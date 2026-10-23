@@ -230,6 +230,11 @@ m03d-route-shop-buy→ src/scenes/rooms/shop.ts  (BUY grid, 4×4)
 …
 ```
 
+**Done and in the repo:** the whole board is imported (33 frames, 66 viewports: 3.5 MB of JSON,
+3.9 MB of SVG, 10.1 MB of PNG) by `scripts/design/export.mjs`; `scripts/design/tokens.mjs` generates
+`design/tokens.json` from it and `scripts/hud/diff.mjs` is the gate. The frame → scene map lives in
+`design/README.md`, and `scripts/design/frames.mjs` is the one table the exporter reads.
+
 and the adaptation rules already agreed: panel 374 at `x=8` centred vertically, chips as 26×26
 letter badges, safe area 47/810, pad 156 at (103,741) with A (334,767) r35 and B (235,788) r35.
 

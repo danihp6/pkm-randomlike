@@ -1,0 +1,2817 @@
+{
+ "slug": "05b-battle-message",
+ "nodeId": "2:569",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "2:569",
+   "name": "05b Battle · message",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "2:570",
+     "name": "battle field",
+     "type": "FRAME",
+     "children": [
+      {
+       "id": "2:571",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.03921568766236305,
+           "g": 0.07058823853731155,
+           "b": 0.10980392247438431
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:572",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 300,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.05098039284348488,
+           "g": 0.10196078568696976,
+           "b": 0.16078431904315948
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:573",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 300,
+        "width": 1280,
+        "height": 120,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.07058823853731155,
+           "g": 0.13333334028720856,
+           "b": 0.20392157137393951
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:574",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 420,
+        "width": 1280,
+        "height": 380,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.08627451211214066,
+           "g": 0.1411764770746231,
+           "b": 0.10196078568696976
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:575",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 720,
+        "y": 246,
+        "width": 460,
+        "height": 80,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.949999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.13333334028720856,
+           "g": 0.2235294133424759,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:576",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 80,
+        "y": 472,
+        "width": 500,
+        "height": 96,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.949999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.125490203499794,
+           "g": 0.21176470816135406,
+           "b": 0.11372549086809158
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:577",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 470,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:578",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 131,
+        "y": 541,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:579",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 262,
+        "y": 612,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:580",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 393,
+        "y": 683,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:581",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 524,
+        "y": 754,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:582",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 655,
+        "y": 525,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:583",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 786,
+        "y": 596,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:584",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 917,
+        "y": 667,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:585",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1048,
+        "y": 738,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:586",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1179,
+        "y": 509,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:587",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 50,
+        "y": 580,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:588",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 181,
+        "y": 651,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:589",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 312,
+        "y": 722,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:590",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 443,
+        "y": 493,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:591",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 574,
+        "y": 564,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:592",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 705,
+        "y": 635,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:593",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 836,
+        "y": 706,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:594",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 967,
+        "y": 477,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:595",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1098,
+        "y": 548,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:596",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1229,
+        "y": 619,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:597",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 100,
+        "y": 690,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:598",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 231,
+        "y": 761,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:599",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 362,
+        "y": 532,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:600",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 493,
+        "y": 603,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:601",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 624,
+        "y": 674,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:602",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 755,
+        "y": 745,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:603",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 886,
+        "y": 516,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:604",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1017,
+        "y": 587,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:605",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1148,
+        "y": 658,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:606",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 19,
+        "y": 729,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:607",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 150,
+        "y": 500,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:608",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 281,
+        "y": 571,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:609",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 412,
+        "y": 642,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:610",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 543,
+        "y": 713,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:611",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 674,
+        "y": 484,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:612",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 805,
+        "y": 555,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:613",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 936,
+        "y": 626,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:614",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1067,
+        "y": 697,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:615",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1198,
+        "y": 768,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:616",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 69,
+        "y": 539,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": false,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:617",
+     "name": "foe shadow",
+     "type": "ELLIPSE",
+     "properties": {
+      "x": 830,
+      "y": 300,
+      "width": 220,
+      "height": 34,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.44999998807907104,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.01568627543747425,
+         "g": 0.027450980618596077,
+         "b": 0.03921568766236305
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:618",
+     "name": "player shadow",
+     "type": "ELLIPSE",
+     "properties": {
+      "x": 210,
+      "y": 528,
+      "width": 240,
+      "height": 36,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.5,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.01568627543747425,
+         "g": 0.027450980618596077,
+         "b": 0.03921568766236305
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:619",
+     "name": "foe panel",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 64,
+      "y": 48,
+      "width": 368,
+      "height": 100,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.8999999761581421,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:620",
+     "name": "foe panel highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 76,
+      "y": 60,
+      "width": 344,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:621",
+     "name": "foe name",
+     "type": "TEXT",
+     "properties": {
+      "x": 88,
+      "y": 68,
+      "width": 114,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:622",
+     "name": "foe lv",
+     "type": "TEXT",
+     "properties": {
+      "x": 340,
+      "y": 70,
+      "width": 35,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:623",
+     "name": "foe hp track",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 126,
+      "width": 220,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.11999999731779099,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:624",
+     "name": "foe hp fill",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 126,
+      "width": 195,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.29019609093666077,
+         "g": 0.8196078538894653,
+         "b": 0.3607843220233917
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:625",
+     "name": "foe hp text",
+     "type": "TEXT",
+     "properties": {
+      "x": 316,
+      "y": 122,
+      "width": 49,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:626",
+     "name": "player panel",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 64,
+      "y": 660,
+      "width": 368,
+      "height": 100,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.8999999761581421,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:627",
+     "name": "player panel highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 76,
+      "y": 672,
+      "width": 344,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:628",
+     "name": "player name",
+     "type": "TEXT",
+     "properties": {
+      "x": 88,
+      "y": 680,
+      "width": 118,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:629",
+     "name": "player lv",
+     "type": "TEXT",
+     "properties": {
+      "x": 348,
+      "y": 682,
+      "width": 35,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:630",
+     "name": "player hp track",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 740,
+      "width": 220,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.11999999731779099,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:631",
+     "name": "player hp fill",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 740,
+      "width": 176,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:632",
+     "name": "player hp text",
+     "type": "TEXT",
+     "properties": {
+      "x": 316,
+      "y": 736,
+      "width": 42,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:633",
+     "name": "weather chip",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 1076,
+      "y": 40,
+      "width": 144,
+      "height": 26,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.699999988079071,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:634",
+     "name": "weather text",
+     "type": "TEXT",
+     "properties": {
+      "x": 1088,
+      "y": 47,
+      "width": 91,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:635",
+     "name": "message box",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 664,
+      "y": 544,
+      "width": 576,
+      "height": 216,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.9200000166893005,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:636",
+     "name": "message box highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 676,
+      "y": 556,
+      "width": 552,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:637",
+     "name": "message line 1",
+     "type": "TEXT",
+     "properties": {
+      "x": 696,
+      "y": 580,
+      "width": 292,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:638",
+     "name": "message line 2",
+     "type": "TEXT",
+     "properties": {
+      "x": 696,
+      "y": 612,
+      "width": 294,
+      "height": 15,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9882352948188782,
+         "g": 0.6470588445663452,
+         "b": 0.6470588445663452
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:639",
+     "name": "type cursor",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 696,
+      "y": 648,
+      "width": 10,
+      "height": 16,
+      "cornerRadius": 2,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:642",
+     "name": "foe type GRASS",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 93,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "385eb78e6f3f6b12073b65283f2369aded80528f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:643",
+     "name": "foe type POISON",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 93,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d1b44ade036b7f2ed5f1e3171f35cdb9b50a8b25"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:644",
+     "name": "player type FIRE",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 705,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "054c7888133061df37eb735bb71b0384f323c8bd"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:645",
+     "name": "player type FLYING",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 705,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "f47778875a8c195ac10c724d572fb140ec87a65d"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:646",
+     "name": "player status ENV",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 376,
+      "y": 736,
+      "width": 44,
+      "height": 16,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "adbcfd7f18fda1c20d78f5165de7afc9e2d16e94"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:686",
+     "name": "foe party ball 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:687",
+     "name": "foe party ball 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:688",
+     "name": "foe party ball 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 144,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:689",
+     "name": "foe sprite art",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 821,
+      "y": 111,
+      "width": 237,
+      "height": 207,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "50951b4bb31876bdc799e69902edc4771ac57c8b"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:690",
+     "name": "player sprite art",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 204,
+      "y": 303,
+      "width": 252,
+      "height": 243,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d188643af09b35cc4e224ecd56c57d13a404e21f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 1790,
+    "y": 1760,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.04313725605607033,
+       "g": 0.062745101749897,
+       "b": 0.09019608050584793
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 80
+  }
+ ],
+ "text": [
+  {
+   "id": "2:569",
+   "name": "05b Battle · message",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "2:621",
+     "name": "foe name",
+     "type": "TEXT",
+     "properties": {
+      "characters": "VENUSAUR",
+      "x": 88,
+      "y": 68,
+      "width": 114,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:622",
+     "name": "foe lv",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LV 34",
+      "x": 340,
+      "y": 70,
+      "width": 35,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:625",
+     "name": "foe hp text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "142/160",
+      "x": 316,
+      "y": 122,
+      "width": 49,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:628",
+     "name": "player name",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CHARIZARD",
+      "x": 88,
+      "y": 680,
+      "width": 118,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:629",
+     "name": "player lv",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LV 36",
+      "x": 348,
+      "y": 682,
+      "width": 35,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:632",
+     "name": "player hp text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "98/112",
+      "x": 316,
+      "y": 736,
+      "width": 42,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:634",
+     "name": "weather text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SUN · 3 TURNS",
+      "x": 1088,
+      "y": 47,
+      "width": 91,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:637",
+     "name": "message line 1",
+     "type": "TEXT",
+     "properties": {
+      "characters": "VENUSAUR used SLUDGE BOMB!",
+      "x": 696,
+      "y": 580,
+      "width": 292,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:638",
+     "name": "message line 2",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CHARIZARD lost 38 HP and is poisoned.",
+      "x": 696,
+      "y": 612,
+      "width": 294,
+      "height": 15,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9882352948188782,
+         "g": 0.6470588445663452,
+         "b": 0.6470588445663452
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 80
+  }
+ ]
+}

@@ -1,0 +1,2455 @@
+{
+ "slug": "03p-panels-pc-rip",
+ "nodeId": "6:2525",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "6:2525",
+   "name": "03p Panels · pc rip",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:2526",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2527",
+     "name": "pc group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "6:2528",
+       "name": "pc panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 348,
+        "width": 304,
+        "height": 243,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2529",
+       "name": "pc panel highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 360,
+        "width": 280,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2530",
+       "name": "key pc",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 360,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2531",
+       "name": "key letter pc",
+       "type": "TEXT",
+       "properties": {
+        "x": 44,
+        "y": 366,
+        "width": 11,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2532",
+       "name": "pc search field",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 68,
+        "y": 360,
+        "width": 190,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.029999999329447746,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2533",
+       "name": "pc search icon",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "6:2534",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 1,
+          "y": 1,
+          "width": 6,
+          "height": 6,
+          "cornerRadius": 0,
+          "fills": [],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2535",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 6.300000190734863,
+          "y": 6.300000190734863,
+          "width": 2.8999996185302734,
+          "height": 2.8999996185302734,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0,
+             "g": 0,
+             "b": 0
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 76,
+        "y": 367,
+        "width": 10,
+        "height": 10,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": false,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2536",
+       "name": "pc search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "x": 92,
+        "y": 367,
+        "width": 76,
+        "height": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2537",
+       "name": "pc view toggle",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 292,
+        "y": 360,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2538",
+       "name": "pc toggle thumb 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 367,
+        "width": 4,
+        "height": 4,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2539",
+       "name": "pc toggle line 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 304,
+        "y": 368,
+        "width": 6,
+        "height": 2,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2540",
+       "name": "pc toggle thumb 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 373,
+        "width": 4,
+        "height": 4,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2541",
+       "name": "pc toggle line 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 304,
+        "y": 374,
+        "width": 6,
+        "height": 2,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2610",
+       "name": "rip viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "6:2611",
+         "name": "rip row 0",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 1,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2612",
+         "name": "rip icon 0",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 7,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FILL",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "ec69dc547fbf3ca07400dd43d8c4697592fa0237"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2613",
+         "name": "rip name 0",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 7,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2614",
+         "name": "rip meta 0",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 23,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2615",
+         "name": "rip tag 0",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 15,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2616",
+         "name": "rip row 1",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 45,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2617",
+         "name": "rip icon 1",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 51,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FILL",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "443cb373f5f044c0616ec7db79460967800e2d1b"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2618",
+         "name": "rip name 1",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 51,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2619",
+         "name": "rip meta 1",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 67,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2620",
+         "name": "rip tag 1",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 59,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2621",
+         "name": "rip row 2",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 89,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2622",
+         "name": "rip icon 2",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 95,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d065e2b44c1e22ae90290e525a4de1f9db11d4e1"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2623",
+         "name": "rip name 2",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 95,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2624",
+         "name": "rip meta 2",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 111,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2625",
+         "name": "rip tag 2",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 103,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2626",
+         "name": "rip row 3",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 133,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2627",
+         "name": "rip icon 3",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 139,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "9027b3b0d56ced3da528b48d7d93a3be35ef51e7"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2628",
+         "name": "rip name 3",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 139,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2629",
+         "name": "rip meta 3",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 155,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2630",
+         "name": "rip tag 3",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 147,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2631",
+         "name": "rip row 4",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 177,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2632",
+         "name": "rip icon 4",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 183,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "238e46d1bdeff403c5ed09c8dbb4b3ee49d811ec"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2633",
+         "name": "rip name 4",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 183,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2634",
+         "name": "rip meta 4",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 199,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2635",
+         "name": "rip tag 4",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 191,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2636",
+         "name": "rip row 5",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 221,
+          "width": 280,
+          "height": 38,
+          "cornerRadius": 6,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2637",
+         "name": "rip icon 5",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 8,
+          "y": 227,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "0541124fbfbac1b7e2a3a8944829e0f3bacdf3ad"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2638",
+         "name": "rip name 5",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 227,
+          "width": 190,
+          "height": 15,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2639",
+         "name": "rip meta 5",
+         "type": "TEXT",
+         "properties": {
+          "x": 40,
+          "y": 243,
+          "width": 190,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2640",
+         "name": "rip tag 5",
+         "type": "TEXT",
+         "properties": {
+          "x": 236,
+          "y": 235,
+          "width": 32,
+          "height": 11,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 36,
+        "y": 396,
+        "width": 280,
+        "height": 183,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0,
+           "g": 0,
+           "b": 0
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2603",
+       "name": "pc grid scroll track",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 320,
+        "y": 396,
+        "width": 4,
+        "height": 183,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2604",
+       "name": "pc grid scroll thumb",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 320,
+        "y": 396,
+        "width": 4,
+        "height": 122,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.3199999928474426,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2605",
+       "name": "pc rip button",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 264,
+        "y": 360,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2645",
+       "name": "pc rip icon",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "6:2646",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 3,
+          "y": 1,
+          "width": 10,
+          "height": 13,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "6:2647",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 6,
+          "y": 5.5,
+          "width": 4,
+          "height": 5,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0,
+             "g": 0,
+             "b": 0
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.06270000338554382,
+             "g": 0.08630000054836273,
+             "b": 0.12160000205039978
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 268,
+        "y": 364,
+        "width": 16,
+        "height": 16,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": false,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 24,
+      "y": 348,
+      "width": 304,
+      "height": 243,
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 26850,
+    "y": 880,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.04313725605607033,
+       "g": 0.062745101749897,
+       "b": 0.09019608050584793
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 53
+  }
+ ],
+ "text": [
+  {
+   "id": "6:2525",
+   "name": "03p Panels · pc rip",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:2527",
+     "name": "pc group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "6:2531",
+       "name": "key letter pc",
+       "type": "TEXT",
+       "properties": {
+        "characters": "C",
+        "x": 44,
+        "y": 366,
+        "width": 11,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2536",
+       "name": "pc search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SEARCH FAINTED",
+        "x": 92,
+        "y": 367,
+        "width": 76,
+        "height": 10,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2610",
+       "name": "rip viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "6:2613",
+         "name": "rip name 0",
+         "type": "TEXT",
+         "properties": {
+          "characters": "PSYDUCK",
+          "x": 40,
+          "y": 7,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2614",
+         "name": "rip meta 0",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 30 · ROUTE 3",
+          "x": 40,
+          "y": 23,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2615",
+         "name": "rip tag 0",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 15,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2618",
+         "name": "rip name 1",
+         "type": "TEXT",
+         "properties": {
+          "characters": "MACHOP",
+          "x": 40,
+          "y": 51,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2619",
+         "name": "rip meta 1",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 27 · ROUTE 5",
+          "x": 40,
+          "y": 67,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2620",
+         "name": "rip tag 1",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 59,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2623",
+         "name": "rip name 2",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RATICATE",
+          "x": 40,
+          "y": 95,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2624",
+         "name": "rip meta 2",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 22 · ROUTE 2",
+          "x": 40,
+          "y": 111,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2625",
+         "name": "rip tag 2",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 103,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2628",
+         "name": "rip name 3",
+         "type": "TEXT",
+         "properties": {
+          "characters": "GLOOM",
+          "x": 40,
+          "y": 139,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2629",
+         "name": "rip meta 3",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 19 · ROUTE 6",
+          "x": 40,
+          "y": 155,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2630",
+         "name": "rip tag 3",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 147,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2633",
+         "name": "rip name 4",
+         "type": "TEXT",
+         "properties": {
+          "characters": "ZUBAT",
+          "x": 40,
+          "y": 183,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2634",
+         "name": "rip meta 4",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 16 · ROUTE 4",
+          "x": 40,
+          "y": 199,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2635",
+         "name": "rip tag 4",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 191,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2638",
+         "name": "rip name 5",
+         "type": "TEXT",
+         "properties": {
+          "characters": "DODUO",
+          "x": 40,
+          "y": 227,
+          "width": 190,
+          "height": 15,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 12,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.9803921580314636,
+             "b": 0.9882352948188782
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2639",
+         "name": "rip meta 5",
+         "type": "TEXT",
+         "properties": {
+          "characters": "LV 21 · ROUTE 7",
+          "x": 40,
+          "y": 243,
+          "width": 190,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 9,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "6:2640",
+         "name": "rip tag 5",
+         "type": "TEXT",
+         "properties": {
+          "characters": "RIP",
+          "x": 236,
+          "y": 235,
+          "width": 32,
+          "height": 11,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Bold"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.9725490212440491,
+             "g": 0.4431372582912445,
+             "b": 0.4431372582912445
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 53
+  }
+ ]
+}

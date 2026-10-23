@@ -1,0 +1,6280 @@
+{
+ "slug": "03b-panels-row-view",
+ "nodeId": "2:6",
+ "depth": 4,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "2:6",
+   "name": "03b Panels · row view",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "2:7",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:8",
+     "name": "party group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:9",
+       "name": "party panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 928,
+        "y": 536,
+        "width": 304,
+        "height": 124,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:10",
+       "name": "party panel highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 940,
+        "y": 548,
+        "width": 280,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:13",
+       "name": "portrait CH",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 944,
+        "y": 586,
+        "width": 52,
+        "height": 52,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "cbafd2ac5343dfed571657e2e5027710a0148635"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:15",
+       "name": "hp track CH",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 944,
+        "y": 644,
+        "width": 52,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:16",
+       "name": "hp fill CH",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 944,
+        "y": 644,
+        "width": 46,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8196078538894653,
+           "b": 0.3607843220233917
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:19",
+       "name": "portrait PI",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1004,
+        "y": 586,
+        "width": 52,
+        "height": 52,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "65e113b043dba01384b1ae706262fbcc3bf1e668"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:21",
+       "name": "hp track PI",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1004,
+        "y": 644,
+        "width": 52,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:22",
+       "name": "hp fill PI",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1004,
+        "y": 644,
+        "width": 29,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9843137264251709,
+           "g": 0.7490196228027344,
+           "b": 0.1411764770746231
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:23",
+       "name": "portrait BU",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1064,
+        "y": 586,
+        "width": 52,
+        "height": 52,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "c02aead2e5372ccbc46c42a7f5bed7d31d048ed6"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:25",
+       "name": "hp track BU",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1064,
+        "y": 644,
+        "width": 52,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:26",
+       "name": "hp fill BU",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1064,
+        "y": 644,
+        "width": 9,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9882352948188782,
+           "g": 0.6470588445663452,
+           "b": 0.6470588445663452
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:29",
+       "name": "portrait GA",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1124,
+        "y": 586,
+        "width": 52,
+        "height": 52,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "b51fe1f5877c5a6ef5b709ac6b767b05b5c52869"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:31",
+       "name": "hp track GA",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1124,
+        "y": 644,
+        "width": 52,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:32",
+       "name": "hp fill GA",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1124,
+        "y": 644,
+        "width": 52,
+        "height": 3,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8196078538894653,
+           "b": 0.3607843220233917
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:33",
+       "name": "party level label",
+       "type": "TEXT",
+       "properties": {
+        "x": 978,
+        "y": 554,
+        "width": 48,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:34",
+       "name": "party xp track",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1028,
+        "y": 558,
+        "width": 126,
+        "height": 8,
+        "cornerRadius": 4,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:35",
+       "name": "party xp fill",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1028,
+        "y": 558,
+        "width": 78,
+        "height": 8,
+        "cornerRadius": 4,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:36",
+       "name": "key party",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 940,
+        "y": 548,
+        "width": 26,
+        "height": 26,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.5,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.04313725605607033,
+           "g": 0.062745101749897,
+           "b": 0.09019608050584793
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:37",
+       "name": "key letter party",
+       "type": "TEXT",
+       "properties": {
+        "x": 948,
+        "y": 555,
+        "width": 11,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:38",
+       "name": "party view toggle",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1194,
+        "y": 548,
+        "width": 26,
+        "height": 26,
+        "cornerRadius": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:187",
+       "name": "toggle thumb 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1201,
+        "y": 556,
+        "width": 4,
+        "height": 4,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:188",
+       "name": "toggle line 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1207,
+        "y": 557,
+        "width": 6,
+        "height": 2,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:189",
+       "name": "toggle thumb 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1201,
+        "y": 562,
+        "width": 4,
+        "height": 4,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:190",
+       "name": "toggle line 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1207,
+        "y": 563,
+        "width": 6,
+        "height": 2,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:191",
+       "name": "vial button",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1194,
+        "y": 586,
+        "width": 26,
+        "height": 62,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05000000074505806,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:192",
+       "name": "vial charge 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1200,
+        "y": 599,
+        "width": 14,
+        "height": 8,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9843137264251709,
+           "g": 0.7490196228027344,
+           "b": 0.1411764770746231
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:193",
+       "name": "vial charge 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1200,
+        "y": 613,
+        "width": 14,
+        "height": 8,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9843137264251709,
+           "g": 0.7490196228027344,
+           "b": 0.1411764770746231
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:194",
+       "name": "vial charge 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1200,
+        "y": 627,
+        "width": 14,
+        "height": 8,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 928,
+      "y": 536,
+      "width": 304,
+      "height": 124,
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:102",
+     "name": "bag group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:103",
+       "name": "bag panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 24,
+        "width": 304,
+        "height": 130,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:104",
+       "name": "bag panel highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 36,
+        "width": 280,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:106",
+       "name": "key bag",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 36,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.5,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.04313725605607033,
+           "g": 0.062745101749897,
+           "b": 0.09019608050584793
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:107",
+       "name": "key letter bag",
+       "type": "TEXT",
+       "properties": {
+        "x": 44,
+        "y": 42,
+        "width": 6,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:108",
+       "name": "money",
+       "type": "TEXT",
+       "properties": {
+        "x": 68,
+        "y": 40,
+        "width": 66,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:109",
+       "name": "bag search field",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 140,
+        "y": 36,
+        "width": 142,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.029999999329447746,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:110",
+       "name": "bag search icon",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "2:111",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 1,
+          "y": 1,
+          "width": 6,
+          "height": 6,
+          "cornerRadius": 0,
+          "fills": [],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:112",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 6.300000190734863,
+          "y": 6.300000190734863,
+          "width": 2.8999996185302734,
+          "height": 2.8999996185302734,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0,
+             "g": 0,
+             "b": 0
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 148,
+        "y": 43,
+        "width": 10,
+        "height": 10,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": false,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:113",
+       "name": "bag search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "x": 164,
+        "y": 43,
+        "width": 59,
+        "height": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:139",
+       "name": "bag view toggle",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 292,
+        "y": 36,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:144",
+       "name": "bag row viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "2:114",
+         "name": "bag tile 1",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:115",
+         "name": "bag icon potion",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 20,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d24e9ca65f6f8224f7b968d8adf24d0b68a3e0bd"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:116",
+         "name": "bag qty 1",
+         "type": "TEXT",
+         "properties": {
+          "x": 42,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:117",
+         "name": "bag tile 2",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 72,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:118",
+         "name": "bag icon large_potion",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 92,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "2041d350e5229ba2e7d7b34c91229f915dd95f6e"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:119",
+         "name": "bag qty 2",
+         "type": "TEXT",
+         "properties": {
+          "x": 114,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:120",
+         "name": "bag tile 3",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 144,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:121",
+         "name": "bag icon full_heal",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 164,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "1ac7fc3e27aa229550990e3ccc049f10f181bd78"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:122",
+         "name": "bag qty 3",
+         "type": "TEXT",
+         "properties": {
+          "x": 186,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:123",
+         "name": "bag tile 4",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 216,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:124",
+         "name": "bag icon antidote",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 236,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "91ac540b4cd665cc61082e3bb51249ad2af228b1"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:125",
+         "name": "bag qty 4",
+         "type": "TEXT",
+         "properties": {
+          "x": 258,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:126",
+         "name": "bag tile 5",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 288,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:127",
+         "name": "bag icon poke_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 308,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:128",
+         "name": "bag qty 5",
+         "type": "TEXT",
+         "properties": {
+          "x": 330,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:129",
+         "name": "bag tile 6",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 360,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:130",
+         "name": "bag icon great_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 380,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "112f9fd4ef20a0afdb9c99054fe1f4aaf3be77a3"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:131",
+         "name": "bag qty 6",
+         "type": "TEXT",
+         "properties": {
+          "x": 402,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:132",
+         "name": "bag tile 7",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 432,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:133",
+         "name": "bag icon oran_berry",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 452,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "2ddf3e2613abe4588e75a87197e2b6db681f7588"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:134",
+         "name": "bag qty 7",
+         "type": "TEXT",
+         "properties": {
+          "x": 474,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:135",
+         "name": "bag tile 8",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 504,
+          "y": 0,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:136",
+         "name": "bag icon leftovers",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 524,
+          "y": 18,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "bd8eeb15c8a0447fee00c64bece6da69bffe50be"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:137",
+         "name": "bag qty 8",
+         "type": "TEXT",
+         "properties": {
+          "x": 546,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 36,
+        "y": 72,
+        "width": 280,
+        "height": 60,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:145",
+       "name": "bag scroll track",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 138,
+        "width": 280,
+        "height": 4,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:146",
+       "name": "bag scroll thumb",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 138,
+        "width": 69,
+        "height": 4,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.3199999928474426,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:147",
+       "name": "bag toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 42,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:148",
+       "name": "bag toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 305,
+        "y": 42,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:149",
+       "name": "bag toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 49,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:150",
+       "name": "bag toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 305,
+        "y": 49,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 24,
+      "y": 24,
+      "width": 304,
+      "height": 130,
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:381",
+     "name": "pc group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:382",
+       "name": "pc panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 208,
+        "width": 304,
+        "height": 112,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:383",
+       "name": "pc panel highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 220,
+        "width": 280,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:384",
+       "name": "key pc",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 220,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:385",
+       "name": "key letter pc",
+       "type": "TEXT",
+       "properties": {
+        "x": 44,
+        "y": 226,
+        "width": 11,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:386",
+       "name": "pc search field",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 68,
+        "y": 220,
+        "width": 214,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.029999999329447746,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:387",
+       "name": "pc search icon",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "2:388",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 1,
+          "y": 1,
+          "width": 6,
+          "height": 6,
+          "cornerRadius": 0,
+          "fills": [],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:389",
+         "name": "Vector",
+         "type": "VECTOR",
+         "properties": {
+          "x": 6.300000190734863,
+          "y": 6.300000190734863,
+          "width": 2.8999996185302734,
+          "height": 2.8999996185302734,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0,
+             "g": 0,
+             "b": 0
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.5803921818733215,
+             "g": 0.6392157077789307,
+             "b": 0.7215686440467834
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 76,
+        "y": 227,
+        "width": 10,
+        "height": 10,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": false,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:390",
+       "name": "pc search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "x": 92,
+        "y": 227,
+        "width": 62,
+        "height": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:391",
+       "name": "pc view toggle",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 292,
+        "y": 220,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.05999999865889549,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:396",
+       "name": "pc grid viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "2:397",
+         "name": "pc slot 1",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 0,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:398",
+         "name": "pc mon pidgeot",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 5,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "c1a4ebc30291c95f96d3f9874f62b3800705e92a"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:399",
+         "name": "pc slot 2",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 47,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:400",
+         "name": "pc mon rattata",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 52,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "3abfb373d9256e50408e2055602bf237351a7970"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:401",
+         "name": "pc slot 3",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 94,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:402",
+         "name": "pc mon raticate",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 99,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d065e2b44c1e22ae90290e525a4de1f9db11d4e1"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:403",
+         "name": "pc slot 4",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 141,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:404",
+         "name": "pc mon zubat",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 146,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "238e46d1bdeff403c5ed09c8dbb4b3ee49d811ec"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:405",
+         "name": "pc slot 5",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 188,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:406",
+         "name": "pc mon golbat",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 193,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "75038db60645a582ae2e856ca655516a7c5573a1"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:407",
+         "name": "pc slot 6",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 235,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:408",
+         "name": "pc mon oddish",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 240,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "5b0f0ccdefdba09e23bafbcc2b0cb3cfd30f666f"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:409",
+         "name": "pc slot 7",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 282,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:410",
+         "name": "pc mon gloom",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 287,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "9027b3b0d56ced3da528b48d7d93a3be35ef51e7"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:411",
+         "name": "pc slot 8",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 329,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:412",
+         "name": "pc mon meowth",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 334,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "2a93ed25f86a946970a85b2b61d964033ecd4237"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:413",
+         "name": "pc slot 9",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 376,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:414",
+         "name": "pc mon psyduck",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 381,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "ec69dc547fbf3ca07400dd43d8c4697592fa0237"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:415",
+         "name": "pc slot 10",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 423,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:416",
+         "name": "pc mon machop",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 428,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "443cb373f5f044c0616ec7db79460967800e2d1b"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:417",
+         "name": "pc slot 11",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 470,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:418",
+         "name": "pc mon geodude",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 475,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "ce45e42ea99005b389e9a2947b7500d104222e5a"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:419",
+         "name": "pc slot 12",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 517,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:420",
+         "name": "pc mon ponyta",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 522,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "4f99b5f5c83083db5f9c4f086491a6eadefdb154"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:421",
+         "name": "pc slot 13",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 564,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:422",
+         "name": "pc mon slowpoke",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 569,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "fb07482fd36f6d321b13fb9a320a5df3f40df8fb"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:423",
+         "name": "pc slot 14",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 611,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:424",
+         "name": "pc mon magnemite",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 616,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "484956c65becb788c0a24201237a33b740cd4f73"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:425",
+         "name": "pc slot 15",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 658,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:426",
+         "name": "pc mon doduo",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 663,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "0541124fbfbac1b7e2a3a8944829e0f3bacdf3ad"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:427",
+         "name": "pc slot 16",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 705,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:428",
+         "name": "pc mon seel",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 710,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d9005180afb99adc2e990ea7a76fad7db9910459"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:429",
+         "name": "pc slot 17",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 752,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:430",
+         "name": "pc mon grimer",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 757,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "8beea257146853fed12bf8653d72e18b121c8d09"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:431",
+         "name": "pc slot 18",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 799,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:432",
+         "name": "pc mon drowzee",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 804,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "6661b3bc57ea1f3a7ba5d4064b09df81421157b2"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:433",
+         "name": "pc slot 19",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 846,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:434",
+         "name": "pc mon krabby",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 851,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "c4ab8311bc91bfb9f002a669bf51d218101fac53"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:435",
+         "name": "pc slot 20",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 893,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:436",
+         "name": "pc mon voltorb",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 898,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "f924635019d48301ffd62e1138264e12fb9753ec"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:437",
+         "name": "pc slot 21",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 940,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:438",
+         "name": "pc mon eevee",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 945,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "57f09cdab509974a7454c8d14435a254f0d9c55b"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:439",
+         "name": "pc slot 22",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 987,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:440",
+         "name": "pc mon snorlax",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 992,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "6764158091f574ff5f2951a5b2a2db26ba8f4357"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:441",
+         "name": "pc slot 23",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1034,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:442",
+         "name": "pc mon lapras",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1039,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d75da9d7011ae383256a7e54e729a91866fb5f41"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:443",
+         "name": "pc slot 24",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1081,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:444",
+         "name": "pc mon dratini",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1086,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "36e1bc773ccad85fda736ebc24347b7ae47c947b"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:445",
+         "name": "pc slot 25",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1128,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:446",
+         "name": "pc mon abra",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1133,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "1d810139e3ca9095c95ea61c2e0dca027ba7456d"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:447",
+         "name": "pc slot 26",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1175,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:448",
+         "name": "pc mon kadabra",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1180,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "7a72aab755a8c1fc7a9117e1e4aa22ce27578909"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:449",
+         "name": "pc slot 27",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1222,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:450",
+         "name": "pc mon tentacool",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1227,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "86612bdd2b3b60bcaed72b48ff76f6f95a6eb0ee"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:451",
+         "name": "pc slot 28",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1269,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:452",
+         "name": "pc mon onix",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1274,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "73ac59a35a2493205370fe6d3c6e4f28fbf3212a"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:453",
+         "name": "pc slot 29",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1316,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:454",
+         "name": "pc mon horsea",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1321,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "a168fcdaaee7fdd9d7594ebc9818aa9cf726e9fd"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:455",
+         "name": "pc slot 30",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1363,
+          "y": 0,
+          "width": 42,
+          "height": 42,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.019999999552965164,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.05999999865889549,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "2:456",
+         "name": "pc mon goldeen",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 1368,
+          "y": 5,
+          "width": 32,
+          "height": 32,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "166504c524c0741e5d9d54599d3ea9ae4cee8e1f"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 36,
+        "y": 256,
+        "width": 280,
+        "height": 42,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:459",
+       "name": "pc toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 226,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:460",
+       "name": "pc toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 305,
+        "y": 226,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:461",
+       "name": "pc toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 298,
+        "y": 233,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:462",
+       "name": "pc toggle grid",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 305,
+        "y": 233,
+        "width": 5,
+        "height": 5,
+        "cornerRadius": 1,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.550000011920929,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:463",
+       "name": "pc row scroll track",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 304,
+        "width": 280,
+        "height": 4,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:464",
+       "name": "pc row scroll thumb",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 36,
+        "y": 304,
+        "width": 56,
+        "height": 4,
+        "cornerRadius": 2,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.3199999928474426,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 24,
+      "y": 208,
+      "width": 304,
+      "height": 112,
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 1790,
+    "y": 880,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.06270000338554382,
+       "g": 0.08630000054836273,
+       "b": 0.12160000205039978
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 151
+  }
+ ],
+ "text": [
+  {
+   "id": "2:6",
+   "name": "03b Panels · row view",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "2:8",
+     "name": "party group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:33",
+       "name": "party level label",
+       "type": "TEXT",
+       "properties": {
+        "characters": "LV 36",
+        "x": 978,
+        "y": 554,
+        "width": 48,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:37",
+       "name": "key letter party",
+       "type": "TEXT",
+       "properties": {
+        "characters": "P",
+        "x": 948,
+        "y": 555,
+        "width": 11,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "2:102",
+     "name": "bag group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:107",
+       "name": "key letter bag",
+       "type": "TEXT",
+       "properties": {
+        "characters": "I",
+        "x": 44,
+        "y": 42,
+        "width": 6,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:108",
+       "name": "money",
+       "type": "TEXT",
+       "properties": {
+        "characters": "$ 2,480",
+        "x": 68,
+        "y": 40,
+        "width": 66,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:113",
+       "name": "bag search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SEARCH ITEM",
+        "x": 164,
+        "y": 43,
+        "width": 59,
+        "height": 10,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:144",
+       "name": "bag row viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "2:116",
+         "name": "bag qty 1",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×3",
+          "x": 42,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:119",
+         "name": "bag qty 2",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×1",
+          "x": 114,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:122",
+         "name": "bag qty 3",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×2",
+          "x": 186,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:125",
+         "name": "bag qty 4",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×1",
+          "x": 258,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:128",
+         "name": "bag qty 5",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×5",
+          "x": 330,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:131",
+         "name": "bag qty 6",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×2",
+          "x": 402,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:134",
+         "name": "bag qty 7",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×4",
+          "x": 474,
+          "y": 44,
+          "width": 11,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "2:137",
+         "name": "bag qty 8",
+         "type": "TEXT",
+         "properties": {
+          "characters": "×1",
+          "x": 546,
+          "y": 44,
+          "width": 10,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "2:381",
+     "name": "pc group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:385",
+       "name": "key letter pc",
+       "type": "TEXT",
+       "properties": {
+        "characters": "C",
+        "x": 44,
+        "y": 226,
+        "width": 11,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:390",
+       "name": "pc search placeholder",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SEARCH POKE",
+        "x": 92,
+        "y": 227,
+        "width": 62,
+        "height": 10,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.3921568691730499,
+           "g": 0.45490196347236633,
+           "b": 0.545098066329956
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 151
+  }
+ ]
+}

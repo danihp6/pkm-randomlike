@@ -1,0 +1,3606 @@
+{
+ "slug": "03d-route-shop-buy",
+ "nodeId": "5:1114",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "5:1114",
+   "name": "03d Route · shop · buy",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "5:1115",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1116",
+     "name": "scrim",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7400000095367432,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.009999999776482582,
+         "g": 0.019999999552965164,
+         "b": 0.03999999910593033
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1261",
+     "name": "shop shell",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 288,
+      "y": 232,
+      "width": 704,
+      "height": 336,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.9200000166893005,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.06300000101327896,
+         "g": 0.0860000029206276,
+         "b": 0.12200000137090683
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1185",
+     "name": "shop panel group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "5:1186",
+       "name": "shop panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 312,
+        "y": 364,
+        "width": 656,
+        "height": 164,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.0430000014603138,
+           "g": 0.06300000101327896,
+           "b": 0.09000000357627869
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "5:1187",
+       "name": "shop panel highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 324,
+        "y": 372,
+        "width": 632,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "5:1202",
+       "name": "shop grid viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "5:1203",
+         "name": "bag tile 1",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 12,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1204",
+         "name": "bag icon potion",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 32,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "d24e9ca65f6f8224f7b968d8adf24d0b68a3e0bd"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1205",
+         "name": "bag qty 1",
+         "type": "TEXT",
+         "properties": {
+          "x": 32,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1206",
+         "name": "bag tile 2",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 93,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1207",
+         "name": "bag icon large_potion",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 113,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "2041d350e5229ba2e7d7b34c91229f915dd95f6e"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1208",
+         "name": "bag qty 2",
+         "type": "TEXT",
+         "properties": {
+          "x": 113,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1209",
+         "name": "bag tile 3",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 174,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1210",
+         "name": "bag icon full_heal",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 194,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "1ac7fc3e27aa229550990e3ccc049f10f181bd78"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1211",
+         "name": "bag qty 3",
+         "type": "TEXT",
+         "properties": {
+          "x": 191,
+          "y": 60,
+          "width": 30,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1212",
+         "name": "bag tile 4",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 255,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1213",
+         "name": "bag icon antidote",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 275,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "91ac540b4cd665cc61082e3bb51249ad2af228b1"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1214",
+         "name": "bag qty 4",
+         "type": "TEXT",
+         "properties": {
+          "x": 276,
+          "y": 60,
+          "width": 23,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1215",
+         "name": "bag tile 5",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 336,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1216",
+         "name": "bag icon poke_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 356,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1217",
+         "name": "bag qty 5",
+         "type": "TEXT",
+         "properties": {
+          "x": 356,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1218",
+         "name": "bag tile 6",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 417,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1219",
+         "name": "bag icon great_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 437,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "112f9fd4ef20a0afdb9c99054fe1f4aaf3be77a3"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1220",
+         "name": "bag qty 6",
+         "type": "TEXT",
+         "properties": {
+          "x": 437,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1221",
+         "name": "bag tile 7",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 498,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1222",
+         "name": "bag icon oran_berry",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 518,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "2ddf3e2613abe4588e75a87197e2b6db681f7588"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1223",
+         "name": "bag qty 7",
+         "type": "TEXT",
+         "properties": {
+          "x": 519,
+          "y": 60,
+          "width": 23,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1224",
+         "name": "bag tile 8",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 579,
+          "y": 16,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1225",
+         "name": "bag icon leftovers",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 599,
+          "y": 34,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "bd8eeb15c8a0447fee00c64bece6da69bffe50be"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1226",
+         "name": "bag qty 8",
+         "type": "TEXT",
+         "properties": {
+          "x": 596,
+          "y": 60,
+          "width": 30,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1227",
+         "name": "bag tile 9",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 12,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1228",
+         "name": "bag icon sitrus_berry",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 32,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "6291c96e03207fb72b01a3e1ff37d4ecd247bb5d"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1229",
+         "name": "bag qty 9",
+         "type": "TEXT",
+         "properties": {
+          "x": 32,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1230",
+         "name": "bag tile 10",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 93,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1231",
+         "name": "bag icon lum_berry",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 113,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "e60a7494d6e251400c43879bfec7e774d863e278"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1232",
+         "name": "bag qty 10",
+         "type": "TEXT",
+         "properties": {
+          "x": 113,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1233",
+         "name": "bag tile 11",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 174,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1234",
+         "name": "bag icon status_heal",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 194,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "ce2e19dff6a0437445b0e3a9feb6c4fa32d782fa"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1235",
+         "name": "bag qty 11",
+         "type": "TEXT",
+         "properties": {
+          "x": 194,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1236",
+         "name": "bag tile 12",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 255,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1237",
+         "name": "bag icon ultra_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 275,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "6e81cbc6f9792ae7a5d2b45026a935266e41ce04"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1238",
+         "name": "bag qty 12",
+         "type": "TEXT",
+         "properties": {
+          "x": 273,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1239",
+         "name": "bag tile 13",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 336,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1240",
+         "name": "bag icon master_ball",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 356,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "4cbfa8fa2f5b3e1de86ca6311f188689dfcfe0ac"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1241",
+         "name": "bag qty 13",
+         "type": "TEXT",
+         "properties": {
+          "x": 363,
+          "y": 132,
+          "width": 10,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1242",
+         "name": "bag tile 14",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 417,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1243",
+         "name": "bag icon charcoal",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 437,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "255db850e7271c7b8a9c52947aec26906a9ae4c8"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1244",
+         "name": "bag qty 14",
+         "type": "TEXT",
+         "properties": {
+          "x": 435,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1245",
+         "name": "bag tile 15",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 498,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1246",
+         "name": "bag icon hard_stone",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 518,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "c971bea156140fe3fbd377082091c0d6950d66bb"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1247",
+         "name": "bag qty 15",
+         "type": "TEXT",
+         "properties": {
+          "x": 516,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1248",
+         "name": "bag tile 16",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 579,
+          "y": 88,
+          "width": 64,
+          "height": 60,
+          "cornerRadius": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.03999999910593033,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 0.07999999821186066,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 1,
+             "g": 1,
+             "b": 1
+            },
+            "boundVariables": {}
+           }
+          ],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1249",
+         "name": "bag icon miracle_seed",
+         "type": "RECTANGLE",
+         "properties": {
+          "x": 599,
+          "y": 106,
+          "width": 24,
+          "height": 24,
+          "cornerRadius": 0,
+          "fills": [
+           {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+             "exposure": 0,
+             "contrast": 0,
+             "saturation": 0,
+             "temperature": 0,
+             "tint": 0,
+             "highlights": 0,
+             "shadows": 0
+            },
+            "imageTransform": [
+             [
+              1,
+              0,
+              0
+             ],
+             [
+              0,
+              1,
+              0
+             ]
+            ],
+            "imageHash": "e7954a1c0e06091b6d02405f67beac6b108b19bf"
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        },
+        {
+         "id": "5:1250",
+         "name": "bag qty 16",
+         "type": "TEXT",
+         "properties": {
+          "x": 597,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ],
+          "strokes": [],
+          "opacity": 1
+         }
+        }
+       ],
+       "properties": {
+        "x": 312,
+        "y": 364,
+        "width": 656,
+        "height": 164,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 312,
+      "y": 364,
+      "width": 656,
+      "height": 164,
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1122",
+     "name": "money",
+     "type": "TEXT",
+     "properties": {
+      "x": 902,
+      "y": 258,
+      "width": 66,
+      "height": 15,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1259",
+     "name": "shop title",
+     "type": "TEXT",
+     "properties": {
+      "x": 312,
+      "y": 244,
+      "width": 84,
+      "height": 31,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1123",
+     "name": "bag search field",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 744,
+      "y": 294,
+      "width": 224,
+      "height": 24,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.029999999329447746,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1124",
+     "name": "bag search icon",
+     "type": "FRAME",
+     "children": [
+      {
+       "id": "5:1125",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1,
+        "y": 1,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "5:1126",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 6.300000190734863,
+        "y": 6.300000190734863,
+        "width": 2.8999996185302734,
+        "height": 2.8999996185302734,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0,
+           "g": 0,
+           "b": 0
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 754,
+      "y": 301,
+      "width": 10,
+      "height": 10,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": false,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1127",
+     "name": "bag search placeholder",
+     "type": "TEXT",
+     "properties": {
+      "x": 770,
+      "y": 300,
+      "width": 65,
+      "height": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.545098066329956
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1191",
+     "name": "tab buy",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 312,
+      "y": 294,
+      "width": 66,
+      "height": 24,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1253",
+     "name": "tab sell",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 378,
+      "y": 294,
+      "width": 66,
+      "height": 24,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1254",
+     "name": "tab label buy",
+     "type": "TEXT",
+     "properties": {
+      "x": 328,
+      "y": 298,
+      "width": 33,
+      "height": 15,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1255",
+     "name": "tab label sell",
+     "type": "TEXT",
+     "properties": {
+      "x": 392,
+      "y": 298,
+      "width": 38,
+      "height": 15,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1262",
+     "name": "shell highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 300,
+      "y": 244,
+      "width": 680,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1263",
+     "name": "header divider",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 312,
+      "y": 280,
+      "width": 656,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1266",
+     "name": "filter consumables",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 312,
+      "y": 330,
+      "width": 116,
+      "height": 20,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1267",
+     "name": "filter label consumables",
+     "type": "TEXT",
+     "properties": {
+      "x": 312,
+      "y": 330,
+      "width": 116,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1268",
+     "name": "filter pokeballs",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 436,
+      "y": 330,
+      "width": 108,
+      "height": 20,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1269",
+     "name": "filter label pokeballs",
+     "type": "TEXT",
+     "properties": {
+      "x": 436,
+      "y": 330,
+      "width": 108,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1270",
+     "name": "filter held",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 552,
+      "y": 330,
+      "width": 60,
+      "height": 20,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1271",
+     "name": "filter label held",
+     "type": "TEXT",
+     "properties": {
+      "x": 552,
+      "y": 330,
+      "width": 60,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1275",
+     "name": "cursor ring",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 322,
+      "y": 378,
+      "width": 68,
+      "height": 64,
+      "cornerRadius": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.05999999865889549,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.49000000953674316,
+         "g": 0.8270000219345093,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.8999999761581421,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "5:1274",
+     "name": "shop stock count",
+     "type": "TEXT",
+     "properties": {
+      "x": 927,
+      "y": 540,
+      "width": 41,
+      "height": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5799999833106995,
+         "g": 0.6399999856948853,
+         "b": 0.7200000286102295
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 5370,
+    "y": 880,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.04313725605607033,
+       "g": 0.062745101749897,
+       "b": 0.09019608050584793
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 76
+  }
+ ],
+ "text": [
+  {
+   "id": "5:1114",
+   "name": "03d Route · shop · buy",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "5:1185",
+     "name": "shop panel group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "5:1202",
+       "name": "shop grid viewport",
+       "type": "FRAME",
+       "children": [
+        {
+         "id": "5:1205",
+         "name": "bag qty 1",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$300",
+          "x": 32,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1208",
+         "name": "bag qty 2",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$700",
+          "x": 113,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1211",
+         "name": "bag qty 3",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$2500",
+          "x": 191,
+          "y": 60,
+          "width": 30,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1214",
+         "name": "bag qty 4",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$100",
+          "x": 276,
+          "y": 60,
+          "width": 23,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1217",
+         "name": "bag qty 5",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$200",
+          "x": 356,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1220",
+         "name": "bag qty 6",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$600",
+          "x": 437,
+          "y": 60,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1223",
+         "name": "bag qty 7",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$100",
+          "x": 519,
+          "y": 60,
+          "width": 23,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1226",
+         "name": "bag qty 8",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$4000",
+          "x": 596,
+          "y": 60,
+          "width": 30,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1229",
+         "name": "bag qty 9",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$200",
+          "x": 32,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1232",
+         "name": "bag qty 10",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$200",
+          "x": 113,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1235",
+         "name": "bag qty 11",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$300",
+          "x": 194,
+          "y": 132,
+          "width": 24,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1238",
+         "name": "bag qty 12",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$1200",
+          "x": 273,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1241",
+         "name": "bag qty 13",
+         "type": "TEXT",
+         "properties": {
+          "characters": "--",
+          "x": 363,
+          "y": 132,
+          "width": 10,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1244",
+         "name": "bag qty 14",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$1000",
+          "x": 435,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1247",
+         "name": "bag qty 15",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$1500",
+          "x": 516,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        },
+        {
+         "id": "5:1250",
+         "name": "bag qty 16",
+         "type": "TEXT",
+         "properties": {
+          "characters": "$1200",
+          "x": 597,
+          "y": 132,
+          "width": 29,
+          "height": 10,
+          "fontName": {
+           "family": "Silkscreen",
+           "style": "Regular"
+          },
+          "fontSize": 8,
+          "fills": [
+           {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+             "r": 0.7960784435272217,
+             "g": 0.8352941274642944,
+             "b": 0.8823529481887817
+            },
+            "boundVariables": {}
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "5:1122",
+     "name": "money",
+     "type": "TEXT",
+     "properties": {
+      "characters": "$ 2,480",
+      "x": 902,
+      "y": 258,
+      "width": 66,
+      "height": 15,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1259",
+     "name": "shop title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SHOP",
+      "x": 312,
+      "y": 244,
+      "width": 84,
+      "height": 31,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 24,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1127",
+     "name": "bag search placeholder",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SEARCH ITEMS",
+      "x": 770,
+      "y": 300,
+      "width": 65,
+      "height": 10,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.545098066329956
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1254",
+     "name": "tab label buy",
+     "type": "TEXT",
+     "properties": {
+      "characters": "BUY",
+      "x": 328,
+      "y": 298,
+      "width": 33,
+      "height": 15,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1255",
+     "name": "tab label sell",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SELL",
+      "x": 392,
+      "y": 298,
+      "width": 38,
+      "height": 15,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1267",
+     "name": "filter label consumables",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CONSUMIBLES",
+      "x": 312,
+      "y": 330,
+      "width": 116,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1269",
+     "name": "filter label pokeballs",
+     "type": "TEXT",
+     "properties": {
+      "characters": "POKEBALLS",
+      "x": 436,
+      "y": 330,
+      "width": 108,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1271",
+     "name": "filter label held",
+     "type": "TEXT",
+     "properties": {
+      "characters": "HELD",
+      "x": 552,
+      "y": 330,
+      "width": 60,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "5:1274",
+     "name": "shop stock count",
+     "type": "TEXT",
+     "properties": {
+      "characters": "16 ITEMS",
+      "x": 927,
+      "y": 540,
+      "width": 41,
+      "height": 10,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5799999833106995,
+         "g": 0.6399999856948853,
+         "b": 0.7200000286102295
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 76
+  }
+ ]
+}
