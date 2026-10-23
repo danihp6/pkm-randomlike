@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The capture beat and its message tick together.** `[Task-118]`, the human's report: the
+      message and the animation of a capture ran on two unrelated clocks. `src/ui/capture.ts` now
+      holds the beat's single clock — `captureTimeline(shakes, success)` returns the throw, the
+      drop, the wobble step, the ordered `shake` / `break` / `settle` ticks and the `totalMs` their
+      phases add up to — and `captureBeat` stopped clamping, so a break the engine rolled with zero
+      shakes plays **no** wobble instead of inventing one. The scene's tween chain and the message
+      box both read that schedule: the wait line (`battle.log.captureWait`) gains one dot per
+      completed wobble, capped at three, and is **set** rather than typed (it is punctuation, not
+      prose); at `settle` the frame prints the engine's own line for that count and the ball opens
+      on a break (the icon atlas has no open-ball frame, so it hides and flashes) or rests on the
+      field on a catch. The `capture` frame's dwell is the beat's `totalMs` plus the shipped hold,
+      input during the beat jumps the whole reveal to its final state, and no RNG draw moved, so a
+      fixed seed plays exactly the wobbles it always paid for. A dev-only `__pkmBattle` probe
+      (behind `IS_DEVELOP`) makes the beat measurable from the browser.
+
 - [x] **The capacity wait asks for 1/6 on every third attempt.** Madrid's single AD has
       answered `OUT_OF_HOST_CAPACITY` for 2/12 since the wait began, and A1 capacity fragments
       by host: `oci-retry.yml` now passes `SHAPES: '2/12 2/12 1/6'`, so one attempt in three

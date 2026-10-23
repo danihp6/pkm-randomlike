@@ -53,7 +53,7 @@ testable logic belongs in the computing half.
 - `partyGrid.ts` — the battle SWITCH window's row geometry: one fixed-size row per party member and the pure label truncation.
 - `scroll.ts` — the pure row-window arithmetic a scrolling grid shares: the clamped row offset, the one-row step and the visible item range.
 - `bag.ts` — the bag pockets, their labels and the pure categorisation of an item.
-- `capture.ts` — the capture sequence's beats: the shakes, the holds and the click.
+- `capture.ts` — the capture beat's one clock: the engine's own wobble count, the throw/drop/wobble/break/settle timeline the tweens and the message box share, and the wait line's dots.
 - `shop.ts` — the Mart and the sell list: stock, prices and the pure trades against the run, and the row's own `draggable` flag.
 - `rewards.ts` — the item and anonymous-Pokémon choices a trainer or boss win offers, and the row model the floating reward card draws.
 - `runSummary.ts` — the run-over summary model and its lines.

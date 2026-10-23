@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getMove, heightOf } from '../data/dex';
+import { getMove, heightOf, normalizeId } from '../data/dex';
 import { megaFormForItem } from '../data/dex/megas';
 import { gmaxFormForBase } from '../data/dex/gmaxes';
 import { getItem } from '../data/items';
@@ -73,7 +73,13 @@ import {
   type EntryKind,
   type EntryStep,
 } from '../ui/beats';
-import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
+import {
+  captureBeat,
+  captureTimeline,
+  captureWaitLine,
+  type CaptureTick,
+  type CaptureTimeline,
+} from '../ui/capture';
 import {
   BAG_GRID_COLS,
   BAG_GRID_GAP,
@@ -421,6 +427,18 @@ export class BattleScene extends Phaser.Scene {
   private lastBallId: string | null = null;
   /** The foe is inside a ball, so it stays hidden even at full HP. */
   private captured = false;
+  /** How long the frame on screen is held before the feed advances. */
+  private frameHoldMs = MESSAGE_HOLD_MS;
+  /** The capture beat the feed frame is playing, and the timers that tick it. */
+  private captureTiming: CaptureTimeline | null = null;
+  private captureTimers: Phaser.Time.TimerEvent[] = [];
+  private captureTweens: Phaser.Tweens.TweenChain | null = null;
+  private captureFlash: Phaser.Tweens.Tween | null = null;
+  /** The capture frame's own final line and the roll it settles on. */
+  private captureFinalLine = '';
+  private captureName = '';
+  private captureHeld = false;
+  private captureOpenFrame: number | null = null;
   /** A running faint/switch beat owns the mon's sprite until it completes. */
   private beat: Partial<Record<SideId, BeatKind | null>> = {};
   private foeMonPos = { x: 0, y: 0 };
@@ -632,6 +650,15 @@ export class BattleScene extends Phaser.Scene {
     this.trainerFrame = null;
     this.lastBallId = null;
     this.captured = false;
+    this.frameHoldMs = MESSAGE_HOLD_MS;
+    this.captureTiming = null;
+    this.captureTimers = [];
+    this.captureTweens = null;
+    this.captureFlash = null;
+    this.captureFinalLine = '';
+    this.captureName = '';
+    this.captureHeld = false;
+    this.captureOpenFrame = null;
     this.beat = {};
     this.cryPlayed = false;
     this.playerFighters = [];
@@ -757,11 +784,13 @@ export class BattleScene extends Phaser.Scene {
       this.scale.off('resize', this.onResize, this);
       this.scene.setVisible(true, 'Route');
       this.releaseMonSprites();
+      if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
     playMusic(this, 'battle-music');
+    if (IS_DEVELOP) (globalThis as Record<string, unknown>).__pkmBattle = this;
     this.startEntry(trigger.kind);
   }
 
@@ -1414,7 +1443,9 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     if (this.mode === 'feed') {
-      // A tap reveals the rest of the line before it moves the feed on.
+      // A tap skips the capture beat whole, or reveals the rest of the line
+      // before it moves the feed on.
+      if (this.finishCaptureBeat()) return;
       if (!typewriterDone(this.typing)) {
         this.completeTyping();
         return;
@@ -1590,12 +1621,15 @@ export class BattleScene extends Phaser.Scene {
 
   private showFrame(): void {
     const frame = this.frames[this.frameIndex];
-    this.applyEvents(frame.events);
-    if (frame.message !== null) this.typeMessage(frame.message);
+    this.frameHoldMs = MESSAGE_HOLD_MS;
+    const capturing = frame.events.some((event) => event.kind === 'capture');
+    this.applyEvents(frame.events, capturing ? (frame.message ?? '') : null);
+    if (frame.message !== null && !capturing) this.typeMessage(frame.message);
     this.refreshHud();
   }
 
   private advanceFeed(): void {
+    this.finishCaptureBeat();
     this.frameIndex += 1;
     this.feedElapsed = 0;
     if (this.frameIndex >= this.frames.length) {
@@ -1630,7 +1664,7 @@ export class BattleScene extends Phaser.Scene {
     this.openMenu();
   }
 
-  private applyEvents(events: readonly BattleEvent[]): void {
+  private applyEvents(events: readonly BattleEvent[], captureLine: string | null = null): void {
     // A batched frame must not stack eight faints.
     let faintPlayed = false;
     for (const event of events) {
@@ -1699,7 +1733,7 @@ export class BattleScene extends Phaser.Scene {
           break;
         }
         case 'capture':
-          this.playCapture(event.shakes, event.success);
+          this.playCapture(event.shakes, event.success, captureLine ?? '');
           break;
         default:
           break;
@@ -1817,12 +1851,23 @@ export class BattleScene extends Phaser.Scene {
       .play(moveFxAnimKey(track.fx), true);
   }
 
-  /** The classic throw, wobble and result beat when a ball is used. */
-  private playCapture(shakes: number, success: boolean): void {
+  /**
+   * The classic throw, wobble and result beat when a ball is used. One timeline
+   * (`captureTimeline`) drives both the ball's tweens and the message box, so the
+   * wobble count on screen is exactly the count the engine rolled.
+   */
+  private playCapture(shakes: number, success: boolean, line = ''): void {
     const beat = captureBeat(shakes, success);
+    const timeline = captureTimeline(shakes, success);
     const frame = itemIconFrame(this.lastBallId ?? 'pokeball') ?? itemIconFrame('pokeball') ?? 0;
     const from = this.playerMonPos;
     const to = this.foeMonPos;
+    this.captureTiming = timeline;
+    this.captureHeld = beat.held;
+    this.captureFinalLine = line;
+    this.captureName = this.enemyFighters[0]?.name ?? '';
+    this.captureOpenFrame = null;
+    this.frameHoldMs = timeline.totalMs + MESSAGE_HOLD_MS;
     this.captureBall
       .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
       .setPosition(from.x, from.y)
@@ -1831,26 +1876,121 @@ export class BattleScene extends Phaser.Scene {
       .setVisible(true);
 
     const wobble: Phaser.Types.Tweens.TweenBuilderConfig[] = [];
-    const step = Math.round(1000 / CAPTURE_SHAKE_SPEED / 3);
     for (let shake = 0; shake < beat.shakes; shake++) {
-      wobble.push({ targets: this.captureBall, angle: 22, duration: step });
-      wobble.push({ targets: this.captureBall, angle: -22, duration: step });
-      wobble.push({ targets: this.captureBall, angle: 0, duration: step });
+      wobble.push({ targets: this.captureBall, angle: 22, duration: timeline.stepMs });
+      wobble.push({ targets: this.captureBall, angle: -22, duration: timeline.stepMs });
+      wobble.push({ targets: this.captureBall, angle: 0, duration: timeline.stepMs });
     }
 
-    this.tweens.chain({
+    this.captureTweens = this.tweens.chain({
       targets: this.captureBall,
       tweens: [
-        { targets: this.captureBall, x: to.x, y: to.y - 28, duration: 260, ease: 'Quad.easeOut' },
-        { targets: this.captureBall, y: to.y, duration: 150, ease: 'Quad.easeIn' },
+        {
+          targets: this.captureBall,
+          x: to.x,
+          y: to.y - 28,
+          duration: timeline.throwMs,
+          ease: 'Quad.easeOut',
+        },
+        { targets: this.captureBall, y: to.y, duration: timeline.dropMs, ease: 'Quad.easeIn' },
         ...wobble,
       ],
-      onComplete: () => {
-        this.captured = beat.held;
-        if (!beat.held) this.captureBall.setVisible(false);
-        this.refreshHud();
-      },
     });
+    this.captureTimers = timeline.beats.map((tick) =>
+      this.time.delayedCall(tick.at, () => this.playCaptureTick(tick)),
+    );
+    // The line is set once the ball lands, not typed: the dots are punctuation and
+    // bypass the player's text speed by design.
+    this.captureTimers.push(
+      this.time.delayedCall(timeline.throwMs + timeline.dropMs, () => this.showCaptureLine(0)),
+    );
+  }
+
+  private playCaptureTick(tick: CaptureTick): void {
+    if (this.captureTiming === null) return;
+    if (tick.kind === 'shake') this.showCaptureLine(tick.index);
+    else if (tick.kind === 'break') this.openCaptureBall();
+    else this.settleCapture();
+  }
+
+  /** Replaces the wait line whole, with one dot per completed wobble. */
+  private showCaptureLine(completed: number): void {
+    this.setMessage(captureWaitLine(this.captureName, completed));
+  }
+
+  /** The frame's own line lands with the settle, and the ball comes to rest. */
+  private settleCapture(): void {
+    this.captured = this.captureHeld;
+    this.captureBall.setAngle(0);
+    if (this.captureHeld) this.captureBall.setAlpha(1).setVisible(true);
+    else this.restBrokenBall();
+    if (this.captureFinalLine !== '') this.setMessage(this.captureFinalLine);
+    this.stopCaptureBeat();
+    this.refreshHud();
+  }
+
+  /** A failed ball rests open when the atlas draws it, else it is gone from the field. */
+  private restBrokenBall(): void {
+    const open = this.captureOpenFrame;
+    if (open === null) this.captureBall.setVisible(false);
+    else
+      this.captureBall.setPosition(this.foeMonPos.x, this.foeMonPos.y).setFrame(open).setVisible(true);
+  }
+
+  /** The ball bursts open: its atlas frame when there is one, a short flash otherwise. */
+  private openCaptureBall(): void {
+    const open = this.openBallFrame();
+    if (open !== null) {
+      this.captureOpenFrame = open;
+      this.captureBall.setFrame(open).setAngle(0);
+      return;
+    }
+    const step = this.captureTiming?.stepMs ?? 0;
+    this.captureFlash = this.tweens.add({
+      targets: this.captureBall,
+      alpha: 0.2,
+      duration: Math.round(step / 2),
+      yoyo: true,
+      onComplete: () => this.captureBall.setVisible(false),
+    });
+  }
+
+  /** The item-icon frame for a ball that has burst open, when the atlas draws one. */
+  private openBallFrame(): number | null {
+    const ball = normalizeId(this.lastBallId ?? 'pokeball');
+    return itemIconFrame(`${ball}open`) ?? itemIconFrame(`open${ball}`);
+  }
+
+  /**
+   * A press while the beat plays skips it whole: ball at rest or hidden, the final
+   * line printed, and the frame then holds like any other. Returns false when no
+   * beat is playing, so the caller falls through to the feed's own rules.
+   */
+  private finishCaptureBeat(): boolean {
+    if (this.captureTiming === null) return false;
+    this.captured = this.captureHeld;
+    this.captureBall.setAngle(0);
+    if (this.captureHeld) {
+      this.captureBall.setAlpha(1).setVisible(true).setPosition(this.foeMonPos.x, this.foeMonPos.y);
+    } else {
+      this.restBrokenBall();
+    }
+    if (this.captureFinalLine !== '') this.setMessage(this.captureFinalLine);
+    this.stopCaptureBeat();
+    this.frameHoldMs = MESSAGE_HOLD_MS;
+    this.feedElapsed = 0;
+    this.refreshHud();
+    return true;
+  }
+
+  private stopCaptureBeat(): void {
+    this.captureTiming = null;
+    for (const timer of this.captureTimers) timer.remove(false);
+    this.captureTimers = [];
+    this.captureTweens?.stop();
+    this.captureTweens = null;
+    this.captureFlash?.stop();
+    this.captureFlash = null;
   }
 
   /**
@@ -4334,6 +4474,11 @@ export class BattleScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     if (this.mode !== 'feed') return;
     const rush = this.confirmKeys.some((key) => key.isDown);
+    // A held confirm skips the capture beat whole before it can rush the frame.
+    if (rush && this.captureTiming !== null) {
+      this.finishCaptureBeat();
+      return;
+    }
     if (rush) this.completeTyping();
     else this.tickTyping(delta);
     // The read hold only starts once the line is fully revealed.
@@ -4342,6 +4487,6 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     this.feedElapsed += delta;
-    if (this.feedElapsed >= (rush ? FAST_HOLD_MS : MESSAGE_HOLD_MS)) this.advanceFeed();
+    if (this.feedElapsed >= (rush ? FAST_HOLD_MS : this.frameHoldMs)) this.advanceFeed();
   }
 }

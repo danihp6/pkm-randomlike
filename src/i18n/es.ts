@@ -668,6 +668,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'battle.log.charge.default': '¡{name} está cargando energía!',
 
   'battle.log.caught': '¡Gotcha! ¡{name} ha sido capturado!',
+  'battle.log.captureWait': '{name}…',
   'battle.log.capture.shakes0': '¡Oh, no! ¡{name} se ha liberado!',
   'battle.log.capture.shakes1': '¡Vaya! ¡{name} parecía atrapado!',
   'battle.log.capture.shakes2': '¡Argh! ¡{name} casi lo tenía!',

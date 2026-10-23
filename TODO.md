@@ -1404,6 +1404,21 @@ decision line. **47c and 47d keep one engine task each as their cut** — `[Task
 members, both of those entries keep their prose and take their new labels, and `[Task-119]`'s
 entry keeps the *(Batch 47b)* it already reads.
 
+**Batch 57 was filled with `[Task-124]` (Batch 59) in this cycle.** The cut was
+`[Task-118]` alone — one task, written against a `[Task-114]` that has since merged. The fill
+search pulled `[Task-124]` because its dependencies (`[Task-122]`, `[Task-123]`) are both
+merged and its paths (`src/main.ts`, `src/ui/hud/mount.ts` + `shell.tsx` + `styles/root.css`,
+`src/assets/fonts/**`) are disjoint from Task-118's (`src/ui/capture.ts`,
+`src/scenes/BattleScene.ts`, the two i18n tables, `src/ui/README.md`). The two empty slots name
+their blockers and nothing more: `[Task-126]` needs `src/main.ts`'s mount point, which
+`[Task-124]` produces in this very batch, and `[Task-125]` needs the `preact` + JSX setup in
+`package.json`/`tsconfig.json` that `[Task-124]` owns (one hot-file owner per batch), so both
+wait for the next cycle together, beside `[Task-127]`. The shared document `src/ui/README.md` is
+claimed by section: Task-118 rewrites the `capture.ts` line, Task-124 appends the `hud/` lines
+after `hud/commands.ts`. Every Phase-12 migration from `[Task-129]` on still needs `[Task-127]`,
+which needs `[Task-124]`-`[Task-126]`; `[Task-28]` stays unscheduled by its own decision line
+and `[Task-104]`/`[Task-113]` are `[!]`.
+
 **Batch 53 was filled with `[Task-128]` (Batch 58) in this cycle.** The cut was
 `[Task-114]` alone; the fill search pulled `[Task-128]` because its dependencies are all merged
 (none) and its paths — `src/scenes/RouteScene.ts`, the new `src/scenes/panels/**` and
@@ -6940,7 +6955,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       moved `src/ui/rocketPanel.ts` (the `[Task-95]` Mega Stone row's own shape). That is why it
       fills **Batch 47c** beside `[Task-120]`, never 47b beside `[Task-109]` (which holds the
       scene), and why its own label moves with it. *(Batch 47c, filled)*
-- [ ] **[Task-118] The capture beat and its message tick together.** The human's report: «que
+- [x] **[Task-118] The capture beat and its message tick together.** The human's report: «que
       mensaje de captura y animación se sincronicen, la pokeball se agite según más cerca de
       capturar y el mensaje vaya añadiendo puntos suspensivos según se agita y al final mostrar
       el mensaje de si se ha capturado». Today two unrelated clocks run the same beat. The
