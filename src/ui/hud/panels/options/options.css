@@ -5,7 +5,7 @@
  * drawn inside its box (`docs/hud-fidelity.md` §3), so a card or a row draws its
  * hairline with an inset outline and keeps its own box for its children.
  *
- * The label and value layers are composited (`translateZ(0)`): Chrome then
+ * The title, label and value layers are composited (`translateZ(0)`): Chrome then
  * rasterises their glyphs on whole pixels, as the board's export does, and the
  * diff gate reads text edges as geometry.
  */
@@ -94,6 +94,7 @@
   top: 84px;
   left: 94px;
   z-index: 1;
+  transform: translateZ(0);
   margin: 0;
   color: var(--hud-text-ink);
   font-size: var(--options-title-size);
@@ -417,7 +418,7 @@
   line-height: var(--hud-type-name-line);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .options {
     /* m 02 Options · mobile frame fill */
     --options-backdrop: #05070c;
@@ -442,6 +443,8 @@
     /* the first two rows set their text 8 px into the row, the rest on its top
        edge (m02-options: board title y 357, 389, 413, 445, 477) */
     --options-text-top: 0px;
+    /* m opacity track, m slider track: 455 on the row at 445 */
+    --options-m-track-top: 10px;
   }
 
   .options__title {
@@ -492,6 +495,17 @@
     --options-text-top: 8px;
   }
 
+  /* m slider track sits 13 px into the first row (362 on the row at 349) */
+  .options__slot:first-child {
+    --options-m-track-top: 13px;
+  }
+
+  /* from the third row on the board sets its text half a pixel lower (m02-options:
+     the LANGUAGE box lands on 483.5 between its bars) */
+  .options__slot:nth-child(n + 3) .options__label {
+    top: 0.5px;
+  }
+
   .options__row {
     border-radius: var(--options-m-row-radius);
   }
@@ -540,11 +554,11 @@
   }
 
   .options__slider .kit-bar {
-    top: 10px;
+    top: var(--options-m-track-top);
   }
 
   .options__knob {
-    top: 6px;
+    top: calc(var(--options-m-track-top) - 4px);
     border: 1px solid var(--hud-accent);
     background: var(--hud-text-primary);
   }

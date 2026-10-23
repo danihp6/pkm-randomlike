@@ -34,5 +34,26 @@
         ]
       }
     ]
+  },
+  "mobile": {
+    "title": "SETTINGS",
+    "subtitle": "",
+    "footer": "",
+    "back": "BACK",
+    "reset": null,
+    "selected": "volume",
+    "groups": [
+      {
+        "id": "gameplay",
+        "title": "",
+        "rows": [
+          { "id": "volume",      "kind": "slider", "label": "VOLUME",       "value": "70%",     "fraction": 0.7,  "on": null },
+          { "id": "textSpeed",   "kind": "step",   "label": "TEXT SPEED",   "value": "FAST",    "fraction": null, "on": null },
+          { "id": "alwaysRun",   "kind": "toggle", "label": "ALWAYS RUN",   "value": "OFF",     "fraction": null, "on": false },
+          { "id": "menuOpacity", "kind": "slider", "label": "MENU OPACITY", "value": "80%",     "fraction": 0.8,  "on": null },
+          { "id": "language",    "kind": "step",   "label": "LANGUAGE",     "value": "ENGLISH", "fraction": null, "on": null }
+        ]
+      }
+    ]
   }
 }

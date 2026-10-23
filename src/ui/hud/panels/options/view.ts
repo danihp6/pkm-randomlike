@@ -41,6 +41,9 @@ export type OptionsView = Readonly<{
   groups: readonly OptionsGroupView[];
 }>;
 
+/** The breakpoint the board's two frames switch at; `options.css` uses the same 600px. */
+export const OPTIONS_NARROW_QUERY = '(max-width: 600px)' as const;
+
 /** The slug this task's fixture and preview answer to. */
 export const OPTIONS_SLUG = '02-options' as const;
 
@@ -122,6 +125,10 @@ function isString(value: unknown): value is string {
   return typeof value === 'string';
 }
 
+function isNonEmpty(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
 function isKind(value: unknown): value is OptionsRowView['kind'] {
   return value === 'step' || value === 'slider' || value === 'toggle' || value === 'keybind';
 }
@@ -166,19 +173,30 @@ function fixtureGroup(value: unknown, id: OptionsGroupView['id']): OptionsGroupV
 
 /**
  * The frame's own content, or null when the payload is not one this panel can draw.
- * A fixture file is `{ slug, state, panel }`; the view is the `panel` block inside it.
+ * `narrow` selects the mobile frame's variant (`payload.mobile`) instead of the
+ * desktop one (`payload.panel`).
  */
-export function fixtureOptionsView(payload: unknown): OptionsView | null {
+export function fixtureOptionsView(payload: unknown, narrow = false): OptionsView | null {
   if (!isPlainObject(payload)) return null;
-  const block = Object.prototype.hasOwnProperty.call(payload, 'panel') ? payload.panel : payload;
+  const block = narrow ? payload.mobile : payload.panel;
   if (!isPlainObject(block)) return null;
   const { title, subtitle, footer, back, reset, selected, groups } = block;
-  if (!isString(title) || !isString(subtitle) || !isString(footer) || !isString(back)) return null;
+  if (!isNonEmpty(title) || !isNonEmpty(back)) return null;
+  if (!isString(subtitle) || !isString(footer)) return null;
   if (reset !== null && !isString(reset)) return null;
   if (selected !== null && !isString(selected)) return null;
-  if (!Array.isArray(groups) || groups.length !== 2) return null;
+  if (!Array.isArray(groups) || groups.length < 1 || groups.length > 2) return null;
   const gameplay = fixtureGroup(groups[0], 'gameplay');
-  const keybinds = fixtureGroup(groups[1], 'keybinds');
-  if (gameplay === null || keybinds === null) return null;
-  return { title, subtitle, footer, back, reset, selected, groups: [gameplay, keybinds] };
+  if (gameplay === null) return null;
+  const keybinds = groups.length === 2 ? fixtureGroup(groups[1], 'keybinds') : null;
+  if (groups.length === 2 && keybinds === null) return null;
+  return {
+    title,
+    subtitle,
+    footer,
+    back,
+    reset,
+    selected,
+    groups: keybinds === null ? [gameplay] : [gameplay, keybinds],
+  };
 }

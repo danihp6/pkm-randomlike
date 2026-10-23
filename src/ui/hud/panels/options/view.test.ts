@@ -4,7 +4,12 @@ import { defaultSettings } from '../../../../engine/save';
 import { t } from '../../../../i18n';
 import { settingsRows } from '../../../settingsScreen';
 import fixture from '../../../../../design/fixtures/02-options.json';
-import { OPTIONS_SLUG, fixtureOptionsView, liveOptionsView } from './view';
+import {
+  OPTIONS_NARROW_QUERY,
+  OPTIONS_SLUG,
+  fixtureOptionsView,
+  liveOptionsView,
+} from './view';
 
 const settings = { ...defaultSettings(), volume: 0.7 };
 const rows = settingsRows(false);
@@ -16,6 +21,10 @@ function clone(): Record<string, unknown> {
 
 function panelOf(payload: Record<string, unknown>): Record<string, unknown> {
   return payload.panel as Record<string, unknown>;
+}
+
+function mobileOf(payload: Record<string, unknown>): Record<string, unknown> {
+  return payload.mobile as Record<string, unknown>;
 }
 
 describe('liveOptionsView', () => {
@@ -111,12 +120,13 @@ describe('liveOptionsView', () => {
 });
 
 describe('fixtureOptionsView', () => {
-  it('answers to the slug this task ships', () => {
+  it('answers to the slug and the breakpoint this task ships', () => {
     expect(OPTIONS_SLUG).toBe('02-options');
     expect(fixture.slug).toBe(OPTIONS_SLUG);
+    expect(OPTIONS_NARROW_QUERY).toBe('(max-width: 600px)');
   });
 
-  it('returns the frame’s own content from the fixture file', () => {
+  it('returns frame 02-options from the panel block', () => {
     const view = fixtureOptionsView(fixture);
     expect(view).not.toBeNull();
     expect(view!.title).toBe('SETTINGS');
@@ -125,26 +135,59 @@ describe('fixtureOptionsView', () => {
     expect(view!.back).toBe('BACK');
     expect(view!.reset).toBe('RESET DEFAULTS');
     expect(view!.selected).toBe('textSpeed');
-    expect(view!.groups[0]!.rows).toHaveLength(5);
+    expect(view!.groups.map((group) => group.id)).toEqual(['gameplay', 'keybinds']);
+    expect(view!.groups[0]!.title).toBe('GAMEPLAY');
+    expect(view!.groups[0]!.rows.map((row) => row.id)).toEqual([
+      'textSpeed',
+      'volume',
+      'alwaysRun',
+      'menuOpacity',
+      'language',
+    ]);
     expect(view!.groups[1]!.rows).toHaveLength(7);
     expect(view!.groups[0]!.rows.find((row) => row.id === 'volume')?.fraction).toBe(0.7);
     expect(view!.groups[0]!.rows.find((row) => row.id === 'menuOpacity')?.fraction).toBe(0.8);
     expect(view!.groups[0]!.rows.find((row) => row.id === 'alwaysRun')?.on).toBe(false);
   });
 
-  it('accepts the panel block on its own', () => {
-    expect(fixtureOptionsView(clone().panel)).not.toBeNull();
+  it('returns frame m02-options from the mobile block when narrow', () => {
+    const view = fixtureOptionsView(fixture, true);
+    expect(view).not.toBeNull();
+    expect(view!.title).toBe('SETTINGS');
+    expect(view!.subtitle).toBe('');
+    expect(view!.footer).toBe('');
+    expect(view!.back).toBe('BACK');
+    expect(view!.reset).toBeNull();
+    expect(view!.selected).toBe('volume');
+    expect(view!.groups).toHaveLength(1);
+    expect(view!.groups[0]!.id).toBe('gameplay');
+    expect(view!.groups[0]!.title).toBe('');
+    expect(view!.groups[0]!.rows.map((row) => row.id)).toEqual([
+      'volume',
+      'textSpeed',
+      'alwaysRun',
+      'menuOpacity',
+      'language',
+    ]);
+    expect(view!.groups[0]!.rows[1]!.value).toBe('FAST');
+    expect(view!.groups[0]!.rows[0]!.kind).toBe('slider');
   });
 
-  it('is null without a panel block', () => {
-    const payload = clone();
-    delete payload.panel;
-    expect(fixtureOptionsView(payload)).toBeNull();
+  it('is null when the requested variant is missing', () => {
+    const withoutMobile = clone();
+    delete withoutMobile.mobile;
+    expect(fixtureOptionsView(withoutMobile, true)).toBeNull();
+    expect(fixtureOptionsView(withoutMobile)).not.toBeNull();
+    const withoutPanel = clone();
+    delete withoutPanel.panel;
+    expect(fixtureOptionsView(withoutPanel)).toBeNull();
+    expect(fixtureOptionsView(withoutPanel, true)).not.toBeNull();
   });
 
   it('is null for anything that is not an object', () => {
     for (const value of [null, undefined, 3, 'panel', [], [{ title: 'X' }]]) {
       expect(fixtureOptionsView(value), String(value)).toBeNull();
+      expect(fixtureOptionsView(value, true), String(value)).toBeNull();
     }
   });
 
@@ -153,6 +196,10 @@ describe('fixtureOptionsView', () => {
     const rowsOf = panelOf(payload).groups as { rows: Record<string, unknown>[] }[];
     rowsOf[0]!.rows[0]!.kind = 'wheel';
     expect(fixtureOptionsView(payload)).toBeNull();
+    const mobile = clone();
+    const mobileRows = mobileOf(mobile).groups as { rows: Record<string, unknown>[] }[];
+    mobileRows[0]!.rows[0]!.kind = 'wheel';
+    expect(fixtureOptionsView(mobile, true)).toBeNull();
   });
 
   it('is null for a slider whose fraction is out of range or missing', () => {
@@ -171,16 +218,25 @@ describe('fixtureOptionsView', () => {
     expect(fixtureOptionsView(payload)).toBeNull();
   });
 
-  it('is null when a group is missing, doubled or renamed', () => {
+  it('is null when no group is left or the first group is not gameplay', () => {
     const payload = clone();
-    const groups = panelOf(payload).groups as Record<string, unknown>[];
-    expect(fixtureOptionsView({ ...payload, panel: { ...panelOf(payload), groups: [groups[0]] } })).toBeNull();
+    const panel = panelOf(payload);
+    const groups = panel.groups as Record<string, unknown>[];
+    expect(fixtureOptionsView({ ...payload, panel: { ...panel, groups: [] } })).toBeNull();
     expect(
-      fixtureOptionsView({ ...payload, panel: { ...panelOf(payload), groups: [groups[0], groups[0]] } }),
+      fixtureOptionsView({ ...payload, panel: { ...panel, groups: [groups[1], groups[0]] } }),
     ).toBeNull();
-    const renamed = JSON.parse(JSON.stringify(fixture)) as Record<string, unknown>;
-    (panelOf(renamed).groups as Record<string, unknown>[])[1]!.id = 'keys';
+    const renamed = clone();
+    (panelOf(renamed).groups as Record<string, unknown>[])[0]!.id = 'keys';
     expect(fixtureOptionsView(renamed)).toBeNull();
+    const twice = clone();
+    const twiceGroups = panelOf(twice).groups as Record<string, unknown>[];
+    expect(
+      fixtureOptionsView({
+        ...twice,
+        panel: { ...panelOf(twice), groups: [twiceGroups[0], twiceGroups[0]] },
+      }),
+    ).toBeNull();
   });
 
   it('is null for a row without an id or a label', () => {
@@ -193,10 +249,21 @@ describe('fixtureOptionsView', () => {
     expect(fixtureOptionsView(payload)).toBeNull();
   });
 
+  it('needs a non-empty title and back', () => {
+    for (const key of ['title', 'back']) {
+      const payload = clone();
+      panelOf(payload)[key] = '';
+      expect(fixtureOptionsView(payload), key).toBeNull();
+      panelOf(payload)[key] = 4;
+      expect(fixtureOptionsView(payload), key).toBeNull();
+    }
+  });
+
   it('mutates nothing', () => {
     const payload = clone();
     const before = JSON.stringify(payload);
     fixtureOptionsView(payload);
+    fixtureOptionsView(payload, true);
     expect(JSON.stringify(payload)).toBe(before);
   });
 });

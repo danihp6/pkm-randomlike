@@ -5,12 +5,12 @@ The spike of `D49`: the board's `02 Options` panel as Preact over the `#hud` lay
 
 ## Layout
 
-- `view.ts` — the panel's value model: `liveOptionsView` from the settings model and `fixtureOptionsView` from `design/fixtures/02-options.json`, plus the slug the frame answers to.
-- `view.test.ts` — the live row split, the printed values, the slider and toggle rows, the capture hint, and the fixture's structural guards, headless.
-- `optionsPanel.tsx` — the panel itself: the title, the two cards, the rows (step, slider, toggle, keybind), the actions and the commands they emit.
+- `view.ts` — the panel's value model: `liveOptionsView` from the settings model and `fixtureOptionsView(payload, narrow)` from `design/fixtures/02-options.json`'s `panel`/`mobile` blocks, the breakpoint constant and the slug the frame answers to.
+- `view.test.ts` — the live row split, the printed values, the slider and toggle rows, the capture hint, and both fixture variants with their structural guards, headless.
+- `optionsPanel.tsx` — the panel itself: the title, one or two cards, the rows (step, slider, toggle, keybind), the actions and the commands they emit.
 - `options.css` — the frame's measured geometry and paint, one scoped custom property per board value, plus the phone column.
 - `mount.tsx` — `mountOptionsPanel`: renders the panel into a host element and returns its disposer.
-- `preview.ts` — `previewRequested` and `installOptionsPreview`: the fixture panel behind `?hud=dom&hudFixture=02-options`.
+- `preview.ts` — `previewRequested` and `installOptionsPreview`: the fixture panel behind `?hud=dom&hudFixture=02-options`, one content block per viewport.
 - `preview.test.ts` — `previewRequested`'s truth table, headless.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.

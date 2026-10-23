@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { VOLUME_STEPS } from '../../../settingsScreen';
 import type { HudCommand } from '../../commands';
 import { Bar, Panel, PrimaryButton, Row } from '../../kit';
-import type { OptionsRowView, OptionsView } from './view';
+import { OPTIONS_NARROW_QUERY, type OptionsRowView, type OptionsView } from './view';
 import './options.css';
 
 export type OptionsPanelProps = Readonly<{
@@ -11,12 +11,10 @@ export type OptionsPanelProps = Readonly<{
   onCommand?: ((command: HudCommand) => void) | undefined;
 }>;
 
-const COMPACT_QUERY = '(max-width: 640px)';
-
 /** The board's phone column replaces the two cards with one narrow card (frame `m02-options`). */
 function compactViewport(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  return window.matchMedia(COMPACT_QUERY).matches;
+  return window.matchMedia(OPTIONS_NARROW_QUERY).matches;
 }
 
 function flatRows(view: OptionsView): readonly OptionsRowView[] {
@@ -213,7 +211,7 @@ export function OptionsPanel(props: OptionsPanelProps): JSX.Element {
   const card = (entry: OptionsView['groups'][number], withActions: boolean): JSX.Element => (
     <div class={`options__group options__group--${entry.id}`} data-hud-group={entry.id}>
       <Panel class={`options__card options__card--${entry.id}`}>
-        <h2 class="options__group-title">{entry.title}</h2>
+        {entry.title === '' ? null : <h2 class="options__group-title">{entry.title}</h2>}
         <div class="options__rows">
           {entry.rows.map((row) => (
             <OptionRow
@@ -248,13 +246,13 @@ export function OptionsPanel(props: OptionsPanelProps): JSX.Element {
       <div class="options__stage">
         <header class="options__head">
           <h1 class="options__title">{view.title}</h1>
-          <p class="options__subtitle">{view.subtitle}</p>
+          {view.subtitle === '' ? null : <p class="options__subtitle">{view.subtitle}</p>}
         </header>
         {gameplay === null ? null : card(gameplay, true)}
         {compact || keybinds === null || keybinds.rows.length === 0
           ? null
           : card(keybinds, false)}
-        <p class="options__footer">{view.footer}</p>
+        {view.footer === '' ? null : <p class="options__footer">{view.footer}</p>}
       </div>
     </div>
   );
