@@ -153,6 +153,10 @@ let domUi: BagPanelUi = initialBagPanelUi();
 let domView: Signal<BagPanelView> | null = null;
 let domDispose: (() => void) | null = null;
 let domSearchFocused = false;
+/** The scene events the DOM mount follows, so `close()` can drop them again. */
+let domSceneEvents: Phaser.Events.EventEmitter | null = null;
+/** True while the route is paused behind a battle or the settings screen. */
+let domScenePaused = false;
 
 /**
  * The number of display objects the bag draws right now: 0 under `?hud=dom`.
@@ -475,7 +479,7 @@ function domViewFor(host: RoutePanelHost): BagPanelView {
   const state = projectHud({ screen: 'route', run: host.run(), notice: null });
   const viewport = { width: host.scene.scale.width, height: host.scene.scale.height };
   const model = bagPanelView(state, domUi, viewport, bagSprite);
-  const open = panelExpanded(host, 'bag');
+  const open = panelExpanded(host, 'bag') && !domScenePaused;
   const selected = model.tiles.find((piece) => piece.selected) ?? null;
   let text = '';
   if (open && model.info !== null && selected !== null && selected.itemId !== null) {
@@ -497,6 +501,24 @@ function domViewFor(host: RoutePanelHost): BagPanelView {
 function paintDomBag(): void {
   if (domHost === null || domView === null) return;
   domView.value = domViewFor(domHost);
+}
+
+/**
+ * The DOM cards live in the `#hud` layer **above** the canvas, so a paused route
+ * would leave them floating over the battle or the settings screen that replaced
+ * it. The shipped Phaser card sits inside the paused scene and vanishes with it;
+ * the mount hides through the same path the collapse uses, so it keeps its state
+ * and its rect for the resume. The event names are `Phaser.Scenes.Events.PAUSE`
+ * and `RESUME` spelled out: this folder's modules never import Phaser's value.
+ */
+function onScenePause(): void {
+  domScenePaused = true;
+  paintDomBag();
+}
+
+function onSceneResume(): void {
+  domScenePaused = false;
+  paintDomBag();
 }
 
 /** A press on a pocket tab or a stack: the panel's own cursor, never the run. */
@@ -545,6 +567,12 @@ function mountDomBag(host: RoutePanelHost): void {
   domHost = host;
   const view = signal(domViewFor(host));
   domView = view;
+  const events = host.scene.events;
+  domSceneEvents = events;
+  // `create()` runs before the scene reports active, so only a real pause counts.
+  domScenePaused = host.scene.sys.isPaused();
+  events.on('pause', onScenePause);
+  events.on('resume', onSceneResume);
   const element = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (element === null) return;
   domHostElement = element;
@@ -556,6 +584,12 @@ function mountDomBag(host: RoutePanelHost): void {
 }
 
 function disposeDomBag(): void {
+  if (domSceneEvents !== null) {
+    domSceneEvents.off('pause', onScenePause);
+    domSceneEvents.off('resume', onSceneResume);
+    domSceneEvents = null;
+  }
+  domScenePaused = false;
   if (domHostElement !== null) {
     domHostElement.removeEventListener('click', onDomClick);
     domHostElement.removeEventListener('input', onDomInput);
