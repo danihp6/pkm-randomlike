@@ -1,24 +1,55 @@
-import { BOOST_IDS, applyBoosts, type BattleFighter, type BoostChange, type BoostId } from '../fighter';
-import { applyStatus, canApplyStatus, isStatusId, statusName } from '../status';
-import { opponent, pushEvent, pushText, type BattleState, type SideId } from '../state';
+import {
+  BOOST_IDS,
+  applyBoosts,
+  type BattleFighter,
+  type BoostChange,
+  type BoostId,
+  type StatusId,
+} from '../fighter';
+import { applyStatus, canApplyStatus, isStatusId } from '../status';
+import {
+  opponent,
+  pushEvent,
+  pushText,
+  type BattleState,
+  type BattleText,
+  type BattleTextKey,
+  type SideId,
+} from '../state';
 import { hasSubstitute } from '../volatile';
 import { makeContext, runAfterStatus, runBoost, runModifyBoost, runStatus } from './registry';
 import { terrainBlocksStatus } from './terrain';
 
-export function statLabel(stat: BoostId): string {
-  const labels: Readonly<Record<BoostId, string>> = {
-    atk: 'Attack',
-    def: 'Defense',
-    spa: 'Sp. Atk',
-    spd: 'Sp. Def',
-    spe: 'Speed',
-    accuracy: 'accuracy',
-    evasion: 'evasiveness',
-  };
-  return labels[stat];
-}
+const BOOST_ROSE: Readonly<Record<BoostId, BattleTextKey>> = {
+  atk: 'battle.log.boostRose.atk',
+  def: 'battle.log.boostRose.def',
+  spa: 'battle.log.boostRose.spa',
+  spd: 'battle.log.boostRose.spd',
+  spe: 'battle.log.boostRose.spe',
+  accuracy: 'battle.log.boostRose.accuracy',
+  evasion: 'battle.log.boostRose.evasion',
+};
 
-export type BoostOptions = Readonly<{ self?: boolean; message?: string }>;
+const BOOST_FELL: Readonly<Record<BoostId, BattleTextKey>> = {
+  atk: 'battle.log.boostFell.atk',
+  def: 'battle.log.boostFell.def',
+  spa: 'battle.log.boostFell.spa',
+  spd: 'battle.log.boostFell.spd',
+  spe: 'battle.log.boostFell.spe',
+  accuracy: 'battle.log.boostFell.accuracy',
+  evasion: 'battle.log.boostFell.evasion',
+};
+
+const STATUS_AFFLICTED: Readonly<Record<StatusId, BattleTextKey>> = {
+  brn: 'battle.log.statusAfflicted.brn',
+  psn: 'battle.log.statusAfflicted.psn',
+  tox: 'battle.log.statusAfflicted.tox',
+  par: 'battle.log.statusAfflicted.par',
+  slp: 'battle.log.statusAfflicted.slp',
+  frz: 'battle.log.statusAfflicted.frz',
+};
+
+export type BoostOptions = Readonly<{ self?: boolean; message?: BattleText }>;
 
 /**
  * Applies stat stages through the `onBoost` hook so guard abilities can veto a
@@ -49,10 +80,11 @@ export function applyBoostEffect(
   }
   if (changes.length > 0) {
     if (options.message) {
-      pushText(state, options.message);
+      pushText(state, options.message.key, options.message.params);
     } else {
-      const direction = changes.every((change) => change.stages > 0) ? 'rose' : 'fell';
-      pushText(state, `${target.name}'s ${statLabel(changes[0].stat)} ${direction}!`);
+      const rose = changes.every((change) => change.stages > 0);
+      const key = rose ? BOOST_ROSE[changes[0].stat] : BOOST_FELL[changes[0].stat];
+      pushText(state, key, { name: target.name });
     }
   }
 }
@@ -63,13 +95,13 @@ export function applyStatusEffect(
   side: SideId,
   target: BattleFighter,
   status: string | undefined,
-  message?: string,
+  message?: BattleText,
 ): void {
   if (!isStatusId(status)) return;
   if (hasSubstitute(target)) return;
   const terrainBlock = terrainBlocksStatus(state.terrain, target, status);
   if (terrainBlock) {
-    pushText(state, terrainBlock);
+    pushText(state, terrainBlock.key, terrainBlock.params);
     return;
   }
   const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
@@ -77,7 +109,8 @@ export function applyStatusEffect(
   if (!canApplyStatus(target, status)) return;
   if (applyStatus(target, status, state.rng)) {
     pushEvent(state, { kind: 'status', side, status });
-    pushText(state, message ?? `${target.name} was afflicted by ${statusName(status)}!`);
+    if (message) pushText(state, message.key, message.params);
+    else pushText(state, STATUS_AFFLICTED[status], { name: target.name });
     runAfterStatus(makeContext(state, side, { source: target, target: opponent(state, side) }), status);
   }
 }

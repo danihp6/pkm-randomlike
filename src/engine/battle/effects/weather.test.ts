@@ -50,7 +50,7 @@ describe('weather', () => {
     expect(state.weather).toBe('rain');
 
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -81,7 +81,7 @@ describe('weather', () => {
 
     expect(state.weather).toBeNull();
     expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('returned to normal')),
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.weather.end'),
     ).toBe(true);
   });
 });

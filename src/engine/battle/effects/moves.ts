@@ -24,11 +24,13 @@ import {
   pushEvent,
   pushText,
   type BattleState,
+  type BattleText,
+  type BattleTextKey,
   type FieldConditionId,
   type SideConditionId,
   type SideId,
 } from '../state';
-import { canApplyStatus, cureStatus, statusName } from '../status';
+import { canApplyStatus, cureStatus } from '../status';
 import { applyLockOn, applyPerish, applyQuash, applySmackDown, applyTrap } from '../volatile';
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import { applyHeldItemEffect } from './items';
@@ -118,11 +120,11 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
     defender.ability !== 'Neutralizing Gas' &&
     moveContacts(attacker, move)
   ) {
-    pushText(state, `${attacker.name} broke through the protection!`);
+    pushText(state, 'battle.log.brokeProtection', { name: attacker.name });
     return false;
   }
 
-  pushText(state, `${defender.name} protected itself!`);
+  pushText(state, 'battle.log.protectedItself', { name: defender.name });
   const punish = PROTECT_MOVES[protectMove];
   if (!punish || !moveContacts(attacker, move) || state.winner !== null) return true;
 
@@ -130,13 +132,10 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
     applyBoostEffect(state, side, attacker, punish.contactBoosts);
   }
   if (punish.contactStatus) {
-    applyStatusEffect(
-      state,
-      side,
-      attacker,
-      punish.contactStatus,
-      `${attacker.name} was hurt by the protection!`,
-    );
+    applyStatusEffect(state, side, attacker, punish.contactStatus, {
+      key: 'battle.log.hurtByProtection',
+      params: { name: attacker.name },
+    });
   }
   if (punish.contactDamageDenominator) {
     const dealt = applyDamage(
@@ -152,7 +151,7 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
       effectiveness: 1,
       crit: false,
     });
-    pushText(state, `${attacker.name} was hurt by the protection!`);
+    pushText(state, 'battle.log.hurtByProtection', { name: attacker.name });
   }
   return true;
 }
@@ -166,10 +165,10 @@ function protectEffect(moveId: string): EffectHandlers {
       if (ctx.rng.next() < chance) {
         fighter.volatiles.protect = moveId;
         fighter.volatiles.protectStreak += 1;
-        pushText(ctx.state, `${fighter.name} protected itself!`);
+        pushText(ctx.state, 'battle.log.protectedItself', { name: fighter.name });
       } else {
         fighter.volatiles.protectStreak = 0;
-        pushText(ctx.state, `${fighter.name}'s protection failed!`);
+        pushText(ctx.state, 'battle.log.protectionFailed', { name: fighter.name });
       }
     },
   };
@@ -181,13 +180,13 @@ function recycleEffect(): EffectHandlers {
       if (ctx.owner !== ctx.source) return;
       const fighter = ctx.owner;
       if (!fighter.lastItemId || fighter.heldItem) {
-        pushText(ctx.state, 'But it failed!');
+        pushText(ctx.state, 'battle.log.fail');
         return;
       }
       const itemId = fighter.lastItemId;
       fighter.heldItem = itemId;
       fighter.lastItemId = null;
-      pushText(ctx.state, `${fighter.name} recycled its item!`);
+      pushText(ctx.state, 'battle.log.move.recycle', { name: fighter.name });
     },
   };
 }
@@ -200,9 +199,9 @@ function transformEffect(): EffectHandlers {
       const userName = ctx.owner.name;
       const targetName = ctx.target.name;
       if (transformInto(ctx.owner, ctx.target)) {
-        pushText(ctx.state, `${userName} transformed into ${targetName}!`);
+        pushText(ctx.state, 'battle.log.move.transform', { name: userName, target: targetName });
       } else {
-        pushText(ctx.state, 'But it failed!');
+        pushText(ctx.state, 'battle.log.fail');
       }
     },
   };
@@ -292,8 +291,17 @@ function acupressure(): EffectHandlers {
   });
 }
 
+const STATUS_SHIFTED: Readonly<Record<StatusId, BattleTextKey>> = {
+  brn: 'battle.log.statusShifted.brn',
+  psn: 'battle.log.statusShifted.psn',
+  tox: 'battle.log.statusShifted.tox',
+  par: 'battle.log.statusShifted.par',
+  slp: 'battle.log.statusShifted.slp',
+  frz: 'battle.log.statusShifted.frz',
+};
+
 /** Aromatherapy and Heal Bell: every healthy party member loses its status. */
-function teamCure(message: string): EffectHandlers {
+function teamCure(message: BattleTextKey): EffectHandlers {
   return selfEffect((ctx) => {
     let cured = false;
     for (const member of ctx.state.sides[ctx.side].party) {
@@ -303,7 +311,7 @@ function teamCure(message: string): EffectHandlers {
       pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
       cured = true;
     }
-    pushText(ctx.state, cured ? message : 'But it failed!');
+    pushText(ctx.state, cured ? message : 'battle.log.fail');
   });
 }
 
@@ -311,7 +319,7 @@ function bellyDrum(): EffectHandlers {
   return selfEffect((ctx) => {
     const holder = ctx.owner;
     if (holder.hp <= Math.floor(holder.maxHp / 2) || holder.boosts.atk >= 6) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     const cost = Math.floor(holder.maxHp / 2);
@@ -332,7 +340,7 @@ function bellyDrum(): EffectHandlers {
       { atk: 12 },
       {
         self: true,
-        message: `${holder.name} cut its own HP and maximized its Attack!`,
+        message: { key: 'battle.log.move.bellydrum', params: { name: holder.name } },
       },
     );
   });
@@ -344,7 +352,7 @@ function trapMove(): EffectHandlers {
     onAfterMove: (ctx) => {
       if (ctx.owner !== ctx.source || !ctx.target || ctx.target.hp <= 0) return;
       applyTrap(ctx.target);
-      pushText(ctx.state, `${ctx.target.name} can no longer escape!`);
+      pushText(ctx.state, 'battle.log.move.trapped', { name: ctx.target.name });
     },
   };
 }
@@ -360,12 +368,15 @@ function camouflage(): EffectHandlers {
   return selfEffect((ctx) => {
     const type = ctx.state.terrain ? TERRAIN_TYPE[ctx.state.terrain] : 'Normal';
     ctx.owner.types = [type];
-    pushText(ctx.state, `${ctx.owner.name} transformed into the ${type} type!`);
+    pushText(ctx.state, 'battle.log.typeChanged', { name: ctx.owner.name, type });
   });
 }
 
-function textMove(text: (name: string) => string): EffectHandlers {
-  return selfEffect((ctx) => pushText(ctx.state, text(ctx.owner.name)));
+function textMove(text: (name: string) => BattleText): EffectHandlers {
+  return selfEffect((ctx) => {
+    const line = text(ctx.owner.name);
+    pushText(ctx.state, line.key, line.params);
+  });
 }
 
 function conversion(): EffectHandlers {
@@ -373,11 +384,11 @@ function conversion(): EffectHandlers {
     const first = ctx.owner.moves[0];
     const move = first ? getMove(first.moveId) : undefined;
     if (!move) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     ctx.owner.types = [move.type];
-    pushText(ctx.state, `${ctx.owner.name} transformed into the ${move.type} type!`);
+    pushText(ctx.state, 'battle.log.typeChanged', { name: ctx.owner.name, type: move.type });
   });
 }
 
@@ -386,12 +397,12 @@ function conversion2(): EffectHandlers {
     const last = ctx.target?.lastMoveId ? getMove(ctx.target.lastMoveId) : undefined;
     const options = last ? TYPE_NAMES.filter((type) => effectiveness(last.type, [type]) < 1) : [];
     if (options.length === 0) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     const type = options[ctx.rng.int(0, options.length - 1)];
     ctx.owner.types = [type];
-    pushText(ctx.state, `${ctx.owner.name} transformed into the ${type} type!`);
+    pushText(ctx.state, 'battle.log.typeChanged', { name: ctx.owner.name, type });
   });
 }
 
@@ -404,7 +415,7 @@ function curse(): EffectHandlers {
     const user = ctx.owner;
     const target = ctx.target;
     if (!target || target.hp <= 0) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     if (!user.types.includes('Ghost')) {
@@ -415,13 +426,13 @@ function curse(): EffectHandlers {
         { atk: 1, def: 1, spe: -1 },
         {
           self: true,
-          message: `${user.name} cursed itself and raised its Attack and Defense!`,
+          message: { key: 'battle.log.move.curseSelf', params: { name: user.name } },
         },
       );
       return;
     }
     if (target.volatiles.curse) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     const cost = Math.max(1, Math.floor(user.maxHp / 2));
@@ -436,10 +447,10 @@ function curse(): EffectHandlers {
       crit: false,
     });
     target.volatiles.curse = true;
-    pushText(ctx.state, `${user.name} cut its own HP and laid a curse on ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.curse', { name: user.name, target: target.name });
     if (user.hp <= 0) {
       pushEvent(ctx.state, { kind: 'faint', side: ctx.side, fighterId: user.id });
-      pushText(ctx.state, `${user.name} fainted!`);
+      pushText(ctx.state, 'battle.log.fainted', { name: user.name });
     }
   });
 }
@@ -450,11 +461,14 @@ function doodle(): EffectHandlers {
     onAfterMove: (ctx) => {
       if (ctx.owner !== ctx.source || !ctx.target || ctx.target.hp <= 0) return;
       if (ctx.target.ability === ctx.owner.ability) {
-        pushText(ctx.state, 'But it failed!');
+        pushText(ctx.state, 'battle.log.fail');
         return;
       }
       ctx.target.ability = ctx.owner.ability;
-      pushText(ctx.state, `${ctx.target.name}'s Ability became ${ctx.owner.ability}!`);
+      pushText(ctx.state, 'battle.log.abilityBecame', {
+        name: ctx.target.name,
+        ability: ctx.owner.ability,
+      });
     },
   };
 }
@@ -465,11 +479,15 @@ function rolePlay(): EffectHandlers {
     onAfterMove: (ctx) => {
       if (ctx.owner !== ctx.source || !ctx.target || ctx.target.hp <= 0) return;
       if (ctx.owner.ability === ctx.target.ability) {
-        pushText(ctx.state, 'But it failed!');
+        pushText(ctx.state, 'battle.log.fail');
         return;
       }
       ctx.owner.ability = ctx.target.ability;
-      pushText(ctx.state, `${ctx.owner.name} copied ${ctx.target.name}'s ${ctx.target.ability}!`);
+      pushText(ctx.state, 'battle.log.move.roleplay', {
+        name: ctx.owner.name,
+        target: ctx.target.name,
+        ability: ctx.target.ability,
+      });
     },
   };
 }
@@ -479,7 +497,7 @@ function stockpile(): EffectHandlers {
   return selfEffect((ctx) => {
     const holder = ctx.owner;
     if (holder.volatiles.stockpile >= 3) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     holder.volatiles.stockpile += 1;
@@ -490,7 +508,10 @@ function stockpile(): EffectHandlers {
       { def: 1, spd: 1 },
       {
         self: true,
-        message: `${holder.name} stockpiled ${holder.volatiles.stockpile}!`,
+        message: {
+          key: 'battle.log.move.stockpile',
+          params: { name: holder.name, count: holder.volatiles.stockpile },
+        },
       },
     );
   });
@@ -499,17 +520,17 @@ function stockpile(): EffectHandlers {
 function haze(): EffectHandlers {
   return selfEffect((ctx) => {
     for (const side of SIDE_IDS) activeFighter(ctx.state, side).boosts = emptyBoosts();
-    pushText(ctx.state, 'All stat changes were eliminated!');
+    pushText(ctx.state, 'battle.log.move.haze');
   });
 }
 
 /** Jungle Healing and Lunar Blessing: heal a quarter and clear the status. */
-function healAndCure(fraction: number, message: string): EffectHandlers {
+function healAndCure(fraction: number, message: BattleTextKey): EffectHandlers {
   return selfEffect((ctx) => {
     const status = cureStatus(ctx.owner);
     if (status) pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
     const healed = healHolder(ctx, Math.max(1, Math.floor(ctx.owner.maxHp * fraction)));
-    pushText(ctx.state, healed > 0 || status ? message : 'But it failed!');
+    pushText(ctx.state, healed > 0 || status ? message : 'battle.log.fail');
   });
 }
 
@@ -522,10 +543,7 @@ function perishSong(): EffectHandlers {
       applyPerish(fighter);
       any = true;
     }
-    pushText(
-      ctx.state,
-      any ? 'All Pokémon hearing the song will faint in three turns!' : 'But it failed!',
-    );
+    pushText(ctx.state, any ? 'battle.log.move.perishsong' : 'battle.log.fail');
   });
 }
 
@@ -534,7 +552,10 @@ function psychUp(): EffectHandlers {
     onAfterMove: (ctx) => {
       if (ctx.owner !== ctx.source || !ctx.target) return;
       ctx.owner.boosts = { ...ctx.target.boosts };
-      pushText(ctx.state, `${ctx.owner.name} copied ${ctx.target.name}'s stat changes!`);
+      pushText(ctx.state, 'battle.log.move.psychup', {
+        name: ctx.owner.name,
+        target: ctx.target.name,
+      });
     },
   };
 }
@@ -543,12 +564,12 @@ function refresh(): EffectHandlers {
   return selfEffect((ctx) => {
     const holder = ctx.owner;
     if (!holder.status || !['brn', 'psn', 'tox', 'par'].includes(holder.status)) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     const status = cureStatus(holder);
     if (status) pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
-    pushText(ctx.state, `${holder.name} became healthy!`);
+    pushText(ctx.state, 'battle.log.move.refresh', { name: holder.name });
   });
 }
 
@@ -556,10 +577,13 @@ function rest(): EffectHandlers {
   return selfEffect((ctx) => {
     const holder = ctx.owner;
     if (holder.hp >= holder.maxHp || holder.status !== null) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
-    applyStatusEffect(ctx.state, ctx.side, holder, 'slp', `${holder.name} slept and became healthy!`);
+    applyStatusEffect(ctx.state, ctx.side, holder, 'slp', {
+      key: 'battle.log.move.rest',
+      params: { name: holder.name },
+    });
     if (holder.status !== 'slp') return;
     holder.statusCounter = 2;
     healHolder(ctx, holder.maxHp);
@@ -570,17 +594,20 @@ function rest(): EffectHandlers {
 function fieldBoosts(
   boosts: Partial<Record<BoostId, number>>,
   applies: (fighter: BattleFighter) => boolean,
-  message: string,
+  message: BattleTextKey,
 ): EffectHandlers {
   return selfEffect((ctx) => {
     let any = false;
     for (const side of SIDE_IDS) {
       const fighter = activeFighter(ctx.state, side);
       if (fighter.hp <= 0 || !applies(fighter)) continue;
-      applyBoostEffect(ctx.state, side, fighter, boosts, { self: true, message });
+      applyBoostEffect(ctx.state, side, fighter, boosts, {
+        self: true,
+        message: { key: message, params: { name: fighter.name } },
+      });
       any = true;
     }
-    if (!any) pushText(ctx.state, 'But it failed!');
+    if (!any) pushText(ctx.state, 'battle.log.fail');
   });
 }
 
@@ -590,7 +617,7 @@ function stuffCheeks(): EffectHandlers {
     const holder = ctx.owner;
     const item = holder.heldItem ? getItem(holder.heldItem) : undefined;
     if (!item || item.kind !== 'held' || !item.consumed) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     applyHeldItemEffect(ctx, item, true);
@@ -603,7 +630,10 @@ function stuffCheeks(): EffectHandlers {
       { def: 2 },
       {
         self: true,
-        message: `${holder.name} ate its ${item.name} and raised its Defense!`,
+        message: {
+          key: 'battle.log.move.stuffcheeks',
+          params: { name: holder.name, item: item.id },
+        },
       },
     );
   });
@@ -614,13 +644,13 @@ function swallow(): EffectHandlers {
     const holder = ctx.owner;
     const count = holder.volatiles.stockpile;
     if (count <= 0) {
-      pushText(ctx.state, 'But it failed!');
+      pushText(ctx.state, 'battle.log.fail');
       return;
     }
     const fraction = count === 1 ? 1 / 4 : count === 2 ? 1 / 2 : 1;
     holder.volatiles.stockpile = 0;
     healHolder(ctx, Math.max(1, Math.floor(holder.maxHp * fraction)));
-    pushText(ctx.state, `${holder.name} swallowed its stockpile and regained health!`);
+    pushText(ctx.state, 'battle.log.move.swallow', { name: holder.name });
   });
 }
 
@@ -630,7 +660,9 @@ function sunHeal(): EffectHandlers {
     const weather = effectiveWeather(ctx.state);
     const fraction = weather === 'sun' ? 2 / 3 : weather ? 1 / 4 : 1 / 2;
     const healed = healHolder(ctx, Math.max(1, Math.floor(ctx.owner.maxHp * fraction)));
-    pushText(ctx.state, healed > 0 ? `${ctx.owner.name} regained health!` : 'But it failed!');
+    pushText(ctx.state, healed > 0 ? 'battle.log.regainedHealth' : 'battle.log.fail', {
+      name: ctx.owner.name,
+    });
   });
 }
 
@@ -640,7 +672,9 @@ function shoreUp(): EffectHandlers {
     const weather = effectiveWeather(ctx.state);
     const fraction = weather === 'sand' ? 2 / 3 : weather ? 1 / 4 : 1 / 2;
     const healed = healHolder(ctx, Math.max(1, Math.floor(ctx.owner.maxHp * fraction)));
-    pushText(ctx.state, healed > 0 ? `${ctx.owner.name} regained health!` : 'But it failed!');
+    pushText(ctx.state, healed > 0 ? 'battle.log.regainedHealth' : 'battle.log.fail', {
+      name: ctx.owner.name,
+    });
   });
 }
 
@@ -655,7 +689,7 @@ function takeHeart(): EffectHandlers {
       { spa: 1, spd: 1 },
       {
         self: true,
-        message: `${ctx.owner.name} took heart and raised its Sp. Atk and Sp. Def!`,
+        message: { key: 'battle.log.move.takeheart', params: { name: ctx.owner.name } },
       },
     );
   });
@@ -675,7 +709,7 @@ function teatime(): EffectHandlers {
       fighter.lastItemId = item.id;
       any = true;
     }
-    if (!any) pushText(ctx.state, 'But it failed!');
+    if (!any) pushText(ctx.state, 'battle.log.fail');
   });
 }
 
@@ -689,7 +723,7 @@ function tidyUp(): EffectHandlers {
       { atk: 1, spe: 1 },
       {
         self: true,
-        message: `${ctx.owner.name} tidied up and raised its Attack and Speed!`,
+        message: { key: 'battle.log.move.tidyup', params: { name: ctx.owner.name } },
       },
     );
   });
@@ -706,14 +740,14 @@ function targetEffect(run: (ctx: EffectContext, target: BattleFighter) => void):
 }
 
 function fail(ctx: EffectContext): void {
-  pushText(ctx.state, 'But it failed!');
+  pushText(ctx.state, 'battle.log.fail');
 }
 
 /**
  * A move that pays a fraction of its own max HP before its data applies, and fails
  * when the user cannot afford it (Clangorous Soul, Fillet Away).
  */
-function hpCost(denominator: number, message: (name: string) => string): EffectHandlers {
+function hpCost(denominator: number, message: (name: string) => BattleText): EffectHandlers {
   return {
     onTryHit: (ctx) => {
       if (ctx.owner !== ctx.source) return;
@@ -733,7 +767,8 @@ function hpCost(denominator: number, message: (name: string) => string): EffectH
         effectiveness: 1,
         crit: false,
       });
-      pushText(ctx.state, message(user.name));
+      const line = message(user.name);
+      pushText(ctx.state, line.key, line.params);
       return undefined;
     },
   };
@@ -795,7 +830,7 @@ function soak(): EffectHandlers {
       return;
     }
     rewriteTypes(target, ['Water']);
-    pushText(ctx.state, `${target.name} transformed into the Water type!`);
+    pushText(ctx.state, 'battle.log.typeChanged', { name: target.name, type: 'Water' });
   });
 }
 
@@ -810,7 +845,7 @@ function reflectType(): EffectHandlers {
       return;
     }
     rewriteTypes(user, target.types);
-    pushText(ctx.state, `${user.name} copied ${target.name}'s type!`);
+    pushText(ctx.state, 'battle.log.move.reflecttype', { name: user.name, target: target.name });
   });
 }
 
@@ -821,7 +856,7 @@ function magicPowder(): EffectHandlers {
       return;
     }
     rewriteTypes(target, ['Psychic']);
-    pushText(ctx.state, `${target.name} transformed into the Psychic type!`);
+    pushText(ctx.state, 'battle.log.typeChanged', { name: target.name, type: 'Psychic' });
   });
 }
 
@@ -833,7 +868,7 @@ function addedTypeMove(type: string): EffectHandlers {
       return;
     }
     addType(target, type);
-    pushText(ctx.state, `${target.name} became the ${type} type too!`);
+    pushText(ctx.state, 'battle.log.typeAdded', { name: target.name, type });
   });
 }
 
@@ -845,7 +880,7 @@ function grantAbility(ability: string): EffectHandlers {
       return;
     }
     target.ability = ability;
-    pushText(ctx.state, `${target.name}'s Ability became ${ability}!`);
+    pushText(ctx.state, 'battle.log.abilityBecame', { name: target.name, ability });
   });
 }
 
@@ -857,7 +892,10 @@ function entrainment(): EffectHandlers {
       return;
     }
     target.ability = ctx.source.ability;
-    pushText(ctx.state, `${target.name}'s Ability became ${ctx.source.ability}!`);
+    pushText(ctx.state, 'battle.log.abilityBecame', {
+      name: target.name,
+      ability: ctx.source.ability,
+    });
   });
 }
 
@@ -872,7 +910,7 @@ function skillSwap(): EffectHandlers {
     const swapped = user.ability;
     user.ability = target.ability;
     target.ability = swapped;
-    pushText(ctx.state, `${user.name} swapped Abilities with ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.skillswap', { name: user.name, target: target.name });
   });
 }
 
@@ -889,7 +927,7 @@ function stageSwap(stats: readonly BoostId[]): EffectHandlers {
       user.boosts[stat] = target.boosts[stat];
       target.boosts[stat] = mine;
     }
-    pushText(ctx.state, `${user.name} switched stat changes with ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.stageswap', { name: user.name, target: target.name });
   });
 }
 
@@ -900,7 +938,7 @@ function speedSwap(): EffectHandlers {
     const mine = user.stats.spe;
     user.stats = { ...user.stats, spe: target.stats.spe };
     target.stats = { ...target.stats, spe: mine };
-    pushText(ctx.state, `${user.name} swapped Speed with ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.speedswap', { name: user.name, target: target.name });
   });
 }
 
@@ -912,14 +950,14 @@ function statSplit(stats: readonly (keyof Stats)[]): EffectHandlers {
     for (const stat of stats) averaged[stat] = Math.floor((user.stats[stat] + target.stats[stat]) / 2);
     user.stats = { ...user.stats, ...averaged };
     target.stats = { ...target.stats, ...averaged };
-    pushText(ctx.state, `${user.name} shared its stats with ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.statsplit', { name: user.name, target: target.name });
   });
 }
 
 /** Heal Pulse and Floral Healing restore the target's HP. */
 function healTarget(
   fraction: (ctx: EffectContext, target: BattleFighter) => number,
-  message: (name: string) => string,
+  message: (name: string) => BattleText,
 ): EffectHandlers {
   return targetEffect((ctx, target) => {
     const healed = applyHeal(target, Math.max(1, Math.floor(target.maxHp * fraction(ctx, target))));
@@ -934,7 +972,8 @@ function healTarget(
       hp: target.hp,
       maxHp: target.maxHp,
     });
-    pushText(ctx.state, message(target.name));
+    const line = message(target.name);
+    pushText(ctx.state, line.key, line.params);
   });
 }
 
@@ -949,7 +988,7 @@ function purify(): EffectHandlers {
     cureStatus(target);
     pushEvent(ctx.state, { kind: 'cure', side: opponentOf(ctx.side), status });
     healHolder(ctx, Math.max(1, Math.floor(ctx.source.maxHp / 2)));
-    pushText(ctx.state, `${target.name} was purified!`);
+    pushText(ctx.state, 'battle.log.move.purify', { name: target.name });
   });
 }
 
@@ -959,7 +998,10 @@ function strengthSap(): EffectHandlers {
     const attack = effectiveStat(target, 'atk');
     healHolder(ctx, attack);
     applyBoostEffect(ctx.state, opponentOf(ctx.side), target, { atk: -1 });
-    pushText(ctx.state, `${ctx.source.name} sapped ${target.name}'s strength!`);
+    pushText(ctx.state, 'battle.log.move.strengthsap', {
+      name: ctx.source.name,
+      target: target.name,
+    });
   });
 }
 
@@ -975,7 +1017,10 @@ function psychoShift(): EffectHandlers {
     cureStatus(user);
     pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status });
     applyStatusEffect(ctx.state, opponentOf(ctx.side), target, status);
-    pushText(ctx.state, `${user.name} shifted its ${statusName(status)} to ${target.name}!`);
+    pushText(ctx.state, STATUS_SHIFTED[status as StatusId], {
+      name: user.name,
+      target: target.name,
+    });
   });
 }
 
@@ -990,7 +1035,7 @@ function itemSwap(): EffectHandlers {
     const mine = user.heldItem;
     user.heldItem = target.heldItem;
     target.heldItem = mine;
-    pushText(ctx.state, `${user.name} swapped items with ${target.name}!`);
+    pushText(ctx.state, 'battle.log.move.itemswap', { name: user.name, target: target.name });
   });
 }
 
@@ -1007,7 +1052,7 @@ function mimic(): EffectHandlers {
     slot.moveId = last.id;
     slot.maxPp = last.pp;
     slot.pp = Math.min(5, last.pp);
-    pushText(ctx.state, `${user.name} learned ${last.name}!`);
+    pushText(ctx.state, 'battle.log.move.mimic', { name: user.name, move: last.id });
   });
 }
 
@@ -1022,7 +1067,11 @@ function spite(): EffectHandlers {
     }
     const lost = Math.min(4, slot.pp);
     slot.pp -= lost;
-    pushText(ctx.state, `${target.name}'s ${last.name} lost ${lost} PP!`);
+    pushText(ctx.state, 'battle.log.move.spite', {
+      name: target.name,
+      move: last.id,
+      pp: lost,
+    });
   });
 }
 
@@ -1030,7 +1079,7 @@ function spite(): EffectHandlers {
 function lockOn(): EffectHandlers {
   return selfEffect((ctx) => {
     applyLockOn(ctx.owner);
-    pushText(ctx.state, `${ctx.owner.name} took aim at its foe!`);
+    pushText(ctx.state, 'battle.log.move.lockon', { name: ctx.owner.name });
   });
 }
 
@@ -1078,7 +1127,7 @@ function quash(): EffectHandlers {
       fail(ctx);
       return;
     }
-    pushText(ctx.state, `${target.name} will act last this turn!`);
+    pushText(ctx.state, 'battle.log.move.quash', { name: target.name });
   });
 }
 
@@ -1102,7 +1151,7 @@ function defog(): EffectHandlers {
       ctx.state.terrainTurns = 0;
     }
     applyBoostEffect(ctx.state, foeSide, target, { evasion: -1 });
-    pushText(ctx.state, `${ctx.source.name} blew away the field's effects!`);
+    pushText(ctx.state, 'battle.log.move.defog', { name: ctx.source.name });
   });
 }
 
@@ -1121,7 +1170,7 @@ function topsyTurvy(): EffectHandlers {
       return;
     }
     applyBoostEffect(ctx.state, opponentOf(ctx.side), target, inverted, {
-      message: `${target.name}'s stat changes were inverted!`,
+      message: { key: 'battle.log.move.topsyturvy', params: { name: target.name } },
     });
   });
 }
@@ -1139,7 +1188,7 @@ function venomDrench(): EffectHandlers {
       target,
       { atk: -1, spa: -1, spe: -1 },
       {
-        message: `${target.name} was drenched and its stats fell!`,
+        message: { key: 'battle.log.move.venomdrench', params: { name: target.name } },
       },
     );
   });
@@ -1149,7 +1198,7 @@ function venomDrench(): EffectHandlers {
 function smackDown(): EffectHandlers {
   return targetEffect((ctx, target) => {
     if (!applySmackDown(target)) return;
-    pushText(ctx.state, `${target.name} fell straight down!`);
+    pushText(ctx.state, 'battle.log.move.smackdown', { name: target.name });
   });
 }
 
@@ -1179,7 +1228,7 @@ function shedTail(): EffectHandlers {
         crit: false,
       });
       user.volatiles.substitute = Math.max(1, Math.floor(user.maxHp / 4));
-      pushText(ctx.state, `${user.name} shed its tail and put in a substitute!`);
+      pushText(ctx.state, 'battle.log.move.shedtail', { name: user.name });
       const battleSide = ctx.state.sides[ctx.side];
       const active = battleSide.party.indexOf(user);
       const hasBench = battleSide.party.some((fighter, index) => index !== active && fighter.hp > 0);
@@ -1192,13 +1241,16 @@ function shedTail(): EffectHandlers {
 /** The status half's handlers, keyed by move id; `moveEffects()` registers them. */
 export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   acupressure: acupressure(),
-  aromatherapy: teamCure('A soothing aroma wafted through the area!'),
+  aromatherapy: teamCure('battle.log.move.aromatherapy'),
   bellydrum: bellyDrum(),
   block: trapMove(),
   camouflage: camouflage(),
   captivate: captivate(),
-  celebrate: textMove((name) => `Congratulations, ${name}!`),
-  clangoroussoul: hpCost(3, (name) => `${name} cut its own HP to raise all its stats!`),
+  celebrate: textMove((name) => ({ key: 'battle.log.move.celebrate', params: { name } })),
+  clangoroussoul: hpCost(3, (name) => ({
+    key: 'battle.log.move.clangoroussoul',
+    params: { name },
+  })),
   conversion: conversion(),
   conversion2: conversion2(),
   curse: curse(),
@@ -1207,30 +1259,33 @@ export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   doodle: doodle(),
   dreameater: requiresSleep('target'),
   entrainment: entrainment(),
-  filletaway: hpCost(2, (name) => `${name} cut its own HP to raise its Attack, Sp. Atk and Speed!`),
+  filletaway: hpCost(2, (name) => ({
+    key: 'battle.log.move.filletaway',
+    params: { name },
+  })),
   floralhealing: healTarget(
     (ctx, target) => (ctx.state.terrain === 'grassy' && isGrounded(target) ? 2 / 3 : 1 / 2),
-    (name) => `${name} regained health!`,
+    (name) => ({ key: 'battle.log.regainedHealth', params: { name } }),
   ),
   flowershield: fieldBoosts(
     { def: 1 },
     (fighter) => fighter.types.includes('Grass'),
-    'The Defense of Grass-type Pokémon rose!',
+    'battle.log.move.flowershield',
   ),
   forestscurse: addedTypeMove('Grass'),
   guardsplit: statSplit(['def', 'spd']),
   guardswap: stageSwap(['def', 'spd']),
   haze: haze(),
-  healbell: teamCure('A bell chimed and healed the team!'),
+  healbell: teamCure('battle.log.move.healbell'),
   healpulse: healTarget(
     () => 1 / 2,
-    (name) => `${name} regained health!`,
+    (name) => ({ key: 'battle.log.regainedHealth', params: { name } }),
   ),
   heartswap: stageSwap(BOOST_IDS),
   hyperspacefury: signatureMove('hoopaunbound'),
-  junglehealing: healAndCure(1 / 4, 'The team was healed by the jungle!'),
+  junglehealing: healAndCure(1 / 4, 'battle.log.move.junglehealing'),
   lockon: lockOn(),
-  lunarblessing: healAndCure(1 / 4, 'The team was bathed in lunar light!'),
+  lunarblessing: healAndCure(1 / 4, 'battle.log.move.lunarblessing'),
   magicpowder: magicPowder(),
   meanlook: trapMove(),
   mimic: mimic(),
@@ -1253,7 +1308,7 @@ export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   rototiller: fieldBoosts(
     { atk: 1, spa: 1 },
     (fighter) => fighter.types.includes('Grass') && isGrounded(fighter),
-    'The Attack and Sp. Atk of grounded Grass-type Pokémon rose!',
+    'battle.log.move.rototiller',
   ),
   shedtail: shedTail(),
   shoreup: shoreUp(),
@@ -1265,7 +1320,7 @@ export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   speedswap: speedSwap(),
   spite: spite(),
   spiderweb: trapMove(),
-  splash: textMove(() => 'But nothing happened!'),
+  splash: textMove(() => ({ key: 'battle.log.move.splash' })),
   stockpile: stockpile(),
   strengthsap: strengthSap(),
   stuffcheeks: stuffCheeks(),

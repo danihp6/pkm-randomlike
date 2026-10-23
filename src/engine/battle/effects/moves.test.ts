@@ -47,7 +47,7 @@ describe('protect', () => {
 
     expect(activeFighter(state, 'player').hp).toBe(before);
     expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('protected itself')),
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.protectedItself'),
     ).toBe(true);
     expect(activeFighter(state, 'player').volatiles.protect).toBeNull();
   });
@@ -107,7 +107,7 @@ describe('Recycle', () => {
   it('fails when there is nothing to recycle', () => {
     const state = battle(['recycle', 'growl'], ['growl']);
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -167,7 +167,7 @@ describe('damage counters', () => {
       isWild: true,
     });
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -189,9 +189,9 @@ describe('damage counters', () => {
       isWild: true,
     });
     takeTurn(ghost, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(
-      ghost.log.some((event) => event.kind === 'text' && event.text.includes("doesn't affect")),
-    ).toBe(true);
+    expect(ghost.log.some((event) => event.kind === 'text' && event.key === 'battle.log.noEffect')).toBe(
+      true,
+    );
   });
 });
 
@@ -473,7 +473,7 @@ describe('ported status moves', () => {
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     expect(player.hp).toBe(1);
     expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('endured the hit')),
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
     ).toBe(true);
   });
 
@@ -590,7 +590,7 @@ function heldBattle(
 
 /** The battle's text lines, in order. */
 function texts(state: BattleState): readonly string[] {
-  return state.log.flatMap((event) => (event.kind === 'text' ? [event.text] : []));
+  return state.log.flatMap((event) => (event.kind === 'text' ? [event.key] : []));
 }
 
 /** A battle against a plain Normal-type target, for the type and identity writes. */
@@ -652,7 +652,7 @@ describe('the status half — infatuation and the move lock', () => {
     const before = activeFighter(state, 'player').hp;
     useMove(state, 'enemy', { type: 'fight', moveIndex: 0 });
     expect(activeFighter(state, 'player').hp).toBe(before);
-    expect(texts(state)).toContain("Bulbasaur can't use the same move twice in a row!");
+    expect(texts(state)).toContain('battle.log.encoreLocked');
   });
 
   it('Encore records the move it locks', () => {
@@ -1015,7 +1015,7 @@ describe('the status half — items, moves and PP', () => {
   it('Trick fails when neither side holds an item', () => {
     const state = battle(['trick'], ['splash']);
     useMove(state, 'player', { type: 'fight', moveIndex: 0 });
-    expect(texts(state)).toContain('But it failed!');
+    expect(texts(state)).toContain('battle.log.fail');
   });
 
   it('Embargo writes its five-turn volatile', () => {
@@ -1060,7 +1060,7 @@ describe('Pain Split', () => {
       event.kind === 'heal' || event.kind === 'damage' ? [event.kind] : [],
     );
     expect(kinds).toEqual(['damage', 'heal']);
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       false,
     );
   });

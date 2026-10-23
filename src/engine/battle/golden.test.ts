@@ -3,7 +3,8 @@ import { formatBattleLog, scriptedBattle, type HarnessFighterSpec } from './harn
 
 /**
  * The battle every rule change is measured against (`docs/battle-spec.md`): the
- * teams and the seed are frozen here and the log below must stay byte-identical.
+ * teams and the seed are frozen here and the battle's keys, as `formatBattleLog`
+ * prints them, must stay byte-identical.
  * The loop itself lives in `./harness` (`scriptedBattle`), so an AI regression
  * (`[Task-35]`) runs the very same script with its own policies.
  *
@@ -26,20 +27,20 @@ describe('golden battle', () => {
     expect(formatBattleLog(state)).toMatchInlineSnapshot(`
       "# turn 1
         > player ember
-      Charmander used Ember!
+      battle.log.used(move=ember, name=Charmander)
         = enemy -26 (23/49 x2)
-      Ember hit Bulbasaur! It's super effective!
+      battle.log.hitSuper(move=ember, name=Bulbasaur)
         > enemy vinewhip
-      Bulbasaur used Vine Whip!
+      battle.log.used(move=vinewhip, name=Bulbasaur)
         = player -6 (45/51 x0.5)
-      Vine Whip hit Charmander! It's not very effective...
+      battle.log.hitWeak(move=vinewhip, name=Charmander)
       # turn 2
         > player ember
-      Charmander used Ember!
+      battle.log.used(move=ember, name=Charmander)
         = enemy -23 (0/49 x2)
-      Ember hit Bulbasaur! It's super effective!
+      battle.log.hitSuper(move=ember, name=Bulbasaur)
         = enemy fainted
-      Bulbasaur fainted!
+      battle.log.fainted(name=Bulbasaur)
       # end player"
     `);
   });

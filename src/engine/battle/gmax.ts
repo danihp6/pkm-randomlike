@@ -47,7 +47,7 @@ export function gigantamax(state: BattleState, side: SideId): boolean {
   fighter.gmax = true;
 
   pushEvent(state, { kind: 'gmax', side, fighterId: fighter.id });
-  pushText(state, `${baseName} Gigantamaxed!`);
+  pushText(state, 'battle.log.gigantamaxed', { name: baseName });
   return true;
 }
 

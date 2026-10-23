@@ -17,6 +17,13 @@ Phaser scene only renders state and forwards choices.
    then Taunt/Encore decay and the weather/terrain turn counters.
 5. A fainted Pokémon is replaced by its owner's next choice before the next
    turn; if a side has no Pokémon left, the battle is over.
+6. Every line the turn prints is a **keyed log event**, never a sentence:
+   `{ kind: 'text'; key; params? }` names a `battle.log.*` key of the source table and
+   the values it interpolates, and `src/ui/feed.ts` (`battleMessage`) resolves the key
+   in the current locale when it builds the frame the scene prints. The engine stays
+   language-free and a fixed seed logs the same keys in every language; the only params
+   a table owns are `move`, `ability` and `item`, and every other one is inserted
+   verbatim (`D43`, amended).
 
 ## 2. The four commands
 

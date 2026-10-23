@@ -1,5 +1,6 @@
 import { getSpecies } from '../../data/dex';
 import type { ItemDef } from '../../data/items';
+import type { TranslationKey } from '../../i18n/en';
 import type { Rng } from '../rng';
 import { makeContext, runStart, runSwitchIn } from './effects/registry';
 import { applyBoosts, trappedBy, type BattleFighter, type BoostId, type StatusId } from './fighter';
@@ -105,9 +106,18 @@ export type BattleSide = {
   sideConditions: SideConditions;
 };
 
+/** Every key the battle log may name: the `battle.log.` family of the source table. */
+export type BattleTextKey = Extract<TranslationKey, `battle.log.${string}`>;
+
+/** The values a log line interpolates. Ids, never rendered words, where a table owns them. */
+export type BattleTextParams = Readonly<Record<string, string | number>>;
+
+/** One log line as the engine emits it: a key plus its params, never a sentence. */
+export type BattleText = Readonly<{ key: BattleTextKey; params?: BattleTextParams }>;
+
 export type BattleEvent =
   | Readonly<{ kind: 'turn'; turn: number }>
-  | Readonly<{ kind: 'text'; text: string }>
+  | Readonly<{ kind: 'text'; key: BattleTextKey; params?: BattleTextParams }>
   | Readonly<{ kind: 'move'; side: SideId; moveId: string }>
   | Readonly<{
       kind: 'damage';
@@ -315,14 +325,13 @@ export function createBattle(setup: BattleSetup): BattleState {
   if (setup.enemyBoosts) applyBoosts(state.sides.enemy.party[0], setup.enemyBoosts);
 
   // The room's rule is the battle feed's first line, ahead of any start hook.
-  if (state.noHeal) pushText(state, 'No items or healing moves can be used in this room!');
+  if (state.noHeal) pushText(state, 'battle.log.roomNoHeal');
 
   // The banned room's line follows the no-heal one, before any start hook.
   if (state.bannedSpecies !== null) {
-    pushText(
-      state,
-      `${getSpecies(state.bannedSpecies)?.name ?? state.bannedSpecies} is barred in this room!`,
-    );
+    pushText(state, 'battle.log.roomBanned', {
+      name: getSpecies(state.bannedSpecies)?.name ?? state.bannedSpecies,
+    });
   }
 
   // The sends are booked before the start hooks run, so the fold always sees a
@@ -415,8 +424,9 @@ export function pushEvent(state: BattleState, event: BattleEvent): void {
   state.log.push(event);
 }
 
-export function pushText(state: BattleState, text: string): void {
-  pushEvent(state, { kind: 'text', text });
+export function pushText(state: BattleState, key: BattleTextKey, params?: BattleTextParams): void {
+  if (params === undefined) pushEvent(state, { kind: 'text', key });
+  else pushEvent(state, { kind: 'text', key, params });
 }
 
 export function finishBattle(state: BattleState, winner: SideId | 'draw'): void {

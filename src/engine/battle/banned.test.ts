@@ -17,8 +17,8 @@ const battle = (extra: Readonly<{ bannedSpecies?: string | null; noHeal?: boolea
     ...extra,
   });
 
-const feed = (state: BattleState, text: string): boolean =>
-  state.log.some((event) => event.kind === 'text' && event.text === text);
+const feed = (state: BattleState, key: string): boolean =>
+  state.log.some((event) => event.kind === 'text' && event.key === key);
 
 describe('the banned-species battle rule', () => {
   it('replaces a barred lead with the first living unbarred member', () => {
@@ -34,10 +34,15 @@ describe('the banned-species battle rule', () => {
 
   it('pushes the rule’s line, after the no-heal one', () => {
     const state = battle({ bannedSpecies: 'pidgey', noHeal: true });
-    const texts = state.log.flatMap((event) => (event.kind === 'text' ? [event.text] : []));
-    expect(texts[0]).toBe('No items or healing moves can be used in this room!');
-    expect(texts[1]).toBe('Pidgey is barred in this room!');
-    expect(feed(state, 'Pidgey is barred in this room!')).toBe(true);
+    const texts = state.log.flatMap((event) => (event.kind === 'text' ? [event.key] : []));
+    expect(texts[0]).toBe('battle.log.roomNoHeal');
+    expect(texts[1]).toBe('battle.log.roomBanned');
+    expect(feed(state, 'battle.log.roomBanned')).toBe(true);
+    expect(state.log).toContainEqual({
+      kind: 'text',
+      key: 'battle.log.roomBanned',
+      params: { name: 'Pidgey' },
+    });
   });
 
   it('books the sends it fielded, in order and deduped', () => {

@@ -14,6 +14,7 @@ import {
   pushEvent,
   pushText,
   type BattleState,
+  type BattleText,
   type SideId,
   type Slot,
   type TargetRef,
@@ -297,7 +298,7 @@ export function useBagItem(state: BattleState, side: SideId, itemId: string): bo
   const item = slot.item;
   const target = activeFighter(state, side);
   pushEvent(state, { kind: 'item', side, itemId: item.id });
-  pushText(state, `${state.sides[side].name} used ${item.name}.`);
+  pushText(state, 'battle.log.usedItem', { name: state.sides[side].name, item: item.id });
 
   switch (item.kind) {
     case 'ball': {
@@ -309,7 +310,8 @@ export function useBagItem(state: BattleState, side: SideId, itemId: string): bo
         fighterId: wild.id,
         shakes: result.shakes,
       });
-      pushText(state, captureMessage(wild.name, result.shakes, result.success));
+      const caught = captureMessage(wild.name, result.shakes, result.success);
+      pushText(state, caught.key, caught.params);
       if (result.success) finishBattle(state, side);
       break;
     }
@@ -320,7 +322,7 @@ export function useBagItem(state: BattleState, side: SideId, itemId: string): bo
       const healed = applyHeal(target, amount);
       if (healed > 0) {
         pushEvent(state, { kind: 'heal', side, amount: healed, hp: target.hp, maxHp: target.maxHp });
-        pushText(state, `${target.name} recovered ${healed} HP.`);
+        pushText(state, 'battle.log.recoveredHp', { name: target.name, hp: healed });
       }
       if (item.cures) cureWithItem(state, side, target, item);
       break;
@@ -340,14 +342,14 @@ function cureWithItem(state: BattleState, side: SideId, target: BattleFighter, i
   const cured = cureStatus(target);
   if (cured) {
     pushEvent(state, { kind: 'cure', side, status: cured });
-    pushText(state, `${target.name} was cured of its status.`);
+    pushText(state, 'battle.log.cured', { name: target.name });
   }
 }
 
-function captureMessage(name: string, shakes: number, success: boolean): string {
-  if (success) return `Gotcha! ${name} was caught!`;
-  if (shakes === 0) return `Oh no! ${name} broke free!`;
-  if (shakes === 1) return `Aww! ${name} appeared to be caught!`;
-  if (shakes === 2) return `Aargh! ${name} almost had it!`;
-  return `Gah! ${name} was so close, too!`;
+function captureMessage(name: string, shakes: number, success: boolean): BattleText {
+  if (success) return { key: 'battle.log.caught', params: { name } };
+  if (shakes === 0) return { key: 'battle.log.capture.shakes0', params: { name } };
+  if (shakes === 1) return { key: 'battle.log.capture.shakes1', params: { name } };
+  if (shakes === 2) return { key: 'battle.log.capture.shakes2', params: { name } };
+  return { key: 'battle.log.capture.shakes3', params: { name } };
 }

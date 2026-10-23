@@ -168,7 +168,7 @@ describe('a no-heal battle', () => {
     expect(state.noHeal).toBe(true);
     expect(state.log[0]).toEqual({
       kind: 'text',
-      text: 'No items or healing moves can be used in this room!',
+      key: 'battle.log.roomNoHeal',
     });
   });
 

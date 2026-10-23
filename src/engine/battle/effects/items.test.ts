@@ -222,9 +222,9 @@ describe('damage items', () => {
     const state = battle('normalgem');
     expect(runModifyDamage(playerContext(state), getMove('ember')!, 100, 2)).toBe(130);
     expect(heldItem(state, 'player')).toBeNull();
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('used up'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.item.usedUp'),
+    ).toBe(true);
   });
 
   it('ignores a defender-held booster', () => {
@@ -417,9 +417,14 @@ describe('held items in the turn loop', () => {
     const player = activeFighter(state, 'player');
 
     expect(controlHp - player.hp).toBe(Math.floor(player.maxHp / 10));
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Life Orb'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some(
+        (event) =>
+          event.kind === 'text' &&
+          event.key === 'battle.log.item.lostHp' &&
+          event.params?.item === 'lifeorb',
+      ),
+    ).toBe(true);
     expect(
       state.log.some((event) => event.kind === 'damage' && event.side === 'player' && event.amount > 0),
     ).toBe(true);
@@ -514,9 +519,9 @@ describe('berry abilities (batch 7)', () => {
 
     expect(player.hp).toBe(before);
     expect(player.heldItem).toBe('sitrusberry');
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Unnerve'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.item.unnerve'),
+    ).toBe(true);
   });
 });
 
@@ -652,7 +657,10 @@ describe('Natural Gift in a real turn', () => {
 
   const usedUp = (state: BattleState): number =>
     state.log.filter(
-      (event) => event.kind === 'text' && event.text.includes('used up its Sitrus Berry!'),
+      (event) =>
+        event.kind === 'text' &&
+        event.key === 'battle.log.item.usedUp' &&
+        event.params?.item === 'sitrusberry',
     ).length;
 
   it('spends the berry once and deals the damage it powered', () => {
