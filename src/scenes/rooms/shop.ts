@@ -16,6 +16,7 @@ import {
   addFrlgWindow,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
+import { parseHudFlags } from '../../ui/hud/fixtures';
 import {
   buildShop,
   buyItem,
@@ -25,6 +26,12 @@ import {
   sellableStacks,
   type ShopSlot,
 } from '../../ui/shop';
+import {
+  closeShopCard,
+  noteShopDrawnObjects,
+  openShopCard,
+  pushShopCard,
+} from '../panels/shop';
 import type { RoomDrop, RoomHost, RoomPanel } from './types';
 
 /**
@@ -35,6 +42,8 @@ import type { RoomDrop, RoomHost, RoomPanel } from './types';
  * only modules that export a `descriptor`, and this file exports none. The card draws
  * no scrim, takes no key and the route keeps walking behind it. A BUY row is taken by
  * dragging it onto the bag or a member; a SELL row still sells with one click.
+ * Under `?hud=dom` (`D49`) this module keeps every rule and builds no card: the DOM
+ * card of `src/scenes/panels/shop.ts` paints the same shelves.
  */
 
 /** The Mart window: BUY / SELL tabs over the floor's own stock. */
@@ -46,6 +55,13 @@ const SHOP_TAB_W = 108;
 const SHOP_TAB_H = 30;
 const SHOP_TAB_GAP = 6;
 const SHOP_MODES = ['buy', 'sell'] as const;
+
+/**
+ * `?hud=dom` read once (`D49`): with it on, this module keeps the stock rules, the
+ * cache key and the trade rules but builds no Phaser card — the Preact card in the
+ * `#hud` layer paints the same shelves.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 
 /** The content offset of the list window: below the money line and the tabs. */
 const SHOP_LIST_TOP = 68;
@@ -145,6 +161,21 @@ export function openMart(host: RoomHost, stock?: MartStock): void {
   shopScroll = 0;
   shopMessage = t('mart.greeting');
   panelHost = host;
+  if (DOM_HUD) {
+    openShopCard(host, {
+      title: t(title),
+      mode: shopMode,
+      rows: buyRows(host.run, shopStock),
+      scroll: shopScroll,
+      selected: shopIndex,
+      money: host.run.money,
+      message: shopMessage,
+      empty: t('mart.emptyStock'),
+      open: true,
+    });
+    host.openPanel(PANEL);
+    return;
+  }
   buildShopPanel(host, t(title));
   refreshShop();
   host.openPanel(PANEL);
@@ -152,6 +183,15 @@ export function openMart(host: RoomHost, stock?: MartStock): void {
 
 /** Tears down the Mart panel (the scene calls it when the room changes). */
 function closeShop(): void {
+  if (DOM_HUD) {
+    closeShopCard();
+    shopRows = [];
+    shopTabs = [];
+    panelHost = null;
+    shopIndex = 0;
+    shopScroll = 0;
+    return;
+  }
   if (!shopPanel) return;
   shopScene?.input.off('wheel', handleShopWheel);
   shopPanel.destroy();
@@ -162,6 +202,7 @@ function closeShop(): void {
   panelHost = null;
   shopIndex = 0;
   shopScroll = 0;
+  noteShopDrawnObjects(0);
 }
 
 /** Builds the Mart's floating card and its row/tab objects once per open. */
@@ -298,11 +339,16 @@ function buildShopPanel(host: RoomHost, title: string): void {
 
   panel.root.add(children);
   scene.input.on('wheel', handleShopWheel);
+  noteShopDrawnObjects(panel.root.list.length);
 }
 
 /** Repaints the Mart for the current tab, hover and the run's money and bag. */
 function refreshShop(): void {
   const host = panelHost;
+  if (DOM_HUD) {
+    if (host) pushShopCard(host);
+    return;
+  }
   if (!shopPanel || !host) return;
   const rows = shopMode === 'buy' ? buyRows(host.run, shopStock) : sellRows(host.run);
   const total = rows.length;
