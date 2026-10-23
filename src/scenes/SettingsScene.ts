@@ -1,9 +1,21 @@
 import Phaser from 'phaser';
+import { signal, type Signal } from '@preact/signals';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import type { Settings } from '../engine/save';
 import { t } from '../i18n';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { prefersTouchControls } from '../input/device';
+import {
+  reduceHudCommand,
+  type HudCommand,
+} from '../ui/hud/commands';
+import {
+  installOptionsPreview,
+  liveOptionsView,
+  mountOptionsPanel,
+  type OptionsView,
+} from '../ui/hud/panels/options';
+import { parseHudFlags } from '../ui/hud/fixtures';
 import {
   addFrlgWindow,
   FRLG_ACCENT,
@@ -70,6 +82,16 @@ function pointInRect(
 }
 
 /**
+ * `?hud=dom` read once (`D49`): with it on, this scene draws no Phaser object and
+ * mounts the Preact panel in the `#hud` layer instead. The fixture preview mounts
+ * on its own, even before the scene is ever opened, so `?hudFixture=02-options`
+ * can be screenshotted without walking the menu.
+ */
+const DOM_HUD =
+  typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+installOptionsPreview(typeof window === 'undefined' ? '' : window.location.search);
+
+/**
  * The settings screen (Phase 7). Opened from the main menu, the starter screen
  * or the route HUD (`Tab`); the opener pauses itself and resumes behind it.
  * Up/down picks a row and left/right steps a step row's value; every change is
@@ -105,6 +127,11 @@ export class SettingsScene extends Phaser.Scene {
   private controls!: Phaser.GameObjects.BitmapText;
   /** The window title, re-resolved on every render so a language switch shows at once. */
   private title!: Phaser.GameObjects.BitmapText;
+  /** The device's row set, read once in `init` so the DOM view and the list agree. */
+  private touch = false;
+  /** The mounted DOM panel (`?hud=dom`): the view it paints and its disposer. */
+  private view: Signal<OptionsView> | null = null;
+  private panelDispose: (() => void) | null = null;
 
   constructor() {
     super('Settings');
@@ -117,11 +144,21 @@ export class SettingsScene extends Phaser.Scene {
     this.capturing = null;
     this.captureSkip = null;
     this.draggingVolume = false;
+    this.touch = prefersTouchControls();
     // Without a keyboard the keybind rows are hidden (the touch pad drives this).
-    this.rowList = settingsRows(prefersTouchControls());
+    this.rowList = settingsRows(this.touch);
   }
 
   create(): void {
+    if (DOM_HUD) {
+      this.view = signal(liveOptionsView(this.settings, this.touch, this.index, false));
+      this.mountPanel();
+      this.bindInput();
+      this.render();
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
+      return;
+    }
+
     const { width, height } = this.scale;
     // Scale.RESIZE hands the scene the whole window, so the panel is clamped to
     // the screen and its rows squeezed to fit a short view — on a phone it stays
@@ -404,6 +441,10 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private render(): void {
+    if (DOM_HUD) {
+      this.pushView();
+      return;
+    }
     // The language row is changed on this very screen, so every string is resolved
     // from the current locale here rather than once in `create`.
     this.title.setText(t('settings.title'));
@@ -420,6 +461,39 @@ export class SettingsScene extends Phaser.Scene {
     this.refreshVolumeSlider();
     this.hint.setText(this.rowHint(settingsRow(this.index, this.rowList), this.capturing !== null));
     this.controls.setText(this.controlsLine());
+  }
+
+  /** The one emit point of the DOM panel: the scene owns the settings, the panel paints them. */
+  private pushView(): void {
+    if (this.view === null) return;
+    this.view.value = liveOptionsView(
+      this.settings,
+      this.touch,
+      this.index,
+      this.capturing !== null,
+    );
+  }
+
+  /** Mounts the panel in the HUD layer; a missing layer (flag read by `main.ts`) mounts nothing. */
+  private mountPanel(): void {
+    if (this.view === null || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposePanel();
+    this.panelDispose = mountOptionsPanel(host, this.view, (command) => this.handleCommand(command));
+  }
+
+  private disposePanel(): void {
+    if (this.panelDispose === null) return;
+    this.panelDispose();
+    this.panelDispose = null;
+  }
+
+  /** A panel control answers through the same action a key or pad press produces. */
+  private handleCommand(command: HudCommand): void {
+    const intent = reduceHudCommand(command);
+    if (intent === null || intent.kind !== 'action') return;
+    this.handleAction(intent.action, null);
   }
 
   /** Redraws the volume slider's fill and knob to the current volume. */
@@ -456,6 +530,7 @@ export class SettingsScene extends Phaser.Scene {
 
   /** Hands the opener back its screen; the route re-reads what changed. */
   private close(): void {
+    this.disposePanel();
     if (this.from === 'Route') (this.scene.get('Route') as RouteScene).applySettings();
     this.scene.resume(this.from);
     this.scene.stop();

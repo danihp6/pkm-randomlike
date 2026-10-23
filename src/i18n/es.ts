@@ -38,6 +38,11 @@ export const es: Readonly<Record<TranslationKey, string>> = {
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'AJUSTES',
+  'settings.subtitle': 'Los cambios se aplican al momento y se guardan en este navegador.',
+  'settings.footer': 'Los atajos se comparten con las pantallas de ruta y combate.',
+  'settings.back': 'VOLVER',
+  'settings.group.gameplay': 'JUEGO',
+  'settings.group.keybinds': 'ATAJOS',
   'settings.textSpeed': 'Velocidad del texto',
   'settings.textSpeed.hint': 'A qué velocidad se escribe el texto de combate.',
   'settings.volume': 'Volumen',
