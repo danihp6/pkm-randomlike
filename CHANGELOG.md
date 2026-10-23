@@ -8,6 +8,37 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's action log speaks the locale.** The engine stops composing English sentences:
+      the `text` event carries `{ key: BattleTextKey; params?: BattleTextParams }`
+      (`BattleTextKey = Extract<TranslationKey, \`battle.log.${string}\`>`, a **type-only** import from
+      `src/i18n/en.ts`, so `src/engine/battle/` keeps no locale, no runtime i18n and no `t`) and
+      `pushText(state, key, params?)` types every one of its **226** call sites across the twelve
+      engine files, the message tables they read and the thirty `applyBoostEffect` overrides.
+      `src/ui/feed.ts` resolves the key with `t()` as it builds each frame (`battleMessage`), so
+      `FeedFrame.message` stays `string | null` and `BattleScene` is untouched. `src/i18n/en.ts`
+      gains the `battle.log.*` family — one key per rule: the **six** whole damage lines, 14
+      stat-stage keys, 24 status keys, the ability/item/move rule keys, 9 weather, 7 terrain, 14
+      side + 14 field, 27 volatile/charge and the five capture keys — and `es.ts` overlays all of
+      it. Params carry **ids** wherever a table owns the word, so `move` resolves through
+      `moveName` (`ember` → `Ascuas`, never `Ember`) and `ability` through
+      `abilityNameFromEnglish`, while species, item and type names stay English (`D43`'s boundary
+      amended: the log is keyed too, so the "half Spanish / half English" cut is retired).
+      `formatBattleLog` prints `key(params sorted)`, so `golden.test.ts`'s snapshot re-pins to the
+      keys and the battle itself is byte-identical: no RNG draw moved, no run field added, no
+      `SAVE_VERSION` step.
+      **QA:** Task QA round 2 on the integration tree ran the spec verbatim — `npm test` (3639
+      passed, 67 skipped) and `npm run build`, the golden keys byte-for-byte, the 226-call
+      distribution identical to `main`'s, the `.text` grep empty, the engine's only i18n import the
+      type-only one, `feed.test.ts` walking the golden battle in both locales, the family counts and
+      the closed param vocabulary in `src/i18n/index.test.ts`, the two shipped Spanish guards
+      untouched, and the 36-path audit inside the exclusive list. The `[live]` criterion was
+      measured by the Orchestrator over CDP on the dev build: a wild battle in **es** printed 11/11
+      lines equal to `t(key, params)` (`¡Charmander usó Ascuas!`, `¡Ascuas alcanzó a Bulbasaur! ¡Es
+      supereficaz!`, the Attack drop, the faint) and a second one the Intimidate line
+      (`¡Intimidación de Gyarados ha bajado el Ataque de Pidgey!`), each drawn verbatim in the
+      message box (`renderer.snapshotArea` over the text's bounds read 1,024 light glyph pixels);
+      the same two battles in **en** printed the same keys in English (`Ember`, not `Ascuas`).
+
 - [x] **The HUD's state is one projection of the engine, and one command reducer feeds it.**
       `src/ui/hud/state.ts` turns `RunState` and the battle state into the serialisable `HudState`
       (party, bag, money, route, battle, notice) with no Phaser object and no second way to compute a

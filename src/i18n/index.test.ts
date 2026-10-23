@@ -118,6 +118,82 @@ describe('width guards', () => {
   });
 });
 
+/**
+ * The battle log's families (`D43`, amended): the engine emits a key per rule and
+ * `src/ui/feed.ts` resolves it, so the table's shape is the contract. Each count
+ * here is the number of rules the engine can name.
+ */
+describe('the battle log', () => {
+  const LOG_KEYS = KEYS.filter((key) => key.startsWith('battle.log.'));
+
+  function family(prefix: string): readonly TranslationKey[] {
+    return LOG_KEYS.filter((key) => key.startsWith(prefix));
+  }
+
+  const PARAMS = new Set([
+    'name',
+    'target',
+    'move',
+    'ability',
+    'item',
+    'type',
+    'hp',
+    'pp',
+    'stage',
+    'count',
+    'volatile',
+  ]);
+
+  it('carries the six damage lines', () => {
+    const lines = ['hit', 'hitCrit', 'hitSuper', 'hitCritSuper', 'hitWeak', 'hitCritWeak'];
+    const keys = lines.map((name) => `battle.log.${name}` as TranslationKey);
+    expect(keys.filter((key) => key in en)).toHaveLength(6);
+    expect(keys.filter((key) => key in es)).toHaveLength(6);
+  });
+
+  it('pins every stat and status family', () => {
+    expect(family('battle.log.boostRose.')).toHaveLength(7);
+    expect(family('battle.log.boostFell.')).toHaveLength(7);
+    expect(family('battle.log.statusAfflicted.')).toHaveLength(6);
+    expect(family('battle.log.statusResidual.')).toHaveLength(6);
+    expect(family('battle.log.statusShifted.')).toHaveLength(6);
+    expect(family('battle.log.itemInflicted.')).toHaveLength(6);
+    expect(family('battle.log.item.raised.')).toHaveLength(7);
+  });
+
+  it('pins every field family', () => {
+    expect(family('battle.log.weather.')).toHaveLength(9);
+    expect(family('battle.log.terrain.')).toHaveLength(7);
+    expect(family('battle.log.side.')).toHaveLength(14);
+    expect(family('battle.log.field.')).toHaveLength(14);
+    expect(family('battle.log.volatile.')).toHaveLength(27);
+    expect(family('battle.log.charge.')).toHaveLength(14);
+  });
+
+  it('pins the capture family at five keys', () => {
+    expect(family('battle.log.capture.')).toHaveLength(4);
+    expect(['battle.log.caught', ...family('battle.log.capture.')]).toHaveLength(5);
+  });
+
+  it('declares only the params the feed knows how to resolve', () => {
+    const offenders: string[] = [];
+    for (const key of LOG_KEYS) {
+      for (const locale of LOCALES) {
+        const table = locale === 'en' ? en : es;
+        for (const name of translationParams(table[key])) {
+          if (!PARAMS.has(name)) offenders.push(`${locale}:${key}: ${name}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps the battle log out of the chrome keys', () => {
+    expect(family('battle.log.')).toHaveLength(LOG_KEYS.length);
+    expect(LOG_KEYS.length).toBeGreaterThan(300);
+  });
+});
+
 describe('detectLocale', () => {
   it('matches the primary subtag exactly', () => {
     expect(detectLocale('es-ES')).toBe('es');

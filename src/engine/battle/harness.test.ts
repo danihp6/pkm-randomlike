@@ -11,31 +11,31 @@ const ENEMY: readonly HarnessFighterSpec[] = [
   { id: 'enemy', speciesId: 'bulbasaur', level: 18, nature: 'serious', moves: ['vinewhip', 'tackle'] },
 ];
 
-/** The golden log, line for line: `golden.test.ts`'s inline snapshot. */
+/** The golden log's keys, line for line: `golden.test.ts`'s inline snapshot. */
 const GOLDEN_LOG = [
   '# turn 1',
   '  > player ember',
-  'Charmander used Ember!',
+  'battle.log.used(move=ember, name=Charmander)',
   '  = enemy -26 (23/49 x2)',
-  "Ember hit Bulbasaur! It's super effective!",
+  'battle.log.hitSuper(move=ember, name=Bulbasaur)',
   '  > enemy vinewhip',
-  'Bulbasaur used Vine Whip!',
+  'battle.log.used(move=vinewhip, name=Bulbasaur)',
   '  = player -6 (45/51 x0.5)',
-  "Vine Whip hit Charmander! It's not very effective...",
+  'battle.log.hitWeak(move=vinewhip, name=Charmander)',
   '# turn 2',
   '  > player ember',
-  'Charmander used Ember!',
+  'battle.log.used(move=ember, name=Charmander)',
   '  = enemy -23 (0/49 x2)',
-  "Ember hit Bulbasaur! It's super effective!",
+  'battle.log.hitSuper(move=ember, name=Bulbasaur)',
   '  = enemy fainted',
-  'Bulbasaur fainted!',
+  'battle.log.fainted(name=Bulbasaur)',
   '# end player',
 ].join('\n');
 
 /** One event of every kind `BattleEvent` carries. */
 const ALL_KINDS: readonly BattleEvent[] = [
   { kind: 'turn', turn: 1 },
-  { kind: 'text', text: 'A line of text.' },
+  { kind: 'text', key: 'battle.log.fail' },
   { kind: 'move', side: 'player', moveId: 'ember' },
   { kind: 'damage', side: 'enemy', amount: 24, hp: 25, maxHp: 49, effectiveness: 2, crit: false },
   { kind: 'heal', side: 'player', amount: 5, hp: 30, maxHp: 51 },
@@ -144,7 +144,7 @@ describe('formatBattleLog', () => {
     }
     expect(lines).toEqual([
       '# turn 1',
-      'A line of text.',
+      'battle.log.fail',
       '  > player ember',
       '  = enemy -24 (25/49 x2)',
       '  = player +5 (30/51)',

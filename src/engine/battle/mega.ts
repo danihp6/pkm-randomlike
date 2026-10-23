@@ -49,7 +49,7 @@ export function megaEvolve(state: BattleState, side: SideId): boolean {
   fighter.mega = true;
 
   pushEvent(state, { kind: 'mega', side, fighterId: fighter.id });
-  pushText(state, `${baseName} Mega Evolved!`);
+  pushText(state, 'battle.log.megaEvolved', { name: baseName });
   // A Mega ability with an on-switch-in effect (Drought, Intimidate...) fires now.
   runStart(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
   return true;

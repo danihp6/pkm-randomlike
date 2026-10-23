@@ -249,15 +249,18 @@ function runTurns(
 }
 
 function texts(state: BattleState): readonly string[] {
-  return state.log.flatMap((event) => (event.kind === 'text' ? [event.text] : []));
+  return state.log.flatMap((event) => (event.kind === 'text' ? [event.key] : []));
 }
 
-function countText(state: BattleState, text: string): number {
-  return texts(state).filter((line) => line === text).length;
+function countText(state: BattleState, key: string): number {
+  return texts(state).filter((line) => line === key).length;
 }
 
-function countIncluding(state: BattleState, fragment: string): number {
-  return texts(state).filter((line) => line.includes(fragment)).length;
+/** The params of every text event of one key, in log order. */
+function namesOf(state: BattleState, key: string): readonly string[] {
+  return state.log.flatMap((event) =>
+    event.kind === 'text' && event.key === key ? [String(event.params?.name)] : [],
+  );
 }
 
 /**
@@ -269,7 +272,8 @@ describe('multi-turn families on seed 2026', () => {
   it('saps the seeded side once per turn', () => {
     const state = runTurns([0, 1, 1], ['leechseed', 'splash'], ['splash'], 3);
     const enemy = activeFighter(state, 'enemy');
-    expect(countIncluding(state, 'sapped by Leech Seed')).toBe(3);
+    expect(countText(state, 'battle.log.leechSeed')).toBe(3);
+    expect(namesOf(state, 'battle.log.leechSeed')).toEqual(['Squirtle', 'Squirtle', 'Squirtle']);
     expect(enemy.maxHp - enemy.hp).toBe(3 * Math.max(1, Math.floor(enemy.maxHp / 8)));
     expect(enemy.volatiles.leechSeed).toBe(true);
   });
@@ -277,38 +281,46 @@ describe('multi-turn families on seed 2026', () => {
   it('puts the drowsy side to sleep on the next residual pass', () => {
     const state = runTurns([0, 1, 1], ['yawn', 'splash'], ['splash'], 3);
     const enemy = activeFighter(state, 'enemy');
-    expect(countIncluding(state, 'grew drowsy')).toBe(1);
+    expect(countText(state, 'battle.log.volatile.drowsy')).toBe(1);
     expect(enemy.status).toBe('slp');
-    expect(countText(state, 'Squirtle fell asleep!')).toBe(1);
+    expect(countText(state, 'battle.log.fellAsleep')).toBe(1);
+    expect(namesOf(state, 'battle.log.fellAsleep')).toEqual(['Squirtle']);
   });
 
   it('counts both actives down to a draw', () => {
     const state = runTurns([0, 1, 1], ['perishsong', 'splash'], ['splash'], 3);
-    expect(countIncluding(state, 'faint in three turns')).toBe(1);
-    expect(countIncluding(state, 'fainted from the perish count')).toBe(2);
+    expect(countText(state, 'battle.log.move.perishsong')).toBe(1);
+    expect(countText(state, 'battle.log.faintedPerish')).toBe(2);
     expect(state.winner).toBe('draw');
   });
 
   it('refuses a taunted status move and lifts the taunt after three passes', () => {
     const state = runTurns([0, 1, 1, 1], ['taunt', 'splash'], ['growl', 'growl'], 4);
-    expect(countIncluding(state, "can't use status moves while taunted")).toBe(3);
-    expect(countText(state, "Charmander's Attack fell!")).toBe(1);
+    expect(countText(state, 'battle.log.taunted')).toBe(3);
+    expect(countText(state, 'battle.log.boostFell.atk')).toBe(1);
+    expect(namesOf(state, 'battle.log.boostFell.atk')).toEqual(['Charmander']);
     expect(activeFighter(state, 'enemy').volatiles.taunt).toBe(0);
   });
 
   it('locks the encored move and ticks the lock down', () => {
     const state = runTurns([1, 0, 1], ['encore', 'splash'], ['growl', 'tackle'], 3);
     const enemy = activeFighter(state, 'enemy');
-    expect(countIncluding(state, 'affected by encore')).toBe(1);
+    expect(countText(state, 'battle.log.volatile.default')).toBe(1);
     expect(enemy.volatiles.encoreMove).toBe('growl');
     expect(enemy.volatiles.encore).toBe(1);
-    expect(countText(state, "Charmander's Attack fell!")).toBe(3);
+    expect(countText(state, 'battle.log.boostFell.atk')).toBe(3);
   });
 
   it('blocks the foe on a protect turn and lets it through on the next', () => {
     const state = runTurns([0, 1, 0], ['protect', 'splash'], ['tackle', 'tackle'], 3);
     const player = activeFighter(state, 'player');
-    expect(countText(state, 'Charmander protected itself!')).toBe(4);
+    expect(countText(state, 'battle.log.protectedItself')).toBe(4);
+    expect(namesOf(state, 'battle.log.protectedItself')).toEqual([
+      'Charmander',
+      'Charmander',
+      'Charmander',
+      'Charmander',
+    ]);
     expect(player.hp).toBeLessThan(player.maxHp);
     expect(formatBattleLog(state)).toContain('# turn 3');
   });

@@ -734,9 +734,14 @@ describe('switch abilities (batch 4)', () => {
       rng: new Rng(1),
       isWild: true,
     });
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Leftovers'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some(
+        (event) =>
+          event.kind === 'text' &&
+          event.key === 'battle.log.ability.frisk' &&
+          event.params?.item === 'leftovers',
+      ),
+    ).toBe(true);
   });
 
   it('Anticipation warns about a super-effective foe move', () => {
@@ -746,9 +751,11 @@ describe('switch abilities (batch 4)', () => {
       rng: new Rng(1),
       isWild: true,
     });
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Anticipation'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some(
+        (event) => event.kind === 'text' && event.key === 'battle.log.ability.anticipation',
+      ),
+    ).toBe(true);
   });
 
   it('Download raises the higher-fitting offensive stat', () => {
@@ -1487,9 +1494,9 @@ describe('defensive and entry abilities (batch 7)', () => {
       fighter('player', 'drowzee', 'Forewarn'),
       fighter('enemy', 'charmander', 'Blaze', ['ember']),
     );
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Forewarn'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.ability.forewarn'),
+    ).toBe(true);
   });
 
   it('Supersweet Syrup lowers the foe evasiveness on entry', () => {
@@ -1555,9 +1562,9 @@ describe('defensive and entry abilities (batch 7)', () => {
       fighter('player', 'charmander', 'Blaze'),
       fighter('enemy', 'dusclops', 'Pressure'),
     );
-    expect(state.log.some((event) => event.kind === 'text' && event.text.includes('Pressure'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.ability.pressure'),
+    ).toBe(true);
   });
 });
 
@@ -1845,9 +1852,9 @@ describe('type-change and turn-shape abilities (batch 9)', () => {
     );
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
     takeTurn(state, { type: 'fight', moveIndex: 0 }, { type: 'fight', moveIndex: 0 });
-    expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('loafing around')),
-    ).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.loafing')).toBe(
+      true,
+    );
   });
 
   it('Trace copies the foe ability and runs its entry effects', () => {

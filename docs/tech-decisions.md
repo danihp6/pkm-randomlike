@@ -836,12 +836,16 @@ language (`English` / `Español`) so the picker reads from either side.
 **The boundary.** The dex's own names stay English in every locale: Pokémon, move,
 ability and item names, the biome names and the trainer classes come from `@pkmn/dex` and
 `src/data/**`, which ship English only — they are *content*, not chrome, and localising
-them is a separate and much larger job. So does the engine's battle log: its strings are
-the content `src/engine/battle/golden.test.ts` pins byte for byte, and localising them
-would change what a fixed seed logs. Only the battle **scene's** own chrome and prompts
-are keyed, so after this decision a battle reads half Spanish (its menu and prompts) and
-half English (the engine's `Charmander used Tackle!` lines) — the intended cut, not an
-oversight.
+them is a separate and much larger job. The **engine's battle log is keyed too**
+(`Task-114`): a text event carries a `battle.log.*` key and the params it interpolates,
+never a sentence, and `src/ui/feed.ts` resolves it through `t()` at the moment it builds
+the frame the battle scene prints. The engine therefore stays headless and
+language-free, a fixed seed logs the same keys in every language, and the action log
+follows the locale like the rest of the chrome. Exactly three params are ids a table
+owns — `move` through `src/i18n/content.ts`, `ability` through `abilityNameFromEnglish`,
+`item` through `src/data/items.ts` — and every other one is inserted verbatim, species,
+type and side names included. `src/engine/battle/golden.test.ts` pins the **keys** it
+prints byte for byte.
 
 **The font constraint.** A key's text may only use characters the FRLG bitmap font can
 draw (`src/data/ui/font.json`, `D19`): Latin-1 letters and accents (á/é/í/ó/ú/ü/ñ, `¿`,

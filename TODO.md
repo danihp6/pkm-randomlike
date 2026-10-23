@@ -1404,6 +1404,19 @@ decision line. **47c and 47d keep one engine task each as their cut** — `[Task
 members, both of those entries keep their prose and take their new labels, and `[Task-119]`'s
 entry keeps the *(Batch 47b)* it already reads.
 
+**Batch 53 was filled with `[Task-128]` (Batch 58) in this cycle.** The cut was
+`[Task-114]` alone; the fill search pulled `[Task-128]` because its dependencies are all merged
+(none) and its paths — `src/scenes/RouteScene.ts`, the new `src/scenes/panels/**` and
+`src/scenes/README.md` — are disjoint from Task-114's. The two empty slots name their blockers:
+`[Task-122]` exports through the figma-edit channel's **single-session lock** in the Orchestrator's
+own session, so it cannot be a parallel dev worktree, and `[Task-124]`, `[Task-125]` and
+`[Task-126]` each need it; `[Task-118]` is written against `[Task-114]` itself, so it cannot ride
+the same batch; every Phase-12 migration from `[Task-129]` on needs `[Task-127]`, which needs
+`[Task-124]`–`[Task-126]`; `[Task-28]` stays unscheduled by its own decision line and
+`[Task-104]`/`[Task-113]` are `[!]`. `[Task-128]` ships here, so **Batch 58 keeps `[Task-122]`
+alone** — its `[Task-123]` and `[Task-128]` have both shipped — and the batch's own prose above
+still lists it under 58 as the cut it was written for.
+
 A **thirty-second round** is the human's decision on the prototype board: **the panels become a DOM
 layer over an untouched canvas**, recorded as `D49` (`docs/tech-decisions.md`) and carried by
 `docs/hud-dom-proposal.md`. The boundary is the whole point of it: the world, the camera, the route
@@ -7195,7 +7208,7 @@ still English, and `[Task-114]` below closes it.
       behind a key, so it must see the panels Task-12, Task-13 and Task-16 add.
       *(Batch 10)*
 
-- [ ] **[Task-114] The battle's action log speaks the locale.** The human's report:
+- [x] **[Task-114] The battle's action log speaks the locale.** The human's report:
       «falta traducir mensajes de accion durante la batalla». Every line the message box
       prints while a turn resolves — `Charmander used Ember!`, `Ember hit Bulbasaur! It's
       super effective!`, `A critical hit!`, `Bulbasaur fainted!`, the stat-stage lines, the

@@ -63,7 +63,8 @@ testable logic belongs in the computing half.
 - `settingsScreen.ts` — the settings rows and the pure change rules (steps, cycles and rebinds).
 - `typewriter.ts` — the message box's typewriter at the player's text speed.
 - `beats.ts` — the faint, switch and level-up animation beats.
-- `feed.ts` — the battle events as the frames the feed draws, and a frame's message.
+- `feed.ts` — the battle events as the frames the feed draws, a frame's message, and the log
+  key resolved in the current locale through the move, ability and item tables.
 - `metrics.ts` — HP fraction, colour and the low-HP danger cue, and the status abbreviations.
 - `typeColors.ts` — the canon type colours.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.

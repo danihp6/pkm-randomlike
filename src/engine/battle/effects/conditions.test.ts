@@ -25,9 +25,9 @@ describe('side conditions', () => {
     expect(state.sides.player.sideConditions.reflect).toBe(1);
     tickConditions(state);
     expect(state.sides.player.sideConditions.reflect).toBe(0);
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'Reflect wore off!')).toBe(
-      true,
-    );
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.side.end.reflect'),
+    ).toBe(true);
   });
 });
 

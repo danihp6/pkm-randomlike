@@ -309,7 +309,7 @@ describe('the room’s whole-field rules in the turn loop', () => {
     expect(activeFighter(endured, 'enemy').hp).toBe(1);
     expect(endured.winner).toBeNull();
     expect(
-      endured.log.some((event) => event.kind === 'text' && event.text.includes('endured the hit!')),
+      endured.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
     ).toBe(true);
 
     const fainted = run();
@@ -418,7 +418,7 @@ describe('the status half in the turn loop', () => {
       [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
     );
     useMove(state, 'player', { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -475,7 +475,7 @@ describe('the status half in a scripted battle on seed 2026', () => {
     expect(enemy.moves[1].pp).toBe((getMove('rest')?.pp ?? 0) - 1 - 4);
     expect(enemy.volatiles.torment).toBe(true);
     expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('locked in a nightmare')),
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.nightmare'),
     ).toBe(true);
   });
 });
@@ -505,9 +505,9 @@ describe('the relative-damage half in the turn loop', () => {
     activeFighter(state, 'enemy').hp = 10;
     takeTurn(state, fight(), fight());
     expect(activeFighter(state, 'enemy').hp).toBe(1);
-    expect(state.log.some((entry) => entry.kind === 'text' && entry.text.includes('endured'))).toBe(
-      true,
-    );
+    expect(
+      state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.enduredHit'),
+    ).toBe(true);
   });
 
   it('lets a Substitute absorb a fixed hit', () => {
@@ -521,7 +521,7 @@ describe('the relative-damage half in the turn loop', () => {
     expect(enemy.hp).toBe(123);
     expect(enemy.volatiles.substitute).toBe(0);
     expect(
-      state.log.some((entry) => entry.kind === 'text' && entry.text === "Ditto's substitute faded!"),
+      state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.substituteFaded'),
     ).toBe(true);
   });
 
@@ -531,7 +531,7 @@ describe('the relative-damage half in the turn loop', () => {
       [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
     );
     takeTurn(state, fight(), fight());
-    expect(state.log.some((entry) => entry.kind === 'text' && entry.text === 'But it failed!')).toBe(
+    expect(state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
       true,
     );
     expect(damageEvents(state)).toHaveLength(0);
@@ -563,7 +563,7 @@ describe('the relative-damage half in the turn loop', () => {
     useMove(state, 'player', fight());
     expect(rng.draws).toBe(0);
     expect(enemy.hp).toBe(enemy.maxHp);
-    expect(state.log.some((entry) => entry.kind === 'text' && entry.text === 'But it failed!')).toBe(
+    expect(state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -574,7 +574,7 @@ describe('the relative-damage half in the turn loop', () => {
       [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
     );
     takeTurn(empty, fight(), fight());
-    expect(empty.log.some((entry) => entry.kind === 'text' && entry.text === 'But it failed!')).toBe(
+    expect(empty.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
       true,
     );
     expect(activeFighter(empty, 'enemy').hp).toBe(123);

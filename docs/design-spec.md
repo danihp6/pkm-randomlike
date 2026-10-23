@@ -318,7 +318,10 @@ Full rules in `docs/battle-spec.md`. In short:
   menus, the battle-state window the **INFO** control opens and the switch grid's
   detail window — is the default card skin, each at its own degree of translucency
   so the field stays readable
-  through it, and they ink their text with the light `FRLG_INK`.
+  through it, and they ink their text with the light `FRLG_INK`. The line the message
+  box prints is the engine's own `battle.log.*` key resolved in the active locale
+  (`src/ui/feed.ts`), so a Spanish run reads its action log in Spanish while the log
+  itself, and every fixed seed, stays language-free.
 
 - The map boss's battle — and only it — is the engine's **double battle** on
   screen (`docs/battle-spec.md` §12): two actives per side, so the foe's platform
