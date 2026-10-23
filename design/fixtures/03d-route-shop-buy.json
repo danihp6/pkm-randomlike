@@ -1,0 +1,29 @@
+{
+  "slug": "03d-route-shop-buy",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "buy": {
+    "title": "MART",
+    "money": 2480,
+    "message": "What can I do for you?",
+    "hint": "Drag a row onto the bag or a Pokémon.",
+    "empty": "Nothing in stock.",
+    "rows": [
+      { "index": 0, "itemId": "pokeball",  "name": "10x Poké Ball", "price": 300,  "count": 10, "owned": 0,  "affordable": true },
+      { "index": 1, "itemId": "potion",    "name": "Potion",        "price": 700,  "count": 1,  "owned": 2,  "affordable": true }
+    ],
+    "selected": 0,
+    "scroll": 0
+  },
+  "sell": {
+    "title": "MART",
+    "money": 2480,
+    "message": "What would you like to sell?",
+    "hint": "Drag a row onto the bag or a Pokémon.",
+    "empty": "Nothing to sell.",
+    "rows": [
+      { "index": 0, "itemId": "nugget", "name": "Nugget", "price": 5000, "count": 1, "owned": 1, "affordable": true }
+    ],
+    "selected": 0,
+    "scroll": 0
+  }
+}

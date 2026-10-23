@@ -1,0 +1,227 @@
+/*
+ * The Mart's floating card (`D49`, frame `03d Route · shop · buy`). The rect of
+ * every part comes from `view.ts`, which mirrors the shipped Phaser card, so this
+ * file carries the board's paint only: radius 11, the 16 % hairline, the 4 % / 8 %
+ * row pair, the 10 px body and the selected row's 16 % accent wash.
+ *
+ * The card's border is a real 1 px edge (the fidelity gate reads it), so the
+ * content layer sits at `inset: -1px` and the model's panel-relative rects land on
+ * the card's outer box.
+ */
+.shop {
+  position: fixed;
+  box-sizing: border-box;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.shop[hidden] {
+  display: none;
+}
+
+.shop,
+.shop *,
+.shop *::before,
+.shop *::after {
+  box-sizing: border-box;
+}
+
+.shop__body {
+  position: absolute;
+  inset: -1px;
+}
+
+.shop__highlight {
+  position: absolute;
+  background: rgb(255 255 255 / 14%);
+}
+
+.shop__header {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.shop__title {
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-title-size);
+  font-weight: 700;
+  line-height: var(--hud-type-title-line);
+}
+
+.shop__close {
+  position: absolute;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.shop__close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.shop__close:hover {
+  color: var(--hud-accent);
+}
+
+.shop__anchor {
+  position: absolute;
+  transform: translateX(-100%);
+  white-space: nowrap;
+}
+
+.shop__money {
+  color: var(--hud-text-muted);
+}
+
+.shop__tabs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shop__tab {
+  position: absolute;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-row-border);
+  border-radius: 0;
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  font-weight: 400;
+  line-height: var(--hud-type-body-line);
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.shop__tab[data-active='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+  color: var(--hud-accent);
+}
+
+.shop__list {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--hud-row-radius);
+  box-shadow: inset 0 0 0 1px var(--hud-row-border);
+  list-style: none;
+  overflow: hidden;
+}
+
+.shop__row-item {
+  display: contents;
+}
+
+.shop__row {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hud-row-radius);
+  box-shadow: inset 0 0 0 1px var(--hud-row-border);
+  background: var(--hud-row-fill);
+  color: inherit;
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.shop__row[data-selected='true'] {
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+}
+
+.shop__icon {
+  position: absolute;
+  top: 9px;
+  left: 8px;
+  background-repeat: no-repeat;
+  background-size: auto;
+  image-rendering: pixelated;
+}
+
+.shop__name {
+  position: absolute;
+  top: 10px;
+  left: 46px;
+  overflow: hidden;
+  max-width: calc(100% - 46px - 86px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shop__price {
+  position: absolute;
+  top: 10px;
+  right: 86px;
+  color: var(--hud-text-muted);
+  white-space: nowrap;
+}
+
+.shop__row[data-affordable='false'] .shop__price {
+  color: var(--hud-text-warning);
+}
+
+.shop__owned {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: var(--hud-text-muted);
+  white-space: nowrap;
+}
+
+.shop__message {
+  position: absolute;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shop__hint {
+  color: var(--hud-text-muted);
+}
+
+.shop__empty {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--hud-text-muted);
+  white-space: nowrap;
+}

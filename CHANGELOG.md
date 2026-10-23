@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The shop panel is the HUD's.** `[Task-134]`, the twelfth of Phase 12 (`D49`): under
+      `?hud=dom` the Mart card is a Preact card in `#hud` — the BUY / SELL tabs, the seven visible
+      stock rows with their icon, name, price and owned count, the money row and the message and
+      empty-stock lines — built from the unchanged `src/ui/shop.ts`, while `src/scenes/rooms/shop.ts`
+      builds no Phaser card under the flag (the stock rules, the cache key, the trade rules and the
+      `RoomPanel` record stay) and `src/scenes/panels/shop.ts` becomes the DOM card's scene-side
+      adapter, one `ShopIntent` transaction per purchase and per sale. Measured over CDP: the card
+      is `320,130 640×540` at 1280×800 and `8,152 374×540` at 390×844 with `border-radius: 11px`;
+      one buy moved money `4000 → 3000` and the bag's stack `10 → 20`, one sale moved them
+      `3000 → 3100` and `20 → 19`; `shopDrawnObjectCount()` is `0` under the flag against `59` off.
+      `npm test` 3909 passed / 67 skipped, `npm run build` green.
 - [x] **The route map panel is the HUD's.** `[Task-133]`, the eleventh of Phase 12 (`D49`): under
       `?hud=dom` the floor minimap is a Preact card in `#hud` — the `Map N · Biome` title and one
       `<svg>` carrying the discovered rooms, their openings, the links and the boss / portal /

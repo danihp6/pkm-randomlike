@@ -7411,7 +7411,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       `src/ui/mapView.ts`, the visited marks and the current room; panning and the room tooltip are
       CSS, not camera. Claims `src/scenes/panels/map.ts`, `src/ui/hud/panels/map/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 62)*
-- [ ] **[Task-134] The shop panel is the HUD's.** Buy and sell grids from `src/ui/shop.ts` in
+- [x] **[Task-134] The shop panel is the HUD's.** Buy and sell grids from `src/ui/shop.ts` in
       `src/ui/hud/panels/shop/`, with the quantity stepper and the money row; the purchase stays one
       command and one run transaction. Claims `src/scenes/panels/shop.ts`,
       `src/ui/hud/panels/shop/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
