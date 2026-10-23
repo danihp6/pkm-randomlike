@@ -7330,7 +7330,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       never mutate the run. One emit point (`syncHud()`), never an ad-hoc `setState` from a scene.
       Tests cover the projection round trip and one command per action family. Claims both modules
       beside their tests and `src/ui/README.md`. *Dependencies:* none. *(Batch 58)*
-- [ ] **[Task-128] The route's panel layer leaves the route scene.** The ten route panels and the
+- [x] **[Task-128] The route's panel layer leaves the route scene.** The ten route panels and the
       route HUD strip move out of `src/scenes/RouteScene.ts` into `src/scenes/panels/<name>.ts` behind
       **one auto-discovered registry**, the shape `D47` gave the room layer in Batch 23b: `bag`, `pc`,
       `party`, `detail`, `map`, `shop`, `trade`, `rewards`, `notices`, `pause` and `hud`. A pure move:
@@ -7338,7 +7338,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       every module keeps drawing its frame exactly as today. It is the task that lets the eleven
       migrations run four at a time instead of one per batch, because each will own a module instead
       of the scene. Claims `src/scenes/RouteScene.ts`, `src/scenes/panels/**` and
-      `src/scenes/README.md`. *Dependencies:* none. *(Batch 58)*
+      `src/scenes/README.md`. *Dependencies:* none. *(Batch 53, filled)*
 - [ ] **[Task-124] The HUD shell mounts once and owns no Phaser object.** `#hud` sits above the canvas
       from `src/main.ts`, `pointer-events: none`, each panel re-enabling it; `src/ui/hud/shell.tsx`,
       `mount.ts` and `styles/root.css` are the only DOM entry points. Silkscreen is vendored at

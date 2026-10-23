@@ -8,6 +8,33 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route's panel layer leaves the route scene.** The route's overlay chrome moves out of
+      `src/scenes/RouteScene.ts` (**8184 → 4399 lines**) into eleven modules under
+      `src/scenes/panels/`, discovered from the folder itself by the new
+      `src/scenes/panels/registry.ts` — the shape `D47` gave the special-room layer:
+      `import.meta.glob('./panels/*.ts', { eager: true })`, a `descriptor` export per module, an
+      `order` that is the build and z sequence (`10 … 110`), and a throw on a duplicate id or a
+      duplicate order so the z-order can never depend on glob order. `types.ts` freezes the port the
+      panels draw through (`RoutePanelHost`: the scene, the live run and settings, the HUD root and
+      its panel records, the drag state, the room-panel slot, the battle starts) and owns the
+      `HudMetrics`/`HudPanel` declarations verbatim. It is a **move**: the scene keeps the keyboard,
+      movement, `onTileEntered`, interaction, trainer sight, room transitions, the room-panel slot,
+      the dev hooks and the pointer listeners that hand each event to the registry from the top; no
+      panel's frame, string, colour, geometry, order or repaint changed, no existing test was
+      touched (the new `registry.test.ts` is the only added one) and no RNG draw or run field moved,
+      so no `SAVE_VERSION` step. `shop.ts` and `trade.ts` are entry-point descriptors delegating to
+      the shipped room modules, because their drawing already lives in `src/scenes/rooms/`.
+      **QA:** Task QA round 2 on the integration tree ran the spec verbatim — `npm test` (3633
+      passed, 67 skipped), `npm run build` (`noUnusedLocals` is the completeness proof of the
+      move), the eleven descriptors and their orders, the `?raw` folder convention, the
+      input-dispatch greps, the handed-over-field greps, both README maps, and the 18-path audit
+      with the test diff empty. Its one red round was a **real** behaviour change the suite could
+      not see: the HUD drag ghost was booked before the panel walk but the `hud` descriptor cleared
+      the overlay list, so it fell out of `hudRoot` and the 2× world camera drew it twice. The fix
+      moved the reset into `resetHudOverlays()`, called before the ghost is booked, and QA's
+      re-check confirmed `hudRoot`'s child order is `main`'s again with the colour and `setDepth`
+      multisets unchanged. No browser pass was owed (pure move).
+
 - [x] **The battle's action log speaks the locale.** The engine stops composing English sentences:
       the `text` event carries `{ key: BattleTextKey; params?: BattleTextParams }`
       (`BattleTextKey = Extract<TranslationKey, \`battle.log.${string}\`>`, a **type-only** import from

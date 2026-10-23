@@ -12,8 +12,11 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   before the first scene runs.
 - `MainMenuScene.ts` — new run / continue, and the run's seed and mode.
 - `StarterScene.ts` — picks the starter pool and opens the seed prompt.
-- `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the HUD, the
-  party/bag/box/detail panels, the Mart, the minimap and the touch controls.
+- `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the room
+  panel slot, the pointer dispatch, the run's battles and the touch controls. Its
+  overlay chrome (HUD panels, notices, pause menu) is built by the panel layer below.
+- `panels/` — the route's overlay panels: one module per panel, discovered by the
+  scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
   registry, so a new room is a new file.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
