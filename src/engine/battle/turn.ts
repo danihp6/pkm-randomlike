@@ -45,7 +45,14 @@ import {
 import { setFieldCondition, setSideCondition, tickConditions } from './effects/conditions';
 import { setTerrain, terrainFromMove, terrainHeal, tickTerrain } from './effects/terrain';
 import { setWeather, tickWeather, weatherChip, weatherFromMove, weatherLabel } from './effects/weather';
-import { computeDamage, rollCrit, type DamageContext, type DamageResult } from './damage';
+import {
+  computeDamage,
+  isFixedDamageMove,
+  resolvesToDamage,
+  rollCrit,
+  type DamageContext,
+  type DamageResult,
+} from './damage';
 import { orderActions } from './order';
 import {
   barredMovesFor,
@@ -242,6 +249,14 @@ function multihitHits(move: Move, rng: BattleState['rng']): number {
   if (!move.multihit) return 1;
   if (typeof move.multihit === 'number') return move.multihit;
   return rng.int(move.multihit[0], move.multihit[1]);
+}
+
+/** Beat Up hits once per healthy party member; the reference skips a statused one. */
+function beatUpHits(state: BattleState, side: SideId): number {
+  return Math.max(
+    1,
+    state.sides[side].party.filter((fighter) => fighter.hp > 0 && fighter.status === null).length,
+  );
 }
 
 const VOLATILE_MESSAGES: Readonly<Record<string, (name: string) => string>> = {
@@ -977,6 +992,11 @@ function resolveMove(
     return;
   }
 
+  if (move.id === 'spitup' && attacker.volatiles.stockpile === 0) {
+    pushText(state, 'But it failed!');
+    return;
+  }
+
   const aims = moveAims(state, side, attacker, move, target ?? opponent(state, side));
   if (aims.length === 0) return;
 
@@ -1041,13 +1061,35 @@ function resolveMove(
     effectTarget = defender;
     lastHitContext = hitContext;
 
-    if (activeMove.category !== 'Status' && activeMove.basePower > 0) {
-      const rolled = multihitHits(activeMove, state.rng);
-      const hits = runModifyMultihit(
-        makeContext(state, side, { source: attacker, target: defender, move: activeMove }),
-        activeMove,
-        rolled,
-      );
+    // Present rolls its own outcome: a quarter heal, or a bullet of 40, 80 or 120.
+    let hitMove = activeMove;
+    if (activeMove.id === 'present') {
+      const roll = state.rng.int(1, 100);
+      if (roll <= 20) {
+        const healed = applyHeal(defender, Math.max(1, Math.floor(defender.maxHp / 4)));
+        if (healed > 0) {
+          pushEvent(state, {
+            kind: 'heal',
+            side: aim.side,
+            amount: healed,
+            hp: defender.hp,
+            maxHp: defender.maxHp,
+          });
+        }
+        continue;
+      }
+      hitMove = { ...activeMove, basePower: roll <= 60 ? 40 : roll <= 90 ? 80 : 120 };
+    }
+
+    if (hitMove.category !== 'Status' && resolvesToDamage(hitMove)) {
+      const hits =
+        hitMove.id === 'beatup'
+          ? beatUpHits(state, side)
+          : runModifyMultihit(
+              makeContext(state, side, { source: attacker, target: defender, move: hitMove }),
+              hitMove,
+              multihitHits(hitMove, state.rng),
+            );
       const statContext = damageStatContext(state, side, attacker, defender);
       for (let hit = 0; hit < hits; hit++) {
         const hitTarget = defender;
@@ -1056,28 +1098,31 @@ function resolveMove(
           ? [state.roomField.overrideType]
           : hitTarget.types;
         const critRatio =
-          activeMove.critRatio +
+          hitMove.critRatio +
           (attacker.volatiles.focusEnergy ? 2 : 0) +
           (attacker.volatiles.dragonCheer ? 1 : 0) +
           state.roomField.critStage;
-        const crit = runModifyCrit(
-          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
-          activeMove,
-          attacker.volatiles.laserFocus ||
-            rollCrit(
-              state.rng,
-              runModifyCritRatio(
-                makeContext(state, side, {
-                  source: attacker,
-                  target: hitTarget,
-                  move: activeMove,
-                }),
-                activeMove,
-                critRatio,
-              ),
-            ),
-        );
-        const result = computeDamage(attacker, hitTarget, activeMove, state.rng, {
+        // A fixed amount takes no roll: the crit is skipped entirely, not rolled dry.
+        const crit = isFixedDamageMove(hitMove)
+          ? false
+          : runModifyCrit(
+              makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
+              hitMove,
+              attacker.volatiles.laserFocus ||
+                rollCrit(
+                  state.rng,
+                  runModifyCritRatio(
+                    makeContext(state, side, {
+                      source: attacker,
+                      target: hitTarget,
+                      move: hitMove,
+                    }),
+                    hitMove,
+                    critRatio,
+                  ),
+                ),
+            );
+        const result = computeDamage(attacker, hitTarget, hitMove, state.rng, {
           weather: effectiveWeather(state),
           terrain: state.terrain,
           critical: crit,
@@ -1088,20 +1133,28 @@ function resolveMove(
           overrideType: state.roomField.overrideType,
           darkAura: state.roomField.darkAura,
           fairyAura: state.roomField.fairyAura,
+          party: state.sides[side].party,
+          targetMovedFirst: state.movedSides.includes(opponentOf(side)),
+          userDamagedThisTurn:
+            attacker.volatiles.physicalDamageTaken + attacker.volatiles.specialDamageTaken > 0,
           ...statContext,
           effectiveness: runModifyEffectiveness(
-            makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
-            activeMove,
-            effectiveness(activeMove.type, defenderTypes),
+            makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
+            hitMove,
+            effectiveness(hitMove.type, defenderTypes),
           ),
         });
         if (result.effectiveness === 0) {
           if (hit === 0) pushText(state, `It doesn't affect ${hitTarget.name}...`);
           break;
         }
+        if (result.damage === 0) {
+          pushText(state, 'But it failed!');
+          break;
+        }
         let damage = runModifyDamage(
-          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
-          activeMove,
+          makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
+          hitMove,
           result.damage,
           result.effectiveness,
           result.crit,
@@ -1111,8 +1164,8 @@ function resolveMove(
           pushText(state, `${hitTarget.name} endured the hit!`);
         }
         const bypassSubstitute = runTrySubstitute(
-          makeContext(state, side, { source: attacker, target: hitTarget, move: activeMove }),
-          activeMove,
+          makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
+          hitMove,
         );
         if (!bypassSubstitute && hasSubstitute(hitTarget)) {
           absorbWithSubstitute(hitTarget, damage);
@@ -1125,8 +1178,8 @@ function resolveMove(
         const dealt = applyDamage(hitTarget, damage);
         hitTarget.volatiles.lastDamageTaken = dealt;
         totalDamage += dealt;
-        if (activeMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
-        else if (activeMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
+        if (hitMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
+        else if (hitMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
         pushEvent(state, {
           kind: 'damage',
           side: aim.side,
@@ -1136,7 +1189,7 @@ function resolveMove(
           effectiveness: result.effectiveness,
           crit: result.crit,
         });
-        pushText(state, damageMessage(activeMove.name, result, hitTarget));
+        pushText(state, damageMessage(hitMove.name, result, hitTarget));
         if (hitTarget.hp <= 0) {
           const bonded = hitTarget.volatiles.destinyBond;
           const grudged = hitTarget.volatiles.grudge;
@@ -1148,11 +1201,12 @@ function resolveMove(
           }
           if (grudged && moveSlot) {
             moveSlot.pp = 0;
-            pushText(state, `${attacker.name}'s ${activeMove.name} lost all its PP due to the grudge!`);
+            pushText(state, `${attacker.name}'s ${hitMove.name} lost all its PP due to the grudge!`);
           }
           break;
         }
       }
+      if (hitMove.id === 'spitup' && totalDamage > 0) attacker.volatiles.stockpile = 0;
     }
     damaged = damaged || totalDamage > 0;
   }

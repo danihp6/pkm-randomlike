@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A damaging move's number is resolved, not read off the dex.** `src/engine/battle/damage.ts`
+      grows the two pure resolvers the battle, the AI and the FIGHT preview now share:
+      `resolveBasePower` (the stockpile/body-relative powers, the counter family, Beat Up's borrowed
+      attack, Return/Frustration at 102, the conditional multipliers) and `fixedDamage` (Seismic
+      Toss, Night Shade, Super Fang, Endeavor, Pain Split, the OHKO rule and its two rolls,
+      Psywave's single draw, Present) — `computeDamage`, `estimateDamage` and `preview.ts` all read
+      them, so one number drives the fight, the AI and the menu. `turn.ts`'s damage gate widens to
+      "the move resolves to damage" and a fixed amount skips the 85–100 roll, the crit, STAB and the
+      type multiplier while still honouring Endure, Substitute and the faint path. The ledger stops
+      lying: `npm run docs:coverage` leaves **zero** `no-op` move rows and `MOVE_AUDIT_ROWS` carries
+      **zero** `knownGap` rows, with `Bide`, `Fling` and `Spotlight` excluded for a stated reason.
+      **QA:** Task QA on the integration tree ran the spec verbatim — `npm test` (3575 passed),
+      `npm run build`, the 15-path diff audit, `npm run docs:coverage` followed by
+      `git diff --exit-code` on the regenerated pair (exit 0), `grep '"status": "no-op"'` → `0`,
+      `grep '835 total (783 port, 0 no-op, 52 excluded)'` → `1`, and the 33 formerly-no-op ids
+      accounted for as 52 `excluded` + 30 `port`; no browser pass owed (engine-only).
+
 - [x] **The item bag is an icon grid, in the route HUD and in battle.** Both surfaces stop drawing
       text rows: the same five-column icon grid, the count badge over the icon, the shipped accent
       on the selection and a dim outline on a free slot. The geometry is one exported model

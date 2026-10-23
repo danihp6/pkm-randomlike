@@ -4437,7 +4437,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       *Dependencies:* `[Task-119]` (the audit rows and the honest ledger) and `[Task-101]` (the shape
       of `turn.ts`/`commands.ts`/`state.ts` it edits; Batch 46 merges first). It adds no run field.
       *(Batch 47c)*
-- [ ] **[Task-121] The relative-damage half of the audit: the number the formula multiplies.** The
+- [x] **[Task-121] The relative-damage half of the audit: the number the formula multiplies.** The
       second half of the report — «daño relativo … no funcionan exactamente igual» — is one missing
       concept in the damage model: **every damaging move in the engine is `move.basePower` through
       `baseDamage`** (`damage.ts` 51-53, 134), and the branch that runs it is gated

@@ -1034,6 +1034,43 @@ function lockOn(): EffectHandlers {
   });
 }
 
+/** Moves one fighter toward `targetHp`, logging the heal or the damage it dealt. */
+function moveToward(ctx: EffectContext, fighter: BattleFighter, targetHp: number): void {
+  if (fighter.hp < targetHp) {
+    const healed = applyHeal(fighter, targetHp - fighter.hp);
+    if (healed > 0) {
+      pushEvent(ctx.state, {
+        kind: 'heal',
+        side: fighter === ctx.source ? ctx.side : opponentOf(ctx.side),
+        amount: healed,
+        hp: fighter.hp,
+        maxHp: fighter.maxHp,
+      });
+    }
+    return;
+  }
+  if (fighter.hp <= targetHp) return;
+  const dealt = applyDamage(fighter, fighter.hp - targetHp);
+  pushEvent(ctx.state, {
+    kind: 'damage',
+    side: fighter === ctx.source ? ctx.side : opponentOf(ctx.side),
+    amount: dealt,
+    hp: fighter.hp,
+    maxHp: fighter.maxHp,
+    effectiveness: 1,
+    crit: false,
+  });
+}
+
+/** Pain Split shares the average of the two HP pools, the user first. */
+function painSplit(): EffectHandlers {
+  return targetEffect((ctx, target) => {
+    const average = Math.floor((ctx.source.hp + target.hp) / 2);
+    moveToward(ctx, ctx.source, average);
+    moveToward(ctx, target, average);
+  });
+}
+
 /** Quash pins the target to the back of this turn's order. */
 function quash(): EffectHandlers {
   return targetEffect((ctx, target) => {
@@ -1200,6 +1237,7 @@ export const MOVE_EFFECTS: Readonly<Record<string, EffectHandlers>> = {
   mindreader: lockOn(),
   moonlight: sunHeal(),
   morningsun: sunHeal(),
+  painsplit: painSplit(),
   partingshot: partingShot(),
   perishsong: perishSong(),
   powersplit: statSplit(['atk', 'spa']),
