@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party detail panel is the HUD's.** `[Task-132]`, the tenth of Phase 12 (`D49`): under
+      `?hud=dom` the route's member window is a Preact card in `#hud` — the 460×560 STATS/MOVES
+      panel, the six stat rows with their nature tint, the ability and held-item lines, the
+      evolution graph drawn as **SVG**, the four-slot move grid with its ⓘ and the learnset pool —
+      rendered from a pure `detailPanelView`, while `src/scenes/panels/detail.ts` keeps every export
+      `RouteScene`/`pause` imports and draws no Phaser object under the flag. A party row's DOM press
+      opens it; an evolution row writes the run through `evolveMember` + `commitRun` in one
+      transaction. Measured over CDP: the card is `108,72 460×560` at 1280×800 and `8,72 374×560` at
+      390×844 (Δ 0), the graph is 5 `<path>` / 2 `<text>` for the fixture family, and flag off leaves
+      169 canvas objects against 0. `npm test` 3868 passed, `npm run build` green.
 - [x] **The battle's HP boxes are the HUD's.** `[Task-140]`, the ninth of Phase 12 (`D49`): under
       `?hud=dom` the battle's four name-and-HP boxes are Preact boxes in the `#hud` layer, drawn
       from `battleHpView` over the battle state — the 368×100 panel at 1280 (358×80 at 390), the

@@ -1,0 +1,508 @@
+/*
+ * The member detail card (`D49`, frame `03m Panels · pokemon moves`). The card, its
+ * hairline, the 1 px highlight, the 26 px corner badge, the tab strip, the stats and
+ * the move cell take the board's paint (`docs/hud-fidelity.md` §4–§5) from the
+ * `styles/root.css` tokens; the rect of every part comes from `view.ts`, which mirrors
+ * the shipped Phaser layout, so this file carries no geometry of its own.
+ *
+ * `--hud-positive` is the stat-tab graph's ready-branch tone (`#4ad15c`, the same one
+ * `src/data/ui/chrome.json` gives `FRLG_POSITIVE`); it is declared here because the
+ * shared token sheet ships no positive colour and no kit change is this task's.
+ */
+.detail {
+  --hud-positive: #4ad15c;
+  --detail-positive: var(--hud-positive);
+  --detail-chip-fill: rgb(11 16 23 / 50%);
+  --detail-chip-stroke: rgb(125 211 252 / 55%);
+  --detail-chip-radius: 6px;
+  --detail-field-fill: rgb(255 255 255 / 3%);
+  --detail-field-stroke: rgb(255 255 255 / 10%);
+  --detail-field-radius: 6px;
+  --detail-cell-stroke: rgb(255 255 255 / 8%);
+  --detail-cell-radius: 8px;
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.detail[hidden] {
+  display: none;
+}
+
+/* The card's hairline is a border, so the content layer starts one pixel out. */
+.detail__body {
+  position: absolute;
+  inset: -1px;
+}
+
+.detail,
+.detail *,
+.detail *::before,
+.detail *::after {
+  box-sizing: border-box;
+}
+
+.detail__highlight {
+  position: absolute;
+  background: var(--hud-row-border);
+}
+
+.detail__chip {
+  position: absolute;
+  border: 1px solid var(--detail-chip-stroke);
+  border-radius: var(--detail-chip-radius);
+  background: var(--detail-chip-fill);
+}
+
+/* The name row leaves the level column clear on the right. */
+.detail__header {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.detail__name {
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  font-weight: 700;
+  line-height: var(--hud-type-readout-line);
+  text-overflow: ellipsis;
+}
+
+.detail__status {
+  padding: 0 4px;
+  border-radius: var(--detail-field-radius);
+  background: var(--hud-row-fill);
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  text-transform: uppercase;
+}
+
+.detail__level {
+  position: absolute;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+}
+
+.detail__type {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  font-size: var(--hud-type-tag-size);
+  line-height: var(--hud-type-tag-line);
+}
+
+.detail__type .kit-type {
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+}
+
+.detail__nickname-field {
+  position: absolute;
+  display: block;
+}
+
+.detail__nickname,
+.detail__search {
+  position: absolute;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--detail-field-stroke);
+  border-radius: var(--detail-field-radius);
+  outline: none;
+  background: var(--detail-field-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.detail__nickname {
+  position: static;
+  width: 100%;
+  height: 100%;
+}
+
+.detail__nickname::placeholder,
+.detail__search::placeholder {
+  color: var(--hud-text-muted);
+}
+
+.detail__nickname:focus-visible,
+.detail__search:focus-visible {
+  border-color: var(--hud-accent);
+}
+
+.detail__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.detail__hints {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: nowrap;
+}
+
+.detail__tabs,
+.detail__moves {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.detail__tab {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-row-border);
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  text-transform: uppercase;
+}
+
+.detail__tab[data-active='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+  color: var(--hud-accent);
+}
+
+.detail__stats {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.detail__stat {
+  position: absolute;
+}
+
+.detail__stat-label,
+.detail__stat-value {
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+}
+
+.detail__stat-label {
+  color: var(--hud-text-muted);
+}
+
+.detail__stat-value {
+  color: var(--hud-text-ink);
+  text-align: right;
+}
+
+.detail__stat[data-effect='up'] .detail__stat-label,
+.detail__stat[data-effect='up'] .detail__stat-value {
+  color: var(--hud-positive);
+}
+
+.detail__stat[data-effect='down'] .detail__stat-label,
+.detail__stat[data-effect='down'] .detail__stat-value {
+  color: var(--hud-negative, #fca5a5);
+}
+
+.detail__info {
+  position: absolute;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 22px 22px;
+  align-content: start;
+  pointer-events: none;
+}
+
+.detail__info-cell {
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+}
+
+.detail__info-button {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--detail-field-stroke);
+  border-radius: var(--detail-chip-radius);
+  background: var(--detail-field-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+}
+
+.detail__info-button[data-pinned='true'] {
+  border-color: var(--hud-accent);
+  color: var(--hud-accent);
+}
+
+.detail__evolution {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.detail__section {
+  position: absolute;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-transform: uppercase;
+}
+
+.detail__hint {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.detail__hint--evolve {
+  color: var(--detail-positive);
+}
+
+.detail__evo {
+  position: absolute;
+  overflow: visible;
+}
+
+.detail__evo-edge {
+  fill: none;
+  stroke: var(--hud-text-muted);
+  stroke-width: 2;
+}
+
+.detail__evo-hit {
+  fill: transparent;
+}
+
+.detail__evo-portrait {
+  fill: var(--hud-row-fill);
+  stroke: var(--detail-cell-stroke);
+}
+
+.detail__evo g[data-current='true'] .detail__evo-portrait {
+  fill: rgb(125 211 252 / 16%);
+  stroke: var(--hud-accent);
+}
+
+.detail__evo g[data-hud-detail-evo-ready='true'] {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.detail__evo g[data-hud-detail-evo-ready='true'] .detail__evo-hit {
+  fill: var(--hud-row-fill);
+  pointer-events: all;
+}
+
+.detail__evo g[data-hud-detail-evo-ready='true']:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: -2px;
+}
+
+.detail__evo-level {
+  fill: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-meta-size);
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.detail__evo-names {
+  position: absolute;
+  pointer-events: none;
+}
+
+.detail__evo-name {
+  position: absolute;
+  overflow: hidden;
+  max-width: 60%;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+}
+
+.detail__evo-name[data-evo-current='true'] {
+  color: var(--hud-accent);
+}
+
+.detail__evo-name[data-evo-ready='true'] {
+  color: var(--detail-positive);
+}
+
+.detail__slot {
+  position: absolute;
+  display: block;
+  padding: 8px 14px;
+  border: 1px solid var(--detail-cell-stroke);
+  border-radius: var(--detail-cell-radius);
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  text-align: left;
+}
+
+.detail__slot[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+}
+
+.detail__slot:disabled {
+  opacity: 0.4;
+}
+
+.detail__slot-name {
+  display: block;
+  overflow: hidden;
+  padding-right: 28px;
+  color: inherit;
+  font-size: var(--hud-type-name-size);
+  font-weight: 700;
+  line-height: var(--hud-type-name-line);
+  white-space: nowrap;
+}
+
+.detail__slot[data-selected='true'] .detail__slot-name {
+  color: var(--hud-accent);
+}
+
+.detail__slot-meta {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  left: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: nowrap;
+}
+
+.detail__slot-info {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--detail-cell-stroke);
+  border-radius: var(--detail-chip-radius);
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+}
+
+.detail__search {
+  position: absolute;
+}
+
+.detail__nav {
+  position: absolute;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--detail-field-stroke);
+  border-radius: var(--detail-field-radius);
+  background: var(--detail-field-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+}
+
+.detail__pool {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.detail__pool-row {
+  position: absolute;
+  display: flex;
+  padding: 8px 10px;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid var(--detail-cell-stroke);
+  border-radius: var(--detail-cell-radius);
+  background: var(--hud-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  text-align: left;
+}
+
+.detail__pool-row[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+}
+
+.detail__pool-row:disabled {
+  color: var(--hud-text-faint);
+}
+
+.detail__pool-name {
+  overflow: hidden;
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+}
+
+.detail__pool-source {
+  margin-left: auto;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: nowrap;
+}
+
+.detail__empty {
+  position: absolute;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-align: center;
+}

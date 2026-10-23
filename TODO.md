@@ -7401,7 +7401,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       party order and the lead become commands. Claims `src/scenes/panels/party.ts`,
       `src/ui/hud/panels/party/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
       `[Task-124]`, `[Task-125]`. *(Batch 61)*
-- [ ] **[Task-132] The party detail panel is the HUD's.** The biggest route panel goes to
+- [x] **[Task-132] The party detail panel is the HUD's.** The biggest route panel goes to
       `src/ui/hud/panels/detail/` from `src/ui/partyDetail.ts` (stats, moves, ability, the evolution
       graph), with `src/scenes/panels/detail.ts` keeping only its open/close; the graph is SVG, not
       canvas, so it is diffable. Claims `src/scenes/panels/detail.ts`, `src/ui/hud/panels/detail/**`
