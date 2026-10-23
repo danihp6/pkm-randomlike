@@ -9,6 +9,7 @@ import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StarterScene } from './scenes/StarterScene';
+import { mountHud, type HudHandle } from './ui/hud/mount';
 
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 800;
@@ -35,6 +36,10 @@ export const config: Phaser.Types.Core.GameConfig = {
 };
 
 export const game = new Phaser.Game(config);
+
+// The DOM HUD (D49) mounts on its own, behind `?hud=dom`, and owns no Phaser object:
+// the flag is read once at boot and the handle is never touched again.
+export const hudHandle: HudHandle | null = mountHud(window.location.search);
 
 // The debug menu is a dev-only DOM overlay; the dynamic import keeps its code
 // out of the production entry chunk (see `src/dev/debugMenu.ts`).

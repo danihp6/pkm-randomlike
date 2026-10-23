@@ -1,0 +1,73 @@
+@font-face {
+  font-family: 'Silkscreen';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../../assets/fonts/silkscreen-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Silkscreen';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../../assets/fonts/silkscreen-700.woff2') format('woff2');
+}
+
+:root {
+  --hud-font: 'Silkscreen', ui-monospace, monospace;
+
+  --hud-panel-fill: rgb(16 22 31 / 72%);
+  --hud-panel-border: rgb(255 255 255 / 16%);
+  --hud-panel-radius: 11px;
+  --hud-row-fill: rgb(255 255 255 / 4%);
+  --hud-row-border: rgb(255 255 255 / 8%);
+  --hud-row-radius: 8px;
+  --hud-accent: #7dd3fc;
+
+  --hud-text-primary: #f1f5f9;
+  --hud-text-secondary: #cbd5e1;
+  --hud-text-muted: #94a3b8;
+  --hud-text-faint: #475569;
+  --hud-text-ink: #f8fafc;
+  --hud-text-warning: #fbbf24;
+
+  --hud-panel-width: 374px;
+  --hud-gutter: 8px;
+
+  --hud-type-tag-size: 8px;
+  --hud-type-tag-line: 10px;
+  --hud-type-meta-size: 9px;
+  --hud-type-meta-line: 12px;
+  --hud-type-body-size: 10px;
+  --hud-type-body-line: 13px;
+  --hud-type-chip-size: 11px;
+  --hud-type-chip-line: 15px;
+  --hud-type-name-size: 12px;
+  --hud-type-name-line: 15px;
+  --hud-type-section-size: 14px;
+  --hud-type-section-line: 18px;
+  --hud-type-readout-size: 16px;
+  --hud-type-readout-line: 20px;
+  --hud-type-title-size: 18px;
+  --hud-type-title-line: 23px;
+  --hud-type-display-size: 20px;
+  --hud-type-display-line: 26px;
+  --hud-type-hero-size: 24px;
+  --hud-type-hero-line: 31px;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  font-family: var(--hud-font);
+}
+
+.hud {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  font-family: var(--hud-font);
+}

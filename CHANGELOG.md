@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The HUD shell mounts once and owns no Phaser object.** `[Task-124]`, the second of Phase 12
+      (`D49`): `/?hud=dom` mounts one full-viewport `#hud` above the canvas (`pointer-events: none`,
+      z-index 1, the world still clickable) and renders the Preact shell into it exactly once;
+      without the flag nothing mounts and the game boots as it always did. `src/ui/hud/mount.ts`
+      holds the pure flag parser and the idempotent mount/dispose, `shell.tsx` is one `.hud` layer
+      that reads no scene, `styles/root.css` carries the `@font-face` blocks and the
+      `design/tokens.json` custom properties with the board's ten type pairs in px, and the
+      Silkscreen 400/700 WOFF2 files ship vendored (OFL, licence included) at
+      `src/assets/fonts/`. `preact` and `@preact/signals` are the only new dependencies and
+      `tsconfig.json` gains the Preact JSX settings; both HUD folder maps and the panel-subfolder
+      map land here, so the eleven migrations add files and never collide on a README.
+
 - [x] **The capture beat and its message tick together.** `[Task-118]`, the human's report: the
       message and the animation of a capture ran on two unrelated clocks. `src/ui/capture.ts` now
       holds the beat's single clock — `captureTimeline(shakes, success)` returns the throw, the

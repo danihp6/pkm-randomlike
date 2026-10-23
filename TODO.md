@@ -7354,7 +7354,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       migrations run four at a time instead of one per batch, because each will own a module instead
       of the scene. Claims `src/scenes/RouteScene.ts`, `src/scenes/panels/**` and
       `src/scenes/README.md`. *Dependencies:* none. *(Batch 53, filled)*
-- [ ] **[Task-124] The HUD shell mounts once and owns no Phaser object.** `#hud` sits above the canvas
+- [x] **[Task-124] The HUD shell mounts once and owns no Phaser object.** `#hud` sits above the canvas
       from `src/main.ts`, `pointer-events: none`, each panel re-enabling it; `src/ui/hud/shell.tsx`,
       `mount.ts` and `styles/root.css` are the only DOM entry points. Silkscreen is vendored at
       `src/assets/fonts/silkscreen-{400,700}.woff2` (OFL, no CDN) with its `@font-face` and the
