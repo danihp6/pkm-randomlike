@@ -114,6 +114,9 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { IS_DEVELOP } from '../dev/env';
+import { parseHudFlags } from '../ui/hud/fixtures';
+import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
+import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
 import {
@@ -316,6 +319,14 @@ const PARTY_DETAIL_H =
 function capitalize(text: string): string {
   return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
 }
+
+/**
+ * The DOM HUD flag (`D49`), read once at module load: with it on the battle's HP
+ * boxes are Preact cards in `#hud` and the scene's four kits stay hidden, so the
+ * arena, the sprites and the effects are the only things the canvas draws. Off, every
+ * line below paints exactly what it painted before the panels existed.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 
 type Mode =
   'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over' | 'info';
@@ -533,6 +544,8 @@ export class BattleScene extends Phaser.Scene {
   private playerPanel2!: Phaser.GameObjects.NineSlice;
   /** The objects each HP window paints into: slot 0's shipped set and slot 1's own. */
   private panelKits!: Record<SideId, readonly [PanelKit, PanelKit]>;
+  /** The mounted DOM HP boxes (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  private hpController: BattleHpController | null = null;
   /** The cursor the target step marks a foe with, and the two foe hit zones. */
   private targetCursor!: Phaser.GameObjects.Image;
   private foeZones: Phaser.GameObjects.Zone[] = [];
@@ -784,8 +797,10 @@ export class BattleScene extends Phaser.Scene {
       this.scale.off('resize', this.onResize, this);
       this.scene.setVisible(true, 'Route');
       this.releaseMonSprites();
+      this.disposeHpPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
+    this.mountHpPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
@@ -797,6 +812,32 @@ export class BattleScene extends Phaser.Scene {
   /** Re-centres the square stage (and everything in it) when the window changes. */
   private onResize(): void {
     this.refreshHud();
+  }
+
+  /** Which sides field a second active right now — the same fields the second window reads. */
+  private doublesInPlay(): Readonly<{ enemy: boolean; player: boolean }> {
+    return {
+      enemy: this.displayActive2.enemy !== null,
+      player: this.displayActive2.player !== null,
+    };
+  }
+
+  /** Mounts the DOM HP boxes into the HUD layer, once per battle (`?hud=dom`). */
+  private mountHpPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeHpPanel();
+    this.hpController = mountBattleHp(host, this.doublesInPlay(), {
+      width: this.scale.width,
+      height: this.scale.height,
+    });
+  }
+
+  private disposeHpPanel(): void {
+    if (this.hpController === null) return;
+    this.hpController.dispose();
+    this.hpController = null;
   }
 
   // --- scene construction -------------------------------------------------
@@ -1055,6 +1096,13 @@ export class BattleScene extends Phaser.Scene {
         secondKit('player'),
       ],
     };
+    // The kits are built either way, so `panelKits` keeps its shape for every other
+    // consumer; under the flag nothing of them may reach the canvas.
+    if (DOM_HUD) {
+      for (const side of SIDE_IDS) {
+        for (const kit of this.panelKits[side]) this.hidePanelKit(kit);
+      }
+    }
 
     this.messageText = addFrlgText(this, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 });
 
@@ -3050,6 +3098,16 @@ export class BattleScene extends Phaser.Scene {
       this.hideMenu();
     }
     this.layoutTargetCursor();
+
+    // The one emit point (`D49`): the DOM boxes paint the snapshot while the canvas
+    // keeps the arena. It runs after the whole layout, because the combatants' caps
+    // and positions above are read by the arena, not by the boxes.
+    if (DOM_HUD) {
+      syncHud(
+        { screen: 'battle', battle: this.state, canCapture: this.launch?.canCapture === true },
+        (next) => this.hpController?.update(next),
+      );
+    }
   }
 
   /**
@@ -3097,6 +3155,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private drawSidePanel(rect: Rect, side: SideId): void {
+    // Under the DOM HUD the panel is a Preact card and the canvas only paints the
+    // arena, so neither the window nor the ball row may reach the screen.
+    if (DOM_HUD) {
+      this.hidePanelKit(this.panelKits[side][0]);
+      return;
+    }
     this.drawPanel(
       rect,
       side,
@@ -3117,6 +3181,10 @@ export class BattleScene extends Phaser.Scene {
    * it (the shipped single layout, reached through the same code).
    */
   private drawSecondPanel(rect: Rect | null, side: SideId): void {
+    if (DOM_HUD) {
+      this.hidePanelKit(this.panelKits[side][1]);
+      return;
+    }
     const fighter = this.displayActive2[side];
     const hp = this.displayHp2[side];
     if (rect === null || !fighter || hp === null) {
@@ -3128,7 +3196,11 @@ export class BattleScene extends Phaser.Scene {
 
   /** Hides slot 1's window and everything it paints. */
   private hideSecondPanel(side: SideId): void {
-    const kit = this.panelKits[side][1];
+    this.hidePanelKit(this.panelKits[side][1]);
+  }
+
+  /** Hides one HP window and everything it paints. */
+  private hidePanelKit(kit: PanelKit): void {
     kit.panel.setVisible(false);
     kit.nameText.setVisible(false);
     kit.statText.setVisible(false);
@@ -3139,6 +3211,31 @@ export class BattleScene extends Phaser.Scene {
     for (const chip of kit.typeChips) chip.setVisible(false);
     kit.hpBar.bar.setVisible(false);
     kit.hpBar.fill.setVisible(false);
+  }
+
+  /** Counts the visible objects of the four HP kits: the `?hud=dom` flag contract's probe. */
+  hpDrawnObjectCount(): number {
+    let count = 0;
+    for (const side of SIDE_IDS) {
+      for (const kit of this.panelKits[side]) {
+        const objects: readonly Readonly<{ visible: boolean }>[] = [
+          kit.panel,
+          kit.nameText,
+          kit.statText,
+          kit.statusText,
+          kit.statusBadge,
+          ...kit.typeBadges,
+          ...kit.typeChipBgs,
+          ...kit.typeChips,
+          kit.hpBar.bar,
+          kit.hpBar.fill,
+        ];
+        for (const object of objects) {
+          if (object.visible) count += 1;
+        }
+      }
+    }
+    return count;
   }
 
   /**
@@ -3268,6 +3365,7 @@ export class BattleScene extends Phaser.Scene {
    * repaint that empties the HP bar.
    */
   private drawFoeBallRow(rect: Rect): void {
+    if (DOM_HUD) return;
     const party = this.state.sides.enemy.party;
     const active = this.state.sides.enemy.activeIndex;
     const x = rect.x + FRLG_WINDOW_PADDING.x;
@@ -4489,4 +4587,13 @@ export class BattleScene extends Phaser.Scene {
     this.feedElapsed += delta;
     if (this.feedElapsed >= (rush ? FAST_HOLD_MS : this.frameHoldMs)) this.advanceFeed();
   }
+}
+
+/**
+ * The number of display objects the HP boxes draw right now: 0 under `?hud=dom`,
+ * where the four kits are built but never shown. The live flag contract reads it
+ * with `(await import('/src/scenes/BattleScene.ts')).battleHpDrawnObjectCount(...)`.
+ */
+export function battleHpDrawnObjectCount(scene: BattleScene): number {
+  return scene.hpDrawnObjectCount();
 }
