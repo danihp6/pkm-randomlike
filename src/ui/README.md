@@ -68,6 +68,8 @@ testable logic belongs in the computing half.
 - `typeColors.ts` — the canon type colours.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.
+- `hud/state.ts` — the DOM HUD's one projection: the serialisable snapshot of the run and the battle (party, bag, money, route, battle, notice) and the single emit point a scene notifies.
+- `hud/commands.ts` — the HUD's command channel: the intents a panel can send and the reducer that maps them onto the action a key or pad press already produces.
 
 ## Rules
 

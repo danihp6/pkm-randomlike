@@ -7309,7 +7309,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       1 px inside. The figma-edit channel is a **single-session lock**: this task's export runs in the
       Orchestrator's session, which holds `s52r`, not in a worktree beside it.
       *Dependencies:* none. *(Batch 58)*
-- [ ] **[Task-123] The HUD's state is one projection of the engine.** `src/ui/hud/state.ts`: the
+- [x] **[Task-123] The HUD's state is one projection of the engine.** `src/ui/hud/state.ts`: the
       serialisable `HudState` snapshot (party, bag, money, route, battle, notice) built from
       `RunState` and the battle state, with no Phaser object and no value the HUD could compute a
       second way. `src/ui/hud/commands.ts`: the `HudCommand` union and the reducer that turns it into

@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The HUD's state is one projection of the engine, and one command reducer feeds it.**
+      `src/ui/hud/state.ts` turns `RunState` and the battle state into the serialisable `HudState`
+      (party, bag, money, route, battle, notice) with no Phaser object and no second way to compute a
+      value, and it emits through one point — `syncHud()` — instead of an ad-hoc `setState` from a
+      scene. `src/ui/hud/commands.ts` owns the `HudCommand` union and `reduceHudCommand`, which turns a
+      key or pad press into the action id the shipped bindings already produce, so rebinding keeps
+      working and the HUD can never mutate the run. Both modules are pure: no renderer, no DOM, no
+      storage, no clock and no RNG.
+      **QA:** Task QA on the integration tree ran the spec verbatim — the two new suites (22 tests),
+      `npm test` (3518 passed), `npm run build`, the export list matching the Contract one-for-one
+      (16 + 7 names, nothing else), both purity greps printing nothing, the 5-path diff audit and
+      `src/ui/README.md` gaining exactly 2 lines and losing none; no browser pass owed (pure module).
+
 - [x] **A damaging move's number is resolved, not read off the dex.** `src/engine/battle/damage.ts`
       grows the two pure resolvers the battle, the AI and the FIGHT preview now share:
       `resolveBasePower` (the stockpile/body-relative powers, the counter family, Beat Up's borrowed
