@@ -427,3 +427,61 @@ Do not edit `kit.css`.
 - Any change to `src/ui/partyScreen.ts`, `src/ui/hud/state.ts`,
   `src/ui/hud/commands.ts`, `src/scenes/panels/hud.ts`, `src/scenes/RouteScene.ts`,
   the engine, the RNG or the save.
+
+## 🔁 Corrective round 1 — the DOM card must not float over a battle (Orchestrator)
+
+This task's own plan was green on its integration tree. The **batch** integration pass found one
+objective failure that none of the task's own criteria covered, measured on the combined tree
+(`4c4fd288a45ac523ecaf8cba3b88461979f301fa`) over CDP at 1280×800 with `?hud=dom` on Chrome 155
+headless:
+
+- On the route the DOM card draws correctly; but when a wild battle starts
+  (`RouteScene.startBattle` → `this.scene.pause()`), the route's DOM roots stay on screen **above**
+  the battle: `[data-hud-panel="bag"|"pc"|"party"]` keep `display: block`, `hidden: false` and their
+  route rects, and each is the topmost node at its own centre (`document.elementFromPoint`). The
+  party card (open by default, `928,8 250×406`) covers the battle field for the whole fight: hiding
+  its root changes **29.8 %** (30 231 / 101 500) of the pixels of its rect, while a control region
+  changes **0 %**.
+- The canvas build does not do this: hiding `scene.hudRoot` during a battle changes **0** of
+  **105 952** pixels of that rect, because the Battle scene draws over the paused route scene. `#hud`
+  is a DOM layer **above** the canvas, so it needs the rule spelled out.
+- Cause: a DOM mount is torn down on **SHUTDOWN** only, and `RouteScene` **pauses** itself for a
+  battle (`this.scene.pause(); this.scene.launch('Battle', …)`) while `BattleScene` later runs
+  `this.scene.resume('Route'); this.scene.stop();`. The Settings scene takes the same pause path.
+
+### Required behaviour (parity with the Phaser card)
+
+- While the `Route` scene is paused — a battle, or the Settings scene — this panel's DOM root is
+  **not visible**: `hidden` set and `getBoundingClientRect().width === 0`.
+- On `resume` it is visible again at **exactly** the rect it had, with the open/collapsed state it
+  had, and its own key behaves as before.
+- Its own key pressed while the route is paused neither toggles nor queues a toggle.
+- The flag-off path does not move: not one line of the shipped Phaser drawing changes, and neither
+  does the Phaser-side layout arithmetic.
+
+### Where the fix goes
+
+Only this task's exclusive paths. It belongs in the scene module you already own
+(`src/scenes/panels/pc.ts.ts`), next to `panelExpanded(host, …)` and its mount: the module has
+`host.scene` (`RoutePanelHost.scene`), so it can subscribe to the scene's own
+`Phaser.Scenes.Events.PAUSE` / `RESUME` events and drop the subscription in `close?()`. Do **not**
+touch `src/ui/hud/mount.ts`, `src/ui/hud/shell.ts`, `src/scenes/RouteScene.ts`,
+`src/scenes/BattleScene.ts`, `src/main.ts` or a batch-mate's file. A hidden root is
+`view.open === false` — the behaviour the collapse already implements — so the mount stays and only
+the view changes.
+
+### Extra acceptance criterion (must be measured, not eyeballed)
+
+- [ ] `[live]` **Hidden over the battle, back on resume.** At 1280×800 with `?hud=dom`: on the route
+      with the panel open (press `O`), record its rect **R** and `hidden === false`. Call
+      `startDebugWildBattle('pidgey', 5)` on the **live** `RouteScene` module (the URL taken from
+      `performance.getEntriesByType('resource')`; a fresh `import('/src/scenes/RouteScene.ts')` is a
+      different module instance) and after 500 ms assert `hidden === true`,
+      `getBoundingClientRect().width === 0`, and that the root is **not** the topmost node at R's
+      centre (`document.elementFromPoint` neither is it nor sits inside it). Then stop the fight the
+      way `BattleScene` does (`game.scene.getScene('Battle').scene.stop()` +
+      `game.scene.getScene('Route').scene.resume()`) and assert the root is visible again at exactly
+      R with the same open state. Repeat once with the panel collapsed: hidden over the battle and
+      still `hidden === true` after the resume.
+- [ ] `[unit]` the task's original plan stays green (`npm test`, `npm run build`) and the diff still
+      lists only this task's exclusive paths (plus `.agent_specs/task-130.md`).
