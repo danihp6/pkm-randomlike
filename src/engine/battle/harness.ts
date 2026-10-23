@@ -91,6 +91,15 @@ export function scriptedBattle(options: ScriptedBattleOptions): BattleState {
   return state;
 }
 
+/** The log's text line as the snapshot prints it: the key, and its sorted params. */
+function formatText(event: Extract<BattleEvent, { kind: 'text' }>): string {
+  if (event.params === undefined) return event.key;
+  const pairs = Object.entries(event.params)
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([name, value]) => `${name}=${String(value)}`);
+  return `${event.key}(${pairs.join(', ')})`;
+}
+
 /** The battle log as text, one line per event — the golden snapshot's own formatter. */
 export function formatBattleLog(state: BattleState): string {
   return state.log
@@ -99,7 +108,7 @@ export function formatBattleLog(state: BattleState): string {
         case 'turn':
           return `# turn ${event.turn}`;
         case 'text':
-          return event.text;
+          return formatText(event);
         case 'move':
           return `  > ${event.side} ${event.moveId}`;
         case 'damage':

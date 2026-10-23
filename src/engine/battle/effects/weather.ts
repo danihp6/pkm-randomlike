@@ -1,6 +1,6 @@
 import type { Move } from '../../../data/dex';
 import type { BattleFighter } from '../fighter';
-import { pushText, type BattleState, type WeatherId } from '../state';
+import { pushText, type BattleState, type BattleTextKey, type WeatherId } from '../state';
 import { normalizeEffectId, registerEffects, type EffectDefinition } from './registry';
 
 export const WEATHER_TURNS = 5;
@@ -13,18 +13,19 @@ const MOVE_WEATHER: Readonly<Record<string, WeatherId>> = {
   hail: 'snow',
 };
 
-const START_MESSAGES: Readonly<Record<WeatherId, string>> = {
-  sun: 'The sunlight turned harsh!',
-  rain: 'It started to rain!',
-  sand: 'A sandstorm kicked up!',
-  snow: 'It started to snow!',
+const START_MESSAGES: Readonly<Record<WeatherId, BattleTextKey>> = {
+  sun: 'battle.log.weather.start.sun',
+  rain: 'battle.log.weather.start.rain',
+  sand: 'battle.log.weather.start.sand',
+  snow: 'battle.log.weather.start.snow',
 };
 
-const LABELS: Readonly<Record<WeatherId, string>> = {
-  sun: 'harsh sunlight',
-  rain: 'rain',
-  sand: 'sandstorm',
-  snow: 'snow',
+/** The buffeted line each weather keys, its label baked into the sentence. */
+export const WEATHER_CHIP_MESSAGES: Readonly<Record<WeatherId, BattleTextKey>> = {
+  sun: 'battle.log.weather.buffeted.sun',
+  rain: 'battle.log.weather.buffeted.rain',
+  sand: 'battle.log.weather.buffeted.sand',
+  snow: 'battle.log.weather.buffeted.snow',
 };
 
 export function weatherFromMove(move: Move): WeatherId | null {
@@ -42,7 +43,7 @@ export function clearWeather(state: BattleState): void {
   if (!state.weather) return;
   state.weather = null;
   state.weatherTurns = 0;
-  pushText(state, 'The weather returned to normal.');
+  pushText(state, 'battle.log.weather.end');
 }
 
 export function tickWeather(state: BattleState): void {
@@ -70,10 +71,6 @@ export function weatherImmune(fighter: BattleFighter, weather: WeatherId): boole
 export function weatherChip(fighter: BattleFighter, weather: WeatherId): number {
   if (fighter.hp <= 0 || weatherImmune(fighter, weather)) return 0;
   return Math.max(1, Math.floor(fighter.maxHp / 16));
-}
-
-export function weatherLabel(weather: WeatherId): string {
-  return LABELS[weather];
 }
 
 /** Effectively permanent for the length of a battle. */

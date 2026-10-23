@@ -26,6 +26,109 @@ file is the human-readable summary.
       could not reproduce byte for byte, and folder maps missing a file) were fixed and re-verified, and
       the harness was proven in both directions — exit 1 on today's Phaser screens, exit 0 when the
       reference is substituted by the shot. `npm test` 3563 passed, `npm run build` green, CI green.
+- [x] **The route's panel layer leaves the route scene.** The route's overlay chrome moves out of
+      `src/scenes/RouteScene.ts` (**8184 → 4399 lines**) into eleven modules under
+      `src/scenes/panels/`, discovered from the folder itself by the new
+      `src/scenes/panels/registry.ts` — the shape `D47` gave the special-room layer:
+      `import.meta.glob('./panels/*.ts', { eager: true })`, a `descriptor` export per module, an
+      `order` that is the build and z sequence (`10 … 110`), and a throw on a duplicate id or a
+      duplicate order so the z-order can never depend on glob order. `types.ts` freezes the port the
+      panels draw through (`RoutePanelHost`: the scene, the live run and settings, the HUD root and
+      its panel records, the drag state, the room-panel slot, the battle starts) and owns the
+      `HudMetrics`/`HudPanel` declarations verbatim. It is a **move**: the scene keeps the keyboard,
+      movement, `onTileEntered`, interaction, trainer sight, room transitions, the room-panel slot,
+      the dev hooks and the pointer listeners that hand each event to the registry from the top; no
+      panel's frame, string, colour, geometry, order or repaint changed, no existing test was
+      touched (the new `registry.test.ts` is the only added one) and no RNG draw or run field moved,
+      so no `SAVE_VERSION` step. `shop.ts` and `trade.ts` are entry-point descriptors delegating to
+      the shipped room modules, because their drawing already lives in `src/scenes/rooms/`.
+      **QA:** Task QA round 2 on the integration tree ran the spec verbatim — `npm test` (3633
+      passed, 67 skipped), `npm run build` (`noUnusedLocals` is the completeness proof of the
+      move), the eleven descriptors and their orders, the `?raw` folder convention, the
+      input-dispatch greps, the handed-over-field greps, both README maps, and the 18-path audit
+      with the test diff empty. Its one red round was a **real** behaviour change the suite could
+      not see: the HUD drag ghost was booked before the panel walk but the `hud` descriptor cleared
+      the overlay list, so it fell out of `hudRoot` and the 2× world camera drew it twice. The fix
+      moved the reset into `resetHudOverlays()`, called before the ghost is booked, and QA's
+      re-check confirmed `hudRoot`'s child order is `main`'s again with the colour and `setDepth`
+      multisets unchanged. No browser pass was owed (pure move).
+
+- [x] **The battle's action log speaks the locale.** The engine stops composing English sentences:
+      the `text` event carries `{ key: BattleTextKey; params?: BattleTextParams }`
+      (`BattleTextKey = Extract<TranslationKey, \`battle.log.${string}\`>`, a **type-only** import from
+      `src/i18n/en.ts`, so `src/engine/battle/` keeps no locale, no runtime i18n and no `t`) and
+      `pushText(state, key, params?)` types every one of its **226** call sites across the twelve
+      engine files, the message tables they read and the thirty `applyBoostEffect` overrides.
+      `src/ui/feed.ts` resolves the key with `t()` as it builds each frame (`battleMessage`), so
+      `FeedFrame.message` stays `string | null` and `BattleScene` is untouched. `src/i18n/en.ts`
+      gains the `battle.log.*` family — one key per rule: the **six** whole damage lines, 14
+      stat-stage keys, 24 status keys, the ability/item/move rule keys, 9 weather, 7 terrain, 14
+      side + 14 field, 27 volatile/charge and the five capture keys — and `es.ts` overlays all of
+      it. Params carry **ids** wherever a table owns the word, so `move` resolves through
+      `moveName` (`ember` → `Ascuas`, never `Ember`) and `ability` through
+      `abilityNameFromEnglish`, while species, item and type names stay English (`D43`'s boundary
+      amended: the log is keyed too, so the "half Spanish / half English" cut is retired).
+      `formatBattleLog` prints `key(params sorted)`, so `golden.test.ts`'s snapshot re-pins to the
+      keys and the battle itself is byte-identical: no RNG draw moved, no run field added, no
+      `SAVE_VERSION` step.
+      **QA:** Task QA round 2 on the integration tree ran the spec verbatim — `npm test` (3639
+      passed, 67 skipped) and `npm run build`, the golden keys byte-for-byte, the 226-call
+      distribution identical to `main`'s, the `.text` grep empty, the engine's only i18n import the
+      type-only one, `feed.test.ts` walking the golden battle in both locales, the family counts and
+      the closed param vocabulary in `src/i18n/index.test.ts`, the two shipped Spanish guards
+      untouched, and the 36-path audit inside the exclusive list. The `[live]` criterion was
+      measured by the Orchestrator over CDP on the dev build: a wild battle in **es** printed 11/11
+      lines equal to `t(key, params)` (`¡Charmander usó Ascuas!`, `¡Ascuas alcanzó a Bulbasaur! ¡Es
+      supereficaz!`, the Attack drop, the faint) and a second one the Intimidate line
+      (`¡Intimidación de Gyarados ha bajado el Ataque de Pidgey!`), each drawn verbatim in the
+      message box (`renderer.snapshotArea` over the text's bounds read 1,024 light glyph pixels);
+      the same two battles in **en** printed the same keys in English (`Ember`, not `Ascuas`).
+
+- [x] **The HUD's state is one projection of the engine, and one command reducer feeds it.**
+      `src/ui/hud/state.ts` turns `RunState` and the battle state into the serialisable `HudState`
+      (party, bag, money, route, battle, notice) with no Phaser object and no second way to compute a
+      value, and it emits through one point — `syncHud()` — instead of an ad-hoc `setState` from a
+      scene. `src/ui/hud/commands.ts` owns the `HudCommand` union and `reduceHudCommand`, which turns a
+      key or pad press into the action id the shipped bindings already produce, so rebinding keeps
+      working and the HUD can never mutate the run. Both modules are pure: no renderer, no DOM, no
+      storage, no clock and no RNG.
+      **QA:** Task QA on the integration tree ran the spec verbatim — the two new suites (22 tests),
+      `npm test` (3518 passed), `npm run build`, the export list matching the Contract one-for-one
+      (16 + 7 names, nothing else), both purity greps printing nothing, the 5-path diff audit and
+      `src/ui/README.md` gaining exactly 2 lines and losing none; no browser pass owed (pure module).
+
+- [x] **A damaging move's number is resolved, not read off the dex.** `src/engine/battle/damage.ts`
+      grows the two pure resolvers the battle, the AI and the FIGHT preview now share:
+      `resolveBasePower` (the stockpile/body-relative powers, the counter family, Beat Up's borrowed
+      attack, Return/Frustration at 102, the conditional multipliers) and `fixedDamage` (Seismic
+      Toss, Night Shade, Super Fang, Endeavor, Pain Split, the OHKO rule and its two rolls,
+      Psywave's single draw, Present) — `computeDamage`, `estimateDamage` and `preview.ts` all read
+      them, so one number drives the fight, the AI and the menu. `turn.ts`'s damage gate widens to
+      "the move resolves to damage" and a fixed amount skips the 85–100 roll, the crit, STAB and the
+      type multiplier while still honouring Endure, Substitute and the faint path. The ledger stops
+      lying: `npm run docs:coverage` leaves **zero** `no-op` move rows and `MOVE_AUDIT_ROWS` carries
+      **zero** `knownGap` rows, with `Bide`, `Fling` and `Spotlight` excluded for a stated reason.
+      **QA:** Task QA on the integration tree ran the spec verbatim — `npm test` (3575 passed),
+      `npm run build`, the 15-path diff audit, `npm run docs:coverage` followed by
+      `git diff --exit-code` on the regenerated pair (exit 0), `grep '"status": "no-op"'` → `0`,
+      `grep '835 total (783 port, 0 no-op, 52 excluded)'` → `1`, and the 33 formerly-no-op ids
+      accounted for as 52 `excluded` + 30 `port`; no browser pass owed (engine-only).
+
+- [x] **The item bag is an icon grid, in the route HUD and in battle.** Both surfaces stop drawing
+      text rows: the same five-column icon grid, the count badge over the icon, the shipped accent
+      on the selection and a dim outline on a free slot. The geometry is one exported model
+      (`bagGridLayout`/`bagGridRows`/`bagGridCell`/`bagGridIndexAt`/`stepBagGrid` in
+      `src/ui/bag.ts`): 56 px cells, 15 cells on the route (3 rows × 5) and 10 in battle (2 rows ×
+      5), so the panel, the footer and the pitch never move when the bag changes. A filter field
+      (`filterBagStacks`, `hud.searchItems`) narrows either grid and drops the overflow past the
+      cap, and a discovered candy's card prints the run's own stat (`hud.candyKnown`) instead of
+      the catalogue line. Both scenes, both locales and the two spec sections are updated by
+      section.
+      **QA:** the live game was measured over CDP at 1280×800 — route `columns 5, rows 3, cellW 56,
+      cells.length 15` with five occupied stacks in fixture order and ten empty slots at alpha 0;
+      56 of 56 pixels of `0x7dd3fc` on the selected row; the candy card read
+      `Red Candy\nThis run: SPEED +1`; battle `rows 2, cellW 35, cells.length 10` with typing owning
+      the keyboard — plus `npm test` (3523 passed) and `npm run build` green.
 
 - [x] **The wait asks for 2/12, not for a shape this account cannot be given.** Oracle caps
       the Always Free Ampere entitlement at **2 OCPU / 12 GB** since August 2026, so every

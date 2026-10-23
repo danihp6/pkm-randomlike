@@ -1404,6 +1404,19 @@ decision line. **47c and 47d keep one engine task each as their cut** — `[Task
 members, both of those entries keep their prose and take their new labels, and `[Task-119]`'s
 entry keeps the *(Batch 47b)* it already reads.
 
+**Batch 53 was filled with `[Task-128]` (Batch 58) in this cycle.** The cut was
+`[Task-114]` alone; the fill search pulled `[Task-128]` because its dependencies are all merged
+(none) and its paths — `src/scenes/RouteScene.ts`, the new `src/scenes/panels/**` and
+`src/scenes/README.md` — are disjoint from Task-114's. The two empty slots name their blockers:
+`[Task-122]` exports through the figma-edit channel's **single-session lock** in the Orchestrator's
+own session, so it cannot be a parallel dev worktree, and `[Task-124]`, `[Task-125]` and
+`[Task-126]` each need it; `[Task-118]` is written against `[Task-114]` itself, so it cannot ride
+the same batch; every Phase-12 migration from `[Task-129]` on needs `[Task-127]`, which needs
+`[Task-124]`–`[Task-126]`; `[Task-28]` stays unscheduled by its own decision line and
+`[Task-104]`/`[Task-113]` are `[!]`. `[Task-128]` ships here, so **Batch 58 keeps `[Task-122]`
+alone** — its `[Task-123]` and `[Task-128]` have both shipped — and the batch's own prose above
+still lists it under 58 as the cut it was written for.
+
 A **thirty-second round** is the human's decision on the prototype board: **the panels become a DOM
 layer over an untouched canvas**, recorded as `D49` (`docs/tech-decisions.md`) and carried by
 `docs/hud-dom-proposal.md`. The boundary is the whole point of it: the world, the camera, the route
@@ -4437,7 +4450,7 @@ Ports of Showdown handlers, in batches, on the hook names in
       *Dependencies:* `[Task-119]` (the audit rows and the honest ledger) and `[Task-101]` (the shape
       of `turn.ts`/`commands.ts`/`state.ts` it edits; Batch 46 merges first). It adds no run field.
       *(Batch 47c)*
-- [ ] **[Task-121] The relative-damage half of the audit: the number the formula multiplies.** The
+- [x] **[Task-121] The relative-damage half of the audit: the number the formula multiplies.** The
       second half of the report — «daño relativo … no funcionan exactamente igual» — is one missing
       concept in the damage model: **every damaging move in the engine is `move.basePower` through
       `baseDamage`** (`damage.ts` 51-53, 134), and the branch that runs it is gated
@@ -6675,7 +6688,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (Batch 29) and the `notice.ts` row `[Task-98]` adds (Batch 36). It claims
       `src/scenes/RouteScene.ts`, so it opens the plan's new **Batch 51**, one batch behind the 2vs2
       pair — and it adds no run field. *(Batch 47b, filled)*
-- [ ] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
+- [x] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
       «la mochila de items y en combate pasen a ser grid». Both bag surfaces are **lists of rows** today:
       the route HUD draws up to `HUD_BAG_ROWS` (6) name rows with a pocket tab strip and the money line
       (`RouteScene`'s bag panel, `HUD_BAG_HEADER` / `HUD_BAG_ROW`), and the battle draws the active
@@ -7195,7 +7208,7 @@ still English, and `[Task-114]` below closes it.
       behind a key, so it must see the panels Task-12, Task-13 and Task-16 add.
       *(Batch 10)*
 
-- [ ] **[Task-114] The battle's action log speaks the locale.** The human's report:
+- [x] **[Task-114] The battle's action log speaks the locale.** The human's report:
       «falta traducir mensajes de accion durante la batalla». Every line the message box
       prints while a turn resolves — `Charmander used Ember!`, `Ember hit Bulbasaur! It's
       super effective!`, `A critical hit!`, `Bulbasaur fainted!`, the stat-stage lines, the
@@ -7309,7 +7322,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       1 px inside. The figma-edit channel is a **single-session lock**: this task's export runs in the
       Orchestrator's session, which holds `s52r`, not in a worktree beside it.
       *Dependencies:* none. *(Batch 58)*
-- [ ] **[Task-123] The HUD's state is one projection of the engine.** `src/ui/hud/state.ts`: the
+- [x] **[Task-123] The HUD's state is one projection of the engine.** `src/ui/hud/state.ts`: the
       serialisable `HudState` snapshot (party, bag, money, route, battle, notice) built from
       `RunState` and the battle state, with no Phaser object and no value the HUD could compute a
       second way. `src/ui/hud/commands.ts`: the `HudCommand` union and the reducer that turns it into
@@ -7317,7 +7330,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       never mutate the run. One emit point (`syncHud()`), never an ad-hoc `setState` from a scene.
       Tests cover the projection round trip and one command per action family. Claims both modules
       beside their tests and `src/ui/README.md`. *Dependencies:* none. *(Batch 58)*
-- [ ] **[Task-128] The route's panel layer leaves the route scene.** The ten route panels and the
+- [x] **[Task-128] The route's panel layer leaves the route scene.** The ten route panels and the
       route HUD strip move out of `src/scenes/RouteScene.ts` into `src/scenes/panels/<name>.ts` behind
       **one auto-discovered registry**, the shape `D47` gave the room layer in Batch 23b: `bag`, `pc`,
       `party`, `detail`, `map`, `shop`, `trade`, `rewards`, `notices`, `pause` and `hud`. A pure move:
@@ -7325,7 +7338,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       every module keeps drawing its frame exactly as today. It is the task that lets the eleven
       migrations run four at a time instead of one per batch, because each will own a module instead
       of the scene. Claims `src/scenes/RouteScene.ts`, `src/scenes/panels/**` and
-      `src/scenes/README.md`. *Dependencies:* none. *(Batch 58)*
+      `src/scenes/README.md`. *Dependencies:* none. *(Batch 53, filled)*
 - [ ] **[Task-124] The HUD shell mounts once and owns no Phaser object.** `#hud` sits above the canvas
       from `src/main.ts`, `pointer-events: none`, each panel re-enabling it; `src/ui/hud/shell.tsx`,
       `mount.ts` and `styles/root.css` are the only DOM entry points. Silkscreen is vendored at

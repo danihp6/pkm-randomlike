@@ -90,3 +90,37 @@ describe('movePreview', () => {
     expect(movePreview(battle(player(['tackle'])), 'player', 3)).toBeNull();
   });
 });
+
+describe('the relative-damage moves in the preview', () => {
+  it('reports a fixed amount as the effective power, with no STAB', () => {
+    const attacker = player(['seismictoss'], { level: 50 });
+    const preview = movePreview(battle(attacker), 'player', 0);
+    expect(preview?.basePower).toBe(0);
+    expect(preview?.power).toBe(50);
+    expect(preview?.stab).toBe(false);
+  });
+
+  it('folds STAB into a resolved power', () => {
+    const attacker = player(['eruption'], { level: 50 });
+    attacker.hp = Math.floor(attacker.maxHp / 2);
+    expect(attacker.hp * 2).toBe(attacker.maxHp);
+    const preview = movePreview(battle(attacker), 'player', 0);
+    expect(preview?.basePower).toBe(150);
+    expect(preview?.stab).toBe(true);
+    expect(preview?.power).toBe(113);
+  });
+
+  it('reads the resolver’s power over the dex number', () => {
+    const preview = movePreview(battle(player(['boltbeak'])), 'player', 0);
+    expect(preview?.basePower).toBe(85);
+    expect(preview?.power).toBe(170);
+    expect(preview?.stab).toBe(false);
+  });
+
+  it('consumes no draw', () => {
+    const state = battle(player(['eruption', 'seismictoss']));
+    movePreview(state, 'player', 0);
+    movePreview(state, 'player', 1);
+    expect(state.rng.next()).toBe(new Rng(1).next());
+  });
+});

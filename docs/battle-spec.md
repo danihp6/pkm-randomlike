@@ -17,6 +17,13 @@ Phaser scene only renders state and forwards choices.
    then Taunt/Encore decay and the weather/terrain turn counters.
 5. A fainted Pokémon is replaced by its owner's next choice before the next
    turn; if a side has no Pokémon left, the battle is over.
+6. Every line the turn prints is a **keyed log event**, never a sentence:
+   `{ kind: 'text'; key; params? }` names a `battle.log.*` key of the source table and
+   the values it interpolates, and `src/ui/feed.ts` (`battleMessage`) resolves the key
+   in the current locale when it builds the frame the scene prints. The engine stays
+   language-free and a fixed seed logs the same keys in every language; the only params
+   a table owns are `move`, `ability` and `item`, and every other one is inserted
+   verbatim (`D43`, amended).
 
 ## 2. The four commands
 
@@ -79,6 +86,120 @@ moves either.
   duration.
 - Type effectiveness comes from the generated 18x18 chart, not a hand-written
   table.
+
+### 3.1 The number the formula multiplies
+
+The formula multiplies a **power**, and for most moves that power is the dex
+`basePower`. A damaging move whose amount the dex cannot express is owned by
+`src/engine/battle/damage.ts` instead: `DAMAGE_RESOLVERS` names every one of them,
+and the two resolvers decide which half of the rule it is.
+
+- `fixedDamage` returns the whole amount and the formula is bypassed: no weather,
+  terrain, aura, screen, crit, 85–100% roll, STAB, type chart or burn term touches
+  it. The hit still runs through Endure, Substitute, `applyDamage` and the faint
+  path, so a fixed amount can be absorbed, survived at 1 HP or score a KO like any
+  other. `computeDamage` reports such a hit as `effectiveness: 1`, `crit: false`
+  and `stab: false`, and the turn loop skips the crit roll outright rather than
+  rolling one it would throw away. `estimateDamage` and the FIGHT preview pass
+  `rng: null` and read the same amount, drawing nothing.
+- `resolveBasePower` computes the power the formula multiplies from scratch. It
+  also carries the moves whose power still derives from the dex number but is
+  **multiplied** by a condition — Eruption, Hex, Facade, the weight- and
+  HP-relative powers and the rest of `3.3` — which is why their ledger note stays
+  `data: basePower` while their real power comes from this resolver.
+
+The fixed amounts (`'fixed'`):
+
+| Move | Amount |
+| --- | --- |
+| Seismic Toss, Night Shade | the user's level |
+| Dragon Rage | 40 |
+| Sonic Boom | 20 |
+| Super Fang, Nature's Madness, Ruination | `max(1, floor(target HP / 2))` |
+| Endeavor | `max(0, target HP − user HP)`; at equal HP the move fails with `But it failed!` |
+| Final Gambit | the user's whole HP; its user's faint still comes from the move's own `selfdestruct` data |
+| Psywave | `max(1, floor(level × roll(5..15) / 10))` |
+| Fissure, Guillotine, Horn Drill, Sheer Cold | the OHKO rule below |
+| Sheer Cold against an Ice-type | 0 |
+
+**The OHKO rule.** The accuracy roll comes first, like any other move. Then, if
+the user is at a lower level than the target the move fails and nothing else is
+rolled. Otherwise one `rng.int(1, 100)` decides it, and the move lands when the
+roll is at most `min(100, 30 + user level − target level)`: a landed OHKO deals the
+target's whole remaining HP. The deterministic estimate (`rng: null`) is a straight
+KO for an equal-or-higher level user and 0 for a lower one.
+
+The resolved powers (`'power'`):
+
+| Move | Power |
+| --- | --- |
+| Beat Up | `10 + floor(base Attack / 10)` |
+| Crush Grip, Wring Out | `max(1, floor(120 × target HP / target max HP))` |
+| Hard Press | `max(1, floor(100 × target HP / target max HP))` |
+| Flail, Reversal | the user's HP ratio: above 0.6875 → 20, 0.5417 → 40, 0.3542 → 80, 0.2083 → 100, else 150 |
+| Electro Ball | user Speed against the target's: ≥4× → 150, ≥3× → 120, ≥2× → 80, greater → 60, else 40 |
+| Gyro Ball | `min(150, floor(25 × target Speed / user Speed) + 1)` |
+| Low Kick, Grass Knot | the target's weight: ≥200 kg → 120, 100 → 100, 50 → 80, 25 → 60, 10 → 40, else 20 |
+| Heat Crash, Heavy Slam | the two weights' ratio: ≥5 → 120, ≥4 → 100, ≥3 → 80, ≥2 → 60, else 40 |
+| Return, Frustration | 102 |
+| Present | the dex power when the turn loop has rolled one, else 40 |
+| Spit Up | `100 × stockpile charges` |
+
+A weight comes from `getSpecies(id).weightkg` and a missing species weighs 0.
+
+### 3.2 Beat Up, Spit Up and Pain Split
+
+- **Beat Up** hits once per healthy party member that carries no primary status,
+  at least once. Every hit reads the **user's** base Attack: the reference reads
+  each member's own base Attack, and the engine keeps no per-member attack seam
+  for a move, so that one difference is deliberate.
+- **Spit Up** with no Stockpile charge fails with `But it failed!` before any roll;
+  after a landed hit it spends every charge. The Stockpile charges themselves are
+  not modelled on Spit Up's behalf — the Defence and Sp. Def stages Stockpile also
+  raises are the reference's other half and stay where they are.
+- **Pain Split** moves both fighters to the average of the two HP pools, the user
+  first: a `heal` for the one below it and a `damage` for the one above it.
+
+### 3.3 The conditional multipliers and the stat swaps
+
+These moves keep their dex `basePower` and have it multiplied instead of computed
+from nothing: Eruption, Water Spout and Dragon Energy scale with the user's HP (a
+150-power move at full HP); Stored Power and Power Trip add 20 for every positive
+stage the user carries; Last Respects adds 50 per fainted party member; Hex,
+Venoshock and Brine double against a status, a poison and a target at half HP or
+less; Facade doubles while its user carries a status (the burn's ×0.5 still
+applies, exactly as the formula does); Payback, Avalanche, Revenge, Bolt Beak and
+Fishious Rend read whether the target has already moved this turn or the user has
+already been hit; and Expanding Force, Rising Voltage, Grassy Glide and Psyblade
+read the terrain. Their ledger note is `data: basePower` because their power still
+comes from that number, and `damage.test.ts` is their evidence.
+
+Two moves swap the stat the hit reads, through one helper that the battle and the
+AI share so they cannot disagree: **Body Press** is physical and reads the user's
+Defense (with its own stage and the attack aura), and **Foul Play** is physical and
+reads the **target's** Attack through the target's stages.
+
+### 3.4 Determinism and the ledger
+
+Three members draw and nothing else does: **Psywave** rolls its 5..15 multiplier
+inside `fixedDamage`; **Present** rolls its heal-or-bullet once in the turn loop,
+after the accuracy roll; and the four **OHKO** moves roll their success inside
+`fixedDamage` after the accuracy roll. Every other fixed or resolved move draws
+nothing, and `estimateDamage`/`movePreview` draw nothing because they pass
+`rng: null`; the AI and the FIGHT menu therefore show the same number the battle
+will multiply.
+
+`npm run docs:coverage` records these moves as `damage: damage.ts` — the engine's
+own table is the evidence, since no dex field holds the amount. Three relatives
+stay **excluded** rather than claiming a port they do not have: **Fling** needs the
+held item's fling power, which `DexItem` does not expose; **Bide** needs a two-turn
+damage accumulator no fighter carries; and **Spotlight** needs a redirection
+mechanic the engine does not model at all (Follow Me and Rage Powder are out for
+the same reason). Four more keep their plain dex power because the trigger they
+would read is not recorded anywhere in the battle state: **Retaliate** (an ally
+fainted last turn), **Round** (an ally's Round this turn), **Echoed Voice** (a
+consecutive-use streak) and **Rage Fist** (the number of hits taken). Each needs a
+new field in `fighter.ts`/`state.ts`, which is a task of its own.
 
 ## 4. Status and volatility
 

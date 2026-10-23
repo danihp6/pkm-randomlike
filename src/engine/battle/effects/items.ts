@@ -1,9 +1,15 @@
 import { getDexItem } from '../../../data/dex';
 import { ITEMS, type ItemDef } from '../../../data/items';
-import { applyBoosts, applyDamage, applyHeal, type BattleFighter } from '../fighter';
-import { opponent, pushEvent, pushText } from '../state';
-import { applyStatus, cureStatus, statusName } from '../status';
-import { statLabel } from './apply';
+import {
+  applyBoosts,
+  applyDamage,
+  applyHeal,
+  type BattleFighter,
+  type BoostId,
+  type StatusId,
+} from '../fighter';
+import { opponent, pushEvent, pushText, type BattleTextKey } from '../state';
+import { applyStatus, cureStatus } from '../status';
 import {
   registerEffects,
   type EffectContext,
@@ -11,13 +17,31 @@ import {
   type EffectHandlers,
 } from './registry';
 
+const ITEM_RAISED: Readonly<Record<BoostId, BattleTextKey>> = {
+  atk: 'battle.log.item.raised.atk',
+  def: 'battle.log.item.raised.def',
+  spa: 'battle.log.item.raised.spa',
+  spd: 'battle.log.item.raised.spd',
+  spe: 'battle.log.item.raised.spe',
+  accuracy: 'battle.log.item.raised.accuracy',
+  evasion: 'battle.log.item.raised.evasion',
+};
+
+const ITEM_INFLICTED: Readonly<Record<StatusId, BattleTextKey>> = {
+  brn: 'battle.log.itemInflicted.brn',
+  psn: 'battle.log.itemInflicted.psn',
+  tox: 'battle.log.itemInflicted.tox',
+  par: 'battle.log.itemInflicted.par',
+  slp: 'battle.log.itemInflicted.slp',
+  frz: 'battle.log.itemInflicted.frz',
+};
+
 /**
  * Held items a run can meet that nothing models yet (`D16` `no-op`): the coverage
  * table reads this list, and `itemEffects()` leaves them unregistered so a develop
  * build warns the first time a battle meets one. Adding a handler means removing
  * the id here.
- */
-export const UNMODELLED_ITEMS: readonly string[] = [
+ */ export const UNMODELLED_ITEMS: readonly string[] = [
   'custapberry',
   'enigmaberry',
   'jabocaberry',
@@ -123,7 +147,7 @@ function unnerved(ctx: EffectContext): boolean {
 function consume(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.heldItem = null;
   ctx.owner.lastItemId = item.id;
-  pushText(ctx.state, `${ctx.owner.name} used up its ${item.name}!`);
+  pushText(ctx.state, 'battle.log.item.usedUp', { name: ctx.owner.name, item: item.id });
   // Cud Chew owes the holder one more bite at the end of the turn.
   if (ctx.owner.ability === 'Cud Chew' && ctx.owner.volatiles.cudChew === null) {
     ctx.owner.volatiles.cudChew = item.id;
@@ -138,7 +162,7 @@ function consume(ctx: EffectContext, item: ItemDef): void {
         hp: ctx.owner.hp,
         maxHp: ctx.owner.maxHp,
       });
-      pushText(ctx.state, `${ctx.owner.name} restored HP with Cheek Pouch!`);
+      pushText(ctx.state, 'battle.log.item.cheekPouch', { name: ctx.owner.name });
     }
   }
 }
@@ -152,7 +176,7 @@ function consume(ctx: EffectContext, item: ItemDef): void {
 function spend(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.heldItem = null;
   ctx.owner.lastItemId = item.id;
-  pushText(ctx.state, `${ctx.owner.name} used up its ${item.name}!`);
+  pushText(ctx.state, 'battle.log.item.usedUp', { name: ctx.owner.name, item: item.id });
 }
 
 /**
@@ -166,7 +190,7 @@ export function applyHeldItemEffect(ctx: EffectContext, item: ItemDef, forced = 
     const cured = cureStatus(holder);
     if (!cured) return false;
     pushEvent(ctx.state, { kind: 'cure', side: ctx.side, status: cured });
-    pushText(ctx.state, `${holder.name}'s ${item.name} cured its status!`);
+    pushText(ctx.state, 'battle.log.item.curedStatus', { name: holder.name, item: item.id });
     return true;
   }
 
@@ -177,7 +201,7 @@ export function applyHeldItemEffect(ctx: EffectContext, item: ItemDef, forced = 
     for (const change of changes) {
       pushEvent(ctx.state, { kind: 'boost', side: ctx.side, stat: change.stat, stages: change.stages });
     }
-    pushText(ctx.state, `${holder.name}'s ${item.name} raised its ${statLabel(changes[0].stat)}!`);
+    pushText(ctx.state, ITEM_RAISED[changes[0].stat], { name: holder.name, item: item.id });
     return true;
   }
 
@@ -194,7 +218,7 @@ export function applyHeldItemEffect(ctx: EffectContext, item: ItemDef, forced = 
     hp: holder.hp,
     maxHp: holder.maxHp,
   });
-  pushText(ctx.state, `${holder.name} restored HP with its ${item.name}!`);
+  pushText(ctx.state, 'battle.log.item.restoredHp', { name: holder.name, item: item.id });
   return true;
 }
 
@@ -204,7 +228,7 @@ function residualHandler(item: ItemDef): NonNullable<EffectHandlers['onResidual'
     const holder = ctx.owner;
     if (holder.hp <= 0) return;
     if (item.consumed && unnerved(ctx)) {
-      pushText(ctx.state, `${holder.name} can't eat its ${item.name} because of Unnerve!`);
+      pushText(ctx.state, 'battle.log.item.unnerve', { name: holder.name, item: item.id });
       return;
     }
     if (!applyHeldItemEffect(ctx, item)) return;
@@ -267,7 +291,7 @@ function surviveHandler(item: ItemDef): NonNullable<EffectHandlers['onModifyDama
     const [numerator, denominator] = survive.chance;
     if (ctx.rng.int(1, denominator) > numerator) return;
     if (item.consumed) spend(ctx, item);
-    pushText(ctx.state, `${holder.name} hung on with its ${item.name}!`);
+    pushText(ctx.state, 'battle.log.item.hungOn', { name: holder.name, item: item.id });
     return Math.max(0, holder.hp - 1);
   };
 }
@@ -318,7 +342,7 @@ function recoilHandler(item: ItemDef): NonNullable<EffectHandlers['onAfterMove']
       effectiveness: 1,
       crit: false,
     });
-    pushText(ctx.state, `${holder.name} lost HP to its ${item.name}!`);
+    pushText(ctx.state, 'battle.log.item.lostHp', { name: holder.name, item: item.id });
   };
 }
 
@@ -330,7 +354,7 @@ function selfStatusHandler(item: ItemDef): NonNullable<EffectHandlers['onResidua
     if (holder.hp <= 0) return;
     if (!applyStatus(holder, status, ctx.rng)) return;
     pushEvent(ctx.state, { kind: 'status', side: ctx.side, status });
-    pushText(ctx.state, `${holder.name}'s ${item.name} inflicted ${statusName(status)}!`);
+    pushText(ctx.state, ITEM_INFLICTED[status], { name: holder.name, item: item.id });
   };
 }
 

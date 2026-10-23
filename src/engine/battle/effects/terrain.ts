@@ -1,6 +1,12 @@
 import type { Move } from '../../../data/dex';
 import { isGrounded, type BattleFighter, type StatusId } from '../fighter';
-import { pushText, type BattleState, type TerrainId } from '../state';
+import {
+  pushText,
+  type BattleState,
+  type BattleText,
+  type BattleTextKey,
+  type TerrainId,
+} from '../state';
 import { normalizeEffectId, registerEffects, type EffectDefinition } from './registry';
 
 export const TERRAIN_TURNS = 5;
@@ -12,11 +18,11 @@ const MOVE_TERRAIN: Readonly<Record<string, TerrainId>> = {
   psychicterrain: 'psychic',
 };
 
-const START_MESSAGES: Readonly<Record<TerrainId, string>> = {
-  electric: 'An electric current ran across the battlefield!',
-  grassy: 'Grass grew to cover the battlefield!',
-  misty: 'Mist swirled around the battlefield!',
-  psychic: 'The battlefield got weird!',
+const START_MESSAGES: Readonly<Record<TerrainId, BattleTextKey>> = {
+  electric: 'battle.log.terrain.start.electric',
+  grassy: 'battle.log.terrain.start.grassy',
+  misty: 'battle.log.terrain.start.misty',
+  psychic: 'battle.log.terrain.start.psychic',
 };
 
 export function terrainFromMove(move: Move): TerrainId | null {
@@ -34,7 +40,7 @@ export function clearTerrain(state: BattleState): void {
   if (!state.terrain) return;
   state.terrain = null;
   state.terrainTurns = 0;
-  pushText(state, 'The terrain returned to normal.');
+  pushText(state, 'battle.log.terrain.end');
 }
 
 export function tickTerrain(state: BattleState): void {
@@ -53,16 +59,20 @@ const TERRAIN_STATUS_BLOCK: Readonly<Partial<Record<TerrainId, readonly StatusId
   electric: ['slp'],
 };
 
-/** Returns a message when the terrain makes `status` illegal, else null. */
+/** Returns a log line when the terrain makes `status` illegal, else null. */
 export function terrainBlocksStatus(
   terrain: TerrainId | null,
   fighter: BattleFighter,
   status: StatusId,
-): string | null {
+): BattleText | null {
   if (!terrain || !isGrounded(fighter)) return null;
-  if (terrain === 'misty') return `${fighter.name} is protected by the mist!`;
+  if (terrain === 'misty') {
+    return { key: 'battle.log.terrain.mistProtected', params: { name: fighter.name } };
+  }
   const blocked = TERRAIN_STATUS_BLOCK[terrain];
-  if (blocked?.includes(status)) return `${fighter.name} can't fall asleep on Electric Terrain!`;
+  if (blocked?.includes(status)) {
+    return { key: 'battle.log.terrain.electricSleep', params: { name: fighter.name } };
+  }
   return null;
 }
 

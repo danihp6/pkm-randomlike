@@ -105,7 +105,7 @@ cycle with the cue table.
 | `src/data/spriteSize.ts` | the battle sprite size curve: canonical height (m) → drawn height (px), the power and clamps | 5 |
 | `src/data/run.ts` | chain length, boss cadence, level bands (level range, party size and BST window, D39), starter pool, starting bag | 2 |
 | `src/data/portraits.ts` | portrait atlas URL and frame mapping (dex number − 1) | 6 |
-| `src/data/itemIcons.ts` | typed view over the generated `anil/item-icons.json` (Añil item icon frames, 24px, normalised id → frame, with `hasItemIcon`/`itemIconFrame` and the Mega Stone / TM fallbacks) | 6 |
+| `src/data/itemIcons.ts` | typed view over the generated `anil/item-icons.json` (Añil item icon frames, 24px, normalised id → frame, with `hasItemIcon`/`itemIconFrame` and the Mega Stone / TM fallbacks); the route and battle bag grids draw each stack's cell icon through `itemIconFrame`, and a stack whose id resolves to no frame keeps its cell and its count badge with no icon | 6 |
 | `src/data/anil/item-icons.json` | generated frame map for the Añil item icon atlas | 6 |
 | `src/data/frlg/item-icons.json` | generated frame map for the FRLG item icon atlas (superseded by the Añil one) | 6 |
 | `src/data/typeIcons.ts` | typed view over the generated `frlg/type-icons.json` (Añil type badge frames, repacked in place) | 7 |
@@ -121,7 +121,11 @@ cycle with the cue table.
   same stat in the same run. The run stores only the colours it has **discovered**
   (`RunState.discoveredCandy`, run-long); the catalogue never carries the mapping, so
   a banded candy row needs no data change to work (`src/engine/run/items.ts`,
-  `candyTreat`).
+  `candyTreat`). The route bag's description card reads that list through
+  `bagDiscoveredCandy` (`src/ui/bag.ts`) and prints `candyTreat`'s stat and sign for
+  a discovered colour, so the card says which stat the candy moves before it is
+  spent; an undiscovered candy and the battle's own card print the catalogue
+  description instead.
 
 ## 4. Typed accessors
 

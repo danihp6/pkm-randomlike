@@ -88,7 +88,7 @@ for (const id of ['gulpmissile', 'multitype', 'powerconstruct', 'rkssystem']) {
   EXCLUDED_ABILITIES.set(id, 'forme change (cut)');
 }
 for (const id of ['heavymetal', 'lightmetal']) {
-  EXCLUDED_ABILITIES.set(id, 'weight is not modelled');
+  EXCLUDED_ABILITIES.set(id, 'weight-changing abilities are not modelled');
 }
 EXCLUDED_ABILITIES.set('suctioncups', 'no forced-switch mechanic');
 EXCLUDED_ABILITIES.set('toxicdebris', 'entry hazards are not modelled');
@@ -167,6 +167,10 @@ const TURN_LOOP_MOVES = new Set([
   'instruct',
 ]);
 
+// Port: the engine's own table of relative-damage moves — the amounts no dex
+// field and no dex number can express, read from the same textual seam.
+const DAMAGE_RESOLVERS = new Set(tableKeys(text('src/engine/battle/damage.ts'), 'DAMAGE_RESOLVERS'));
+
 // Port: data fields the battle reads. The status ids are `STATUS_IDS`
 // (`src/engine/battle/status.ts`), the volatiles are the cases of
 // `applyVolatileEffect`'s switch (`src/engine/battle/turn.ts` — anything else
@@ -209,6 +213,7 @@ const hasReadSecondary = (move) =>
 const portedMoveNote = (move) => {
   if (registeredMoves.has(move.id)) return `registry: ${registeredMoves.get(move.id)}`;
   if (TURN_LOOP_MOVES.has(move.id)) return 'turn loop: turn.ts';
+  if (DAMAGE_RESOLVERS.has(move.id)) return 'damage: damage.ts';
   if (MOVE_STATUSES.has(move.status)) return 'data: status';
   if (MOVE_VOLATILES.has(move.volatileStatus)) return 'data: volatileStatus';
   if (move.boosts) return 'data: boosts';
@@ -273,6 +278,9 @@ for (const id of ['spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'courtcha
   EXCLUDED_MOVES.set(id, 'entry hazards are not modelled');
 }
 EXCLUDED_MOVES.set('sketch', 'needs a permanent move copy');
+EXCLUDED_MOVES.set('bide', 'needs a two-turn damage accumulator');
+EXCLUDED_MOVES.set('fling', "needs the held item's fling power");
+EXCLUDED_MOVES.set('spotlight', 'needs a redirection mechanic');
 
 const moveEntries = [...moves]
   .sort((a, b) => a.name.localeCompare(b.name))
@@ -333,9 +341,9 @@ hide during playtests.
   meets one, so a gap cannot hide during playtests.
 - \`excluded\` — deliberately out of scope: no playable species has it, it only
   works with allies, it needs a cut mechanic (Mega/Z/Dynamax/Terastal/forme
-  change), or it needs a mechanic the engine does not model (weight, entry
-  hazards, forced switching, out-of-battle effects). Excluded effects are never
-  a coverage gap.
+  change), or it needs a mechanic the engine does not model (entry hazards,
+  forced switching, out-of-battle effects). Excluded effects are never a
+  coverage gap.
 - \`removed\` — the engine no longer carries it because its mechanic became
   **data** (\`D38\`): the forme-changing abilities whose forme is now an evolution
   branch, a variant drawn at generation or a hand-authored Mega. The deletion is
@@ -343,8 +351,13 @@ hide during playtests.
   is gone. Removals are listed in \`REMOVED_ABILITIES\` in
   \`scripts/effect-coverage.mjs\`.
 - For a move, \`port\` means a registered handler, an id the turn loop
-  special-cases, or a data-driven field the engine reads; \`no-op\` means a run
-  can meet the move and nothing happens.
+  special-cases, a data-driven field the engine reads, or an id in
+  \`DAMAGE_RESOLVERS\` (\`src/engine/battle/damage.ts\`), which is what
+  \`damage: damage.ts\` names. \`data: basePower\` means the formula multiplies the
+  move's dex number, with the multiplicative exceptions \`resolveBasePower\`
+  applies to a named few (Eruption, Hex, Facade, the weight- and HP-relative
+  powers) — those are documented in \`docs/battle-spec.md\` §3. \`no-op\` means a
+  run can meet the move and nothing happens.
 - For an item, \`port\` means the held item registers a handler
   (\`effects/items.ts\`) or the Bag item is one \`commands.ts\` reads; \`no-op\`
   means a run can meet the item and nothing happens.

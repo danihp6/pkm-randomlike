@@ -151,6 +151,21 @@ carries over.
   item on a fainted member does nothing (no stack is spent, no notice, and the item
   never becomes a held item); when it does apply the stack leaves the bag and the
   HUD flashes `Used Potion.` for 2.6 s.
+- The bag window is an **icon grid**: **five fixed columns** of square cells over
+  three rows (fifteen stacks) under the pocket tab strip, each cell the item's own
+  Añil icon with a small `xN` count badge in its lower-right corner — a stack whose
+  atlas has no icon still gets its cell and its badge. The **selected** cell wears
+  the accent fill and the accent 1-px outline and an **empty** slot is the dim 1-px
+  outline only, so the grid's shape reads even when the pocket is nearly empty; a
+  click selects a cell and the shipped **drag** — a stack onto a member, an item
+  back onto the bag — is unchanged. A **filter** field between the tabs and the grid
+  narrows the cells by name as it is typed (case-insensitive, matching the
+  catalogue's own English name in every locale, `D43`), and the fifteen-stack cap
+  drops the overflow: the filter is the way to the rest. Beside the grid floats the
+  shared description card: it names the selected item and prints its catalogue
+  description, or, for a **coloured candy** the run has already discovered, the
+  stat and sign **this run** gave it (`docs/data-spec.md` §3). The card is the grid's
+  own selection, not a button — there is no ⓘ in the bag.
 - The **Pokevial** is a charged button in the party window's header (top-right),
   drawn as a **single bar** whose fill climbs through three colour stages with
   **POKEVIAL** written inside (no charge count): clicking it **only when the bar
@@ -287,7 +302,11 @@ Full rules in `docs/battle-spec.md`. In short:
   **volatiles** hidden, so the window lists neither.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
-  consumables.
+  consumables. The pocket is the same **icon grid** as the route's, two rows of
+  the five fixed columns (ten stacks) under the tabs, with its own **filter**
+  field: a click or the `[` / `]` keys change pockets, the arrows walk the cells,
+  `confirm` uses the stack the cell holds — a click only selects — and a
+  selected stack's line and description card sit under and above the grid.
 - Every battle ends by itself: once the closing line has been read, a run, a
   catch, a win or a loss all return to the route with no confirm to press.
 - On a wide screen the battle is a centred **square** (at most 900 px a side);
@@ -299,7 +318,10 @@ Full rules in `docs/battle-spec.md`. In short:
   menus, the battle-state window the **INFO** control opens and the switch grid's
   detail window — is the default card skin, each at its own degree of translucency
   so the field stays readable
-  through it, and they ink their text with the light `FRLG_INK`.
+  through it, and they ink their text with the light `FRLG_INK`. The line the message
+  box prints is the engine's own `battle.log.*` key resolved in the active locale
+  (`src/ui/feed.ts`), so a Spanish run reads its action log in Spanish while the log
+  itself, and every fixed seed, stays language-free.
 
 - The map boss's battle — and only it — is the engine's **double battle** on
   screen (`docs/battle-spec.md` §12): two actives per side, so the foe's platform
@@ -541,10 +563,10 @@ answers to a key. Every route-HUD operation is reached with the **pointer**, and
 each pane draws its own highlight for the member, stack or move in hand. **The
 pause menu is the one keyboard surface the route keeps** (`cancel`, arrows,
 `confirm`); the Mart and the mini-boss reward are **pointer-only floating cards**
-that take no key at all, and a focused text field — the nickname and the learnset
-search field — receives typed characters and swallows the arrows while it is
-being typed into, which is text editing, not pane browsing. The release overlay
-and the level-up popup keep `confirm`. The battle, the menus, the settings and the
+that take no key at all, and a focused text field — the nickname, the learnset
+search field and the bag's filter — receives typed characters and swallows the
+arrows while it is being typed into, which is text editing, not pane browsing. The
+release overlay and the level-up popup keep `confirm`. The battle, the menus, the settings and the
 run-over screen stay fully keyboard playable, as the table's rows below say; only
 the route HUD changed.
 
@@ -555,8 +577,9 @@ the route HUD changed.
 | Party row reorder / deposit / withdraw | `RouteScene.dropHudAcross` | pointer: drag a row onto another (reorder) or onto the PC box / party (deposit / withdraw) | pointer |
 | Party header / Pokevial | `RouteScene.drinkPokevial` | pointer: click the vial with a full meter (`vialButtonAt`) | pointer |
 | PC box cells and pages | `RouteScene.stepBoxPage` | pointer: click a cell or a page tab, wheel over the window | pointer |
-| Bag stacks | `RouteScene.hudHeldStackAt` | pointer: press a held stack and drop it on a member (`equipHudItem`) | pointer |
+| Bag stacks | `RouteScene.hudDraggableStackAt` | pointer: click a cell to select it (its description card floats beside the grid) and press-drag a held stack or a heal/status consumable onto a member (`equipHudItem`) — the route's grid takes no arrow key | pointer |
 | Bag pockets | `RouteScene.selectBagTab` | pointer: click a pocket tab | pointer |
+| Bag filter | `RouteScene.handleHudPointerDown` | pointer: click the field, then type; it swallows every key while focused | pointer |
 | Detail tabs STATS/MOVES | `RouteScene.detailTabAt` | pointer: click a tab | pointer |
 | Detail nickname field | `RouteScene.beginNicknameEdit` | pointer: click the name row, then type | pointer |
 | Detail ability info | `RouteScene.abilityInfoAt` | pointer: hover or click the ⓘ | pointer |
@@ -574,7 +597,7 @@ the route HUD changed.
 | Battle command grid | `BattleScene.moveMenuGrid` | arrows, `confirm`, `cancel` | keyboard |
 | Battle moves grid + ⓘ | `BattleScene.renderMoveMenu` | arrows, `confirm`, `run` toggles the ⓘ | keyboard (new) |
 | Battle MEGA / G-MAX cells | `BattleScene.moveMenuGrid` | `right` reaches them, `confirm` toggles | keyboard |
-| Battle bag list and pockets | `BattleScene.handleAction` | `up`/`down` list, `left`/`right` pockets | keyboard (new) |
+| Battle bag list and pockets | `BattleScene.handleAction` | arrows walk the bag's five-column grid, `confirm` uses the selected stack, a click on a cell selects, `[` / `]` or a tab click change pockets; the filter field takes typed text and keeps every command shortcut off | keyboard (new) |
 | Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ | keyboard (new) |
 | Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
 | Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` | keyboard |

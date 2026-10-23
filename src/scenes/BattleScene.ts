@@ -74,7 +74,20 @@ import {
   type EntryStep,
 } from '../ui/beats';
 import { CAPTURE_SHAKE_SPEED, captureBeat } from '../ui/capture';
-import { bagCategoryLabel, bagCategoryForKind, type BagCategory } from '../ui/bag';
+import {
+  BAG_GRID_COLS,
+  BAG_GRID_GAP,
+  bagCategoryLabel,
+  bagCategoryForKind,
+  bagGridLayout,
+  filterBagStacks,
+  stepBagCursor,
+  stepBagGrid,
+  type BagCategory,
+  type BagGridDebugState,
+  type BagGridMetrics,
+  type BagGridRect,
+} from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
 import {
   HP_CUE_GAP,
@@ -94,6 +107,7 @@ import {
   type Typewriter,
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
+import { IS_DEVELOP } from '../dev/env';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
 import {
@@ -113,6 +127,7 @@ import {
   FRLG_ROW_STROKE,
   FRLG_SELECTED_FILL,
   FRLG_SELECTED_STROKE,
+  FRLG_SURFACE,
   badgeInkFor,
 } from '../ui/frlg';
 import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
@@ -203,12 +218,19 @@ const MEGA_CONTROL_FRAME = itemIconFrame('hardstone') ?? 0;
 const MAX_BATTLE_SIZE = 900;
 /** Below this square side the stacked, full-width phone layout is used. */
 const COMPACT_SIZE = 700;
-/** The bag pocket tabs drawn inside the menu window, as in the route HUD. */
+/** The bag panel's pocket tabs, drawn inside the menu window, as in the route HUD. */
 const MENU_TAB_W = 120;
 const MENU_TAB_H = 26;
 const MENU_TAB_GAP = 4;
-/** Bag rows that fit under the tab strip in the 160px menu window. */
-const MENU_BAG_ROWS = 3;
+/** The bag grid: five fixed columns over two rows of square icon cells. */
+const MENU_BAG_ROWS = 2;
+const MENU_BAG_CELL_MAX = 56;
+/** The selected stack's line under the grid, and the gap above it. */
+const MENU_BAG_DETAIL_H = 20;
+const MENU_BAG_DETAIL_GAP = 6;
+const BAG_INFO_W = 320;
+const BAG_INFO_GAP = 8;
+const MENU_BAG_CAP = MENU_BAG_ROWS * BAG_GRID_COLS;
 /** The FIGHT / BAG / SWITCH / RUN grid: 2 columns, one gap and one inset. */
 const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
@@ -570,6 +592,31 @@ export class BattleScene extends Phaser.Scene {
   private bagCategories: readonly BagCategory[] = ['consumable'];
   private bagCategory: BagCategory = 'consumable';
   private bagTabs: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
+  /** The pocket's drawn stacks (filtered, capped), which `menuIndex` walks. */
+  private bagStacks: readonly BagSlot[] = [];
+  private bagQuery = '';
+  private bagSearchFocused = false;
+  private bagSearchRect: BagGridRect = { x: 0, y: 0, w: 0, h: 0 };
+  private bagSearchBg!: Phaser.GameObjects.Rectangle;
+  private bagSearchText!: Phaser.GameObjects.BitmapText;
+  private bagEmptyText!: Phaser.GameObjects.BitmapText;
+  /** The selected stack's line in the band under the grid. */
+  private bagDetailText!: Phaser.GameObjects.BitmapText;
+  private bagCells: {
+    bg: Phaser.GameObjects.Rectangle;
+    icon: Phaser.GameObjects.Image;
+    badgeBg: Phaser.GameObjects.Rectangle;
+    badge: Phaser.GameObjects.BitmapText;
+  }[] = [];
+  private bagZones: Phaser.GameObjects.Zone[] = [];
+  /** The floating description card the selected cell shows, and its last text. */
+  private bagInfoLayer!: Phaser.GameObjects.Container;
+  private bagInfoPopup!: InfoPopup;
+  private bagInfoText = '';
+  /** The grid's geometry for the current menu rect, or null with no bag open. */
+  private bagGrid: BagGridMetrics | null = null;
+  /** The grid band handed to `bagGridLayout`, in the square's own coordinates. */
+  private bagGridBand: BagGridRect = { x: 0, y: 0, w: 0, h: 0 };
 
   /** The keys behind the confirm action, polled so holding one rushes the feed. */
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
@@ -606,6 +653,11 @@ export class BattleScene extends Phaser.Scene {
     this.targetMoveIndex = null;
     this.beat2 = {};
     this.entryPartnerStep = -1;
+    this.bagStacks = [];
+    this.bagQuery = '';
+    this.bagSearchFocused = false;
+    this.bagInfoText = '';
+    this.bagGrid = null;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -1052,11 +1104,57 @@ export class BattleScene extends Phaser.Scene {
     // The overlay marks ride over the ball row and the pocket tabs built above.
     this.marks = this.add.graphics();
 
+    // The bag's filter field, grid cells and selected line: built once, painted
+    // and repositioned on every redraw because the menu rect moves with the stage.
+    this.bagSearchBg = this.add
+      .rectangle(0, 0, 10, 24, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
+      .setVisible(false);
+    this.bagSearchText = addFrlgText(this, 0, 0, '', {
+      size: 16,
+      tint: FRLG_INK,
+    })
+      .setMaxWidth(1)
+      .setVisible(false);
+    this.bagEmptyText = addFrlgText(this, 0, 0, t('battle.noItems'), {
+      size: 16,
+      tint: FRLG_MUTED,
+      origin: [0.5, 0],
+    }).setVisible(false);
+    this.bagDetailText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
+    this.bagCells = Array.from({ length: MENU_BAG_CAP }, () => {
+      const bg = this.add.rectangle(0, 0, 10, 10).setOrigin(0, 0).setVisible(false);
+      const icon = this.add.image(0, 0, ITEM_ICON_TEXTURE_KEY, 0).setOrigin(0.5).setVisible(false);
+      const badgeBg = this.add
+        .rectangle(0, 0, 10, 16, FRLG_SURFACE, 0.85)
+        .setOrigin(0, 0)
+        .setVisible(false);
+      const badge = addFrlgText(this, 0, 0, '', {
+        size: 16,
+        tint: FRLG_INK,
+        origin: [1, 0],
+      }).setVisible(false);
+      return { bg, icon, badgeBg, badge };
+    });
+    // A click selects a cell; it never spends the stack the way a row click did.
+    this.bagZones = Array.from({ length: MENU_BAG_CAP }, (_, index) => {
+      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
+      zone.setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.selectBagCell(index));
+      if (zone.input) zone.input.enabled = false;
+      return zone;
+    });
+
     // The shared moves grid and its floating info popup, built last so the popup
     // rides over the menu and the battle behind it. Hidden until fights open it.
     this.moveGrid = new MoveGrid(this);
 
     this.buildPartyDetail();
+
+    // The bag's own description card, above every window it floats over.
+    this.bagInfoLayer = this.add.container(0, 0);
+    this.bagInfoPopup = new InfoPopup(this, this.bagInfoLayer);
   }
 
   /**
@@ -1229,17 +1327,19 @@ export class BattleScene extends Phaser.Scene {
     // a pocket tab is left to it, so picking an option never also taps the feed.
     this.input.on(
       'pointerdown',
-      (_pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
-        this.onPointerDown(objects),
+      (pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
+        this.onPointerDown(objects, pointer),
     );
     // The ⓘ hover is classified from the live pointer, so one scene-level listener
     // replaces the per-row zone's own move event; leaving the canvas drops an
     // unpinned popup.
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.onMoveInfoHover(pointer));
     this.input.on('gameout', () => this.clearMoveInfo());
-    // `[` / `]` cycle the bag's pockets, as in the route HUD.
+    // `[` / `]` cycle the bag's pockets; while the filter field is focused they
+    // are swallowed as text input instead.
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
       if (this.mode !== 'bag') return;
+      if (this.typeInBagSearch(event)) return;
       if (event.key === '[') this.cycleBagTab(-1);
       else if (event.key === ']') this.cycleBagTab(1);
     });
@@ -1250,12 +1350,9 @@ export class BattleScene extends Phaser.Scene {
    * A / B and pad. The battle routes it the same way either way.
    */
   private handleAction(action: KeybindAction): void {
-    // The bag's pocket strip is reachable with the arrows, not only the raw
-    // `[` / `]` keys (which stay as an alias). (§10.3)
-    if (this.mode === 'bag' && (action === 'left' || action === 'right')) {
-      this.cycleBagTab(action === 'left' ? -1 : 1);
-      return;
-    }
+    // The bag's filter field owns every key while it is being typed into, so no
+    // command shortcut (confirm included) fires under it.
+    if (this.bagSearchFocused) return;
     switch (action) {
       case 'confirm':
         this.onConfirm();
@@ -1277,7 +1374,16 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** A click on the scene: feed taps and the result screen answer it. */
-  private onPointerDown(objects: readonly Phaser.GameObjects.GameObject[]): void {
+  private onPointerDown(
+    objects: readonly Phaser.GameObjects.GameObject[],
+    pointer: Phaser.Input.Pointer,
+  ): void {
+    // A press on the bag's filter field focuses it, as the route's field does.
+    if (this.mode === 'bag' && this.pointerOnBagSearch(pointer)) {
+      this.bagSearchFocused = true;
+      this.refreshHud();
+      return;
+    }
     if (this.mode === 'entry') {
       this.finishEntry();
       return;
@@ -2247,31 +2353,51 @@ export class BattleScene extends Phaser.Scene {
       this.bagCategories.find((category) =>
         usable.some((slot) => bagCategoryForKind(slot.item.kind) === category),
       ) ?? this.bagCategories[0];
+    this.bagQuery = '';
+    this.bagSearchFocused = false;
     this.mode = 'bag';
+    this.menuIndex = 0;
     this.setBagItems(this.bagCategory);
   }
 
-  /** Rebuilds the bag list for a pocket, as a menu the cursor and clicks drive. */
+  /** Shows a pocket's stacks, as the grid the cursor and clicks drive. */
   private setBagItems(category: BagCategory): void {
     this.bagCategory = category;
-    const stacks = this.usableBag().filter((slot) => bagCategoryForKind(slot.item.kind) === category);
+    this.refreshBagItems();
+  }
+
+  /**
+   * Rebuilds the drawn stacks from the pocket and the filter, and the menu items
+   * that submit them. `filterBagStacks` owns the matching rule; the pocket keeps
+   * its own order, so the grid reads in bag order like the shipped list did.
+   */
+  private refreshBagItems(): void {
+    const pocket = this.usableBag().filter(
+      (slot) => bagCategoryForKind(slot.item.kind) === this.bagCategory,
+    );
+    const counts = pocket.map((slot) => ({ itemId: slot.item.id, count: slot.count }));
+    const kept = new Set(filterBagStacks(counts, this.bagQuery).map((stack) => stack.itemId));
+    this.bagStacks = pocket.filter((slot) => kept.has(slot.item.id)).slice(0, MENU_BAG_CAP);
     this.menuItems =
-      stacks.length === 0
+      this.bagStacks.length === 0
         ? [{ label: t('battle.noItems'), enabled: false, onSelect: () => {} }]
-        : stacks.map((slot) => ({
+        : this.bagStacks.map((slot) => ({
             label: `${slot.item.name} x${slot.count}`,
             enabled: true,
             onSelect: () => this.submit({ type: 'bag', itemId: slot.item.id }),
           }));
-    this.menuIndex = 0;
+    this.menuIndex = stepBagCursor(this.menuIndex, 0, this.bagStacks.length);
     this.refreshHud();
   }
 
-  /** Steps the bag to the next pocket, as `[` / `]` or a tab click ask. */
+  /** Steps the bag to the next pocket, as `[` / `]` ask. */
   private cycleBagTab(delta: number): void {
     if (this.bagCategories.length < 2) return;
     const index = this.bagCategories.indexOf(this.bagCategory);
     const next = (index + delta + this.bagCategories.length) % this.bagCategories.length;
+    this.bagQuery = '';
+    this.bagSearchFocused = false;
+    this.menuIndex = 0;
     this.setBagItems(this.bagCategories[next]);
   }
 
@@ -2280,7 +2406,20 @@ export class BattleScene extends Phaser.Scene {
     if (this.mode !== 'bag') return;
     const category = this.bagCategories[slot];
     if (!category || category === this.bagCategory) return;
+    this.bagQuery = '';
+    this.bagSearchFocused = false;
+    this.menuIndex = 0;
     this.setBagItems(category);
+  }
+
+  /**
+   * A click on a grid cell selects it. It never submits: the confirming gesture
+   * stays the confirm action (or the ◀ back control's sibling rows).
+   */
+  private selectBagCell(index: number): void {
+    if (index < 0 || index >= this.bagStacks.length) return;
+    this.menuIndex = index;
+    this.refreshHud();
   }
 
   private openParty(slot: Slot = 0): void {
@@ -2444,6 +2583,14 @@ export class BattleScene extends Phaser.Scene {
   private navigateMenu(action: 'up' | 'down' | 'left' | 'right'): void {
     if (this.mode === 'target') {
       this.moveTarget(action === 'left' || action === 'up' ? -1 : 1);
+      return;
+    }
+    if (this.mode === 'bag') {
+      const next = stepBagGrid(this.menuIndex, action, this.bagStacks.length);
+      if (next !== this.menuIndex) {
+        this.menuIndex = next;
+        this.refreshHud();
+      }
       return;
     }
     if (this.mode === 'moves' || this.mode === 'menu' || this.mode === 'partner') {
@@ -3018,7 +3165,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private renderCommandMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
-    this.hideBagTabs();
+    this.hideBagChrome();
     this.hideMoveChrome();
     this.hidePartyGrid();
     this.layoutBackButton(menu, false);
@@ -3137,7 +3284,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private renderInfoWindow(menu: Rect): void {
     this.menuPanel.setVisible(true);
-    this.hideBagTabs();
+    this.hideBagChrome();
     this.hideMoveChrome();
     this.hidePartyGrid();
     this.hideInfoControl();
@@ -3160,7 +3307,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private renderPartyGrid(menu: Rect): void {
     this.menuPanel.setVisible(true);
-    this.hideBagTabs();
+    this.hideBagChrome();
     this.hideMoveChrome();
     this.hideInfoControl();
     const party = this.state.sides.player.party;
@@ -3520,7 +3667,7 @@ export class BattleScene extends Phaser.Scene {
    */
   private renderMoveMenu(menu: Rect): void {
     this.menuPanel.setVisible(true);
-    this.hideBagTabs();
+    this.hideBagChrome();
     this.hidePartyGrid();
     this.hideInfoControl();
     for (const row of this.menuRows) row.setVisible(false);
@@ -3742,14 +3889,211 @@ export class BattleScene extends Phaser.Scene {
         .setPosition(x + MENU_TAB_W / 2, tabY + 5)
         .setVisible(true);
     });
-    // The ◀ back control sits centred on the list's left edge, as in the grids.
-    const rowsTop = tabY + MENU_TAB_H + 8;
+    // The rows of the other modes are not this one's: keep their objects dark.
+    for (const row of this.menuRows) row.setVisible(false);
+    for (const zone of this.menuZones) {
+      zone.setData('item', -1);
+      if (zone.input) zone.input.enabled = false;
+    }
+
+    // The filter field under the tabs, the route's own box and height.
+    const filterX = menu.x + pad.x;
+    const filterY = tabY + MENU_TAB_H + 8;
+    const filterW = menu.w - pad.x * 2;
+    this.bagSearchRect = { x: filterX, y: filterY, w: filterW, h: 24 };
+    this.bagSearchBg.setPosition(filterX, filterY).setSize(filterW, 24).setVisible(true);
+    const placeholder =
+      this.bagSearchFocused || this.bagQuery.length > 0 ? this.bagQuery : t('hud.searchItems');
+    this.bagSearchText
+      .setText(`${this.bagSearchFocused ? '>' : ' '} ${placeholder}`)
+      .setTint(this.bagQuery.length === 0 && !this.bagSearchFocused ? FRLG_MUTED : FRLG_INK)
+      .setPosition(filterX + 6, filterY + 4)
+      .setMaxWidth(filterW - 78)
+      .setVisible(true);
+
+    // The grid band: whatever the filter and the selected line leave between them.
+    // The menu rect moves with the stage, so the metrics are recomputed here; the
+    // cells themselves were built once and are only repositioned and repainted.
+    const gridY = filterY + 24 + 8;
+    const grid: Rect = {
+      x: filterX,
+      y: gridY,
+      w: filterW,
+      h: menu.y + menu.h - pad.bottom - MENU_BAG_DETAIL_H - MENU_BAG_DETAIL_GAP - gridY,
+    };
+    this.bagGridBand = grid;
+    this.bagGrid = bagGridLayout(grid, this.bagStacks.length, {
+      rows: MENU_BAG_ROWS,
+      gap: BAG_GRID_GAP,
+      maxCell: MENU_BAG_CELL_MAX,
+    });
+    this.paintBagCells();
+    this.bagEmptyText
+      .setPosition(grid.x + grid.w / 2, grid.y + grid.h / 2 - 8)
+      .setVisible(this.bagStacks.length === 0);
+
+    const selected = this.bagStacks[this.menuIndex];
+    this.bagDetailText
+      .setText(selected ? `${selected.item.name} x${selected.count}` : t('battle.noItems'))
+      .setPosition(menu.x + pad.x, menu.y + menu.h - pad.bottom - MENU_BAG_DETAIL_H)
+      .setVisible(true);
+
+    const text = selected ? `${selected.item.name}\n${selected.item.shortDesc}` : '';
+    this.bagInfoText = text;
+    if (selected) {
+      this.bagInfoPopup.show(
+        { x: menu.x + pad.x, width: BAG_INFO_W, above: grid.y - BAG_INFO_GAP, below: grid.y },
+        { text },
+      );
+    } else {
+      this.bagInfoPopup.hide();
+    }
+
+    // The ◀ back control sits centred on the grid band's left edge, as in the grids.
     const backX = menu.x + pad.x + 14;
-    const backY = (rowsTop + menu.y + menu.h - pad.bottom) / 2;
+    const backY = (gridY + menu.y + menu.h - pad.bottom) / 2;
     this.backArrow.setVisible(true).setPosition(backX, backY);
     this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
     if (this.backZone.input) this.backZone.input.enabled = true;
-    this.layoutMenuRows(menu, this.menuItems, rowsTop, MENU_BAG_ROWS, MOVE_BACK_COL);
+  }
+
+  /** Paints the ten grid cells from the drawn stacks and the cursor, and squares the zones. */
+  private paintBagCells(): void {
+    const grid = this.bagGrid;
+    if (!grid) return;
+    this.bagCells.forEach((cell, i) => {
+      const rect = grid.cells[i];
+      if (rect === undefined) return;
+      const slot = this.bagStacks[i];
+      cell.bg.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setVisible(true);
+      if (slot === undefined) {
+        cell.bg
+          .setFillStyle(FRLG_ROW_FILL.colour, 0)
+          .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha * 0.4);
+        cell.icon.setVisible(false);
+        cell.badgeBg.setVisible(false);
+        cell.badge.setText('').setVisible(false);
+        return;
+      }
+      const selected = i === this.menuIndex;
+      const fill = selected ? FRLG_SELECTED_FILL : FRLG_ROW_FILL;
+      const stroke = selected ? FRLG_SELECTED_STROKE : FRLG_ROW_STROKE;
+      cell.bg.setFillStyle(fill.colour, fill.alpha).setStrokeStyle(1, stroke.colour, stroke.alpha);
+      const frame = itemIconFrame(slot.item.id);
+      cell.icon.setVisible(frame !== null).setPosition(rect.x + rect.w / 2, rect.y + rect.h / 2);
+      if (frame !== null) cell.icon.setFrame(frame);
+      const badgeW = cell.badge
+        .setText(`x${slot.count}`)
+        .setPosition(rect.x + rect.w - 4, rect.y + rect.h - 18)
+        .setVisible(true)
+        .getTextBounds().global.width;
+      cell.badgeBg
+        .setSize(badgeW + 6, 16)
+        .setPosition(rect.x + rect.w - 4 - badgeW - 3, rect.y + rect.h - 18)
+        .setFillStyle(FRLG_SURFACE, 0.85)
+        .setVisible(true);
+    });
+    this.bagZones.forEach((zone, i) => {
+      const rect = grid.cells[i];
+      if (rect === undefined) return;
+      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setVisible(true);
+      if (zone.input) zone.input.enabled = true;
+    });
+  }
+
+  /** True when a press lands on the bag's filter field. */
+  private pointerOnBagSearch(pointer: Phaser.Input.Pointer): boolean {
+    const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y, this.hitPoint);
+    const rect = this.bagSearchRect;
+    return (
+      point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h
+    );
+  }
+
+  /**
+   * Routes a key into the bag's filter field while it holds focus: the route's
+   * own rule, redrawing the pocket instead of a HUD panel.
+   */
+  private typeInBagSearch(event: KeyboardEvent): boolean {
+    if (!this.bagSearchFocused) return false;
+    if (event.key === 'Escape' || event.key === 'Enter') {
+      this.bagSearchFocused = false;
+    } else if (event.key === 'Backspace') {
+      if (this.bagQuery.length === 0) return true;
+      this.bagQuery = this.bagQuery.slice(0, -1);
+    } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
+      this.bagQuery += event.key;
+    } else {
+      return true;
+    }
+    event.preventDefault();
+    this.refreshBagItems();
+    return true;
+  }
+
+  /**
+   * Dev only: the bag grid as drawn, in canvas (pointer) coordinates. Null when
+   * no bag is on screen.
+   */
+  bagDebugState(): BagGridDebugState | null {
+    if (!IS_DEVELOP || this.mode !== 'bag' || !this.bagGrid) return null;
+    const camera = this.cameras.main;
+    const shift = (x: number, y: number, w: number, h: number): BagGridRect => ({
+      x: x + camera.x,
+      y: y + camera.y,
+      w,
+      h,
+    });
+    const rectOf = (rect: Phaser.Geom.Rectangle): BagGridRect =>
+      shift(rect.x, rect.y, rect.width, rect.height);
+    const cells = this.bagCells.map((cell, index) => {
+      const slot = this.bagStacks[index];
+      const selected =
+        slot !== undefined &&
+        cell.bg.fillColor === FRLG_SELECTED_FILL.colour &&
+        cell.bg.fillAlpha === FRLG_SELECTED_FILL.alpha;
+      return {
+        index,
+        itemId: slot?.item.id ?? null,
+        count: slot?.count ?? 0,
+        badge: cell.badge.text,
+        iconFrame: cell.icon.visible ? Number(cell.icon.frame.name) : null,
+        selected,
+        fill: cell.bg.fillColor,
+        fillAlpha: cell.bg.fillAlpha,
+        stroke: cell.bg.strokeColor,
+        strokeAlpha: cell.bg.strokeAlpha,
+        rect: rectOf(cell.bg.getBounds()),
+      };
+    });
+    // `InfoPopup` builds its window first, so the layer's first child is the card
+    // the scene handed `show`; reading its bounds measures what is on screen.
+    const card = this.bagInfoLayer.list[0] as Phaser.GameObjects.NineSlice;
+    const cardBounds = card.getBounds();
+    return {
+      category: this.bagCategory,
+      query: this.bagQuery,
+      focused: this.bagSearchFocused,
+      columns: this.bagGrid.columns,
+      rows: this.bagGrid.rows,
+      cellW: this.bagGrid.cellW,
+      cellH: this.bagGrid.cellH,
+      gap: this.bagGrid.gap,
+      search: rectOf(this.bagSearchBg.getBounds()),
+      grid: shift(this.bagGridBand.x, this.bagGridBand.y, this.bagGridBand.w, this.bagGridBand.h),
+      tabs: this.bagCategories.map((category, slot) => ({
+        category,
+        rect: rectOf(this.bagTabs[slot].bg.getBounds()),
+      })),
+      cells,
+      info: {
+        visible: this.bagInfoPopup.visible,
+        text: this.bagInfoText,
+        x: cardBounds.x + camera.x,
+        width: cardBounds.width,
+      },
+      footer: this.bagDetailText.text,
+    };
   }
 
   /** Places the ◀ back control in the submenu header, or hides it. */
@@ -3817,17 +4161,35 @@ export class BattleScene extends Phaser.Scene {
     }
     this.hideMoveChrome();
     this.hidePartyGrid();
-    this.hideBagTabs();
+    this.hideBagChrome();
     this.hideInfoControl();
     this.backArrow.setVisible(false);
     if (this.backZone.input) this.backZone.input.enabled = false;
   }
 
-  private hideBagTabs(): void {
+  /** Hides every piece of the bag window: tabs, filter, grid, cells and card. */
+  private hideBagChrome(): void {
     for (const tab of this.bagTabs) {
       tab.bg.setVisible(false);
       tab.label.setVisible(false);
     }
+    this.bagSearchBg.setVisible(false);
+    this.bagSearchText.setVisible(false);
+    this.bagEmptyText.setVisible(false);
+    this.bagDetailText.setVisible(false);
+    for (const cell of this.bagCells) {
+      cell.bg.setVisible(false);
+      cell.icon.setVisible(false);
+      cell.badgeBg.setVisible(false);
+      cell.badge.setVisible(false);
+    }
+    for (const zone of this.bagZones) {
+      zone.setVisible(false);
+      if (zone.input) zone.input.enabled = false;
+    }
+    this.bagInfoPopup.hide();
+    this.bagInfoText = '';
+    this.bagGrid = null;
   }
 
   /** Hovering a row moves the cursor onto it, like the arrow keys. */

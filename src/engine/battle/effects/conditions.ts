@@ -2,6 +2,7 @@ import {
   SIDE_IDS,
   pushText,
   type BattleState,
+  type BattleTextKey,
   type FieldConditionId,
   type SideConditionId,
   type SideId,
@@ -52,44 +53,44 @@ export const FIELD_CONDITION_TURNS: Readonly<Record<FieldConditionId, number>> =
   watersport: 5,
 };
 
-const SIDE_START: Readonly<Record<SideConditionId, (name: string) => string>> = {
-  reflect: (name) => `${name} raised Reflect!`,
-  lightscreen: (name) => `${name} raised Light Screen!`,
-  auroraveil: (name) => `${name} raised Aurora Veil!`,
-  tailwind: (name) => `The Tailwind blew from behind ${name}!`,
-  luckychant: (name) => `${name} is cloaked in Lucky Chant!`,
-  mist: (name) => `${name} became shrouded in mist!`,
-  safeguard: (name) => `${name} became cloaked in a mystical veil!`,
+const SIDE_START: Readonly<Record<SideConditionId, BattleTextKey>> = {
+  reflect: 'battle.log.side.start.reflect',
+  lightscreen: 'battle.log.side.start.lightscreen',
+  auroraveil: 'battle.log.side.start.auroraveil',
+  tailwind: 'battle.log.side.start.tailwind',
+  luckychant: 'battle.log.side.start.luckychant',
+  mist: 'battle.log.side.start.mist',
+  safeguard: 'battle.log.side.start.safeguard',
 };
 
-const SIDE_END: Readonly<Record<SideConditionId, string>> = {
-  reflect: 'Reflect wore off!',
-  lightscreen: 'Light Screen wore off!',
-  auroraveil: 'Aurora Veil wore off!',
-  tailwind: 'The Tailwind petered out!',
-  luckychant: 'The Lucky Chant wore off!',
-  mist: 'The mist faded.',
-  safeguard: 'The mystical veil disappeared.',
+const SIDE_END: Readonly<Record<SideConditionId, BattleTextKey>> = {
+  reflect: 'battle.log.side.end.reflect',
+  lightscreen: 'battle.log.side.end.lightscreen',
+  auroraveil: 'battle.log.side.end.auroraveil',
+  tailwind: 'battle.log.side.end.tailwind',
+  luckychant: 'battle.log.side.end.luckychant',
+  mist: 'battle.log.side.end.mist',
+  safeguard: 'battle.log.side.end.safeguard',
 };
 
-const FIELD_START: Readonly<Record<FieldConditionId, string>> = {
-  trickroom: 'The dimensions were twisted!',
-  gravity: 'Gravity intensified!',
-  magicroom: 'It created a bizarre area in which held items lose their effects!',
-  wonderroom: 'It created a bizarre area in which Defense and Sp. Def are swapped!',
-  fairylock: 'Fairy Lock trapped all Pokémon on the field!',
-  mudsport: 'Electricity is weakened!',
-  watersport: 'Fire is weakened!',
+const FIELD_START: Readonly<Record<FieldConditionId, BattleTextKey>> = {
+  trickroom: 'battle.log.field.start.trickroom',
+  gravity: 'battle.log.field.start.gravity',
+  magicroom: 'battle.log.field.start.magicroom',
+  wonderroom: 'battle.log.field.start.wonderroom',
+  fairylock: 'battle.log.field.start.fairylock',
+  mudsport: 'battle.log.field.start.mudsport',
+  watersport: 'battle.log.field.start.watersport',
 };
 
-const FIELD_END: Readonly<Record<FieldConditionId, string>> = {
-  trickroom: 'The twisted dimensions returned to normal!',
-  gravity: 'Gravity returned to normal!',
-  magicroom: 'The bizarre area vanished!',
-  wonderroom: 'The bizarre area vanished!',
-  fairylock: 'The effects of Fairy Lock ended!',
-  mudsport: 'The mud sport ended!',
-  watersport: 'The water sport ended!',
+const FIELD_END: Readonly<Record<FieldConditionId, BattleTextKey>> = {
+  trickroom: 'battle.log.field.end.trickroom',
+  gravity: 'battle.log.field.end.gravity',
+  magicroom: 'battle.log.field.end.magicroom',
+  wonderroom: 'battle.log.field.end.wonderroom',
+  fairylock: 'battle.log.field.end.fairylock',
+  mudsport: 'battle.log.field.end.mudsport',
+  watersport: 'battle.log.field.end.watersport',
 };
 
 export function sideConditionTurns(state: BattleState, side: SideId, id: SideConditionId): number {
@@ -103,7 +104,7 @@ export function setSideCondition(
   turns = SIDE_CONDITION_TURNS[id],
 ): void {
   state.sides[side].sideConditions[id] = turns;
-  pushText(state, SIDE_START[id](state.sides[side].name));
+  pushText(state, SIDE_START[id], { name: state.sides[side].name });
 }
 
 export function setFieldCondition(

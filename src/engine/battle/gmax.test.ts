@@ -129,7 +129,11 @@ describe('gigantamax', () => {
     expect(fighter.hp).toBe(before.hp * GMAX_HP_MULTIPLIER);
     expect(fighter.stats.hp).toBe(fighter.maxHp);
     expect(state.log).toContainEqual({ kind: 'gmax', side: 'player', fighterId: 'player' });
-    expect(state.log).toContainEqual({ kind: 'text', text: 'Gengar Gigantamaxed!' });
+    expect(state.log).toContainEqual({
+      kind: 'text',
+      key: 'battle.log.gigantamaxed',
+      params: { name: 'Gengar' },
+    });
   });
 
   it('is once per battle, and changes nothing without the stone', () => {

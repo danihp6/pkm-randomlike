@@ -309,7 +309,7 @@ describe('the room’s whole-field rules in the turn loop', () => {
     expect(activeFighter(endured, 'enemy').hp).toBe(1);
     expect(endured.winner).toBeNull();
     expect(
-      endured.log.some((event) => event.kind === 'text' && event.text.includes('endured the hit!')),
+      endured.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
     ).toBe(true);
 
     const fainted = run();
@@ -418,7 +418,7 @@ describe('the status half in the turn loop', () => {
       [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['tackle'] }],
     );
     useMove(state, 'player', { type: 'fight', moveIndex: 0 });
-    expect(state.log.some((event) => event.kind === 'text' && event.text === 'But it failed!')).toBe(
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
       true,
     );
   });
@@ -475,7 +475,188 @@ describe('the status half in a scripted battle on seed 2026', () => {
     expect(enemy.moves[1].pp).toBe((getMove('rest')?.pp ?? 0) - 1 - 4);
     expect(enemy.volatiles.torment).toBe(true);
     expect(
-      state.log.some((event) => event.kind === 'text' && event.text.includes('locked in a nightmare')),
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.nightmare'),
     ).toBe(true);
+  });
+});
+
+/** The damage events of a turn, in order. */
+function damageEvents(state: BattleState): readonly { amount: number }[] {
+  return state.log.flatMap((event) => (event.kind === 'damage' ? [{ amount: event.amount }] : []));
+}
+
+describe('the relative-damage half in the turn loop', () => {
+  it('logs a fixed hit as neutral and uncritical, for its exact amount', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['seismictoss'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    takeTurn(state, fight(), fight());
+    const event = state.log.find((entry) => entry.kind === 'damage');
+    expect(event).toMatchObject({ amount: 50, hp: 73, maxHp: 123, effectiveness: 1, crit: false });
+    expect(activeFighter(state, 'enemy').hp).toBe(73);
+  });
+
+  it('leaves a fixed hit’s target at 1 HP under Endure', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['seismictoss'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['endure'] }],
+    );
+    activeFighter(state, 'enemy').hp = 10;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'enemy').hp).toBe(1);
+    expect(
+      state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.enduredHit'),
+    ).toBe(true);
+  });
+
+  it('lets a Substitute absorb a fixed hit', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['seismictoss'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    const enemy = activeFighter(state, 'enemy');
+    enemy.volatiles.substitute = 40;
+    takeTurn(state, fight(), fight());
+    expect(enemy.hp).toBe(123);
+    expect(enemy.volatiles.substitute).toBe(0);
+    expect(
+      state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.substituteFaded'),
+    ).toBe(true);
+  });
+
+  it('fails Endeavor at equal HP instead of dealing nothing', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['endeavor'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    takeTurn(state, fight(), fight());
+    expect(state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
+      true,
+    );
+    expect(damageEvents(state)).toHaveLength(0);
+    expect(activeFighter(state, 'enemy').hp).toBe(123);
+  });
+
+  it('mirrors twice the physical damage Counter took this turn', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['counter'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['tackle'] }],
+    );
+    activeFighter(state, 'player').boosts.spe = -6;
+    takeTurn(state, fight(), fight());
+    const [taken, mirrored] = damageEvents(state);
+    expect(taken.amount).toBe(25);
+    expect(mirrored.amount).toBe(50);
+  });
+
+  it('fails the OHKO rule against a higher level without drawing', () => {
+    const rng = new CountingRng(9);
+    const state = createBattle({
+      player: [createFighter({ id: 'p', speciesId: 'ditto', level: 50, moves: ['fissure'] })],
+      enemy: [createFighter({ id: 'e', speciesId: 'ditto', level: 60, moves: ['splash'] })],
+      rng,
+      isWild: true,
+    });
+    activeFighter(state, 'player').volatiles.lockOn = true;
+    const enemy = activeFighter(state, 'enemy');
+    useMove(state, 'player', fight());
+    expect(rng.draws).toBe(0);
+    expect(enemy.hp).toBe(enemy.maxHp);
+    expect(state.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
+      true,
+    );
+  });
+
+  it('refuses Spit Up at no stockpile and spends the charge on a hit', () => {
+    const empty = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['spitup'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    takeTurn(empty, fight(), fight());
+    expect(empty.log.some((entry) => entry.kind === 'text' && entry.key === 'battle.log.fail')).toBe(
+      true,
+    );
+    expect(activeFighter(empty, 'enemy').hp).toBe(123);
+
+    const charged = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['spitup'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    const player = activeFighter(charged, 'player');
+    player.volatiles.stockpile = 1;
+    takeTurn(charged, fight(), fight());
+    expect(damageEvents(charged)[0].amount).toBe(67);
+    expect(activeFighter(charged, 'enemy').hp).toBe(56);
+    expect(player.volatiles.stockpile).toBe(0);
+  });
+
+  it('lands one Beat Up hit per healthy party member', () => {
+    const state = build(
+      [
+        { id: 'p1', speciesId: 'ditto', level: 50, moves: ['beatup'] },
+        { id: 'p2', speciesId: 'ditto', level: 50, moves: ['splash'] },
+        { id: 'p3', speciesId: 'ditto', level: 50, moves: ['splash'] },
+      ],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    );
+    state.sides.player.party[2].status = 'brn';
+    takeTurn(state, fight(), fight());
+    expect(damageEvents(state)).toHaveLength(2);
+    expect(activeFighter(state, 'enemy').hp).toBe(110);
+  });
+
+  it('doubles Payback when the target has already moved this turn', () => {
+    const run = (playerSpe: number): number => {
+      const state = build(
+        [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['payback'] }],
+        [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['tackle'] }],
+      );
+      activeFighter(state, 'player').boosts.spe = playerSpe;
+      takeTurn(state, fight(), fight());
+      const dealt = state.log.find((entry) => entry.kind === 'damage' && entry.side === 'enemy');
+      if (dealt?.kind !== 'damage') throw new Error('Payback never landed');
+      return dealt.amount;
+    };
+    expect(run(6)).toBe(22);
+    expect(run(-6)).toBe(43);
+  });
+
+  it('doubles Avalanche when the user was damaged this turn', () => {
+    const run = (enemyMove: string): number => {
+      const state = build(
+        [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['avalanche'] }],
+        [{ id: 'e', speciesId: 'ditto', level: 50, moves: [enemyMove] }],
+      );
+      takeTurn(state, fight(), fight());
+      const dealt = state.log.find((entry) => entry.kind === 'damage' && entry.side === 'enemy');
+      if (dealt?.kind !== 'damage') throw new Error('Avalanche never landed');
+      return dealt.amount;
+    };
+    expect(run('splash')).toBe(25);
+    expect(run('tackle')).toBe(51);
+  });
+
+  it('heals for a quarter on Present’s heal branch and hits on its damaging one', () => {
+    const heal = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['present'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      13,
+    );
+    activeFighter(heal, 'enemy').hp = 40;
+    takeTurn(heal, fight(), fight());
+    expect(activeFighter(heal, 'enemy').hp).toBe(70);
+    expect(heal.log.some((entry) => entry.kind === 'heal' && entry.side === 'enemy')).toBe(true);
+    expect(damageEvents(heal)).toHaveLength(0);
+
+    const hit = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['present'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      1,
+    );
+    activeFighter(hit, 'enemy').hp = 40;
+    takeTurn(hit, fight(), fight());
+    expect(damageEvents(hit)[0].amount).toBe(28);
+    expect(activeFighter(hit, 'enemy').hp).toBe(12);
   });
 });

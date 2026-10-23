@@ -298,8 +298,8 @@
     {
       "id": "beatup",
       "name": "Beat Up",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "behemothbash",
@@ -334,8 +334,8 @@
     {
       "id": "bide",
       "name": "Bide",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "excluded",
+      "note": "needs a two-turn damage accumulator"
     },
     {
       "id": "bind",
@@ -832,8 +832,8 @@
     {
       "id": "crushgrip",
       "name": "Crush Grip",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "curse",
@@ -1066,8 +1066,8 @@
     {
       "id": "dragonrage",
       "name": "Dragon Rage",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "dragonrush",
@@ -1192,8 +1192,8 @@
     {
       "id": "electroball",
       "name": "Electro Ball",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "electrodrift",
@@ -1234,8 +1234,8 @@
     {
       "id": "endeavor",
       "name": "Endeavor",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "endure",
@@ -1391,7 +1391,7 @@
       "id": "finalgambit",
       "name": "Final Gambit",
       "status": "port",
-      "note": "data: selfdestruct"
+      "note": "damage: damage.ts"
     },
     {
       "id": "fireblast",
@@ -1444,14 +1444,14 @@
     {
       "id": "fissure",
       "name": "Fissure",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "flail",
       "name": "Flail",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "flameburst",
@@ -1510,8 +1510,8 @@
     {
       "id": "fling",
       "name": "Fling",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "excluded",
+      "note": "needs the held item's fling power"
     },
     {
       "id": "flipturn",
@@ -1642,8 +1642,8 @@
     {
       "id": "frustration",
       "name": "Frustration",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "furyattack",
@@ -1756,8 +1756,8 @@
     {
       "id": "grassknot",
       "name": "Grass Knot",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "grasspledge",
@@ -1828,8 +1828,8 @@
     {
       "id": "guillotine",
       "name": "Guillotine",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "gunkshot",
@@ -1846,8 +1846,8 @@
     {
       "id": "gyroball",
       "name": "Gyro Ball",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "hail",
@@ -1870,8 +1870,8 @@
     {
       "id": "hardpress",
       "name": "Hard Press",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "harden",
@@ -1954,8 +1954,8 @@
     {
       "id": "heatcrash",
       "name": "Heat Crash",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "heatwave",
@@ -1966,8 +1966,8 @@
     {
       "id": "heavyslam",
       "name": "Heavy Slam",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "helpinghand",
@@ -2014,8 +2014,8 @@
     {
       "id": "horndrill",
       "name": "Horn Drill",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "hornleech",
@@ -2416,8 +2416,8 @@
     {
       "id": "lowkick",
       "name": "Low Kick",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "lowsweep",
@@ -2824,8 +2824,8 @@
     {
       "id": "naturesmadness",
       "name": "Nature's Madness",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "needlearm",
@@ -2842,8 +2842,8 @@
     {
       "id": "nightshade",
       "name": "Night Shade",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "nightslash",
@@ -2944,8 +2944,8 @@
     {
       "id": "painsplit",
       "name": "Pain Split",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "registry: effects/moves.ts"
     },
     {
       "id": "paraboliccharge",
@@ -3172,8 +3172,8 @@
     {
       "id": "present",
       "name": "Present",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "prismaticlaser",
@@ -3268,8 +3268,8 @@
     {
       "id": "psywave",
       "name": "Psywave",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "punishment",
@@ -3430,8 +3430,8 @@
     {
       "id": "return",
       "name": "Return",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "revelationdance",
@@ -3448,8 +3448,8 @@
     {
       "id": "reversal",
       "name": "Reversal",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "revivalblessing",
@@ -3562,8 +3562,8 @@
     {
       "id": "ruination",
       "name": "Ruination",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "sacredfire",
@@ -3688,8 +3688,8 @@
     {
       "id": "seismictoss",
       "name": "Seismic Toss",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "selfdestruct",
@@ -3748,8 +3748,8 @@
     {
       "id": "sheercold",
       "name": "Sheer Cold",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "shellsidearm",
@@ -4012,8 +4012,8 @@
     {
       "id": "sonicboom",
       "name": "Sonic Boom",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "spacialrend",
@@ -4102,8 +4102,8 @@
     {
       "id": "spitup",
       "name": "Spit Up",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "spite",
@@ -4132,8 +4132,8 @@
     {
       "id": "spotlight",
       "name": "Spotlight",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "excluded",
+      "note": "needs a redirection mechanic"
     },
     {
       "id": "springtidestorm",
@@ -4306,8 +4306,8 @@
     {
       "id": "superfang",
       "name": "Super Fang",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "supercellslam",
@@ -4972,8 +4972,8 @@
     {
       "id": "wringout",
       "name": "Wring Out",
-      "status": "no-op",
-      "note": "reachable, not ported yet"
+      "status": "port",
+      "note": "damage: damage.ts"
     },
     {
       "id": "xscissor",

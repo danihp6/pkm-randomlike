@@ -74,3 +74,187 @@ export function stepBagCursor(index: number, delta: number, count: number): numb
   const current = Math.min(Math.max(0, from), count - 1);
   return (((current + delta) % count) + count) % count;
 }
+
+/**
+ * The bag grid's fixed width: every bag surface draws five columns, whether the
+ * route's HUD window or the battle's menu box, so the two read as one bag.
+ */
+export const BAG_GRID_COLS = 5;
+
+/** The gap between two grid cells, both axes, in px. */
+export const BAG_GRID_GAP = 6;
+
+export type BagGridDirection = 'up' | 'down' | 'left' | 'right';
+
+/** A rect in the caller's own coordinate space. */
+export type BagGridRect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+export interface BagGridOptions {
+  /** Columns to lay out. Default `BAG_GRID_COLS` (5). Never below 1. */
+  readonly columns?: number;
+  /** Gap between cells, both axes. Default `BAG_GRID_GAP` (6). Never below 0. */
+  readonly gap?: number;
+  /** Rows to lay out. Default `bagGridRows(count, columns)`. Never below 1. */
+  readonly rows?: number;
+  /** An upper bound on the cell's side, so a wide band cannot make huge cells. */
+  readonly maxCell?: number;
+}
+
+export interface BagGridMetrics {
+  readonly columns: number;
+  readonly rows: number;
+  readonly gap: number;
+  /** The cell's side in px. `cellH === cellW` always: the cells are square. */
+  readonly cellW: number;
+  readonly cellH: number;
+  /** `rows * columns` rects, row-major (index 0 top-left), all `cellW` square. */
+  readonly cells: readonly BagGridRect[];
+}
+
+/** A count folded into a stack number: finite, whole and never negative. */
+function stackCount(count: number): number {
+  return Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : 0;
+}
+
+/** The rows a count needs at `columns` wide: `max(1, ceil(count / columns))`. */
+export function bagGridRows(count: number, columns: number = BAG_GRID_COLS): number {
+  const cols = Math.max(1, Math.trunc(columns));
+  return Math.max(1, Math.ceil(stackCount(count) / cols));
+}
+
+/**
+ * Lays the grid out inside `bounds`: the largest integer square that fits both
+ * axes, centred horizontally and anchored at the top, always `rows * columns`
+ * cells long so the caller draws the empty tail of a short pocket.
+ */
+export function bagGridLayout(
+  bounds: BagGridRect,
+  count: number,
+  options: BagGridOptions = {},
+): BagGridMetrics {
+  const columns = Math.max(1, Math.trunc(options.columns ?? BAG_GRID_COLS));
+  const gap = Math.max(0, Math.trunc(options.gap ?? BAG_GRID_GAP));
+  const rows = Math.max(1, Math.trunc(options.rows ?? bagGridRows(count, columns)));
+  const fit = Math.min((bounds.w - (columns - 1) * gap) / columns, (bounds.h - (rows - 1) * gap) / rows);
+  let cell = Math.max(1, Math.floor(fit));
+  if (options.maxCell !== undefined && Number.isFinite(options.maxCell)) {
+    cell = Math.max(1, Math.min(cell, Math.trunc(options.maxCell)));
+  }
+  const gridW = columns * cell + (columns - 1) * gap;
+  const originX = bounds.x + Math.floor((bounds.w - gridW) / 2);
+  const originY = bounds.y;
+  const cells: BagGridRect[] = [];
+  for (let i = 0; i < rows * columns; i++) {
+    cells.push({
+      x: originX + (i % columns) * (cell + gap),
+      y: originY + Math.floor(i / columns) * (cell + gap),
+      w: cell,
+      h: cell,
+    });
+  }
+  return { columns, rows, gap, cellW: cell, cellH: cell, cells };
+}
+
+/** The cell **slot** `index` (not a stack), or null when it is out of range. */
+export function bagGridCell(metrics: BagGridMetrics, index: number): BagGridRect | null {
+  if (!Number.isFinite(index)) return null;
+  const slot = Math.trunc(index);
+  return slot >= 0 && slot < metrics.cells.length ? metrics.cells[slot] : null;
+}
+
+/** The stack index under a point, or null (outside the grid, in a gap, past `count`). */
+export function bagGridIndexAt(
+  metrics: BagGridMetrics,
+  x: number,
+  y: number,
+  count: number,
+): number | null {
+  const stacks = stackCount(count);
+  if (stacks <= 0 || metrics.cells.length === 0) return null;
+  const first = metrics.cells[0];
+  const stride = metrics.cellW + metrics.gap;
+  const column = Math.floor((x - first.x) / stride);
+  const row = Math.floor((y - first.y) / stride);
+  if (column < 0 || column >= metrics.columns || row < 0 || row >= metrics.rows) return null;
+  const index = row * metrics.columns + column;
+  if (index >= stacks) return null;
+  const cell = metrics.cells[index];
+  if (cell === undefined) return null;
+  if (x > cell.x + cell.w || y > cell.y + cell.h) return null;
+  return index;
+}
+
+/** The cursor after one step, row-major; see the stepping rule below. */
+export function stepBagGrid(
+  index: number,
+  direction: BagGridDirection,
+  count: number,
+  columns: number = BAG_GRID_COLS,
+): number {
+  const stacks = stackCount(count);
+  if (stacks <= 0 || !Number.isFinite(index)) return 0;
+  const cols = Math.max(1, Math.trunc(columns));
+  const current = Math.min(Math.max(0, Math.trunc(index)), stacks - 1);
+  const rows = bagGridRows(stacks, cols);
+  const row = Math.floor(current / cols);
+  const column = current % cols;
+  let nextRow = row;
+  let nextColumn = column;
+  if (direction === 'up') nextRow = (row - 1 + rows) % rows;
+  else if (direction === 'down') nextRow = (row + 1) % rows;
+  else if (direction === 'left') nextColumn = (column - 1 + cols) % cols;
+  else nextColumn = (column + 1) % cols;
+  return Math.min(nextRow * cols + nextColumn, stacks - 1);
+}
+
+/**
+ * The stacks whose catalogue name contains `query` (trimmed, case-insensitive),
+ * in bag order. The name is the catalogue's own **English** one in every locale
+ * (`D43`: item names are content, not chrome).
+ */
+export function filterBagStacks(stacks: readonly BagCounts[], query: string): readonly BagCounts[] {
+  const needle = query.trim().toLowerCase();
+  if (needle.length === 0) return stacks;
+  return stacks.filter((stack) =>
+    (getItem(stack.itemId)?.name ?? stack.itemId).toLowerCase().includes(needle),
+  );
+}
+
+/** The candy colour the run has already discovered for `itemId`, or null. */
+export function bagDiscoveredCandy(itemId: string, discoveredCandy: readonly string[]): string | null {
+  const colour = getItem(itemId)?.candy;
+  return colour !== undefined && discoveredCandy.includes(colour) ? colour : null;
+}
+
+/** One drawn bag cell, as both surfaces paint it. */
+export type BagGridDebugCell = Readonly<{
+  index: number;
+  itemId: string | null;
+  count: number;
+  badge: string;
+  iconFrame: number | null;
+  selected: boolean;
+  fill: number;
+  fillAlpha: number;
+  stroke: number;
+  strokeAlpha: number;
+  rect: BagGridRect;
+}>;
+
+/** The dev-only read of a drawn bag grid. */
+export type BagGridDebugState = Readonly<{
+  category: BagCategory;
+  query: string;
+  focused: boolean;
+  columns: number;
+  rows: number;
+  cellW: number;
+  cellH: number;
+  gap: number;
+  search: BagGridRect;
+  grid: BagGridRect;
+  tabs: readonly Readonly<{ category: BagCategory; rect: BagGridRect }>[];
+  cells: readonly BagGridDebugCell[];
+  info: Readonly<{ visible: boolean; text: string; x: number; width: number }>;
+  footer: string;
+}>;
