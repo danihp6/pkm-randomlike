@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The panel kit the board is made of.** `[Task-125]`, the third of Phase 12 (`D49`):
+      `src/ui/hud/kit/` ships the eight primitives the eleven panel migrations compose — `Panel`
+      (radius 11, 1 px hairline, the 1 px highlight 12 px inside the top edge), `Row` (a `div`
+      until it is given an action, then a `button`), `Chip` (26×26, radius 6, the initial only),
+      `Bar` (`role="progressbar"`, clamped `aria-valuenow`), `Sheet`, `PrimaryButton`, `Meta` and
+      `TypeBadge` — as stateless Preact components plus the `*Class` / `fillPercent` /
+      `typeBadgeTone` helpers they are built on. `kit.css` writes no colour, type size, line box or
+      radius of its own: every value is a `var(--hud-*)` from `root.css` except the three radii the
+      board uses and the tokens did not carry (6, 10, 16), declared once kit-scoped; borders stay
+      1 px, the board's ~26 px rows keep their height while interactive rows and chips extend a
+      44×44 hit area behind the drawn box, and one `:focus-visible` rule draws the 2 px accent ring.
+      Measured in Chromium at 1280×800: panel 374 px wide with radius 11, chip 26×26 r6, type badge
+      on the canon colour with a ≥ 4.5:1 ink, both Silkscreen faces loaded, the tab ring at
+      `2px solid #7dd3fc`, and `#hud` still one empty shell so nothing leaks into Task-124's layer.
+
 - [x] **The HUD shell mounts once and owns no Phaser object.** `[Task-124]`, the second of Phase 12
       (`D49`): `/?hud=dom` mounts one full-viewport `#hud` above the canvas (`pointer-events: none`,
       z-index 1, the world still clickable) and renders the Preact shell into it exactly once;

@@ -7364,7 +7364,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       ever add files inside their own folder. Claims `src/main.ts`, `src/ui/hud/**` (shell, mount,
       styles, both READMEs), `src/assets/fonts/**` and `src/assets/README.md`.
       *Dependencies:* `[Task-122]`, `[Task-123]`. *(Batch 59)*
-- [ ] **[Task-125] The panel kit the board is made of.** `src/ui/hud/kit/`: `Panel`, `Row`, `Chip`,
+- [x] **[Task-125] The panel kit the board is made of.** `src/ui/hud/kit/`: `Panel`, `Row`, `Chip`,
       `Sheet`, `PrimaryButton`, `Meta` and `TypeBadge` as Preact components with plain CSS driven by
       the tokens — integer pixels, `box-sizing: border-box`, the board's radius and borders, no shadow
       the board does not draw, ≥ 44 px touch targets and a focus ring. No component library and no
