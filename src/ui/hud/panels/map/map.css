@@ -1,0 +1,101 @@
+/*
+ * The route header card (`D49`, frame `03o Panels · map routes`): the floor
+ * minimap in the shipped 216 × 250 rect of `src/scenes/panels/map.ts`. The card,
+ * its 1 px highlight and the title line take the board's paint through
+ * `styles/root.css`; the grid, its links, the room cells, their openings and their
+ * markers come from `view.ts` as data and are drawn as one SVG, so a viewport
+ * change is one re-render. No content colour is retyped here: the view module
+ * carries the current-room gold and every room marker's tone.
+ */
+.map {
+  /* 03o map routes highlight: the 1 px band 12 px inside the top edge */
+  --map-highlight: var(--hud-row-border);
+  /* FRLG_ROW_FILL / FRLG_ROW_STROKE: white at 6 % and 10 % */
+  --map-room-fill: rgb(255 255 255 / 6%);
+  --map-room-stroke: rgb(255 255 255 / 10%);
+  /* FRLG_MUTED, the shipped link line */
+  --map-link: #94a3b8;
+  /* the card's own ink: the boss dot's second ink and the capture ball's band */
+  --map-ink: #10161f;
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  /* The header has nothing interactive: no press ever reaches the card. */
+  pointer-events: none;
+  user-select: none;
+}
+
+.map[hidden] {
+  display: none;
+}
+
+.map,
+.map *,
+.map *::before,
+.map *::after {
+  box-sizing: border-box;
+}
+
+/*
+ * The card's hairline is drawn inside its box, so the absolutely positioned
+ * children of the root would start one pixel in from the panel's own rect. The
+ * face covers the root's border box, so every child lands exactly on the
+ * panel-relative coordinate the view gives it.
+ */
+.map__face {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  bottom: -1px;
+  left: -1px;
+}
+
+.map__highlight {
+  position: absolute;
+  background: var(--map-highlight);
+}
+
+.map__title {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map__grid {
+  position: absolute;
+  overflow: visible;
+}
+
+/*
+ * The whole minimap is one element. Its ticks and rings are drawn on the room
+ * walls, so the SVG lets them spill the way the canvas does instead of clipping
+ * them at the grid's own extent.
+ */
+.map__grid svg {
+  position: absolute;
+  overflow: visible;
+}
+
+/* `view.empty.box.x` is the label's centre, as the shipped text's `0.5` origin is. */
+.map__empty {
+  position: absolute;
+  transform: translateX(-50%);
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-align: center;
+  white-space: nowrap;
+}

@@ -1,0 +1,31 @@
+{
+  "slug": "03o-panels-map-routes",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "map": {
+    "title": "Map 1 · Viridian Forest",
+    "view": {
+      "width": 15,
+      "height": 11,
+      "visible": true,
+      "links": [{ "from": 0, "to": 1, "x1": 3, "y1": 3, "x2": 6, "y2": 3 }],
+      "rooms": [
+        {
+          "id": 0,
+          "col": 0,
+          "row": 0,
+          "shape": "square",
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 6,
+          "current": true,
+          "boss": false,
+          "portal": false,
+          "marker": null,
+          "captureSpent": true,
+          "openings": [{ "edge": "E", "kind": "entry", "x": 6, "y": 3 }]
+        }
+      ]
+    }
+  }
+}

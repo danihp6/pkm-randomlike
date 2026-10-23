@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route map panel is the HUD's.** `[Task-133]`, the eleventh of Phase 12 (`D49`): under
+      `?hud=dom` the floor minimap is a Preact card in `#hud` — the `Map N · Biome` title and one
+      `<svg>` carrying the discovered rooms, their openings, the links and the boss / portal /
+      capture / special markers — built from the unchanged `buildMapView`, while
+      `src/scenes/panels/map.ts` draws no Phaser object under the flag and keeps its `header`
+      record. The card follows the route's pause and returns at the same rect. Measured over CDP
+      at 1280×800 and 390×844: `8,8 216×250` (Δ 0), radius 11 over the 72 % panel, and on the same
+      floor the DOM grid is 4 rooms / 3 links / 11 openings against the canvas view's 4 / 3 / 11,
+      with one `data-current` room at `rgb(246, 217, 138)`; flag off leaves 5 draw objects against
+      0. `npm test` 3857 passed, `npm run build` green.
 - [x] **The party detail panel is the HUD's.** `[Task-132]`, the tenth of Phase 12 (`D49`): under
       `?hud=dom` the route's member window is a Preact card in `#hud` — the 460×560 STATS/MOVES
       panel, the six stat rows with their nature tint, the ability and held-item lines, the

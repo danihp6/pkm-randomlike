@@ -7407,7 +7407,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       canvas, so it is diffable. Claims `src/scenes/panels/detail.ts`, `src/ui/hud/panels/detail/**`
       and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`.
       *(Batch 62)*
-- [ ] **[Task-133] The route map panel is the HUD's.** `src/ui/hud/panels/map/` renders the grid from
+- [x] **[Task-133] The route map panel is the HUD's.** `src/ui/hud/panels/map/` renders the grid from
       `src/ui/mapView.ts`, the visited marks and the current room; panning and the room tooltip are
       CSS, not camera. Claims `src/scenes/panels/map.ts`, `src/ui/hud/panels/map/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 62)*
