@@ -459,11 +459,16 @@ node name in the comment (the `kit.css` radii precedent) — never inline in a r
         `(760, 200, 424, 470) ±2`; at 390 the card is `(8, 271, 374, 302) ±2`.
   - [ ] `[live]` **One press, one step:** with `?hud=dom`, press the `settings`
         keybind (`TAB` by default) on the main menu; one `[data-hud-panel="options"]`
-        appears with a `[data-hud-row]` per `settingsRows(false)` entry, the first
-        row's text is `settingsRowLabel(SETTINGS_ROWS[0])` and it is the selected
-        one. Then one CDP `Input.dispatchKeyEvent` `ArrowDown` (keyDown + keyUp)
-        leaves the second row selected and the scene's `index === 1` (**not** 2 —
-        read `(await import('/src/main.ts')).game.scene.getScene('Settings').index`).
+        appears with a `[data-hud-row]` per entry of
+        `settingsRows(prefersTouchControls())` — the list the shipped screen shows on
+        *this* device, read through `import('/src/ui/settingsScreen.ts')` and
+        `import('/src/input/device.ts')`; headless Chromium reports `(hover: none)`,
+        so that is the 7 step rows, and the keybinds path is the unit criterion's
+        job. The first row's text is `settingsRowLabel(SETTINGS_ROWS[0])` and it is
+        the selected one. Then one CDP `Input.dispatchKeyEvent` `ArrowDown`
+        (keyDown + keyUp) leaves the second row selected and the scene's `index ===
+        1` (**not** 2 — read
+        `(await import('/src/main.ts')).game.scene.getScene('Settings').index`).
   - [ ] `[live]` **No input regression / the flag-off path:** on plain `/` (no
         flags) `TAB` opens Settings and the Phaser panel still draws: the Settings
         scene's display list has ≥ 10 children **and** `renderer.snapshotArea` of
