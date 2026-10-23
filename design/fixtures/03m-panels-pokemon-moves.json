@@ -1,0 +1,178 @@
+{
+  "slug": "03m-panels-pokemon-moves",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "detail": {
+    "id": "fixture-charizard",
+    "speciesId": "charizard",
+    "name": "CHARIZARD",
+    "nickname": null,
+    "level": 36,
+    "types": ["fire", "flying"],
+    "nature": "adamant",
+    "ability": "Blaze",
+    "abilityDesc": "Powers up Fire-type moves when the Pokemon's HP is low.",
+    "hp": 98,
+    "maxHp": 112,
+    "status": null,
+    "statusLabel": null,
+    "heldItemName": null,
+    "stats": { "hp": 112, "atk": 84, "def": 78, "spa": 109, "spd": 85, "spe": 100 },
+    "moves": [
+      {
+        "moveId": "flamethrower",
+        "name": "FLAMETHROWER",
+        "type": "fire",
+        "category": "Special",
+        "pp": 15,
+        "maxPp": 15,
+        "desc": "The target is scorched with an intense blast of fire.",
+        "power": 90,
+        "basePower": 90,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "status": null
+      },
+      {
+        "moveId": "airslash",
+        "name": "AIR SLASH",
+        "type": "flying",
+        "category": "Special",
+        "pp": 15,
+        "maxPp": 15,
+        "desc": "The user attacks with a blade of air that slices even the sky.",
+        "power": 75,
+        "basePower": 75,
+        "accuracy": 95,
+        "baseAccuracy": 95,
+        "status": null
+      },
+      {
+        "moveId": "dragonclaw",
+        "name": "DRAGON CLAW",
+        "type": "dragon",
+        "category": "Physical",
+        "pp": 10,
+        "maxPp": 10,
+        "desc": "The user slashes the target with huge, sharp claws.",
+        "power": 80,
+        "basePower": 80,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "status": null
+      },
+      {
+        "moveId": "earthquake",
+        "name": "EARTHQUAKE",
+        "type": "ground",
+        "category": "Physical",
+        "pp": 10,
+        "maxPp": 10,
+        "desc": "The user sets off an earthquake that strikes every Pokemon around it.",
+        "power": 100,
+        "basePower": 100,
+        "accuracy": 100,
+        "baseAccuracy": 100,
+        "status": null
+      }
+    ],
+    "caughtLabel": null,
+    "evolutions": [
+      {
+        "id": "charmander",
+        "name": "Charmander",
+        "depth": 0,
+        "row": 0,
+        "level": null,
+        "parent": null,
+        "current": false,
+        "ready": false,
+        "kind": "species"
+      },
+      {
+        "id": "charmeleon",
+        "name": "Charmeleon",
+        "depth": 1,
+        "row": 1,
+        "level": 16,
+        "parent": 0,
+        "current": false,
+        "ready": false,
+        "kind": "species"
+      },
+      {
+        "id": "charizard",
+        "name": "Charizard",
+        "depth": 2,
+        "row": 2,
+        "level": 36,
+        "parent": 1,
+        "current": true,
+        "ready": false,
+        "kind": "species"
+      },
+      {
+        "id": "charizardmegax",
+        "name": "Mega Charizard X · Mega Evolves with Charizardite X",
+        "depth": 3,
+        "row": 3,
+        "level": null,
+        "parent": 2,
+        "current": false,
+        "ready": false,
+        "kind": "mega"
+      },
+      {
+        "id": "charizardmegay",
+        "name": "Mega Charizard Y · Mega Evolves with Charizardite Y",
+        "depth": 3,
+        "row": 4,
+        "level": null,
+        "parent": 2,
+        "current": false,
+        "ready": false,
+        "kind": "mega"
+      },
+      {
+        "id": "charizardgmax",
+        "name": "Gigantamax Charizard · Charizardite G",
+        "depth": 3,
+        "row": 5,
+        "level": null,
+        "parent": 2,
+        "current": false,
+        "ready": false,
+        "kind": "gmax"
+      }
+    ]
+  },
+  "pool": [
+    { "moveId": "razorleaf", "name": "RAZOR LEAF", "type": "grass", "source": "Lv 12", "enabled": true },
+    { "moveId": "leechseed", "name": "LEECH SEED", "type": "grass", "source": "Lv 15", "enabled": true },
+    {
+      "moveId": "flamethrower",
+      "name": "FLAMETHROWER",
+      "type": "fire",
+      "source": "Lv 30",
+      "enabled": true
+    },
+    { "moveId": "airslash", "name": "AIR SLASH", "type": "flying", "source": "Lv 33", "enabled": true },
+    {
+      "moveId": "dragonclaw",
+      "name": "DRAGON CLAW",
+      "type": "dragon",
+      "source": "Lv 36",
+      "enabled": true
+    },
+    { "moveId": "earthquake", "name": "EARTHQUAKE", "type": "ground", "source": "TM26", "enabled": true }
+  ],
+  "ui": {
+    "tab": "moves",
+    "cursor": 0,
+    "page": 0,
+    "poolCursor": 0,
+    "info": null,
+    "abilityInfo": false,
+    "grab": null,
+    "nickname": null
+  }
+}

@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
+import { signal, type Signal } from '@preact/signals';
 import { getMove, getSpecies, type StatId, type Stats } from '../../data/dex';
 import { tmNumber } from '../../data/tms';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../../data/portraits';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../../data/statusIcons';
 import { abilityMoveType } from '../../engine/battle/moveType';
-import { MAX_MOVES, evolveMember, type RunPokemon } from '../../engine/run';
+import { MAX_MOVES, evolveMember, moveMoves, type RunPokemon, type RunState } from '../../engine/run';
 import { equipMove, learnsetPool, unequipMove, type LearnEntry } from '../../engine/run/learnset';
 import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../../engine/run/nickname';
 import { t } from '../../i18n';
@@ -25,6 +26,17 @@ import {
   badgeInkFor,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import {
+  DETAIL_POOL_COLS,
+  detailPanelView,
+  initialDetailPanelUi,
+  mountDetailPanel,
+  type DetailIntent,
+  type DetailPanelUi,
+  type DetailPanelView,
+  type DetailPoolRow,
+} from '../../ui/hud/panels/detail';
 import { InfoPopup } from '../../ui/infoPopup';
 import { MoveGrid, padMoveGridCells, type MoveGridCell } from '../../ui/moveGrid';
 import {
@@ -243,6 +255,35 @@ let learnPopupBody!: Phaser.GameObjects.BitmapText;
 let learnPopupOpen = false;
 /** Scene time the popup opened, so the click that opened it cannot dismiss it. */
 let learnPopupAt = 0;
+
+/**
+ * `?hud=dom` read once (`D49`): with it on, the card is the Preact panel in
+ * `src/ui/hud/panels/detail/` and this module draws no Phaser object for it.
+ * `parseHudFlags` reads the query string only.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this module imports
+ * Phaser type-only. The route pauses itself for a battle and for the Settings screen;
+ * a DOM card sits above the canvas, so it has to hide itself on the beat.
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
+
+/** The mounted DOM card: the view it paints and the mount's disposer. */
+let domView: Signal<DetailPanelView> | null = null;
+let domDispose: (() => void) | null = null;
+/** The delegated party-row press that opens the card under the flag, and its remover. */
+let domOpener: (() => void) | null = null;
+/** The scene's pause/resume subscription, dropped when the route goes away. */
+let domUnsubscribeScene: (() => void) | null = null;
+/** True while the route is paused under another screen: the card hides then. */
+let domPaused = false;
+/** The move slot and the pool row the DOM card's cursor sits on; -1 for none. */
+let hudDetailCursor = -1;
+let hudPoolCursor = -1;
+/** The container the detail window's own objects live in: what the flag contract counts. */
+let hudDetailBody: Phaser.GameObjects.Container | null = null;
 
 /** The last row the pool window may start at, or 0 when it all fits. */
 function maxLearnScrollTop(host: RoutePanelHost): number {
@@ -588,6 +629,10 @@ function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: M
  * when no member is open (or the member has left the run).
  */
 export function refreshDetail(host: RoutePanelHost): void {
+  if (DOM_HUD) {
+    pushDomView(host);
+    return;
+  }
   if (!hudDetail) return;
   // A collapsed window never holds the keyboard: the collapse repaint lands here.
   if (!panelExpanded(host, 'detail')) {
@@ -728,6 +773,7 @@ function pointInRect(
 
 /** True when the pointer is over the open detail panel. */
 export function pointerInDetailPanel(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+  if (DOM_HUD) return false;
   if (hudDetailState.memberId === null || !panelExpanded(host, 'detail')) return false;
   const point = panelPoint(host, pointer, 'detail');
   return (
@@ -931,6 +977,7 @@ export function scrollLearnset(host: RoutePanelHost, deltaRows: number): void {
 
 /** True when the pointer is over the MOVES tab's learnset band. */
 export function pointerInLearnBand(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+  if (DOM_HUD) return false;
   if (hudDetailState.tab !== 'moves' || !panelExpanded(host, 'detail')) return false;
   return pointInRect(panelPoint(host, pointer, 'detail'), hudLearnRect);
 }
@@ -996,7 +1043,7 @@ function resetLearnDrag(): void {
 
 /** Ends a learnset drag: hides the ghost and restores the cursor. */
 function endLearnDrag(host: RoutePanelHost): void {
-  if (hudLearnDrag === null && !hudLearnGhost.visible) return;
+  if (hudLearnDrag === null && hudLearnGhost?.visible !== true) return;
   resetLearnDrag();
   setGrabMoved(false);
   host.scene.input.setDefaultCursor('default');
@@ -1036,13 +1083,15 @@ export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
   const panel = panelById(host, 'detail');
   if (panel && !panel.expanded) {
     panel.expanded = true;
-    hudDetail.setVisible(true);
+    hudDetail?.setVisible(true);
   }
   hudDetailState = openDetail(memberId);
   resetDetailInfo();
   hudLearnScrollTop = 0;
   hudLearnQuery = '';
   hudSearchFocus = false;
+  hudDetailCursor = -1;
+  hudPoolCursor = -1;
   cancelNicknameEdit(host);
   endLearnDrag(host);
   refreshDetail(host);
@@ -1218,6 +1267,15 @@ export type DetailHover = Readonly<{
  * what the route's hover cursor should read from the panel.
  */
 export function detailHover(host: RoutePanelHost, pointer: Phaser.Input.Pointer): DetailHover {
+  if (DOM_HUD) {
+    return {
+      overMove: false,
+      overInfo: false,
+      overAbilityInfo: false,
+      overEvolution: false,
+      overDetailName: false,
+    };
+  }
   const cell = detailInfoAt(host, pointer) ?? detailLearnInfoAt(host, pointer);
   updateDetailInfo(host, cell);
   const overAbilityInfo = abilityInfoAt(host, pointer);
@@ -1623,6 +1681,371 @@ function pointerAt(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean
   return pointerUp(host, pointer);
 }
 
+/** The DOM card's viewport: the scene's own window, as the HUD metrics see it. */
+function viewportOf(host: RoutePanelHost): { width: number; height: number } {
+  return { width: host.scene.scale.width, height: host.scene.scale.height };
+}
+
+/** The number of display objects the detail window draws right now: 0 under `?hud=dom`. */
+export function detailDrawnObjectCount(): number {
+  if (DOM_HUD) return 0;
+  return hudDetailBody?.list.length ?? 0;
+}
+
+/** The panel's own state, as the DOM card's pure view reads it. */
+function domUi(): DetailPanelUi {
+  return {
+    tab: hudDetailState.tab,
+    cursor: hudDetailCursor,
+    page: hudLearnScrollTop * DETAIL_POOL_COLS,
+    poolCursor: hudPoolCursor,
+    info: hudDetailInfoPinned && hudDetailInfo?.grid === 'moves' ? hudDetailInfo.index : null,
+    abilityInfo: hudAbilityInfoPinned,
+    grab: hudDetailState.grab,
+    nickname: hudNicknameEdit,
+  };
+}
+
+/** One learnset pool row as the DOM card paints it: the shipped name and source tag. */
+function learnRow(
+  entry: LearnEntry,
+  ability: string,
+  ivs: Partial<Stats> | null | undefined,
+): DetailPoolRow {
+  const move = getMove(entry.moveId);
+  const source =
+    entry.source === 'tm'
+      ? t('detail.learnTm', { tm: tmNumber(entry.tmId ?? '') ?? '?' })
+      : entry.source === 'tutor'
+        ? t('detail.learnTutor')
+        : t('detail.learnLevel', { level: entry.level ?? '?' });
+  return {
+    moveId: entry.moveId,
+    name: moveName(entry.moveId),
+    type: move ? abilityMoveType(ability, move, ivs) : '',
+    source,
+    enabled: true,
+  };
+}
+
+/** The member's panel data for the DOM: a fallen member has no branch to evolve into. */
+function domDetail(host: RoutePanelHost, memberId: string): MemberDetail | null {
+  const detail = memberDetail(host.run(), memberId);
+  if (detail === null) return null;
+  return deadDetail(host) ? { ...detail, evolutions: [] } : detail;
+}
+
+/** The one emit point of the DOM card: the scene owns the run, the card paints it. */
+function pushDomView(host: RoutePanelHost): void {
+  const view = domView;
+  if (view === null) return;
+  const memberId = hudDetailState.memberId;
+  const detail = memberId === null ? null : domDetail(host, memberId);
+  const member = detailMember(host);
+  const pool =
+    detail === null || member === undefined
+      ? []
+      : learnPool(host).map((entry) => learnRow(entry, detail.ability, member.fighter.ivs));
+  const projected = detailPanelView(detail, pool, domUi(), viewportOf(host));
+  view.value = {
+    ...projected,
+    open: projected.open && !domPaused && panelExpanded(host, 'detail'),
+    search: { ...projected.search, value: hudLearnQuery },
+  };
+}
+
+/** The route paused (a battle over it, or the Settings screen): the card follows. */
+function setDomPaused(host: RoutePanelHost, paused: boolean): void {
+  if (domPaused === paused) return;
+  domPaused = paused;
+  pushDomView(host);
+}
+
+/** Drops the scene's pause/resume subscription; the route is going away. */
+function unsubscribeScene(): void {
+  domUnsubscribeScene?.();
+  domUnsubscribeScene = null;
+  domPaused = false;
+}
+
+/** Subscribes the card to the route's own pause and resume beats. */
+function subscribeScene(host: RoutePanelHost): void {
+  unsubscribeScene();
+  const events = host.scene.events;
+  const onPause = (): void => setDomPaused(host, true);
+  const onResume = (): void => setDomPaused(host, false);
+  events.on(SCENE_PAUSE, onPause);
+  events.on(SCENE_RESUME, onResume);
+  domUnsubscribeScene = () => {
+    events.off(SCENE_PAUSE, onPause);
+    events.off(SCENE_RESUME, onResume);
+  };
+}
+
+/**
+ * The opener. Under the flag the party rows are DOM buttons that answer `party.ts`,
+ * so the route's canvas pointer path never reaches `openMemberDetail`: one delegated
+ * press on the `#hud` layer opens the member whose row was pressed, and nothing else.
+ */
+function installPartyOpener(host: RoutePanelHost, layer: Element): () => void {
+  const onClick = (event: Event): void => {
+    if (domPaused) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const row = target.closest('[data-hud-party-member]');
+    if (row === null) return;
+    const memberId = row.getAttribute('data-hud-party-member');
+    if (memberId === null || memberId.length === 0) return;
+    const run = host.run();
+    const known = [...run.party, ...run.box, ...run.rip].some((entry) => entry.fighter.id === memberId);
+    if (!known) return;
+    openMemberDetail(host, memberId);
+  };
+  layer.addEventListener('click', onClick);
+  return () => layer.removeEventListener('click', onClick);
+}
+
+function removePartyOpener(): void {
+  domOpener?.();
+  domOpener = null;
+}
+
+function disposeDomPanel(): void {
+  removePartyOpener();
+  if (domDispose === null) return;
+  domDispose();
+  domDispose = null;
+}
+
+/** A member's first free move slot, or the slot under the cursor, or the tail. */
+function equipSlot(run: RunState, memberId: string): number {
+  const member =
+    run.party.find((entry) => entry.fighter.id === memberId) ??
+    run.box.find((entry) => entry.fighter.id === memberId);
+  const count = member?.fighter.moves.length ?? MAX_MOVES;
+  if (hudDetailCursor >= 0 && hudDetailCursor < count) return hudDetailCursor;
+  return Math.min(count, MAX_MOVES - 1);
+}
+
+/** The rename field's confirm: the pure rules decide the text, the host persists it. */
+function commitDomNickname(host: RoutePanelHost, text: string): void {
+  const memberId = hudDetailState.memberId;
+  hudNicknameFocus = false;
+  hudNicknameEdit = null;
+  if (memberId !== null) {
+    const run = host.run();
+    const next = renameMember(run, memberId, normalizeNickname(text));
+    if (next !== run) {
+      host.commitRun(next);
+      return;
+    }
+  }
+  pushDomView(host);
+}
+
+/**
+ * The DOM card's command channel, resolved here and nowhere else. Every write goes
+ * through the engine functions this module already imports and lands on the run only
+ * through `commitRun`; everything else is the panel's own cursor state.
+ */
+function runDetailIntent(host: RoutePanelHost, intent: DetailIntent): void {
+  if (!DOM_HUD || domPaused) return;
+  const memberId = hudDetailState.memberId;
+  switch (intent.type) {
+    case 'tab':
+      hudDetailState = setDetailTab(hudDetailState, intent.tab);
+      hudDetailCursor = -1;
+      hudPoolCursor = -1;
+      resetDetailInfo();
+      pushDomView(host);
+      return;
+    case 'cursor':
+      hudDetailCursor = intent.index;
+      pushDomView(host);
+      return;
+    case 'poolCursor':
+      hudPoolCursor = intent.index;
+      pushDomView(host);
+      return;
+    case 'page':
+      scrollLearnset(host, intent.delta);
+      return;
+    case 'search':
+      hudLearnQuery = intent.query;
+      hudLearnScrollTop = 0;
+      hudPoolCursor = -1;
+      dropLearnInfo();
+      pushDomView(host);
+      return;
+    case 'info':
+      if (
+        intent.index === null ||
+        (hudDetailInfoPinned && hudDetailInfo?.grid === 'moves' && hudDetailInfo.index === intent.index)
+      ) {
+        hudDetailInfo = null;
+        hudDetailInfoPinned = false;
+      } else {
+        hudDetailInfo = { grid: 'moves', index: intent.index };
+        hudDetailInfoPinned = true;
+      }
+      pushDomView(host);
+      return;
+    case 'abilityInfo':
+      hudAbilityInfoPinned = intent.open;
+      hudAbilityInfo = intent.open;
+      pushDomView(host);
+      return;
+    case 'grab': {
+      if (hudDetailState.grab === null) {
+        hudDetailState = grabMove(hudDetailState, intent.index);
+      } else if (hudDetailState.grab === intent.index) {
+        hudDetailState = dropMove(hudDetailState);
+      } else if (memberId !== null) {
+        const run = host.run();
+        const next = moveMoves(run, memberId, hudDetailState.grab, intent.index);
+        hudDetailState = dropMove(hudDetailState);
+        if (next !== run) {
+          host.commitRun(next);
+          return;
+        }
+      }
+      pushDomView(host);
+      return;
+    }
+    case 'drop': {
+      const from = hudDetailState.grab;
+      hudDetailState = dropMove(hudDetailState);
+      if (from !== null && memberId !== null && from !== intent.slot) {
+        const run = host.run();
+        const next = moveMoves(run, memberId, from, intent.slot);
+        if (next !== run) {
+          host.commitRun(next);
+          return;
+        }
+      }
+      pushDomView(host);
+      return;
+    }
+    case 'equip': {
+      if (memberId === null) return;
+      const run = host.run();
+      const next = equipMove(run, memberId, intent.moveId, equipSlot(run, memberId), run.seed);
+      if (next !== run) {
+        host.commitRun(next);
+        return;
+      }
+      pushDomView(host);
+      return;
+    }
+    case 'unequip': {
+      if (memberId === null) return;
+      const slot = intent.slot >= 0 ? intent.slot : (hudDetailState.grab ?? -1);
+      const run = host.run();
+      const next = unequipMove(run, memberId, slot);
+      hudDetailState = dropMove(hudDetailState);
+      if (next !== run) {
+        host.commitRun(next);
+        return;
+      }
+      pushDomView(host);
+      return;
+    }
+    case 'evolve': {
+      if (memberId === null) return;
+      const run = host.run();
+      const next = evolveMember(run, memberId, intent.into);
+      if (next !== run) {
+        host.commitRun(next);
+        return;
+      }
+      pushDomView(host);
+      return;
+    }
+    case 'nickname':
+      if ('begin' in intent) beginNicknameEdit(host);
+      else if ('cancel' in intent) cancelNicknameEdit(host);
+      else commitDomNickname(host, intent.commit);
+      return;
+    default:
+      return;
+  }
+}
+
+/**
+ * The flag-on build: the same layout arithmetic and the same panel record (so the
+ * saved layout, the collapse and the pointer-outside rule keep working) but no
+ * content and no visible Phaser object — the card is the DOM one.
+ *
+ * The level-up / evolution popup is **not** migrated by this task: it is the beat
+ * `RouteScene` raises after a battle, it draws in its own screen-space container and
+ * contributes nothing to the panel's body, so it is still built here.
+ */
+function buildDom(host: RoutePanelHost): void {
+  const scene = host.scene;
+  const { detailW } = host.hud();
+  const x = Math.max(HUD_PANEL_MARGIN, boxLeft() - detailW - HUD_GAP);
+  const y = boxTop();
+  hudDetailX = x;
+  hudDetailY = y;
+  const body = scene.add.container(0, 0);
+  hudDetailBody = body;
+  const detailWindow = addFrlgWindow(scene, x, y, detailW, HUD_DETAIL_H).setVisible(false);
+  const panel = makeHudPanel(
+    host,
+    'detail',
+    x,
+    y,
+    detailW,
+    HUD_DETAIL_H,
+    body,
+    detailWindow,
+    PANEL_ICON_KEYS.detail,
+    PANEL_KEY_ACTIONS.detail ?? null,
+  );
+  panel.container.setVisible(false);
+  panel.icon.setVisible(false);
+  // `makeHudPanel` hangs the Transparent-HUD outline in the body; the card draws
+  // nothing at all under the flag, so the empty body stays empty and stays zero.
+  body.remove(panel.border);
+  buildLearnPopup(host);
+  disposeDomPanel();
+  const view = signal(detailPanelView(null, [], initialDetailPanelUi(), viewportOf(host)));
+  domView = view;
+  const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
+  if (layer !== null) {
+    domDispose = mountDetailPanel(layer, view, (intent) => runDetailIntent(host, intent));
+    domOpener = installPartyOpener(host, layer);
+  }
+  subscribeScene(host);
+  pushDomView(host);
+}
+
+/** Disposes the card and clears the module state the DOM path owns. */
+function closeDom(): void {
+  unsubscribeScene();
+  disposeDomPanel();
+  domView = null;
+  hudDetailBody = null;
+  hudDetailState = CLOSED_DETAIL;
+  hudDetailCursor = -1;
+  hudPoolCursor = -1;
+  hudLearnScrollTop = 0;
+  hudLearnQuery = '';
+  hudSearchFocus = false;
+  hudNicknameFocus = false;
+  hudNicknameEdit = null;
+  hudLearnScrollDrag = null;
+  hudLearnDrag = null;
+  hudLearnWindow = [];
+  hudLearnRect = { x: 0, y: 0, w: 0, h: 0 };
+  hudSearchRect = { x: 0, y: 0, w: 0, h: 0 };
+  hudNicknameRect = { x: 0, y: 0, w: 0, h: 0 };
+  hudDetailX = 0;
+  hudDetailY = 0;
+  resetDetailInfo();
+  learnPopupOpen = false;
+}
+
 export const descriptor: RoutePanelDescriptor = {
   id: 'detail',
   order: 110,
@@ -1639,7 +2062,15 @@ export const descriptor: RoutePanelDescriptor = {
     hudAbilityInfoPinned = false;
     hudNicknameFocus = false;
     hudNicknameEdit = null;
+    hudDetailCursor = -1;
+    hudPoolCursor = -1;
+    hudDetailBody = null;
+    if (DOM_HUD) {
+      buildDom(host);
+      return;
+    }
     hudDetail = buildDetailPanel(host);
+    hudDetailBody = hudDetail;
     // The learnset chip follows the pointer over the HUD, above every window.
     hudLearnGhost = addFrlgText(host.scene, 0, 0, '', {
       size: 16,
@@ -1663,6 +2094,14 @@ export const descriptor: RoutePanelDescriptor = {
   },
   refresh: refreshDetail,
   pointer(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+    if (DOM_HUD) return false;
     return pointerAt(host, pointer);
+  },
+  key(): boolean {
+    return false;
+  },
+  close(): void {
+    if (!DOM_HUD) return;
+    closeDom();
   },
 };
