@@ -32,6 +32,25 @@ a headless test, and never imports the scene.
 - `trade.ts` — the trade card's entry point; its drawing still lives in `rooms/trade.ts`.
 - `README.md` — this map.
 
+## The port's additions over the spec's frozen list
+
+`RoutePanelHost` (`types.ts`) is the spec's frozen surface **plus** the six reads a
+panel cannot compute on its own, added by Task-128 and to be treated as frozen from
+now on:
+
+- `route()` — the route on screen, for the header's biome name.
+- `plan()` — the floor plan (or null off a planned room), for the minimap.
+- `rooms()` — the special rooms' descriptors, for the minimap's own markers (`D47`).
+- `beginRowDrag(drag)` — starts a row drag the scene owns (the reward's rows).
+- `openSettings()` — opens the Settings screen paused on top (the pause menu's row).
+- `restartRun()` — starts a fresh run (the pause menu's Reset row; the rule itself
+  stays in the scene).
+
+A `close` is optional on every descriptor and the scene walks it, in build order, on
+shutdown. No shipped panel implements one: each owns only objects that live in the
+HUD root or a screen-space root, which Phaser destroys with the scene, and whose
+module state the next `build` overwrites, so nothing leaks.
+
 ## Rules
 
 1. A panel is a new file exporting exactly one `descriptor`; adding one needs no edit
@@ -43,3 +62,6 @@ a headless test, and never imports the scene.
    `src/ui/` helpers and the HUD frame functions in `hud.ts`.
 5. A helper another panel also needs is exported by the module that owns it, never
    copied.
+6. The scene empties the overlay registry (`resetHudOverlays`) before it registers
+   its drag ghost; overlays are added to the HUD root by `finishHud`, in `rank`
+   order, once every panel exists.

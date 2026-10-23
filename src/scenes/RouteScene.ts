@@ -273,6 +273,7 @@ import {
   persistHudLayout as saveHudLayout,
   refreshPanelKeyLabels,
   registerHudOverlay,
+  resetHudOverlays,
   setDraggedItem,
   setGrabMoved,
   setHudLevel,
@@ -1236,8 +1237,10 @@ export class RouteScene extends Phaser.Scene {
     // The pinned camera is built against an empty root, so every panel and card the
     // folder builds next lands on the HUD camera and only there.
     this.setupHudCamera();
-    // The avatar held in hand while a member or a stack is dragged: screen-space,
-    // so it rides the HUD root above the panels (`finishHud` adds it there).
+    // The overlay registry is emptied before anything registers into it, and the
+    // drag ghost is booked first, so `finishHud` adds it to the root at rank 0 —
+    // above the panels' containers, below the learnset chip and the bag's card.
+    resetHudOverlays();
     this.hudDragGhost = this.add.image(0, 0, PORTRAIT_TEXTURE_KEY, 0).setScale(0.9).setVisible(false);
     registerHudOverlay(this.hudDragGhost, 0);
     for (const panel of this.panels.all) panel.build(this.panelHost);
@@ -1254,6 +1257,13 @@ export class RouteScene extends Phaser.Scene {
       this.detachBack = listenForBack(() => this.onBackGesture());
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachBack?.());
     }
+    // A stopped scene hands every panel its own teardown, in build order. Every
+    // object a shipped panel owns already lives in the HUD root or a screen-space
+    // root that Phaser destroys with the scene, so no panel needs a `close` today;
+    // the walk is here so a later panel that owns something else has the hook.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      for (const panel of this.panels.all) panel.close?.(this.panelHost);
+    });
     // A battle pauses the route mid-walk; drop the pad's held direction so the
     // player does not keep stepping the moment the route comes back, and give up
     // an in-progress nickname edit rather than resuming into a focused field.

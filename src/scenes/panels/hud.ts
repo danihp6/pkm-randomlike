@@ -653,9 +653,19 @@ function buildPanelIcon(
 }
 
 /**
+ * Clears the overlay registry for a fresh HUD build. The scene calls it **before**
+ * it registers its own drag ghost and before the build walk, so the list is empty
+ * for a new scene and every later `registerHudOverlay` survives the walk.
+ */
+export function resetHudOverlays(): void {
+  overlays = [];
+}
+
+/**
  * Records an object that must ride above every panel (the drag ghosts, the bag's
  * description card). `rank` is its fixed stacking slot, so the build order of the
- * folder can never reorder them.
+ * folder can never reorder them. Registering never adds to the root itself: the
+ * build walk's tail (`finishHud`) does, once every panel exists.
  */
 export function registerHudOverlay(object: Phaser.GameObjects.GameObject, rank: number): void {
   overlays.push({ rank, object });
@@ -799,7 +809,6 @@ export const descriptor: RoutePanelDescriptor = {
     hudPanelDrag = null;
     hudIconPress = null;
     hudDetailPlaced = false;
-    overlays = [];
     buildPartyHeader(host);
   },
   refresh: refreshHudPanel,
