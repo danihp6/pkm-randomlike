@@ -94,6 +94,8 @@ export const en = {
   'hud.evolveTitle': 'EVOLUTION',
   'hud.pressAnyKey': 'press any key',
   'hud.mission': 'Mission: {mission}',
+  'hud.searchItems': 'search items...',
+  'hud.candyKnown': 'This run: {stat} {delta}',
 
   // mission — the floor's own objective (`src/data/missions.ts`)
   'mission.flawless': 'Flawless floor',

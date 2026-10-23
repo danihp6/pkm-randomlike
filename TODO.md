@@ -6675,7 +6675,7 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (Batch 29) and the `notice.ts` row `[Task-98]` adds (Batch 36). It claims
       `src/scenes/RouteScene.ts`, so it opens the plan's new **Batch 51**, one batch behind the 2vs2
       pair — and it adds no run field. *(Batch 47b, filled)*
-- [ ] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
+- [x] **[Task-110] The item bag is an icon grid, in the route HUD and in battle.** The human's rule:
       «la mochila de items y en combate pasen a ser grid». Both bag surfaces are **lists of rows** today:
       the route HUD draws up to `HUD_BAG_ROWS` (6) name rows with a pocket tab strip and the money line
       (`RouteScene`'s bag panel, `HUD_BAG_HEADER` / `HUD_BAG_ROW`), and the battle draws the active

@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The item bag is an icon grid, in the route HUD and in battle.** Both surfaces stop drawing
+      text rows: the same five-column icon grid, the count badge over the icon, the shipped accent
+      on the selection and a dim outline on a free slot. The geometry is one exported model
+      (`bagGridLayout`/`bagGridRows`/`bagGridCell`/`bagGridIndexAt`/`stepBagGrid` in
+      `src/ui/bag.ts`): 56 px cells, 15 cells on the route (3 rows × 5) and 10 in battle (2 rows ×
+      5), so the panel, the footer and the pitch never move when the bag changes. A filter field
+      (`filterBagStacks`, `hud.searchItems`) narrows either grid and drops the overflow past the
+      cap, and a discovered candy's card prints the run's own stat (`hud.candyKnown`) instead of
+      the catalogue line. Both scenes, both locales and the two spec sections are updated by
+      section.
+      **QA:** the live game was measured over CDP at 1280×800 — route `columns 5, rows 3, cellW 56,
+      cells.length 15` with five occupied stacks in fixture order and ten empty slots at alpha 0;
+      56 of 56 pixels of `0x7dd3fc` on the selected row; the candy card read
+      `Red Candy\nThis run: SPEED +1`; battle `rows 2, cellW 35, cells.length 10` with typing owning
+      the keyboard — plus `npm test` (3523 passed) and `npm run build` green.
+
 - [x] **The wait asks for 2/12, not for a shape this account cannot be given.** Oracle caps
       the Always Free Ampere entitlement at **2 OCPU / 12 GB** since August 2026, so every
       4/24 attempt was a request the tenancy could only ever answer with "out of capacity" —
