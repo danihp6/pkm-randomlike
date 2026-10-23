@@ -53,6 +53,11 @@ numbers of the tree this task starts from; **do not plan against the entry's
   every count in that file goes through). The three "helper" readers
   (`banned.test.ts` 37, `moveAudit.test.ts` 252, `moves.test.ts` 593) are the
   single place each file reads the text; converting the helper converts the file.
+- Two suites assert the text **shape** rather than reading `event.text`, which the
+  25-reader inventory above does not catch: `src/engine/battle/commands.test.ts`
+  (`toContainEqual({ kind: 'text', text: … })`) and
+  `src/engine/battle/gmax.test.ts` (the same form, on the G-Max line). Both are this
+  task's and both re-pin to `key` (+ `params`), never relaxed or deleted.
 - Non-test readers that must keep working untouched: `src/ui/feed.ts` 24-25 and
   `src/scenes/BattleScene.ts` 1576-1594 (`battleFrames(...)` then
   `frame.message`). `FeedFrame.message` therefore **stays** `string | null`.
@@ -87,6 +92,8 @@ Every one of these is written only by this task. Nothing outside this list.
 - `src/engine/battle/harness.test.ts`
 - `src/engine/battle/turn.test.ts`
 - `src/engine/battle/banned.test.ts`
+- `src/engine/battle/commands.test.ts`
+- `src/engine/battle/gmax.test.ts`
 - `src/engine/battle/moveAudit.test.ts`
 - `src/engine/battle/effects/abilities.test.ts`
 - `src/engine/battle/effects/items.test.ts`
@@ -184,9 +191,9 @@ export function applyStatusEffect(
 ): void;
 // delete `statLabel`: its two readers become whole keys and it has no caller left.
 
-// effects/terrain.ts — was `(state, fighter, status) => string | null`
+// effects/terrain.ts — was `(terrain: TerrainId | null, fighter, status) => string | null`
 export function terrainBlocksStatus(
-  state: BattleState,
+  terrain: TerrainId | null,
   fighter: BattleFighter,
   status: string,
 ): BattleText | null;           // argument order and guards unchanged
@@ -425,7 +432,7 @@ plus `battle.log.volatile.drowsy` (`{name} grew drowsy!`), plus one
 The `es` value of every key is the official-Spanish-style line in the house
 voice (compare `es.ts`'s existing battle lines): `move` and `ability` params read
 in Spanish because the feed resolves them through `src/i18n/content.ts`
-(`ember` → `Lanzallamas`), species, item and type params stay English, no em dash
+(`ember` → `Ascuas`, its official Spanish name — `Lanzallamas` is Flamethrower), species, item and type params stay English, no em dash
 (`U+2014`), every character drawable by the FRLG font (`src/data/ui/font.json`).
 
 ### `formatBattleLog` — `src/engine/battle/harness.ts`
@@ -529,7 +536,7 @@ else is headless.
         `setLocale('es')`, asserts each frame's `message` is a non-null, non-empty
         string with no `{` or `}` in it, and asserts the `es` run's `used` frame
         equals `t('battle.log.used', { name: 'Charmander', move: moveName('ember') })`
-        (i.e. contains `Lanzallamas`, never `Ember`). `npm test -- feed` passes,
+        (i.e. contains `Ascuas`, never `Ember`). `npm test -- feed` passes,
         and `afterEach` restores `setLocale('en')`.
   - [ ] `[unit]` The families are complete: the new
         `describe('the battle log')` block in `src/i18n/index.test.ts` pins
@@ -538,8 +545,10 @@ else is headless.
         `battle.log.statusResidual.*` at 6, `battle.log.statusShifted.*` at 6,
         `battle.log.itemInflicted.*` at 6, `battle.log.weather.*` at 9,
         `battle.log.terrain.*` at 7, `battle.log.side.*` at 14,
-        `battle.log.field.*` at 14, `battle.log.capture.*` at 5,
-        `battle.log.volatile.*` at 28, and asserts every declared token of every
+        `battle.log.field.*` at 14, `battle.log.capture.*` at 4 **plus**
+        `battle.log.caught` (the five capture keys), `battle.log.volatile.*` at
+        **27** (the 25 `VOLATILE_MESSAGES` entries + `drowsy` + `default`; `yawn`
+        is not a table entry), and asserts every declared token of every
         `battle.log.*` key is one of
         `name target move ability item type hp pp stage count volatile`.
   - [ ] `[unit]` The two shipped guards cover the new Spanish lines without being
@@ -561,7 +570,7 @@ else is headless.
         name row), must equal the `es` value of the matching key with its
         params substituted, read off `src/i18n/es.ts`: for an `ember` hit that is
         super effective, `t('battle.log.hitSuper', { name: '<species>', move:
-        moveName('ember') })` — i.e. the box shows `Lanzallamas` and never
+        moveName('ember') })` — i.e. the box shows `Ascuas` and never
         `Ember`, and the sentence is Spanish while the species name stays
         English. Then repeat with **English** and read the same line: it must
         equal the `en` value of the same key (`Ember hit <species>! It's super
