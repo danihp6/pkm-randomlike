@@ -3983,7 +3983,7 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [ ] **[Task-28] Activate the ESLint half of `npm run lint`.** Task-01 shipped
+- [!] **[Task-28] Activate the ESLint half of `npm run lint`.** Task-01 shipped
       `eslint.config.mjs` committed and **dormant**: the flat config for `src/**/*.ts`
       and `vite.config.ts` (plus `vite`/`infra`/`public`/`sprite-sources`/`coverage`/
       `.agent_specs`/`scripts` ignores), written so that switching it on is a
@@ -4001,7 +4001,7 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
       rules off in `eslint.config.mjs`, never edit a file it reports. Linting
       `scripts/**` stays out of scope: the config ignores them on purpose.
       *Dependencies:* none inside this repo — it waits on the upstream release.
-      *Decision:* **Dormant and unscheduled.** The blocker is upstream: `typescript-eslint` peers `typescript <6.1` while the repo pins 7. Neither a second toolchain nor dropping the half.
+      *Decision:* **Dormant and unscheduled.** The blocker is upstream: `typescript-eslint` peers `typescript <6.1` while the repo pins 7. Neither a second toolchain nor dropping the half. **BLOCKED:** upstream — every `typescript-eslint` release up to 8.71.2 peers `typescript <6.1.0` while the repo pins native `typescript@7.0.2`, so `@typescript-eslint/parser` throws at import and `npx eslint .` exits 2; unschedulable until a human decides a second toolchain or dropping the ESLint half.
       **Unscheduled** (no batch).
 - [x] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
       **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` was a
