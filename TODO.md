@@ -7443,7 +7443,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       at 390×844. Claims `src/scenes/panels/hud.ts`, `src/ui/hud/panels/hud/**`, its fixture and the
       `D49` addendum. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`.
       *(Batch 64)*
-- [ ] **[Task-140] The battle's HP boxes are the HUD's.** The four name-and-HP boxes (the two actives
+- [x] **[Task-140] The battle's HP boxes are the HUD's.** The four name-and-HP boxes (the two actives
       per side in a 2vs2) leave `src/scenes/BattleScene.ts` for
       `src/ui/hud/panels/battle-hp/`, reading the battle state and animating its own fill; the scene
       awaits `hud.play()` before the next frame, so the drop still lands with its line. The arena, the

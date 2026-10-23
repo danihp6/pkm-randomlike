@@ -1,0 +1,219 @@
+/*
+ * The battle HP boxes (`D49`, frames `05 Battle HUD` / `m 05 Battle HUD`). Every
+ * value the board carries and `styles/root.css` does not is declared once here next
+ * to the frame's node name; the rest come from the `--hud-*` tokens. The card is the
+ * kit's panel, so its hairline, radius and geometry stay the kit's: only the fill
+ * (the board draws the battle cards at 90 %, the kit at 72 %) and the highlight (14 %
+ * against the kit's 8 %) are overridden — the highlight is drawn from the view, so
+ * the kit's `::before` line is switched off rather than recoloured.
+ *
+ * The name, level and readout layers are composited (`translateZ(0)`), so Chrome
+ * rasterises their glyphs on whole pixels as the board's export does.
+ */
+.battle-hp {
+  /* 05 Battle HUD · foe panel, player panel */
+  --battle-hp-panel-fill: rgb(16 22 31 / 90%);
+  /* 05 Battle HUD · foe panel highlight, player panel highlight */
+  --battle-hp-highlight: rgb(255 255 255 / 14%);
+  /* 05 Battle HUD · foe hp track, player hp track */
+  --battle-hp-track-fill: rgb(255 255 255 / 12%);
+  /* 05 Battle HUD · foe hp fill */
+  --battle-hp-fill: #4ad15c;
+  /* the shipped canvas chip's fill; the board draws no status box on this frame */
+  --battle-hp-status-fill: #8b5cf6;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+}
+
+.battle-hp,
+.battle-hp *,
+.battle-hp *::before,
+.battle-hp *::after {
+  box-sizing: border-box;
+}
+
+.battle-hp .battle-hp__box {
+  position: absolute;
+  width: auto;
+  height: auto;
+  max-width: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--hud-panel-radius);
+  background: var(--battle-hp-panel-fill);
+  pointer-events: none;
+}
+
+.battle-hp .battle-hp__box::before {
+  display: none;
+}
+
+/* The board measures every internal from the card's outer edge; the kit's 1 px
+   hairline sits inside that edge, so the content box starts one pixel in. */
+.battle-hp__content {
+  position: absolute;
+  inset: -1px;
+}
+
+.battle-hp__highlight {
+  position: absolute;
+  display: block;
+  background: var(--battle-hp-highlight);
+}
+
+.battle-hp__name {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  width: 114px;
+  height: 20px;
+  overflow: hidden;
+  transform: translateZ(0);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  font-weight: 700;
+  line-height: var(--hud-type-readout-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.battle-hp__level {
+  position: absolute;
+  top: 22px;
+  left: 276px;
+  width: 35px;
+  height: 13px;
+  transform: translateZ(0);
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  text-align: right;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.battle-hp__track {
+  position: absolute;
+  top: 78px;
+  left: 24px;
+  display: block;
+  width: 220px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--battle-hp-track-fill);
+}
+
+/* the board measures the player track 2 px lower than the foe's */
+.battle-hp__box--player .battle-hp__track {
+  top: 80px;
+}
+
+.battle-hp__fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--battle-hp-fill);
+}
+
+.battle-hp--settled .battle-hp__fill {
+  transition: width var(--battle-hp-fill-ms, 300ms) linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-hp--settled .battle-hp__fill {
+    transition: none;
+  }
+}
+
+.battle-hp__value {
+  position: absolute;
+  top: 74px;
+  left: 252px;
+  width: 49px;
+  height: 13px;
+  transform: translateZ(0);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+}
+
+.battle-hp__box--player .battle-hp__value {
+  top: 76px;
+}
+
+.battle-hp__status {
+  position: absolute;
+  top: 76px;
+  left: 312px;
+  display: block;
+  width: 44px;
+  height: 16px;
+  transform: translateZ(0);
+  border-radius: 6px;
+  background: var(--battle-hp-status-fill);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 599.98px) {
+  .battle-hp {
+    /* m 05 Battle HUD · m foe panel, m player panel */
+    --battle-hp-panel-fill: rgb(16 22 31 / 88%);
+    /* m foe panel highlight, m player panel highlight */
+    --battle-hp-highlight: rgb(255 255 255 / 14%);
+  }
+
+  /* m 05 Battle HUD · m hp track 110, m hp track 482: 214×10, square */
+  .battle-hp__track,
+  .battle-hp__box--player .battle-hp__track {
+    top: 54px;
+    left: 20px;
+    width: 214px;
+    height: 10px;
+    border-radius: 0;
+  }
+
+  /* m hp fill foe, m hp fill player */
+  .battle-hp__fill {
+    border-radius: 0;
+  }
+
+  .battle-hp__name {
+    top: 14px;
+    left: 20px;
+    width: 114px;
+    height: 13px;
+    font-size: var(--hud-type-body-size);
+    line-height: var(--hud-type-body-line);
+  }
+
+  .battle-hp__level {
+    top: 18px;
+    left: auto;
+    right: 14px;
+    width: 44px;
+  }
+
+  .battle-hp__value,
+  .battle-hp__box--player .battle-hp__value {
+    top: 48px;
+    left: 240px;
+    width: 50px;
+  }
+
+  .battle-hp__status {
+    top: 46px;
+    left: 290px;
+  }
+}

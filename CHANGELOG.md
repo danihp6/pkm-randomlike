@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's HP boxes are the HUD's.** `[Task-140]`, the ninth of Phase 12 (`D49`): under
+      `?hud=dom` the battle's four name-and-HP boxes are Preact boxes in the `#hud` layer, drawn
+      from `battleHpView` over the battle state — the 368×100 panel at 1280 (358×80 at 390), the
+      220×8 track at `+24,+78` with `round(fraction × 220)` of fill and the live `hp/maxHp` value —
+      while `src/scenes/BattleScene.ts` draws no box under the flag and keeps the arena, the
+      combatants and the effects. A turn still lands with its line: after `E, E` the log grows and
+      the foe's value and fill agree (`5/20`, fill 55). Measured over CDP: enemy `64,48 368×100` and
+      player `64,660 368×100` at 1280×800, `16,16`/`16,504 358×80` at 390×844, radius 11 over the
+      1 px hairline, and flag off leaves the 14 canvas objects in place. The batch's cross-check also
+      confirms the route's three cards (bag, PC, party) hide while the battle is up and return at
+      their old rects afterwards. `npm test` 3836 passed, `npm run build` green.
 - [x] **The party panel is the HUD's.** `[Task-131]`, the eighth of Phase 12 (`D49`): under
       `?hud=dom` the route's party card is a Preact panel in `#hud` — the 250×406 box, the 26×26 key
       chip, the level and XP band, the six 210×48 rows with their 45×45 portraits, the HP bars and
