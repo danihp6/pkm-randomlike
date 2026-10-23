@@ -7396,7 +7396,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       fixture. The box's scroll and its search field become native. Claims `src/scenes/panels/pc.ts`,
       `src/ui/hud/panels/pc/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
       `[Task-124]`, `[Task-125]`. *(Batch 61)*
-- [ ] **[Task-131] The party panel is the HUD's.** `src/scenes/panels/party.ts` and
+- [x] **[Task-131] The party panel is the HUD's.** `src/scenes/panels/party.ts` and
       `src/ui/hud/panels/party/` render the six rows and their HP from `src/ui/partyScreen.ts`; the
       party order and the lead become commands. Claims `src/scenes/panels/party.ts`,
       `src/ui/hud/panels/party/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,

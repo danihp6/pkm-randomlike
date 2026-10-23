@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party panel is the HUD's.** `[Task-131]`, the eighth of Phase 12 (`D49`): under
+      `?hud=dom` the route's party card is a Preact panel in `#hud` — the 250×406 box, the 26×26 key
+      chip, the level and XP band, the six 210×48 rows with their 45×45 portraits, the HP bars and
+      the held-item marks, all from `src/ui/partyScreen.ts`'s view model — while
+      `src/scenes/panels/party.ts` draws no Phaser object under the flag and keeps its record, so
+      `partyBottom()` still returns 414 and the bag keeps its `y`. The party order and the lead are
+      commands: clicking a row calls `moveInParty`, and the cursor row carries the board's accent
+      hairline. Measured over CDP: the DOM box is the Phaser box to the pixel (Δ 0 at 1280×800,
+      `928,8 250×406`, and at 390×844, `38,8`), six rows land at `82 + i × 52` with their fills at
+      `hpFraction`, and the card — open by default, so it was the one covering the battle — hides
+      while the route is paused and returns at the same rect and open state, even after a real
+      flee back to the route. Flag off: 51 draw objects against 0. `npm test` 3820 passed,
+      `npm run build` green.
 - [x] **The PC panel is the HUD's.** `[Task-130]`, the seventh of Phase 12 (`D49`): `?hud=dom`
       turns the box into a Preact card in `#hud` — the shipped 344×378 box, the `BOX`/`RIP` pane
       tabs, the native search field over the 4×4 grid of 76×76 cells at an 80 px pitch, the page
