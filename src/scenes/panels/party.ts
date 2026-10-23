@@ -54,7 +54,9 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * module draws none of it: the window and its panel record are still built (so the
  * quick key, the saved layout and the collapse keep working) but stay invisible, and
  * `refresh` feeds the panel's signal instead. Presses inside the panel come back as
- * `HudCommand`s, so the run is still only ever written here.
+ * `HudCommand`s, so the run is still only ever written here. `#hud` is a DOM layer
+ * above the canvas, so while the route is paused under a battle or the Settings screen
+ * the mount hides the card and brings it back as it was on `RESUME`.
  */
 
 const HUD_PARTY_ROW = 52;
@@ -71,6 +73,13 @@ const HUD_PARTY_HEADER = HUD_VIAL_Y + HUD_VIAL_H + 8;
 
 /** `?hud=dom`, read once: the DOM party panel is the only party this scene draws. */
 const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this folder imports
+ * Phaser type-only: the route stops under a battle or the Settings screen and comes
+ * back from it on these two.
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
 
 let hudRows: {
   highlight: Phaser.GameObjects.Rectangle;
@@ -104,6 +113,16 @@ function partyLive(): PartyLive {
 /** The mounted DOM panel: the view it paints and its disposer. */
 let domView: Signal<PartyPanelView> | null = null;
 let domDispose: (() => void) | null = null;
+/** The host the mount was built with, so a pause repaints without waiting for `refresh`. */
+let domHost: RoutePanelHost | null = null;
+/** The scene the mount listens to, so `close` can drop the subscription. */
+let domScene: Phaser.Scene | null = null;
+/**
+ * True while the route is paused under another screen. `#hud` is a DOM layer **above**
+ * the canvas, so a paused route's cards would float over the battle covering it; the
+ * mount stays and only the view's `open` goes false, which is the collapse state.
+ */
+let routePaused = false;
 
 /** The members a pane shows: the party, the PC box, or the fallen. */
 export function paneMembers(host: RoutePanelHost, pane: PaneId): readonly RunPokemon[] {
@@ -178,14 +197,34 @@ function partyView(host: RoutePanelHost): PartyPanelView {
     width: host.scene.scale.width,
     height: host.scene.scale.height,
   });
-  return { ...view, open: panelExpanded(host, 'party') };
+  return { ...view, open: !routePaused && panelExpanded(host, 'party') };
+}
+
+/** Repaints the mounted card from the live host, or nothing before the first mount. */
+function repaintDomPanel(): void {
+  if (domView === null || domHost === null) return;
+  domView.value = partyView(domHost);
+}
+
+/** A battle or the Settings screen covers the route: the card goes with the paused HUD. */
+function pauseDomPanel(): void {
+  routePaused = true;
+  repaintDomPanel();
+}
+
+/** The route is the screen on top again: the card returns as it was left. */
+function resumeDomPanel(): void {
+  routePaused = false;
+  repaintDomPanel();
 }
 
 /**
  * A press inside the DOM card. A row makes that member the lead (`moveInParty`), a
  * no-op for the member already there; the chip toggles the panel exactly as `P`.
+ * A paused route takes neither, so a press can never toggle behind the screen on top.
  */
 function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
+  if (routePaused) return;
   if (command.type === 'member') {
     const run = host.run();
     const index = run.party.findIndex((member) => member.fighter.id === command.memberId);
@@ -198,6 +237,13 @@ function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
 }
 
 function disposeDomPanel(): void {
+  if (domScene !== null) {
+    domScene.events.off(SCENE_PAUSE, pauseDomPanel);
+    domScene.events.off(SCENE_RESUME, resumeDomPanel);
+    domScene = null;
+  }
+  routePaused = false;
+  domHost = null;
   if (domDispose !== null) {
     domDispose();
     domDispose = null;
@@ -213,7 +259,11 @@ function mountDomPanel(host: RoutePanelHost): void {
   if (layer === null) return;
   const view = signal(partyView(host));
   domView = view;
+  domHost = host;
   domDispose = mountPartyPanel(layer, view, (command) => runPanelCommand(host, command));
+  domScene = host.scene;
+  domScene.events.on(SCENE_PAUSE, pauseDomPanel);
+  domScene.events.on(SCENE_RESUME, resumeDomPanel);
 }
 
 function refreshParty(host: RoutePanelHost): void {
