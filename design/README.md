@@ -13,11 +13,15 @@ decision; `docs/hud-dom-proposal.md` §11 is the recipe; `docs/hud-fidelity.md` 
 | `screens/<slug>.svg` | 1:1 vector, diffable, **no `<text>`** (Figma outlines it)     | review, the escape-hatch assets      |
 | `screens/<slug>.png` | `@2x` rasterisation, the diff's reference, never edited       | `scripts/hud/diff.mjs`               |
 | `board.json`         | slug → node ids, frame name, task, panel, scene               | the exporter, the README below       |
+| `tokens.json`        | the derived palette, type scale, radii and geometry           | the kit, the CSS vars, the chrome    |
+
+`design/diff/<slug>/` is `npm run hud:diff`'s own output (shot, pixelmatch diff, report) and is
+gitignored: it is evidence of a run, not a reference.
 
 `<slug>` is the frame name in lower-kebab; the mobile twin carries an `m` prefix
 (`03 Route HUD` → `03-route-hud` / `m03-route-hud`). 33 frames, 66 viewports.
 
-Measured size at export: 3.5 MB of JSON, 3.9 MB of SVG, 10.1 MB of PNG.
+Measured size at export: ≈3.7 MB of JSON, 3.9 MB of SVG, 10.1 MB of PNG.
 
 ## The frame → scene map
 

@@ -1,8 +1,9 @@
 // The prototype gate (`D49`): screenshots the running HUD at both viewports and measures it against
 // the board, reporting geometry and colour apart. Geometry is the position of the strongest
 // horizontal and vertical edges, matched within 2 px, so a moving panel, row pitch or radius shows up
-// while glyph antialiasing does not; colour is the mean ΔE on flat fills (≤ 2). Text is measured on
-// its box and colour, never per pixel.
+// while glyph antialiasing does not; colour is the mean ΔE on flat fills (≤ 2). Text is not measured
+// yet: its boxes live in `design/frames/<slug>.json` and the check lands with the first DOM panel
+// (`[Task-127]`), never as a per-pixel comparison.
 //
 // Usage:
 //   node scripts/hud/diff.mjs --slug 02-options [--url http://127.0.0.1:4173] [--settle 1200]

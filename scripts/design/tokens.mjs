@@ -178,7 +178,7 @@ const tokens = {
   panelBounds: { top: Math.min(...topEdge), bottom: Math.max(...bottomEdge) },
   grid: { pitch, mobileOffset: offset },
   palette,
-  source: { frames: files.length, text: sizes.size, exportedAt: new Date().toISOString().slice(0, 10) },
+  source: { frames: files.length, textSizes: sizes.size, exportedAt: new Date().toISOString().slice(0, 10) },
   warnings: missing.length ? [`roles the board no longer draws: ${missing.join(', ')}`] : [],
 };
 
