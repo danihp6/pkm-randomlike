@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The capacity wait asks for 1/6 on every third attempt.** Madrid's single AD has
+      answered `OUT_OF_HOST_CAPACITY` for 2/12 since the wait began, and A1 capacity fragments
+      by host: `oci-retry.yml` now passes `SHAPES: '2/12 2/12 1/6'`, so one attempt in three
+      asks for half the Always Free entitlement — which spends none of the allowance and fits
+      hosts the full one does not — while the other two keep asking for the 2/12 the box should
+      end up with. The knob already existed and needed no code: `oci-launch.sh` rotates one
+      entry per attempt, so repeating an entry is the weighting. Landing at 1/6 **ends** the
+      wait (the chain parks on any `RUNNING` instance), so `docs/agent-vm.md` gains the resize
+      runbook — brake `OCI_RETRY`, stop, `update --shape-config`, start — with the warning that
+      a `STOPPED` box reads as absent to the chain, which would launch a second instance and put
+      the account over the ceiling.
+
 - [x] **The prototype board lives in the repo, and "identical to the board" is a command.** `[Task-122]`,
       the first of Phase 12 (`D49`): `scripts/design/export.mjs` walks a 33-frame table, resolves every
       node id from `page_info` instead of a hand-typed map, and writes three artifacts per viewport —

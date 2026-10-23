@@ -115,7 +115,9 @@ oci compute instance launch --compartment-id "$T" \
 `VM.Standard.A1.Flex` is the only shape that matters, and its free size depends on the
 account: **2 OCPU / 12 GB** since Oracle cut the Always Free Ampere entitlement in August
 2026, or still 4 OCPU / 24 GB on a pay-as-you-go account, inside the free allowance. The
-retry asks for 2/12 (`SHAPES`) because that is the ceiling this tenancy can be granted.
+retry asks for that ceiling on two attempts out of three and for **1/6** on the third
+(`SHAPES`): asking for less spends none of the allowance, and a half-size box today beats a
+full-size one that never appears.
 
 ## Waiting for capacity from CI
 
@@ -131,9 +133,13 @@ and the new workflow's first scheduled tick came five hours after it went live. 
 holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI; the
 default of 1 is a one-shot probe), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s),
 `START_DELAY` (300 s) and
-`BUDGET` (3 600 s), and walks through its attempts asking for 2/12 every time. `SHAPES` is
+`BUDGET` (3 600 s), and walks through its attempts on a rotation, `2/12 2/12 1/6`. `SHAPES` is
 the knob: it takes a list of `<ocpus>/<gb>` and rotates one per attempt, so the day the
-account goes pay-as-you-go it is `SHAPES: 4/24 2/12 1/6` again and nothing else changes.
+account goes pay-as-you-go it is `SHAPES: 4/24 2/12 1/6` and nothing else changes. Writing an
+entry twice is how the rotation is weighted. A misspelt entry, or a memory outside the shape's
+own 1–6 GB per OCPU, answers `InvalidParameter` instead of "no capacity": the script treats
+that as a real error and stops the chain, so a typo silently costs the wait until somebody
+reads the red run.
 `timeout-minutes: 75` sits above the script's own budget, so the job ends itself instead of
 being killed mid-launch.
 
@@ -184,6 +190,30 @@ Rotating the key is a human's job: `oci iam user api-key delete`, upload a new o
 `gh secret set OCI_CLI_KEY_CONTENT < new-key.pem`. The workflow spends no model tokens;
 each attempt is one `launch` call, and a `TooManyRequests` or a full region exits `0` on
 purpose so the runs list does not turn red while the answer is simply "not yet".
+
+## Growing a 1/6 box to 2/12
+
+The retry parks on **any** `RUNNING` instance, so when the rotation's 1/6 slot lands the wait
+is over: 1 OCPU still leaves half the allowance free, and growing is a separate, deliberate
+step. Brake the chain first — a `STOPPED` instance is `RUNNING` to nobody, so a live retry
+would read the box as gone and launch a second one beside it, and two instances over the
+2 OCPU / 12 GB ceiling are a bill:
+
+```bash
+gh variable set OCI_RETRY --body off
+oci compute instance action --instance-id "$ID" --action STOP --wait-for-state STOPPED
+oci compute instance update --instance-id "$ID" --force \
+  --shape-config '{"ocpus":2,"memoryInGBs":12}'
+oci compute instance action --instance-id "$ID" --action START --wait-for-state RUNNING
+gh variable set OCI_RETRY --body on
+```
+
+The `update` is where the wait resumes: a bigger shape needs a host with room for it, so it
+answers `OutOfHostCapacity` exactly like a `launch` and wants the same patience and the same
+spacing — never a tight loop, and never while the retry chain is running. The instance keeps
+its IP, its boot volume and everything installed on it, so a failed resize costs a stop and a
+start, not the bootstrap. If the box has to work in the meantime, `START` it back at 1/6 with
+the same call and try again another day.
 
 ## Bootstrap
 
