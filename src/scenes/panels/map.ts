@@ -1,3 +1,4 @@
+import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import { getBiome } from '../../data/biomes';
 import { isFinalMap } from '../../engine/maps';
@@ -10,7 +11,9 @@ import {
   addFrlgWindow,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
-import { buildMapView, type MapRoomMarker, type MapViewRoom } from '../../ui/mapView';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import { mapPanelView, mountMapPanel, type MapPanelView } from '../../ui/hud/panels/map';
+import { buildMapView, type MapRoomMarker, type MapView, type MapViewRoom } from '../../ui/mapView';
 import { PANEL_ICON_KEYS } from '../BootScene';
 import {
   HUD_CONTENT_LEFT,
@@ -20,6 +23,7 @@ import {
   HUD_TOP,
   PANEL_KEY_ACTIONS,
   makeHudPanel,
+  panelExpanded,
 } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -28,6 +32,13 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * the map name over the discovered-rooms grid, one panel in the free top-left
  * corner. The layout and every reveal rule come from the pure `buildMapView`; this
  * module only scales and paints it.
+ *
+ * With `?hud=dom` (`D49`) the card is the Preact panel in
+ * `src/ui/hud/panels/map/` and this module draws none of it: the panel record is
+ * still built (so the saved layout and the collapse keep working) but stays
+ * invisible, and `refresh` feeds the panel's signal instead. `#hud` is a DOM layer
+ * above the canvas, so while the route is paused under a battle or the Settings
+ * screen the mount hides the card and brings it back as it was on `RESUME`.
  */
 
 const HUD_MAP_X = 8;
@@ -38,10 +49,58 @@ const HUD_MAP_TITLE_H = HUD_PAD_TOP + 34;
 const HUD_MAP_CURRENT_FILL = 0xf6d98a;
 const HUD_MAP_CURRENT_STROKE = 0x9a7a1f;
 
+/** `?hud=dom`, read once: the DOM card is the only header this scene draws. */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this folder imports
+ * Phaser type-only: the route stops under a battle or the Settings screen and comes
+ * back from it on these two.
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
+
 let hudTitle!: Phaser.GameObjects.BitmapText;
 /** The floor minimap panel: its graphics and the "no map" label. */
 let hudMapGraphics!: Phaser.GameObjects.Graphics;
 let hudMapEmpty!: Phaser.GameObjects.BitmapText;
+/** The shipped container the canvas body lives in: what the flag contract counts. */
+let hudMapBody: Phaser.GameObjects.Container | null = null;
+/** The mounted DOM panel: its view, its disposer, the host and the scene it follows. */
+let domView: Signal<MapPanelView> | null = null;
+let domDispose: (() => void) | null = null;
+let domHost: RoutePanelHost | null = null;
+let domScene: Phaser.Scene | null = null;
+/**
+ * True while the route is paused under another screen. `#hud` is a DOM layer **above**
+ * the canvas, so a paused route's card would float over the battle covering it; the
+ * mount stays and only the view's `open` goes false, which is the collapse state.
+ */
+let mapPaused = false;
+
+/** The port, plus the marker map the minimap's special rooms come from. */
+function mapViewOf(host: RoutePanelHost): MapView | null {
+  const plan = host.plan();
+  if (!plan) return null;
+  const run = host.run();
+  return buildMapView(plan, {
+    discovered: run.discoveredRooms,
+    currentRoom: run.routeInMap,
+    portalOpen: portalOpen(host),
+    captureSpent: run.capturedRooms,
+    markers: plan.specials.reduce<Record<number, MapRoomMarker>>((all, special) => {
+      all[special.roomId] = special.kind;
+      return all;
+    }, {}),
+  });
+}
+
+/** The header's own line: the floor number and the biome it holds. */
+function mapTitle(host: RoutePanelHost): string {
+  return t('route.mapTitle', {
+    map: host.run().mapIndex,
+    biome: getBiome(host.route().biomeId).name,
+  });
+}
 
 /** The portal is open once the map's boss has fallen, except on the final map (D31). */
 function portalOpen(host: RoutePanelHost): boolean {
@@ -58,22 +117,11 @@ function refreshMapView(host: RoutePanelHost): void {
   if (!hudMapGraphics) return;
   const graphics = hudMapGraphics;
   graphics.clear();
-  const plan = host.plan();
-  if (!plan) {
+  const view = mapViewOf(host);
+  if (!view) {
     hudMapEmpty.setVisible(true);
     return;
   }
-  const run = host.run();
-  const view = buildMapView(plan, {
-    discovered: run.discoveredRooms,
-    currentRoom: run.routeInMap,
-    portalOpen: portalOpen(host),
-    captureSpent: run.capturedRooms,
-    markers: plan.specials.reduce<Record<number, MapRoomMarker>>((all, special) => {
-      all[special.roomId] = special.kind;
-      return all;
-    }, {}),
-  });
   hudMapEmpty.setVisible(!view.visible);
   if (!view.visible) return;
 
@@ -184,11 +232,115 @@ function drawCaptureBall(
   graphics.fillCircle(cx, cy, radius * 0.2);
 }
 
+/** The number of display objects the header draws right now: 0 under `?hud=dom`. */
+export function mapDrawnObjectCount(): number {
+  if (DOM_HUD) return 0;
+  return hudMapBody?.list.length ?? 0;
+}
+
+/** The view's viewport: the scene's own window, as the HUD metrics see it. */
+function viewport(host: RoutePanelHost): { width: number; height: number } {
+  return { width: host.scene.scale.width, height: host.scene.scale.height };
+}
+
+/**
+ * The card as data: the floor, its title and the panel record's own open state. It
+ * is the one emit point of the DOM panel — the scene owns the run and the plan, the
+ * Preact card paints them.
+ */
+function mapDomView(host: RoutePanelHost): MapPanelView {
+  const view = mapPanelView(mapViewOf(host), mapTitle(host), viewport(host));
+  return { ...view, open: !mapPaused && panelExpanded(host, 'header') };
+}
+
+/** Repaints the mounted card from the live host, or nothing before the first mount. */
+function repaintDomPanel(): void {
+  if (domView === null || domHost === null) return;
+  domView.value = mapDomView(domHost);
+}
+
+/** A battle or the Settings screen covers the route: the card goes with the paused HUD. */
+function pauseDomPanel(): void {
+  mapPaused = true;
+  repaintDomPanel();
+}
+
+/** The route is the screen on top again: the card returns as it was left. */
+function resumeDomPanel(): void {
+  mapPaused = false;
+  repaintDomPanel();
+}
+
+function disposeDomPanel(): void {
+  if (domScene !== null) {
+    domScene.events.off(SCENE_PAUSE, pauseDomPanel);
+    domScene.events.off(SCENE_RESUME, resumeDomPanel);
+    domScene = null;
+  }
+  mapPaused = false;
+  domHost = null;
+  if (domDispose !== null) {
+    domDispose();
+    domDispose = null;
+  }
+  domView = null;
+}
+
+function closeDom(): void {
+  disposeDomPanel();
+  hudMapBody = null;
+}
+
+/**
+ * The flag-on build: the shipped layout arithmetic and the panel record, so the
+ * saved layout and the collapse keep working, but nothing drawn — an invisible
+ * window, an empty body and the Preact card in `#hud`.
+ */
+function buildDom(host: RoutePanelHost): void {
+  disposeDomPanel();
+  const scene = host.scene;
+  const { mapW } = host.hud();
+  const mapWindow = addFrlgWindow(scene, HUD_MAP_X, HUD_MAP_Y, mapW, HUD_MAP_H).setVisible(false);
+  const body = scene.add.container(0, 0);
+  hudMapBody = body;
+  const panel = makeHudPanel(
+    host,
+    'header',
+    HUD_MAP_X,
+    HUD_MAP_Y,
+    mapW,
+    HUD_MAP_H,
+    body,
+    mapWindow,
+    PANEL_ICON_KEYS.header,
+    PANEL_KEY_ACTIONS.header ?? null,
+  );
+  panel.container.setVisible(false);
+  panel.icon.setVisible(false);
+  // `makeHudPanel` hangs the Transparent-HUD outline in the body; the header draws
+  // nothing at all under the flag, so the empty body stays empty and the flag
+  // contract counts zero.
+  body.remove(panel.border);
+  mapPaused = scene.sys.isPaused();
+  const view = signal(mapDomView(host));
+  domView = view;
+  domHost = host;
+  const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
+  if (layer !== null) domDispose = mountMapPanel(layer, view, undefined);
+  domScene = scene;
+  domScene.events.on(SCENE_PAUSE, pauseDomPanel);
+  domScene.events.on(SCENE_RESUME, resumeDomPanel);
+}
+
 export const descriptor: RoutePanelDescriptor = {
   id: 'map',
   order: 10,
   hudPanel: 'header',
   build(host: RoutePanelHost): void {
+    if (DOM_HUD) {
+      buildDom(host);
+      return;
+    }
     const { mapW } = host.hud();
     const scene = host.scene;
     const children: Phaser.GameObjects.GameObject[] = [];
@@ -207,6 +359,7 @@ export const descriptor: RoutePanelDescriptor = {
       { size: 16, tint: FRLG_MUTED, origin: [0.5, 0] },
     );
     children.push(hudTitle, hudMapGraphics, hudMapEmpty);
+    hudMapBody = scene.add.container(0, 0, children);
     // The header has nothing interactive, so its whole window grabs for a drag.
     makeHudPanel(
       host,
@@ -215,20 +368,22 @@ export const descriptor: RoutePanelDescriptor = {
       HUD_MAP_Y,
       mapW,
       HUD_MAP_H,
-      scene.add.container(0, 0, children),
+      hudMapBody,
       window,
       PANEL_ICON_KEYS.header,
       PANEL_KEY_ACTIONS.header ?? null,
     );
   },
   refresh(host: RoutePanelHost): void {
+    if (DOM_HUD) {
+      repaintDomPanel();
+      return;
+    }
     if (!hudTitle) return;
-    hudTitle.setText(
-      t('route.mapTitle', {
-        map: host.run().mapIndex,
-        biome: getBiome(host.route().biomeId).name,
-      }),
-    );
+    hudTitle.setText(mapTitle(host));
     refreshMapView(host);
+  },
+  close(): void {
+    if (DOM_HUD) closeDom();
   },
 };
