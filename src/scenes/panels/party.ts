@@ -1,10 +1,11 @@
+import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../../data/portraits';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../../data/statusIcons';
 import { getSpecies } from '../../data/dex';
 import { restoreFighter } from '../../engine/battle';
-import { MAX_PARTY_SIZE, type RunPokemon } from '../../engine/run';
+import { MAX_PARTY_SIZE, moveInParty, type RunPokemon } from '../../engine/run';
 import {
   FRLG_HPBAR,
   FRLG_HPBAR_KEY,
@@ -13,6 +14,16 @@ import {
   addFrlgWindow,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
+import type { HudCommand } from '../../ui/hud/commands';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import {
+  initialPartyPanelUi,
+  mountPartyPanel,
+  partyPanelView,
+  type PartyPanelUi,
+  type PartyPanelView,
+} from '../../ui/hud/panels/party';
+import { projectHud } from '../../ui/hud/state';
 import { hpColorInt, hpFraction } from '../../ui/metrics';
 import type { PaneId } from '../../ui/partyScreen';
 import { PANEL_ICON_KEYS } from '../BootScene';
@@ -29,6 +40,7 @@ import {
   makeHudPanel,
   panelExpanded,
   panelPoint,
+  toggleHudPanel,
 } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -37,6 +49,12 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * under the shared level/XP line and the Pokevial bar the frame layer paints. A row
  * is a hit target for the scene's drag path; it repaints from the run, never per
  * frame.
+ *
+ * With `?hud=dom` (`D49`) the card is the Preact panel in the `#hud` layer and this
+ * module draws none of it: the window and its panel record are still built (so the
+ * quick key, the saved layout and the collapse keep working) but stay invisible, and
+ * `refresh` feeds the panel's signal instead. Presses inside the panel come back as
+ * `HudCommand`s, so the run is still only ever written here.
  */
 
 const HUD_PARTY_ROW = 52;
@@ -51,6 +69,9 @@ const HUD_HELD_ICON_SCALE = 0.85;
 /** The party header's band: the level line, the XP bar and the vial, over the rows. */
 const HUD_PARTY_HEADER = HUD_VIAL_Y + HUD_VIAL_H + 8;
 
+/** `?hud=dom`, read once: the DOM party panel is the only party this scene draws. */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+
 let hudRows: {
   highlight: Phaser.GameObjects.Rectangle;
   portrait: Phaser.GameObjects.Image;
@@ -63,6 +84,26 @@ let hudRows: {
 /** The party window's own top and height, which the bag window stacks under. */
 let hudPartyY = 0;
 let hudPartyH = 0;
+/**
+ * The live party body. It hangs off `globalThis` the way the battle scene publishes
+ * itself (`__pkmBattle`): the dev server serves a second copy of this module under
+ * `?t=` after an HMR update, and the acceptance probe imports the module by path, so
+ * a copy-local reference would report a panel that is drawing as empty.
+ */
+type PartyLive = { body: Phaser.GameObjects.Container | null };
+const PARTY_LIVE_KEY = '__pkmPartyPanel';
+
+function partyLive(): PartyLive {
+  const scope = globalThis as Record<string, unknown>;
+  const existing = scope[PARTY_LIVE_KEY];
+  if (existing !== undefined) return existing as PartyLive;
+  const created: PartyLive = { body: null };
+  scope[PARTY_LIVE_KEY] = created;
+  return created;
+}
+/** The mounted DOM panel: the view it paints and its disposer. */
+let domView: Signal<PartyPanelView> | null = null;
+let domDispose: (() => void) | null = null;
 
 /** The members a pane shows: the party, the PC box, or the fallen. */
 export function paneMembers(host: RoutePanelHost, pane: PaneId): readonly RunPokemon[] {
@@ -76,8 +117,15 @@ export function partyBottom(): number {
   return hudPartyY + hudPartyH;
 }
 
+/** The number of display objects the party draws right now: 0 under `?hud=dom`. */
+export function partyDrawnObjectCount(): number {
+  if (DOM_HUD) return 0;
+  return partyLive().body?.list.length ?? 0;
+}
+
 /** True when the pointer is on the party window's frame. */
 export function pointerInPartyPanel(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+  if (DOM_HUD) return false;
   if (!panelExpanded(host, 'party')) return false;
   const point = panelPoint(host, pointer, 'party');
   const x = hudColumnLeft(host);
@@ -91,6 +139,7 @@ export function pointerInPartyPanel(host: RoutePanelHost, pointer: Phaser.Input.
 
 /** The party index under the pointer, or null outside a filled row. */
 export function hudPartyRowAt(host: RoutePanelHost, pointer: Phaser.Input.Pointer): number | null {
+  if (DOM_HUD) return null;
   if (!pointerInPartyPanel(host, pointer)) return null;
   const point = panelPoint(host, pointer, 'party');
   const rowTop = hudPartyY + HUD_PARTY_HEADER;
@@ -101,19 +150,77 @@ export function hudPartyRowAt(host: RoutePanelHost, pointer: Phaser.Input.Pointe
 
 /** A party row's held-item badge, so the drag path can take the item in hand. */
 export function partyHeldBadge(index: number): Phaser.GameObjects.Image | undefined {
+  if (DOM_HUD) return undefined;
   return hudRows[index]?.held;
 }
 
 /** Paints one party portrait for the level-up beat, and clears it afterwards. */
 export function setPartyPortraitTint(index: number, tint: number): void {
+  if (DOM_HUD) return;
   hudRows[index]?.portrait.setTint(tint);
 }
 
 export function clearPartyPortraitTints(): void {
+  if (DOM_HUD) return;
   for (const row of hudRows) row.portrait.clearTint();
 }
 
+/** The panel's own cursor: the party pane's index while it holds the cursor. */
+function panelUi(host: RoutePanelHost): PartyPanelUi {
+  const ui = host.ui();
+  return ui.pane === 'party' ? { cursor: ui.index } : initialPartyPanelUi();
+}
+
+/** The view the DOM paints: the route projection plus the panel record's own open state. */
+function partyView(host: RoutePanelHost): PartyPanelView {
+  const state = projectHud({ screen: 'route', run: host.run(), notice: null });
+  const view = partyPanelView(state, panelUi(host), {
+    width: host.scene.scale.width,
+    height: host.scene.scale.height,
+  });
+  return { ...view, open: panelExpanded(host, 'party') };
+}
+
+/**
+ * A press inside the DOM card. A row makes that member the lead (`moveInParty`), a
+ * no-op for the member already there; the chip toggles the panel exactly as `P`.
+ */
+function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
+  if (command.type === 'member') {
+    const run = host.run();
+    const index = run.party.findIndex((member) => member.fighter.id === command.memberId);
+    if (index <= 0) return;
+    const next = moveInParty(run, index, 0);
+    if (next !== run) host.commitRun(next);
+    return;
+  }
+  if (command.type === 'panel' && command.panel === 'party') toggleHudPanel(host, 'party');
+}
+
+function disposeDomPanel(): void {
+  if (domDispose !== null) {
+    domDispose();
+    domDispose = null;
+  }
+  domView = null;
+}
+
+/** Mounts the card in the `#hud` layer; a missing layer mounts nothing. */
+function mountDomPanel(host: RoutePanelHost): void {
+  disposeDomPanel();
+  if (typeof document === 'undefined') return;
+  const layer = document.getElementById('hud');
+  if (layer === null) return;
+  const view = signal(partyView(host));
+  domView = view;
+  domDispose = mountPartyPanel(layer, view, (command) => runPanelCommand(host, command));
+}
+
 function refreshParty(host: RoutePanelHost): void {
+  if (DOM_HUD) {
+    if (domView !== null) domView.value = partyView(host);
+    return;
+  }
   if (hudRows.length === 0) return;
   const run = host.run();
   const ui = host.ui();
@@ -174,17 +281,40 @@ export const descriptor: RoutePanelDescriptor = {
   build(host: RoutePanelHost): void {
     const scene = host.scene;
     const x = hudColumnLeft(host);
-    const { partyW, partyHpBarScale } = host.hud();
-    const partyChildren: Phaser.GameObjects.GameObject[] = [];
     const partyY = HUD_TOP;
     const partyH = HUD_PARTY_HEADER + MAX_PARTY_SIZE * HUD_PARTY_ROW + HUD_PAD_BOTTOM;
     hudPartyY = partyY;
     hudPartyH = partyH;
+    hudRows = [];
+    partyLive().body = null;
+
+    if (DOM_HUD) {
+      const { partyW } = host.hud();
+      const partyWindow = addFrlgWindow(scene, x, partyY, partyW, partyH).setVisible(false);
+      const panel = makeHudPanel(
+        host,
+        'party',
+        x,
+        partyY,
+        partyW,
+        partyH,
+        scene.add.container(0, 0),
+        partyWindow,
+        PANEL_ICON_KEYS.party,
+        PANEL_KEY_ACTIONS.party ?? null,
+      );
+      panel.container.setVisible(false);
+      panel.icon.setVisible(false);
+      mountDomPanel(host);
+      return;
+    }
+
+    const { partyW, partyHpBarScale } = host.hud();
+    const partyChildren: Phaser.GameObjects.GameObject[] = [];
     const partyWindow = addFrlgWindow(scene, x, partyY, partyW, partyH);
     partyChildren.push(partyWindow);
     const partyLeft = x + HUD_PAD_X;
     const partyRight = x + partyW - HUD_PAD_X;
-    hudRows = [];
     for (let i = 0; i < MAX_PARTY_SIZE; i++) {
       const rowY = partyY + HUD_PARTY_HEADER + i * HUD_PARTY_ROW;
       const highlight = scene.add
@@ -229,6 +359,8 @@ export const descriptor: RoutePanelDescriptor = {
       hudRows.push({ highlight, portrait, held, status, name, bar, fill });
       partyChildren.push(highlight, portrait, held, name, status, bar, fill);
     }
+    const partyBody = scene.add.container(0, 0, partyChildren);
+    partyLive().body = partyBody;
     makeHudPanel(
       host,
       'party',
@@ -236,11 +368,17 @@ export const descriptor: RoutePanelDescriptor = {
       partyY,
       partyW,
       partyH,
-      scene.add.container(0, 0, partyChildren),
+      partyBody,
       partyWindow,
       PANEL_ICON_KEYS.party,
       PANEL_KEY_ACTIONS.party ?? null,
     );
   },
   refresh: refreshParty,
+  close(): void {
+    if (!DOM_HUD) return;
+    disposeDomPanel();
+    partyLive().body = null;
+    hudRows = [];
+  },
 };

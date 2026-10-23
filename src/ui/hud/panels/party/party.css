@@ -1,0 +1,258 @@
+/*
+ * The party card (`D49`). The box is the shipped one — 250 px wide in the right-hand
+ * column, 82 px of header over six 52 px rows and a 12 px pad — and the paint is the
+ * board's `03b Panels · row view` party group: radius 11, the 1 px hairline, the 1 px
+ * highlight 12 px inside the top edge, the 26×26 accent-edged key chip and the accent
+ * selected row. Every value `styles/root.css` carries is read from its token; only the
+ * board values it does not carry are declared here, once each, next to the node name.
+ *
+ * The card, the chip and the three bars are drawn here rather than composed from
+ * `kit/`: each of them is a measured, `data-hud-*`-addressed box (the kit's `Panel`,
+ * `Bar` and `Chip` neither forward a data attribute nor carry the shipped party's
+ * 8/20/16 px bar heights), and the kit's chip hit overlay is reproduced with its own
+ * values below.
+ */
+.party {
+  /* 03b party panel: the hairline, fill and radius are root.css's panel tokens */
+  --party-highlight: var(--hud-row-border);
+  /* 03b key party: #0B1017 at 50 %, accent stroke at 55 %, radius 6 */
+  --party-chip-fill: rgb(11 16 23 / 50%);
+  --party-chip-border: rgb(125 211 252 / 55%);
+  --party-chip-radius: 6px;
+  /* 03b party xp track / hp track / vial track: #FFFFFF at 12 % */
+  --party-track: rgb(255 255 255 / 12%);
+  --party-track-radius: 4px;
+  /* 03b party xp fill */
+  --party-xp-fill: #60a5fa;
+  /* 03b vials: one fill step per charge, the shipped HUD_VIAL_FILL_COLORS */
+  --party-vial-fill-1: #fde68a;
+  --party-vial-fill-2: #fbbf24;
+  --party-vial-fill-3: #f97316;
+  /* the shipped HP fill */
+  --party-hp-fill: #58d080;
+  /* FRLG_SELECTED_FILL / FRLG_SELECTED_STROKE: accent at 16 % under a 1 px accent stroke */
+  --party-selected-fill: rgb(125 211 252 / 16%);
+  --party-selected-stroke: rgb(125 211 252 / 100%);
+  /* the shipped row's own offsets, from the Phaser party module */
+  --party-pad-x: 20px;
+  --party-pad-top: 16px;
+  --party-xp-inset: 12px;
+  --party-column: 56px;
+  --party-name-top: 6px;
+  --party-status-top: 5px;
+  /* the baked FRLG HP track scaled to the 154 px bar: 60, 8, 192, 12 × 154/268 */
+  --party-hp-inset-x: 34.5px;
+  --party-hp-inset-y: 4.6px;
+  --party-hp-fill-height: 6.9px;
+
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.party[hidden] {
+  display: none;
+}
+
+.party,
+.party *,
+.party *::before,
+.party *::after {
+  box-sizing: border-box;
+}
+
+/*
+ * The card's hairline is drawn inside its box (`docs/hud-fidelity.md` §3), so the
+ * absolutely positioned children of the root would otherwise start one pixel in
+ * from the panel's own rect. The face covers the root's border box, so every
+ * child lands exactly on the panel-relative coordinate the view gives it.
+ */
+.party__face,
+.party__row-face {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  bottom: -1px;
+  left: -1px;
+}
+
+.party__highlight {
+  position: absolute;
+  background: var(--party-highlight);
+}
+
+.party__chip {
+  position: absolute;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--party-chip-border);
+  border-radius: var(--party-chip-radius);
+  background: var(--party-chip-fill);
+  color: var(--hud-accent);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: var(--hud-type-chip-line);
+  cursor: pointer;
+}
+
+.party__chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.party__level {
+  position: absolute;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  white-space: nowrap;
+}
+
+.party__xp-text {
+  position: absolute;
+  top: var(--party-pad-top);
+  right: calc(var(--party-pad-x) + var(--party-xp-inset));
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  white-space: nowrap;
+}
+
+.party__xp,
+.party__vial,
+.party__hp {
+  position: absolute;
+  overflow: hidden;
+  border-radius: var(--party-track-radius);
+  background: var(--party-track);
+}
+
+.party__xp-fill {
+  height: 100%;
+  background: var(--party-xp-fill);
+}
+
+.party__vial-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--party-vial-fill-1);
+}
+
+.party__vial-fill[data-step='2'] {
+  background: var(--party-vial-fill-2);
+}
+
+.party__vial-fill[data-step='3'] {
+  background: var(--party-vial-fill-3);
+}
+
+.party__vial-label {
+  position: absolute;
+  top: 3px;
+  right: 0;
+  left: 0;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-align: center;
+}
+
+.party__row {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  /* The selected row paints this stroke; a transparent one keeps every row's face
+     anchored to the same border box, so a press never shifts its own contents. */
+  border: 1px solid transparent;
+  border-radius: var(--hud-row-radius);
+  background: transparent;
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.party__row--selected {
+  border-color: var(--party-selected-stroke);
+  background: var(--party-selected-fill);
+}
+
+.party__portrait {
+  position: absolute;
+  border: 1px solid var(--hud-row-border);
+  border-radius: var(--party-chip-radius);
+  background: var(--hud-row-fill);
+}
+
+.party__held {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--party-chip-radius);
+  background: var(--party-chip-fill);
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: var(--hud-type-chip-line);
+}
+
+.party__name {
+  position: absolute;
+  top: var(--party-name-top);
+  right: 24px;
+  left: var(--party-column);
+  overflow: hidden;
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party__status {
+  position: absolute;
+  top: var(--party-status-top);
+  right: 0;
+  color: var(--hud-text-warning);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  text-transform: uppercase;
+}
+
+.party__hp-fill {
+  position: absolute;
+  top: var(--party-hp-inset-y);
+  left: var(--party-hp-inset-x);
+  height: var(--party-hp-fill-height);
+  border-radius: 2px;
+  background: var(--party-hp-fill);
+}
+
+.party__chip:focus-visible,
+.party__row:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
