@@ -10,6 +10,11 @@ export type BattleMovesProps = Readonly<{
   onIntent?: ((intent: BattleMovesIntent) => void) | undefined;
 }>;
 
+/** The intent a slot press sends: the index that slot's own view carries. */
+export function slotPressIntent(slot: BattleMoveSlotView): BattleMovesIntent {
+  return { type: 'move', moveIndex: slot.index };
+}
+
 /** The card in viewport coordinates: the layer is `fixed`, so the model's page rects are its own. */
 function cardStyle(rect: Rect): CSSProperties {
   return {
@@ -34,8 +39,15 @@ function flag(value: boolean): string {
   return value ? 'true' : 'false';
 }
 
+/** One slot's press: the intent the card emits for it. */
+export type MoveSlotProps = Readonly<{
+  slot: BattleMoveSlotView;
+  card: Rect;
+  onPress: () => void;
+}>;
+
 /** One move card: the type chip, the name, the category and the three stat lines. */
-function MoveSlot(props: Readonly<{ slot: BattleMoveSlotView; card: Rect }>): JSX.Element {
+export function MoveSlot(props: MoveSlotProps): JSX.Element {
   const { slot, card } = props;
   return (
     <button
@@ -51,6 +63,7 @@ function MoveSlot(props: Readonly<{ slot: BattleMoveSlotView; card: Rect }>): JS
       data-empty={flag(slot.empty)}
       disabled={slot.empty || !slot.enabled}
       style={insetStyle(slot.box, card)}
+      onClick={props.onPress}
     >
       {slot.empty ? null : (
         <>
@@ -100,7 +113,7 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
       style={cardStyle(card)}
     >
       {view.slots.map((slot) => (
-        <MoveSlot key={slot.index} slot={slot} card={card} />
+        <MoveSlot key={slot.index} slot={slot} card={card} onPress={() => emit(slotPressIntent(slot))} />
       ))}
       {view.slots.map((slot) =>
         slot.info === null ? null : (

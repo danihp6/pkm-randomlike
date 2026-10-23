@@ -16,6 +16,8 @@ scene's own `menu` rect — painted with `05 Battle HUD`'s cell skin.
   empty slot and the description card's height and above/below choice, headless.
 - `battleMoves.tsx` — the card: one button per slot, the ⓘ buttons, the three controls and
   the floating description, each answering with a `BattleMovesIntent`.
+- `battleMoves.test.ts` — the slot button itself: its press emits that slot's `move`
+  intent, an unpickable slot is disabled and an empty one paints no interior, headless.
 - `battleMoves.css` — the board's cell skin (radius 8, the 12 % accent selected cell and
   the 4 % / 8 % row pair), the glass card and the description window.
 - `mount.tsx` — `mountBattleMoves`: renders the card into a host element, returns the
