@@ -1,0 +1,1755 @@
+{
+ "slug": "m03i-panels-trade-pick",
+ "nodeId": "8:3246",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "8:3246",
+   "name": "M 03i Panels · trade pick",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "11:5367",
+     "name": "m dialog",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "11:5331",
+       "name": "m panel",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 8,
+        "y": 168,
+        "width": 374,
+        "height": 508,
+        "cornerRadius": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.9599999785423279,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5332",
+       "name": "m divider",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 236,
+        "width": 326,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5333",
+       "name": "m party tile 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 260,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5334",
+       "name": "m party tile 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 136,
+        "y": 260,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5335",
+       "name": "m party tile 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 248,
+        "y": 260,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5336",
+       "name": "m party tile 4",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 24,
+        "y": 332,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5337",
+       "name": "m party tile 5",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 136,
+        "y": 332,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5338",
+       "name": "m party tile 6",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 248,
+        "y": 332,
+        "width": 104,
+        "height": 64,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5339",
+       "name": "m pc slot 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 71,
+        "y": 422,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5340",
+       "name": "m pc slot 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 135,
+        "y": 422,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5341",
+       "name": "m pc slot 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 199,
+        "y": 422,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5342",
+       "name": "m pc slot 4",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 263,
+        "y": 422,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5343",
+       "name": "m pc slot 5",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 71,
+        "y": 486,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5344",
+       "name": "m pc slot 6",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 135,
+        "y": 486,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5345",
+       "name": "m pc slot 7",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 199,
+        "y": 486,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5346",
+       "name": "m pc slot 8",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 263,
+        "y": 486,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5347",
+       "name": "m pc slot 9",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 71,
+        "y": 550,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5348",
+       "name": "m pc slot 10",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 135,
+        "y": 550,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5349",
+       "name": "m pc slot 11",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 199,
+        "y": 550,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5350",
+       "name": "m pc slot 12",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 263,
+        "y": 550,
+        "width": 56,
+        "height": 56,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5351",
+       "name": "m button",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 12,
+        "y": 616,
+        "width": 350,
+        "height": 44,
+        "cornerRadius": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5352",
+       "name": "board title",
+       "type": "TEXT",
+       "properties": {
+        "x": 24,
+        "y": 186,
+        "width": 75,
+        "height": 23,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9450980424880981,
+           "g": 0.9607843160629272,
+           "b": 0.9764705896377563
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5353",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "x": 219,
+        "y": 190,
+        "width": 131,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5354",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "x": 24,
+        "y": 212,
+        "width": 253,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5355",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "x": 24,
+        "y": 246,
+        "width": 38,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5356",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "x": 71,
+        "y": 408,
+        "width": 15,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5357",
+       "name": "board title",
+       "type": "TEXT",
+       "properties": {
+        "x": 150,
+        "y": 628,
+        "width": 74,
+        "height": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9450980424880981,
+           "g": 0.9607843160629272,
+           "b": 0.9764705896377563
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5358",
+       "name": "portrait CH",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 54,
+        "y": 270,
+        "width": 44,
+        "height": 44,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "cbafd2ac5343dfed571657e2e5027710a0148635"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5359",
+       "name": "portrait PI",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 166,
+        "y": 270,
+        "width": 44,
+        "height": 44,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "65e113b043dba01384b1ae706262fbcc3bf1e668"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5360",
+       "name": "portrait BU",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 278,
+        "y": 270,
+        "width": 44,
+        "height": 44,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "c02aead2e5372ccbc46c42a7f5bed7d31d048ed6"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5361",
+       "name": "portrait GA",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 54,
+        "y": 342,
+        "width": 44,
+        "height": 44,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "b51fe1f5877c5a6ef5b709ac6b767b05b5c52869"
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5362",
+       "name": "rip icon 0",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 83,
+        "y": 434,
+        "width": 32,
+        "height": 32,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "ec69dc547fbf3ca07400dd43d8c4697592fa0237"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5363",
+       "name": "rip icon 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 147,
+        "y": 434,
+        "width": 32,
+        "height": 32,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FILL",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "443cb373f5f044c0616ec7db79460967800e2d1b"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5364",
+       "name": "rip icon 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 211,
+        "y": 434,
+        "width": 32,
+        "height": 32,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "d065e2b44c1e22ae90290e525a4de1f9db11d4e1"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5365",
+       "name": "rip icon 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 275,
+        "y": 434,
+        "width": 32,
+        "height": 32,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "9027b3b0d56ced3da528b48d7d93a3be35ef51e7"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "11:5366",
+       "name": "rip icon 4",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 83,
+        "y": 498,
+        "width": 32,
+        "height": 32,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "238e46d1bdeff403c5ed09c8dbb4b3ee49d811ec"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 8,
+      "y": 168,
+      "width": 374,
+      "height": 508,
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 15640,
+    "y": 880,
+    "width": 390,
+    "height": 844,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.019607843831181526,
+       "g": 0.027450980618596077,
+       "b": 0.0470588244497776
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 37
+  }
+ ],
+ "text": [
+  {
+   "id": "8:3246",
+   "name": "M 03i Panels · trade pick",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "11:5367",
+     "name": "m dialog",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "11:5352",
+       "name": "board title",
+       "type": "TEXT",
+       "properties": {
+        "characters": "TRADE",
+        "x": 24,
+        "y": 186,
+        "width": 75,
+        "height": 23,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 18,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9450980424880981,
+           "g": 0.9607843160629272,
+           "b": 0.9764705896377563
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "11:5353",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PARTY 4/6 · PC 5/16",
+        "x": 219,
+        "y": 190,
+        "width": 131,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "11:5354",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "characters": "Pick the Pokémon you will give away.",
+        "x": 24,
+        "y": 212,
+        "width": 253,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "11:5355",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PARTY",
+        "x": 24,
+        "y": 246,
+        "width": 38,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "11:5356",
+       "name": "board subtitle",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PC",
+        "x": 71,
+        "y": 408,
+        "width": 15,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "11:5357",
+       "name": "board title",
+       "type": "TEXT",
+       "properties": {
+        "characters": "GIVE AWAY",
+        "x": 150,
+        "y": 628,
+        "width": 74,
+        "height": 13,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9450980424880981,
+           "g": 0.9607843160629272,
+           "b": 0.9764705896377563
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 37
+  }
+ ]
+}

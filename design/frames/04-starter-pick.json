@@ -1,0 +1,947 @@
+{
+ "slug": "04-starter-pick",
+ "nodeId": "6:1416",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "6:1416",
+   "name": "04 Starter pick",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:1417",
+     "name": "card 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 218,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.06300000101327896,
+         "g": 0.0860000029206276,
+         "b": 0.12200000137090683
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1418",
+     "name": "card 1 highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 230,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1419",
+     "name": "portrait 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 284,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "ffcc2d8a176faf80de34bf45982bfcf701b2da08"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1420",
+     "name": "card 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 510,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.06300000101327896,
+         "g": 0.0860000029206276,
+         "b": 0.12200000137090683
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1421",
+     "name": "card 2 highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 522,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1422",
+     "name": "portrait 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 576,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "da3f44deb1a895fe1ec47289d33434e94ce0ef67"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1423",
+     "name": "card 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 802,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.06300000101327896,
+         "g": 0.0860000029206276,
+         "b": 0.12200000137090683
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1424",
+     "name": "card 3 highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 814,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1425",
+     "name": "portrait 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 868,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "4336722f401f30a86442f37401c54ab889d119c2"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1426",
+     "name": "starter title",
+     "type": "TEXT",
+     "properties": {
+      "x": 240,
+      "y": 26,
+      "width": 800,
+      "height": 40,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1428",
+     "name": "name 1",
+     "type": "TEXT",
+     "properties": {
+      "x": 238,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1429",
+     "name": "name 2",
+     "type": "TEXT",
+     "properties": {
+      "x": 530,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1430",
+     "name": "name 3",
+     "type": "TEXT",
+     "properties": {
+      "x": 822,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1431",
+     "name": "share line",
+     "type": "TEXT",
+     "properties": {
+      "x": 240,
+      "y": 688,
+      "width": 800,
+      "height": 18,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1443",
+     "name": "type GRASS",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 318,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "385eb78e6f3f6b12073b65283f2369aded80528f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1444",
+     "name": "type POISON",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 354,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d1b44ade036b7f2ed5f1e3171f35cdb9b50a8b25"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1445",
+     "name": "type FIRE",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 628,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "054c7888133061df37eb735bb71b0384f323c8bd"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1446",
+     "name": "type WATER",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 920,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "7e9bad334c7725c5d0b0250cf6bc95243da4857e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2233",
+     "name": "seed reroll hint",
+     "type": "TEXT",
+     "properties": {
+      "x": 480,
+      "y": 716,
+      "width": 320,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.5490196347236633
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 5370,
+    "y": 0,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.0430000014603138,
+       "g": 0.06300000101327896,
+       "b": 0.09000000357627869
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 19
+  }
+ ],
+ "text": [
+  {
+   "id": "6:1416",
+   "name": "04 Starter pick",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:1426",
+     "name": "starter title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CHOOSE YOUR STARTER",
+      "x": 240,
+      "y": 26,
+      "width": 800,
+      "height": 40,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 32,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1428",
+     "name": "name 1",
+     "type": "TEXT",
+     "properties": {
+      "characters": "BULBASAUR",
+      "x": 238,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1429",
+     "name": "name 2",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CHARMANDER",
+      "x": 530,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1430",
+     "name": "name 3",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SQUIRTLE",
+      "x": 822,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1431",
+     "name": "share line",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SHARE: PKRL-1-f-1a2b3c",
+      "x": 240,
+      "y": 688,
+      "width": 800,
+      "height": 18,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2233",
+     "name": "seed reroll hint",
+     "type": "TEXT",
+     "properties": {
+      "characters": "HOLD R FOR NEW SEED",
+      "x": 480,
+      "y": 716,
+      "width": 320,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.5490196347236633
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 19
+  }
+ ]
+}

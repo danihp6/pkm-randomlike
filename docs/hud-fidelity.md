@@ -13,8 +13,11 @@ nodes, **1,302 of them text**. The frame → node map is §6; it saves every tas
 ## 2. Typography: two families, ten sizes, tight boxes
 
 The board uses **Silkscreen Regular and Silkscreen Bold and nothing else** (733 Bold, 569 Regular).
-The ten sizes in use are 8, 9, 10, 11, 12, 13, 14, 16, 18, 20 and 24 px, and **each size carries a
-fixed box height**, which is what makes "identical" measurable:
+The kit is built on **ten box sizes** — 8, 9, 10, 11, 12, 14, 16, 18, 20 and 24 px — and **each size
+carries a fixed box height**, which is what makes "identical" measurable. The export of the 66
+viewports finds eighteen sizes in use (7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 38
+and 40 px); `design/tokens.json` carries all of them in `scale`, and the ten below are the ones the kit
+draws:
 
 | size  | box height | ratio | where it is the usual choice                    |
 | ----- | ---------- | ----- | ----------------------------------------------- |
@@ -51,22 +54,24 @@ masked path. Figma converts every string to outlines. So:
 
 ## 4. Palette and chrome, measured across all 66 frames
 
-| token            | value                                                           | uses         |
-| ---------------- | --------------------------------------------------------------- | ------------ |
-| muted            | `#94A3B8`                                                       | 451          |
-| ink              | `#F8FAFC`                                                       | 302          |
-| primary          | `#F1F5F9`                                                       | 253          |
-| accent           | `#7DD3FC`                                                       | 169          |
-| secondary        | `#CBD5E1`                                                       | 108          |
-| board background | `#05070C`                                                       | 43           |
-| panel            | `#10161F` at **72 %, 90 % and 92 %**                            | 41 / 21 / 88 |
-| sheet            | `#0B1017` at 70 %                                               | 35           |
-| warning          | `#FBBF24`                                                       | 28           |
-| hairlines        | `#FFFFFF` at 2, 3, 4, 6, 7, 8, 10, 12, 14, 16, 18, 22, 50, 55 % | —            |
+| token            | value                                                           | uses          |
+| ---------------- | --------------------------------------------------------------- | ------------- |
+| muted            | `#94A3B8`                                                       | 451           |
+| ink              | `#F8FAFC`                                                       | 302           |
+| primary          | `#F1F5F9`                                                       | 253           |
+| accent           | `#7DD3FC`                                                       | 169           |
+| secondary        | `#CBD5E1`                                                       | 108           |
+| board background | `#05070C`                                                       | 43            |
+| panel            | `#10161F` at **72 %, 86 %, 88 %, 90 %, 92 %, 96 % and 100 %**   | 41+ / 21 / 88 |
+| sheet            | `#0B1017` at 70 %                                               | 35            |
+| warning          | `#FBBF24`                                                       | 28            |
+| hairlines        | `#FFFFFF` at 2, 3, 4, 6, 7, 8, 10, 12, 14, 16, 18, 22, 50, 55 % | —             |
 
 **Corrections to the proposal's token block.** `#F8FAFC` (ink) is missing there, `faint #475569`
-appears in the proposal but not in the board's top fourteen, and the panel is **three** alphas, not
-one. `tokens.json` must be generated from these, not typed from the proposal.
+appears in the proposal but not in the board's top fourteen, and the panel is **not one alpha**: the
+export measures seven between 72 % and 100 %, and `design/tokens.json` lists them in `panel.alphas`
+while pinning 72 % as the default. `tokens.json` must be generated from these, not typed from the
+proposal.
 
 **Radii**, by frequency: **8** (497 — rows, cards, tiles), **6** (208 — chips and compact rows), **11**
 (88 — every dialog panel), 12 (15 — the full-height mobile panel and the toggle), 16 (6 — sheets),
@@ -103,6 +108,7 @@ second.
 | frame                            | desktop  | mobile    |
 | -------------------------------- | -------- | --------- |
 | 01 Main menu                     | `1:1556` | `8:3230`  |
+| 01b Main menu · no save          | `4:1057` | `8:3239`  |
 | 02 Options                       | `1:1557` | `8:3231`  |
 | 03 Route HUD                     | `1:1558` | `8:3232`  |
 | 03b Panels · row view            | `2:6`    | `8:3862`  |

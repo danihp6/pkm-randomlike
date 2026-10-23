@@ -1,0 +1,873 @@
+{
+ "slug": "03h-panels-rocket-slots",
+ "nodeId": "6:1485",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "6:1485",
+   "name": "03h Panels · rocket slots",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:1486",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1487",
+     "name": "scrim",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7400000095367432,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.009999999776482582,
+         "g": 0.019999999552965164,
+         "b": 0.03999999910593033
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1488",
+     "name": "casino card",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 410,
+      "y": 228,
+      "width": 460,
+      "height": 344,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.06300000101327896,
+         "g": 0.0860000029206276,
+         "b": 0.12200000137090683
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1489",
+     "name": "card highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 422,
+      "y": 240,
+      "width": 436,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1490",
+     "name": "reel field",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 548,
+      "y": 336,
+      "width": 184,
+      "height": 64,
+      "cornerRadius": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.11999999731779099,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1491",
+     "name": "reel 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 556,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.05999999865889549,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1492",
+     "name": "reel 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 616,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.05999999865889549,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1493",
+     "name": "reel 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 676,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.05999999865889549,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1494",
+     "name": "reel face 1 potion",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 568,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d24e9ca65f6f8224f7b968d8adf24d0b68a3e0bd"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1495",
+     "name": "reel face 2 poke_ball",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 628,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1496",
+     "name": "reel face 3 oran_berry",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 688,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "2ddf3e2613abe4588e75a87197e2b6db681f7588"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1497",
+     "name": "row 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 434,
+      "y": 410,
+      "width": 412,
+      "height": 38,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1498",
+     "name": "row 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 434,
+      "y": 454,
+      "width": 412,
+      "height": 38,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.05999999865889549,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1499",
+     "name": "card title",
+     "type": "TEXT",
+     "properties": {
+      "x": 434,
+      "y": 244,
+      "width": 300,
+      "height": 30,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1500",
+     "name": "money",
+     "type": "TEXT",
+     "properties": {
+      "x": 650,
+      "y": 248,
+      "width": 196,
+      "height": 18,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1501",
+     "name": "row label 1",
+     "type": "TEXT",
+     "properties": {
+      "x": 450,
+      "y": 420,
+      "width": 300,
+      "height": 18,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1502",
+     "name": "row label 2",
+     "type": "TEXT",
+     "properties": {
+      "x": 450,
+      "y": 464,
+      "width": 300,
+      "height": 18,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:1593",
+     "name": "rocket emblem",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 624,
+      "y": 276,
+      "width": 32,
+      "height": 48,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "f5424a24991a9022522c89ad56c09d93e0dda699"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 12530,
+    "y": 880,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.0430000014603138,
+       "g": 0.06300000101327896,
+       "b": 0.09000000357627869
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 18
+  }
+ ],
+ "text": [
+  {
+   "id": "6:1485",
+   "name": "03h Panels · rocket slots",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:1499",
+     "name": "card title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SLOT MACHINE",
+      "x": 434,
+      "y": 244,
+      "width": 300,
+      "height": 30,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 24,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1500",
+     "name": "money",
+     "type": "TEXT",
+     "properties": {
+      "characters": "MONEY  $ 2,480",
+      "x": 650,
+      "y": 248,
+      "width": 196,
+      "height": 18,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1501",
+     "name": "row label 1",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SPIN  $ 300",
+      "x": 450,
+      "y": 420,
+      "width": 300,
+      "height": 18,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:1502",
+     "name": "row label 2",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LEAVE",
+      "x": 450,
+      "y": 464,
+      "width": 300,
+      "height": 18,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9729999899864197,
+         "g": 0.9800000190734863,
+         "b": 0.9879999756813049
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 18
+  }
+ ]
+}

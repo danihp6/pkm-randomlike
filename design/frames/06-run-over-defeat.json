@@ -1,0 +1,1282 @@
+{
+ "slug": "06-run-over-defeat",
+ "nodeId": "6:2171",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "6:2171",
+   "name": "06 Run over · defeat",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "7:2744",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "7:2745",
+     "name": "scrim",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.800000011920929,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.009999999776482582,
+         "g": 0.019999999552965164,
+         "b": 0.03999999910593033
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2173",
+     "name": "run over panel",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 280,
+      "y": 170,
+      "width": 720,
+      "height": 480,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2174",
+     "name": "run over panel highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 292,
+      "y": 182,
+      "width": 692,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2175",
+     "name": "run over accent",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 616,
+      "y": 186,
+      "width": 48,
+      "height": 2,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9882352948188782,
+         "g": 0.6470588445663452,
+         "b": 0.6470588445663452
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2176",
+     "name": "run over rule 0",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 336,
+      "y": 386,
+      "width": 608,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2177",
+     "name": "run over rule 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 336,
+      "y": 432,
+      "width": 608,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2178",
+     "name": "run over rule 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 336,
+      "y": 478,
+      "width": 608,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2179",
+     "name": "run over rule 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 336,
+      "y": 524,
+      "width": 608,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.07999999821186066,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2187",
+     "name": "main menu button",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 540,
+      "y": 590,
+      "width": 200,
+      "height": 40,
+      "cornerRadius": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2190",
+     "name": "run over title",
+     "type": "TEXT",
+     "properties": {
+      "x": 320,
+      "y": 196,
+      "width": 640,
+      "height": 36,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2191",
+     "name": "run over blurb",
+     "type": "TEXT",
+     "properties": {
+      "x": 320,
+      "y": 236,
+      "width": 640,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2192",
+     "name": "run stat label 0",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 360,
+      "width": 300,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2193",
+     "name": "run stat value 0",
+     "type": "TEXT",
+     "properties": {
+      "x": 764,
+      "y": 358,
+      "width": 180,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2194",
+     "name": "run stat label 1",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 406,
+      "width": 300,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2195",
+     "name": "run stat value 1",
+     "type": "TEXT",
+     "properties": {
+      "x": 764,
+      "y": 404,
+      "width": 180,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2196",
+     "name": "run stat label 2",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 452,
+      "width": 300,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2197",
+     "name": "run stat value 2",
+     "type": "TEXT",
+     "properties": {
+      "x": 764,
+      "y": 450,
+      "width": 180,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2198",
+     "name": "run stat label 3",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 498,
+      "width": 300,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2199",
+     "name": "run stat value 3",
+     "type": "TEXT",
+     "properties": {
+      "x": 764,
+      "y": 496,
+      "width": 180,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2200",
+     "name": "run share",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 544,
+      "width": 608,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.5490196347236633
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2201",
+     "name": "button label main menu",
+     "type": "TEXT",
+     "properties": {
+      "x": 540,
+      "y": 604,
+      "width": 200,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.7960784435272217,
+         "g": 0.8352941274642944,
+         "b": 0.8823529481887817
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2436",
+     "name": "tab totals",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 336,
+      "y": 312,
+      "width": 90,
+      "height": 24,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2437",
+     "name": "tab pokemon",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 432,
+      "y": 312,
+      "width": 100,
+      "height": 24,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.03999999910593033,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2438",
+     "name": "tab totals label",
+     "type": "TEXT",
+     "properties": {
+      "x": 336,
+      "y": 316,
+      "width": 90,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2439",
+     "name": "tab pokemon label",
+     "type": "TEXT",
+     "properties": {
+      "x": 432,
+      "y": 316,
+      "width": 100,
+      "height": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 0,
+    "y": 2640,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.019607843831181526,
+       "g": 0.027450980618596077,
+       "b": 0.0470588244497776
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 26
+  }
+ ],
+ "text": [
+  {
+   "id": "6:2171",
+   "name": "06 Run over · defeat",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "6:2190",
+     "name": "run over title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "YOU HAVE NO MORE POKEMON!",
+      "x": 320,
+      "y": 196,
+      "width": 640,
+      "height": 36,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 28,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2191",
+     "name": "run over blurb",
+     "type": "TEXT",
+     "properties": {
+      "characters": "THE RUN IS OVER · NOTHING CARRIES OVER.",
+      "x": 320,
+      "y": 236,
+      "width": 640,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 14,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2192",
+     "name": "run stat label 0",
+     "type": "TEXT",
+     "properties": {
+      "characters": "ROUTES CLEARED",
+      "x": 336,
+      "y": 360,
+      "width": 300,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2193",
+     "name": "run stat value 0",
+     "type": "TEXT",
+     "properties": {
+      "characters": "05",
+      "x": 764,
+      "y": 358,
+      "width": 180,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2194",
+     "name": "run stat label 1",
+     "type": "TEXT",
+     "properties": {
+      "characters": "POKEMON CAUGHT",
+      "x": 336,
+      "y": 406,
+      "width": 300,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2195",
+     "name": "run stat value 1",
+     "type": "TEXT",
+     "properties": {
+      "characters": "09",
+      "x": 764,
+      "y": 404,
+      "width": 180,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2196",
+     "name": "run stat label 2",
+     "type": "TEXT",
+     "properties": {
+      "characters": "POKEMON LOST",
+      "x": 336,
+      "y": 452,
+      "width": 300,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2197",
+     "name": "run stat value 2",
+     "type": "TEXT",
+     "properties": {
+      "characters": "06",
+      "x": 764,
+      "y": 450,
+      "width": 180,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2198",
+     "name": "run stat label 3",
+     "type": "TEXT",
+     "properties": {
+      "characters": "ENEMIES FAINTED",
+      "x": 336,
+      "y": 498,
+      "width": 300,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2199",
+     "name": "run stat value 3",
+     "type": "TEXT",
+     "properties": {
+      "characters": "23",
+      "x": 764,
+      "y": 496,
+      "width": 180,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2200",
+     "name": "run share",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SHARE: PKRL-1-f-91C4-8B",
+      "x": 336,
+      "y": 544,
+      "width": 608,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.3921568691730499,
+         "g": 0.45490196347236633,
+         "b": 0.5490196347236633
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2201",
+     "name": "button label main menu",
+     "type": "TEXT",
+     "properties": {
+      "characters": "MAIN MENU",
+      "x": 540,
+      "y": 604,
+      "width": 200,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.7960784435272217,
+         "g": 0.8352941274642944,
+         "b": 0.8823529481887817
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2438",
+     "name": "tab totals label",
+     "type": "TEXT",
+     "properties": {
+      "characters": "TOTALS",
+      "x": 336,
+      "y": 316,
+      "width": 90,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "6:2439",
+     "name": "tab pokemon label",
+     "type": "TEXT",
+     "properties": {
+      "characters": "POKEMON",
+      "x": 432,
+      "y": 316,
+      "width": 100,
+      "height": 16,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 8,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 26
+  }
+ ]
+}

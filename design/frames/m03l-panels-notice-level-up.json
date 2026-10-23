@@ -1,0 +1,709 @@
+{
+ "slug": "m03l-panels-notice-level-up",
+ "nodeId": "8:3249",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "8:3249",
+   "name": "M 03l Panels · notice level up",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "8:4613",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4614",
+     "name": "m toast",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 8,
+      "y": 47,
+      "width": 374,
+      "height": 132,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4617",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4618",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4619",
+     "name": "board subtitle",
+     "type": "TEXT",
+     "properties": {
+      "x": 420,
+      "y": -16,
+      "width": 8,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4620",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 24,
+      "y": 67,
+      "width": 188,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4621",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 307,
+      "y": 68,
+      "width": 63,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4622",
+     "name": "board subtitle",
+     "type": "TEXT",
+     "properties": {
+      "x": 24,
+      "y": 94,
+      "width": 97,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4623",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 52,
+      "y": 114,
+      "width": 79,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4624",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 52,
+      "y": 140,
+      "width": 78,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "11:5368",
+     "name": "type GRASS",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 20,
+      "y": 112,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "385eb78e6f3f6b12073b65283f2369aded80528f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "11:5369",
+     "name": "type GRASS",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 20,
+      "y": 138,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "385eb78e6f3f6b12073b65283f2369aded80528f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 21010,
+    "y": 880,
+    "width": 390,
+    "height": 844,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.019607843831181526,
+       "g": 0.027450980618596077,
+       "b": 0.0470588244497776
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 12
+  }
+ ],
+ "text": [
+  {
+   "id": "8:3249",
+   "name": "M 03l Panels · notice level up",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "8:4617",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "X",
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4618",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "X",
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4619",
+     "name": "board subtitle",
+     "type": "TEXT",
+     "properties": {
+      "characters": "X",
+      "x": 420,
+      "y": -16,
+      "width": 8,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4620",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "BULBASAUR GREW TO LV 18!",
+      "x": 24,
+      "y": 67,
+      "width": 188,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4621",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LEVEL UP",
+      "x": 307,
+      "y": 68,
+      "width": 63,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.4901960790157318,
+         "g": 0.8274509906768799,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4622",
+     "name": "board subtitle",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LEARNED MOVES",
+      "x": 24,
+      "y": 94,
+      "width": 97,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4623",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "RAZOR LEAF",
+      "x": 52,
+      "y": 114,
+      "width": 79,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4624",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LEECH SEED",
+      "x": 52,
+      "y": 140,
+      "width": 78,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 12
+  }
+ ]
+}

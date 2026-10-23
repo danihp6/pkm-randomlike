@@ -1,0 +1,314 @@
+{
+ "slug": "m03k-panels-notice-item",
+ "nodeId": "8:3248",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "8:3248",
+   "name": "M 03k Panels · notice item",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "8:4610",
+     "name": "route screenshot",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FILL",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "07330cb83e87c54ca3eeb5b983887f6c19c94560"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4611",
+     "name": "m toast",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 8,
+      "y": 47,
+      "width": 374,
+      "height": 56,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.7200000286102295,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4612",
+     "name": "bag icon potion",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 117,
+      "y": 63,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d24e9ca65f6f8224f7b968d8adf24d0b68a3e0bd"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4615",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "8:4616",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "x": 149,
+      "y": 68,
+      "width": 124,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 19220,
+    "y": 880,
+    "width": 390,
+    "height": 844,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.019607843831181526,
+       "g": 0.027450980618596077,
+       "b": 0.0470588244497776
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 5
+  }
+ ],
+ "text": [
+  {
+   "id": "8:3248",
+   "name": "M 03k Panels · notice item",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "8:4615",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "X",
+      "x": 420,
+      "y": -16,
+      "width": 10,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "8:4616",
+     "name": "board title",
+     "type": "TEXT",
+     "properties": {
+      "characters": "OBTAINED POTION!",
+      "x": 149,
+      "y": 68,
+      "width": 124,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9450980424880981,
+         "g": 0.9607843160629272,
+         "b": 0.9764705896377563
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 5
+  }
+ ]
+}

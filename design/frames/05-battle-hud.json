@@ -1,0 +1,5995 @@
+{
+ "slug": "05-battle-hud",
+ "nodeId": "1:1560",
+ "depth": 8,
+ "exportedAt": "2026-10-23T11:28:29.187Z",
+ "geometry": [
+  {
+   "id": "1:1560",
+   "name": "05 Battle HUD",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "1:2756",
+     "name": "battle field",
+     "type": "FRAME",
+     "children": [
+      {
+       "id": "1:2757",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.03921568766236305,
+           "g": 0.07058823853731155,
+           "b": 0.10980392247438431
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2758",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 300,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.05098039284348488,
+           "g": 0.10196078568696976,
+           "b": 0.16078431904315948
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2759",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 300,
+        "width": 1280,
+        "height": 120,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.07058823853731155,
+           "g": 0.13333334028720856,
+           "b": 0.20392157137393951
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2760",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 420,
+        "width": 1280,
+        "height": 380,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.08627451211214066,
+           "g": 0.1411764770746231,
+           "b": 0.10196078568696976
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2761",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 720,
+        "y": 246,
+        "width": 460,
+        "height": 80,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.949999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.13333334028720856,
+           "g": 0.2235294133424759,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2762",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 80,
+        "y": 472,
+        "width": 500,
+        "height": 96,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.949999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.125490203499794,
+           "g": 0.21176470816135406,
+           "b": 0.11372549086809158
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2763",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 0,
+        "y": 470,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2764",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 131,
+        "y": 541,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2765",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 262,
+        "y": 612,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2766",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 393,
+        "y": 683,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2767",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 524,
+        "y": 754,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2768",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 655,
+        "y": 525,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2769",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 786,
+        "y": 596,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2770",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 917,
+        "y": 667,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2771",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1048,
+        "y": 738,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2772",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1179,
+        "y": 509,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2773",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 50,
+        "y": 580,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2774",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 181,
+        "y": 651,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2775",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 312,
+        "y": 722,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2776",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 443,
+        "y": 493,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2777",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 574,
+        "y": 564,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2778",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 705,
+        "y": 635,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2779",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 836,
+        "y": 706,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2780",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 967,
+        "y": 477,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2781",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1098,
+        "y": 548,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2782",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1229,
+        "y": 619,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2783",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 100,
+        "y": 690,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2784",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 231,
+        "y": 761,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2785",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 362,
+        "y": 532,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2786",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 493,
+        "y": 603,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2787",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 624,
+        "y": 674,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2788",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 755,
+        "y": 745,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2789",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 886,
+        "y": 516,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2790",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1017,
+        "y": 587,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2791",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1148,
+        "y": 658,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2792",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 19,
+        "y": 729,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2793",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 150,
+        "y": 500,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2794",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 281,
+        "y": 571,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2795",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 412,
+        "y": 642,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2796",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 543,
+        "y": 713,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2797",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 674,
+        "y": 484,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2798",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 805,
+        "y": 555,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2799",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 936,
+        "y": 626,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2800",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1067,
+        "y": 697,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2801",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 1198,
+        "y": 768,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2802",
+       "name": "Vector",
+       "type": "VECTOR",
+       "properties": {
+        "x": 69,
+        "y": 539,
+        "width": 6,
+        "height": 6,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.1725490242242813,
+           "g": 0.29019609093666077,
+           "b": 0.16470588743686676
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": false,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2803",
+     "name": "foe shadow",
+     "type": "ELLIPSE",
+     "properties": {
+      "x": 830,
+      "y": 300,
+      "width": 220,
+      "height": 34,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.44999998807907104,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.01568627543747425,
+         "g": 0.027450980618596077,
+         "b": 0.03921568766236305
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2807",
+     "name": "player shadow",
+     "type": "ELLIPSE",
+     "properties": {
+      "x": 210,
+      "y": 528,
+      "width": 240,
+      "height": 36,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.5,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.01568627543747425,
+         "g": 0.027450980618596077,
+         "b": 0.03921568766236305
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2811",
+     "name": "foe panel",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 64,
+      "y": 48,
+      "width": 368,
+      "height": 100,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.8999999761581421,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2812",
+     "name": "foe panel highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 76,
+      "y": 60,
+      "width": 344,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2813",
+     "name": "foe name",
+     "type": "TEXT",
+     "properties": {
+      "x": 88,
+      "y": 68,
+      "width": 114,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2814",
+     "name": "foe lv",
+     "type": "TEXT",
+     "properties": {
+      "x": 340,
+      "y": 70,
+      "width": 35,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2819",
+     "name": "foe hp track",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 126,
+      "width": 220,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.11999999731779099,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2820",
+     "name": "foe hp fill",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 126,
+      "width": 195,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.29019609093666077,
+         "g": 0.8196078538894653,
+         "b": 0.3607843220233917
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2821",
+     "name": "foe hp text",
+     "type": "TEXT",
+     "properties": {
+      "x": 316,
+      "y": 122,
+      "width": 49,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2826",
+     "name": "player panel",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 64,
+      "y": 660,
+      "width": 368,
+      "height": 100,
+      "cornerRadius": 11,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.8999999761581421,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.062745101749897,
+         "g": 0.08627451211214066,
+         "b": 0.12156862765550613
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.1599999964237213,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2827",
+     "name": "player panel highlight",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 76,
+      "y": 672,
+      "width": 344,
+      "height": 1,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2828",
+     "name": "player name",
+     "type": "TEXT",
+     "properties": {
+      "x": 88,
+      "y": 680,
+      "width": 118,
+      "height": 20,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2829",
+     "name": "player lv",
+     "type": "TEXT",
+     "properties": {
+      "x": 348,
+      "y": 682,
+      "width": 35,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2835",
+     "name": "player hp track",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 740,
+      "width": 220,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.11999999731779099,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 1,
+         "g": 1,
+         "b": 1
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2836",
+     "name": "player hp fill",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 740,
+      "width": 176,
+      "height": 8,
+      "cornerRadius": 4,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2837",
+     "name": "player hp text",
+     "type": "TEXT",
+     "properties": {
+      "x": 316,
+      "y": 736,
+      "width": 42,
+      "height": 13,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2843",
+     "name": "weather chip",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 1076,
+      "y": 40,
+      "width": 144,
+      "height": 26,
+      "cornerRadius": 6,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.14000000059604645,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 0.699999988079071,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "1:2844",
+     "name": "weather text",
+     "type": "TEXT",
+     "properties": {
+      "x": 1088,
+      "y": 47,
+      "width": 91,
+      "height": 12,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:517",
+     "name": "foe type GRASS",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 93,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "385eb78e6f3f6b12073b65283f2369aded80528f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:518",
+     "name": "foe type POISON",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 93,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d1b44ade036b7f2ed5f1e3171f35cdb9b50a8b25"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:519",
+     "name": "player type FIRE",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 705,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "054c7888133061df37eb735bb71b0384f323c8bd"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:520",
+     "name": "player type FLYING",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 705,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "f47778875a8c195ac10c724d572fb140ec87a65d"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:521",
+     "name": "player status ENV",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 376,
+      "y": 736,
+      "width": 44,
+      "height": 16,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "adbcfd7f18fda1c20d78f5165de7afc9e2d16e94"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:562",
+     "name": "battle menu group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "1:2852",
+       "name": "battle menu",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 664,
+        "y": 544,
+        "width": 576,
+        "height": 216,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.9200000166893005,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2853",
+       "name": "battle menu highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 676,
+        "y": 556,
+        "width": 552,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2854",
+       "name": "menu tab 0",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 684,
+        "y": 564,
+        "width": 128,
+        "height": 30,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2855",
+       "name": "menu tab label 0",
+       "type": "TEXT",
+       "properties": {
+        "x": 696,
+        "y": 573,
+        "width": 42,
+        "height": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2856",
+       "name": "menu tab 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 820,
+        "y": 564,
+        "width": 128,
+        "height": 30,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2857",
+       "name": "menu tab label 1",
+       "type": "TEXT",
+       "properties": {
+        "x": 832,
+        "y": 573,
+        "width": 25,
+        "height": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2858",
+       "name": "menu tab 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 956,
+        "y": 564,
+        "width": 128,
+        "height": 30,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2859",
+       "name": "menu tab label 2",
+       "type": "TEXT",
+       "properties": {
+        "x": 968,
+        "y": 573,
+        "width": 60,
+        "height": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2860",
+       "name": "menu tab 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 1092,
+        "y": 564,
+        "width": 128,
+        "height": 30,
+        "cornerRadius": 6,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.10000000149011612,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2861",
+       "name": "menu tab label 3",
+       "type": "TEXT",
+       "properties": {
+        "x": 1104,
+        "y": 573,
+        "width": 26,
+        "height": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2862",
+       "name": "move cell 0",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 684,
+        "y": 614,
+        "width": 258,
+        "height": 62,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.11999999731779099,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2863",
+       "name": "move cell name 0",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 620,
+        "width": 95,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2866",
+       "name": "move pp 0",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 638,
+        "width": 49,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2867",
+       "name": "move power 0",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 652,
+        "width": 40,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2868",
+       "name": "move cell 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 952,
+        "y": 614,
+        "width": 258,
+        "height": 62,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2869",
+       "name": "move cell name 1",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 620,
+        "width": 66,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2872",
+       "name": "move pp 1",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 638,
+        "width": 49,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2873",
+       "name": "move power 1",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 652,
+        "width": 40,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2874",
+       "name": "move cell 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 684,
+        "y": 686,
+        "width": 258,
+        "height": 62,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2875",
+       "name": "move cell name 2",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 692,
+        "width": 90,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2878",
+       "name": "move pp 2",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 710,
+        "width": 49,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2879",
+       "name": "move power 2",
+       "type": "TEXT",
+       "properties": {
+        "x": 728,
+        "y": 724,
+        "width": 40,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2880",
+       "name": "move cell 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 952,
+        "y": 686,
+        "width": 258,
+        "height": 62,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.03999999910593033,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.07999999821186066,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2881",
+       "name": "move cell name 3",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 692,
+        "width": 79,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2884",
+       "name": "move pp 3",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 710,
+        "width": 43,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "1:2885",
+       "name": "move power 3",
+       "type": "TEXT",
+       "properties": {
+        "x": 996,
+        "y": 724,
+        "width": 45,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:522",
+       "name": "move chip 0 FIRE",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 696,
+        "y": 620,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "054c7888133061df37eb735bb71b0384f323c8bd"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:523",
+       "name": "move chip 1 FLYING",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 964,
+        "y": 620,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "f47778875a8c195ac10c724d572fb140ec87a65d"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:524",
+       "name": "move chip 2 DRAGON",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 696,
+        "y": 692,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "6bb4f0fa0cc21835fc0dee6242eaeae7037b4d8c"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:525",
+       "name": "move chip 3 GROUND",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 964,
+        "y": 692,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "fbca6192acbdda31cca612abbaac311fe7ed5f5d"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:554",
+       "name": "move acc 0",
+       "type": "TEXT",
+       "properties": {
+        "x": 776,
+        "y": 652,
+        "width": 44,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:555",
+       "name": "move acc 1",
+       "type": "TEXT",
+       "properties": {
+        "x": 1044,
+        "y": 652,
+        "width": 39,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:556",
+       "name": "move acc 2",
+       "type": "TEXT",
+       "properties": {
+        "x": 776,
+        "y": 724,
+        "width": 44,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:557",
+       "name": "move acc 3",
+       "type": "TEXT",
+       "properties": {
+        "x": 1049,
+        "y": 724,
+        "width": 44,
+        "height": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:558",
+       "name": "move category 0",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 696,
+        "y": 648,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "5e0dcd3a132e043d6aae2020b95485782ee06ca6"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:559",
+       "name": "move category 1",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 964,
+        "y": 648,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "5e0dcd3a132e043d6aae2020b95485782ee06ca6"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:560",
+       "name": "move category 2",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 696,
+        "y": 720,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "1ad604ad3ca3eea1e0f97103a3a9eb4869fca7fa"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:561",
+       "name": "move category 3",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 964,
+        "y": 720,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "1ad604ad3ca3eea1e0f97103a3a9eb4869fca7fa"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 664,
+      "y": 544,
+      "width": 576,
+      "height": 216,
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:563",
+     "name": "foe party ball 1",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 88,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:564",
+     "name": "foe party ball 2",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 116,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:565",
+     "name": "foe party ball 3",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 144,
+      "y": 160,
+      "width": 24,
+      "height": 24,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "83fa7c86f6ad0dd9f1ec96c614d7abf9452df03e"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:567",
+     "name": "foe sprite art",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 821,
+      "y": 111,
+      "width": 237,
+      "height": 207,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "50951b4bb31876bdc799e69902edc4771ac57c8b"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:568",
+     "name": "player sprite art",
+     "type": "RECTANGLE",
+     "properties": {
+      "x": 204,
+      "y": 303,
+      "width": 252,
+      "height": 243,
+      "cornerRadius": 0,
+      "fills": [
+       {
+        "type": "IMAGE",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "scaleMode": "FIT",
+        "scalingFactor": 1,
+        "rotation": 0,
+        "filters": {
+         "exposure": 0,
+         "contrast": 0,
+         "saturation": 0,
+         "temperature": 0,
+         "tint": 0,
+         "highlights": 0,
+         "shadows": 0
+        },
+        "imageTransform": [
+         [
+          1,
+          0,
+          0
+         ],
+         [
+          0,
+          1,
+          0
+         ]
+        ],
+        "imageHash": "d188643af09b35cc4e224ecd56c57d13a404e21f"
+       }
+      ],
+      "strokes": [],
+      "opacity": 1
+     }
+    },
+    {
+     "id": "2:701",
+     "name": "attack detail group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:692",
+       "name": "attack detail",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 664,
+        "y": 372,
+        "width": 576,
+        "height": 160,
+        "cornerRadius": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.9200000166893005,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.062745101749897,
+           "g": 0.08627451211214066,
+           "b": 0.12156862765550613
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.1599999964237213,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:693",
+       "name": "attack detail highlight",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 676,
+        "y": 384,
+        "width": 552,
+        "height": 1,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 1,
+           "g": 1,
+           "b": 1
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:694",
+       "name": "attack type",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 684,
+        "y": 428,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "054c7888133061df37eb735bb71b0384f323c8bd"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:695",
+       "name": "attack category",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 712,
+        "y": 428,
+        "width": 24,
+        "height": 24,
+        "cornerRadius": 0,
+        "fills": [
+         {
+          "type": "IMAGE",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "scaleMode": "FIT",
+          "scalingFactor": 1,
+          "rotation": 0,
+          "filters": {
+           "exposure": 0,
+           "contrast": 0,
+           "saturation": 0,
+           "temperature": 0,
+           "tint": 0,
+           "highlights": 0,
+           "shadows": 0
+          },
+          "imageTransform": [
+           [
+            1,
+            0,
+            0
+           ],
+           [
+            0,
+            1,
+            0
+           ]
+          ],
+          "imageHash": "5e0dcd3a132e043d6aae2020b95485782ee06ca6"
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:696",
+       "name": "attack name",
+       "type": "TEXT",
+       "properties": {
+        "x": 684,
+        "y": 398,
+        "width": 162,
+        "height": 20,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:697",
+       "name": "attack pp",
+       "type": "TEXT",
+       "properties": {
+        "x": 1160,
+        "y": 402,
+        "width": 60,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:698",
+       "name": "attack power",
+       "type": "TEXT",
+       "properties": {
+        "x": 748,
+        "y": 432,
+        "width": 49,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:699",
+       "name": "attack acc",
+       "type": "TEXT",
+       "properties": {
+        "x": 820,
+        "y": 432,
+        "width": 54,
+        "height": 14,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "2:700",
+       "name": "attack description",
+       "type": "TEXT",
+       "properties": {
+        "x": 684,
+        "y": 470,
+        "width": 386,
+        "height": 36,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 664,
+      "y": 372,
+      "width": 576,
+      "height": 160,
+      "opacity": 1
+     }
+    },
+    {
+     "id": "6:2431",
+     "name": "stat stages",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "6:2413",
+       "name": "stage atk",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 448,
+        "y": 673,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2414",
+       "name": "stage sign atk",
+       "type": "TEXT",
+       "properties": {
+        "x": 448,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2415",
+       "name": "stage label atk",
+       "type": "TEXT",
+       "properties": {
+        "x": 448,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2416",
+       "name": "stage def",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 488,
+        "y": 673,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2417",
+       "name": "stage sign def",
+       "type": "TEXT",
+       "properties": {
+        "x": 488,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2418",
+       "name": "stage label def",
+       "type": "TEXT",
+       "properties": {
+        "x": 488,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2419",
+       "name": "stage spa",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 528,
+        "y": 673,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2420",
+       "name": "stage sign spa",
+       "type": "TEXT",
+       "properties": {
+        "x": 528,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2421",
+       "name": "stage label spa",
+       "type": "TEXT",
+       "properties": {
+        "x": 528,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2422",
+       "name": "stage spd",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 448,
+        "y": 713,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2423",
+       "name": "stage sign spd",
+       "type": "TEXT",
+       "properties": {
+        "x": 448,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2424",
+       "name": "stage label spd",
+       "type": "TEXT",
+       "properties": {
+        "x": 448,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2425",
+       "name": "stage spe",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 488,
+        "y": 713,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2426",
+       "name": "stage sign spe",
+       "type": "TEXT",
+       "properties": {
+        "x": 488,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2427",
+       "name": "stage label spe",
+       "type": "TEXT",
+       "properties": {
+        "x": 488,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2428",
+       "name": "stage acc",
+       "type": "RECTANGLE",
+       "properties": {
+        "x": 528,
+        "y": 713,
+        "width": 34,
+        "height": 34,
+        "cornerRadius": 8,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.14000000059604645,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 0.6000000238418579,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2429",
+       "name": "stage sign acc",
+       "type": "TEXT",
+       "properties": {
+        "x": 528,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      },
+      {
+       "id": "6:2430",
+       "name": "stage label acc",
+       "type": "TEXT",
+       "properties": {
+        "x": 528,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ],
+        "strokes": [],
+        "opacity": 1
+       }
+      }
+     ],
+     "properties": {
+      "x": 448,
+      "y": 673,
+      "width": 114,
+      "height": 74,
+      "opacity": 1
+     }
+    }
+   ],
+   "properties": {
+    "x": 0,
+    "y": 1760,
+    "width": 1280,
+    "height": 800,
+    "cornerRadius": 0,
+    "fills": [
+     {
+      "type": "SOLID",
+      "visible": true,
+      "opacity": 1,
+      "blendMode": "NORMAL",
+      "color": {
+       "r": 0.04313725605607033,
+       "g": 0.062745101749897,
+       "b": 0.09019608050584793
+      },
+      "boundVariables": {}
+     }
+    ],
+    "strokes": [],
+    "opacity": 1
+   },
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 143
+  }
+ ],
+ "text": [
+  {
+   "id": "1:1560",
+   "name": "05 Battle HUD",
+   "type": "FRAME",
+   "children": [
+    {
+     "id": "1:2813",
+     "name": "foe name",
+     "type": "TEXT",
+     "properties": {
+      "characters": "VENUSAUR",
+      "x": 88,
+      "y": 68,
+      "width": 114,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2814",
+     "name": "foe lv",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LV 34",
+      "x": 340,
+      "y": 70,
+      "width": 35,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2821",
+     "name": "foe hp text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "142/160",
+      "x": 316,
+      "y": 122,
+      "width": 49,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2828",
+     "name": "player name",
+     "type": "TEXT",
+     "properties": {
+      "characters": "CHARIZARD",
+      "x": 88,
+      "y": 680,
+      "width": 118,
+      "height": 20,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Bold"
+      },
+      "fontSize": 16,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9725490212440491,
+         "g": 0.9803921580314636,
+         "b": 0.9882352948188782
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2829",
+     "name": "player lv",
+     "type": "TEXT",
+     "properties": {
+      "characters": "LV 36",
+      "x": 348,
+      "y": 682,
+      "width": 35,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2837",
+     "name": "player hp text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "98/112",
+      "x": 316,
+      "y": 736,
+      "width": 42,
+      "height": 13,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 10,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.5803921818733215,
+         "g": 0.6392157077789307,
+         "b": 0.7215686440467834
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "1:2844",
+     "name": "weather text",
+     "type": "TEXT",
+     "properties": {
+      "characters": "SUN · 3 TURNS",
+      "x": 1088,
+      "y": 47,
+      "width": 91,
+      "height": 12,
+      "fontName": {
+       "family": "Silkscreen",
+       "style": "Regular"
+      },
+      "fontSize": 9,
+      "fills": [
+       {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+         "r": 0.9843137264251709,
+         "g": 0.7490196228027344,
+         "b": 0.1411764770746231
+        },
+        "boundVariables": {}
+       }
+      ]
+     }
+    },
+    {
+     "id": "2:562",
+     "name": "battle menu group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "1:2855",
+       "name": "menu tab label 0",
+       "type": "TEXT",
+       "properties": {
+        "characters": "FIGHT",
+        "x": 696,
+        "y": 573,
+        "width": 42,
+        "height": 13,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.4901960790157318,
+           "g": 0.8274509906768799,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2857",
+       "name": "menu tab label 1",
+       "type": "TEXT",
+       "properties": {
+        "characters": "BAG",
+        "x": 832,
+        "y": 573,
+        "width": 25,
+        "height": 13,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2859",
+       "name": "menu tab label 2",
+       "type": "TEXT",
+       "properties": {
+        "characters": "POKEMON",
+        "x": 968,
+        "y": 573,
+        "width": 60,
+        "height": 13,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2861",
+       "name": "menu tab label 3",
+       "type": "TEXT",
+       "properties": {
+        "characters": "RUN",
+        "x": 1104,
+        "y": 573,
+        "width": 26,
+        "height": 13,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 10,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2863",
+       "name": "move cell name 0",
+       "type": "TEXT",
+       "properties": {
+        "characters": "FLAMETHROWER",
+        "x": 728,
+        "y": 620,
+        "width": 95,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2866",
+       "name": "move pp 0",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PP 12/15",
+        "x": 728,
+        "y": 638,
+        "width": 49,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2867",
+       "name": "move power 0",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PWR 90",
+        "x": 728,
+        "y": 652,
+        "width": 40,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2869",
+       "name": "move cell name 1",
+       "type": "TEXT",
+       "properties": {
+        "characters": "AIR SLASH",
+        "x": 996,
+        "y": 620,
+        "width": 66,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2872",
+       "name": "move pp 1",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PP 15/15",
+        "x": 996,
+        "y": 638,
+        "width": 49,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2873",
+       "name": "move power 1",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PWR 75",
+        "x": 996,
+        "y": 652,
+        "width": 40,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2875",
+       "name": "move cell name 2",
+       "type": "TEXT",
+       "properties": {
+        "characters": "DRAGON CLAW",
+        "x": 728,
+        "y": 692,
+        "width": 90,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2878",
+       "name": "move pp 2",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PP 10/10",
+        "x": 728,
+        "y": 710,
+        "width": 49,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2879",
+       "name": "move power 2",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PWR 80",
+        "x": 728,
+        "y": 724,
+        "width": 40,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2881",
+       "name": "move cell name 3",
+       "type": "TEXT",
+       "properties": {
+        "characters": "EARTHQUAKE",
+        "x": 996,
+        "y": 692,
+        "width": 79,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2884",
+       "name": "move pp 3",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PP 8/10",
+        "x": 996,
+        "y": 710,
+        "width": 43,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "1:2885",
+       "name": "move power 3",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PWR 100",
+        "x": 996,
+        "y": 724,
+        "width": 45,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:554",
+       "name": "move acc 0",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC 100",
+        "x": 776,
+        "y": 652,
+        "width": 44,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:555",
+       "name": "move acc 1",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC 95",
+        "x": 1044,
+        "y": 652,
+        "width": 39,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:556",
+       "name": "move acc 2",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC 100",
+        "x": 776,
+        "y": 724,
+        "width": 44,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:557",
+       "name": "move acc 3",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC 100",
+        "x": 1049,
+        "y": 724,
+        "width": 44,
+        "height": 12,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 9,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "2:701",
+     "name": "attack detail group",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "2:696",
+       "name": "attack name",
+       "type": "TEXT",
+       "properties": {
+        "characters": "FLAMETHROWER",
+        "x": 684,
+        "y": 398,
+        "width": 162,
+        "height": 20,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 16,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:697",
+       "name": "attack pp",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PP 12/15",
+        "x": 1160,
+        "y": 402,
+        "width": 60,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:698",
+       "name": "attack power",
+       "type": "TEXT",
+       "properties": {
+        "characters": "PWR 90",
+        "x": 748,
+        "y": 432,
+        "width": 49,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:699",
+       "name": "attack acc",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC 100",
+        "x": 820,
+        "y": 432,
+        "width": 54,
+        "height": 14,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 11,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.7960784435272217,
+           "g": 0.8352941274642944,
+           "b": 0.8823529481887817
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "2:700",
+       "name": "attack description",
+       "type": "TEXT",
+       "properties": {
+        "characters": "THE FOE IS SCORCHED WITH AN INTENSE BLAST OF FIRE.\nIT MAY ALSO LEAVE THE TARGET WITH A BURN.",
+        "x": 684,
+        "y": 470,
+        "width": 386,
+        "height": 36,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Regular"
+        },
+        "fontSize": 12,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.5803921818733215,
+           "g": 0.6392157077789307,
+           "b": 0.7215686440467834
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "id": "6:2431",
+     "name": "stat stages",
+     "type": "GROUP",
+     "children": [
+      {
+       "id": "6:2414",
+       "name": "stage sign atk",
+       "type": "TEXT",
+       "properties": {
+        "characters": "+2",
+        "x": 448,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2415",
+       "name": "stage label atk",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ATK",
+        "x": 448,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2417",
+       "name": "stage sign def",
+       "type": "TEXT",
+       "properties": {
+        "characters": "+1",
+        "x": 488,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2418",
+       "name": "stage label def",
+       "type": "TEXT",
+       "properties": {
+        "characters": "DEF",
+        "x": 488,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2420",
+       "name": "stage sign spa",
+       "type": "TEXT",
+       "properties": {
+        "characters": "+3",
+        "x": 528,
+        "y": 675,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.29019609093666077,
+           "g": 0.8705882430076599,
+           "b": 0.501960813999176
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2421",
+       "name": "stage label spa",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SPA",
+        "x": 528,
+        "y": 692,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2423",
+       "name": "stage sign spd",
+       "type": "TEXT",
+       "properties": {
+        "characters": "-1",
+        "x": 448,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2424",
+       "name": "stage label spd",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SPD",
+        "x": 448,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2426",
+       "name": "stage sign spe",
+       "type": "TEXT",
+       "properties": {
+        "characters": "-2",
+        "x": 488,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2427",
+       "name": "stage label spe",
+       "type": "TEXT",
+       "properties": {
+        "characters": "SPE",
+        "x": 488,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2429",
+       "name": "stage sign acc",
+       "type": "TEXT",
+       "properties": {
+        "characters": "-1",
+        "x": 528,
+        "y": 715,
+        "width": 34,
+        "height": 15,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 13,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.4431372582912445,
+           "b": 0.4431372582912445
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      },
+      {
+       "id": "6:2430",
+       "name": "stage label acc",
+       "type": "TEXT",
+       "properties": {
+        "characters": "ACC",
+        "x": 528,
+        "y": 732,
+        "width": 34,
+        "height": 11,
+        "fontName": {
+         "family": "Silkscreen",
+         "style": "Bold"
+        },
+        "fontSize": 7,
+        "fills": [
+         {
+          "type": "SOLID",
+          "visible": true,
+          "opacity": 1,
+          "blendMode": "NORMAL",
+          "color": {
+           "r": 0.9725490212440491,
+           "g": 0.9803921580314636,
+           "b": 0.9882352948188782
+          },
+          "boundVariables": {}
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "path": [
+    [
+     "PAGE",
+     "0:1",
+     "Page 1"
+    ]
+   ],
+   "descendantCount": 143
+  }
+ ]
+}
