@@ -18,6 +18,10 @@ decision; `docs/hud-dom-proposal.md` §11 is the recipe; `docs/hud-fidelity.md` 
 `design/diff/<slug>/` is `npm run hud:diff`'s own output (shot, pixelmatch diff, report) and is
 gitignored: it is evidence of a run, not a reference.
 
+The rasters under `screens/` carry the game's own screen inside them (the board draws each panel over
+the route it belongs to), so they hold decomp art. `D50` accepts that for this one directory and says
+why; the frames carry no image bytes, so a checkout without `screens/` still has every string and box.
+
 `<slug>` is the frame name in lower-kebab; the mobile twin carries an `m` prefix
 (`03 Route HUD` → `03-route-hud` / `m03-route-hud`). 33 frames, 66 viewports.
 
