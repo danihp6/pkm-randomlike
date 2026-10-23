@@ -38,8 +38,10 @@
 #   BUDGET          seconds the attempt loop may spend before handing the wait back to the
 #                   schedule, so a job is never killed mid-launch (default 2400)
 #   SHAPES          space-separated `<ocpus>/<gb>` requests, rotated one per attempt
-#                   (default `4/24 2/12 1/6`). CI passes `2/12` only: that is the Always Free
-#                   Ampere ceiling since August 2026, and 4/24 belongs to a PAYG account.
+#                   (default `4/24 2/12 1/6`). CI passes `2/12 2/12 1/6`: 2/12 is the Always
+#                   Free Ampere ceiling since August 2026, 4/24 belongs to a PAYG account, and
+#                   the repeated entry weights the rotation toward the size worth having while
+#                   still trying the half shape that fits where it does not.
 
 set -uo pipefail
 export SUPPRESS_LABEL_WARNING=True
