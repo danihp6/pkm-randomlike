@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A fixture reproduces a frame exactly.** `[Task-126]`, the fourth of Phase 12 (`D49`):
+      `?hud=dom&hudFixture=<slug>` now has a mechanism behind it. `src/ui/hud/fixtures/flags.ts`
+      reads both flags once, with the `?hud=dom` half **delegating** to `mount.ts`'s
+      `hudRequested` — one parser, never a second — and a slug normalised to
+      `/^[a-z0-9][a-z0-9-]{0,63}$/`; `registry.ts` is the eager, build-time
+      `import.meta.glob('design/fixtures/*.json')`, empty and silent while the folder does not
+      exist; `index.ts` validates a payload's `{ slug, state }` into `HudState` structurally,
+      rejects a file whose inner slug disagrees with its name, and warns once per page load
+      instead of throwing. `holdForFixture(fixture, sink)` is the freeze the diff needs: it emits
+      the fixture's state once and drops every live run emission, and with no fixture it returns
+      the sink unchanged. Measured in Chromium: `/?hud=dom&hudFixture=02-options` leaves the shell
+      at 1280×800 with one child, no `data-hud-fixture` anywhere and no error above the `/`
+      baseline, while `/?hudFixture=02-options` mounts no HUD at all. Task-127 is the first
+      consumer: it calls `parseHudFlags`, `installFixture` and `holdForFixture`, and authors
+      `design/fixtures/02-options.json`.
+
 - [x] **The panel kit the board is made of.** `[Task-125]`, the third of Phase 12 (`D49`):
       `src/ui/hud/kit/` ships the eight primitives the eleven panel migrations compose — `Panel`
       (radius 11, 1 px hairline, the 1 px highlight 12 px inside the top edge), `Row` (a `div`

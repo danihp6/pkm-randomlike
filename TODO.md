@@ -7370,7 +7370,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       the board does not draw, ≥ 44 px touch targets and a focus ring. No component library and no
       CSS-in-JS: the diff has to be debuggable in devtools. Claims `src/ui/hud/kit/**` and its README.
       *Dependencies:* `[Task-122]`. *(Batch 59)*
-- [ ] **[Task-126] A fixture reproduces a frame exactly.** `?hud=dom` and `?hudFixture=<slug>` parsed
+- [x] **[Task-126] A fixture reproduces a frame exactly.** `?hud=dom` and `?hudFixture=<slug>` parsed
       in `src/dev/hudFlags.ts` with a test, and `src/ui/hud/fixtures/**` loading
       `design/fixtures/<slug>.json` into the store and holding the live run feed while the flag is
       on, so the diff compares like with like instead of a different party against the board. Claims
