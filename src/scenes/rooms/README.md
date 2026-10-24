@@ -23,10 +23,11 @@ the keyboard slot, the counter tile and the route, and the room owns its own con
   permanent opening for the floor) and the reward the scene draws inside.
 - `gate.test.ts` — the gate's own surface: its reward id and stream, the seal's
   refusal and opening (with the run and the rebuild it asks for) and the marker.
-- `trade.ts` — the trade room: its counter and the window that gives a member away for
-  a random one.
+- `trade.ts` — the trade room: its counter and the interact key that opens the trade
+  card, which lives in `src/scenes/panels/trade.ts` (the shipped Phaser window, or the
+  board's `03i`/`03j` Preact card under `?hud=dom`).
 - `trade.test.ts` — the room's own surface: the counter, the rows, the refusal paths,
-  the commit and the marker.
+  the commit and the marker, driven through the card module the room opens.
 - `noHeal.ts` — the no-heal room: its notice, its `psychic` trainer on the room's
   farthest tile and the marker of the room whose battles refuse the Bag and heals.
 - `noHeal.test.ts` - the room's own surface: the trainer's id, tile and archetype,

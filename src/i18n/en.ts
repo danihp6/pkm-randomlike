@@ -154,6 +154,14 @@ export const en = {
   'trade.refused': 'You need another Pokémon to trade.',
   'trade.missing': 'That Pokémon is not in your party.',
   'trade.done': 'Received {name}!',
+  'trade.party': 'PARTY',
+  'trade.pc': 'PC',
+  'trade.meta': 'PARTY {party}/6 · PC {pc}/16',
+  'trade.give': 'GIVE AWAY',
+  'trade.received': 'RECEIVED',
+  'trade.added': 'ADDED TO YOUR PARTY',
+  'trade.close': 'CLOSE',
+  'trade.complete': 'COMPLETE',
 
   // npc — the special-NPC cards: the shell's last row, the merchant, and the
   // member-edit rows with the sacrifice

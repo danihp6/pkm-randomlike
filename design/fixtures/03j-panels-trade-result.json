@@ -1,0 +1,53 @@
+{
+  "slug": "03j-panels-trade-result",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "pick": {
+    "kind": "pick",
+    "message": "The trade in this room is done.",
+    "canTrade": false,
+    "selected": 0,
+    "partyCount": 5,
+    "pcCount": 5,
+    "open": true,
+    "received": null,
+    "party": [
+      { "memberId": "member-2", "name": "Charmander", "level": 17, "frame": 4 },
+      { "memberId": "member-3", "name": "Squirtle", "level": 18, "frame": 7 },
+      { "memberId": "member-4", "name": "Growlithe", "level": 16, "frame": 58 },
+      { "memberId": "member-5", "name": "Eevee", "level": 20, "frame": 133 },
+      { "memberId": "member-6", "name": "Gastly", "level": 15, "frame": 92 }
+    ],
+    "pc": [
+      { "memberId": "member-7", "name": "Abra", "frame": 63 },
+      { "memberId": "member-8", "name": "Machop", "frame": 66 },
+      { "memberId": "member-9", "name": "Oddish", "frame": 43 },
+      { "memberId": "member-10", "name": "Psyduck", "frame": 54 },
+      { "memberId": "member-11", "name": "Ponyta", "frame": 77 }
+    ]
+  },
+  "result": {
+    "kind": "result",
+    "message": "Received SHELLDER!",
+    "canTrade": false,
+    "selected": 0,
+    "partyCount": 6,
+    "pcCount": 5,
+    "open": true,
+    "received": { "name": "SHELLDER", "level": 18, "type": "water", "frame": 90 },
+    "party": [
+      { "memberId": "member-2", "name": "Charmander", "level": 17, "frame": 4 },
+      { "memberId": "member-3", "name": "Squirtle", "level": 18, "frame": 7 },
+      { "memberId": "member-4", "name": "Growlithe", "level": 16, "frame": 58 },
+      { "memberId": "member-5", "name": "Eevee", "level": 20, "frame": 133 },
+      { "memberId": "member-6", "name": "Gastly", "level": 15, "frame": 92 },
+      { "memberId": "member-12", "name": "Shellder", "level": 18, "frame": 90 }
+    ],
+    "pc": [
+      { "memberId": "member-7", "name": "Abra", "frame": 63 },
+      { "memberId": "member-8", "name": "Machop", "frame": 66 },
+      { "memberId": "member-9", "name": "Oddish", "frame": 43 },
+      { "memberId": "member-10", "name": "Psyduck", "frame": 54 },
+      { "memberId": "member-11", "name": "Ponyta", "frame": 77 }
+    ]
+  }
+}

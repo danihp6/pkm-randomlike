@@ -157,6 +157,14 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'trade.refused': 'Necesitas otro Pokémon para intercambiar.',
   'trade.missing': 'Ese Pokémon no está en tu equipo.',
   'trade.done': '¡Has recibido a {name}!',
+  'trade.party': 'EQUIPO',
+  'trade.pc': 'PC',
+  'trade.meta': 'EQUIPO {party}/6 · PC {pc}/16',
+  'trade.give': 'ENTREGAR',
+  'trade.received': 'RECIBIDO',
+  'trade.added': 'AÑADIDO A TU EQUIPO',
+  'trade.close': 'CERRAR',
+  'trade.complete': 'COMPLETO',
 
   // npc — the special-NPC cards: the shell's last row, the merchant, and the
   // member-edit rows with the sacrifice
