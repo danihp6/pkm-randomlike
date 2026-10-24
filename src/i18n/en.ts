@@ -32,6 +32,16 @@ export const en = {
   'runOver.seed': 'Seed: {seed}',
   'runOver.share': 'Share: {share}',
   'runOver.return': '{key} — return to the main menu',
+  'runOver.tabTotals': 'TOTALS',
+  'runOver.tabPokemon': 'POKEMON',
+  'runOver.enemiesFainted': 'ENEMIES FAINTED',
+  'runOver.colPokemon': 'POKEMON',
+  'runOver.colKos': 'KOs',
+  'runOver.colDealt': 'DMG DEALT',
+  'runOver.colTanked': 'DMG TANKED',
+  'runOver.stateParty': 'PARTY',
+  'runOver.stateBox': 'PC',
+  'runOver.stateRip': 'FNT',
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'SETTINGS',

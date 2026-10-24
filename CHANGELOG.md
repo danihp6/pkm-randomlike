@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Run over is the HUD's.** `[Task-148]`, the twenty-fourth of Phase 12 (`D49`): `06`, `07`
+      and `07b` — the summary card, the win/loss copy, the four stat rows, the share line, the
+      TOTALS/POKEMON tabs and the POKEMON table — are a Preact panel in
+      `src/ui/hud/panels/run-over/`, with `src/scenes/RunOverScene.ts` keeping the save clear, the
+      armed input delay and the return to the menu. The panel is `280,170 720×480` at 1280×800 (and
+      `8,140 374×560` / `8,96 374×604` at 390×844), the tabs `336,312 90×24` and `432,312 100×24`,
+      and the table rows at a 36 px pitch. `runOverDrawnObjectCount()` is `0` under the flag against
+      `10` off. The run records no enemies-fainted, KO or damage counters, so the live screen prints
+      `—` in those cells and the frames' figures live only in the fixtures; the ten labels the panel
+      needs (tabs, columns, states and the fainted row) are keys in both locales. `npm test` 4196
+      passed / 68 skipped, `npm run build` green.
 - [x] **The starter picker is the HUD's.** `[Task-147]`, the twenty-third of Phase 12 (`D49`):
       under `?hud=dom` `04`'s three cards, their names and type badges, the share line and the footer
       hint are a Preact panel in `src/ui/hud/panels/starter/`, and `src/scenes/StarterScene.ts` keeps

@@ -7492,7 +7492,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       confirmation in `src/ui/hud/panels/starter/`, with `src/scenes/StarterScene.ts` keeping the
       pick. Claims `src/scenes/StarterScene.ts`, `src/ui/hud/panels/starter/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 65)*
-- [ ] **[Task-148] Run over is the HUD's.** `06`, `07` and `07b`: the summary card, the fallen list
+- [x] **[Task-148] Run over is the HUD's.** `06`, `07` and `07b`: the summary card, the fallen list
       and the victory variant in `src/ui/hud/panels/run-over/`, from `src/ui/runSummary.ts`, with the
       permadeath wording unchanged. Claims `src/scenes/RunOverScene.ts`,
       `src/ui/hud/panels/run-over/**` and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`,
