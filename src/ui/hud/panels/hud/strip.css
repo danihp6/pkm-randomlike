@@ -1,0 +1,77 @@
+/*
+ * The route strip (`D49`, frame `03 Route HUD`): the 26×26 edge chips of the four
+ * keyed panels, at the board's own phone slots or at each panel's dock. The fill,
+ * the hairline inside the box and the radius are the frame's `m chip` nodes; the
+ * letter is the board's 11 / 15 px bold ink. No shadow and no transition: the
+ * strip is chrome and never animates.
+ */
+.hud-strip-mount {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud-strip {
+  --strip-chip-fill: rgb(16 22 31 / 90%);
+  --strip-chip-border: rgb(255 255 255 / 22%);
+  --strip-chip-radius: 6px;
+
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--hud-font);
+}
+
+.hud-strip[hidden] {
+  display: none;
+}
+
+.hud-strip,
+.hud-strip *,
+.hud-strip *::before,
+.hud-strip *::after {
+  box-sizing: border-box;
+}
+
+.hud-strip__chip {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  /* The board's stroke is 1 px inside the 26 px box (`docs/hud-fidelity.md` §3). */
+  border: 1px solid var(--strip-chip-border);
+  border-radius: var(--strip-chip-radius);
+  background: var(--strip-chip-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  font-weight: 700;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* A thumb needs more than 26 px, so the hit area grows without moving the paint. */
+.hud-strip__chip::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+.hud-strip__chip:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
+
+.hud-strip__letter {
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: var(--hud-type-chip-line);
+}

@@ -1,3 +1,4 @@
+import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import { keyLabel, type KeybindAction } from '../../data/keybinds';
 import type { HudPanelId } from '../../data/hudLayout';
@@ -13,6 +14,9 @@ import {
   FRLG_WINDOW_PADDING,
 } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
+import type { HudCommand } from '../../ui/hud/commands';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import { mountHudStrip, stripView, type StripSlot, type StripView } from '../../ui/hud/panels/hud';
 import { PANEL_ICON_SIZE } from '../BootScene';
 import type { HudMetrics, HudPanel, RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -22,7 +26,21 @@ import type { HudMetrics, HudPanel, RoutePanelDescriptor, RoutePanelHost } from 
  * party header's shared level, XP and Pokevial bar. Every other panel builds its
  * window through `makeHudPanel`, so the frame, its z-order and its saved layout have
  * exactly one owner.
+ *
+ * With `?hud=dom` (`D49`) the header paints nothing here — the party card owns the
+ * level, XP and Pokevial readouts — and the one piece of route chrome a collapsed
+ * DOM card loses, the edge chips, is the strip in `src/ui/hud/panels/hud/`.
  */
+
+/** `?hud=dom`, read once: the canvas draws no HUD chrome at all. */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this folder imports
+ * Phaser type-only: the route stops under a battle or the Settings screen and comes
+ * back from it on these two (the same pair `map.ts` listens to).
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
 
 /** The panel widths the metrics clamp: the fixed design sizes. */
 export const HUD_PANEL_W = 344;
@@ -101,6 +119,9 @@ export const PANEL_KEY_ACTIONS: Readonly<Partial<Record<HudPanelId, KeybindActio
   bag: 'bag',
   box: 'box',
 };
+
+/** The seven objects the party header adds (vial bg/fill/label, level, XP bg/fill/text). */
+export const HUD_HEADER_OBJECTS = 7;
 
 /** The HUD's panel widths for the current window, clamped to the screen. */
 export function hudMetrics(width: number): HudMetrics {
@@ -540,6 +561,8 @@ export function refreshPanelKeyLabels(host: RoutePanelHost): void {
 
 /** Paints the party header's shared level line; the level-up beat counts it up. */
 export function setHudLevel(level: number): void {
+  // Under `?hud=dom` the party card paints the level and the header is never built.
+  if (!hudLevelText) return;
   hudLevelText.setText(t('hud.level', { level }));
 }
 
@@ -583,6 +606,9 @@ export function makeHudPanel(
   key: KeybindAction | null,
 ): HudPanel {
   const { icon, label, w: iconW, h: iconH } = buildPanelIcon(host, x, y, iconTexture, key);
+  // Under `?hud=dom` the DOM cards own every chip and every press, so the Phaser
+  // icon is provably unpainted from one place (the record still carries it).
+  if (DOM_HUD) icon.setVisible(false);
   // The outline that stands in for the window while Transparent HUD is on. It
   // lives in the body, so collapsing the panel hides it with the content.
   const border = host.scene.add.graphics().setVisible(false);
@@ -680,6 +706,119 @@ export function finishHud(host: RoutePanelHost): void {
   const root = host.hudRoot();
   for (const { object } of [...overlays].sort((a, b) => a.rank - b.rank)) root.add(object);
   applyStoredHudLayout(host);
+}
+
+/** The canvas strip's own display objects, so the flag contract has one counter. */
+let hudDrawnObjects = 0;
+/** The mounted strip: its view, its disposer, the host and the scene it follows. */
+let stripSignal: Signal<StripView> | null = null;
+let stripDispose: (() => void) | null = null;
+let stripHost: RoutePanelHost | null = null;
+let stripScene: Phaser.Scene | null = null;
+/**
+ * True while the route is paused under another screen. `#hud` is a DOM layer
+ * **above** the canvas, so a paused route's chips would float over the battle
+ * covering it; the mount stays and the view simply goes closed.
+ */
+let routePaused = false;
+
+/** The route strip's own display objects in Phaser: 0 under `?hud=dom`. */
+export function hudDrawnObjectCount(): number {
+  return DOM_HUD ? 0 : hudDrawnObjects;
+}
+
+/** The canvas builder reports what it added; 0 under the flag. */
+export function noteHudDrawnObjects(count: number): void {
+  hudDrawnObjects = DOM_HUD ? 0 : Math.max(0, count);
+}
+
+/**
+ * The docked panel records as the strip reads them: each panel's `x`/`y` plus the
+ * drag offset it carries, and whether it is collapsed to a chip.
+ */
+function panelsAsSlots(host: RoutePanelHost): readonly StripSlot[] {
+  return host.panels().map((panel) => ({
+    id: panel.id,
+    x: panel.x + panel.dx,
+    y: panel.y + panel.dy,
+    collapsed: !panel.expanded,
+  }));
+}
+
+/**
+ * The strip as data, recomputed on every `refresh`: a collapse, a drag, the stored
+ * layout and a resize all reach the chips without a hook of their own.
+ */
+function stripViewOf(host: RoutePanelHost): StripView {
+  return stripView(
+    { open: !routePaused, slots: panelsAsSlots(host), keybinds: host.settings().keybinds },
+    { width: host.scene.scale.width, height: host.scene.scale.height },
+  );
+}
+
+/** Repaints the mounted strip from the live host, or nothing before the first mount. */
+function repaintStrip(): void {
+  if (stripSignal === null || stripHost === null) return;
+  stripSignal.value = stripViewOf(stripHost);
+}
+
+/** A battle or the Settings screen covers the route: the chips go with the paused HUD. */
+function pauseStrip(): void {
+  routePaused = true;
+  repaintStrip();
+}
+
+/** The route is the screen on top again: the chips return as they were left. */
+function resumeStrip(): void {
+  routePaused = false;
+  repaintStrip();
+}
+
+/**
+ * A chip press is its panel's quick key and nothing else: the same
+ * `toggleHudPanel` an `M` / `O` / `P` / `I` press runs. A press while paused never
+ * reaches a panel behind the screen that covers the route.
+ */
+function handleStripCommand(host: RoutePanelHost, command: HudCommand): void {
+  if (routePaused || command.type !== 'panel') return;
+  toggleHudPanel(host, command.panel);
+}
+
+function disposeStrip(): void {
+  if (stripScene !== null) {
+    stripScene.events.off(SCENE_PAUSE, pauseStrip);
+    stripScene.events.off(SCENE_RESUME, resumeStrip);
+    stripScene = null;
+  }
+  routePaused = false;
+  stripHost = null;
+  if (stripDispose !== null) {
+    stripDispose();
+    stripDispose = null;
+  }
+  stripSignal = null;
+}
+
+/**
+ * Mounts the chips into the `#hud` layer. The strip builds at order 30, after the
+ * header and the party and before the bag and the box, so it paints whatever docks
+ * exist and the first `refreshHud()` of the build walk completes the rail. A
+ * missing layer mounts nothing.
+ */
+function mountStrip(host: RoutePanelHost): void {
+  disposeStrip();
+  const scene = host.scene;
+  routePaused = scene.sys.isPaused();
+  const view = signal(stripViewOf(host));
+  stripSignal = view;
+  stripHost = host;
+  const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
+  if (layer !== null) {
+    stripDispose = mountHudStrip(layer, view, (command) => handleStripCommand(host, command));
+  }
+  scene.events.on(SCENE_PAUSE, pauseStrip);
+  scene.events.on(SCENE_RESUME, resumeStrip);
+  stripScene = scene;
 }
 
 function buildPartyHeader(host: RoutePanelHost): void {
@@ -809,8 +948,28 @@ export const descriptor: RoutePanelDescriptor = {
     hudPanelDrag = null;
     hudIconPress = null;
     hudDetailPlaced = false;
+    if (DOM_HUD) {
+      mountStrip(host);
+      noteHudDrawnObjects(0);
+      return;
+    }
     buildPartyHeader(host);
+    noteHudDrawnObjects(HUD_HEADER_OBJECTS);
   },
-  refresh: refreshHudPanel,
-  pointer: pointerAt,
+  refresh(host: RoutePanelHost): void {
+    if (DOM_HUD) {
+      repaintStrip();
+      return;
+    }
+    refreshHudPanel(host);
+  },
+  pointer(host: RoutePanelHost, pointer: Phaser.Input.Pointer): boolean {
+    // The DOM owns every press under the flag: an invisible canvas spot must never
+    // answer with the Pokevial or a panel drag.
+    if (DOM_HUD) return false;
+    return pointerAt(host, pointer);
+  },
+  close(): void {
+    if (DOM_HUD) disposeStrip();
+  },
 };

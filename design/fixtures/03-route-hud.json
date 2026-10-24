@@ -1,0 +1,109 @@
+{
+  "slug": "03-route-hud",
+  "state": {
+    "party": [
+      {
+        "id": "f-charmander",
+        "speciesId": "charmander",
+        "name": "Charmander",
+        "level": 12,
+        "hp": 32,
+        "maxHp": 39,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": "charcoal",
+        "heldItemName": "Charcoal",
+        "shiny": false,
+        "hpFraction": 0.82
+      },
+      {
+        "id": "f-pidgey",
+        "speciesId": "pidgey",
+        "name": "Pidgey",
+        "level": 11,
+        "hp": 28,
+        "maxHp": 33,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false,
+        "hpFraction": 0.85
+      },
+      {
+        "id": "f-bulbasaur",
+        "speciesId": "bulbasaur",
+        "name": "Bulbasaur",
+        "level": 12,
+        "hp": 30,
+        "maxHp": 41,
+        "status": "par",
+        "statusLabel": "PAR",
+        "heldItem": "miracle_seed",
+        "heldItemName": "Miracle Seed",
+        "shiny": false,
+        "hpFraction": 0.73
+      },
+      {
+        "id": "f-gastly",
+        "speciesId": "gastly",
+        "name": "Gastly",
+        "level": 11,
+        "hp": 21,
+        "maxHp": 30,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false,
+        "hpFraction": 0.7
+      }
+    ],
+    "bag": [],
+    "money": 2480,
+    "route": {
+      "mode": "finite",
+      "mapIndex": 1,
+      "routeInMap": 2,
+      "routeIndex": 2,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 14,
+      "squadLevel": 12,
+      "xp": 1820,
+      "xpFraction": 0.61,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [0, 1, 2],
+      "mission": null,
+      "missionsCompleted": 0,
+      "stats": { "catches": 3, "casualties": 1 }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "strip": {
+    "frame": "design/frames/m03-route-hud.json",
+    "nodes": { "header": "m chip MAP", "box": "m chip BOX", "bag": "m chip BAG" },
+    "narrow": {
+      "viewport": { "width": 390, "height": 844 },
+      "chips": [
+        { "id": "header", "letter": "M", "box": { "x": 8, "y": 55, "w": 26, "h": 26 } },
+        { "id": "box", "letter": "C", "box": { "x": 8, "y": 119, "w": 26, "h": 26 } },
+        { "id": "bag", "letter": "I", "box": { "x": 38, "y": 551, "w": 26, "h": 26 } }
+      ]
+    },
+    "wide": { "viewport": { "width": 1280, "height": 800 }, "chips": [] },
+    "paint": {
+      "fill": "rgb(16 22 31 / 90%)",
+      "border": "rgb(255 255 255 / 22%)",
+      "radius": 6,
+      "letterSize": 11,
+      "letterLine": 15,
+      "letterWeight": 700,
+      "letterColour": "#f8fafc"
+    }
+  }
+}

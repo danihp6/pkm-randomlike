@@ -1156,6 +1156,19 @@ covered by the diff), no testing-library, no CSS toolchain.
 (2) Options `02` as the spike; (3) the route panels, one per task; (4) the battle boxes, one per
 task; (5) the route HUD chips and the pad decision last.
 
+### D49 addendum — the touch pad stays in Phaser
+
+**The decision.** The touch pad stays in Phaser. It is an **input surface, not chrome**: it draws
+three transparent outlines and two letters, and every press is already the `KeybindAction` a key
+produces — `createTouchControls({ onAction })` in `src/ui/touchControls.ts` hands the pad's
+direction, `confirm` and `cancel` to the same handler the keyboard drives — so a DOM pad would
+re-implement pointer capture, the pad's owning pointer id, held-direction polling and the battle's
+camera offset for zero fidelity. Its geometry is already the board's to the pixel:
+`touchControlsLayout(390, 844)` yields the 156 px pad at (103,741) and A/B at r35
+(334,767)/(235,788), exactly `docs/hud-fidelity.md` §5, so there is nothing for the diff to
+improve. `src/ui/touchLayout.ts` stays the one model; if the pad ever moves it moves as its own
+task with that model and a pointer-events contract.
+
 ## D50 — The board's rasters stay in the repo, with the game's own screen inside them *(decided)*
 
 **The fact.** 62 of the 66 viewports exported into `design/screens/` carry the route's screenshot as
