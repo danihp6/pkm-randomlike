@@ -29,7 +29,8 @@ run  = map 1 -> map 2 -> ... -> map N            (N fixed in finite mode)
 
 map  = a grid of K rooms joined by openings      (K random, from the map's range)
        connected, closed into at least one cycle, no dangling opening
-       + a few special rooms (shop, mini-boss, mega-stone)
+       + a few special rooms (mini-boss, mega-stone, gated, trade, no-heal, static,
+         secret-shop)
 ```
 
 - One **biome** is rolled for the whole map (never the previous map's), so every
@@ -377,10 +378,11 @@ targets — the bag panel, a living party or box member, and (for the reward's
 anonymous Pokémon rows) the party panel. A row released anywhere else changes
 nothing. The Mart's BUY row buys on that drop (the units land in the bag, then a
 member drop spends or equips one), a BUY row the run cannot afford is not a drag
-source, and a SELL row still sells one unit on a click. It exists only while the
-player is in the shop room (it is opened at the counter with `E` and is
-unavailable anywhere else), so buying is tied to the room rather than to a menu
-key.
+source, and a SELL row still sells one unit on a click. The card exists only while
+the counter that owns it is at hand: the floor's **merchant** special NPC raises it
+from his `TRADE` row (from map 2 on, in the floor's first trainer room) and the
+**secret-shop** leaf raises it from its counter with `E`. It is unavailable
+anywhere else, so buying stays tied to the room rather than to a menu key.
 
 ### The static-species leaf
 

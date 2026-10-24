@@ -293,7 +293,15 @@ describe('roomKindOf', () => {
 
   it('leaves the entry room and every special leaf quiet', () => {
     expect(roomKindOf({ entry: true, boss: false, special: null })).toBe('quiet');
-    for (const special of ['shop', 'mini-boss', 'mega-stone']) {
+    for (const special of [
+      'mini-boss',
+      'mega-stone',
+      'gated',
+      'trade',
+      'no-heal',
+      'static',
+      'secret-shop',
+    ]) {
       expect(roomKindOf({ entry: false, boss: false, special })).toBe('quiet');
     }
   });

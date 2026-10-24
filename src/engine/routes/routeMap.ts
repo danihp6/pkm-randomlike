@@ -21,7 +21,7 @@ export type RouteItem = Readonly<{
   id: string;
   position: Tile;
   itemId: string;
-  /** Hidden items draw as a faint sparkle instead of a Poke Ball. */
+  /** Hidden items draw the biome's floor patch instead of a Poke Ball. */
   hidden: boolean;
 }>;
 
