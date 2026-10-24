@@ -26,7 +26,9 @@ the move cues and the cry cues in id order. The rows come from the packed asset
 folder in one `import.meta.glob`: a cue whose file was never packed cannot be
 played, and `audioCue(id)` throws `unknown audio cue: <id>` for a typo. The
 folder is gitignored (`npm run assets:pack`), so a clone without the private
-store simply has no cues.
+store resolves every cue to the committed
+`src/assets/placeholders/audio/silence.wav` instead (`PLACEHOLDER_AUDIO_URL`):
+the game boots and plays nothing rather than failing its whole preload.
 
 ## The Phaser half
 

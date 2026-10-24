@@ -1,3 +1,5 @@
+import silenceUrl from '../assets/placeholders/audio/silence.wav';
+
 /**
  * The audio vocabulary (D22 addendum): every sound the game can play is one row
  * here, and a cue id is the only name a scene may use — no scene names a file, a
@@ -61,6 +63,14 @@ const AUDIO_URLS = import.meta.glob('../assets/audio/*.wav', {
   query: '?url',
   import: 'default',
 }) as Record<string, string>;
+
+/**
+ * The silence a cue falls back to when this checkout carries no rip: the packed
+ * cues are gitignored, and without this a clean clone threw `unknown audio cue`
+ * in `BootScene.preload` and drew no scene at all (issue #47). Same contract as
+ * `src/assets/placeholders/` for the atlases: the game boots and plays nothing.
+ */
+export const PLACEHOLDER_AUDIO_URL: string = silenceUrl;
 
 /** The asset id behind one of the glob's paths: `../assets/audio/hit.wav` -> `hit`. */
 function assetId(path: string): string {
@@ -128,9 +138,15 @@ export function isMusic(id: AudioCueId): boolean {
   return audioCue(id).kind === 'music';
 }
 
-/** The bundled URL of a cue's asset (Vite's folder glob, one entry per cue). */
+/**
+ * The bundled URL of a cue's asset (Vite's folder glob, one entry per cue). A cue
+ * whose asset this checkout lacks — a clone without the rip — resolves to the
+ * committed silence; an id with no row at all still throws, because that is a bug
+ * in the caller, not a missing file.
+ */
 export function audioCueUrl(id: AudioCueId): string {
   const url = AUDIO_URLS[`${CUE_DIRECTORY}${id}.${AUDIO_EXTENSION}`];
-  if (!url) throw new Error(`unknown audio cue: ${id}`);
-  return url;
+  if (url) return url;
+  if (!CUE_BY_ID.has(id)) throw new Error(`unknown audio cue: ${id}`);
+  return PLACEHOLDER_AUDIO_URL;
 }
