@@ -1192,7 +1192,13 @@ function resolveMove(
           result.effectiveness,
           result.crit,
         );
-        if ((hitTarget.volatiles.endure || state.roomField.endure) && damage >= hitTarget.hp) {
+        // The Endure move spares the user for the rest of the turn, even at 1 HP,
+        // and drops off before the next one. The room's `endure` condition lasts
+        // the whole battle, so it only spares a target still above 1 HP: clamping
+        // `hp - 1` to 0 at 1 HP made it immortal and the boss arena unwinnable.
+        const moveEndure = hitTarget.volatiles.endure;
+        const roomEndure = state.roomField.endure && hitTarget.hp > 1;
+        if ((moveEndure || roomEndure) && damage >= hitTarget.hp) {
           damage = Math.max(0, hitTarget.hp - 1);
           pushText(state, 'battle.log.enduredHit', { name: hitTarget.name });
         }
