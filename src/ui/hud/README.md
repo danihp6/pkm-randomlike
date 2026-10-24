@@ -19,7 +19,7 @@ spacing or type size is written, and every value comes from `design/tokens.json`
 - `mount.test.ts` — the flag's truth table, the vendored font files and the layer contract `root.css` pins, headless (the repo has no jsdom).
 - `shell.tsx` — the shell component: one `.hud` layer with `data-hud="root"`, no props, no state and no Phaser object.
 - `styles/root.css` — the two Silkscreen `@font-face` blocks, the `:root` tokens taken from `design/tokens.json` (panel, row, accent, the six text tones, panel width 374, gutter 8) and the ten board type sizes with their px line heights.
-- `panels/` — planned: the eleven panel migrations of Batches 61-65, one folder per screen (see `panels/README.md`).
+- `panels/` — the board's twenty-one panel migrations, one folder per screen (see `panels/README.md`).
 - `kit/` — the shared DOM primitives (panel, row, chip, bar, sheet, button, meta, type badge), their class helpers and the one kit stylesheet every panel composes.
 - `fixtures/` — the `design/fixtures/<slug>.json` payloads `?hudFixture=<slug>` feeds the store.
 
