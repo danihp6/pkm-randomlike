@@ -1,0 +1,28 @@
+{
+  "slug": "06-run-over-defeat",
+  "state": {
+    "party": [],
+    "bag": [],
+    "money": null,
+    "route": null,
+    "battle": {},
+    "notice": null
+  },
+  "runOver": {
+    "won": false,
+    "tab": "totals",
+    "title": "YOU HAVE NO MORE POKEMON!",
+    "blurb": "THE RUN IS OVER · NOTHING CARRIES OVER.",
+    "stats": [
+      { "id": "routes", "label": "ROUTES CLEARED", "value": "05" },
+      { "id": "catches", "label": "POKEMON CAUGHT", "value": "09" },
+      { "id": "lost", "label": "POKEMON LOST", "value": "06" },
+      { "id": "fainted", "label": "ENEMIES FAINTED", "value": "23" }
+    ],
+    "share": "SHARE: PKRL-1-f-91C4-8B",
+    "button": { "label": "MAIN MENU" },
+    "secondary": null,
+    "tabLabels": { "totals": "TOTALS", "pokemon": "POKEMON" },
+    "rows": []
+  }
+}

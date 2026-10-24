@@ -1,0 +1,731 @@
+/*
+ * The run-over score screen (`D49`, frames `06` / `07` / `07b` and `m06` / `m07` /
+ * `m07b`). Every value the board carries and `styles/root.css` does not is declared
+ * once here as a scoped custom property, next to the frame's node name; the rest come
+ * from the `--hud-*` tokens. The stage is the board's page — 1280 × 800 on the desk,
+ * 390 × 844 on a phone — and every offset below is a coordinate of the matching frame
+ * measured from the panel's own top-left corner, because the board's strokes sit
+ * inside the box (`docs/hud-fidelity.md` §3).
+ */
+.run-over {
+  /* 06 / 07 · board background */
+  --run-over-screen: #05070c;
+  /* 06 · the defeat accent (#7dd3fc on a win, the --hud-accent token) */
+  --run-over-accent: #fca5a5;
+  /* 06 / 07 · panel highlight */
+  --run-over-highlight: rgb(255 255 255 / 14%);
+  /* 06 / 07 · the four stat rules */
+  --run-over-rule: rgb(255 255 255 / 8%);
+  /* 06 / 07 · share line */
+  --run-over-share: #64748c;
+  /* 07b · the selected tab's fill */
+  --run-over-selected-fill: rgb(125 211 252 / 16%);
+  /* 07b · the FNT member state */
+  --run-over-rip: #f87171;
+  /* 07 / 07b · portrait cell border and fill */
+  --run-over-cell-border: rgb(255 255 255 / 14%);
+  --run-over-cell-fill: rgb(255 255 255 / 4%);
+  /* 06 / 07 · run over title */
+  --run-over-title-size: 28px;
+  --run-over-title-line: 36px;
+  /* 06 / 07 · run over blurb */
+  --run-over-blurb-size: 14px;
+  --run-over-blurb-line: 18px;
+  /* 06 / 07 · tab label */
+  --run-over-tab-size: 8px;
+  --run-over-tab-line: 16px;
+  /* 06 / 07 · stat labels and values */
+  --run-over-label-size: 12px;
+  --run-over-label-line: 15px;
+  --run-over-value-size: 16px;
+  --run-over-value-line: 20px;
+  /* 06 / 07 · share line */
+  --run-over-share-size: 9px;
+  --run-over-share-line: 12px;
+  /* 06 / 07 · button labels */
+  --run-over-button-size: 12px;
+  --run-over-button-line: 16px;
+  /* 07b · table headers, names and figures */
+  --run-over-header-size: 8px;
+  --run-over-header-line: 12px;
+  --run-over-name-size: 11px;
+  --run-over-name-line: 15px;
+  --run-over-state-size: 8px;
+  --run-over-state-line: 12px;
+  /* 06 / 07 · the rule under a stat row (m06 / m07 draw it 30 px down) */
+  --run-over-rule-top: 26px;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--run-over-screen);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.run-over[data-won='true'] {
+  --run-over-accent: var(--hud-accent);
+}
+
+.run-over,
+.run-over *,
+.run-over *::before,
+.run-over *::after {
+  box-sizing: border-box;
+}
+
+/* The layer takes every click except the tabs and the one action. */
+.run-over * {
+  pointer-events: none;
+}
+
+.run-over__stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1280px;
+  height: 800px;
+  transform: translate(-50%, -50%);
+}
+
+/* 06 / 07 · run over panel. The board draws its stroke inside the box
+   (`docs/hud-fidelity.md` §3), so the card paints with an inset outline and every
+   child below keeps the frame's own page coordinate. */
+.run-over__panel {
+  position: absolute;
+  top: 170px;
+  left: 280px;
+  width: 720px;
+  height: 480px;
+  border-radius: var(--hud-panel-radius);
+  outline: 1px solid var(--hud-panel-border);
+  outline-offset: -1px;
+  background: var(--hud-panel-fill);
+}
+
+/* The kit panel is the card's skin: the wrapper above is the measured node. */
+.run-over__panel > .kit-panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.run-over__panel > .kit-panel::before {
+  display: none;
+}
+
+/* 06 / 07 · run over panel highlight: 12 px inside the top edge */
+.run-over__highlight {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: var(--run-over-highlight);
+}
+
+/* 06 / 07 · run over accent */
+.run-over__accent {
+  position: absolute;
+  top: 16px;
+  left: 336px;
+  width: 48px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--run-over-accent);
+}
+
+/* 06 / 07 · run over title */
+.run-over__title {
+  position: absolute;
+  top: 26px;
+  left: 40px;
+  width: 640px;
+  height: 36px;
+  margin: 0;
+  color: var(--hud-text-ink);
+  font-size: var(--run-over-title-size);
+  font-weight: 700;
+  line-height: var(--run-over-title-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 06 / 07 · run over blurb */
+.run-over__blurb {
+  position: absolute;
+  top: 66px;
+  left: 40px;
+  width: 640px;
+  height: 20px;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--run-over-blurb-size);
+  line-height: var(--run-over-blurb-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 07 · win party 0…3, four 40 px cells on a 52 px pitch */
+.run-over__portraits {
+  position: absolute;
+  top: 92px;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.run-over__portrait-cell {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--run-over-cell-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--run-over-cell-fill);
+}
+
+/* 06 / 07 · tab totals / tab pokemon */
+.run-over__tabs {
+  position: absolute;
+  top: 142px;
+  left: 56px;
+  display: flex;
+  gap: 6px;
+}
+
+.run-over__tab {
+  width: 90px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: 6px;
+  background: var(--hud-row-fill);
+  color: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: var(--run-over-tab-size);
+  font-weight: 700;
+  line-height: var(--run-over-tab-line);
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.run-over__tab[data-hud-run-over-tab='pokemon'] {
+  width: 100px;
+}
+
+.run-over__tab[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: var(--run-over-selected-fill);
+  color: var(--hud-accent);
+}
+
+/* 06 / 07 · the four stat rows: label left, value right, a rule under each */
+.run-over__stats {
+  position: absolute;
+  top: 190px;
+  left: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.run-over__stat {
+  position: relative;
+  width: 608px;
+  height: 16px;
+}
+
+.run-over__stat-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  color: var(--hud-text-muted);
+  font-size: var(--run-over-label-size);
+  line-height: var(--run-over-label-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-over__stat-value {
+  position: absolute;
+  top: -2px;
+  left: 428px;
+  width: 180px;
+  color: var(--hud-text-ink);
+  font-size: var(--run-over-value-size);
+  line-height: var(--run-over-value-line);
+  white-space: nowrap;
+}
+
+.run-over__rule {
+  position: absolute;
+  top: var(--run-over-rule-top);
+  left: 0;
+  width: 608px;
+  height: 1px;
+  background: var(--run-over-rule);
+}
+
+/* 06 / 07 · run share */
+.run-over__share {
+  position: absolute;
+  top: 374px;
+  left: 56px;
+  width: 608px;
+  height: 12px;
+  overflow: hidden;
+  color: var(--run-over-share);
+  font-size: var(--run-over-share-size);
+  line-height: var(--run-over-share-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 06 · main menu button / 07 · end run + continue */
+.run-over__actions {
+  position: absolute;
+  top: 420px;
+  left: 0;
+  display: flex;
+  width: 720px;
+  height: 40px;
+  justify-content: center;
+  gap: 24px;
+}
+
+.run-over__button {
+  width: 200px;
+  height: 40px;
+}
+
+.run-over__button > .kit-button {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-color: var(--hud-panel-border);
+  border-radius: var(--hud-row-radius);
+  color: var(--hud-text-secondary);
+  font-size: var(--run-over-button-size);
+  line-height: var(--run-over-button-line);
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+
+/* 07 · continue button: the frame's second, accent-filled action */
+.run-over__secondary {
+  display: flex;
+  width: 200px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-accent);
+  border-radius: var(--hud-row-radius);
+  background: var(--run-over-selected-fill);
+  color: var(--hud-accent);
+  font-size: var(--run-over-button-size);
+  font-weight: 700;
+  line-height: var(--run-over-button-line);
+  text-transform: uppercase;
+}
+
+/* 07b · the POKéMON table: headers, then one row per member */
+.run-over__list {
+  position: absolute;
+  top: 212px;
+  left: 56px;
+  width: 608px;
+  height: 198px;
+}
+
+.run-over__header {
+  position: absolute;
+  top: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--run-over-header-size);
+  line-height: var(--run-over-header-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-over__header[data-hud-run-over-header='pokemon'] {
+  left: 42px;
+  width: 160px;
+}
+
+.run-over__header[data-hud-run-over-header='kos'] {
+  left: 304px;
+  width: 54px;
+}
+
+.run-over__header[data-hud-run-over-header='dealt'] {
+  left: 384px;
+  width: 90px;
+}
+
+.run-over__header[data-hud-run-over-header='tanked'] {
+  left: 504px;
+  width: 80px;
+}
+
+.run-over__rows {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 608px;
+}
+
+.run-over__row {
+  position: relative;
+  width: 608px;
+  height: 32px;
+}
+
+/* 07b · list row: the wrapper above is the measured node, the kit row its skin */
+.run-over .run-over__row > .kit-row {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  outline: 1px solid var(--hud-row-border);
+  outline-offset: -1px;
+  background: var(--hud-row-fill);
+}
+
+.run-over__portrait {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--run-over-cell-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--run-over-cell-fill);
+}
+
+.run-over__row-name {
+  position: absolute;
+  top: 7px;
+  left: 42px;
+  width: 160px;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--run-over-name-size);
+  line-height: var(--run-over-name-line);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-over__row-state {
+  position: absolute;
+  top: 8px;
+  left: 216px;
+  width: 50px;
+  color: var(--hud-text-muted);
+  font-size: var(--run-over-state-size);
+  line-height: var(--run-over-state-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.run-over__row[data-state='rip'] .run-over__row-state {
+  color: var(--run-over-rip);
+}
+
+.run-over__cell {
+  position: absolute;
+  top: 7px;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--run-over-name-size);
+  line-height: var(--run-over-name-line);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.run-over__cell[data-hud-run-over-column='kos'] {
+  left: 304px;
+  width: 54px;
+}
+
+.run-over__cell[data-hud-run-over-column='dealt'] {
+  left: 384px;
+  width: 90px;
+}
+
+.run-over__cell[data-hud-run-over-column='tanked'] {
+  left: 504px;
+  width: 80px;
+}
+
+/* 07b · the table's five rows push the actions 10 px down the card */
+.run-over[data-tab='pokemon'] .run-over__actions {
+  top: 430px;
+}
+
+@media (max-width: 600px) {
+  .run-over {
+    /* m06 / m07 · the phone card is a darker panel (90 %) at radius 12 */
+    --run-over-title-size: 18px;
+    --run-over-title-line: 23px;
+    --run-over-blurb-size: 9px;
+    --run-over-blurb-line: 12px;
+    --run-over-tab-size: 10px;
+    --run-over-tab-line: 13px;
+    --run-over-label-size: 10px;
+    --run-over-label-line: 13px;
+    --run-over-value-size: 10px;
+    --run-over-value-line: 13px;
+    --run-over-share-size: 9px;
+    --run-over-share-line: 12px;
+    --run-over-button-size: 10px;
+    --run-over-button-line: 13px;
+    --run-over-header-size: 9px;
+    --run-over-header-line: 12px;
+    --run-over-name-size: 10px;
+    --run-over-name-line: 13px;
+    --run-over-state-size: 9px;
+    --run-over-state-line: 12px;
+    --run-over-rule-top: 30px;
+  }
+
+  .run-over__stage {
+    width: 390px;
+    height: 844px;
+  }
+
+  /* m07 / m07b · m panel */
+  .run-over__panel {
+    top: 96px;
+    left: 8px;
+    width: 374px;
+    height: 604px;
+    border-radius: 12px;
+    background: rgb(16 22 31 / 90%);
+  }
+
+  /* Neither phone frame draws the top-edge highlight. */
+  .run-over__highlight {
+    display: none;
+  }
+
+  /* m06 / m07 · m accent */
+  .run-over__accent {
+    top: 20px;
+    left: 163px;
+  }
+
+  /* m06 · the phone defeat frame has no tab strip and no party strip, so the card
+     is 44 px shorter and every row below the title moves up with it. */
+  .run-over[data-won='false'] .run-over__panel {
+    top: 140px;
+    height: 560px;
+  }
+
+  .run-over[data-won='false'] .run-over__tabs,
+  .run-over[data-won='false'] .run-over__portraits {
+    display: none;
+  }
+
+  .run-over[data-won='false'] .run-over__stats {
+    top: 110px;
+  }
+
+  .run-over[data-won='false'] .run-over__share {
+    top: 360px;
+  }
+
+  .run-over[data-won='false'] .run-over__actions {
+    top: 460px;
+  }
+
+  /* m06 / m07 · board title and subtitle, centred in the card */
+  .run-over__title {
+    top: 34px;
+    left: 0;
+    width: 100%;
+    height: 23px;
+  }
+
+  .run-over__blurb {
+    top: 62px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+  }
+
+  /* m07 · portrait CH…GA: the same 40 px cells on a 52 px pitch */
+  .run-over__portraits {
+    top: 92px;
+    gap: 12px;
+  }
+
+  /* m07 · m tab TOTALS / m tab POKEMON */
+  .run-over__tabs {
+    top: 140px;
+    left: 24px;
+    gap: 8px;
+  }
+
+  .run-over__tab {
+    height: 28px;
+    border-radius: 7px;
+  }
+
+  /* m06 / m07 · m stat rows */
+  .run-over__stats {
+    top: 184px;
+    left: 24px;
+    gap: 33px;
+  }
+
+  .run-over__stat {
+    width: 326px;
+    height: 13px;
+  }
+
+  .run-over__stat-label {
+    width: 232px;
+  }
+
+  .run-over__stat-value {
+    top: 0;
+    left: 268px;
+    width: 50px;
+  }
+
+  .run-over__rule {
+    width: 326px;
+  }
+
+  /* m06 / m07 · share */
+  .run-over__share {
+    top: 434px;
+    left: 24px;
+    width: 326px;
+  }
+
+  /* m06 / m07 · m button / m button 2 */
+  .run-over__actions {
+    top: 504px;
+    width: 374px;
+    height: 44px;
+    gap: 20px;
+  }
+
+  .run-over[data-tab='pokemon'] .run-over__actions {
+    top: 504px;
+  }
+
+  .run-over__button,
+  .run-over__secondary {
+    width: 320px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  /* m07 · two 150 px actions on the phone */
+  .run-over[data-actions='2'] .run-over__button,
+  .run-over[data-actions='2'] .run-over__secondary {
+    width: 150px;
+  }
+
+  /* m07b · m list headers and m p rows */
+  .run-over__list {
+    top: 188px;
+    left: 24px;
+    width: 342px;
+    height: 258px;
+  }
+
+  .run-over__header[data-hud-run-over-header='pokemon'] {
+    left: 8px;
+    width: 200px;
+  }
+
+  .run-over__header[data-hud-run-over-header='kos'] {
+    left: 213px;
+    width: 40px;
+  }
+
+  .run-over__header[data-hud-run-over-header='dealt'] {
+    left: 262px;
+    width: 50px;
+  }
+
+  .run-over__header[data-hud-run-over-header='tanked'] {
+    left: 312px;
+    width: 30px;
+  }
+
+  .run-over__rows {
+    top: 18px;
+    gap: 6px;
+    width: 342px;
+  }
+
+  .run-over__row {
+    width: 342px;
+    height: 44px;
+  }
+
+  .run-over .run-over__row > .kit-row {
+    border-radius: var(--hud-row-radius);
+    background: rgb(255 255 255 / 3%);
+  }
+
+  .run-over__portrait {
+    top: 10px;
+    left: 12px;
+  }
+
+  .run-over__row-name {
+    top: 9px;
+    left: 46px;
+    width: 240px;
+  }
+
+  .run-over__row-state {
+    top: 26px;
+    left: 46px;
+  }
+
+  .run-over__cell {
+    top: 16px;
+  }
+
+  .run-over__cell[data-hud-run-over-column='kos'] {
+    left: 210px;
+    width: 36px;
+  }
+
+  .run-over__cell[data-hud-run-over-column='dealt'] {
+    left: 246px;
+    width: 57px;
+  }
+
+  .run-over__cell[data-hud-run-over-column='tanked'] {
+    left: 303px;
+    width: 39px;
+  }
+}

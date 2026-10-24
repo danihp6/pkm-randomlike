@@ -1,0 +1,85 @@
+{
+  "slug": "07-run-over-victory",
+  "state": {
+    "party": [
+      {
+        "id": "charmander-1",
+        "speciesId": "charmander",
+        "name": "Charmander",
+        "level": 16,
+        "hp": 41,
+        "maxHp": 41,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "pikachu-2",
+        "speciesId": "pikachu",
+        "name": "Pikachu",
+        "level": 16,
+        "hp": 38,
+        "maxHp": 38,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "bulbasaur-3",
+        "speciesId": "bulbasaur",
+        "name": "Bulbasaur",
+        "level": 15,
+        "hp": 44,
+        "maxHp": 44,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "gastly-4",
+        "speciesId": "gastly",
+        "name": "Gastly",
+        "level": 15,
+        "hp": 33,
+        "maxHp": 33,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      }
+    ],
+    "bag": [],
+    "money": null,
+    "route": null,
+    "battle": {},
+    "notice": null
+  },
+  "runOver": {
+    "won": true,
+    "tab": "totals",
+    "title": "THE FINAL ROUTE FALLS.",
+    "blurb": "EVERY ROUTE CLEARED · THE CHAIN ENDS HERE.",
+    "stats": [
+      { "id": "routes", "label": "ROUTES CLEARED", "value": "08" },
+      { "id": "catches", "label": "POKEMON CAUGHT", "value": "17" },
+      { "id": "lost", "label": "POKEMON LOST", "value": "04" },
+      { "id": "fainted", "label": "ENEMIES FAINTED", "value": "37" }
+    ],
+    "share": "SHARE: PKRL-1-f-7F3A-2C",
+    "button": { "label": "END RUN" },
+    "secondary": { "label": "CONTINUE" },
+    "tabLabels": { "totals": "TOTALS", "pokemon": "POKEMON" },
+    "rows": []
+  }
+}

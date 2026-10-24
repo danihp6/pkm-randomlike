@@ -32,6 +32,8 @@ export const en = {
   'runOver.seed': 'Seed: {seed}',
   'runOver.share': 'Share: {share}',
   'runOver.return': '{key} — return to the main menu',
+  'runOver.tabTotals': 'TOTALS',
+  'runOver.tabPokemon': 'POKEMON',
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'SETTINGS',

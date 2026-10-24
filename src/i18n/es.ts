@@ -35,6 +35,8 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'runOver.seed': 'Semilla: {seed}',
   'runOver.share': 'Partida: {share}',
   'runOver.return': '{key} · volver al menú principal',
+  'runOver.tabTotals': 'TOTALES',
+  'runOver.tabPokemon': 'POKÉMON',
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'AJUSTES',

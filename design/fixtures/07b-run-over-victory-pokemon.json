@@ -1,0 +1,131 @@
+{
+  "slug": "07b-run-over-victory-pokemon",
+  "state": {
+    "party": [
+      {
+        "id": "charizard-1",
+        "speciesId": "charizard",
+        "name": "Charizard",
+        "level": 42,
+        "hp": 138,
+        "maxHp": 138,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "bulbasaur-2",
+        "speciesId": "bulbasaur",
+        "name": "Bulbasaur",
+        "level": 38,
+        "hp": 104,
+        "maxHp": 104,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "pikachu-3",
+        "speciesId": "pikachu",
+        "name": "Pikachu",
+        "level": 36,
+        "hp": 96,
+        "maxHp": 96,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "gastly-4",
+        "speciesId": "gastly",
+        "name": "Gastly",
+        "level": 35,
+        "hp": 84,
+        "maxHp": 84,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      }
+    ],
+    "bag": [],
+    "money": null,
+    "route": null,
+    "battle": {},
+    "notice": null
+  },
+  "runOver": {
+    "won": true,
+    "tab": "pokemon",
+    "title": "THE FINAL ROUTE FALLS.",
+    "blurb": "EVERY ROUTE CLEARED · THE CHAIN ENDS HERE.",
+    "stats": [
+      { "id": "routes", "label": "ROUTES CLEARED", "value": "08" },
+      { "id": "catches", "label": "POKEMON CAUGHT", "value": "17" },
+      { "id": "lost", "label": "POKEMON LOST", "value": "04" },
+      { "id": "fainted", "label": "ENEMIES FAINTED", "value": "37" }
+    ],
+    "share": "SHARE: PKRL-1-f-7F3A-2C",
+    "button": { "label": "END RUN" },
+    "secondary": { "label": "CONTINUE" },
+    "tabLabels": { "totals": "TOTALS", "pokemon": "POKEMON" },
+    "rows": [
+      {
+        "memberId": "charizard-1",
+        "name": "CHARIZARD",
+        "state": "party",
+        "level": 42,
+        "kos": "8",
+        "dealt": "4,120",
+        "tanked": "2,140"
+      },
+      {
+        "memberId": "bulbasaur-2",
+        "name": "BULBASAUR",
+        "state": "party",
+        "level": 38,
+        "kos": "6",
+        "dealt": "2,980",
+        "tanked": "1,650"
+      },
+      {
+        "memberId": "abra-5",
+        "name": "ABRA",
+        "state": "box",
+        "level": 33,
+        "kos": "5",
+        "dealt": "1,860",
+        "tanked": "780"
+      },
+      {
+        "memberId": "pikachu-3",
+        "name": "PIKACHU",
+        "state": "party",
+        "level": 36,
+        "kos": "4",
+        "dealt": "2,300",
+        "tanked": "1,100"
+      },
+      {
+        "memberId": "psyduck-6",
+        "name": "PSYDUCK",
+        "state": "rip",
+        "level": 30,
+        "kos": "4",
+        "dealt": "1,520",
+        "tanked": "1,480"
+      }
+    ]
+  }
+}
