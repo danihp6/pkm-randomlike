@@ -8,6 +8,7 @@ import phoneVictoryFrame from '../../../../../design/frames/m07-run-over-victory
 import defeatFixture from '../../../../../design/fixtures/06-run-over-defeat.json';
 import pokemonFixture from '../../../../../design/fixtures/07b-run-over-victory-pokemon.json';
 import victoryFixture from '../../../../../design/fixtures/07-run-over-victory.json';
+import { t } from '../../../../i18n';
 import { isHudState } from '../../fixtures';
 import { RUN_OVER_STAT_IDS, fixtureRunOverView, runOverBoard } from './index';
 
@@ -219,11 +220,14 @@ describe('design/fixtures/07b-run-over-victory-pokemon.json', () => {
     // The phone defeat frame carries no tab strip, so its card is exactly 44 px
     // shorter; the board pins the taller, tab-bearing variant (`m07` / `m07b`).
     expect(rectOf(defeat, 'm panel').h + 44).toBe(rectOf(victory, 'm panel').h);
-    expect(board.row.pitch).toBe(
-      rectOf(phonePokemon, 'm p row 1').y - rectOf(phonePokemon, 'm p row 0').y,
-    );
-    expect(board.row.w).toBe(rectOf(phonePokemon, 'm p row 0').w);
-    expect(board.row.h).toBe(rectOf(phonePokemon, 'm p row 0').h);
+    const phoneRow = rectOf(phonePokemon, 'm p row 0');
+    expect(board.row).toEqual({
+      x: phoneRow.x,
+      y: phoneRow.y,
+      w: phoneRow.w,
+      h: phoneRow.h,
+      pitch: rectOf(phonePokemon, 'm p row 1').y - phoneRow.y,
+    });
   });
 });
 
@@ -329,5 +333,45 @@ describe('fixtureRunOverView guards', () => {
     expect(view!.portraits!.map((portrait) => portrait.memberId)).toEqual(
       pokemonFixture.state.party.map((row) => row.id),
     );
+  });
+
+  it('falls back to the table’s own copy when a payload omits its labels', () => {
+    const view = fixtureRunOverView(
+      payloadWith((block) => {
+        delete block.tabLabels;
+        delete block.columnLabels;
+        delete block.stateLabels;
+      }),
+    );
+
+    expect(view!.tabLabels).toEqual({
+      totals: t('runOver.tabTotals'),
+      pokemon: t('runOver.tabPokemon'),
+    });
+    expect(view!.columnLabels).toEqual({
+      pokemon: t('runOver.colPokemon'),
+      kos: t('runOver.colKos'),
+      dealt: t('runOver.colDealt'),
+      tanked: t('runOver.colTanked'),
+    });
+    expect(view!.stateLabels).toEqual({
+      party: t('runOver.stateParty'),
+      box: t('runOver.stateBox'),
+      rip: t('runOver.stateRip'),
+    });
+  });
+
+  it('keeps a payload’s own labels when it carries them', () => {
+    const view = fixtureRunOverView(
+      payloadWith((block) => {
+        block.tabLabels = { totals: 'SUM', pokemon: 'MON' };
+        block.columnLabels = { pokemon: 'MON', kos: 'KO', dealt: 'DEALT', tanked: 'TOOK' };
+        block.stateLabels = { party: 'TEAM', box: 'STORAGE', rip: 'DEAD' };
+      }),
+    );
+
+    expect(view!.tabLabels).toEqual({ totals: 'SUM', pokemon: 'MON' });
+    expect(view!.columnLabels.pokemon).toBe('MON');
+    expect(view!.stateLabels.box).toBe('STORAGE');
   });
 });

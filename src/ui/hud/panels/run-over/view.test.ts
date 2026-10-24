@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../../../../engine/run';
 import { t } from '../../../../i18n';
 import { runSummary } from '../../../runSummary';
-import { RUN_OVER_EM_DASH, RUN_OVER_ROW_STATE_LABELS, liveRunOverView, runOverBoard } from './view';
+import { RUN_OVER_EM_DASH, liveRunOverView, runOverBoard } from './view';
 
 const SEED = 'pkm-148';
 
@@ -62,11 +62,10 @@ describe('liveRunOverView', () => {
     const view = liveRunOverView(endedRun(), false, 'totals', 'E');
     const label = (id: string): string => view.stats.find((stat) => stat.id === id)!.label;
 
-    expect(label('routes')).toBe('Routes cleared');
     expect(label('routes')).toBe(t('runOver.routes', { count: '' }).split(':')[0]!.trim());
     expect(label('catches')).toBe(t('runOver.caught', { count: '' }).split(':')[0]!.trim());
     expect(label('lost')).toBe(t('runOver.lost', { count: '' }).split(':')[0]!.trim());
-    expect(label('fainted')).toBe('Enemies fainted');
+    expect(label('fainted')).toBe(t('runOver.enemiesFainted'));
     expect(view.stats.every((stat) => !/\d/.test(stat.label))).toBe(true);
   });
 
@@ -80,15 +79,26 @@ describe('liveRunOverView', () => {
     expect(liveRunOverView(run, true, 'totals', '\u2191').button.label).toContain('\u2191');
   });
 
-  it('names both tabs from the two new keys', () => {
+  it('names both tabs, the table columns and the three states from the table', () => {
     const view = liveRunOverView(endedRun(), true, 'totals', 'E');
 
     expect(view.tabLabels).toEqual({
       totals: t('runOver.tabTotals'),
       pokemon: t('runOver.tabPokemon'),
     });
-    expect(view.tabLabels!.totals).toBe('TOTALS');
-    expect(view.tabLabels!.pokemon).toBe('POKEMON');
+    expect(view.columnLabels).toEqual({
+      pokemon: t('runOver.colPokemon'),
+      kos: t('runOver.colKos'),
+      dealt: t('runOver.colDealt'),
+      tanked: t('runOver.colTanked'),
+    });
+    expect(view.stateLabels).toEqual({
+      party: t('runOver.stateParty'),
+      box: t('runOver.stateBox'),
+      rip: t('runOver.stateRip'),
+    });
+    expect(view.columnLabels.pokemon).toBe(t('runOver.colPokemon'));
+    expect(view.stateLabels.rip).toBe(t('runOver.stateRip'));
     expect(view.tab).toBe('totals');
     expect(liveRunOverView(endedRun(), true, 'pokemon', 'E').tab).toBe('pokemon');
   });
@@ -116,13 +126,14 @@ describe('liveRunOverView', () => {
       'gastly-6',
     ]);
     expect(rows.map((row) => row.state)).toEqual(['party', 'party', 'party', 'box', 'rip', 'rip']);
-    expect(rows.map((row) => RUN_OVER_ROW_STATE_LABELS[row.state])).toEqual([
-      'PARTY',
-      'PARTY',
-      'PARTY',
-      'PC',
-      'FNT',
-      'FNT',
+    const view = liveRunOverView(run, true, 'pokemon', 'E');
+    expect(rows.map((row) => view.stateLabels[row.state])).toEqual([
+      t('runOver.stateParty'),
+      t('runOver.stateParty'),
+      t('runOver.stateParty'),
+      t('runOver.stateBox'),
+      t('runOver.stateRip'),
+      t('runOver.stateRip'),
     ]);
     expect(rows.map((row) => row.level)).toEqual([12, 12, 12, 12, 12, 12]);
   });

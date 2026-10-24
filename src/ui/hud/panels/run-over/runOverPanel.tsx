@@ -3,10 +3,7 @@ import { Panel, PrimaryButton, Row } from '../../kit';
 import type { RunOverIntent } from './mount';
 import {
   RUN_OVER_COLUMNS,
-  RUN_OVER_COLUMN_LABELS,
   RUN_OVER_EM_DASH,
-  RUN_OVER_ROW_STATE_LABELS,
-  RUN_OVER_TAB_FALLBACK,
   type RunOverColumnId,
   type RunOverRowView,
   type RunOverTab,
@@ -23,13 +20,13 @@ function rowCell(row: RunOverRowView, column: Exclude<RunOverColumnId, 'pokemon'
   return row[column] ?? RUN_OVER_EM_DASH;
 }
 
-function tableRow(row: RunOverRowView): JSX.Element {
+function tableRow(row: RunOverRowView, stateLabels: RunOverView['stateLabels']): JSX.Element {
   return (
     <div class="run-over__row" key={row.memberId} data-hud-run-over-row data-state={row.state}>
       <Row class="run-over__row-skin">
         <span class="run-over__portrait" role="img" aria-label={row.name} />
         <span class="run-over__row-name">{row.name}</span>
-        <span class="run-over__row-state">{RUN_OVER_ROW_STATE_LABELS[row.state]}</span>
+        <span class="run-over__row-state">{stateLabels[row.state]}</span>
         <span class="run-over__cell" data-hud-run-over-column="kos">
           {rowCell(row, 'kos')}
         </span>
@@ -49,7 +46,7 @@ export function RunOverPanel(props: RunOverPanelProps): JSX.Element {
   const handler = props.onIntent;
   const secondary = view.secondary ?? null;
   const portraits = view.portraits ?? [];
-  const tabs = view.tabLabels ?? RUN_OVER_TAB_FALLBACK;
+  const tabs = view.tabLabels;
 
   const openTab = (tab: RunOverTab): void => {
     if (handler === undefined) return;
@@ -130,10 +127,10 @@ export function RunOverPanel(props: RunOverPanelProps): JSX.Element {
             <div class="run-over__list" data-hud-run-over-list>
               {RUN_OVER_COLUMNS.map((column) => (
                 <span class="run-over__header" key={column} data-hud-run-over-header={column}>
-                  {RUN_OVER_COLUMN_LABELS[column]}
+                  {view.columnLabels[column]}
                 </span>
               ))}
-              <div class="run-over__rows">{view.rows.map(tableRow)}</div>
+              <div class="run-over__rows">{view.rows.map((row) => tableRow(row, view.stateLabels))}</div>
             </div>
           )}
           <div class="run-over__actions">

@@ -37,6 +37,14 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'runOver.return': '{key} · volver al menú principal',
   'runOver.tabTotals': 'TOTALES',
   'runOver.tabPokemon': 'POKÉMON',
+  'runOver.enemiesFainted': 'ENEMIGOS DEBILITADOS',
+  'runOver.colPokemon': 'POKÉMON',
+  'runOver.colKos': 'KOs',
+  'runOver.colDealt': 'DAÑO HECHO',
+  'runOver.colTanked': 'DAÑO RECIBIDO',
+  'runOver.stateParty': 'EQUIPO',
+  'runOver.stateBox': 'PC',
+  'runOver.stateRip': 'FNT',
 
   // settings — SettingsScene and settingsScreen.ts
   'settings.title': 'AJUSTES',

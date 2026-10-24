@@ -38,8 +38,10 @@ this panel paints the view it is handed.
    no code derives, seeds or invents them. A later engine task must add the counters before a live
    numeric column is possible; until then a live figure in that table is a bug.
 2. The panel is data: no run, no scene, no RNG, no clock and no Phaser. It makes no i18n call, so
-   the two tab labels and the party strip travel in the view; the board's own chrome (the tab
-   fallback, `PARTY` / `PC` / `FNT`, the four table headers) is declared once in `view.ts`.
+   every label it paints travels in the view — the tab strip, the four table headers, the member
+   states (`runOver.col*`, `runOver.state*`) and the fainted row (`runOver.enemiesFainted`) come
+   from `src/i18n/en.ts` through `liveRunOverView`, and a fixture payload's own copy wins when it
+   carries one.
 3. The card wrapper and the row wrappers are the measured nodes; the kit `Panel` and `Row` they
    wrap are the skins, so the paint and the board's 1 px edges sit on the wrapper.
 4. `portraits` is read from the fixture's `payload.state.party` (and from `run.party` live), never

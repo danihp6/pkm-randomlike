@@ -52,6 +52,8 @@ export type RunOverRowView = Readonly<{
 export type RunOverPortraitView = Readonly<{ memberId: string; name: string }>;
 
 export type RunOverTabLabels = Readonly<Record<RunOverTab, string>>;
+export type RunOverColumnLabels = Readonly<Record<RunOverColumnId, string>>;
+export type RunOverStateLabels = Readonly<Record<RunOverRowState, string>>;
 
 export type RunOverView = Readonly<{
   won: boolean;
@@ -65,34 +67,43 @@ export type RunOverView = Readonly<{
   /** The board's party strip, in party order; empty draws none (`06` / `m06`). */
   portraits?: readonly RunOverPortraitView[];
   /** The board's tab copy; the panel never reads the locale itself. */
-  tabLabels?: RunOverTabLabels;
+  tabLabels: RunOverTabLabels;
+  /** The POKéMON table's four headers, in board order. */
+  columnLabels: RunOverColumnLabels;
+  /** The table's state column: the copy each member state prints. */
+  stateLabels: RunOverStateLabels;
   /** The board's second, frame-only action (`07`'s CONTINUE); `null` draws one. */
   secondary?: Readonly<{ label: string }> | null;
 }>;
 
-/**
- * The board's own chrome, the copy that is not a run figure: the tab strip, the
- * table's four headers and the one-letter member state. It lives here, not in the
- * panel, so the panel stays locale-free; none of it is a `runOver.*` string.
- */
-export const RUN_OVER_TAB_FALLBACK: RunOverTabLabels = { totals: 'TOTALS', pokemon: 'POKEMON' };
-
-/** The POKéMON table's four columns, in board order, and the header each prints. */
+/** The POKéMON table's four columns, in board order; the ids are structure, not copy. */
 export const RUN_OVER_COLUMNS = ['pokemon', 'kos', 'dealt', 'tanked'] as const;
 export type RunOverColumnId = (typeof RUN_OVER_COLUMNS)[number];
-export const RUN_OVER_COLUMN_LABELS: Readonly<Record<RunOverColumnId, string>> = {
-  pokemon: 'POKEMON',
-  kos: 'KOs',
-  dealt: 'DMG DEALT',
-  tanked: 'DMG TANKED',
-};
 
-/** The board's state column: PARTY / PC / FNT, one letter-group per member state. */
-export const RUN_OVER_ROW_STATE_LABELS: Readonly<Record<RunOverRowState, string>> = {
-  party: 'PARTY',
-  box: 'PC',
-  rip: 'FNT',
-};
+/**
+ * Every label the panel paints but a run figure does not carry, read from the
+ * table here: the panel itself never touches the locale (`D43`, `D49`).
+ */
+function tabLabels(): RunOverTabLabels {
+  return { totals: t('runOver.tabTotals'), pokemon: t('runOver.tabPokemon') };
+}
+
+function columnLabels(): RunOverColumnLabels {
+  return {
+    pokemon: t('runOver.colPokemon'),
+    kos: t('runOver.colKos'),
+    dealt: t('runOver.colDealt'),
+    tanked: t('runOver.colTanked'),
+  };
+}
+
+function stateLabels(): RunOverStateLabels {
+  return {
+    party: t('runOver.stateParty'),
+    box: t('runOver.stateBox'),
+    rip: t('runOver.stateRip'),
+  };
+}
 
 export type RunOverRect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type RunOverPitchRect = Readonly<{ x: number; y: number; w: number; h: number; pitch: number }>;
@@ -181,27 +192,19 @@ export function liveRunOverView(
       { id: 'routes', label: statLabel('runOver.routes'), value: figure(summary.routesCleared) },
       { id: 'catches', label: statLabel('runOver.caught'), value: figure(summary.catches) },
       { id: 'lost', label: statLabel('runOver.lost'), value: figure(summary.casualties) },
-      { id: 'fainted', label: FAINTED_LABEL, value: RUN_OVER_EM_DASH },
+      { id: 'fainted', label: t('runOver.enemiesFainted'), value: RUN_OVER_EM_DASH },
     ],
     share: t('runOver.share', { share: summary.share }),
     tab,
     rows: tab === 'pokemon' ? liveRows(run) : [],
     button: { label: t('runOver.return', { key: confirmKey }) },
     portraits: partyRows(run).map((row) => ({ memberId: row.id, name: row.name })),
-    tabLabels: {
-      totals: t('runOver.tabTotals'),
-      pokemon: t('runOver.tabPokemon'),
-    },
+    tabLabels: tabLabels(),
+    columnLabels: columnLabels(),
+    stateLabels: stateLabels(),
     secondary: null,
   };
 }
-
-/**
- * The fainted row's label. The run does not record the counter yet, and this task
- * may add no key beyond the two tab labels, so the live label is the board's own
- * wording until a `runOver.fainted` key exists with the engine counter.
- */
-const FAINTED_LABEL = 'Enemies fainted';
 
 /** The killed, the binned and the fallen: party, then box, then rip, as the board reads. */
 function liveRows(run: RunState): readonly RunOverRowView[] {
@@ -306,13 +309,37 @@ function fixturePortraits(state: unknown): readonly RunOverPortraitView[] {
   return portraits;
 }
 
+/** The payload's own tab copy, or the table's when the payload omits it. */
 function fixtureTabLabels(value: unknown): RunOverTabLabels {
-  if (!isPlainObject(value)) return RUN_OVER_TAB_FALLBACK;
+  const fallback = tabLabels();
+  if (!isPlainObject(value)) return fallback;
   const { totals, pokemon } = value;
   return {
-    totals: isNonEmpty(totals) ? totals : RUN_OVER_TAB_FALLBACK.totals,
-    pokemon: isNonEmpty(pokemon) ? pokemon : RUN_OVER_TAB_FALLBACK.pokemon,
+    totals: isNonEmpty(totals) ? totals : fallback.totals,
+    pokemon: isNonEmpty(pokemon) ? pokemon : fallback.pokemon,
   };
+}
+
+/** The payload's own table headers, or the table's when the payload omits them. */
+function fixtureColumnLabels(value: unknown): RunOverColumnLabels {
+  const fallback = columnLabels();
+  if (!isPlainObject(value)) return fallback;
+  const pick = (id: RunOverColumnId): string => {
+    const printed = value[id];
+    return isNonEmpty(printed) ? printed : fallback[id];
+  };
+  return { pokemon: pick('pokemon'), kos: pick('kos'), dealt: pick('dealt'), tanked: pick('tanked') };
+}
+
+/** The payload's own state column, or the table's when the payload omits it. */
+function fixtureStateLabels(value: unknown): RunOverStateLabels {
+  const fallback = stateLabels();
+  if (!isPlainObject(value)) return fallback;
+  const pick = (id: RunOverRowState): string => {
+    const printed = value[id];
+    return isNonEmpty(printed) ? printed : fallback[id];
+  };
+  return { party: pick('party'), box: pick('box'), rip: pick('rip') };
 }
 
 function fixtureSecondary(value: unknown): Readonly<{ label: string }> | null {
@@ -350,6 +377,8 @@ export function fixtureRunOverView(payload: unknown): RunOverView | null {
     button: { label: button.label },
     portraits: fixturePortraits(payload.state),
     tabLabels: fixtureTabLabels(block.tabLabels),
+    columnLabels: fixtureColumnLabels(block.columnLabels),
+    stateLabels: fixtureStateLabels(block.stateLabels),
     secondary,
   };
 }
