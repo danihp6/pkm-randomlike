@@ -301,8 +301,6 @@
   font-size: var(--main-menu-stat-label-size);
   /* 01 · the board tracks its footer labels 2 px between glyphs */
   letter-spacing: 2px;
-  /* …and CSS tracks after the last one too, so that gap is taken back. */
-  margin-right: -2px;
   line-height: var(--main-menu-stat-label-line);
   text-transform: uppercase;
 }
@@ -334,7 +332,6 @@
   font-size: var(--main-menu-stat-label-size);
   font-weight: 700;
   letter-spacing: 2px;
-  margin-right: -2px;
   line-height: var(--main-menu-stat-label-line);
   text-transform: uppercase;
   white-space: nowrap;
