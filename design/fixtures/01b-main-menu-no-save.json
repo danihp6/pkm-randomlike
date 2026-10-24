@@ -1,0 +1,26 @@
+{
+  "slug": "01b-main-menu-no-save",
+  "state": {
+    "party": [],
+    "bag": [],
+    "money": null,
+    "route": null,
+    "battle": null,
+    "notice": null
+  },
+  "menu": {
+    "title": "POKERANDOMLIKE",
+    "version": "v0.7.0 · PHASE 7",
+    "selected": "new",
+    "rows": [
+      { "id": "new", "label": "NEW RUN", "value": "NEW SEED" },
+      { "id": "options", "label": "OPTIONS", "value": "" },
+      { "id": "stats", "label": "STATS", "value": "" }
+    ],
+    "stats": [
+      { "id": "wins", "label": "WINS", "value": "23", "name": null },
+      { "id": "elite", "label": "MAX ELITE STRIKE", "value": "2", "name": null },
+      { "id": "monthly", "label": "MONTHLY MAX STRIKE", "value": "7", "name": "NOVA" }
+    ]
+  }
+}
