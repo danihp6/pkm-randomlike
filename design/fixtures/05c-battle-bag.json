@@ -1,0 +1,30 @@
+{
+  "slug": "05c-battle-bag",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "bag": {
+    "open": true,
+    "card": { "x": 276, "y": 582, "w": 728, "h": 192 },
+    "tabs": [
+      { "category": "consumable", "label": "CONSUMIBLES", "active": true },
+      { "category": "ball", "label": "POKEBALLS", "active": false }
+    ],
+    "query": "",
+    "focused": false,
+    "rows": [
+      { "itemId": "potion", "name": "Potion", "count": 3 },
+      { "itemId": "superpotion", "name": "Super Potion", "count": 2 },
+      { "itemId": "hyperpotion", "name": "Hyper Potion", "count": 1 },
+      { "itemId": "pokeball", "name": "Poke Ball", "count": 12 },
+      { "itemId": "greatball", "name": "Great Ball", "count": 5 },
+      { "itemId": "ultraball", "name": "Ultra Ball", "count": 4 },
+      { "itemId": "antidote", "name": "Antidote", "count": 2 },
+      { "itemId": "awakening", "name": "Awakening", "count": 1 }
+    ],
+    "selected": 0,
+    "detail": "Potion x3",
+    "info": {
+      "text": "Potion\nA SPRAY-TYPE MEDICINE.\nRESTORES 20 HP TO ONE POKEMON."
+    },
+    "empty": null
+  }
+}
