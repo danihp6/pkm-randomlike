@@ -25,11 +25,14 @@ a headless test, and never imports the scene.
 - `pc.ts` — the PC BOX window: page tabs, avatar grid and the RIP tab.
 - `detail.ts` — the member detail window: STATS, MOVES, evolutions, nickname,
   learnset pool and the level-up/evolution popup.
-- `notices.ts` — the notice strip, the area-entry banner and the floor's mission line.
-- `rewards.ts` — the mini-boss reward card and its rows.
+- `notices.ts` — the notice strip, the area banner and the mission line: their DOM
+  cards under `?hud=dom`, and the shipped Phaser cards with the flag off.
+- `rewards.ts` — the mini-boss reward card: its DOM card under `?hud=dom`, and the
+  shipped Phaser card with the flag off.
 - `pause.ts` — the pause menu and the hold-to-reset overlay.
 - `shop.ts` — the Mart's DOM card under `?hud=dom`; with the flag off its drawing still lives in `rooms/shop.ts`.
-- `trade.ts` — the trade card's entry point; its drawing still lives in `rooms/trade.ts`.
+- `trade.ts` — the trade card's entry point: its DOM card under `?hud=dom`, and the
+  Phaser drawing in `rooms/trade.ts` with the flag off.
 - `README.md` — this map.
 
 ## The port's additions over the spec's frozen list

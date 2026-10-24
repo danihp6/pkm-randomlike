@@ -7425,7 +7425,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       `src/ui/rewards.ts` in `src/ui/hud/panels/rewards/`, one row per offer, the pick inert until it
       is committed. Claims `src/scenes/panels/rewards.ts`, `src/ui/hud/panels/rewards/**` and its
       fixture. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
-- [ ] **[Task-137] The notices strip and the mission line are the HUD's.** The transient notice
+- [x] **[Task-137] The notices strip and the mission line are the HUD's.** The transient notice
       (`src/ui/notice.ts`) and the floor's mission card become DOM text at the top of the screen,
       with the safe-area inset the canvas never respected (47 px top, 810 bottom), and the typewriter
       stays the same beat. Claims `src/scenes/panels/notices.ts`,

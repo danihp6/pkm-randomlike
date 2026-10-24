@@ -8,6 +8,15 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The notices strip and the mission line are the HUD's.** `[Task-137]`, the sixteenth of
+      Phase 12 (`D49`): the transient notice and the floor's mission card are DOM text at the top of
+      the screen, stacked from the safe-area inset the canvas never respected (`47` px from the
+      design tokens, `810` at the bottom), with the typewriter beat unchanged. Measured over CDP at
+      1280×800 and 390×844: the strip is `280,24 720×56` and `8,47 374×56`, both at 0 px deviation
+      from the frame, and the hold fired at 2635 ms of scene delta against the 2680 ms the shipped
+      Phaser strip takes, so the beat is the same one. `noticesDrawnObjectCount()` is `0` under the
+      flag against `7` off, the route keeps walking under the strip, and `src/ui/notice.ts` and
+      `RouteScene.ts` are untouched. `npm test` 3960 passed / 67 skipped, `npm run build` green.
 - [x] **The mini-boss reward panel is the HUD's.** `[Task-136]`, the fifteenth of Phase 12 (`D49`):
       under `?hud=dom` the mini-boss reward is a Preact card in `#hud` built from the unchanged
       `src/ui/rewards.ts` view model — one row per offer with its icon, name and description, the
