@@ -137,6 +137,7 @@ describe('the live flag contract', () => {
     vi.resetModules();
   });
 
+  // A cold scene import globs 525 packed cues (~7 s), so the default 5 s budget starves the assertions.
   it('counts the canvas strip with the flag off and 0 under ?hud=dom', async () => {
     vi.resetModules();
     const flagOff = await import('../../../../scenes/panels/hud');
@@ -149,5 +150,5 @@ describe('the live flag contract', () => {
     const flagOn = await import('../../../../scenes/panels/hud');
     flagOn.noteHudDrawnObjects(9);
     expect(flagOn.hudDrawnObjectCount()).toBe(0);
-  });
+  }, 30_000);
 });
