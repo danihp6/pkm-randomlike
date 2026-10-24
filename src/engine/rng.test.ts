@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Rng, dailySeed, hashSeed, randomSeed, rngFromSeed } from './rng';
 
 describe('hashSeed', () => {
@@ -90,5 +90,12 @@ describe('seeds', () => {
 
   it('generates non-empty random seeds', () => {
     expect(randomSeed().length).toBeGreaterThan(0);
+  });
+
+  it('generates the seed from crypto, in the same base-36 shape', () => {
+    const draw = vi.spyOn(crypto, 'getRandomValues');
+    expect(randomSeed()).toMatch(/^[0-9a-z]+$/);
+    expect(draw).toHaveBeenCalled();
+    draw.mockRestore();
   });
 });

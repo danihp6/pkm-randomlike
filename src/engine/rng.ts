@@ -39,8 +39,16 @@ export function hashSeed(input: string): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
+/**
+ * A fresh run seed. It is the run's *name*, not a roll: every draw after it comes
+ * from the seeded `Rng` streams (D11), so this only has to be unpredictable and
+ * never collides. `crypto` keeps it off `Math.random`, which has no business
+ * inside the engine even here.
+ */
 export function randomSeed(): string {
-  return Math.floor(Math.random() * 0xffffffff).toString(36);
+  const words = new Uint32Array(1);
+  crypto.getRandomValues(words);
+  return words[0]!.toString(36);
 }
 
 export function dailySeed(date: Date = new Date()): string {
