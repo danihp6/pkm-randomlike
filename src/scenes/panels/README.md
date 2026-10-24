@@ -15,7 +15,7 @@ a headless test, and never imports the scene.
 - `registry.ts` — collects the folder's `descriptor` exports, keyed by id and sorted
   by `order`; it throws on a duplicate id or a duplicate order.
 - `registry.test.ts` — the collection rules and the folder's own module convention.
-- `hud.ts` — the frame machinery: the draggable panel records, their collapse icons,
+- `hud.ts` — the frame machinery and the DOM chip strip: the panel records, their collapse icons,
   the drag/clamp/persist rules, the Transparent HUD repaint, and the party header's
   shared level, XP and Pokevial bar.
 - `map.ts` — the route header, which is the floor minimap.

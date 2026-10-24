@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route HUD strip is the HUD's, and the pad stays in Phaser.** `[Task-139]`, the
+      nineteenth of Phase 12 (`D49`): the chips (`M` map, `I` bag and the box), the party HP strip
+      and the money row live in `src/ui/hud/panels/hud/`, and the touch pad's fate is decided in
+      `D49`'s addendum as "the touch pad stays in Phaser" — it is an input surface, not chrome.
+      Measured over CDP: the three chips at 390×844 are `8,55`, `8,119` and `38,551` at `26×26`,
+      their fill `rgb(16 22 31 / 0.9)`, a `1px` white-22 % hairline, radius `6px` and an `11px/15px`
+      `700` white letter centred within 0 px; at 1280×800 they dock at `8,8`, `576,72` and
+      `928,422` (the party card's bottom + 8). `hudDrawnObjectCount()` is `0` under the flag against
+      `7` off, the bag's footer money row is the only purse (no `data-hud-strip-money`), the chip
+      opens and closes its card, and a press on the pad still walks one tile. `npm test` 4067
+      passed / 68 skipped, `npm run build` green.
 - [x] **The pause card is the HUD's.** `[Task-138]`, the eighteenth of Phase 12 (`D49`): under
       `?hud=dom` the pause menu is a Preact card in `#hud` — the scrim, the highlight, the title,
       the divider and the game's two rows (`Settings`, `Reset`) — while `src/scenes/panels/pause.ts`

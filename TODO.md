@@ -7435,7 +7435,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       and its two rows; the scene keeps the pause itself and loses only the drawing. Claims
       `src/scenes/panels/pause.ts`, `src/ui/hud/panels/pause/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
-- [ ] **[Task-139] The route HUD strip is the HUD's, and the pad's fate is decided here.** The chips
+- [x] **[Task-139] The route HUD strip is the HUD's, and the pad's fate is decided here.** The chips
       (26×26 letter badges, `M` map, `I` bag, `P` party, `C` pc, `S` stats), the party HP strip and
       the money row move to `src/ui/hud/panels/hud/`; the touch pad is either left in Phaser or moved,
       and the call is written into `docs/tech-decisions.md` as an addendum to `D49` with the reason.
