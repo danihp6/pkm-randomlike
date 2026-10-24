@@ -7471,7 +7471,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       measured frame dwell. Claims `src/scenes/BattleScene.ts`,
       `src/ui/hud/panels/battle-log/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-124]`,
       `[Task-125]`, `[Task-140]`. *(Batch 65)*
-- [ ] **[Task-145] The main menu is the HUD's.** `01` and `01b`: the route window, the title, the
+- [x] **[Task-145] The main menu is the HUD's.** `01` and `01b`: the route window, the title, the
       CONTINUE/NEW rows, the party portraits and the stats footer move to
       `src/ui/hud/panels/main-menu/`, and `src/scenes/MainMenuScene.ts` keeps the scene and the
       navigation. Claims `src/scenes/MainMenuScene.ts`, `src/ui/hud/panels/main-menu/**` and its

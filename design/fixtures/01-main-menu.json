@@ -1,0 +1,106 @@
+{
+  "slug": "01-main-menu",
+  "state": {
+    "party": [
+      {
+        "id": "charmander-1",
+        "speciesId": "charmander",
+        "name": "Charmander",
+        "level": 16,
+        "hp": 41,
+        "maxHp": 41,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "pikachu-2",
+        "speciesId": "pikachu",
+        "name": "Pikachu",
+        "level": 16,
+        "hp": 38,
+        "maxHp": 38,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": "oran-berry",
+        "heldItemName": "Oran Berry",
+        "shiny": false
+      },
+      {
+        "id": "bulbasaur-3",
+        "speciesId": "bulbasaur",
+        "name": "Bulbasaur",
+        "level": 15,
+        "hp": 44,
+        "maxHp": 44,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": false
+      },
+      {
+        "id": "gastly-4",
+        "speciesId": "gastly",
+        "name": "Gastly",
+        "level": 15,
+        "hp": 33,
+        "maxHp": 33,
+        "hpFraction": 1,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": null,
+        "heldItemName": null,
+        "shiny": true
+      }
+    ],
+    "bag": [
+      { "itemId": "poke-ball", "name": "Poké Ball", "count": 6, "category": "balls" },
+      { "itemId": "potion", "name": "Potion", "count": 3, "category": "medicine" }
+    ],
+    "money": 1240,
+    "route": {
+      "mode": "normal",
+      "mapIndex": 3,
+      "routeInMap": 4,
+      "routeIndex": 13,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 22,
+      "squadLevel": 16,
+      "xp": 0,
+      "xpFraction": 0,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [1, 2, 3, 4],
+      "mission": null,
+      "missionsCompleted": 1,
+      "stats": { "catches": 3, "casualties": 0 }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "menu": {
+    "title": "POKERANDOMLIKE",
+    "version": "v0.7.0 · PHASE 7",
+    "selected": "continue",
+    "rows": [
+      { "id": "continue", "label": "CONTINUE", "value": "MAP 3 · FOREST" },
+      { "id": "new", "label": "NEW RUN", "value": "NEW SEED" },
+      { "id": "options", "label": "OPTIONS", "value": "" },
+      { "id": "stats", "label": "STATS", "value": "" }
+    ],
+    "stats": [
+      { "id": "wins", "label": "WINS", "value": "23", "name": null },
+      { "id": "elite", "label": "MAX ELITE STRIKE", "value": "2", "name": null },
+      { "id": "monthly", "label": "MONTHLY MAX STRIKE", "value": "7", "name": "NOVA" }
+    ]
+  }
+}

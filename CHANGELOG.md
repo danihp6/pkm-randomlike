@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu is the HUD's.** `[Task-145]`, the twenty-first of Phase 12 (`D49`): `01` and
+      `01b` — the route window, the title, the CONTINUE/NEW/OPTIONS/STATS rows, the party portraits
+      and the stats footer — are a Preact panel in `src/ui/hud/panels/main-menu/`, and
+      `src/scenes/MainMenuScene.ts` keeps the scene and the navigation. The panel covers the
+      viewport, the title is `724,146 447×49`, the card `724,236 460×362` (`460×300` without a
+      save), the window `96,150 560×380` and the four rows `420×54` at `y = 300/362/424/486`;
+      at 390×844 the card is `374×264` at `8,390` with no horizontal overflow and no version line.
+      The menu still navigates (the cursor moves, OPTIONS opens its card, CONTINUE starts the
+      route), and with the flag off the canvas paints 10 sampled colours where the flag-on canvas
+      paints 1. `npm test` 4076 passed / 68 skipped, `npm run build` green.
 - [x] **The battle's switch screen is the HUD's.** `[Task-143]`, the twentieth of Phase 12 (`D49`):
       under `?hud=dom` the party grid of a battle is a Preact card in `#hud` — six rows with their
       portraits, HP tracks and status marks — built from the same view model the canvas used, with
