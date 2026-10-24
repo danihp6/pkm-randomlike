@@ -8,6 +8,15 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's bag is the HUD's.** `[Task-142]`, the seventeenth of Phase 12 (`D49`): under
+      `?hud=dom` the battle bag is a Preact card in `#hud` — the pocket tabs, the search line, the
+      5×2 cell grid laid out by the shipped `bagGridLayout`, the stack badges and the description
+      band — built from the unchanged `src/ui/bag.ts`, with one command per use and the same item
+      rules. The card is `battleMovesBox(viewport)` by identity, `276,582 728×192` at 1280×800 and
+      `16,592 358×236` at 390×844; `battleBagDrawnObjectCount()` is `0` under the flag against `28`
+      off, and the same canvas area is a single flat colour under the flag against 117 colours off,
+      so the canvas draws none of the bag. `src/engine/**` and `src/ui/bag.ts` are untouched.
+      `npm test` 3966 passed / 67 skipped, `npm run build` green.
 - [x] **The notices strip and the mission line are the HUD's.** `[Task-137]`, the sixteenth of
       Phase 12 (`D49`): the transient notice and the floor's mission card are DOM text at the top of
       the screen, stacked from the safe-area inset the canvas never respected (`47` px from the

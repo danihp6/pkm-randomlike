@@ -1,0 +1,210 @@
+/*
+ * The battle's bag (`D49`, frame `05c Battle · bag`). Its card is the battle menu
+ * window the scene already laid out, so the card only paints the glass the hidden
+ * canvas window used to: the pocket chips, the filter field, the 5×2 stack grid
+ * with its dim empty tail, the selected stack's line and the floating item card.
+ * Every rect comes from the model in card coordinates; nothing here re-measures it.
+ */
+.battle-bag {
+  /* 05c Battle · bag — the menu window behind the pocket chips and the grid */
+  --battle-bag-card-fill: rgb(16 22 31 / 90%);
+  --battle-bag-row-fill: rgb(255 255 255 / 4%);
+  --battle-bag-row-border: rgb(255 255 255 / 8%);
+  --battle-bag-selected-fill: rgb(125 211 252 / 12%);
+  /* the empty tail of a short pocket: the grid's own 40 % outline */
+  --battle-bag-tail-border: rgb(255 255 255 / 4%);
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: visible;
+  border-radius: var(--hud-panel-radius);
+  background: var(--battle-bag-card-fill);
+  box-shadow: inset 0 0 0 1px var(--hud-panel-border);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: none;
+}
+
+.battle-bag[hidden] {
+  display: none;
+}
+
+.battle-bag,
+.battle-bag * {
+  box-sizing: border-box;
+}
+
+/* the pocket chips inside the card, at most two */
+.battle-bag__tab {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  overflow: hidden;
+  appearance: none;
+  border: 1px solid var(--battle-bag-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-bag-row-fill);
+  color: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* the active pocket carries its own underline, as the canvas marks it */
+.battle-bag__tab--active {
+  border-color: var(--hud-accent);
+  background: var(--battle-bag-selected-fill);
+  box-shadow: inset 0 -2px 0 0 var(--hud-accent);
+  color: var(--hud-accent);
+}
+
+.battle-bag__search {
+  position: absolute;
+  padding: 0 6px;
+  appearance: none;
+  border: 1px solid var(--battle-bag-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-bag-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+}
+
+.battle-bag__search::placeholder {
+  color: var(--hud-text-muted);
+  text-transform: uppercase;
+}
+
+.battle-bag__search[data-focused='true'] {
+  border-color: var(--hud-accent);
+  background: var(--battle-bag-selected-fill);
+}
+
+.battle-bag__grid {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* one stack: the icon and the ×N badge, or the dim outline of an empty tail cell */
+.battle-bag__cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  appearance: none;
+  border: 1px solid var(--battle-bag-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-bag-row-fill);
+  color: var(--hud-text-secondary);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-bag__cell--selected {
+  border-color: var(--hud-accent);
+  background: var(--battle-bag-selected-fill);
+}
+
+.battle-bag__cell--empty {
+  border-color: var(--battle-bag-tail-border);
+  background: transparent;
+  pointer-events: none;
+}
+
+.battle-bag__icon {
+  flex: none;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.battle-bag__badge {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  padding: 0 2px;
+  border-radius: 4px;
+  background: rgb(16 22 31 / 85%);
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.battle-bag__cell--selected .battle-bag__badge {
+  color: var(--hud-accent);
+}
+
+/* the selected stack's line under the band */
+.battle-bag__detail {
+  position: absolute;
+  margin: 0;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.battle-bag__empty {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--hud-text-muted);
+  text-transform: uppercase;
+}
+
+/* the floating item card the selected stack shows */
+.battle-bag__info {
+  position: absolute;
+  padding: 6px 10px;
+  overflow: hidden;
+  border: 1px solid var(--battle-bag-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-bag-card-fill);
+  box-shadow: inset 0 0 0 1px var(--hud-panel-border);
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+/* the ◀ control on the band's left edge */
+.battle-bag__back {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  appearance: none;
+  border: 1px solid var(--battle-bag-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-bag-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-bag__tab:focus-visible,
+.battle-bag__cell:focus-visible,
+.battle-bag__back:focus-visible,
+.battle-bag__search:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}

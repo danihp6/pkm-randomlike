@@ -7455,7 +7455,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       selection still reaches `commands.ts`. Claims `src/scenes/BattleScene.ts`,
       `src/ui/hud/panels/battle-moves/**` and its fixture. *Dependencies:* `[Task-127]`,
       `[Task-124]`, `[Task-125]`. *(Batch 62)*
-- [ ] **[Task-142] The battle's bag is the HUD's.** The battle bag list and its use flow in
+- [x] **[Task-142] The battle's bag is the HUD's.** The battle bag list and its use flow in
       `src/ui/hud/panels/battle-bag/`, one command per use, the same item rules. Claims
       `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-bag/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*

@@ -115,6 +115,13 @@ import {
 import { loadSettings } from '../settings';
 import { IS_DEVELOP } from '../dev/env';
 import { parseHudFlags } from '../ui/hud/fixtures';
+import {
+  battleBagBox,
+  mountBattleBag,
+  type BattleBagController,
+  type BattleBagInput,
+  type BattleBagIntent,
+} from '../ui/hud/panels/battle-bag';
 import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
 import {
   battleMovesBox,
@@ -561,6 +568,8 @@ export class BattleScene extends Phaser.Scene {
   private hpController: BattleHpController | null = null;
   /** The mounted DOM move menu (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private movesController: BattleMovesController | null = null;
+  /** The mounted DOM bag (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  private bagController: BattleBagController | null = null;
   /** The cursor the target step marks a foe with, and the two foe hit zones. */
   private targetCursor!: Phaser.GameObjects.Image;
   private foeZones: Phaser.GameObjects.Zone[] = [];
@@ -814,10 +823,12 @@ export class BattleScene extends Phaser.Scene {
       this.releaseMonSprites();
       this.disposeHpPanel();
       this.disposeMovesPanel();
+      this.disposeBagPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     this.mountHpPanel();
     this.mountMovesPanel();
+    this.mountBagPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
@@ -870,6 +881,21 @@ export class BattleScene extends Phaser.Scene {
     if (this.movesController === null) return;
     this.movesController.dispose();
     this.movesController = null;
+  }
+
+  /** Mounts the DOM bag into the HUD layer, once per battle (`?hud=dom`). */
+  private mountBagPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeBagPanel();
+    this.bagController = mountBattleBag(host, (intent) => this.onBattleBagIntent(intent));
+  }
+
+  private disposeBagPanel(): void {
+    if (this.bagController === null) return;
+    this.bagController.dispose();
+    this.bagController = null;
   }
 
   // --- scene construction -------------------------------------------------
@@ -3140,6 +3166,7 @@ export class BattleScene extends Phaser.Scene {
         (next) => this.hpController?.update(next),
       );
       this.movesController?.update(this.battleMovesInput(menu));
+      this.bagController?.update(this.battleBagInput(menu));
     }
   }
 
@@ -3290,6 +3317,35 @@ export class BattleScene extends Phaser.Scene {
     }
     for (let i = 0; i < MAX_MOVES; i++) {
       if (this.moveGrid.cellRect(i) !== null) count += 1;
+    }
+    return count;
+  }
+
+  /**
+   * Counts the visible objects the bag owns: the ◀, the filter field, the selected
+   * line and the pocket's tabs and cells. The `?hud=dom` flag contract's probe.
+   */
+  bagDrawnObjectCount(): number {
+    const objects: readonly Readonly<{ visible: boolean }>[] = [
+      this.backArrow,
+      this.bagSearchBg,
+      this.bagSearchText,
+      this.bagEmptyText,
+      this.bagDetailText,
+    ];
+    let count = 0;
+    for (const object of objects) {
+      if (object.visible) count += 1;
+    }
+    for (const tab of this.bagTabs) {
+      if (tab.bg.visible) count += 1;
+      if (tab.label.visible) count += 1;
+    }
+    for (const cell of this.bagCells) {
+      if (cell.bg.visible) count += 1;
+      if (cell.icon.visible) count += 1;
+      if (cell.badgeBg.visible) count += 1;
+      if (cell.badge.visible) count += 1;
     }
     return count;
   }
@@ -4036,6 +4092,87 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
+   * The DOM bag's state: the card `battleBagBox` derives from the viewport the
+   * camera viewport sits in, and the pockets, stacks and cursor this scene owns.
+   */
+  private battleBagInput(menu: Rect): BattleBagInput {
+    const derived = battleBagBox({ width: this.scale.width, height: this.scale.height });
+    // Before the first layout the stage has no size; the canvas's own rect is then
+    // the only card there is, and an open bag must still land somewhere.
+    const card = derived.w > 0 && derived.h > 0 ? derived : menu;
+    const selected = this.bagStacks[this.menuIndex];
+    return {
+      open: this.mode === 'bag',
+      card,
+      tabs: this.bagCategories.map((category) => ({
+        category,
+        label: bagCategoryLabel(category),
+        active: category === this.bagCategory,
+      })),
+      query: this.bagQuery,
+      focused: this.bagSearchFocused,
+      rows: this.bagStacks.map((slot) => ({
+        itemId: slot.item.id,
+        name: slot.item.name,
+        count: slot.count,
+      })),
+      selected: this.menuIndex,
+      detail: selected ? `${selected.item.name} x${selected.count}` : t('battle.noItems'),
+      info: selected ? { text: `${selected.item.name}\n${selected.item.shortDesc}` } : null,
+      empty: this.bagStacks.length === 0 ? t('battle.noItems') : null,
+    };
+  }
+
+  /**
+   * The DOM bag's only receiver: every intent lands on the call the canvas already
+   * made, so a press and a key reach the same engine command.
+   */
+  private onBattleBagIntent(intent: BattleBagIntent): void {
+    switch (intent.type) {
+      case 'tab': {
+        if (this.mode !== 'bag') return;
+        this.selectBagTab(this.bagCategories.indexOf(intent.category));
+        return;
+      }
+      case 'select': {
+        if (this.mode !== 'bag') return;
+        this.selectBagCell(intent.index);
+        return;
+      }
+      case 'use': {
+        if (this.mode !== 'bag') return;
+        const index = this.bagStacks.findIndex((slot) => slot.item.id === intent.itemId);
+        if (index < 0) return;
+        if (!this.usableBag().some((slot) => slot.item.id === intent.itemId)) return;
+        this.menuIndex = index;
+        this.submit({ type: 'bag', itemId: intent.itemId });
+        return;
+      }
+      case 'search': {
+        if (this.mode !== 'bag') return;
+        this.bagQuery = intent.query;
+        this.refreshBagItems();
+        return;
+      }
+      case 'focus': {
+        this.bagSearchFocused = intent.focused;
+        this.refreshHud();
+        return;
+      }
+      case 'scroll': {
+        if (this.mode !== 'bag') return;
+        this.menuIndex = stepBagCursor(this.menuIndex, intent.delta, this.bagStacks.length);
+        this.refreshHud();
+        return;
+      }
+      case 'back': {
+        this.onBack();
+        return;
+      }
+    }
+  }
+
+  /**
    * The moves menu: the shared grid fills the window (the same component the route
    * HUD draws in its detail panel), the ◀ back control sits centred on the grid's
    * left edge and the MEGA control takes a column on the right while it is usable.
@@ -4224,6 +4361,12 @@ export class BattleScene extends Phaser.Scene {
 
   /** The bag: a pocket tab strip over the active pocket's stacks. */
   private renderBagMenu(menu: Rect): void {
+    if (DOM_HUD) {
+      // The DOM card draws the whole bag, so every canvas piece of it goes dark:
+      // the window, the tabs, the filter, the cells, the item card and the ◀.
+      this.hideMenu();
+      return;
+    }
     this.menuPanel.setVisible(true);
     this.hideMoveChrome();
     this.hidePartyGrid();
@@ -4390,6 +4533,9 @@ export class BattleScene extends Phaser.Scene {
    */
   private typeInBagSearch(event: KeyboardEvent): boolean {
     if (!this.bagSearchFocused) return false;
+    // Under the DOM bag the native field owns the text, so the canvas only swallows
+    // the key: appending here would type every character twice.
+    if (DOM_HUD) return true;
     if (event.key === 'Escape' || event.key === 'Enter') {
       this.bagSearchFocused = false;
     } else if (event.key === 'Backspace') {
@@ -4740,4 +4886,9 @@ export function battleHpDrawnObjectCount(scene: BattleScene): number {
  */
 export function battleMovesDrawnObjectCount(scene: BattleScene): number {
   return scene.movesDrawnObjectCount();
+}
+
+/** The display objects the bag draws right now: 0 under `?hud=dom`. */
+export function battleBagDrawnObjectCount(scene: BattleScene): number {
+  return scene.bagDrawnObjectCount();
 }
