@@ -6,7 +6,7 @@ export type LootEntry = Readonly<{ itemId: string; weight: number }>;
 export type BandLoot = Readonly<{
   /** Weighted pool the ground items are drawn from. */
   pool: readonly LootEntry[];
-  /** Chance a placed item is hidden (a faint sparkle instead of a Poke Ball). */
+  /** Chance a placed item is hidden (the biome's floor patch instead of a Poke Ball). */
   hiddenChance: number;
   /** Chance an optional path (a `pocket`) actually holds an item at all. */
   itemChance: number;

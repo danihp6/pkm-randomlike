@@ -393,8 +393,10 @@ function outdoorFrames(atlas) {
 /**
  * Forest: Viridian Forest's darker ground under the same dense tree border. The
  * floor is a weighted mix of the forest ground tiles (all `0,34`-family,
- * `rgb(88,160,128)`) that `FRLG_FOREST_TILESET` renders: `0,34` base, `2,34`,
- * `3,34`, `5,34` as variety and the flowered `0,38` rare. The tuft `2,33` is the
+ * `rgb(88,160,128)`) that `FRLG_FOREST_TILESET` renders: `0,34` base, `2,34` and
+ * `3,34` as variety and the flowered `0,38` rare. `5,34` is stamped too, but it is
+ * **not** part of that mix: it is the hidden-item patch `hiddenItemFrame` names, so
+ * it must keep its frame and must never read as ground. The tuft `2,33` is the
  * dark-palette tall grass drawn on that ground.
  */
 function forestFrames(atlas) {

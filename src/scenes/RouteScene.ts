@@ -1112,7 +1112,13 @@ export class RouteScene extends Phaser.Scene {
       this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
     }
     this.persistRun();
+    // A restart in place (`scene.start('Route', …)`) runs `create` again over the
+    // previous room's arrays, whose objects Phaser already destroyed with the
+    // scene, so the stale entries must go before the rebuild (#34).
     this.tileSprites = [];
+    this.entitySprites = [];
+    this.itemSprites = [];
+    this.grassStep = null;
     this.hudPanels = [];
     this.trainerSprites = [];
     this.trainerSpinIndex.clear();

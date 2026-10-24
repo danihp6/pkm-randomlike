@@ -317,6 +317,23 @@ describe('the room’s whole-field rules in the turn loop', () => {
     expect(fainted.winner).toBe('player');
   });
 
+  it('faints a target that already sits at 1 HP under the Endure room', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 40, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] }],
+      5,
+      false,
+      { endure: true },
+    );
+    state.sides.enemy.party[0].hp = 1;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'enemy').hp).toBe(0);
+    expect(state.winner).toBe('player');
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
+    ).toBe(false);
+  });
+
   it('crits with a +1 room stage whose roll the control misses', () => {
     // Seed 19's first draw (0.0585) sits between the 1/24 base rate and the 1/8
     // +1-stage rate, and Tackle is the first move, so the crit roll is that draw.

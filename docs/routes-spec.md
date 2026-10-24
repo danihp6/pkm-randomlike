@@ -120,8 +120,8 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    The number of items also follows the route's **size** (a bigger map carves more
    optional paths), not its band. A pocket is kept clear of tall grass (an item
    never spawns on grass) and of ledges. Each item rolls a **hidden** flag from the
-   band's `hiddenChance`; a hidden item shows a faint sparkle instead of a Poke
-   Ball. Ids are stable
+   band's `hiddenChance`; a hidden item shows the biome's own floor patch
+   (`TilesetConfig.hiddenItemFrame`) instead of a Poke Ball. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
    deterministic `pockets` order. A **quiet** room — the map's entry room, its boss
    room and its special rooms (mini-boss/mega-stone and the rest;
@@ -486,8 +486,9 @@ starts it full. The pointer only reads as a click over a full bar.
 Ground items sit on the route's pockets (step 4), nudged onto the most
 wall-hugging tile their lane opened so an item rests against walls (a corner
 where the branch allows it). A visible item draws the FRLG field Poke Ball and
-**blocks its tile** while it is there; a hidden one draws a faint sparkle and
-does **not** block, so the player can walk over it and take it underfoot. Either
+**blocks its tile** while it is there; a hidden one draws the biome's own floor
+patch (a frame no ground tile draws, so it reads as ground) and does **not**
+block, so the player can walk over it and take it underfoot. Either
 way the **interact key** (`E` by default) takes it, adding it to the run's bag,
 marking it in `RunState.pickedItems` (so a reload does not respawn it) and raising
 the route's **transient notice** — the run's own `Obtained <name>!` line, naming

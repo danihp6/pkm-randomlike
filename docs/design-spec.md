@@ -44,9 +44,10 @@ carries over.
   (`FINITE_MAPS`), and the levels climb **2 → 55** — the first floor is **2–9**,
   the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they field
   **two trainer rooms** where the late floors field four
-  (`src/data/population.ts`) and map 1 hangs no shop
-  leaf. Each map's boss closes it and opens the **portal** to the next, and the
-  **last map's final boss** wins the run. An **infinite mode** reuses the same
+  (`src/data/population.ts`), and no floor hangs a shop leaf: the Mart is the
+  floor's guaranteed merchant NPC from map 2 on. Each map's boss closes it and
+  opens the **portal** to the next, and the **last map's final boss** wins the
+  run. An **infinite mode** reuses the same
   generator without the finish line.
 - A run is defined by one **seed**: the starter screen shows it as a share
   string and `S` opens a prompt to type a seed or paste a friend's share string,
@@ -474,10 +475,10 @@ run's money shows in the HUD's **bag panel**.
 The player's preferences outlive a run: text speed (how fast the battle message
 box types itself out), master volume, **always run** (walk at running speed
 without holding the run key; on by default), the **Transparent HUD** panels, the
-**Reduce flashing** option (drop the full-screen flashes a beat would play, stop
-the route's hidden-item glint from pulsing and release the hold-to-reset scrim at
-once; off by default, §10), the **HUD layout** (where each panel of the route
-HUD sits and whether it is collapsed) and the **language**. They live in the same
+**Reduce flashing** option (drop the full-screen flashes a beat would play and
+release the hold-to-reset scrim at once; off by default, §10), the **HUD layout**
+(where each panel of the route HUD sits and whether it is collapsed) and the
+**language**. They live in the same
 save document as the run (D22), are stored the moment they change and are edited
 from one screen (`Tab`, from the main menu, the starter pick or the route HUD).
 

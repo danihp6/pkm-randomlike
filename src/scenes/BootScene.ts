@@ -84,7 +84,8 @@ const moveFxUrl = packedAtlasUrl(MOVE_FX_ATLASES, '../assets/moves.png', placeho
 export const GRASS_TEXTURE_KEY = 'route:grass';
 export const TRAINER_TEXTURE_KEY = 'route:trainer';
 export const ARROW_TEXTURE_KEY = 'route:arrow';
-/** The shop counter the player interacts with in a shop room (Phase 9). */
+/** The counter a leaf places for the player to interact with: the secret-shop
+ *  shelf stands on it. */
 export const SHOP_COUNTER_TEXTURE_KEY = 'route:shop-counter';
 export const BATTLE_MON_TEXTURE_KEY = 'battle:mon';
 export const BATTLE_PLATFORM_TEXTURE_KEY = 'battle:platform';

@@ -208,7 +208,9 @@ right corner of the Pokemon Center on the Hoeloo compilation
 (`sprite-sources/frlg/tileset.png`); `scripts/frlg/build-field-items.mjs` crops it
 to 16x16 and keys the flat background into the gitignored
 `src/assets/frlg/ground-item.png`, read through `src/data/groundItemSprite.ts`.
-Hidden items draw the procedural sparkle (`BootScene`) instead.
+Hidden items draw the biome's own floor patch instead (the tileset's
+`hiddenItemFrame`, stamped by `scripts/frlg/build-tilesets.mjs`): no extra sprite,
+no procedural glint.
 
 The HP readout and the command cursor still come from the same sheet:
 `scripts/frlg/build-battle-ui.mjs` crops and 4x-upscales the HP readout — the

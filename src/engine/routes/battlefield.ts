@@ -28,8 +28,9 @@ export type BattlefieldSeeds = Pick<BattleSetup, 'weather' | 'terrain' | 'field'
 
 /**
  * The kind of roll a room earns: the boss room, a room that fields regular trainers,
- * or a quiet leaf (the entry room and every special leaf: shop, mini-boss,
- * mega-stone). `boss` wins over `quiet` — the boss room is both.
+ * or a quiet leaf (the entry room and every special leaf: mini-boss, mega-stone,
+ * gated, trade, no-heal, static, secret-shop). `boss` wins over `quiet` — the boss
+ * room is both.
  */
 export function roomKindOf(
   room: Readonly<{ entry: boolean; boss: boolean; special: string | null }>,

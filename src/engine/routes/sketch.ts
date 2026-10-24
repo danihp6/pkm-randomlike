@@ -99,7 +99,7 @@ export type RouteRequest = Readonly<{
    * stays free of the band's loot table (the caller passes it).
    */
   loot?: readonly LootEntry[];
-  /** Chance a placed item is hidden (the faint sparkle). Defaults to `0`. */
+  /** Chance a placed item is hidden (drawn as the biome's floor patch). Defaults to `0`. */
   hiddenChance?: number;
   /** Chance an optional-path end actually holds an item. Defaults to `1`. */
   itemChance?: number;

@@ -11,6 +11,7 @@ import {
   audioCue,
   audioCueUrl,
   isMusic,
+  PLACEHOLDER_AUDIO_URL,
   type AudioCueId,
 } from './cues';
 
@@ -199,6 +200,15 @@ describe.skipIf(!hasArt('audio'))('audio cue table', () => {
       'unknown audio cue: move-not-a-sound',
     );
     expect(() => audioCueUrl('cry-not-a-cry' as AudioCueId)).toThrow('unknown audio cue: cry-not-a-cry');
+  });
+
+  it('ships a real silence to fall back to when this checkout has no rip', () => {
+    const silence = readFileSync(
+      fileURLToPath(new URL('../assets/placeholders/audio/silence.wav', import.meta.url)),
+    );
+    expect(silence.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(silence.toString('ascii', 8, 12)).toBe('WAVE');
+    expect(PLACEHOLDER_AUDIO_URL).toBeTruthy();
   });
 });
 
