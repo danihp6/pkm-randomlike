@@ -1,0 +1,66 @@
+/*
+ * The battle's message box (`D49`, frames `05b`/`m05b Battle · message`). The shipped
+ * canvas window is hidden under the flag, so the card paints the battle's 92 % glass
+ * the Phaser window used to draw, at the board's own box: the 1 px hairline inside it,
+ * the 1 px highlight 12 px down, the message in ink and the effect line in the frame's
+ * red. Every colour, size and radius the board carries and `styles/root.css` does not
+ * is declared once here next to the frame's node name.
+ */
+.battle-log {
+  /* 05b · message box */
+  --battle-log-fill: rgb(16 22 31 / 92%);
+  /* 05b · message box highlight */
+  --battle-log-highlight: rgb(255 255 255 / 14%);
+  /* 05b · message line 2 */
+  --battle-log-effect: #fca5a5;
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--hud-panel-radius);
+  background: var(--battle-log-fill);
+  box-shadow: inset 0 0 0 1px var(--hud-panel-border);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  pointer-events: none;
+}
+
+.battle-log[hidden] {
+  display: none;
+}
+
+.battle-log,
+.battle-log * {
+  box-sizing: border-box;
+}
+
+/* 05b · message box highlight: a rule 12 px inside the card's top edge. */
+.battle-log__highlight {
+  position: absolute;
+  background: var(--battle-log-highlight);
+}
+
+/* 05b · message line 1: 16/20 ink; the phone card reads at the body size (13 px line). */
+.battle-log__line {
+  position: absolute;
+  margin: 0;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 05b · message line 2: 12/15, secondary red. */
+.battle-log__line--effect {
+  color: var(--battle-log-effect);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+}
+
+/* m05b · the phone card keeps the desktop 1:1 clone but at the body type size. */
+.battle-log--narrow .battle-log__line {
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+}

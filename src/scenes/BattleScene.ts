@@ -138,6 +138,15 @@ import {
   type BattleSwitchInput,
   type BattleSwitchIntent,
 } from '../ui/hud/panels/battle-switch';
+import {
+  BATTLE_LOG_DWELL_MS,
+  battleLogPreviewRequested,
+  feedStep,
+  installBattleLogPreview,
+  liveBattleLogView,
+  mountBattleLog,
+  type BattleLogHandle,
+} from '../ui/hud/panels/battle-log';
 import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
@@ -189,8 +198,6 @@ import { t } from '../i18n';
 import { moveName, moveShortDescription } from '../i18n/content';
 import type { RouteScene } from './RouteScene';
 
-const MESSAGE_HOLD_MS = 900;
-const FAST_HOLD_MS = 45;
 /** How long the win / loss / catch line stays up before the battle closes itself. */
 const OUTCOME_HOLD_MS = 1300;
 const MENU_ROWS = 4;
@@ -357,6 +364,7 @@ function capitalize(text: string): string {
 const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 
 installBattleSwitchPreview(typeof window === 'undefined' ? '' : window.location.search);
+installBattleLogPreview(typeof window === 'undefined' ? '' : window.location.search);
 
 type Mode =
   'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over' | 'info';
@@ -469,7 +477,7 @@ export class BattleScene extends Phaser.Scene {
   /** The foe is inside a ball, so it stays hidden even at full HP. */
   private captured = false;
   /** How long the frame on screen is held before the feed advances. */
-  private frameHoldMs = MESSAGE_HOLD_MS;
+  private frameHoldMs: number = BATTLE_LOG_DWELL_MS;
   /** The capture beat the feed frame is playing, and the timers that tick it. */
   private captureTiming: CaptureTimeline | null = null;
   private captureTimers: Phaser.Time.TimerEvent[] = [];
@@ -582,6 +590,8 @@ export class BattleScene extends Phaser.Scene {
   private bagController: BattleBagController | null = null;
   /** The mounted DOM switch grid (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private switchController: BattleSwitchController | null = null;
+  /** The mounted DOM message box (`?hud=dom`) and the line `refreshHud` pushes to it. */
+  private logController: BattleLogHandle | null = null;
   /** The cursor the target step marks a foe with, and the two foe hit zones. */
   private targetCursor!: Phaser.GameObjects.Image;
   private foeZones: Phaser.GameObjects.Zone[] = [];
@@ -699,7 +709,7 @@ export class BattleScene extends Phaser.Scene {
     this.trainerFrame = null;
     this.lastBallId = null;
     this.captured = false;
-    this.frameHoldMs = MESSAGE_HOLD_MS;
+    this.frameHoldMs = BATTLE_LOG_DWELL_MS;
     this.captureTiming = null;
     this.captureTimers = [];
     this.captureTweens = null;
@@ -837,12 +847,14 @@ export class BattleScene extends Phaser.Scene {
       this.disposeMovesPanel();
       this.disposeBagPanel();
       this.disposeSwitchPanel();
+      this.disposeBattleLogPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     this.mountHpPanel();
     this.mountMovesPanel();
     this.mountBagPanel();
     this.mountSwitchPanel();
+    this.mountBattleLogPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
@@ -925,6 +937,35 @@ export class BattleScene extends Phaser.Scene {
     if (this.switchController === null) return;
     this.switchController.dispose();
     this.switchController = null;
+  }
+
+  /** Mounts the DOM message box into the HUD layer, once per battle (`?hud=dom`). */
+  private mountBattleLogPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    // The fixture preview paints its own frame and owns the layer; the scene steps aside.
+    if (battleLogPreviewRequested(window.location.search)) return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeBattleLogPanel();
+    this.logController = mountBattleLog(host, liveBattleLogView(false, null));
+  }
+
+  private disposeBattleLogPanel(): void {
+    if (this.logController === null) return;
+    this.logController.dispose();
+    this.logController = null;
+  }
+
+  /**
+   * Pushes the line the typewriter is revealing to the DOM message box. The box is
+   * the canvas `messagePanel`'s visibility rule exactly: open while no menu owns it,
+   * and the closed box carries no line.
+   */
+  private updateBattleLog(): void {
+    const controller = this.logController;
+    if (controller === null) return;
+    const menuOpen = this.menuItems.length > 0;
+    controller.update(liveBattleLogView(!menuOpen, menuOpen ? null : visibleText(this.typing)));
   }
 
   // --- scene construction -------------------------------------------------
@@ -1756,7 +1797,7 @@ export class BattleScene extends Phaser.Scene {
 
   private showFrame(): void {
     const frame = this.frames[this.frameIndex];
-    this.frameHoldMs = MESSAGE_HOLD_MS;
+    this.frameHoldMs = BATTLE_LOG_DWELL_MS;
     const capturing = frame.events.some((event) => event.kind === 'capture');
     this.applyEvents(frame.events, capturing ? (frame.message ?? '') : null);
     if (frame.message !== null && !capturing) this.typeMessage(frame.message);
@@ -2002,7 +2043,7 @@ export class BattleScene extends Phaser.Scene {
     this.captureFinalLine = line;
     this.captureName = this.enemyFighters[0]?.name ?? '';
     this.captureOpenFrame = null;
-    this.frameHoldMs = timeline.totalMs + MESSAGE_HOLD_MS;
+    this.frameHoldMs = timeline.totalMs + BATTLE_LOG_DWELL_MS;
     this.captureBall
       .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
       .setPosition(from.x, from.y)
@@ -2112,7 +2153,7 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.captureFinalLine !== '') this.setMessage(this.captureFinalLine);
     this.stopCaptureBeat();
-    this.frameHoldMs = MESSAGE_HOLD_MS;
+    this.frameHoldMs = BATTLE_LOG_DWELL_MS;
     this.feedElapsed = 0;
     this.refreshHud();
     return true;
@@ -2973,6 +3014,7 @@ export class BattleScene extends Phaser.Scene {
   private setMessage(text: string): void {
     this.typing = revealAll(beginTypewriter(text));
     this.messageText.setText(text);
+    this.updateBattleLog();
   }
 
   /** Starts revealing a message at the player's text speed. */
@@ -2980,6 +3022,7 @@ export class BattleScene extends Phaser.Scene {
     this.typing = beginTypewriter(text);
     this.typingRemainder = 0;
     this.messageText.setText('');
+    this.updateBattleLog();
   }
 
   /**
@@ -2994,6 +3037,7 @@ export class BattleScene extends Phaser.Scene {
     if (typewriter === this.typing) return;
     this.typing = typewriter;
     this.messageText.setText(visibleText(typewriter));
+    this.updateBattleLog();
   }
 
   /** Skips to the end of the line (a confirm tap, or confirm held). */
@@ -3001,6 +3045,7 @@ export class BattleScene extends Phaser.Scene {
     if (typewriterDone(this.typing)) return;
     this.typing = revealAll(this.typing);
     this.messageText.setText(this.typing.text);
+    this.updateBattleLog();
   }
 
   private refreshHud(): void {
@@ -3166,8 +3211,10 @@ export class BattleScene extends Phaser.Scene {
     this.drawSecondPanel(playerInfo2, 'player');
     this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
     this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
-    this.messagePanel.setVisible(!menuOpen);
-    this.messageText.setVisible(!menuOpen);
+    // Under the DOM HUD the message box is the `battle-log` card and this window never
+    // reaches the canvas; the flag contract's probe counts exactly these two objects.
+    this.messagePanel.setVisible(!menuOpen && !DOM_HUD);
+    this.messageText.setVisible(!menuOpen && !DOM_HUD);
 
     this.messageText.setPosition(
       message.x + FRLG_TEXTBOX_PADDING.x,
@@ -3197,6 +3244,7 @@ export class BattleScene extends Phaser.Scene {
       this.movesController?.update(this.battleMovesInput(menu));
       this.bagController?.update(this.battleBagInput(menu));
       this.switchController?.update(this.battleSwitchInput(menu));
+      this.updateBattleLog();
     }
   }
 
@@ -3377,6 +3425,17 @@ export class BattleScene extends Phaser.Scene {
       if (cell.badgeBg.visible) count += 1;
       if (cell.badge.visible) count += 1;
     }
+    return count;
+  }
+
+  /**
+   * Counts the message box's visible objects: the glass window and its text. The
+   * `?hud=dom` flag contract's probe.
+   */
+  logDrawnObjectCount(): number {
+    let count = 0;
+    if (this.messagePanel.visible) count += 1;
+    if (this.messageText.visible) count += 1;
     return count;
   }
 
@@ -5001,13 +5060,11 @@ export class BattleScene extends Phaser.Scene {
     }
     if (rush) this.completeTyping();
     else this.tickTyping(delta);
-    // The read hold only starts once the line is fully revealed.
-    if (!typewriterDone(this.typing)) {
-      this.feedElapsed = 0;
-      return;
-    }
-    this.feedElapsed += delta;
-    if (this.feedElapsed >= (rush ? FAST_HOLD_MS : this.frameHoldMs)) this.advanceFeed();
+    // The read hold only starts once the line is fully revealed, and a held confirm
+    // advances on the 45 ms floor instead of the frame's own dwell.
+    const step = feedStep(typewriterDone(this.typing), this.feedElapsed, this.frameHoldMs, rush, delta);
+    this.feedElapsed = step.elapsedMs;
+    if (step.advance) this.advanceFeed();
   }
 }
 
@@ -5036,4 +5093,13 @@ export function battleBagDrawnObjectCount(scene: BattleScene): number {
 /** The display objects the switch grid draws right now: 0 under `?hud=dom`. */
 export function battleSwitchDrawnObjectCount(scene: BattleScene): number {
   return scene.switchDrawnObjectCount();
+}
+
+/**
+ * The number of display objects the message box draws right now: 0 under `?hud=dom`,
+ * where the box is the `battle-log` card. The live flag contract reads it with
+ * `(await import('/src/scenes/BattleScene.ts')).battleLogDrawnObjectCount(...)`.
+ */
+export function battleLogDrawnObjectCount(scene: BattleScene): number {
+  return scene.logDrawnObjectCount();
 }
