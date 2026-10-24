@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's switch screen is the HUD's.** `[Task-143]`, the twentieth of Phase 12 (`D49`):
+      under `?hud=dom` the party grid of a battle is a Preact card in `#hud` — six rows with their
+      portraits, HP tracks and status marks — built from the same view model the canvas used, with
+      the send-out beat still the scene's. The card is `276,582 728×192` at 1280×800 and
+      `16,592 358×236` at 390×844, the row pitch `26.656` / `34`, the HP track `107.2` with a
+      `76.8` area and fills `67.2, 57.6, 38.4, 19.2, 15.36` (the 0 HP row carries none), and `PAR` /
+      `PSN` sit `44×16` at `row.right − 52`. In a live wild battle the card opens with
+      `switchDrawnObjectCount()` `0`, the party's four rows, a row press that switches and closes
+      the card for the turn, and `Q` or the card's `◀` back to FIGHT/BAG/SWITCH/RUN.
+      `npm test` 4088 passed / 68 skipped, `npm run build` green.
 - [x] **The route HUD strip is the HUD's, and the pad stays in Phaser.** `[Task-139]`, the
       nineteenth of Phase 12 (`D49`): the chips (`M` map, `I` bag and the box), the party HP strip
       and the money row live in `src/ui/hud/panels/hud/`, and the touch pad's fate is decided in

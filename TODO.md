@@ -7459,7 +7459,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       `src/ui/hud/panels/battle-bag/`, one command per use, the same item rules. Claims
       `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-bag/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
-- [ ] **[Task-143] The battle's switch screen is the HUD's.** The party grid, its HP and its status
+- [x] **[Task-143] The battle's switch screen is the HUD's.** The party grid, its HP and its status
       marks in `src/ui/hud/panels/battle-switch/`, with the send-out beat still owned by the scene.
       Claims `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-switch/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*

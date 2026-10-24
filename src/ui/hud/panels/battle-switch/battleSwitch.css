@@ -1,0 +1,181 @@
+/*
+ * The battle's SWITCH window (`D49`, frame `05d Battle · pokemon`). Every value the board
+ * carries and `styles/root.css` does not is declared once here next to the frame's node
+ * name: the row is the board's `slot tile` (radius 8, white 6 % over a white 10 % edge),
+ * the picked row is `party sel` (the accent at 16 % under a solid accent edge), the HP
+ * track is `hp track CH` (radius 3) and the mark is the shipped 44×16 `status` chip. The
+ * shipped canvas window is hidden under the flag, so the card itself paints the battle's
+ * 90 % glass the Phaser window used to draw.
+ *
+ * The rows are one column of six inside the card, which is the canvas' switch window and
+ * not the board's 2×2 party group: the card must land exactly on the window it replaces,
+ * so the board supplies the row's paint and the canvas supplies its pitch.
+ */
+.battle-switch {
+  /* 05d Battle · pokemon · battle menu */
+  --battle-switch-card-fill: rgb(16 22 31 / 90%);
+  /* party sel */
+  --battle-switch-selected-fill: rgb(125 211 252 / 16%);
+  /* slot tile 2, slot tile 3, slot tile 4 */
+  --battle-switch-row-fill: rgb(255 255 255 / 6%);
+  --battle-switch-row-border: rgb(255 255 255 / 10%);
+  /* hp track CH, hp track PI, hp track BU, hp track GA */
+  --battle-switch-track-fill: rgb(255 255 255 / 12%);
+  /* hp fill CH / hp fill PI / hp fill BU: `src/ui/metrics.ts` HP_COLORS */
+  --battle-switch-fill-healthy: #4ad15c;
+  --battle-switch-fill-caution: #f5c242;
+  --battle-switch-fill-danger: #ef4444;
+  /* status PAR BU, status ENV CH */
+  --battle-switch-status-fill: #8b5cf6;
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: visible;
+  border-radius: var(--hud-panel-radius);
+  background: var(--battle-switch-card-fill);
+  box-shadow: inset 0 0 0 1px var(--hud-panel-border);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: none;
+}
+
+.battle-switch[hidden] {
+  display: none;
+}
+
+.battle-switch,
+.battle-switch * {
+  box-sizing: border-box;
+}
+
+/* slot tile 2…4 */
+.battle-switch__row {
+  position: absolute;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  appearance: none;
+  border: 1px solid var(--battle-switch-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-switch-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* party sel */
+.battle-switch__row--selected {
+  border-color: var(--hud-accent);
+  background: var(--battle-switch-selected-fill);
+}
+
+.battle-switch__row:disabled {
+  cursor: default;
+}
+
+/* portrait CH: the board's 8 px-radius tile, with no image — the sprite stays in the canvas */
+.battle-switch__portrait {
+  position: absolute;
+  border: 1px solid var(--battle-switch-row-border);
+  border-radius: 8px;
+  background: var(--battle-switch-row-fill);
+}
+
+/* mon name CH */
+.battle-switch__label {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.battle-switch__row--field .battle-switch__label {
+  color: var(--hud-accent);
+}
+
+.battle-switch__row--marked {
+  opacity: 0.45;
+}
+
+/* hp track CH: the baked texture's own empty track */
+.battle-switch__hp {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--battle-switch-track-fill);
+}
+
+/* the texture's 192×12 fill window, scaled with the track */
+.battle-switch__hp-area {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+/* hp fill CH */
+.battle-switch__hp-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--battle-switch-fill-healthy);
+}
+
+.battle-switch__hp-fill--healthy {
+  background: var(--battle-switch-fill-healthy);
+}
+
+.battle-switch__hp-fill--caution {
+  background: var(--battle-switch-fill-caution);
+}
+
+.battle-switch__hp-fill--danger {
+  background: var(--battle-switch-fill-danger);
+}
+
+/* status PAR BU */
+.battle-switch__status {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--battle-switch-status-fill);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* the ◀ the canvas arms at 48×36 */
+.battle-switch__back {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  appearance: none;
+  border: 1px solid var(--battle-switch-row-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--battle-switch-row-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.battle-switch__row:focus-visible,
+.battle-switch__back:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
