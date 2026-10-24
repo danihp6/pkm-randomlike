@@ -321,6 +321,8 @@ describe('the live flag contract', () => {
     vi.resetModules();
   });
 
+  // Two cold dynamic imports of the panel's whole graph: the default 5 s is the
+  // test runner's budget for a transform, not for anything this test asserts.
   it('reports the canvas count with the flag off and 0 under ?hud=dom', async () => {
     vi.resetModules();
     const flagOff = await import('../../../../scenes/panels/rewards');
@@ -332,7 +334,7 @@ describe('the live flag contract', () => {
     const flagOn = await import('../../../../scenes/panels/rewards');
     flagOn.noteRewardsDrawnObjects(12);
     expect(flagOn.rewardsDrawnObjectCount()).toBe(0);
-  });
+  }, 30000);
 
   it('never reports a negative canvas count', async () => {
     vi.resetModules();
