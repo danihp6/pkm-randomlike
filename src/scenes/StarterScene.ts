@@ -16,6 +16,16 @@ import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow, FRLG_ACCENT, FRLG_MUTED, FRLG_SURFACE } from '../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
+import { parseHudFlags } from '../ui/hud/fixtures';
+import {
+  installStarterPreview,
+  liveStarterView,
+  mountStarter,
+  starterPreviewRequested,
+  type StarterHandle,
+  type StarterIntent,
+  type StarterView,
+} from '../ui/hud/panels/starter';
 import { closeSeedPrompt, openSeedPrompt } from '../ui/seedPrompt';
 import { t } from '../i18n';
 import { loadSettings } from '../settings';
@@ -41,6 +51,20 @@ const COMPACT_WIDTH = 700;
 /** The selected Pokémon's portrait bobs by this many px, once each way per beat. */
 const BOB_AMPLITUDE = 6;
 const BOB_DURATION = 420;
+
+/**
+ * `?hud=dom` read once (`D49`): with it on this scene draws no Phaser object and
+ * mounts the Preact picker in the `#hud` layer instead. The fixture preview mounts
+ * on its own, even before the scene is ever opened, so
+ * `?hudFixture=04-starter-pick` can be screenshotted without walking the game.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+installStarterPreview(typeof window === 'undefined' ? '' : window.location.search);
+
+/** The number of display objects the picker draws right now: 0 under `?hud=dom`. */
+export function starterDrawnObjectCount(scene: Phaser.Scene): number {
+  return scene.children.length;
+}
 
 /**
  * One card's placement for the current stage. `cardW`/`cardH`/`gap` are screen
@@ -72,6 +96,9 @@ type StarterLayout = Readonly<{
  * The seed is on screen as the share string that reproduces the run (D21), and
  * `S` opens the seed prompt to type a seed or paste a friend's share string
  * (which also carries their mode), rerolling the cards from there.
+ *
+ * The scene keeps every rule under `?hud=dom` and loses only its drawing: the
+ * pick panel in `src/ui/hud/panels/starter/` paints the same offer.
  */
 export class StarterScene extends Phaser.Scene {
   private index = 0;
@@ -84,6 +111,12 @@ export class StarterScene extends Phaser.Scene {
   private cursor!: Phaser.GameObjects.BitmapText;
   private shareText!: Phaser.GameObjects.BitmapText;
   private layout!: StarterLayout;
+  /** The controls line, which is also the DOM panel's footer hint. */
+  private hint = '';
+  /** True on the DOM path, so `render` repaints the panel instead of the cards. */
+  private dom = false;
+  /** The mounted DOM picker (`?hud=dom`): the one emit point of the drawn offer. */
+  private controller: StarterHandle | null = null;
 
   constructor() {
     super('Starter');
@@ -95,10 +128,34 @@ export class StarterScene extends Phaser.Scene {
   }
 
   create(): void {
-    const { width, height } = this.scale;
     this.index = 0;
     this.pool = rollStarterPool(rngFromSeed(`${this.seed}:starters`), STARTER_POOL_SIZE);
+    const { width, height } = this.scale;
     this.layout = this.computeLayout(width, height);
+    this.hint = this.controlsCopy();
+    this.dom = DOM_HUD;
+    if (this.dom) {
+      this.createDom();
+    } else {
+      this.draw();
+    }
+
+    subscribeKeybinds(this, ({ action }) => this.handleAction(action));
+    // The seed prompt stays a fixed key: it opens a DOM field, not a game action.
+    this.input.keyboard!.on('keydown-S', (event: KeyboardEvent) => {
+      // The key that opens the prompt must not also type itself into the field.
+      event.preventDefault();
+      this.promptForSeed();
+    });
+    this.events.once('shutdown', () => closeSeedPrompt());
+
+    if (!this.dom) this.renderSeed();
+    this.render();
+  }
+
+  /** The shipped drawing: the surface, the title and blurb, the cards and the footers. */
+  private draw(): void {
+    const { width, height } = this.scale;
     const compact = this.layout.compact;
 
     this.add.rectangle(0, 0, width, height, FRLG_SURFACE).setOrigin(0, 0);
@@ -120,8 +177,42 @@ export class StarterScene extends Phaser.Scene {
       tint: FRLG_MUTED,
       origin: 0.5,
     });
+    addFrlgText(this, width / 2, height - 56, this.hint, {
+      size: 16,
+      tint: FRLG_MUTED,
+      origin: 0.5,
+    });
+  }
+
+  /**
+   * The flag-on build: the same offer, no Phaser object, one panel in `#hud`. A
+   * fixture preview owns the layer, so the scene then steps aside instead of
+   * mounting a second picker on top of the frame's.
+   */
+  private createDom(): void {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    if (starterPreviewRequested(window.location.search)) return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposePanel();
+    this.controller = mountStarter(host, this.view(), (intent) => this.handleIntent(intent));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
+  }
+
+  private view(): StarterView {
+    return liveStarterView(this.pool, this.index, this.seed, this.mode, this.hint);
+  }
+
+  private disposePanel(): void {
+    if (this.controller === null) return;
+    this.controller.dispose();
+    this.controller = null;
+  }
+
+  /** The footer copy: the shipped controls line for the layout in use. */
+  private controlsCopy(): string {
     const keys = loadSettings().keybinds;
-    const controls = compact
+    return this.layout.compact
       ? t('starter.controlsCompact', {
           left: keyLabel(keys.left),
           right: keyLabel(keys.right),
@@ -135,23 +226,6 @@ export class StarterScene extends Phaser.Scene {
           settings: keyLabel(keys.settings),
           cancel: keyLabel(keys.cancel),
         });
-    addFrlgText(this, width / 2, height - 56, controls, {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: 0.5,
-    });
-
-    subscribeKeybinds(this, ({ action }) => this.handleAction(action));
-    // The seed prompt stays a fixed key: it opens a DOM field, not a game action.
-    this.input.keyboard!.on('keydown-S', (event: KeyboardEvent) => {
-      // The key that opens the prompt must not also type itself into the field.
-      event.preventDefault();
-      this.promptForSeed();
-    });
-    this.events.once('shutdown', () => closeSeedPrompt());
-
-    this.renderSeed();
-    this.render();
   }
 
   /**
@@ -231,6 +305,38 @@ export class StarterScene extends Phaser.Scene {
         this.openSettings();
         return;
     }
+  }
+
+  /**
+   * The panel's intents, one per pointer or focus gesture. A chosen card is the
+   * canvas's one-click pick: move the cursor there and confirm in the same press.
+   */
+  private handleIntent(intent: StarterIntent): void {
+    switch (intent.type) {
+      case 'select':
+        this.index = this.clampIndex(intent.index);
+        this.render();
+        return;
+      case 'choose':
+        this.index = this.clampIndex(intent.index);
+        this.render();
+        this.confirm();
+        return;
+      case 'seed-prompt':
+        this.promptForSeed();
+        return;
+      case 'cancel':
+        this.scene.start('MainMenu');
+        return;
+      case 'settings':
+        this.openSettings();
+        return;
+    }
+  }
+
+  private clampIndex(index: number): number {
+    if (!Number.isFinite(index) || this.pool.length === 0) return 0;
+    return Math.min(Math.max(0, Math.trunc(index)), this.pool.length - 1);
   }
 
   /** Wraps the picked card by `delta`. */
@@ -346,6 +452,10 @@ export class StarterScene extends Phaser.Scene {
 
   /** Moves the ▶ cursor to the highlighted card and bobs that card's portrait. */
   private render(): void {
+    if (this.dom) {
+      this.controller?.update(this.view());
+      return;
+    }
     const pos = this.cardPos(this.index);
     this.cursor.setPosition(pos.x - this.layout.cursorOffset, pos.y + this.layout.cardH / 2);
     this.animateSelection();
@@ -400,6 +510,10 @@ export class StarterScene extends Phaser.Scene {
     this.mode = share.mode;
     this.index = 0;
     this.pool = rollStarterPool(rngFromSeed(`${this.seed}:starters`), STARTER_POOL_SIZE);
+    if (this.dom) {
+      this.render();
+      return;
+    }
     for (const portrait of this.portraits) this.tweens.killTweensOf(portrait);
     for (const card of this.cards) card.destroy();
     this.portraits = [];
