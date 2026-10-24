@@ -130,6 +130,14 @@ import {
   type BattleMovesInput,
   type BattleMovesIntent,
 } from '../ui/hud/panels/battle-moves';
+import {
+  battleSwitchBox,
+  installBattleSwitchPreview,
+  mountBattleSwitch,
+  type BattleSwitchController,
+  type BattleSwitchInput,
+  type BattleSwitchIntent,
+} from '../ui/hud/panels/battle-switch';
 import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
@@ -347,6 +355,8 @@ function capitalize(text: string): string {
  * line below paints exactly what it painted before the panels existed.
  */
 const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+
+installBattleSwitchPreview(typeof window === 'undefined' ? '' : window.location.search);
 
 type Mode =
   'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over' | 'info';
@@ -570,6 +580,8 @@ export class BattleScene extends Phaser.Scene {
   private movesController: BattleMovesController | null = null;
   /** The mounted DOM bag (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private bagController: BattleBagController | null = null;
+  /** The mounted DOM switch grid (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  private switchController: BattleSwitchController | null = null;
   /** The cursor the target step marks a foe with, and the two foe hit zones. */
   private targetCursor!: Phaser.GameObjects.Image;
   private foeZones: Phaser.GameObjects.Zone[] = [];
@@ -824,11 +836,13 @@ export class BattleScene extends Phaser.Scene {
       this.disposeHpPanel();
       this.disposeMovesPanel();
       this.disposeBagPanel();
+      this.disposeSwitchPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     this.mountHpPanel();
     this.mountMovesPanel();
     this.mountBagPanel();
+    this.mountSwitchPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
     this.scene.setVisible(false, 'Route');
@@ -896,6 +910,21 @@ export class BattleScene extends Phaser.Scene {
     if (this.bagController === null) return;
     this.bagController.dispose();
     this.bagController = null;
+  }
+
+  /** Mounts the DOM switch grid into the HUD layer, once per battle (`?hud=dom`). */
+  private mountSwitchPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeSwitchPanel();
+    this.switchController = mountBattleSwitch(host, (intent) => this.onBattleSwitchIntent(intent));
+  }
+
+  private disposeSwitchPanel(): void {
+    if (this.switchController === null) return;
+    this.switchController.dispose();
+    this.switchController = null;
   }
 
   // --- scene construction -------------------------------------------------
@@ -3167,6 +3196,7 @@ export class BattleScene extends Phaser.Scene {
       );
       this.movesController?.update(this.battleMovesInput(menu));
       this.bagController?.update(this.battleBagInput(menu));
+      this.switchController?.update(this.battleSwitchInput(menu));
     }
   }
 
@@ -3346,6 +3376,56 @@ export class BattleScene extends Phaser.Scene {
       if (cell.icon.visible) count += 1;
       if (cell.badgeBg.visible) count += 1;
       if (cell.badge.visible) count += 1;
+    }
+    return count;
+  }
+
+  /**
+   * Counts the visible objects the switch grid owns: the window, the ◀, the cells,
+   * avatars, labels, bars, fills and the detail window with its contents. The
+   * `?hud=dom` flag contract's probe.
+   */
+  switchDrawnObjectCount(): number {
+    const objects: readonly Readonly<{ visible: boolean }>[] = [
+      this.menuPanel,
+      this.backArrow,
+      this.menuCursor,
+    ];
+    let count = 0;
+    for (const object of objects) {
+      if (object.visible) count += 1;
+    }
+    for (let i = 0; i < MAX_PARTY_SIZE; i++) {
+      if (this.partyCells[i].visible) count += 1;
+      if (this.partyAvatars[i].visible) count += 1;
+      if (this.partyLabels[i].visible) count += 1;
+      if (this.partyHpBars[i].visible) count += 1;
+      if (this.partyHpFills[i].visible) count += 1;
+    }
+    // The detail window's own contents keep their flags when the container is
+    // hidden, so they only count while the window the canvas drew is up.
+    if (!this.partyDetail.visible) return count;
+    count += 1;
+    const contents: readonly Readonly<{ visible: boolean }>[] = [
+      this.partyDetailName,
+      this.partyDetailLevel,
+      this.partyDetailEmpty,
+    ];
+    for (const object of contents) {
+      if (object.visible) count += 1;
+    }
+    for (const chip of this.partyDetailTypes) {
+      if (chip.bg.visible) count += 1;
+      if (chip.label.visible) count += 1;
+    }
+    for (const row of this.partyDetailStats.rows) {
+      if (row.label.visible) count += 1;
+      if (row.value.visible) count += 1;
+    }
+    for (const row of this.partyDetailMoves) {
+      if (row.cell.visible) count += 1;
+      if (row.name.visible) count += 1;
+      if (row.pp.visible) count += 1;
     }
     return count;
   }
@@ -3656,6 +3736,13 @@ export class BattleScene extends Phaser.Scene {
    * as in the moves menu.
    */
   private renderPartyGrid(menu: Rect): void {
+    if (DOM_HUD) {
+      // The DOM card draws the whole grid, so every canvas piece of it goes dark —
+      // the window, the ◀, the cells, the avatars, the labels, the bars, the detail
+      // window and its ⓘs. `hideMenu` is that one call.
+      this.hideMenu();
+      return;
+    }
     this.menuPanel.setVisible(true);
     this.hideBagChrome();
     this.hideMoveChrome();
@@ -4166,6 +4253,59 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
       case 'back': {
+        this.onBack();
+        return;
+      }
+    }
+  }
+
+  /**
+   * The DOM switch grid's state: the card `battleSwitchBox` derives, and the party this
+   * scene owns — one plain row per member, never a `BattleFighter`.
+   */
+  private battleSwitchInput(menu: Rect): BattleSwitchInput {
+    const derived = battleSwitchBox({ width: this.scale.width, height: this.scale.height });
+    // Before the first layout the stage has no size; the canvas' own rect is then
+    // the only card there is, and an open grid must still land somewhere.
+    const card = derived.w > 0 && derived.h > 0 ? derived : menu;
+    if (this.mode !== 'party') return { open: false, card, rows: [], selected: 0 };
+    const side = this.state.sides.player;
+    const switchable = switchablePartyIndices(this.state, 'player');
+    const fieldRows = this.double ? partyGridFieldRows(side.activeIndex, side.secondActiveIndex) : [];
+    return {
+      open: true,
+      card,
+      selected: this.menuIndex,
+      rows: side.party.slice(0, MAX_PARTY_SIZE).map((fighter, index) => ({
+        name: fighter.name,
+        level: fighter.level,
+        hp: fighter.hp,
+        maxHp: fighter.maxHp,
+        statusLabel: statusAbbreviation(fighter.status),
+        enabled: switchable.includes(index),
+        field: fieldRows.includes(index),
+      })),
+    };
+  }
+
+  /**
+   * The DOM switch grid's only receiver: every intent lands on the call the canvas
+   * already made, so a press and a key reach the same engine command — and the
+   * send-out beat stays the feed's (`playSwitch`), never the card's.
+   */
+  private onBattleSwitchIntent(intent: BattleSwitchIntent): void {
+    switch (intent.type) {
+      case 'switch': {
+        if (this.mode !== 'party') return;
+        const index = moveIndexIn(intent.index, this.state.sides.player.party.length);
+        if (index === null) return;
+        if (!switchablePartyIndices(this.state, 'player').includes(index)) return;
+        this.menuIndex = index;
+        this.confirmParty(index);
+        return;
+      }
+      case 'back': {
+        if (this.mode !== 'party') return;
         this.onBack();
         return;
       }
@@ -4891,4 +5031,9 @@ export function battleMovesDrawnObjectCount(scene: BattleScene): number {
 /** The display objects the bag draws right now: 0 under `?hud=dom`. */
 export function battleBagDrawnObjectCount(scene: BattleScene): number {
   return scene.bagDrawnObjectCount();
+}
+
+/** The display objects the switch grid draws right now: 0 under `?hud=dom`. */
+export function battleSwitchDrawnObjectCount(scene: BattleScene): number {
+  return scene.switchDrawnObjectCount();
 }
