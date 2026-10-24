@@ -1,0 +1,62 @@
+/*
+ * The route's three passive cards (`D49`, frames `03k` / `m03k`): the notice strip,
+ * the mission line and the area-entry banner. Every rect comes from `view.ts`, so
+ * this file carries the board's paint only — radius 11, the 16 % hairline, the 1 px
+ * highlight 12 px inside the top edge, the readout on the strip and the mission and
+ * the title on the boxed area banner, whose ring is the accent.
+ *
+ * The cards sit in the `#hud` layer and take no input: `pointer-events: none` here,
+ * no handler anywhere, so the route keeps walking under them.
+ */
+.notices {
+  pointer-events: none;
+}
+
+.notices__card {
+  position: fixed;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-align: center;
+  pointer-events: none;
+}
+
+.notices__card--notice {
+  text-transform: uppercase;
+}
+
+.notices__card[hidden] {
+  display: none;
+}
+
+.notices__card::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: rgb(255 255 255 / 14%);
+}
+
+.notices__card--area {
+  border-color: var(--hud-accent);
+  font-size: var(--hud-type-title-size);
+  line-height: var(--hud-type-title-line);
+}
+
+.notices__line {
+  overflow: hidden;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
