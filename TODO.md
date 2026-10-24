@@ -7476,12 +7476,18 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       `src/ui/hud/panels/main-menu/`, and `src/scenes/MainMenuScene.ts` keeps the scene and the
       navigation. Claims `src/scenes/MainMenuScene.ts`, `src/ui/hud/panels/main-menu/**` and its
       fixture. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
-- [ ] **[Task-146] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
+- [!] **[Task-146] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
       `src/ui/hud/panels/stats/`, including the monthly global record row; the numbers stay the ones
       `src/ui/runSummary.ts` already derives. Claims `src/ui/hud/panels/stats/**` and its fixtures;
       `src/scenes/MainMenuScene.ts` only if the screens still live there, in which case
       `[Task-145]` runs first. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`,
       `[Task-145]`. *(Batch 65)*
+      *BLOCKED: there is no stats/ranking screen to migrate and no cross-run or per-Pokémon record
+      to draw — `RunStats` is `{catches, casualties}` (`src/engine/run/state.ts` 30-33), the save
+      keeps one run, and frames 08/08b/08c/09/09b need run history, playtime, per-species KOs/damage
+      and a monthly ranking, i.e. a run-history store with a `SAVE_VERSION` step that Phase 12
+      forbids (`TODO.md` lines 1474-1475). Needs a human decision: an engine task ahead of it, or a
+      re-scope to a current-run screen with empty states. Issue #51.*
 - [ ] **[Task-147] The starter picker is the HUD's.** `04`: the three cards, their types and the
       confirmation in `src/ui/hud/panels/starter/`, with `src/scenes/StarterScene.ts` keeping the
       pick. Claims `src/scenes/StarterScene.ts`, `src/ui/hud/panels/starter/**` and its fixture.
