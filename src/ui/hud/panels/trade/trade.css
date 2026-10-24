@@ -1,0 +1,332 @@
+/*
+ * The trade card (`D49`, frames `03i` pick / `03j` result). Every printed rect comes
+ * from `view.ts`, which mirrors the frames' own numbers, so this file carries the
+ * board's paint only: radius 11, the 16 % hairline, the 14 % highlight line, the 4 %
+ * tile pair with the accent selected edge, and the one filled action.
+ *
+ * The pick card's border is a real 1 px edge (the fidelity gate reads it), so the
+ * content layer sits at `inset: -1px` and the model's panel-relative rects land on
+ * the card's outer box. The result state clears the panel's own surface: the `03j`
+ * card is a smaller card centred inside the panel's box.
+ */
+.trade {
+  --trade-tile-fill: rgb(255 255 255 / 4%);
+  --trade-tile-stroke: rgb(255 255 255 / 8%);
+  --trade-tile-selected: rgb(125 211 252 / 16%);
+  --trade-highlight: rgb(255 255 255 / 14%);
+  --trade-portrait-fill: rgb(255 255 255 / 4%);
+  --trade-radius: 11px;
+  position: fixed;
+  box-sizing: border-box;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--trade-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.trade[hidden] {
+  display: none;
+}
+
+.trade[data-kind='result'] {
+  border-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+
+.trade,
+.trade *,
+.trade *::before,
+.trade *::after {
+  box-sizing: border-box;
+}
+
+/*
+ * The board's scrim (`03i` / `03j`): the modal card sits over a 74 % veil of the
+ * route. It never takes a press — the canvas keeps its own pointer handling, exactly
+ * as the shipped Phaser window's scrim did.
+ */
+.trade__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgb(3 5 10 / 74%);
+  pointer-events: none;
+}
+
+.trade__face {
+  position: absolute;
+  inset: -1px;
+}
+
+.trade__highlight {
+  position: absolute;
+  background: var(--trade-highlight);
+}
+
+.trade__title {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-hero-size);
+  font-weight: 700;
+  line-height: var(--hud-type-hero-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__meta {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__message {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__label,
+.trade__kicker,
+.trade__added {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__tile {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--trade-tile-stroke);
+  border-radius: var(--hud-row-radius);
+  background: var(--trade-tile-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.trade__tile[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: var(--trade-tile-selected);
+}
+
+.trade__portrait {
+  position: absolute;
+  border: 1px solid var(--trade-tile-stroke);
+  border-radius: var(--hud-row-radius);
+  background: var(--trade-portrait-fill);
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.trade__portrait--tile {
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+}
+
+.trade__portrait--cell {
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+}
+
+.trade__tile-name {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__tile-level {
+  position: absolute;
+  top: 24px;
+  right: 8px;
+  left: 8px;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__cell {
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid var(--trade-tile-stroke);
+  border-radius: var(--hud-row-radius);
+  background: var(--trade-tile-fill);
+}
+
+.trade__cell-name {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  left: 4px;
+  overflow: hidden;
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-tag-size);
+  line-height: var(--hud-type-tag-line);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.trade__give {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--hud-row-border);
+  border-radius: 8px;
+  background: var(--hud-row-fill);
+  color: var(--hud-accent);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-readout-size);
+  font-weight: 700;
+  line-height: var(--hud-type-readout-line);
+  cursor: pointer;
+}
+
+.trade__give:disabled {
+  color: var(--hud-text-muted);
+  cursor: default;
+}
+
+.trade__close {
+  position: absolute;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-row-border);
+  border-radius: 6px;
+  background: var(--trade-tile-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  cursor: pointer;
+}
+
+.trade__give:focus-visible,
+.trade__close:focus-visible,
+.trade__tile:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
+
+.trade__result {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--trade-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  pointer-events: auto;
+}
+
+.trade__portrait--result {
+  border-radius: 8px;
+}
+
+.trade__type {
+  position: absolute;
+  border-radius: 4px;
+}
+
+.trade__name {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-hero-size);
+  font-weight: 700;
+  line-height: var(--hud-type-hero-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .trade {
+    --trade-radius: 12px;
+  }
+
+  .trade__result {
+    --trade-radius: 16px;
+  }
+
+  .trade__title,
+  .trade__name {
+    font-size: var(--hud-type-title-size);
+    line-height: var(--hud-type-title-line);
+  }
+
+  .trade__meta,
+  .trade__message,
+  .trade__label,
+  .trade__kicker,
+  .trade__added {
+    font-size: var(--hud-type-meta-size);
+    line-height: var(--hud-type-meta-line);
+  }
+
+  .trade__give {
+    font-size: var(--hud-type-name-size);
+  }
+
+  .trade__portrait--tile {
+    width: 44px;
+    height: 44px;
+  }
+
+  .trade__tile-name {
+    top: 4px;
+    right: 6px;
+    left: 6px;
+    font-size: var(--hud-type-meta-size);
+    line-height: var(--hud-type-meta-line);
+  }
+
+  .trade__tile-level {
+    top: 16px;
+    right: 6px;
+    left: 6px;
+    font-size: var(--hud-type-tag-size);
+    line-height: var(--hud-type-tag-line);
+  }
+}

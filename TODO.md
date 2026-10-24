@@ -7416,7 +7416,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       command and one run transaction. Claims `src/scenes/panels/shop.ts`,
       `src/ui/hud/panels/shop/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
       `[Task-124]`, `[Task-125]`. *(Batch 62)*
-- [ ] **[Task-135] The trade panel is the HUD's.** The two-column trade in
+- [x] **[Task-135] The trade panel is the HUD's.** The two-column trade in
       `src/ui/hud/panels/trade/`, reading the room's proposal and answering accept or decline through
       the command channel; `src/scenes/rooms/trade.ts` keeps its rule and loses only the drawing.
       Claims `src/scenes/panels/trade.ts`, `src/ui/hud/panels/trade/**` and its fixture.

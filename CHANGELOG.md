@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The trade panel is the HUD's.** `[Task-135]`, the fourteenth of Phase 12 (`D49`): under
+      `?hud=dom` the trade room's card is a Preact panel in `#hud` — the six party tiles and the
+      PC grid, the meta line, the greeting and its message, the `GIVE AWAY` button and the `03j`
+      result card with its portrait and type chip — built from the pure `tradePanelView`, while
+      `src/scenes/rooms/trade.ts` keeps only its counter, fixture and `interact` and
+      `src/scenes/panels/trade.ts` owns the card, sending one `tradePokemon` call per press and one
+      `host.commitRun` per landed trade, so the run still changes in one place. Measured over CDP
+      at 1280×800 and 390×844: the card is `260,120 760×560` on desktop and `8,168 374×508` on the
+      phone (Δ 0, no horizontal overflow); `tradeDrawnObjectCount()` is `0` under the flag against
+      `26` off; and `renderer.snapshotArea(260,120,760,560)` hashes identically with the DOM card
+      open and closed, so the canvas draws none of it. `npm test` 3974 passed / 67 skipped,
+      `npm run build` green.
 - [x] **The battle's move menu is the HUD's.** `[Task-141]`, the thirteenth of Phase 12 (`D49`):
       under `?hud=dom` the four-slot move menu, its ⓘ and its type badges are a Preact panel in
       `#hud`, drawn from the same view model the canvas used and re-deriving its four cell rects
