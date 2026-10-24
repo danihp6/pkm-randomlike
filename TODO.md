@@ -7488,7 +7488,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       and a monthly ranking, i.e. a run-history store with a `SAVE_VERSION` step that Phase 12
       forbids (`TODO.md` lines 1474-1475). Needs a human decision: an engine task ahead of it, or a
       re-scope to a current-run screen with empty states. Issue #51.*
-- [ ] **[Task-147] The starter picker is the HUD's.** `04`: the three cards, their types and the
+- [x] **[Task-147] The starter picker is the HUD's.** `04`: the three cards, their types and the
       confirmation in `src/ui/hud/panels/starter/`, with `src/scenes/StarterScene.ts` keeping the
       pick. Claims `src/scenes/StarterScene.ts`, `src/ui/hud/panels/starter/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 65)*

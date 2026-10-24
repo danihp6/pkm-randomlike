@@ -1,0 +1,345 @@
+/*
+ * The starter pick (`D49`, frames `04` / `m04`). Every value the board carries and
+ * `styles/root.css` does not is declared once here, next to the frame's node name;
+ * the rest come from the `--hud-*` tokens. The stage is the board's page: 1280 × 800
+ * on the desk, 390 × 844 on a phone, and every inner rect below is a page coordinate
+ * of the matching frame.
+ *
+ * The card wrapper is the measured node and carries the board's paint; the kit
+ * `Panel` is its skin and fills it, exactly as the main menu's card does. The board
+ * draws its strokes inside the box (`docs/hud-fidelity.md` §3), so the wrapper's 1 px
+ * border is inside its 260 × 320 (or 340 × 104) box.
+ */
+.starter {
+  /* 04 · board background */
+  --starter-screen: #0b1017;
+  /* 04 · card fill (72 %, the kit's own panel alpha) */
+  --starter-card-fill: rgb(16 22 31 / 72%);
+  /* 04 · card highlight */
+  --starter-highlight: rgb(255 255 255 / 14%);
+  /* 04 · portrait cell (a placeholder: the sprite pixels stay the canvas's) */
+  --starter-portrait-border: rgb(255 255 255 / 14%);
+  --starter-portrait-fill: rgb(255 255 255 / 4%);
+  /* 04 · starter title */
+  --starter-title-ink: #f8fafc;
+  --starter-title-size: 32px;
+  --starter-title-line: 40px;
+  /* 04 · name 1 */
+  --starter-name-ink: #f8fafc;
+  --starter-name-size: 20px;
+  --starter-name-line: 30px;
+  /* 04 · share line */
+  --starter-share-size: 12px;
+  --starter-share-line: 18px;
+  /* 04 · seed reroll hint */
+  --starter-hint-ink: #64748b;
+  --starter-hint-size: 10px;
+  --starter-hint-line: 12px;
+
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  background: var(--starter-screen);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.starter,
+.starter *,
+.starter *::before,
+.starter *::after {
+  box-sizing: border-box;
+}
+
+/* The layer takes the cards' clicks and nothing else: the canvas keeps the rest. */
+.starter * {
+  pointer-events: none;
+}
+
+.starter__stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1280px;
+  height: 800px;
+  transform: translate(-50%, -50%);
+}
+
+/* 04 · starter title */
+.starter__title {
+  position: absolute;
+  top: 26px;
+  left: 240px;
+  width: 800px;
+  height: 40px;
+  margin: 0;
+  transform: translateZ(0);
+  color: var(--starter-title-ink);
+  font-size: var(--starter-title-size);
+  font-weight: 700;
+  line-height: var(--starter-title-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 04 · card 1 at (218,176), card 2 at (510,176), card 3 at (802,176) */
+.starter__cards {
+  position: absolute;
+  top: 176px;
+  left: 218px;
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+/*
+ * 04 · card *: the measured node and the whole card is its own press target. The
+ * hairline is an inset outline rather than a border, so the wrapper's box is the
+ * card box AND its children measure from the card's own corner (the options card
+ * and the main menu's rows draw their edge the same way).
+ */
+.starter__card {
+  position: relative;
+  display: block;
+  width: 260px;
+  height: 320px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  border-radius: var(--hud-panel-radius);
+  outline: 1px solid var(--hud-panel-border);
+  outline-offset: -1px;
+  background: var(--starter-card-fill);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* card 1 carries the board's accent stroke: it is the one the cursor is on */
+.starter__card[data-selected='true'] {
+  outline-color: var(--hud-accent);
+}
+
+/* 04 · card * highlight: 12 px inside the card's top edge */
+.starter__card::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: var(--starter-highlight);
+}
+
+.starter__card > .kit-panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.starter__card > .kit-panel::before {
+  display: none;
+}
+
+/* The card's own outline is its skin, so focus draws a ring outside it instead. */
+.starter__card:focus-visible {
+  box-shadow: 0 0 0 2px var(--hud-accent);
+}
+
+/* 04 · portrait *: the card's placeholder cell, at (66,46) from the card */
+.starter__portrait {
+  position: absolute;
+  top: 46px;
+  left: 66px;
+  width: 128px;
+  height: 128px;
+  border: 1px solid var(--starter-portrait-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--starter-portrait-fill);
+}
+
+/* 04 · name 1 at (238,375): 20 px inside the card, centred in its 220 px box */
+.starter__name {
+  position: absolute;
+  top: 199px;
+  left: 20px;
+  width: 220px;
+  height: 30px;
+  transform: translateZ(0);
+  color: var(--starter-name-ink);
+  font-size: var(--starter-name-size);
+  font-weight: 700;
+  line-height: var(--starter-name-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/*
+ * 04 · type badge row at y = 246 from the card, centred on the card: two badges
+ * start 100 px in (218 + 100 = 318, the frame's first), one starts 118 px in
+ * (510 + 118 = 628, the frame's next two).
+ */
+.starter__badges {
+  position: absolute;
+  top: 246px;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* 04 · type GRASS / type POISON: the measured 24 × 24 cell */
+.starter__badge {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.starter__badge > .kit-type {
+  position: absolute;
+  inset: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0 2px;
+  overflow: hidden;
+  justify-content: center;
+  border-radius: 0;
+  font-size: var(--hud-type-tag-size);
+  line-height: var(--hud-type-tag-line);
+  text-align: center;
+}
+
+/* 04 · share line */
+.starter__share {
+  position: absolute;
+  top: 688px;
+  left: 240px;
+  width: 800px;
+  height: 18px;
+  margin: 0;
+  transform: translateZ(0);
+  color: var(--hud-text-muted);
+  font-size: var(--starter-share-size);
+  line-height: var(--starter-share-line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* 04 · seed reroll hint (the live line is the shipped controls copy) */
+.starter__hint {
+  position: absolute;
+  top: 716px;
+  left: 480px;
+  width: 320px;
+  height: 12px;
+  margin: 0;
+  transform: translateZ(0);
+  color: var(--starter-hint-ink);
+  font-size: var(--starter-hint-size);
+  line-height: var(--starter-hint-line);
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .starter {
+    /* m04 · board background (the phone frame is a shade darker than the desk's) */
+    --starter-screen: #05070c;
+    /* m04 · board title */
+    --starter-title-ink: #f1f5f9;
+    --starter-title-size: 18px;
+    --starter-title-line: 23px;
+    /* m04 · board title (a name) */
+    --starter-name-ink: #f1f5f9;
+    --starter-name-size: 12px;
+    --starter-name-line: 15px;
+    /* m04 · board subtitle (the share line) */
+    --starter-share-size: 9px;
+    --starter-share-line: 12px;
+    /* m04 · board subtitle (the hint) */
+    --starter-hint-size: 9px;
+    --starter-hint-line: 12px;
+  }
+
+  .starter__stage {
+    width: 390px;
+    height: 844px;
+  }
+
+  .starter__title {
+    top: 58px;
+    left: 55px;
+    width: 279px;
+    height: 23px;
+  }
+
+  /* m04 · m card 243 / 359 / 475: one full-width row each */
+  .starter__cards {
+    top: 243px;
+    left: 25px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .starter__card {
+    width: 340px;
+    height: 104px;
+  }
+
+  /* m04 · portrait * at (20,12) from the card */
+  .starter__portrait {
+    top: 12px;
+    left: 20px;
+    width: 80px;
+    height: 80px;
+  }
+
+  /* m04 · a name at (116,24) from the card, left-aligned in the row's free room */
+  .starter__name {
+    top: 24px;
+    left: 116px;
+    width: 208px;
+    height: 15px;
+    text-align: left;
+  }
+
+  /* m04 · type GRASS at (116,64) from the card, the row growing to the right */
+  .starter__badges {
+    top: 64px;
+    right: auto;
+    left: 116px;
+    justify-content: flex-start;
+  }
+
+  /* m04 · board subtitle (the share line) */
+  .starter__share {
+    top: 740px;
+    left: 117px;
+    width: 155px;
+    height: 12px;
+  }
+
+  /* m04 · board subtitle (the hint) */
+  .starter__hint {
+    top: 788px;
+    left: 138px;
+    width: 113px;
+    height: 12px;
+  }
+}

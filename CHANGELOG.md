@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The starter picker is the HUD's.** `[Task-147]`, the twenty-third of Phase 12 (`D49`):
+      under `?hud=dom` `04`'s three cards, their names and type badges, the share line and the footer
+      hint are a Preact panel in `src/ui/hud/panels/starter/`, and `src/scenes/StarterScene.ts` keeps
+      the seeded pool, the cursor, the seed prompt and the run start. The cards are
+      `218,176 / 510,176 / 802,176` at `260×320` with the title at `240,26` and the badges at
+      `318/354/628/920,422`, and `25,243 / 25,359 / 25,475` at `340×104` with the title at `55,58`
+      and no horizontal overflow at 390×844. `starterDrawnObjectCount()` is `0` under the flag
+      against `9` top-level (26 recursive) off; a real click on a card starts the route with that
+      card's species, `Q` returns to the menu, `S` opens the seed prompt and the arrows move the DOM
+      cursor. `npm test` 4183 passed / 68 skipped, `npm run build` green.
 - [x] **The battle's message box is the HUD's, and its pacing is one clock.** `[Task-144]`, the
       twenty-second of Phase 12 (`D49`): under `?hud=dom` the box and its typewriter are a Preact
       panel in `src/ui/hud/panels/battle-log/` at the board's own box — `664,544 576×216` at

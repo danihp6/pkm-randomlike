@@ -1,0 +1,15 @@
+{
+  "slug": "04-starter-pick",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": {}, "notice": null },
+  "starter": {
+    "title": "CHOOSE YOUR STARTER",
+    "cards": [
+      { "speciesId": "bulbasaur", "num": 1, "name": "BULBASAUR", "types": ["grass", "poison"] },
+      { "speciesId": "charmander", "num": 4, "name": "CHARMANDER", "types": ["fire"] },
+      { "speciesId": "squirtle", "num": 7, "name": "SQUIRTLE", "types": ["water"] }
+    ],
+    "selected": 0,
+    "share": "SHARE: PKRL-1-f-1a2b3c",
+    "hint": "HOLD R FOR NEW SEED"
+  }
+}
