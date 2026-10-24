@@ -1,0 +1,36 @@
+{
+  "slug": "03f-panels-reward-item",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "item": {
+    "title": "MINI-BOSS REWARD",
+    "choose": "Choose one.",
+    "armed": -1,
+    "open": true,
+    "rows": [
+      {
+        "index": 0,
+        "kind": "item",
+        "itemId": "charcoal",
+        "iconFrame": 108,
+        "label": "Charcoal",
+        "description": "Powers up Fire-type moves."
+      },
+      {
+        "index": 1,
+        "kind": "item",
+        "itemId": "hardstone",
+        "iconFrame": 309,
+        "label": "Hard Stone",
+        "description": "Powers up Rock-type moves."
+      },
+      {
+        "index": 2,
+        "kind": "item",
+        "itemId": "miracleseed",
+        "iconFrame": 463,
+        "label": "Miracle Seed",
+        "description": "Powers up Grass-type moves."
+      }
+    ]
+  }
+}

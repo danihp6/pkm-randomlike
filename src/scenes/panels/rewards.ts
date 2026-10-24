@@ -1,5 +1,12 @@
+import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
-import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../../data/itemIcons';
+import itemIcons from '../../data/anil/item-icons.json';
+import {
+  ITEM_ICON_ATLAS_URL,
+  ITEM_ICON_SIZE,
+  ITEM_ICON_TEXTURE_KEY,
+  itemIconFrame,
+} from '../../data/itemIcons';
 import { getItem } from '../../data/items';
 import { ROUTE_LOOT } from '../../data/loot';
 import { bandForMap } from '../../engine/run';
@@ -19,6 +26,16 @@ import { t } from '../../i18n';
 import { FRLG_MUTED, FRLG_SELECTED_FILL, FRLG_SELECTED_STROKE } from '../../ui/frlg';
 import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
 import { addFloatingPanel, type FloatingPanel } from '../../ui/floatingPanel';
+import { parseHudFlags } from '../../ui/hud/fixtures';
+import {
+  mountRewardsPanel,
+  rewardsPanelView,
+  rewardsPress,
+  type RewardRowView,
+  type RewardsInput,
+  type RewardsIntent,
+  type RewardsPanelView,
+} from '../../ui/hud/panels/rewards';
 import { itemPickupNotice } from '../../ui/notice';
 import { pokemonRewardChoices, rewardChoices, rewardRows, type RewardRow } from '../../ui/rewards';
 import type { RoomDrop } from '../rooms/types';
@@ -28,11 +45,39 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * The mini-boss reward (`docs/maps-spec.md` §7, D33, D45): a beaten strong
  * trainer opens one **floating** card of six rows — three items from the map's
  * reward pool and three Pokémon it presents only by their highest stat and their
- * nature. A row is taken by dragging it onto the bag or the party; the ✕ leaves
- * it, and either way the stored callback (the level-up beat) runs. The two lists
- * ride **sibling streams**, so the item rows a fixed seed already produced do
- * not move.
+ * nature. The two lists ride **sibling streams**, so the item rows a fixed seed
+ * already produced do not move.
+ *
+ * With `?hud=dom` (`D49`) the card is the HUD's Preact panel
+ * (`src/ui/hud/panels/rewards/`) and this module draws nothing in Phaser: it still
+ * owns the rows, the arm and the callback, and the mount paints them. A press
+ * **arms** a row and a second press on the armed row — or `confirm` — **commits**
+ * it, so the pick is inert until it is committed. The commit path is the shipped
+ * one: an item lands in the bag through the shipped bag drop (`addItem` +
+ * `commitRun` + the pickup notice) and is used on a member from the bag
+ * afterwards, and a Pokémon lands in the party through `createRunPokemon` +
+ * `adoptAtLevel` + `addPokemon`. With the flag off the shipped drag still drops an
+ * item straight onto a member. Either way no capture is spent, `stats.catches` does
+ * not move, the stored callback (the level-up beat) runs exactly once, and the two
+ * `:reward:` streams are the only RNG.
  */
+
+/**
+ * `?hud=dom` read once, the way every scene module reads it. With the flag off this
+ * module builds the canvas card and the Preact panel is never mounted.
+ */
+const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/** The item atlas' columns (`src/data/anil/item-icons.json`), for the sprite offsets. */
+const ITEM_ICON_COLS: number = itemIcons.cols;
+/**
+ * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this folder's
+ * modules never import Phaser as a value. A paused route sits under the DOM root,
+ * which has to hide itself; the resume brings the card back.
+ */
+const SCENE_PAUSE = 'pause';
+const SCENE_RESUME = 'resume';
+/** The scene's own teardown: the DOM card is outside Phaser and must be unmounted. */
+const SCENE_SHUTDOWN = 'shutdown';
 
 /** The mini-boss reward choice (Phase 9): one window of item and Pokémon rows. */
 const REWARD_W = 560;
@@ -43,14 +88,44 @@ const MINI_BOSS_REWARD_CHOICES = 3;
 /** How many unidentified Pokémon the same window offers. */
 const MINI_BOSS_REWARD_POKEMON_CHOICES = 3;
 
-/** The mini-boss reward window: its floating card, root and callback. */
+/** The canvas card (flag off): its floating panel, which also answers "is it up". */
 let miniBossRewardPanel: FloatingPanel | null = null;
-let miniBossRewardRoot: Phaser.GameObjects.Container | null = null;
-let miniBossRewardOnDone: (() => void) | null = null;
+/** The DOM card (flag on): its host, view signal, mount disposer and scene subscription. */
+let cardHost: RoutePanelHost | null = null;
+let cardView: Signal<RewardsPanelView> | null = null;
+let cardDispose: (() => void) | null = null;
+let cardUnsubscribe: (() => void) | null = null;
+/** Both paths' shared state: the rows on offer, the armed row and the level-up beat. */
+let rewardRowsOnOffer: readonly RewardRow[] = [];
+let rewardArmed = -1;
+let rewardPaused = false;
+let rewardOnDone: (() => void) | null = null;
+/** The canvas card's display-object count, for the live flag contract (flag off). */
+let shippedDrawnObjects = 0;
+
+/**
+ * The number of display objects the reward card draws in Phaser right now. Under
+ * the flag the card is the DOM one and the answer is 0; with the flag off the count
+ * is the built card's own (`buildMiniBossReward` reports it through
+ * `noteRewardsDrawnObjects`), exactly as `shopDrawnObjectCount` reads the Mart's.
+ */
+export function rewardsDrawnObjectCount(): number {
+  return DOM_HUD ? 0 : shippedDrawnObjects;
+}
+
+/** The canvas card reports its display-object count; under the flag nothing is drawn. */
+export function noteRewardsDrawnObjects(count: number): void {
+  shippedDrawnObjects = DOM_HUD ? 0 : Math.max(0, count);
+}
+
+/** True while a reward card is up, whichever path built it. */
+function rewardOpen(): boolean {
+  return miniBossRewardPanel !== null || cardView !== null;
+}
 
 /** Opens the reward card, or runs its callback straight away when one is up. */
 export function openMiniBossReward(host: RoutePanelHost, onDone: () => void): void {
-  if (miniBossRewardPanel) {
+  if (rewardOpen()) {
     onDone();
     return;
   }
@@ -70,18 +145,163 @@ export function openMiniBossReward(host: RoutePanelHost, onDone: () => void): vo
     onDone();
     return;
   }
-  miniBossRewardOnDone = onDone;
-  buildMiniBossReward(host, rows);
+  rewardOnDone = onDone;
+  rewardRowsOnOffer = rows;
+  rewardArmed = -1;
+  rewardPaused = false;
+  if (DOM_HUD) openRewardsCard(host);
+  else buildMiniBossReward(host, rows);
 }
 
-/** Tears down the reward card and runs its callback (the level-up beat). */
+/** Tears the reward card down and runs its callback (the level-up beat). */
 export function closeMiniBossReward(): void {
-  const onDone = miniBossRewardOnDone;
-  miniBossRewardOnDone = null;
+  const onDone = rewardOnDone;
+  rewardOnDone = null;
+  closeRewardsCard();
   miniBossRewardPanel?.destroy();
   miniBossRewardPanel = null;
-  miniBossRewardRoot = null;
+  rewardRowsOnOffer = [];
+  rewardArmed = -1;
+  shippedDrawnObjects = 0;
   onDone?.();
+}
+
+/** The atlas cell for an item, as the panel's `background-position` pair. */
+function rewardIcon(itemId: string): RewardRowView['icon'] {
+  const frame = itemIconFrame(itemId);
+  if (frame === null) return null;
+  return {
+    url: ITEM_ICON_ATLAS_URL,
+    size: ITEM_ICON_SIZE,
+    x: (frame % ITEM_ICON_COLS) * ITEM_ICON_SIZE,
+    y: Math.floor(frame / ITEM_ICON_COLS) * ITEM_ICON_SIZE,
+  };
+}
+
+/** The view's viewport: the scene's own window, which the card is centred in. */
+function viewport(host: RoutePanelHost): { width: number; height: number } {
+  return { width: host.scene.scale.width, height: host.scene.scale.height };
+}
+
+/**
+ * The rows as the panel reads them: an item row carries its name, its description
+ * and its atlas cell; a Pokémon row carries its label and nothing else.
+ */
+function rewardRowViews(): readonly RewardRowView[] {
+  return rewardRowsOnOffer.map((row, index): RewardRowView => ({
+    index,
+    kind: row.kind,
+    label: row.kind === 'item' ? row.name : row.label,
+    description: row.kind === 'item' ? row.description : '',
+    icon: row.kind === 'item' ? rewardIcon(row.itemId) : null,
+    armed: false,
+    box: { x: 0, y: 0, w: 0, h: 0 },
+  }));
+}
+
+/** This module's own state, as the pure view takes it. */
+function rewardsInput(): RewardsInput {
+  return {
+    title: t('reward.title'),
+    choose: t('reward.choose'),
+    rows: rewardRowViews(),
+    armed: rewardArmed,
+    open: !rewardPaused,
+  };
+}
+
+/** Repaints the DOM card from the rows and the arm; a paused route hides it. */
+function paintRewards(host: RoutePanelHost): void {
+  const view = cardView;
+  if (view === null) return;
+  cardHost = host;
+  view.value = rewardsPanelView(rewardsInput(), viewport(host));
+}
+
+/**
+ * Opens the DOM card: the view is this module's own rows, the mount is the `#hud`
+ * layer. A missing layer mounts nothing, exactly as the shipped DOM panels guard it.
+ */
+function openRewardsCard(host: RoutePanelHost): void {
+  cardHost = host;
+  rewardPaused = host.scene.sys.isPaused();
+  const painted = signal(rewardsPanelView(rewardsInput(), viewport(host)));
+  cardView = painted;
+  const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
+  if (layer !== null) {
+    cardDispose = mountRewardsPanel(layer, painted, (intent) => handleRewardsIntent(host, intent));
+  }
+  const events = host.scene.events;
+  const onPause = (): void => setRewardsPaused(true);
+  const onResume = (): void => setRewardsPaused(false);
+  const onShutdown = (): void => closeMiniBossReward();
+  events.on(SCENE_PAUSE, onPause);
+  events.on(SCENE_RESUME, onResume);
+  events.on(SCENE_SHUTDOWN, onShutdown);
+  cardUnsubscribe = () => {
+    events.off(SCENE_PAUSE, onPause);
+    events.off(SCENE_RESUME, onResume);
+    events.off(SCENE_SHUTDOWN, onShutdown);
+  };
+}
+
+/** Tears the DOM card down: the scene subscription, the mount and the session state. */
+function closeRewardsCard(): void {
+  cardUnsubscribe?.();
+  cardUnsubscribe = null;
+  cardDispose?.();
+  cardDispose = null;
+  cardView = null;
+  cardHost = null;
+  rewardPaused = false;
+}
+
+function setRewardsPaused(paused: boolean): void {
+  if (rewardPaused === paused) return;
+  rewardPaused = paused;
+  const host = cardHost;
+  if (host !== null) paintRewards(host);
+}
+
+/** The committed row's shipped drop: an item to the bag, a Pokémon to the party. */
+function commitReward(host: RoutePanelHost, index: number): void {
+  const row = rewardRowsOnOffer[index];
+  if (row === undefined) return;
+  takeMiniBossReward(host, row, row.kind === 'item' ? { onto: 'bag' } : { onto: 'party' });
+}
+
+/** The card's own command channel: the one place anything is written. */
+function handleRewardsIntent(host: RoutePanelHost, intent: RewardsIntent): void {
+  if (cardView === null) return;
+  switch (intent.type) {
+    case 'arm': {
+      const action = rewardsPress(rewardArmed, intent.index, rewardRowsOnOffer.length);
+      rewardArmed = action.armed;
+      if (action.commit !== null) {
+        commitReward(host, action.commit);
+        return;
+      }
+      paintRewards(host);
+      return;
+    }
+    case 'commit': {
+      if (rewardRowsOnOffer.length === 0) return;
+      // The keyboard's confirm is the second press: arming the first row when
+      // nothing is armed, committing the armed one otherwise.
+      if (rewardArmed < 0) {
+        rewardArmed = 0;
+        paintRewards(host);
+        return;
+      }
+      commitReward(host, rewardArmed);
+      return;
+    }
+    case 'close':
+      closeMiniBossReward();
+      return;
+    default:
+      return;
+  }
 }
 
 /** Builds the reward card: the item rows first, then the anonymous Pokémon rows. */
@@ -94,7 +314,6 @@ function buildMiniBossReward(host: RoutePanelHost, rows: readonly RewardRow[]): 
     onClose: () => closeMiniBossReward(),
   });
   miniBossRewardPanel = panel;
-  miniBossRewardRoot = panel.root;
   const content = panel.content;
   const left = content.x;
   const width = content.w;
@@ -160,6 +379,7 @@ function buildMiniBossReward(host: RoutePanelHost, rows: readonly RewardRow[]): 
     }),
   );
   panel.root.add(children);
+  noteRewardsDrawnObjects(panel.root.list.length);
 }
 
 /**
@@ -172,7 +392,7 @@ function buildMiniBossReward(host: RoutePanelHost, rows: readonly RewardRow[]): 
  * the card up and changes nothing.
  */
 function takeMiniBossReward(host: RoutePanelHost, row: RewardRow, drop: RoomDrop): void {
-  if (!miniBossRewardRoot) return;
+  if (!rewardOpen()) return;
   const run = host.run();
   if (row.kind === 'pokemon') {
     if (drop.onto !== 'party') return;
@@ -209,7 +429,12 @@ export const descriptor: RoutePanelDescriptor = {
   order: 70,
   build(): void {
     miniBossRewardPanel = null;
-    miniBossRewardRoot = null;
-    miniBossRewardOnDone = null;
+    cardHost = null;
+    cardView = null;
+    rewardRowsOnOffer = [];
+    rewardArmed = -1;
+    rewardPaused = false;
+    rewardOnDone = null;
+    shippedDrawnObjects = 0;
   },
 };

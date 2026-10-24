@@ -1,0 +1,260 @@
+/*
+ * The mini-boss reward card (`D49`, frames `03f`/`03g` and their `m03f`/`m03g`
+ * twins). Every rect comes from `view.ts`, which mirrors the board, so this file
+ * carries the board's paint only: radius 11 on the desktop card and 16 on the phone
+ * sheet, the 16 % hairline, the 1 px highlight 12 px inside the top edge, the 6 %
+ * row pair with the 8 % stroke under the armed row's 16 % accent wash, and the two
+ * boards' own type sizes.
+ *
+ * The card's border is a real 1 px edge (the fidelity gate reads it), so the
+ * content layer sits at `inset: -1px` and the model's panel-relative rects land on
+ * the card's outer box. The row band clips at the board's three slots and scrolls,
+ * because a live card offers the three items and the three unidentified Pokémon at
+ * once (see `README.md` rule 4).
+ */
+.rewards {
+  position: fixed;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.rewards[data-layout='sheet'] {
+  /* m03f m sheet: radius 16 */
+  border-radius: 16px;
+}
+
+.rewards[hidden] {
+  display: none;
+}
+
+.rewards,
+.rewards *,
+.rewards *::before,
+.rewards *::after {
+  box-sizing: border-box;
+}
+
+.rewards__body {
+  position: absolute;
+  inset: -1px;
+}
+
+.rewards__highlight {
+  position: absolute;
+  background: rgb(255 255 255 / 14%);
+}
+
+.rewards__handle {
+  position: absolute;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 22%);
+}
+
+.rewards__title {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rewards[data-layout='card'] .rewards__title {
+  font-size: var(--hud-type-hero-size);
+  line-height: var(--hud-type-hero-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__title {
+  font-size: var(--hud-type-title-size);
+  line-height: var(--hud-type-title-line);
+}
+
+.rewards__choose {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rewards[data-layout='card'] .rewards__choose {
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__choose {
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.rewards__close {
+  position: absolute;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-weight: 700;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.rewards[data-layout='card'] .rewards__close {
+  font-size: var(--hud-type-hero-size);
+  line-height: var(--hud-type-hero-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__close {
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+}
+
+.rewards__close::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.rewards__close:hover {
+  color: var(--hud-accent);
+}
+
+.rewards__list {
+  position: absolute;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hud-accent) transparent;
+}
+
+.rewards__spacer {
+  display: block;
+  width: 1px;
+}
+
+.rewards__row {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hud-row-radius);
+  box-shadow: inset 0 0 0 1px var(--hud-row-border);
+  background: rgb(255 255 255 / 6%);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.rewards__row[data-armed='true'] {
+  /* row 1 of the frames: accent at 16 % under its 1 px accent stroke */
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+}
+
+.rewards__icon {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-size: auto;
+  image-rendering: pixelated;
+}
+
+.rewards[data-layout='card'] .rewards__icon {
+  top: 14px;
+  left: 14px;
+}
+
+.rewards[data-layout='sheet'] .rewards__icon {
+  top: 24px;
+  left: 14px;
+}
+
+.rewards__name,
+.rewards__desc,
+.rewards__label {
+  position: absolute;
+  overflow: hidden;
+  max-width: calc(100% - 40px);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rewards__name {
+  font-weight: 700;
+}
+
+.rewards__desc {
+  color: var(--hud-text-muted);
+}
+
+.rewards[data-layout='card'] .rewards__name {
+  top: 8px;
+  left: 56px;
+  font-size: var(--hud-type-display-size);
+  line-height: var(--hud-type-display-line);
+}
+
+.rewards[data-layout='card'] .rewards__desc {
+  top: 38px;
+  left: 56px;
+  font-size: var(--hud-type-section-size);
+  line-height: var(--hud-type-section-line);
+}
+
+.rewards[data-layout='card'] .rewards__label {
+  top: 30px;
+  left: 16px;
+  font-size: var(--hud-type-display-size);
+  font-weight: 700;
+  line-height: var(--hud-type-display-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__name {
+  top: 12px;
+  left: 50px;
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__desc {
+  top: 34px;
+  left: 50px;
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.rewards[data-layout='sheet'] .rewards__label {
+  top: 26px;
+  left: 14px;
+  font-size: var(--hud-type-body-size);
+  font-weight: 700;
+  line-height: var(--hud-type-body-line);
+}
+
+.rewards__row:focus-visible,
+.rewards__close:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
