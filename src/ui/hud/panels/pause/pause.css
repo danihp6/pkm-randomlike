@@ -1,0 +1,118 @@
+/*
+ * The pause card (`D49`, frame `03n`): the 55 % scrim, the 360 px card at radius
+ * 11 with a 16 % hairline, the 1 px highlight 12 px inside its top edge, the 8 %
+ * divider under the title and the two rows at radius 8. Every rect comes from
+ * `view.ts`, so this file carries the board's paint only.
+ *
+ * The scrim is the card's sibling, outside `.pause`, so its one token lives on the
+ * mount: the card's own paint stays scoped to `.pause`. The card's border is a
+ * real 1 px edge (the fidelity gate reads it), so the content layer sits at
+ * `inset: -1px` and the model's card-relative rects land on the card's outer box.
+ */
+.pause-mount {
+  --pause-scrim: rgb(5 7 12 / 55%);
+}
+
+.pause__scrim {
+  position: fixed;
+  box-sizing: border-box;
+  background: var(--pause-scrim);
+  pointer-events: none;
+}
+
+.pause {
+  --pause-panel-fill: rgb(16 22 31 / 92%);
+  --pause-panel-border: rgb(255 255 255 / 16%);
+  --pause-highlight: rgb(255 255 255 / 14%);
+  --pause-divider: rgb(255 255 255 / 8%);
+  --pause-row-fill: rgb(255 255 255 / 4%);
+  --pause-row-border: rgb(255 255 255 / 10%);
+  --pause-row-selected-fill: rgb(125 211 252 / 16%);
+
+  position: fixed;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--pause-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--pause-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.pause[hidden],
+.pause__scrim[hidden] {
+  display: none;
+}
+
+.pause,
+.pause *,
+.pause *::before,
+.pause *::after {
+  box-sizing: border-box;
+}
+
+.pause__body {
+  position: absolute;
+  inset: -1px;
+}
+
+.pause__highlight {
+  position: absolute;
+  background: var(--pause-highlight);
+}
+
+.pause__title {
+  position: absolute;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-hero-size);
+  font-weight: 700;
+  line-height: var(--hud-type-hero-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pause__divider {
+  position: absolute;
+  background: var(--pause-divider);
+}
+
+.pause__row {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--hud-row-radius);
+  box-shadow: inset 0 0 0 1px var(--pause-row-border);
+  background: var(--pause-row-fill);
+  color: var(--hud-text-secondary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-name-size);
+  line-height: var(--hud-type-name-line);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pause__row[data-selected='true'] {
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+  background: var(--pause-row-selected-fill);
+  color: var(--hud-accent);
+}
+
+.pause__label {
+  position: absolute;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pause__row:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}

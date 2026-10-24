@@ -7431,7 +7431,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       stays the same beat. Claims `src/scenes/panels/notices.ts`,
       `src/ui/hud/panels/notices/**` and its fixture. *Dependencies:* `[Task-127]`, `[Task-128]`,
       `[Task-124]`, `[Task-125]`. *(Batch 63)*
-- [ ] **[Task-138] The pause panel is the HUD's.** `src/ui/hud/panels/pause/` renders the pause card
+- [x] **[Task-138] The pause panel is the HUD's.** `src/ui/hud/panels/pause/` renders the pause card
       and its two rows; the scene keeps the pause itself and loses only the drawing. Claims
       `src/scenes/panels/pause.ts`, `src/ui/hud/panels/pause/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*

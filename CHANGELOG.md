@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The pause card is the HUD's.** `[Task-138]`, the eighteenth of Phase 12 (`D49`): under
+      `?hud=dom` the pause menu is a Preact card in `#hud` — the scrim, the highlight, the title,
+      the divider and the game's two rows (`Settings`, `Reset`) — while `src/scenes/panels/pause.ts`
+      keeps the open state, the cursor, the two-press Reset and the key routing, so the flag-off
+      Phaser card is untouched. Measured over CDP at 1280×800: the card is `460,300 360×200`, the
+      rows `484,376 312×48` and `484,432 312×48` (pitch 56), the card fill `rgb(16 22 31 / 92%)`
+      and the row fills `125 211 252 / 16%` and `255 255 255 / 4%` exactly; `ESC` opens it and the
+      route stops walking (tile `18,15` unchanged through 900 ms of held `→`), the inert scrim
+      leaves it open on a click at `(100,100)`, and the first press on `Reset run` arms it
+      (`Reset run - press again`) while the second starts a new run on the Starter screen — the DOM
+      row and the keys both. `npm test` 4142 passed / 13 skipped, `npm run build` green.
 - [x] **The battle's bag is the HUD's.** `[Task-142]`, the seventeenth of Phase 12 (`D49`): under
       `?hud=dom` the battle bag is a Preact card in `#hud` — the pocket tabs, the search line, the
       5×2 cell grid laid out by the shipped `bagGridLayout`, the stack badges and the description

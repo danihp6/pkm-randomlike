@@ -29,7 +29,7 @@ a headless test, and never imports the scene.
   cards under `?hud=dom`, and the shipped Phaser cards with the flag off.
 - `rewards.ts` — the mini-boss reward card: its DOM card under `?hud=dom`, and the
   shipped Phaser card with the flag off.
-- `pause.ts` — the pause menu and the hold-to-reset overlay.
+- `pause.ts` — the pause menu as the HUD's DOM card under `?hud=dom` (the shipped Phaser card with the flag off) and the hold-to-reset overlay.
 - `shop.ts` — the Mart's DOM card under `?hud=dom`; with the flag off its drawing still lives in `rooms/shop.ts`.
 - `trade.ts` — the trade card's entry point: its DOM card under `?hud=dom`, and the
   Phaser drawing in `rooms/trade.ts` with the flag off.
