@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The mini-boss reward panel is the HUD's.** `[Task-136]`, the fifteenth of Phase 12 (`D49`):
+      under `?hud=dom` the mini-boss reward is a Preact card in `#hud` built from the unchanged
+      `src/ui/rewards.ts` view model — one row per offer with its icon, name and description, the
+      stat line a Pokémon offer carries and no invented fourth row — and the pick stays a two-step
+      commit, so the first press only arms a row. The card is `360,196 560×342` at 1280×800 and
+      `8,226 374×392` at 390×844 (Δ 0, inside the 8 px margin), `rewardsDrawnObjectCount()` is `0`
+      under the flag against `32` off, and `renderer.snapshotArea(360,196,560,342)` is byte-identical
+      with the DOM card open, so the canvas paints none of it. The two-step pick is pinned by the
+      reducer test (`commit` called exactly once, on the second press of the same row).
+      `npm test` 3975 passed / 67 skipped, `npm run build` green.
 - [x] **The trade panel is the HUD's.** `[Task-135]`, the fourteenth of Phase 12 (`D49`): under
       `?hud=dom` the trade room's card is a Preact panel in `#hud` — the six party tiles and the
       PC grid, the meta line, the greeting and its message, the `GIVE AWAY` button and the `03j`

@@ -1,0 +1,27 @@
+{
+  "slug": "03g-panels-reward-pokemon",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "pokemon": {
+    "title": "MINI-BOSS REWARD",
+    "choose": "Choose one.",
+    "armed": -1,
+    "open": true,
+    "rows": [
+      {
+        "index": 0,
+        "kind": "pokemon",
+        "topStat": "atk",
+        "nature": "adamant",
+        "label": "ATTACK · Adamant"
+      },
+      {
+        "index": 1,
+        "kind": "pokemon",
+        "topStat": "spa",
+        "nature": "modest",
+        "label": "SP. ATK · Modest"
+      },
+      { "index": 2, "kind": "pokemon", "topStat": "spe", "nature": "jolly", "label": "SPEED · Jolly" }
+    ]
+  }
+}

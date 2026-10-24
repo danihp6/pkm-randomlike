@@ -7421,7 +7421,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       the command channel; `src/scenes/rooms/trade.ts` keeps its rule and loses only the drawing.
       Claims `src/scenes/panels/trade.ts`, `src/ui/hud/panels/trade/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
-- [ ] **[Task-136] The mini-boss reward panel is the HUD's.** The item-and-Pokémon choice from
+- [x] **[Task-136] The mini-boss reward panel is the HUD's.** The item-and-Pokémon choice from
       `src/ui/rewards.ts` in `src/ui/hud/panels/rewards/`, one row per offer, the pick inert until it
       is committed. Claims `src/scenes/panels/rewards.ts`, `src/ui/hud/panels/rewards/**` and its
       fixture. *Dependencies:* `[Task-127]`, `[Task-128]`, `[Task-124]`, `[Task-125]`. *(Batch 63)*
