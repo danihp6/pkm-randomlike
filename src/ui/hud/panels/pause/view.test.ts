@@ -32,6 +32,29 @@ vi.mock('../../../../scenes/BootScene', () => ({
   SHOP_COUNTER_TEXTURE_KEY: 'route:shop-counter',
 }));
 
+/**
+ * The DOM card's mount is captured instead of rendered: the headless environment has
+ * no `document`, so the scene's callback is the only part of the mount a test can
+ * drive. Whatever the mount is handed is exactly what a row press sends.
+ */
+const mountMock = vi.hoisted(() => ({
+  dispose: vi.fn(),
+  onIntent: undefined as ((intent: { type: 'row'; index: number }) => void) | undefined,
+  view: undefined as { value: unknown } | undefined,
+}));
+
+vi.mock('./mount', () => ({
+  mountPausePanel: (
+    _host: unknown,
+    view: { value: unknown },
+    onIntent?: (intent: { type: 'row'; index: number }) => void,
+  ) => {
+    mountMock.onIntent = onIntent;
+    mountMock.view = view;
+    return mountMock.dispose;
+  },
+}));
+
 const DESKTOP = { width: 1280, height: 800 };
 const PHONE = { width: 390, height: 844 };
 
@@ -285,5 +308,95 @@ describe('the live flag contract', () => {
     const scene = await import('../../../../scenes/panels/pause');
     scene.notePauseDrawnObjects(-4);
     expect(scene.pauseDrawnObjectCount()).toBe(0);
+  });
+});
+
+describe('the DOM row press', () => {
+  type StubHost = { openSettings: () => void; restartRun: () => void };
+  type SceneModule = typeof import('../../../../scenes/panels/pause');
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    mountMock.onIntent = undefined;
+    mountMock.view = undefined;
+    mountMock.dispose.mockClear();
+  });
+
+  /** The module as the game loads it under `?hud=dom`, with the card's mount captured. */
+  async function flagOnScene(): Promise<SceneModule> {
+    vi.stubGlobal('window', { location: { search: '?hud=dom' } });
+    vi.stubGlobal('document', { getElementById: () => ({ appendChild: vi.fn() }) });
+    vi.resetModules();
+    return import('../../../../scenes/panels/pause');
+  }
+
+  /** The chainable display object `buildResetOverlay` allocates when it builds. */
+  function drawnObject(): Record<string, () => unknown> {
+    const object: Record<string, () => unknown> = {};
+    for (const method of ['setOrigin', 'setScrollFactor', 'setDepth']) {
+      object[method] = () => object;
+    }
+    return object;
+  }
+
+  /** The host the card's build needs: a scale, the overlay's objects and the two calls. */
+  function cardHost(): StubHost & RoutePanelHost {
+    const scene = {
+      scale: { width: 1280, height: 800 },
+      add: { rectangle: () => drawnObject(), graphics: () => drawnObject() },
+      cameras: { main: { ignore: vi.fn() } },
+    };
+    return { openSettings: vi.fn(), restartRun: vi.fn(), scene } as unknown as StubHost & RoutePanelHost;
+  }
+
+  function press(index: number): void {
+    expect(mountMock.onIntent, 'the flag mounts the DOM card').toBeTypeOf('function');
+    mountMock.onIntent?.({ type: 'row', index });
+  }
+
+  function painted(): PausePanelView {
+    return mountMock.view!.value as PausePanelView;
+  }
+
+  it('arms Reset on the first row press and starts the run on the second', async () => {
+    const scene = await flagOnScene();
+    const host = cardHost();
+    scene.descriptor.build(host);
+    scene.openPauseMenu(host);
+
+    press(1);
+    expect(host.restartRun).not.toHaveBeenCalled();
+    expect(scene.pauseMenuOpenNow()).toBe(true);
+    expect(painted().open).toBe(true);
+    expect(painted().rows[1]!.armed).toBe(true);
+    expect(painted().rows[1]!.label).toBe(t('pause.resetArmed'));
+
+    press(1);
+    expect(host.restartRun).toHaveBeenCalledTimes(1);
+    expect(scene.pauseMenuOpenNow()).toBe(false);
+    expect(painted().open).toBe(false);
+  });
+
+  it('moves the cursor and disarms when the press picks another row', async () => {
+    const scene = await flagOnScene();
+    const host = cardHost();
+    scene.descriptor.build(host);
+    scene.openPauseMenu(host);
+
+    press(1);
+    expect(painted().rows[1]!.armed).toBe(true);
+    press(0);
+    expect(host.openSettings).toHaveBeenCalledTimes(1);
+    expect(host.restartRun).not.toHaveBeenCalled();
+    expect(scene.pauseMenuOpenNow()).toBe(false);
+  });
+
+  it('unmounts the card when the descriptor closes', async () => {
+    const scene = await flagOnScene();
+    const host = cardHost();
+    scene.descriptor.build(host);
+    scene.descriptor.close?.(host);
+    expect(mountMock.dispose).toHaveBeenCalledTimes(1);
   });
 });

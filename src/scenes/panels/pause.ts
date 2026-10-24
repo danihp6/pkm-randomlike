@@ -134,9 +134,7 @@ function buildPauseMenu(host: RoutePanelHost): void {
     const zone = scene.add.zone(rowX, rowY, rowW, PAUSE_MENU_ROW_H).setOrigin(0, 0);
     zone.setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => {
-      pauseMenuIndex = i;
-      pauseMenuArmed = false;
-      activatePauseMenu(host);
+      pressPauseMenuRow(host, i);
     });
     children.push(highlight, label, zone);
     return { highlight, label };
@@ -291,6 +289,20 @@ function refreshPauseMenu(): void {
   });
 }
 
+/**
+ * A press on a row, shared by the shipped zones and the DOM card: a press on
+ * another row moves the cursor and disarms Reset; a press on the row that is
+ * already armed keeps it armed, so the second press on `Reset run` starts the
+ * fresh run exactly as the key path's second `confirm` does.
+ */
+function pressPauseMenuRow(host: RoutePanelHost, index: number): void {
+  if (index !== pauseMenuIndex) {
+    pauseMenuIndex = index;
+    pauseMenuArmed = false;
+  }
+  activatePauseMenu(host);
+}
+
 /** The DOM's twin of a row's `pointerdown` zone: a press names a row and runs it. */
 function handlePauseIntent(host: RoutePanelHost, intent: PausePanelIntent): void {
   switch (intent.type) {
@@ -298,9 +310,7 @@ function handlePauseIntent(host: RoutePanelHost, intent: PausePanelIntent): void
       const index = intent.index;
       if (!Number.isInteger(index)) return;
       if (index < 0 || index >= PAUSE_MENU_ITEMS.length) return;
-      pauseMenuIndex = index;
-      pauseMenuArmed = false;
-      activatePauseMenu(host);
+      pressPauseMenuRow(host, index);
       return;
     }
     default:
