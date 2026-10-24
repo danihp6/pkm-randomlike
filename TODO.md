@@ -7463,7 +7463,7 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       marks in `src/ui/hud/panels/battle-switch/`, with the send-out beat still owned by the scene.
       Claims `src/scenes/BattleScene.ts`, `src/ui/hud/panels/battle-switch/**` and its fixture.
       *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
-- [ ] **[Task-144] The battle's message box is the HUD's, and its pacing is one clock.** The box and
+- [x] **[Task-144] The battle's message box is the HUD's, and its pacing is one clock.** The box and
       the typewriter move to `src/ui/hud/panels/battle-log/`, and the feed's frames
       (`src/ui/feed.ts`) drive it: each frame awaits the HUD's line before the next, so a "Critical
       hit!" still lands with the HP drop it describes. This is the pacing change `D49` names, and the

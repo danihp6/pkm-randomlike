@@ -1,0 +1,124 @@
+/**
+ * The battle message box's value model (`05b`/`m05b`): the board's measured box and
+ * its two line rects, the live line the scene is revealing, the fixture parser and
+ * the frame-step rule. Pure and total — the panel paints, the scene pushes, and the
+ * only clock in the panel's world is `BATTLE_LOG_DWELL_MS`.
+ */
+
+export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+export const BATTLE_LOG_SLUG: '05b-battle-message' = '05b-battle-message';
+export const BATTLE_LOG_SLUGS: readonly ['05b-battle-message', 'm05b-battle-message'] = [
+  '05b-battle-message',
+  'm05b-battle-message',
+];
+
+/** The read hold after a line is fully revealed: 900 ms, the scene's only dwell. */
+export const BATTLE_LOG_DWELL_MS: 900 = 900;
+
+/** The shipped 45 ms floor a held confirm gives a frame (`FAST_HOLD_MS` in the canvas). */
+const RUSH_HOLD_MS = 45;
+
+/** 600: under it the phone column's card is used (`m05b`), the battle panels' breakpoint. */
+export const BATTLE_LOG_BREAKPOINT = 600;
+export const BATTLE_LOG_NARROW_QUERY = `(max-width: ${BATTLE_LOG_BREAKPOINT - 1}px)`;
+
+/** At most two lines: the frame draws one message and its effect line. */
+const MAX_LINES = 2;
+
+/** 05b Battle · message · message box. */
+const DESKTOP_BOX: Rect = { x: 664, y: 544, w: 576, h: 216 };
+/** 05b Battle · message · message line 1. */
+const DESKTOP_LINE_1: Rect = { x: 696, y: 580, w: 292, h: 20 };
+/** 05b Battle · message · message line 2. */
+const DESKTOP_LINE_2: Rect = { x: 696, y: 612, w: 294, h: 15 };
+
+/** M 05b Battle · message · m menu panel. */
+const NARROW_BOX: Rect = { x: 16, y: 592, w: 358, h: 236 };
+/**
+ * The two lines sit 16 px inside the phone card at y 620 and 646 (the frame's own copy).
+ * The frame's text nodes are 224 and 153 wide because that is the copy's intrinsic
+ * width; the panel takes the card's content column so a live line is never clipped.
+ */
+const NARROW_LINE_X = 32;
+const NARROW_LINE_W = NARROW_BOX.w - (NARROW_LINE_X - NARROW_BOX.x) * 2;
+const NARROW_LINE_1: Rect = { x: NARROW_LINE_X, y: 620, w: NARROW_LINE_W, h: 13 };
+const NARROW_LINE_2: Rect = { x: NARROW_LINE_X, y: 646, w: NARROW_LINE_W, h: 13 };
+
+export type BattleLogTone = 'primary' | 'effect';
+export type BattleLogLineView = Readonly<{ text: string; tone: BattleLogTone }>;
+/** 0..2 lines. Live is at most one; the fixture carries the frame's two. */
+export type BattleLogView = Readonly<{ visible: boolean; lines: readonly BattleLogLineView[] }>;
+
+/**
+ * The two boards' measured rects, exported for the fixture test and the diff. The
+ * panel draws the desktop box at 1280×800 and the phone card under 600 px, so a
+ * panel push never has to carry a viewport.
+ */
+export function battleLogBoard(viewport: 'desktop' | 'narrow'): Readonly<{
+  box: Readonly<{ x: number; y: number; w: number; h: number }>;
+  line1: Readonly<{ x: number; y: number; w: number; h: number }>;
+  line2: Readonly<{ x: number; y: number; w: number; h: number }>;
+}> {
+  if (viewport === 'narrow') {
+    return { box: { ...NARROW_BOX }, line1: { ...NARROW_LINE_1 }, line2: { ...NARROW_LINE_2 } };
+  }
+  return { box: { ...DESKTOP_BOX }, line1: { ...DESKTOP_LINE_1 }, line2: { ...DESKTOP_LINE_2 } };
+}
+
+/** The live line the scene is revealing (already localised). `null` = no line. */
+export function liveBattleLogView(visible: boolean, line: string | null): BattleLogView {
+  if (!visible || line === null) return { visible, lines: [] };
+  return { visible, lines: [{ text: line, tone: 'primary' }] };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isTone(value: unknown): value is BattleLogTone {
+  return value === 'primary' || value === 'effect';
+}
+
+/**
+ * The frame's own payload (`design/fixtures/05b-battle-message.json`), or `null`
+ * when it is not one this panel can draw: no `battleLog` block, a `visible` that is
+ * not a boolean, more than two lines, a line without a string `text` or with an
+ * unknown `tone`. It never throws.
+ */
+export function fixtureBattleLogView(payload: unknown): BattleLogView | null {
+  if (!isObject(payload)) return null;
+  const block = payload['battleLog'];
+  if (!isObject(block)) return null;
+  const visible = block['visible'];
+  if (typeof visible !== 'boolean') return null;
+  const lines = block['lines'];
+  if (!Array.isArray(lines) || lines.length > MAX_LINES) return null;
+  const parsed: BattleLogLineView[] = [];
+  for (const line of lines) {
+    if (!isObject(line)) return null;
+    const text = line['text'];
+    const tone = line['tone'];
+    if (typeof text !== 'string' || !isTone(tone)) return null;
+    parsed.push({ text, tone });
+  }
+  return { visible, lines: parsed };
+}
+
+/**
+ * The feed's one clock, so the pacing is a pure rule the scene calls and a test
+ * pins. A line that is still typing holds at zero; a revealed line banks the
+ * frame's delta and advances once it reaches the hold — the rush floor when a
+ * confirm is held, the frame's own hold otherwise.
+ */
+export function feedStep(
+  typingDone: boolean,
+  elapsedMs: number,
+  holdMs: number,
+  rush: boolean,
+  deltaMs: number,
+): Readonly<{ elapsedMs: number; advance: boolean }> {
+  if (!typingDone) return { elapsedMs: 0, advance: false };
+  const elapsedMsNext = elapsedMs + deltaMs;
+  return { elapsedMs: elapsedMsNext, advance: elapsedMsNext >= (rush ? RUSH_HOLD_MS : holdMs) };
+}

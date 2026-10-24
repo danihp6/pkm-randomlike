@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's message box is the HUD's, and its pacing is one clock.** `[Task-144]`, the
+      twenty-second of Phase 12 (`D49`): under `?hud=dom` the box and its typewriter are a Preact
+      panel in `src/ui/hud/panels/battle-log/` at the board's own box — `664,544 576×216` at
+      1280×800 with the two lines at `696,580` / `696,612` (ink `#F8FAFC`, effect `#FCA5A5`) and
+      `16,592 358×236` with the lines at `32,620` / `32,646` at 390×844 — while the scene keeps the
+      feed. `battleLogDrawnObjectCount()` is `0` under the flag against `2` off, the DOM line grows
+      character by character, and the next frame starts `≥ 850 ms` after the line completes
+      (measured 1023 / 1028 ms on two lines): the 900 ms dwell now lives once, as
+      `BATTLE_LOG_DWELL_MS`, and the capture beat still adds it. `npm test` 4185 passed / 68
+      skipped, `npm run build` green.
 - [x] **The main menu is the HUD's.** `[Task-145]`, the twenty-first of Phase 12 (`D49`): `01` and
       `01b` — the route window, the title, the CONTINUE/NEW/OPTIONS/STATS rows, the party portraits
       and the stats footer — are a Preact panel in `src/ui/hud/panels/main-menu/`, and

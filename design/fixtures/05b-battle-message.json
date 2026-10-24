@@ -1,0 +1,11 @@
+{
+  "slug": "05b-battle-message",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": {}, "notice": null },
+  "battleLog": {
+    "visible": true,
+    "lines": [
+      { "text": "VENUSAUR used SLUDGE BOMB!", "tone": "primary" },
+      { "text": "CHARIZARD lost 38 HP and is poisoned.", "tone": "effect" }
+    ]
+  }
+}
