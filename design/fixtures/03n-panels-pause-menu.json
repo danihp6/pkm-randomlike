@@ -1,0 +1,13 @@
+{
+  "slug": "03n-panels-pause-menu",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "menu": {
+    "title": "MENU",
+    "selected": 0,
+    "armed": false,
+    "rows": [
+      { "id": "settings", "label": "Settings" },
+      { "id": "reset", "label": "Reset run" }
+    ]
+  }
+}
