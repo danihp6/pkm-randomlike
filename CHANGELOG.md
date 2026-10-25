@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The 61 Spanish descriptions are written, not waited for.** `[Task-149]`, the first of
+      Phase 13 (`D52`): the 18 moves and 43 abilities `MISSING_ES` named now carry a `description` and
+      a `shortDescription` authored in the repo from the dex's own English copy, so
+      `src/data/i18n/es/meta.json` reads 835/835 moves and 311/311 abilities described with both
+      `missingDescriptions` lists `[]`. No name moved: the official Spanish strings were already in
+      the tables (`Bramido Dragón`, `Cadena Virulenta` — the backlog's spot-check values were literal
+      translations). `src/i18n/content.test.ts` flips from "these ids are missing" to a whole-table
+      sweep — no row echoes its English source, no English sentence survives, and the authored 61 sit
+      inside their length bounds. The content generator (`scripts/build-i18n-content.mjs`) is not
+      rerun: it would overwrite the authored rows from the empty dump. `npm test` 4235 passed /
+      68 skipped, `npm run build` green.
 - [x] **The four `[!]` blockers are decided and the queue is refilled.** The backlog Phase 12 ended
       on is empty by construction, not by accident: `[Task-28]` is closed (the ESLint half is
       dropped, `D51`), `[Task-113]` is superseded by `[Task-149]` (the 61 DLC descriptions are

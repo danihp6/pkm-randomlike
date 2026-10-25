@@ -7562,7 +7562,7 @@ Phase 12 screen without pretending a screen exists to migrate.
   `[Task-151]`'s row and `[Task-153]`'s second slot, so it cannot start before Batch 67 lands. It is
   the last task of the phase and the reason the phase exists.
 
-- [ ] **[Task-149] The 61 DLC descriptions, authored in the repo.** Fill `description` and
+- [x] **[Task-149] The 61 DLC descriptions, authored in the repo.** Fill `description` and
       `shortDescription` in `src/data/i18n/es/moves.json` and `abilities.json` for exactly the 18
       moves and 43 abilities `MISSING_ES` names; regenerate `meta.json` so both `missingDescriptions`
       lists are empty and `MISSING_ES` is `[]`. **The text is written in the repo, in Spanish, from

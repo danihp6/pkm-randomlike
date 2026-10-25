@@ -66,8 +66,8 @@
   },
   "alluringvoice": {
     "name": "Canto Encantador",
-    "description": "",
-    "shortDescription": ""
+    "description": "Un canto hechizador que confunde al objetivo si este había subido alguna de sus características durante ese turno.",
+    "shortDescription": "Confunde al objetivo que haya subido alguna característica."
   },
   "allyswitch": {
     "name": "Cambio de Banda",
@@ -456,8 +456,8 @@
   },
   "burningbulwark": {
     "name": "Llama Protectora",
-    "description": "",
-    "shortDescription": ""
+    "description": "Levanta una barrera de fuego que detiene los ataques dañinos y quema a quien la toque. Los movimientos de estado la atraviesan y cada uso repetido es menos fiable.",
+    "shortDescription": "Detiene ataques y quema al contacto; los de estado pasan."
   },
   "burningjealousy": {
     "name": "Envidia Ardiente",
@@ -851,8 +851,8 @@
   },
   "dragoncheer": {
     "name": "Bramido Dragón",
-    "description": "",
-    "shortDescription": ""
+    "description": "Un bramido que aumenta la probabilidad de golpe crítico de un aliado cercano, y todavía más si ese aliado es de tipo Dragón.",
+    "shortDescription": "Sube el crítico de un aliado; más si es de tipo Dragón."
   },
   "dragonclaw": {
     "name": "Garra Dragón",
@@ -1001,8 +1001,8 @@
   },
   "electroshot": {
     "name": "Electrorrayo",
-    "description": "",
-    "shortDescription": ""
+    "description": "Se carga el primer turno subiendo el Ataque Especial y dispara al siguiente. Con lluvia o Hierba Única se ejecuta de inmediato.",
+    "shortDescription": "Sube el Ataque Especial y golpea al segundo turno."
   },
   "electroweb": {
     "name": "Electrotela",
@@ -1136,8 +1136,8 @@
   },
   "ficklebeam": {
     "name": "Láser Veleidoso",
-    "description": "",
-    "shortDescription": ""
+    "description": "Dispara un láser caprichoso que, con algo de suerte, duplica su potencia.",
+    "shortDescription": "Puede duplicar su potencia al azar."
   },
   "fierydance": {
     "name": "Danza Llama",
@@ -1561,8 +1561,8 @@
   },
   "hardpress": {
     "name": "Prensa Metálica",
-    "description": "",
-    "shortDescription": ""
+    "description": "Aplasta con una fuerza proporcional a los PS que le queden al objetivo: cuanto más sano esté, más duele.",
+    "shortDescription": "Golpea más fuerte cuanto más PS conserva el objetivo."
   },
   "haze": {
     "name": "Niebla",
@@ -1856,8 +1856,8 @@
   },
   "ivycudgel": {
     "name": "Garrote Liana",
-    "description": "",
-    "shortDescription": ""
+    "description": "Golpea con una liana que tiene una alta probabilidad de crítico. Su tipo cambia según la máscara que lleve Ogerpon.",
+    "shortDescription": "Mucho crítico; el tipo depende de la forma de Ogerpon."
   },
   "jawlock": {
     "name": "Presa Maxilar",
@@ -2106,8 +2106,8 @@
   },
   "malignantchain": {
     "name": "Cadena Virulenta",
-    "description": "",
-    "shortDescription": ""
+    "description": "Una cadena venenosa que envenena gravemente al objetivo la mitad de las veces.",
+    "shortDescription": "Envenena gravemente la mitad de las veces."
   },
   "matblock": {
     "name": "Escudo Tatami",
@@ -2116,8 +2116,8 @@
   },
   "matchagotcha": {
     "name": "Cañón Batidor",
-    "description": "",
-    "shortDescription": ""
+    "description": "Rocía té hirviendo que puede quemar, recupera la mitad del daño infligido y descongela al objetivo.",
+    "shortDescription": "Puede quemar, drena PS y descongela al objetivo."
   },
   "meanlook": {
     "name": "Mal de Ojo",
@@ -2196,8 +2196,8 @@
   },
   "mightycleave": {
     "name": "Filo Potente",
-    "description": "",
-    "shortDescription": ""
+    "description": "Un tajo tan potente que atraviesa la protección del rival sin llegar a romperla.",
+    "shortDescription": "Ignora la protección sin romperla."
   },
   "milkdrink": {
     "name": "Batido",
@@ -2676,8 +2676,8 @@
   },
   "psychicnoise": {
     "name": "Psicorruido",
-    "description": "",
-    "shortDescription": ""
+    "description": "Un ruido psíquico que impide al objetivo recuperar PS durante dos turnos.",
+    "shortDescription": "Impide recuperar PS durante dos turnos."
   },
   "psychicterrain": {
     "name": "Campo Psíquico",
@@ -3586,8 +3586,8 @@
   },
   "supercellslam": {
     "name": "Plancha Voltaica",
-    "description": "",
-    "shortDescription": ""
+    "description": "Una plancha eléctrica que, si falla, hiere a quien la usa con la mitad de sus PS máximos.",
+    "shortDescription": "Si falla, quien la usa pierde la mitad de sus PS máximos."
   },
   "superfang": {
     "name": "Superdiente",
@@ -3661,13 +3661,13 @@
   },
   "syrupbomb": {
     "name": "Bomba Caramelo",
-    "description": "",
-    "shortDescription": ""
+    "description": "Una explosión de caramelo tan pegajosa que reduce la Velocidad del objetivo al final de cada turno durante tres turnos.",
+    "shortDescription": "Reduce la Velocidad del objetivo durante tres turnos."
   },
   "tachyoncutter": {
     "name": "Tajo Taquión",
-    "description": "",
-    "shortDescription": ""
+    "description": "Dos tajos de partículas a velocidad de la luz que golpean dos veces y nunca fallan.",
+    "shortDescription": "Golpea dos veces y no falla nunca."
   },
   "tackle": {
     "name": "Placaje",
@@ -3746,8 +3746,8 @@
   },
   "temperflare": {
     "name": "Cólera Ardiente",
-    "description": "",
-    "shortDescription": ""
+    "description": "Una rabia ardiente que duplica su potencia si el ataque anterior de quien la usa no surtió efecto.",
+    "shortDescription": "Duplica su potencia si el ataque anterior fracasó."
   },
   "terablast": {
     "name": "Teraexplosión",
@@ -3756,8 +3756,8 @@
   },
   "terastarstorm": {
     "name": "Teraclúster",
-    "description": "",
-    "shortDescription": ""
+    "description": "Si lo usa Terapagos en su Forma Estelar, pasa a tipo Estelar, alcanza a todos los rivales y puede volverse físico.",
+    "shortDescription": "Con Terapagos Estelar alcanza a todos los rivales."
   },
   "terrainpulse": {
     "name": "Pulso de Campo",
@@ -3806,8 +3806,8 @@
   },
   "thunderclap": {
     "name": "Relámpago Súbito",
-    "description": "",
-    "shortDescription": ""
+    "description": "Un relámpago repentino que suele atacar primero, pero solo funciona si el objetivo también va a atacar.",
+    "shortDescription": "Ataca primero, pero solo si el objetivo va a atacar."
   },
   "thunderfang": {
     "name": "Colmillo Rayo",
@@ -3951,8 +3951,8 @@
   },
   "upperhand": {
     "name": "Palma Rauda",
-    "description": "",
-    "shortDescription": ""
+    "description": "Una palmada rápida que hace retroceder al objetivo, siempre que este use un movimiento con prioridad.",
+    "shortDescription": "Hace retroceder si el objetivo usa prioridad."
   },
   "uproar": {
     "name": "Alboroto",
