@@ -7584,7 +7584,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       tests and `docs/battle-spec.md`. *Dependencies:* none — `damage.ts` and the roll are shipped.
       *(Batch 66)*
 
-- [ ] **[Task-151] The custom ability row: `darkmatter`.** The generated dex has no Gen 9 row that
+- [x] **[Task-151] The custom ability row: `darkmatter`.** The generated dex has no Gen 9 row that
       ignores the type chart, so the repo gets **one hand-authored ability table the accessors
       accept**: `src/data/dex/customAbilities.ts` with `darkmatter` — EN *Dark Matter*, ES *Materia
       Oscura*, "The holder's moves ignore the type chart: no weaknesses, no resistances, no

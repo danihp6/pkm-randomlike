@@ -1843,6 +1843,17 @@ function pierceGhostImmunity(): EffectHandlers {
   };
 }
 
+/**
+ * Dark Matter (a hand-authored row, `src/data/dex/customAbilities.ts`): the
+ * holder's moves ignore the type chart, so every hit is neutral — a 0x immunity
+ * included, which the turn loop applies *after* this hook.
+ */
+function darkmatter(): EffectHandlers {
+  return {
+    onModifyEffectiveness: (ctx) => (ctx.owner === ctx.source ? 1 : undefined),
+  };
+}
+
 /** Abilities Trace may never copy (unknown, toggle or recursion-prone). */
 const TRACE_BANNED = new Set([
   'Trace',
@@ -2738,6 +2749,9 @@ const ABILITIES: readonly (readonly [string, EffectHandlers])[] = [
   ['victorystar', accuracyModifier(1.1, (ctx) => ctx.owner === ctx.source)],
   ['wanderingspirit', wanderingSpirit()],
   ['wimpout', escapeBelowHalf('Wimp Out')],
+
+  // The hand-authored rows the generated dex does not carry (`customAbilities.ts`).
+  ['darkmatter', darkmatter()],
 ];
 
 export function abilityEffects(): readonly EffectDefinition[] {

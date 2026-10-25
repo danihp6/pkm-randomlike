@@ -2,15 +2,21 @@
 
 Do not edit by hand. Regenerate with `npm run data:dex`
 (`scripts/build-dex.mjs`, reads `@pkmn/dex`, the full National Dex). The package
-is a devDependency; the game only ever reads these JSON files.
+is a devDependency; the game only ever reads these JSON files, plus the one
+hand-authored table below.
 
 `meta.json` records the source, the generation and the row counts — a test
 asserts the counts still match, so a bad regeneration fails loudly.
 
 ## Files
 
+`customAbilities.ts` is the folder's one **hand-authored** file: the ability rows
+the generated dex does not carry, read through `abilities.ts`. Everything else is
+generated.
+
 | File | Fields that matter to us |
 | --- | --- |
+| `customAbilities.ts` | `CUSTOM_ABILITIES`: `id`, `name`, `desc`, `shortDesc` plus the Spanish `nameEs` / `descEs` / `shortDescEs` — `darkmatter` today, joined at lookup by `abilities.ts` and counted as `counts.customAbilities` |
 | `species.json` | `id`, `num`, `name`, `types`, `baseStats`, `abilities`, `prevo`, `evos`, `evolutions[]`, `weightkg`, `heightm`, `genderRatio`, `nfe`, `catchRate`, form fields |
 | `megas.json` | a battle-only `Species` plus `baseSpeciesId`, `stoneId`, `stoneName`; every Mega of a playable base species, `Past` or `Future` — the dex's own "announced, not released" tag (D34) |
 | `gmaxes.json` | a battle-only `Species` plus `baseSpeciesId` (the exact `changesFrom`); every dex `…-Gmax` entry whose base species is playable — 34 today, one per species (D44) |

@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The repo owns an ability the dex does not carry.** `[Task-151]`, the third of Phase 13:
+      `src/data/dex/customAbilities.ts` hand-authors **`darkmatter`** (*Dark Matter* / *Materia
+      Oscura*) — the holder's moves ignore the type chart — and the whole pipeline accepts it.
+      `getAbility` resolves the row while `allAbilities()` keeps returning the 311 generated rows (a
+      new `allAbilitiesWithCustom()` and a `counts.customAbilities: 1` carry it), so the dex tests and
+      the i18n table's `abilities.total` invariant are untouched; the effect registry registers its
+      `onModifyEffectiveness` handler (returns `1`, dispatched before the chart), which is what puts
+      it in `randomAbilityPool()` — every random draw moved with it, so the fixed-seed pin in
+      `randomAbility.test.ts` and the one in `run/memberEdits.test.ts` were re-pinned, with a comment.
+      `scripts/effect-coverage.mjs` now reads the hand-authored rows too, so
+      `docs/balance/effect-coverage.md` regenerates idempotently with `darkmatter` as `port`, and
+      `src/i18n/content.ts` prints its Spanish copy. `src/data/dex/abilities.json` is untouched.
+      `npm test` 4252 passed / 68 skipped, `npm run build` green.
 - [x] **The four team-type bonuses.** `[Task-150]`, the second of Phase 13: a battle carries the
       player party's repeated types as `BattleSetup.teamTypes` / `BattleState.teamTypes`
       (default `[]`), and while two living members share a type a move of that type deals **+10 %**

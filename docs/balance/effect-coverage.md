@@ -42,7 +42,7 @@ The run only ever hands out the items in `src/data/items.ts`, so a dex item that
 is not in that catalogue is `excluded` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — 311 total (263 port, 0 no-op, 36 excluded, 12 removed)
+## Abilities — 312 total (311 dex rows + 1 hand-authored `customAbilities.ts`; 264 port, 0 no-op, 36 excluded, 12 removed)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -92,6 +92,7 @@ catalogue row, not engine code.
 | Damp | `port` | ported in `effects/abilities.ts` |
 | Dancer | `port` | ported in `effects/abilities.ts` |
 | Dark Aura | `port` | ported in `effects/abilities.ts` |
+| Dark Matter | `port` | ported in `effects/abilities.ts` |
 | Dauntless Shield | `port` | ported in `effects/abilities.ts` |
 | Dazzling | `port` | ported in `effects/abilities.ts` |
 | Defeatist | `port` | ported in `effects/abilities.ts` |

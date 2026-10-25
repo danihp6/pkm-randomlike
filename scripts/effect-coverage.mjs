@@ -27,7 +27,16 @@ const lineEnd = (source, marker, from = 0) => {
   return Math.min(crlf, lf);
 };
 
-const abilities = read('src/data/dex/abilities.json');
+const generatedAbilities = read('src/data/dex/abilities.json');
+// The hand-authored rows (`src/data/dex/customAbilities.ts`) are abilities a run
+// can hold too, so they join the table. Read as text, like every other source of
+// truth here; the registry row is what classifies them `port`.
+const customAbilities = [
+  ...text('src/data/dex/customAbilities.ts').matchAll(
+    /id: '([a-z0-9]+)',\s*\n?\s*name: '([^']+)'/g,
+  ),
+].map((match) => ({ id: match[1], name: match[2] }));
+const abilities = [...generatedAbilities, ...customAbilities];
 const items = read('src/data/dex/items.json');
 const moves = read('src/data/dex/moves.json');
 const learnsets = read('src/data/dex/learnsets.json');
@@ -366,7 +375,7 @@ The run only ever hands out the items in \`src/data/items.ts\`, so a dex item th
 is not in that catalogue is \`excluded\` by definition: adding it later is a
 catalogue row, not engine code.
 
-## Abilities — ${abilityRows.length} total (${count(abilityRows, 'port')} port, ${count(abilityRows, 'no-op')} no-op, ${count(abilityRows, 'excluded')} excluded, ${count(abilityRows, 'removed')} removed)
+## Abilities — ${abilityRows.length} total (${generatedAbilities.length} dex rows + ${customAbilities.length} hand-authored \`customAbilities.ts\`; ${count(abilityRows, 'port')} port, ${count(abilityRows, 'no-op')} no-op, ${count(abilityRows, 'excluded')} excluded, ${count(abilityRows, 'removed')} removed)
 
 ${table(abilityRows)}
 
