@@ -432,6 +432,8 @@ type RoomNpc = Readonly<{ row: NpcRow; tile: Tile }>;
 type BattleExtras = Readonly<{
   noFlee?: boolean;
   enemyBoosts?: Partial<Record<BoostId, number>>;
+  /** The fight rolls (or was told) two actives per side (`docs/battle-spec.md` §12). */
+  double?: boolean;
 }>;
 
 /** The base inputs of the route on screen, before the debug reroll nonce. */
@@ -2796,13 +2798,21 @@ export class RouteScene extends Phaser.Scene {
         ? { levelFor: (size: number) => trainerLevel(squadLevel(this.run), size, band.maxLevel) }
         : {}),
     });
-    this.startBattle({
-      kind: 'trainer',
-      trainerId: trainer.id,
-      trainerName: archetype.name,
-      roster: withForcedAbility(roster, archetype),
-      archetypeId: archetype.id,
-    });
+    const roomKey = this.room ? `room:${this.room.roomId}` : '';
+    this.startBattle(
+      {
+        kind: 'trainer',
+        trainerId: trainer.id,
+        trainerName: archetype.name,
+        roster: withForcedAbility(roster, archetype),
+        archetypeId: archetype.id,
+      },
+      {
+        ...(kind !== null && mapIndex !== null
+          ? { double: bossIsDouble(kind, this.run.seed, mapIndex, roomKey) }
+          : {}),
+      },
+    );
   }
 
   /** Opens a room's own wild battle through the shipped wild path (`startBattle`). */
@@ -3405,9 +3415,10 @@ export class RouteScene extends Phaser.Scene {
       // The no-heal leaf's rule rides the launch too, so its trainer's battle and
       // any dev wild opened in the room both carry it.
       noHeal: this.room?.special === 'no-heal',
-      // The boss room's battle is the map boss's own — a double battle on every
-      // floor (`docs/maps-spec.md` §6); every other room's battles stay single.
-      ...(this.room?.boss === true ? { double: bossIsDouble('boss') } : {}),
+      // Whether this fight fields two actives per side is the fight's own roll
+      // (`src/data/bosses.ts`), carried here through `BattleExtras`; every other
+      // room's battles stay single.
+      ...(extras.double === true ? { double: true } : {}),
       // The banned-species leaf's rule rides the launch the same way: every battle
       // the room opens bars the party's most-used species from being sent out.
       bannedSpecies: this.room?.special === 'banned' ? bannedSpeciesOf(this.run) : null,

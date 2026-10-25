@@ -1,3 +1,4 @@
+import { hashSeed, Rng } from '../engine/rng';
 import type { BoostId } from '../engine/battle/fighter';
 import type { RoomConditionId } from './battlefields';
 
@@ -18,20 +19,25 @@ export const DOUBLE_ACTIVES = 2;
 /** Which of a floor's two hand-placed fights a party size belongs to. */
 export type BossPartyKind = 'boss' | 'miniboss';
 
-/** One kind's fixed party: its sizes and whether it fights as a double battle. */
-export type BossPartyRow = Readonly<{ firstMap: number; size: number; double: boolean }>;
+/** One kind's fixed party: its sizes and the chance its fight is a double battle. */
+export type BossPartyRow = Readonly<{
+  firstMap: number;
+  size: number;
+  /** Probability in `0..1` that this kind's fight fields two actives per side. */
+  doubleChance: number;
+}>;
 
 /**
  * A fixed party size per kind. `firstMap` is what **map 1** fields — the run's
  * on-ramp — and `size` is what every floor from map 2 on fields, an infinite run
- * included. `double` fields two active slots at once: the map boss does, the
- * mini-boss stays a single battle.
+ * included. `doubleChance` is the balancing knob for the double-battle roll: the
+ * map boss fields two actives on a quarter of its floors, the mini-boss on a tenth.
  */
 export const BOSS_PARTY: Readonly<Record<BossPartyKind, BossPartyRow>> = {
-  // The map boss: the floor's finale, at the map's cap, fought as a double battle.
-  boss: { firstMap: 3, size: 6, double: true },
-  // The mini-boss: a fixed smaller fight at band levels, single.
-  miniboss: { firstMap: 2, size: 3, double: false },
+  // The map boss: the floor's finale, at the map's cap.
+  boss: { firstMap: 3, size: 6, doubleChance: 0.25 },
+  // The mini-boss: a fixed smaller fight at band levels.
+  miniboss: { firstMap: 2, size: 3, doubleChance: 0.1 },
 };
 
 /**
@@ -43,9 +49,21 @@ export function bossPartySize(kind: BossPartyKind, mapIndex: number): number {
   return Number.isFinite(mapIndex) && Math.floor(mapIndex) >= 2 ? row.size : row.firstMap;
 }
 
-/** True when `kind`'s fight is a double battle (the map boss). */
-export function bossIsDouble(kind: BossPartyKind): boolean {
-  return BOSS_PARTY[kind].double;
+/**
+ * True when `kind`'s fight on `mapIndex` in `routeKey` is a double battle. Draws from
+ * its own stream — `hashSeed(`${seed}:double:${kind}:${mapIndex}:${routeKey}`)` — so no
+ * existing draw moves and a replay rebuilds the same answer (D11).
+ */
+export function bossIsDouble(
+  kind: BossPartyKind,
+  seed: string,
+  mapIndex: number,
+  routeKey: string,
+): boolean {
+  return (
+    new Rng(hashSeed(`${seed}:double:${kind}:${mapIndex}:${routeKey}`)).next() <
+    BOSS_PARTY[kind].doubleChance
+  );
 }
 
 /** Which side a boss opening favours. */

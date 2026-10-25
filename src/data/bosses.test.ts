@@ -6,6 +6,7 @@ import {
   bossIsDouble,
   bossPartySize,
   type BossOpening,
+  type BossPartyKind,
 } from './bosses';
 import { ROOM_BATTLEFIELDS } from './battlefields';
 import { BOOST_IDS } from '../engine/battle/fighter';
@@ -16,6 +17,18 @@ describe('BOSS_PARTY', () => {
     expect(BOSS_PARTY.boss.size).toBe(6);
     expect(BOSS_PARTY.miniboss.firstMap).toBe(2);
     expect(BOSS_PARTY.miniboss.size).toBe(3);
+  });
+
+  it('pins the two double-battle chances', () => {
+    expect(BOSS_PARTY.boss.doubleChance).toBe(0.25);
+    expect(BOSS_PARTY.miniboss.doubleChance).toBe(0.1);
+  });
+
+  it('keeps every double-battle chance a real probability', () => {
+    for (const row of Object.values(BOSS_PARTY)) {
+      expect(row.doubleChance).toBeGreaterThanOrEqual(0);
+      expect(row.doubleChance).toBeLessThanOrEqual(1);
+    }
   });
 
   it('keeps every row a whole, positive party', () => {
@@ -38,16 +51,42 @@ describe('BOSS_PARTY', () => {
 });
 
 describe('bossIsDouble', () => {
-  it('makes the map boss a double battle and leaves the mini-boss single', () => {
-    expect(bossIsDouble('boss')).toBe(true);
-    expect(bossIsDouble('miniboss')).toBe(false);
-    expect(DOUBLE_ACTIVES).toBe(2);
+  const SEEDS = Array.from({ length: 10_000 }, (_, index) => `s${index}`);
+
+  function rate(kind: BossPartyKind): number {
+    const hits = SEEDS.filter((seed) => bossIsDouble(kind, seed, 3, 'room:5')).length;
+    return hits / SEEDS.length;
+  }
+
+  it('rolls the map boss on a quarter of the seeds and the mini-boss on a tenth', () => {
+    const boss = rate('boss');
+    expect(boss).toBeGreaterThanOrEqual(0.24);
+    expect(boss).toBeLessThanOrEqual(0.26);
+    const miniboss = rate('miniboss');
+    expect(miniboss).toBeGreaterThanOrEqual(0.09);
+    expect(miniboss).toBeLessThanOrEqual(0.11);
   });
 
-  it('agrees with the row flag', () => {
-    for (const kind of ['boss', 'miniboss'] as const) {
-      expect(bossIsDouble(kind)).toBe(BOSS_PARTY[kind].double);
+  it('answers two fixed seeds exactly', () => {
+    expect(bossIsDouble('boss', 's1', 3, 'room:5')).toBe(true);
+    expect(bossIsDouble('boss', 's0', 3, 'room:5')).toBe(false);
+  });
+
+  it('is pure: the same arguments twice answer the same boolean', () => {
+    for (const seed of ['s0', 's1', 's7', 's42']) {
+      for (const kind of ['boss', 'miniboss'] as const) {
+        expect(bossIsDouble(kind, seed, 3, 'room:5')).toBe(bossIsDouble(kind, seed, 3, 'room:5'));
+      }
     }
+  });
+
+  it('keeps the room in the key, so two rooms of one floor can disagree', () => {
+    expect(bossIsDouble('boss', 's1', 3, 'room:5')).toBe(true);
+    expect(bossIsDouble('boss', 's1', 3, 'room:6')).toBe(false);
+  });
+
+  it('fields two active slots per side', () => {
+    expect(DOUBLE_ACTIVES).toBe(2);
   });
 });
 

@@ -248,6 +248,12 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   **fixed party of six** (`bossPartySize('boss', mapIndex)`, `src/data/bosses.ts`);
   **map 1** is the exception at **three**, because the first floor is the run's
   on-ramp.
+- That fight is a **double battle** — two actives per side — on **25 %** of floors;
+  the mini-boss's own fight rolls **10 %** (`BOSS_PARTY[kind].doubleChance`). The
+  answer comes from the fight's own stream,
+  `${seed}:double:<kind>:<mapIndex>:room:<roomId>`, so it is stable per floor and
+  room and no other floor draw moves (D11). A one-member party on a double fight
+  still degrades to the single layout (`secondActiveIndex = -1`).
 - The portal is **carved from the start** on a free wall of the boss room and stays
   **sealed** while the boss stands, so the room looks the same before and after.
   Once the boss falls the portal opens; stepping through it advances the run to the
