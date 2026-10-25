@@ -14,6 +14,7 @@
   `23 → 24` migration that seeds an empty list. No screen renders it yet; the store is
   what `[Task-155]` will read.
 - **Environment:** worktree `../wt-pkm-152`, branch `task-152`.
+- **Local toolchain:** `node_modules` is already present in this worktree as a **symlink** to the main checkout's install. Do **not** run `npm ci` or `npm install`; run `npm test` / `npm run build` directly.
 - **Dependencies:** none. `RunStats` (`src/engine/run/state.ts`) and the migration
   chain are shipped.
 
