@@ -96,6 +96,7 @@ const FACES: Readonly<Record<BandId, readonly string[]>> = {
     'ultraball',
     'nugget',
     'egg',
+    'bindingband',
     'leftovers',
     'blackglasses',
     'spelltag',

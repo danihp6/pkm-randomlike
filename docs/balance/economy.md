@@ -81,7 +81,7 @@ from the seeded `Rng`, so which two a shelf shows is a property of the run's see
 | low   | 10x Poke Ball — 1000   | Super Potion — 700   | 7 rows, all 100–200                            | one of 8 TMs — 3000   | —                     |
 | mid   | 10x Great Ball — 3000  | Super Potion — 700   | 14 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 | —                 |
 | high  | 10x Great Ball — 3000  | Hyper Potion — 1200  | 13 rows: 200 berries, 1000 type items, 4000 boosters | one of 8 TMs — 3000 | —                 |
-| late  | 10x Ultra Ball — 6000  | Hyper Potion — 1200  | 31 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 | one of 34 — 8000 |
+| late  | 10x Ultra Ball — 6000  | Hyper Potion — 1200  | 32 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 | one of 34 — 8000 |
 | end   | 10x Ultra Ball — 6000  | Full Restore — 3000  | 13 rows: 200 berries, 1000 type items, 4000 premium  | one of 8 TMs — 3000 | one of 34 — 8000 |
 
 The rows one fixed seed opens with, per band — the shelves
@@ -114,7 +114,7 @@ prices above:
   from `mid` on — Wide Lens, Muscle Band, Wise Glasses, Normal Gem, Iron Ball and
   Lagging Tail at `mid`, Expert Belt, Scope Lens and Razor Claw at `high` — while
   the **premium** 4000-class pieces (Leftovers, the Choice set, Life Orb, the
-  Sashes, the Orbs) wait for `late`, and the 18 resist berries arrive with them. A
+  Sashes, the Orbs, Binding Band) wait for `late`, and the 18 resist berries arrive with them. A
   `mid` floor's whole money (≈ 2 500) buys the pack and the rung rather than one of
   its 4000-class rows; that is accepted, because the row is a two-of-fourteen draw
   and the premium rows still wait for `late`.
