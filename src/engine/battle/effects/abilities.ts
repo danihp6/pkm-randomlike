@@ -3,6 +3,7 @@ import { effectiveness, getMove } from '../../../data/dex';
 import {
   applyDamage,
   applyHeal,
+  hasAbility,
   isGrounded,
   stagedStat,
   transformInto,
@@ -92,15 +93,15 @@ function intimidate(): EffectHandlers {
     onSwitchIn: (ctx) => {
       const foe = ctx.target;
       if (!foe || foe.hp <= 0) return;
-      if (foe.ability === 'Inner Focus') {
+      if (hasAbility(foe, 'Inner Focus')) {
         pushText(ctx.state, 'battle.log.ability.innerFocus', { name: foe.name });
         return;
       }
-      if (foe.ability === 'Scrappy') {
+      if (hasAbility(foe, 'Scrappy')) {
         pushText(ctx.state, 'battle.log.ability.scrappy', { name: foe.name });
         return;
       }
-      if (foe.ability === 'Guard Dog') {
+      if (hasAbility(foe, 'Guard Dog')) {
         applyBoostEffect(
           ctx.state,
           opponentOf(ctx.side),
@@ -125,7 +126,7 @@ function intimidate(): EffectHandlers {
           },
         },
       );
-      if (foe.ability === 'Rattled') {
+      if (hasAbility(foe, 'Rattled')) {
         applyBoostEffect(
           ctx.state,
           opponentOf(ctx.side),
@@ -616,7 +617,7 @@ function roughSkin(): EffectHandlers {
 function pickpocket(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
     if (ctx.owner.heldItem || !attacker.heldItem) return;
-    if (attacker.ability === 'Sticky Hold') {
+    if (hasAbility(attacker, 'Sticky Hold')) {
       pushText(ctx.state, 'battle.log.ability.stickyHold', { name: attacker.name });
       return;
     }
@@ -1020,7 +1021,7 @@ function synchronize(): EffectHandlers {
     onAfterStatus: (ctx, status) => {
       if (ctx.owner !== ctx.source || !ctx.target) return;
       if (!['brn', 'par', 'psn'].includes(status)) return;
-      if (ctx.target.ability === 'Synchronize') return;
+      if (hasAbility(ctx.target, 'Synchronize')) return;
       const key = SYNCHRONIZE[status as StatusId];
       if (key === undefined) return;
       applyStatusEffect(ctx.state, opponentOf(ctx.side), ctx.target, status, {
@@ -1562,7 +1563,7 @@ function magician(): EffectHandlers {
       if (!payload.hit || !damagingMove(payload)) return;
       if (ctx.owner.hp <= 0 || ctx.target.hp <= 0) return;
       if (ctx.owner.heldItem || !ctx.target.heldItem) return;
-      if (ctx.target.ability === 'Sticky Hold') {
+      if (hasAbility(ctx.target, 'Sticky Hold')) {
         pushText(ctx.state, 'battle.log.ability.stickyHold', { name: ctx.target.name });
         return;
       }
@@ -1580,7 +1581,7 @@ function magician(): EffectHandlers {
 
 function lingeringAroma(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
-    if (attacker.ability === 'Lingering Aroma') return;
+    if (hasAbility(attacker, 'Lingering Aroma')) return;
     attacker.ability = 'Lingering Aroma';
     pushText(ctx.state, 'battle.log.abilityBecame', {
       name: attacker.name,
@@ -2155,7 +2156,7 @@ function aura(type: string): EffectHandlers {
   return {
     onModifyDamage: (ctx, payload) => {
       if (payload.move.type !== type) return;
-      const broken = SIDE_IDS.some((side) => activeFighter(ctx.state, side).ability === 'Aura Break');
+      const broken = SIDE_IDS.some((side) => hasAbility(activeFighter(ctx.state, side), 'Aura Break'));
       return scaledDamage(payload.damage, broken ? 0.75 : 4 / 3);
     },
   };
@@ -2319,7 +2320,7 @@ function mimicry(): EffectHandlers {
 /** Mummy overwrites the ability of whatever makes contact with the holder. */
 function mummy(): EffectHandlers {
   return contactReaction((ctx, attacker) => {
-    if (attacker.ability === 'Mummy') return;
+    if (hasAbility(attacker, 'Mummy')) return;
     attacker.ability = 'Mummy';
     pushText(ctx.state, 'battle.log.abilityBecame', { name: attacker.name, ability: 'Mummy' });
   });

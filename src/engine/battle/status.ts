@@ -1,5 +1,5 @@
 import type { Rng } from '../rng';
-import type { BattleFighter, StatusId } from './fighter';
+import { hasAbility, type BattleFighter, type StatusId } from './fighter';
 
 export const STATUS_IDS: readonly StatusId[] = ['brn', 'psn', 'tox', 'par', 'slp', 'frz'];
 
@@ -32,7 +32,7 @@ const TYPE_IMMUNITIES: Readonly<Record<StatusId, readonly string[]>> = {
 export function canApplyStatus(fighter: BattleFighter, status: StatusId): boolean {
   if (fighter.hp <= 0) return false;
   if (fighter.status !== null) return false;
-  if ((status === 'psn' || status === 'tox') && fighter.ability === 'Corrosion') return true;
+  if ((status === 'psn' || status === 'tox') && hasAbility(fighter, 'Corrosion')) return true;
   return !fighter.types.some((type) => TYPE_IMMUNITIES[status].includes(type));
 }
 
@@ -59,7 +59,7 @@ export type StatusMoveCheck =
 /** Run before a move: sleep/freeze counters and the paralysis roll. */
 export function beforeMoveStatus(fighter: BattleFighter, rng: Rng): StatusMoveCheck {
   if (fighter.status === 'slp') {
-    fighter.statusCounter -= fighter.ability === 'Early Bird' ? 2 : 1;
+    fighter.statusCounter -= hasAbility(fighter, 'Early Bird') ? 2 : 1;
     if (fighter.statusCounter <= 0) {
       cureStatus(fighter);
       return { cured: 'slp' };

@@ -58,6 +58,26 @@ describe('protect', () => {
     expect(protectBlocks(state, 'player', getMove('raindance')!)).toBe(false);
   });
 
+  it('lets Unseen Fist break protection from the second ability slot', () => {
+    const state = createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'charmander',
+          level: 20,
+          ability: 'Blaze',
+          secondAbility: 'Unseen Fist',
+          moves: ['tackle'],
+        }),
+      ],
+      enemy: [fighter('enemy', 'bulbasaur', ['growl'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    activeFighter(state, 'enemy').volatiles.protect = 'protect';
+    expect(protectBlocks(state, 'player', getMove('tackle')!)).toBe(false);
+  });
+
   it('Spiky Shield hurts a contact attacker, Baneful Bunker poisons it', () => {
     const spikes = battle(['tackle'], ['growl']);
     const spikesAttacker = activeFighter(spikes, 'player');

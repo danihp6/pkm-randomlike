@@ -3,7 +3,14 @@ import type { ItemDef } from '../../data/items';
 import type { TranslationKey } from '../../i18n/en';
 import type { Rng } from '../rng';
 import { makeContext, runStart, runSwitchIn } from './effects/registry';
-import { applyBoosts, trappedBy, type BattleFighter, type BoostId, type StatusId } from './fighter';
+import {
+  applyBoosts,
+  hasAbility,
+  trappedBy,
+  type BattleFighter,
+  type BoostId,
+  type StatusId,
+} from './fighter';
 
 export type SideId = 'player' | 'enemy';
 
@@ -401,9 +408,9 @@ export function isOver(state: BattleState): boolean {
 export function weatherSuppressed(state: BattleState): boolean {
   return SIDE_IDS.some((side) => {
     const fighter = activeFighter(state, side);
-    if (fighter.ability !== 'Air Lock' && fighter.ability !== 'Cloud Nine') return false;
+    if (!hasAbility(fighter, 'Air Lock') && !hasAbility(fighter, 'Cloud Nine')) return false;
     const foe = activeFighter(state, opponentOf(side));
-    return foe.ability !== 'Neutralizing Gas';
+    return !hasAbility(foe, 'Neutralizing Gas');
   });
 }
 

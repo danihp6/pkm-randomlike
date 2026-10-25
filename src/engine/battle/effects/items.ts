@@ -4,6 +4,7 @@ import {
   applyBoosts,
   applyDamage,
   applyHeal,
+  hasAbility,
   type BattleFighter,
   type BoostId,
   type StatusId,
@@ -132,7 +133,7 @@ function belowThreshold(item: ItemDef, fighter: BattleFighter): boolean {
   if (!item.below) return true;
   let [numerator, denominator] = item.below;
   // Gluttony eats a berry at half HP even when it would normally wait longer.
-  if (fighter.ability === 'Gluttony' && numerator / denominator < 1 / 2) {
+  if (hasAbility(fighter, 'Gluttony') && numerator / denominator < 1 / 2) {
     numerator = 1;
     denominator = 2;
   }
@@ -141,7 +142,7 @@ function belowThreshold(item: ItemDef, fighter: BattleFighter): boolean {
 
 /** Unnerve stops the foe from eating its own berry. */
 function unnerved(ctx: EffectContext): boolean {
-  return opponent(ctx.state, ctx.side).ability === 'Unnerve';
+  return hasAbility(opponent(ctx.state, ctx.side), 'Unnerve');
 }
 
 function consume(ctx: EffectContext, item: ItemDef): void {
@@ -149,10 +150,10 @@ function consume(ctx: EffectContext, item: ItemDef): void {
   ctx.owner.lastItemId = item.id;
   pushText(ctx.state, 'battle.log.item.usedUp', { name: ctx.owner.name, item: item.id });
   // Cud Chew owes the holder one more bite at the end of the turn.
-  if (ctx.owner.ability === 'Cud Chew' && ctx.owner.volatiles.cudChew === null) {
+  if (hasAbility(ctx.owner, 'Cud Chew') && ctx.owner.volatiles.cudChew === null) {
     ctx.owner.volatiles.cudChew = item.id;
   }
-  if (item.consumed && ctx.owner.ability === 'Cheek Pouch' && ctx.owner.hp > 0) {
+  if (item.consumed && hasAbility(ctx.owner, 'Cheek Pouch') && ctx.owner.hp > 0) {
     const healed = applyHeal(ctx.owner, Math.max(1, Math.floor(ctx.owner.maxHp / 3)));
     if (healed > 0) {
       pushEvent(ctx.state, {
@@ -206,7 +207,7 @@ export function applyHeldItemEffect(ctx: EffectContext, item: ItemDef, forced = 
   }
 
   const baseAmount = healAmountOf(item, holder.maxHp);
-  const amount = holder.ability === 'Ripen' ? baseAmount * 2 : baseAmount;
+  const amount = hasAbility(holder, 'Ripen') ? baseAmount * 2 : baseAmount;
   if (amount <= 0 || (!forced && !belowThreshold(item, holder))) return false;
   const healed = applyHeal(holder, amount);
   if (healed <= 0) return false;

@@ -2,7 +2,13 @@ import type { Move, MoveEffect } from '../../../data/dex';
 import { isUnportedMove } from '../../../data/moveCoverage';
 import { warnUnportedEffect } from '../../../dev/warnings';
 import type { Rng } from '../../rng';
-import { moveContacts, type BattleFighter, type BoostId } from '../fighter';
+import {
+  moveContacts,
+  hasAbility,
+  normalizeAbilityId,
+  type BattleFighter,
+  type BoostId,
+} from '../fighter';
 import type { BattleState, SideId } from '../state';
 
 export type EffectKind = 'ability' | 'item' | 'move' | 'weather' | 'terrain' | 'status' | 'volatile';
@@ -98,7 +104,7 @@ export type ContextOptions = Readonly<{
 const REGISTRY = new Map<string, EffectDefinition>();
 
 export function normalizeEffectId(id: string): string {
-  return id.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalizeAbilityId(id);
 }
 
 export function registerEffect(def: EffectDefinition): void {
@@ -138,19 +144,19 @@ export function makeContext(state: BattleState, side: SideId, options: ContextOp
 
 type EffectRef = Readonly<{ effect: EffectDefinition; owner: BattleFighter }>;
 
-function activeAbility(state: BattleState, side: SideId): string {
-  return state.sides[side].party[state.sides[side].activeIndex].ability;
-}
-
 /** Neutralizing Gas suppresses the opposing active Pokémon's ability. */
 function gasSuppresses(state: BattleState, side: SideId): boolean {
   const foeSide: SideId = side === 'player' ? 'enemy' : 'player';
-  return activeAbility(state, foeSide) === 'Neutralizing Gas';
+  return hasAbility(activeFighterOf(state, foeSide), 'Neutralizing Gas');
+}
+
+function activeFighterOf(state: BattleState, side: SideId): BattleFighter {
+  return state.sides[side].party[state.sides[side].activeIndex];
 }
 
 function abilityActive(state: BattleState, fighter: BattleFighter, side: SideId): boolean {
   if (state.roomField.abilitiesOff) return false;
-  if (fighter.ability === 'Neutralizing Gas') return true;
+  if (hasAbility(fighter, 'Neutralizing Gas')) return true;
   return !gasSuppresses(state, side);
 }
 
@@ -164,13 +170,24 @@ function ownedEffects(
   const active = abilityActive(state, fighter, side);
   // Mold Breaker ignores every ability except the piercer's own.
   const pierced = state.abilityPierce !== null && state.abilityPierce !== fighter;
-  const ability = getEffect(fighter.ability);
   if (active && !pierced) {
+    const ability = getEffect(fighter.ability);
     if (ability) refs.push({ effect: ability, owner: fighter });
     else if (fighter.ability) warnUnportedEffect('ability', fighter.ability);
+    // A granted second ability dispatches on its own slot (`Task-153`): one ref
+    // per distinct row, so two slots naming the same effect still run it once.
+    const second = fighter.secondAbility;
+    if (second) {
+      const granted = getEffect(second);
+      if (granted) {
+        if (granted.id !== ability?.id) refs.push({ effect: granted, owner: fighter });
+      } else {
+        warnUnportedEffect('ability', second);
+      }
+    }
   }
   // Klutz suppresses the holder's held item entirely, and Magic Room every held item.
-  if (fighter.heldItem && fighter.ability !== 'Klutz' && state.field.magicroom <= 0) {
+  if (fighter.heldItem && !hasAbility(fighter, 'Klutz') && state.field.magicroom <= 0) {
     const item = getEffect(fighter.heldItem);
     if (item) refs.push({ effect: item, owner: fighter });
     else warnUnportedEffect('item', fighter.heldItem);

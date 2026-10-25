@@ -2,6 +2,7 @@ import { allMoves, effectiveness, getMove, type Move, type MoveEffect } from '..
 import {
   applyDamage,
   applyHeal,
+  hasAbility,
   resetBattleState,
   takesIndirectDamage,
   BOOST_IDS,
@@ -538,8 +539,8 @@ function applyMoveEffects(
     move.category === 'Status' &&
     Boolean(move.flags.reflectable) &&
     (defender.volatiles.magicCoat ||
-      (defender.ability === 'Magic Bounce' &&
-        attacker.ability !== 'Neutralizing Gas' &&
+      (hasAbility(defender, 'Magic Bounce') &&
+        !hasAbility(attacker, 'Neutralizing Gas') &&
         state.abilityPierce !== defender));
   if (reflects) {
     if (defender.volatiles.magicCoat) {
@@ -609,7 +610,7 @@ function applyMoveEffects(
 
   const secondaries: MoveEffect[] = [];
   if (move.secondaries) secondaries.push(...move.secondaries);
-  const sheerForce = acting.ability === 'Sheer Force' && move.basePower > 0;
+  const sheerForce = hasAbility(acting, 'Sheer Force') && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {
     for (const secondary of secondaries) {
       applySecondary(state, actingSide, secondary, acting, effectTargetOfMove, move.type);
@@ -618,7 +619,7 @@ function applyMoveEffects(
 
   if (move.drain && move.drain.length === 2 && totalDamage > 0) {
     const drained = Math.max(1, Math.floor((totalDamage * move.drain[0]) / move.drain[1]));
-    if (effectTargetOfMove.ability === 'Liquid Ooze') {
+    if (hasAbility(effectTargetOfMove, 'Liquid Ooze')) {
       if (takesIndirectDamage(acting)) {
         const dealt = applyDamage(acting, drained);
         pushEvent(state, {
@@ -777,7 +778,7 @@ const PRESSURED_TARGETS = new Set([
 /** Pressure makes foe-targeting moves cost an extra PP. */
 function ppCost(state: BattleState, side: SideId, move: Move): number {
   const foe = opponent(state, side);
-  if (foe.ability === 'Pressure' && PRESSURED_TARGETS.has(move.target)) return 2;
+  if (hasAbility(foe, 'Pressure') && PRESSURED_TARGETS.has(move.target)) return 2;
   return 1;
 }
 
@@ -950,7 +951,7 @@ function resolveMove(
   target?: BattleFighter,
 ): void {
   // Truant alternates: after a turn in which it acts, the next one is lost.
-  if (attacker.ability === 'Truant') {
+  if (hasAbility(attacker, 'Truant')) {
     if (attacker.volatiles.truant) {
       attacker.volatiles.truant = false;
       pushText(state, 'battle.log.loafing', { name: attacker.name });
@@ -1111,7 +1112,7 @@ function resolveMove(
 
     // Protean and Libero change the user's type, once per switch-in in Gen 9.
     if (
-      (attacker.ability === 'Protean' || attacker.ability === 'Libero') &&
+      (hasAbility(attacker, 'Protean') || hasAbility(attacker, 'Libero')) &&
       !attacker.volatiles.proteanUsed
     ) {
       attacker.volatiles.proteanUsed = true;
@@ -1346,7 +1347,7 @@ function dancerFollowUp(state: BattleState, side: SideId, move: Move): void {
   if (dancerCopyActive || !move.flags.dance || state.winner !== null) return;
   const foeSide = opponentOf(side);
   const dancer = activeFighter(state, foeSide);
-  if (dancer.hp <= 0 || dancer.ability !== 'Dancer') return;
+  if (dancer.hp <= 0 || !hasAbility(dancer, 'Dancer')) return;
   const copy = getMove(move.id);
   if (!copy) return;
   dancerCopyActive = true;
@@ -1365,13 +1366,13 @@ function piercesTargetAbility(
   attacker: BattleFighter,
   move: Move,
 ): boolean {
-  if (opponent(state, side).ability === 'Neutralizing Gas') return false;
-  if (['Mold Breaker', 'Teravolt', 'Turboblaze'].includes(attacker.ability)) return true;
-  return attacker.ability === 'Mycelium Might' && move.category === 'Status';
+  if (hasAbility(opponent(state, side), 'Neutralizing Gas')) return false;
+  if (['Mold Breaker', 'Teravolt', 'Turboblaze'].some((id) => hasAbility(attacker, id))) return true;
+  return hasAbility(attacker, 'Mycelium Might') && move.category === 'Status';
 }
 
 function gasSuppresses(state: BattleState, side: SideId): boolean {
-  return opponent(state, side).ability === 'Neutralizing Gas';
+  return hasAbility(opponent(state, side), 'Neutralizing Gas');
 }
 
 /** Unaware and the Ruin auras, after ability suppression, as damage-context flags. */
@@ -1387,18 +1388,18 @@ function damageStatContext(
   const foeSide = opponentOf(side);
   const alive = (fighter: BattleFighter, fighterSide: SideId): boolean =>
     state.abilityPierce !== fighter && !gasSuppresses(state, fighterSide);
-  const attackerUnaware = attacker.ability === 'Unaware' && !gasSuppresses(state, side);
-  const defenderUnaware = defender.ability === 'Unaware' && alive(defender, foeSide);
+  const attackerUnaware = hasAbility(attacker, 'Unaware') && !gasSuppresses(state, side);
+  const defenderUnaware = hasAbility(defender, 'Unaware') && alive(defender, foeSide);
 
   let attackMultiplier = 1;
   let defenseMultiplier = 1;
   if (alive(defender, foeSide)) {
-    if (defender.ability === 'Tablets of Ruin' || defender.ability === 'Vessel of Ruin') {
+    if (hasAbility(defender, 'Tablets of Ruin') || hasAbility(defender, 'Vessel of Ruin')) {
       attackMultiplier *= 0.75;
     }
   }
   if (alive(attacker, side)) {
-    if (attacker.ability === 'Sword of Ruin' || attacker.ability === 'Beads of Ruin') {
+    if (hasAbility(attacker, 'Sword of Ruin') || hasAbility(attacker, 'Beads of Ruin')) {
       defenseMultiplier *= 0.75;
     }
   }
@@ -1543,7 +1544,7 @@ function resolveResiduals(state: BattleState): void {
       const fighter = activeFighter(state, side, slot);
       if (fighter.hp <= 0) continue;
       const residual =
-        fighter.ability === 'Poison Heal' || !takesIndirectDamage(fighter)
+        hasAbility(fighter, 'Poison Heal') || !takesIndirectDamage(fighter)
           ? null
           : residualDamage(fighter);
       if (!residual) continue;

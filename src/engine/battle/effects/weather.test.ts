@@ -84,4 +84,16 @@ describe('weather', () => {
       state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.weather.end'),
     ).toBe(true);
   });
+
+  it('reads sand immunity from the second ability slot', () => {
+    const veiled = createFighter({
+      id: 'x',
+      speciesId: 'charmander',
+      level: 20,
+      ability: 'Blaze',
+      secondAbility: 'Sand Veil',
+    });
+    expect(weatherImmune(veiled, 'sand')).toBe(true);
+    expect(weatherChip(veiled, 'sand')).toBe(0);
+  });
 });

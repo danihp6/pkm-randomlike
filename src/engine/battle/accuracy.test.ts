@@ -14,6 +14,23 @@ describe('accuracyChance', () => {
     expect(accuracyChance(true, make('charmander'), make('sentret'))).toBe(1);
   });
 
+  it('ignores the defender evasion stage for a Mind’s Eye second ability', () => {
+    const attacker = createFighter({
+      id: 'a',
+      speciesId: 'charmander',
+      level: 20,
+      nature: 'serious',
+      ability: 'Blaze',
+      secondAbility: "Mind's Eye",
+    });
+    const defender = make('sentret');
+    defender.boosts.evasion = 1;
+    expect(accuracyChance(60, attacker, defender)).toBeCloseTo(0.6);
+    attacker.ability = 'Blaze';
+    delete attacker.secondAbility;
+    expect(accuracyChance(60, attacker, defender)).toBeCloseTo(0.45);
+  });
+
   it('multiplies by the net accuracy/evasion stage', () => {
     const attacker = make('charmander');
     const defender = make('sentret');

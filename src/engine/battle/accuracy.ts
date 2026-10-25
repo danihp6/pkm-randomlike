@@ -1,5 +1,5 @@
 import type { Rng } from '../rng';
-import { accuracyStageMultiplier, clampBoost, type BattleFighter } from './fighter';
+import { accuracyStageMultiplier, clampBoost, hasAbility, type BattleFighter } from './fighter';
 
 /** Dense fog costs every move this much of its own accuracy (`docs/battle-spec.md` §4). */
 export const FOG_ACCURACY_PENALTY = 20;
@@ -20,7 +20,7 @@ export function accuracyChance(
   conditions: AccuracyConditions = {},
 ): number {
   if (moveAccuracy === true) return 1;
-  const evasion = attacker.ability === "Mind's Eye" ? 0 : defender.boosts.evasion;
+  const evasion = hasAbility(attacker, "Mind's Eye") ? 0 : defender.boosts.evasion;
   const stage = clampBoost(attacker.boosts.accuracy - evasion);
   // Fog takes 20 off the move's own accuracy, so the stage multiplier scales the
   // reduced number and a move printed at 20 or less cannot hit at all.

@@ -1,6 +1,6 @@
 import { getMove } from '../../data/dex';
 import { accuracyChance } from './accuracy';
-import { clampBoost, type BattleFighter } from './fighter';
+import { clampBoost, hasAbility, type BattleFighter } from './fighter';
 import {
   activeFighter,
   effectiveWeather,
@@ -98,7 +98,7 @@ function accuracyPreview(
   moveAccuracy: number | true,
   ctx: ReturnType<typeof makeContext>,
 ): Pick<MovePreview, 'baseAccuracy' | 'accuracy' | 'accuracyStage'> {
-  const evasion = attacker.ability === "Mind's Eye" ? 0 : defender.boosts.evasion;
+  const evasion = hasAbility(attacker, "Mind's Eye") ? 0 : defender.boosts.evasion;
   const accuracyStage = clampBoost(attacker.boosts.accuracy - evasion);
   if (moveAccuracy === true) {
     return { baseAccuracy: null, accuracy: null, accuracyStage };

@@ -497,6 +497,32 @@ describe('berry abilities (batch 7)', () => {
     expect(player.heldItem).toBeNull();
   });
 
+  it('Ripen doubles the berry heal from the second ability slot', () => {
+    const state = createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'applin',
+          level: 20,
+          ability: 'Gluttony',
+          secondAbility: 'Ripen',
+          heldItem: 'sitrusberry',
+          moves: ['ember'],
+        }),
+      ],
+      enemy: [createFighter({ id: 'enemy', speciesId: 'bulbasaur', level: 18, moves: ['tackle'] })],
+      rng: new Rng(99),
+      isWild: true,
+    });
+    const player = activeFighter(state, 'player');
+    player.hp = Math.floor(player.maxHp / 4);
+    const before = player.hp;
+
+    runResidual(playerContext(state));
+
+    expect(player.hp).toBe(before + 2 * Math.floor(player.maxHp / 4));
+  });
+
   it('Cheek Pouch heals a third of max HP when a berry is eaten', () => {
     const state = itemBattle('greedent', 'Cheek Pouch', 'sitrusberry');
     const player = activeFighter(state, 'player');

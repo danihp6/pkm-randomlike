@@ -15,7 +15,7 @@ import {
 } from './maps/plan';
 import { floorForRoute } from './run/floors';
 import type { AiLevel } from './battle/ai';
-import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
+import { normalizeAbilityId, type FighterSnapshot, type Gender, type MoveSlot, type StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import type { RunHistoryRecord, RunSpeciesRecord } from './run/history';
@@ -661,6 +661,10 @@ function parseFighter(value: unknown): FighterSnapshot | null {
   // never the member; a v14 document simply has none.
   const nickname = typeof value.nickname === 'string' ? normalizeNickname(value.nickname) : null;
   const statTreats = parseStatTreats(value.statTreats);
+  // A second ability is optional additive data (`Task-153`): a non-empty string
+  // whose normalised id differs from the primary survives, anything else drops
+  // the field and stays tolerant — never the member.
+  const secondAbility = typeof value.secondAbility === 'string' ? value.secondAbility.trim() : '';
 
   return {
     id: value.id,
@@ -669,6 +673,9 @@ function parseFighter(value: unknown): FighterSnapshot | null {
     level: Math.min(MAX_LEVEL, value.level),
     nature: value.nature,
     ability: value.ability,
+    ...(secondAbility !== '' && normalizeAbilityId(secondAbility) !== normalizeAbilityId(value.ability)
+      ? { secondAbility }
+      : {}),
     gender,
     shiny,
     heldItem,

@@ -931,6 +931,62 @@ describe('nickname migration', () => {
   });
 });
 
+describe('the second ability on a fighter (Task-153)', () => {
+  /** The sample run with the lead's fighter carrying `secondAbility` as given. */
+  function runWithSecondAbility(secondAbility: unknown): Record<string, unknown> {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    const party = run.party as Record<string, unknown>[];
+    const [first, ...rest] = party;
+    const fighter = { ...(first.fighter as Record<string, unknown>), secondAbility };
+    return { ...run, party: [{ ...first, fighter }, ...rest] };
+  }
+
+  const abilityOf = (): string => sampleRun().party[0].fighter.ability;
+
+  it('keeps a valid second ability beside the primary', () => {
+    const run = sampleRun();
+    const named: RunState = {
+      ...run,
+      party: run.party.map((member, index) =>
+        index === 0
+          ? {
+              ...member,
+              fighter: { ...member.fighter, secondAbility: 'Intimidate' },
+            }
+          : member,
+      ),
+    };
+    const encoded = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: named,
+      history: [],
+    });
+    const decoded = document(encoded);
+    expect(decoded.run?.party[0].fighter.ability).toBe(abilityOf());
+    expect(decoded.run?.party[0].fighter.secondAbility).toBe('Intimidate');
+    expect(decoded.run?.party[1].fighter.secondAbility).toBeUndefined();
+    expect(encoded).toContain('"secondAbility":"Intimidate"');
+  });
+
+  it('drops an empty or duplicated second ability and keeps the member', () => {
+    const decodedOf = (secondAbility: unknown) =>
+      document(
+        JSON.stringify({
+          version: SAVE_VERSION,
+          settings: defaultSettings(),
+          run: runWithSecondAbility(secondAbility),
+        }),
+      );
+
+    for (const secondAbility of ['', '   ', abilityOf(), abilityOf().toUpperCase(), 7, null]) {
+      const run = decodedOf(secondAbility).run;
+      expect(run?.party).toHaveLength(6);
+      expect('secondAbility' in (run?.party[0].fighter ?? {})).toBe(false);
+    }
+  });
+});
+
 describe('the NPC member words', () => {
   /** A run whose party, box and rip each carry one crash-test member. */
   function editedRun(): RunState {

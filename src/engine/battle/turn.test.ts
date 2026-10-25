@@ -167,6 +167,46 @@ describe('ability interactions in the turn loop', () => {
     expect(state.sides.player.party[0].moves[0].pp).toBe(before - 2);
   });
 
+  it('Pressure costs the extra PP from the second ability slot too', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] }],
+      [
+        {
+          id: 'e',
+          speciesId: 'dusclops',
+          level: 20,
+          ability: 'Frisk',
+          secondAbility: 'Pressure',
+          moves: ['tackle'],
+        },
+      ],
+    );
+    const before = state.sides.player.party[0].moves[0].pp;
+    takeTurn(state, fight(), fight());
+    expect(state.sides.player.party[0].moves[0].pp).toBe(before - 2);
+  });
+
+  it('Protean changes the holder type from the second ability slot', () => {
+    const state = build(
+      [
+        {
+          id: 'p',
+          speciesId: 'pidgey',
+          level: 20,
+          ability: 'Keen Eye',
+          secondAbility: 'Protean',
+          moves: ['ember'],
+        },
+      ],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }],
+    );
+    const player = activeFighter(state, 'player');
+    expect(player.types).toEqual(['Normal', 'Flying']);
+    takeTurn(state, fight(), fight());
+    expect(player.types).toEqual(['Fire']);
+    expect(player.volatiles.proteanUsed).toBe(true);
+  });
+
   it('Liquid Ooze makes a drain move hurt its user', () => {
     const state = build(
       [{ id: 'p', speciesId: 'bulbasaur', level: 20, moves: ['absorb'] }],
