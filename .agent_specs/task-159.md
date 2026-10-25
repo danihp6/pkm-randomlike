@@ -47,6 +47,14 @@ Nothing outside this list. No other task in this batch claims any of these paths
 - `scripts/effect-coverage.mjs`
 - `src/data/moveCoverage.json` (**generated** — regenerate, never hand-edit)
 - `docs/balance/effect-coverage.md` (**generated** — regenerate, never hand-edit)
+- `src/data/shop.ts` (**added at dev time, 2026-10-25** — Binding Band stops being
+  `no-op`, and `src/data/shop.test.ts` asserts the Mart stocks every modelled
+  competitive held item, so one `late` row is mandatory; nothing else in the file)
+- `docs/balance/economy.md` (**added at dev time, 2026-10-25** — only the two rows the
+  new `late` shelf changes: the count and the premium list)
+- `src/ui/casinoReels.test.ts` (**added at dev time, 2026-10-25** — only the frozen
+  `FACES.late` list, which `Task-115`'s rule says follows the Mart the day it bands an
+  item)
 - `src/i18n/en.ts`
 - `src/i18n/es.ts`
 - `docs/battle-spec.md` §4 "Status and volatility" — **only** §4
