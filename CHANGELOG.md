@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The four `[!]` blockers are decided and the queue is refilled.** The backlog Phase 12 ended
+      on is empty by construction, not by accident: `[Task-28]` is closed (the ESLint half is
+      dropped, `D51`), `[Task-113]` is superseded by `[Task-149]` (the 61 DLC descriptions are
+      authored in the repo, `D52`), and `[Task-104]`/`[Task-146]` are split into tasks that need no
+      content nobody can get. **Phase 13** adds `[Task-149]` to `[Task-155]` in three batches: **66**
+      (`149` the 61 descriptions, `150` the four team-type bonuses, `151` the `darkmatter` row,
+      `152` the run-history store), **67** (`153` the engine's second ability slot and `155` the stats
+      screen) and **68** (`154` the dark Pokémon, which reads the two before it). Every new item
+      carries its claims, its dependencies and — where a human decided — its `*Decision:*` line, so
+      the next cycle cuts the batch without asking again.
+- [x] **The loop loses two workflows it never needed.** `agent-smoke.yml` and `oci-retry.yml` are
+      deleted with `scripts/agent/vm/oci-launch.sh` and its offline harness (`D53`), the VM-script
+      step leaves `ci.yml`, and the provisioning and capacity-wait chapters leave
+      `docs/agent-vm.md`, which now documents the host itself — the cycle, the driver, the brake and
+      the prompt — with the box left to a human. The `OCI_*` repository variables stay until a human
+      deletes them; nothing in the repo reads them any more.
+
 - [x] **Run over is the HUD's.** `[Task-148]`, the twenty-fourth of Phase 12 (`D49`): `06`, `07`
       and `07b` — the summary card, the win/loss copy, the four stat rows, the share line, the
       TOTALS/POKEMON tabs and the POKEMON table — are a Preact panel in

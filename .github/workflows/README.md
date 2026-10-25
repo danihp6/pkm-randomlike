@@ -13,10 +13,6 @@ part it cannot know.
 
 - `ci.yml` — the repo's gate (`npm test` + `npm run build`) on `main` and on pull
   requests. Read-only; it is the required check.
-- `agent-smoke.yml` — dispatch-only probe that the credential, the CLI and the
-  `opencode-go` model ids answer through the provider. Read-only, no repo side
-  effects, 30 seconds: it is the early warning for the one external dependency that
-  can break the whole loop, and the only pipeline that spends nothing on a repo.
 - `agent-cycle.yml` — **the autopilot's unit of work, and the only workflow allowed
   to write `main`**: one batch, the Orchestrator driving plan → dev → QA → merge
   (--no-ff) → TODO/CHANGELOG bookkeeping → push. It picks the batch itself from the
@@ -37,15 +33,3 @@ part it cannot know.
   it closes. It needs the `AUTOPILOT_TOKEN` secret, because `GITHUB_TOKEN` cannot write
   repository variables. `hours: 0` closes the range now; with no range set the brake is
   manual and the pass skips itself.
-- `oci-retry.yml` — the wait for the Always Free VM (`docs/agent-vm.md`): **continuous**
-  while it is armed, because each run hands the baton to the next one when it ends without
-  an instance — the schedule alone fires every 1–3 hours and cannot hold a wait. One run is
-  8 attempts ~7 minutes apart (a 5 min warm-up, 5 min between attempts, 10 after a 429,
-  because Oracle throttles `launch` anything faster), asking for **2/12** (the Always Free
-  Ampere ceiling since August 2026) two attempts out of three and **1/6** on the third, since
-  a smaller request fits hosts the full entitlement does not. It parks on the `RUNNING`
-  instance, which is
-  also what stops the chain, needs `OCI_SSH_PUBLIC_KEY` (the public half, injected at launch)
-  and opens an `oci-ready` issue when a slot opens; `OCI_RETRY=off` is the brake. Read-only
-  on the repo, no model tokens, and the waiting answers exit `0` so the runs list is not red
-  while the region is full.

@@ -5,8 +5,8 @@ half of it that runs unattended. The workflows themselves are in `.github/workfl
 and carry the same policy in their headers, but this is the map.
 
 **Host:** the loop has two. Today it is GitHub Actions — the repository is public, so its
-minutes are free — and the same cycle is merged as a script for an always-on Oracle VM
-(`docs/agent-vm.md`) whose instance is still waiting on capacity. Everything below holds
+minutes are free — and the same cycle is merged as a script for an always-on VM
+(`docs/agent-vm.md`). Everything below holds
 for both: the protocol, the markers, the verdict and the guards. The VM host is
 `scripts/agent/vm/`; the Actions host is the workflows (`gh workflow run
 agent-cycle.yml`, or `agent / autopilot` for the loop). The brake is `AUTOPILOT` in one
@@ -17,8 +17,6 @@ and `brake.sh` in the other, and it is **off** until a human arms it.
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
 | `ci.yml` | push to `main`, pull requests | The gate: `npm test` + `npm run build`. Read-only. |
-| `agent-smoke.yml` | dispatch | Proves the credential, the CLI and the model ids answer through the provider. |
-| `agent-role-smoke.yml` | dispatch | Proves a roled agent starts headless and loads its prompt, that `--auto` lets it use tools, that a job can push a branch, and that the private asset store is readable with the deploy key. |
 | `agent-cycle.yml` | dispatch (the driver dispatches it) | **One batch, end to end.** The only workflow allowed to write `main`. |
 | `agent-autopilot.yml` | `schedule` every 30 min, dispatch | The loop: decides whether a cycle may start and dispatches one. Spends no tokens. |
 | `agent-autopilot-window.yml` | dispatch, `schedule` hourly | The timed brake: arms `AUTOPILOT` for a range you pick (`hours`, and the range's UTC start) and turns it off on the range's edges. Needs the `AUTOPILOT_TOKEN` secret. |

@@ -1192,6 +1192,50 @@ it the move is a `.gitignore` line plus a checkout under `ASSETS_ROOT` (the same
 already take), not a rewrite. The frames themselves — `design/frames/*.json`, the text and geometry —
 carry no image bytes and are unaffected either way.
 
+## D51 - One compiler: the ESLint half is dropped, and the lint gate is Prettier under `tsc` *(decided)*
+
+`[Task-28]` shipped a dormant `eslint.config.mjs` waiting for a `typescript-eslint` release
+that peers with the repo's native `typescript@7.0.2`. None did: every release up to **8.72.0**
+declares `typescript >=4.8.4 <6.1.0`, and TS 7 exposes no JavaScript API for a parser to
+import.
+
+**Decided (`2026-10-25`): the half is dropped, not deferred.** `eslint.config.mjs` is deleted,
+`npm run lint` stays `prettier --check .`, and `tsc --noEmit` inside `npm run build` keeps the
+type gate. The alternative — a second, non-native TypeScript installed only for linting — was
+rejected because two compilers that disagree turn a green lint into a claim nobody can trust.
+
+**The escape hatch.** If a lint net is wanted again it must be a linter that reads no TypeScript
+API (an `oxlint`-shaped tool) and it takes its own task, so the deadlock is never rediscovered.
+
+## D52 - The 61 DLC descriptions are Spanish authored in the repo, and `D43` keeps its official-text rule everywhere else *(decided)*
+
+`[Task-113]` was blocked because PokeAPI's dump and the base-game Scarlet/Violet text carry no
+`es` row for **18 moves and 43 abilities** (all DLC rows), and `D43` forbids a machine
+translation. The English fallback already ships and renders, so the gap is visible but not
+broken.
+
+**Decided (`2026-10-25`): those 61 get Spanish written in the repo** (`[Task-149]`), from the
+generated dex's own English `desc`/`shortDesc`, reviewed as content. The rule that matters —
+**no machine translation, ever** — is untouched: the strings are authored and reviewed like any
+other content, never emitted by a generator. Names stay the official Spanish ones; only the two
+description fields are filled.
+
+**Scope.** Exactly the ids `MISSING_ES` names. If a DLC Spanish dump appears later it corrects
+those strings; nothing else in the content-localisation path changes.
+
+## D53 - The loop's host surface shrinks: no smoke probe and no capacity wait *(decided)*
+
+`agent-smoke.yml` probed a credential and a model id that the cycle itself exercises on every
+run, and `oci-retry.yml` existed only to wait for an Always Free instance nobody has ever
+provisioned. Both cost runs in the list that look like the loop working when it is not.
+
+**Decided (`2026-10-25`): both workflows are deleted**, with `scripts/agent/vm/oci-launch.sh`,
+its offline harness and the provisioning/wait chapters of `docs/agent-vm.md`. The VM host
+survives as code and as documentation — the cycle, the driver, the brake and the prompt — and a
+human provisions the box; the repository makes no provider-specific call. `ci.yml` loses its
+VM-script step, `.github/workflows/README.md` and `docs/agent-ci.md` lose their rows, and the
+`OCI_*` repository variables are left for a human to delete since only secrets can rot.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

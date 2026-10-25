@@ -3,7 +3,7 @@ name: agent / cycle
 # The autopilot's unit of work, and the only workflow allowed to write `main`: one
 # batch, the Orchestrator driving the ritual it already knows — cut, spec, worktree,
 # dev, QA, merge --no-ff, bookkeeping, push. Nested subagents were measured working
-# headlessly in `agent-role-smoke.yml`, so the roles are used exactly as written.
+# headlessly before the roles were frozen, so the roles are used exactly as written.
 #
 # The unit of durability is the **task**, not the batch: every `task-<ID>` branch is
 # pushed (spec first, then `dev: done` and `qa: pass` markers on its tip) and each
