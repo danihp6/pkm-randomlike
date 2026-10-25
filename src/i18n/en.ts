@@ -288,7 +288,7 @@ export const en = {
   'detail.learnLevel': 'Lv{level}',
   'detail.learnTm': 'TM{tm}',
   'detail.learnTutor': 'Tutor',
-  'detail.megaEvolvesWith': '{forme} · Mega Evolves with {stone}',
+  'detail.megaEvolvesWith': '{stone}',
   'detail.gmaxEvolvesWith': '{forme} · {stone}',
 
   // move — the shared move grid

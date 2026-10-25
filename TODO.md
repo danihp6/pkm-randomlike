@@ -7562,6 +7562,11 @@ Phase 12 screen without pretending a screen exists to migrate.
   `[Task-151]`'s row and `[Task-153]`'s second slot, so it cannot start before Batch 67 lands. It is
   the last task of the phase and the reason the phase exists.
 
+### Batch 69 - the double-battle roll
+
+- **`[Task-156]` alone**, and it is a one-task batch on purpose: it rewrites the flag every battle
+  reads (`BOSS_PARTY` and the launch), so no batch-mate may hold a battle path while it lands.
+
 - [x] **[Task-149] The 61 DLC descriptions, authored in the repo.** Fill `description` and
       `shortDescription` in `src/data/i18n/es/moves.json` and `abilities.json` for exactly the 18
       moves and 43 abilities `MISSING_ES` names; regenerate `meta.json` so both `missingDescriptions`
@@ -7633,6 +7638,172 @@ Phase 12 screen without pretending a screen exists to migrate.
       and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`, `[Task-145]`,
       `[Task-152]`. *(Batch 67)*
 
+- [ ] **[Task-156] The double-battle roll: 25 % for the boss, 10 % for the mini-boss.** Today
+      `BOSS_PARTY` hard-codes `double: true` for the map boss and `false` for the mini-boss, and the
+      launch only reads the room flag (`RouteScene` 3410), so a mini-boss never rolls one at all.
+      **Decision (`2026-10-25`): both kinds roll, from the run's own seed** — **25 %** for the boss,
+      **10 %** for the mini-boss. `BOSS_PARTY[kind].doubleChance` replaces `double`; one pure helper
+      (`bossIsDouble(kind, seed, mapIndex, routeIndex, key)`, or a `rollDouble` beside it) draws from
+      a stream of its own —
+      `hashSeed(\`${seed}:double:${kind}:${mapIndex}:${routeKey}\`)` — so no existing draw moves and a
+      replay rebuilds the same answer. The mini-boss trainer's launch (`isMiniBoss`, `RouteScene`
+      2776) carries the flag the boss room already carries; the screen, the second slot, the target
+      step and the AI need no change, because all of them read `BattleLaunch.double`.
+      **Docs:** `docs/battle-spec.md` §12 (the "Data" bullet and its double-battle paragraph) and
+      `docs/maps-spec.md` §6. **Tests:** the rate over 10 000 seeds lands within one point of 25 and
+      10, and a fixed seed pins one double and one single answer. Claims `src/data/bosses.ts`,
+      `src/data/bosses.test.ts`, the launch seam in `src/scenes/RouteScene.ts`, `src/engine/run/**`
+      if the roll lives there, `docs/battle-spec.md` and `docs/maps-spec.md`. *Dependencies:* none —
+      the `double` path ships end to end. *(Batch 69)*
+
+---
+
+## Phase 14 - The centre chamber
+
+The human's room-shape decision of `2026-10-25`: the **entry room**, the **boss room** and every
+**dead-end room** stop being a point or a bare stub and get one **central chamber** — a diamond that
+is never perfect, grown from the room's centre **against its walls** and re-rolled per seed, so no
+two rooms share an outline. Dead ends lose their optional branches, the boss room becomes a two-door
+line with the chamber in the middle, and the player spawns **inside** the chamber instead of on a
+bare centre tile.
+
+### Batches 70 and 71 - the chamber, then what lives in it
+
+- **Batch 70 — `[Task-157]` alone.** It owns the carve (`sketch.ts`), the shape table (`layout.ts`)
+  and the wall guards, so no task that touches a room's floor may run beside it.
+- **Batch 71 — `[Task-158]` alone**, and the empty slots are a dependency: it reads the chamber
+  `[Task-157]` writes and moves the boss's cell and the entry's spawn, so it cannot start before
+  Batch 70 lands.
+
+- [ ] **[Task-157] The centre chamber, and the dead ends lose their branches.** Every room with no
+      through-lane — the entry, the boss and any `dead-end` — gets one **central chamber**: a
+      diamond grown from the room's centre, **never a perfect one**. `ShapeSpec` gains
+      `chamber: 'none' | 'diamond'`; the carve runs after the spine and before the terrain, from a
+      stream of its own (`route:<room>:chamber`), and grows the outline row by row —
+      `|dx| ≤ radius - |dy| * slope + jitter(row)`, the jitter seeded per room — then **stops at the
+      walls**: the border band an opening owns, a carved ledge line, and any tile the biome's wall
+      motif would turn into a stump are never bitten, which is what makes it fit the room instead of
+      stamping a rhombus. The entry lane joins the chamber's nearest edge and the chamber joins the
+      room's network, so connectivity and the hazard passes still see one floor.
+      **Dead ends lose their optional branches**: `dead-end.branchCount` goes to `0`, and the loot
+      and trainers those branches carried move **into the chamber's own pockets**, using the rule the
+      branches' pockets already follow (the item sits on the deepest wall-hugging floor tile).
+      **Docs:** `docs/routes-spec.md` §2 (the pipeline) and §4 (the shape table), `docs/maps-spec.md`
+      §2. **Tests:** a fixed seed pins one chamber's outline; four seeds never repeat an outline; the
+      chamber never touches the border band, a ledge or an opening; a dead-end room fields no branch
+      and still holds its item; `validate.ts` stays green on every shape. Claims
+      `src/engine/routes/{sketch,layout,walls,validate}.ts`, their tests and the two docs.
+      *Dependencies:* none. *(Batch 70)*
+
+- [ ] **[Task-158] The boss room is a two-door line with the chamber, and the boss lives in it.**
+      The boss room stops being a dead-end leaf: the plan gives it **two openings** — the incoming
+      link and the **portal** — so its shape is `corridor`, and `[Task-157]`'s chamber sits in the
+      middle of that line. The **boss is placed inside the chamber** (`bossTrainer`, `RouteScene`
+      699) on every floor, never on a stub, and the **entry room spawns the player inside its own
+      chamber** (the centre spawn at `sketch.ts` 1469 already puts the player at the centre; this
+      task guarantees that centre is chamber floor). `bossRoomSealed` is untouched: the second
+      opening exists in the plan, stays sealed until the boss falls, and the chamber keeps its lane
+      to it. **Docs:** `docs/maps-spec.md` §2 (the shape table, the entry and boss rooms) and §6 (the
+      boss room's door and the boss's cell). **Tests:** the boss's cell is inside the chamber on 20
+      fixed seeds; the entry's spawn is inside its chamber; the boss room reads `corridor` and the
+      portal is sealed. Claims `src/engine/maps/plan.ts`, `src/engine/routes/{sketch,validate}.ts`,
+      `src/scenes/RouteScene.ts`, `src/engine/maps/plan.test.ts` and the two docs.
+      *Dependencies:* `[Task-157]`. *(Batch 71)*
+
+### Batch 74 - the boss door's sign
+
+- **`[Task-161]` alone**, and it lands **after** `[Task-158]`: both edit the boss room's own layout
+  and `RouteScene`, so they cannot share a batch even though neither needs the other.
+
+- [ ] **[Task-161] A sign at the door that leads into the boss room, and a popup that names it.** The
+      route gets a **static sign** beside the opening that enters the boss room — on the approach
+      side, where the player sees it before stepping through — drawn from **`tileset-2`**, cell
+      **`(col 23, row 3)`**: in the source sheet that is `x = 1 + 23·17 = 392`, `y = 1 + 3·17 = 52`,
+      a 16×16 cell, and **it already comes with a transparent background** (68 of its 256 pixels are
+      `alpha 0`), so it is stamped as-is, with no colour key. It is solid, and it sits **one tile off
+      the opening band** so the door stays passable. Interacting with it (the same `tryInteract` the
+      ground items use, `RouteScene` 2839) opens a **popup** that says it is the boss room, one key in
+      both locales (`boss.sign`), on the NPC card's own window, not a transient notice.
+      **Fix shape:** the sign is **its own 16×16 texture**, not a biome-atlas frame — the FRLG atlas is
+      **full** (`TILESET_COLS = 4` × `TILESET_ROWS = 13` = 52 frames, `FRAME_LEDGE = 51`), and growing
+      it to a 14th row would re-pin the whole tileset contract and every fixture; `scripts/frlg/`
+      gains a small packer that cuts that one cell into `src/assets/frlg/sign.png` (the same
+      `decodePng`/`encodePng` the item icons use), `BootScene` loads it like the item atlas, and
+      `src/data/tilesets/props.ts` names the texture and its one frame.
+      `RouteMap` gains `signs: readonly RouteSign[]` (`{ x, y, text }`), filled by the room build
+      that already knows the boss room and its link — **no RNG**, so a rebuilt room puts it in the
+      same cell — and `RouteScene` draws it as a sprite and blocks the tile. The interact path checks
+      a `sign` before a trainer and opens the card; walking away closes it like any other panel.
+      **Docs:** `docs/routes-spec.md` §2 (the interactables), `docs/maps-spec.md` §6 (the boss room's
+      door) and `docs/tileset-spec.md` §2 (a prop texture beside the tileset). **Tests:** the cut cell
+      is 16×16 with its transparent corners; the sign lands beside the boss-room link on 20 fixed
+      seeds and never on the band; the door still opens; the popup's text is the i18n key; the tile is
+      solid from the four sides. Claims `scripts/frlg/` (the new packer), `src/assets/frlg/sign.png`,
+      `src/data/tilesets/props.ts`, `src/engine/routes/{routeMap,layout}.ts`, `src/scenes/{BootScene,
+      RouteScene}.ts`, `src/i18n/en.ts`, `src/i18n/es.ts` and the three docs.
+      *Dependencies:* none, but it lands after `[Task-158]` (same files). *(Batch 74)*
+
+---
+
+## Phase 15 - Battle rules the audit cannot see
+
+The move audit (`[Task-119]`–`[Task-121]`) counts a move as `port` when its handler exists and its
+volatile lands; it cannot see a rule that has to **repeat** every turn. Trap moves are the proof:
+they pass the ledger and deal no damage at all.
+
+### Batch 72 - the trap moves
+
+- **`[Task-159]` alone**: it owns `turn.ts`'s volatile case and the residual pass, the volatile's
+  shape and the audit's expectations, so no other battle task may run beside it.
+
+- [ ] **[Task-159] Trap moves damage their target every turn, and the audit learns to see it.** Sand
+      Tomb, Fire Spin, Whirlpool, Wrap, Bind, Infestation, Magma Storm, Thunder Cage, Snap Trap and
+      Clamp all carry `volatileStatus: 'partiallytrapped'`, and the engine treats it as `trapped`:
+      `turn.ts` 347-350 sends both ids to `applyTrap` (`volatile.ts` 39), which only sets a boolean,
+      so the target cannot switch but **loses no HP on any later turn** and the state never expires.
+      **Fix shape:** `volatiles.partiallyTrapped` becomes its own record — `{ turns, moveId }` — with
+      the **4-5 turn** duration drawn from the battle's seeded `Rng` when the move lands, a new trap
+      replacing the counter; the residual pass (`resolveResiduals`, `turn.ts` 1504) applies **1/8 of
+      max HP** after the status/weather/ability passes, **1/6 with Binding Band**, which stops being
+      a `no-op` item, with its own line in both locales; the volatile clears when the counter reaches
+      zero (a switch is impossible while it holds, which is the same `isTrapped` the AI already
+      reads). Ghost-type immunity to trapping is ported from Showdown and pinned by a test.
+      **The audit half:** `moveAudit`'s expectation gains a `residual` field (what the move does on
+      the following turn), so the ten rows stop being `port` on the strength of a volatile alone —
+      and the whole "a handler exists but nothing happens" class is caught from then on.
+      **Docs:** `docs/battle-spec.md` (status and volatiles) and the regenerated
+      `docs/balance/effect-coverage.md`. **Tests:** a fixed seed pins the duration (one 4 and one 5),
+      the 1/8 and the 1/6, the clear on the last turn, and a second trap resetting the counter. The
+      duration draw is new, so the ten moves' fixed-seed regressions are re-pinned. Claims
+      `src/engine/battle/{turn,volatile,fighter,status}.ts`, `src/engine/battle/moveAudit.ts`,
+      `src/engine/battle/effects/items.ts`, the i18n keys and the two docs. *Dependencies:*
+      `[Task-119]`. *(Batch 72)*
+
+### Batch 73 - the per-hit roll
+
+- **`[Task-160]` alone**: it owns the hit loop in `turn.ts` and the audit rows for the three
+  `multiaccuracy` moves, so no other battle task may run beside it.
+
+- [ ] **[Task-160] Population Bomb and the two Triple moves check accuracy on every hit.** The dex
+      marks three moves `multiaccuracy: true` — **Population Bomb** (10 hits, 90 %), **Triple Axel**
+      and **Triple Kick** (3 hits, 90 %) — and the engine reads the flag **nowhere**: `useMove` rolls
+      one `rollHitWith` per target (`turn.ts` 1054) and then runs the whole `for hit < hits` loop
+      (`1127`), so all ten or three hits land on a single roll. **Fix shape:** when
+      `move.multiaccuracy` is true the loop rolls `rollHitWith` before each hit and **stops the move
+      on the first miss**, pushing one `battle.log.missed`; the same loop gives Triple Kick and Triple
+      Axel their **ramp** — the hit's base power is `basePower × (hit + 1)`, 10/20/30 and 20/40/60 —
+      which is the second half of the same bug and the reason their damage reads flat today. Skill
+      Link keeps forcing the full count (it changes the number of hits, not the rolls), and Loaded
+      Dice stays out of scope because the item is still `no-op`.
+      **The audit half:** the three rows in `moveAudit.ts` (1146-1148, 808) stop asserting "three
+      `damage` events" and instead pin a **miss stop** and the per-hit powers with a fixed seed, so a
+      flat multi-hit cannot pass again. **Docs:** `docs/battle-spec.md` §3.
+      **Tests:** a fixed seed where the second roll misses ends the move at one hit; a fixed seed
+      where all three land reports 10/20/30 (Triple Kick) and 20/40/60 (Triple Axel); Population Bomb
+      pins a 10-hit run and a stop at hit 4. The per-hit rolls are new draws, so those seeds are
+      re-pinned. Claims `src/engine/battle/turn.ts`, `src/engine/battle/modifiers.ts`,
+      `src/engine/battle/moveAudit.ts` and `docs/battle-spec.md`. *Dependencies:* none. *(Batch 73)*
+
 ---
 
 ## Bugs
@@ -7641,6 +7812,74 @@ Reported in play, awaiting triage. A bug becomes a task in the batch plan, and t
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
 finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
 the combined tree.
+
+**A doubles round (`2026-10-25`), from a boss fight.** Three reports and one question, parked
+here because a batch was in flight when they arrived:
+
+- **The player's two windows are stacked in the wrong order, and the two render paths disagree.**
+  In a double battle the lead is the **left** sprite (`playerMonPos`) and the partner the right one
+  (`playerMonPos2`), but the Phaser layout puts the partner's window **below** the lead's
+  (`secondPlayerPanel`, `src/scenes/BattleScene.ts` 3256) while the HUD panel puts it **above**
+  (`partnerBox`, `src/ui/hud/panels/battle-hp/view.ts` 93). The left Pokémon therefore wears the top
+  window, which is what the human saw. Expected: **one rule for both paths — the partner's window
+  above the lead's, the lead's the one nearest the menu** — plus a test that pins the pair's rects
+  and which `data-hud-hp` id lands on each.
+- **The target step must be visible, not merely implemented.** `chooseMove` → `openTargetStep`
+  (`BattleScene` 2585/2613) already asks which foe a single-target damaging move hits, but it opens
+  only with two live foe slots and no spread target, and no prompt says so. Fix shape: the prompt
+  names the marked foe (one key in both locales), the marker reads at 390×844, the partner's own move
+  (slot 1) takes the step, and a test walks four cases — two live foes (asks), one live foe (does
+  not), spread (does not), status/self/ally (does not). No engine rule moves: `FightCommand.target`
+  ships.
+- **A move that catches the ally must say so.** `allAdjacent` already adds the user's own live
+  partner and `all` covers every other fighter (`useMove`, `docs/battle-spec.md` §12), but the log
+  never names the ally it hit. Expected: the ally's window drops and one log line names it; spread
+  damage reduction, Helping Hand and redirection stay out of scope, as the spec says.
+- **The partner's menu draws two buttons, and the grid reads as broken.** By design
+  `openPartnerMenu` (`src/scenes/BattleScene.ts` 2455) offers slot 1 FIGHT and SWITCH only, because
+  the Bag and RUN are the side's own actions; the human sees a half-empty command grid. Fix shape:
+  draw the shipped **four** buttons with BAG and RUN **present and disabled** on slot 1 (with the
+  disabled reason), so the grid never looks like a missing menu; letting the partner open the
+  side-level bag would be its own decision, not a polish.
+- **There is no way back to the partner's command.** Once slot 1 submits, `partnerCommand` is stored
+  and slot 0's menu opens (`openMenu`, line 2421); `onCancel` (1643) only closes slot 0's own
+  submenu — and `openMenu` re-enters slot 0 because `partnerCommand !== null` — so the partner's
+  choice is final. Fix shape: a back action on the slot-0 command menu **and** on its move/switch
+  submenus that clears `partnerCommand` and `commandSlot` and re-opens the partner's menu, wired to
+  the same `?` arrow the submenus already draw plus Esc/Backspace and the pad's B; `onCancel` routes
+  by `commandSlot` instead of resetting it to 0, and a test walks partner → lead → back → partner.
+- **Answered, then changed by the human on the same day: the double battle is now a roll, not a
+  rule.** Until `2026-10-25` the map boss was **always** double (`BOSS_PARTY.boss.double = true`) and
+  the mini-boss **always** single; the human's decision that day is **25 % for the boss and 10 % for
+  the mini-boss**, drawn from the run's seed. `[Task-156]` (Batch 69) carries it: `doubleChance`
+  replaces `double`, the mini-boss's trainer launch starts reading the flag, and the docs follow.
+  Wilds stay single, and a party of one on a double boss still degrades to the single layout
+  (`secondActiveIndex = -1`).
+
+**A HUD report (`2026-10-25`): the detail popup opens under the panel it came from.** Clicking a
+party member — in the party panel or in the PC — opens that Pokémon's data panel **below** the panel
+that spawned it, so it is covered instead of laid on top. `order` is build order only
+(`src/scenes/panels/types.ts` 29; the detail is `order: 110`) and a panel raised or dragged afterwards
+keeps painting above it, while the DOM HUD renders the popup as a sibling whose DOM position decides.
+Fix shape: the detail popup is **raised when it opens** — `bringToTop` on its container and on the
+info popup (`detail.ts` 1381) so it sits above party, PC, rewards and shop on every open — and in the
+DOM HUD it renders in a top layer above every panel. One rule, two renderings, with a test that opens
+the detail from the party and from the PC and asserts it is the topmost panel.
+
+**A pacing report (`2026-10-25`): the HP bar drops before the line that explains it, and too fast.**
+`showFrame` (`src/scenes/BattleScene.ts` 1798) applies the frame's events — the hit that lowers
+`displayHp` — at the same instant it starts typing the message, and the bar's own animation is a
+**300 ms** CSS transition (`HP_FILL_MS`, `src/ui/hud/panels/battle-hp/view.ts` 33). A 60 % hit
+therefore snaps down while the line is still being typed, which is the opposite of the rhythm the
+bar exists for. **Expected:** the line finishes first, then the bar drains at a readable cadence
+(proportional to the fraction lost, with the number counting down), and the next frame waits for
+both — one rule, the Phaser bar and the HUD panel alike. **Fix shape:** `showFrame` splits into
+"type the line" and "apply the frame's events when the line completes"; `frameHoldMs` becomes
+`line + drain + BATTLE_LOG_DWELL_MS`, so the 900 ms dwell starts after the drain; the drain gets its
+own duration (a full bar in ~800-900 ms, a heal slower), shared by `battle-hp` (a CSS custom property)
+and the Phaser bar's tween, and `HP_FILL_MS` stops being a one-size 300 ms. The `Critical hit!` line
+keeps landing with the drop it describes, and the `battle-log` tests keep the 900 ms dwell after the
+line.
 
 **The audit of every move is a defect, and it is in the plan.** The report — «añade en todo lo
 antes posible tarea para revisar logica de todos los ataques, ahora los de estado o daño relativo

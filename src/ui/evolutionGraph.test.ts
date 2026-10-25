@@ -198,9 +198,7 @@ describe('battle-only formes as information rows', () => {
       expect(base, mega.id).toBeDefined();
       expect(row, mega.id).toBeDefined();
       expect(row!.kind, mega.id).toBe('mega');
-      expect(row!.name, mega.id).toBe(
-        `${formeDisplayName(mega.name)} · Mega Evolves with ${mega.stoneName}`,
-      );
+      expect(row!.name, mega.id).toBe(mega.stoneName);
       expect(row!.level, mega.id).toBeNull();
       expect(row!.current, mega.id).toBe(false);
       expect(row!.ready, mega.id).toBe(false);
@@ -231,10 +229,10 @@ describe('battle-only formes as information rows', () => {
   it('prints the exact copy, stone and all', () => {
     const graph = evolutionGraph('charizard', 36);
     const [x, y] = megaFormsForBase('charizard');
-    expect(graph[3]!.name).toBe(`Mega Charizard X · Mega Evolves with ${x!.stoneName}`);
-    expect(graph[4]!.name).toBe(`Mega Charizard Y · Mega Evolves with ${y!.stoneName}`);
-    expect(graph[3]!.name).toBe('Mega Charizard X · Mega Evolves with Charizardite X');
-    expect(graph[4]!.name).toBe('Mega Charizard Y · Mega Evolves with Charizardite Y');
+    expect(graph[3]!.name).toBe(x!.stoneName);
+    expect(graph[4]!.name).toBe(y!.stoneName);
+    expect(graph[3]!.name).toBe('Charizardite X');
+    expect(graph[4]!.name).toBe('Charizardite Y');
     expect(graph[5]!.name).toBe('Gigantamax Charizard · Charizardite G');
     expect(evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax')?.name).toBe(
       'Gigantamax Corviknight · Corviknightite G',
