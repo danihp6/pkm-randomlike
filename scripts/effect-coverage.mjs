@@ -199,7 +199,20 @@ const volatileCases = (source) => {
   if (ids.length === 0) throw new Error('effect-coverage: no volatile cases parsed');
   return new Set(ids);
 };
+const volatileSrc = text('src/engine/battle/volatile.ts');
 const MOVE_VOLATILES = volatileCases(text('src/engine/battle/turn.ts'));
+
+// The volatiles that pay damage every turn (`RESIDUAL_VOLATILES` in
+// `src/engine/battle/volatile.ts`, read as text like the item list above): a move
+// that only writes one of them is never `port` on the strength of the write, so
+// the ledger asks for the residual seam instead.
+const RESIDUAL_VOLATILES = (() => {
+  const start = volatileSrc.indexOf('const RESIDUAL_VOLATILES');
+  if (start < 0) return new Set();
+  const end = volatileSrc.indexOf('];', start);
+  if (end < 0) return new Set();
+  return new Set([...volatileSrc.slice(start, end).matchAll(/'([a-z0-9]+)'/g)].map((m) => m[1]));
+})();
 const MOVE_WEATHERS = new Set(['sunnyday', 'raindance', 'sandstorm', 'snowscape', 'hail']);
 const MOVE_TERRAINS = new Set(['electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain']);
 
@@ -224,6 +237,7 @@ const portedMoveNote = (move) => {
   if (TURN_LOOP_MOVES.has(move.id)) return 'turn loop: turn.ts';
   if (DAMAGE_RESOLVERS.has(move.id)) return 'damage: damage.ts';
   if (MOVE_STATUSES.has(move.status)) return 'data: status';
+  if (RESIDUAL_VOLATILES.has(norm(move.volatileStatus ?? ''))) return 'data: residual';
   if (MOVE_VOLATILES.has(move.volatileStatus)) return 'data: volatileStatus';
   if (move.boosts) return 'data: boosts';
   if (move.self?.boosts) return 'data: self.boosts';
@@ -362,7 +376,10 @@ hide during playtests.
 - For a move, \`port\` means a registered handler, an id the turn loop
   special-cases, a data-driven field the engine reads, or an id in
   \`DAMAGE_RESOLVERS\` (\`src/engine/battle/damage.ts\`), which is what
-  \`damage: damage.ts\` names. \`data: basePower\` means the formula multiplies the
+  \`damage: damage.ts\` names. \`data: residual\` means the move writes one of
+  \`RESIDUAL_VOLATILES\` (\`src/engine/battle/volatile.ts\`), a volatile that pays
+  damage on every following turn: the table never calls such a move ported on the
+  strength of the write alone. \`data: basePower\` means the formula multiplies the
   move's dex number, with the multiplicative exceptions \`resolveBasePower\`
   applies to a named few (Eruption, Hex, Facade, the weight- and HP-relative
   powers) — those are documented in \`docs/battle-spec.md\` §3. \`no-op\` means a

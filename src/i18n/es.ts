@@ -454,6 +454,8 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'battle.log.wishCameTrue': '¡El deseo de {name} se ha cumplido!',
   'battle.log.leechSeed': '¡{name} pierde energía por Drenadoras!',
   'battle.log.nightmare': '¡{name} está atrapado en una pesadilla!',
+  'battle.log.partiallyTrapped': '¡{name} sufre por la trampa!',
+  'battle.log.partiallyTrappedEnd': '¡{name} se libra de la trampa!',
   'battle.log.curse': '¡{name} sufre la maldición!',
   'battle.log.liquidOoze': '¡{name} ha absorbido el lodo!',
   'battle.log.energyDrained': '¡A {name} le han drenado la energía!',

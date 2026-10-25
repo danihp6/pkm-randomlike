@@ -40,6 +40,53 @@ export function applyTrap(fighter: BattleFighter): void {
   fighter.volatiles.trapped = true;
 }
 
+/** A binding move holds for 4-5 residual ticks (the classic duration). */
+export const PARTIAL_TRAP_TURNS: Readonly<{ min: number; max: number }> = { min: 4, max: 5 };
+
+/** The share of max HP a trap pays per turn; a held Binding Band switches it to 1/6. */
+export const PARTIAL_TRAP_FRACTION = 8;
+
+/**
+ * The volatiles that pay damage every turn: the coverage table reads this list, so a
+ * move that only writes one of them is never `port` on the strength of the write.
+ */
+export const RESIDUAL_VOLATILES: readonly string[] = ['partiallytrapped'];
+
+/**
+ * Binds `fighter` to `moveId`: draws the duration (`rng.int(4, 5)`) — **one draw, the
+ * only one this rule makes** — and replaces any trap already holding it, so a second
+ * binding move resets the counter instead of stacking. Always returns `true` (the write
+ * happens).
+ */
+export function applyPartialTrap(fighter: BattleFighter, moveId: string, rng: Rng): boolean {
+  fighter.volatiles.partiallyTrapped = {
+    turns: rng.int(PARTIAL_TRAP_TURNS.min, PARTIAL_TRAP_TURNS.max),
+    moveId,
+  };
+  fighter.volatiles.trapped = true;
+  return true;
+}
+
+/**
+ * One residual tick of the trap: decrements `turns`; at zero it clears
+ * `partiallyTrapped` and releases `trapped` unless `octolock` or `noretreat` still holds
+ * it. Returns the turns left (`0` when it just cleared).
+ */
+export function tickPartialTrap(fighter: BattleFighter): number {
+  const trap = fighter.volatiles.partiallyTrapped;
+  if (!trap) return 0;
+  const left = trap.turns - 1;
+  if (left <= 0) {
+    fighter.volatiles.partiallyTrapped = null;
+    if (!fighter.volatiles.octolock && !fighter.volatiles.noretreat) {
+      fighter.volatiles.trapped = false;
+    }
+    return 0;
+  }
+  fighter.volatiles.partiallyTrapped = { turns: left, moveId: trap.moveId };
+  return left;
+}
+
 export function applyTorment(fighter: BattleFighter): boolean {
   if (fighter.volatiles.torment) return false;
   fighter.volatiles.torment = true;

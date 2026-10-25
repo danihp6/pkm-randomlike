@@ -62,6 +62,8 @@ export type EffectHandlers = Readonly<{
   onModifyMultihit?: (ctx: EffectContext, hits: number) => number | void;
   onModifyBoost?: (ctx: EffectContext, payload: BoostPayload) => number | void;
   onModifyRecoil?: (ctx: EffectContext, recoil: number) => number | void;
+  /** A held item amending the damage a binding move pays (Binding Band). */
+  onModifyTrapDamage?: (ctx: EffectContext, damage: number) => number | void;
   /** Secondary-effect proc chance in percent (Serene Grace doubles it). */
   onModifySecondaryChance?: (ctx: EffectContext, chance: number) => number | void;
   /** The move's type effectiveness (Scrappy and Mind's Eye pierce Ghost immunity). */
@@ -478,6 +480,16 @@ export function runModifyRecoil(ctx: EffectContext, move: Move, recoil: number):
   let value = recoil;
   for (const ref of contextEffects(ctx, false, move)) {
     const next = ref.effect.handlers.onModifyRecoil?.(contextFor(ctx, ref), value);
+    if (typeof next === 'number') value = next;
+  }
+  return value;
+}
+
+/** Partial-trap damage modifiers read the trapped fighter's own held item. */
+export function runModifyTrapDamage(ctx: EffectContext, damage: number): number {
+  let value = damage;
+  for (const ref of contextEffects(ctx, false, null)) {
+    const next = ref.effect.handlers.onModifyTrapDamage?.(contextFor(ctx, ref), value);
     if (typeof next === 'number') value = next;
   }
   return value;

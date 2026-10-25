@@ -20,6 +20,7 @@ import {
   registerEffects,
   runBoost,
   runModifyDamage,
+  runModifyTrapDamage,
   runResidual,
   runStatus,
   runTryHit,
@@ -260,6 +261,38 @@ describe('the radiant room turns the ability dispatcher off', () => {
 
     expect(player.hp).toBe(before + Math.floor(player.maxHp / 16));
     expect(player.heldItem).toBe('leftovers');
+  });
+});
+
+describe('trap damage modifiers (Task-159)', () => {
+  it('reads the trapped fighter\'s own held item, and keeps its last numeric answer', () => {
+    registerEffect(
+      effect('trapband', { onModifyTrapDamage: (_ctx, damage) => damage * 2 }, 'item'),
+    );
+
+    const state = battle();
+    const victim = activeFighter(state, 'enemy');
+    const foe = activeFighter(state, 'player');
+    victim.heldItem = 'trapband';
+
+    const ctx = makeContext(state, 'enemy', { source: victim, target: foe });
+    expect(runModifyTrapDamage(ctx, 6)).toBe(12);
+
+    foe.heldItem = 'trapband';
+    victim.heldItem = null;
+    const foeHeld = makeContext(state, 'enemy', { source: victim, target: foe });
+    expect(runModifyTrapDamage(foeHeld, 6)).toBe(6);
+  });
+
+  it('leaves the damage alone when no handler answers', () => {
+    registerEffect(effect('silentband', { onModifyTrapDamage: () => {} }, 'item'));
+    const state = battle();
+    const victim = activeFighter(state, 'enemy');
+    const ctx = makeContext(state, 'enemy', {
+      source: victim,
+      target: activeFighter(state, 'player'),
+    });
+    expect(runModifyTrapDamage(ctx, 7)).toBe(7);
   });
 });
 

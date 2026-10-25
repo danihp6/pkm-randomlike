@@ -237,6 +237,28 @@ handler in `src/engine/battle/effects/moves.ts` or a case of
 `applyVolatileEffect` in `src/engine/battle/turn.ts`, and every row is pinned in
 `src/engine/battle/moveAudit.ts`.
 
+The ten **binding moves** — Sand Tomb, Fire Spin, Whirlpool, Wrap, Bind,
+Infestation, Magma Storm, Thunder Cage, Snap Trap and Clamp — write
+`volatiles.partiallyTrapped`, a `{ turns, moveId }` record rather than a bare
+`trapped`. The duration is **4-5** turns drawn from `state.rng` at the moment the
+move lands — one draw, made after that move's accuracy roll and its damage
+secondary rolls and before the rest of the turn draws anything — and a second
+binding move replaces the record instead of stacking. From the following turn on,
+each residual pass pays **1/8** of the victim's max HP, or **1/6** through a held
+**Binding Band** (`onModifyTrapDamage`, `src/engine/battle/effects/registry.ts`);
+the trap sits in the end-of-turn order **after** the ability and item residuals and
+**before** Yawn, never on the landing turn. When the counter reaches zero it clears
+and releases `trapped`, unless Octolock or No Retreat still holds the holder.
+`trapped` is set for as long as the trap runs, so `isTrapped` and the AI's switch
+rules keep working — except that a **Ghost** is immune to the binding's switch
+block, though it still takes the damage, while the two self-inflicted traps keep
+their Ghost. Because a write is not a behaviour, `MOVE_AUDIT_ROWS` carries a
+`residual` expectation for every move that sets a volatile in
+`RESIDUAL_VOLATILES` (`src/engine/battle/volatile.ts`): `probeResidual` runs the
+audited move and then one full turn, so a handler that exists but does nothing on
+the following turn can no longer pass as `port`, and the coverage table reads that
+same list as `data: residual`.
+
 An ally-aimed move never lands on the foe: a single battle fields no partner, so
 Aromatic Mist, Coaching and Dragon Cheer fail, while Howl (whose target is "all
 allies") raises the user's own Attack. Three of the writes above are still

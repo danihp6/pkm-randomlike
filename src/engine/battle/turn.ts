@@ -23,6 +23,7 @@ import {
   runModifyMultihit,
   runModifyPriority,
   runModifyRecoil,
+  runModifyTrapDamage,
   runResidual,
   runStart,
   runSwitchIn,
@@ -109,6 +110,7 @@ import {
   applyNightmare,
   applyNoRetreat,
   applyOctolock,
+  applyPartialTrap,
   applyPerish,
   applyTaunt,
   applyTelekinesis,
@@ -121,6 +123,8 @@ import {
   leechSeedDamage,
   makeSubstitute,
   nightmareDamage,
+  PARTIAL_TRAP_FRACTION,
+  tickPartialTrap,
   tickPerish,
 } from './volatile';
 import { rollRun } from './runAway';
@@ -332,6 +336,7 @@ function applyVolatileEffect(
   side: SideId,
   target: BattleFighter,
   volatile: string,
+  moveId: string,
 ): boolean {
   const ctx = makeContext(state, side, { source: target, target: opponent(state, side) });
   if (!runTryVolatile(ctx, volatile)) return false;
@@ -346,9 +351,10 @@ function applyVolatileEffect(
       case 'encore':
         return hasSubstitute(target) ? false : applyEncore(target);
       case 'trapped':
-      case 'partiallytrapped':
         applyTrap(target);
         return true;
+      case 'partiallytrapped':
+        return applyPartialTrap(target, moveId, state.rng);
       case 'perishsong':
       case 'perish':
         applyPerish(target);
@@ -495,6 +501,7 @@ function applySecondary(
   attacker: BattleFighter,
   defender: BattleFighter,
   moveType: string,
+  moveId: string,
 ): void {
   if (effect.chance !== undefined) {
     const chance = teamTypeStatusChance(
@@ -516,7 +523,7 @@ function applySecondary(
   if (!runTrySecondary(secondaryCtx, effect)) return;
   if (effect.status) applyStatusEffect(state, opponentOf(side), defender, effect.status);
   if (effect.volatileStatus) {
-    applyVolatileEffect(state, opponentOf(side), defender, effect.volatileStatus);
+    applyVolatileEffect(state, opponentOf(side), defender, effect.volatileStatus, moveId);
   }
   if (effect.boosts) applyBoostEffect(state, opponentOf(side), defender, effect.boosts);
 }
@@ -580,7 +587,7 @@ function applyMoveEffects(
   if (move.status) applyStatusEffect(state, effectSide, effectTarget, move.status);
 
   if (move.volatileStatus) {
-    applyVolatileEffect(state, effectSide, effectTarget, move.volatileStatus);
+    applyVolatileEffect(state, effectSide, effectTarget, move.volatileStatus, move.id);
   }
 
   if (move.boosts) {
@@ -613,7 +620,7 @@ function applyMoveEffects(
   const sheerForce = hasAbility(acting, 'Sheer Force') && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {
     for (const secondary of secondaries) {
-      applySecondary(state, actingSide, secondary, acting, effectTargetOfMove, move.type);
+      applySecondary(state, actingSide, secondary, acting, effectTargetOfMove, move.type, move.id);
     }
   }
 
@@ -1572,6 +1579,38 @@ function resolveResiduals(state: BattleState): void {
       if (fighter.hp <= 0) continue;
       runResidual(makeContext(state, side, { source: fighter, target: opponent(state, side) }));
       if (fighter.hp <= 0) faint(state, side, slot);
+    }
+  }
+
+  for (const side of SIDE_IDS) {
+    for (const slot of liveSlots(state, side)) {
+      const fighter = activeFighter(state, side, slot);
+      const trap = fighter.volatiles.partiallyTrapped;
+      if (!trap || fighter.hp <= 0) continue;
+      if (takesIndirectDamage(fighter)) {
+        const base = Math.max(1, Math.floor(fighter.maxHp / PARTIAL_TRAP_FRACTION));
+        const damage = runModifyTrapDamage(
+          makeContext(state, side, { source: fighter, target: opponent(state, side) }),
+          base,
+        );
+        const dealt = applyDamage(fighter, damage);
+        pushEvent(state, {
+          kind: 'damage',
+          side,
+          amount: dealt,
+          hp: fighter.hp,
+          maxHp: fighter.maxHp,
+          effectiveness: 1,
+          crit: false,
+        });
+        pushText(state, 'battle.log.partiallyTrapped', { name: fighter.name, move: trap.moveId });
+      }
+      const left = tickPartialTrap(fighter);
+      if (fighter.hp <= 0) {
+        faint(state, side, slot);
+        continue;
+      }
+      if (left === 0) pushText(state, 'battle.log.partiallyTrappedEnd', { name: fighter.name });
     }
   }
 

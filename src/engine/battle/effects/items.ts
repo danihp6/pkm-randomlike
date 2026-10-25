@@ -61,7 +61,6 @@ const ITEM_INFLICTED: Readonly<Record<StatusId, BattleTextKey>> = {
   'airballoon',
   'assaultvest',
   'bigroot',
-  'bindingband',
   'blacksludge',
   'blunderpolicy',
   'boosterenergy',
@@ -464,6 +463,12 @@ function handlersFor(item: ItemDef): EffectHandlers {
   if (item.flee) handlers = { ...handlers, onTryEscape: fleeHandler() };
   if (item.teraType) handlers = { ...handlers, onStart: teraCrystalHandler(item) };
   if (item.recoil) handlers = { ...handlers, onAfterMove: recoilHandler(item) };
+  if (item.id === 'bindingband') {
+    handlers = {
+      ...handlers,
+      onModifyTrapDamage: (ctx) => Math.max(1, Math.floor(ctx.owner.maxHp / 6)),
+    };
+  }
   return handlers;
 }
 

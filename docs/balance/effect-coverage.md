@@ -29,7 +29,10 @@ hide during playtests.
 - For a move, `port` means a registered handler, an id the turn loop
   special-cases, a data-driven field the engine reads, or an id in
   `DAMAGE_RESOLVERS` (`src/engine/battle/damage.ts`), which is what
-  `damage: damage.ts` names. `data: basePower` means the formula multiplies the
+  `damage: damage.ts` names. `data: residual` means the move writes one of
+  `RESIDUAL_VOLATILES` (`src/engine/battle/volatile.ts`), a volatile that pays
+  damage on every following turn: the table never calls such a move ported on the
+  strength of the write alone. `data: basePower` means the formula multiplies the
   move's dex number, with the multiplicative exceptions `resolveBasePower`
   applies to a named few (Eruption, Hex, Facade, the weight- and HP-relative
   powers) — those are documented in `docs/battle-spec.md` §3. `no-op` means a
@@ -419,7 +422,7 @@ catalogue row, not engine code.
 | Belly Drum | `port` | registry: effects/moves.ts |
 | Bestow | `excluded` | no playable species has it |
 | Bide | `excluded` | needs a two-turn damage accumulator |
-| Bind | `port` | data: volatileStatus |
+| Bind | `port` | data: residual |
 | Bite | `port` | data: secondaries |
 | Bitter Blade | `port` | data: drain |
 | Bitter Malice | `port` | data: secondaries |
@@ -471,7 +474,7 @@ catalogue row, not engine code.
 | Chip Away | `excluded` | no playable species has it |
 | Chloroblast | `port` | data: basePower |
 | Circle Throw | `port` | data: basePower |
-| Clamp | `port` | data: volatileStatus |
+| Clamp | `port` | data: residual |
 | Clanging Scales | `port` | data: basePower |
 | Clangorous Soul | `port` | registry: effects/moves.ts |
 | Clear Smog | `port` | data: basePower |
@@ -600,7 +603,7 @@ catalogue row, not engine code.
 | Fire Lash | `port` | data: secondaries |
 | Fire Pledge | `port` | data: basePower |
 | Fire Punch | `port` | data: secondaries |
-| Fire Spin | `port` | data: volatileStatus |
+| Fire Spin | `port` | data: residual |
 | First Impression | `port` | data: basePower |
 | Fishious Rend | `port` | data: basePower |
 | Fissure | `port` | damage: damage.ts |
@@ -727,7 +730,7 @@ catalogue row, not engine code.
 | Incinerate | `port` | data: basePower |
 | Infernal Parade | `port` | data: secondaries |
 | Inferno | `port` | data: secondaries |
-| Infestation | `port` | data: volatileStatus |
+| Infestation | `port` | data: residual |
 | Ingrain | `port` | data: volatileStatus |
 | Instruct | `port` | turn loop: turn.ts |
 | Ion Deluge | `excluded` | no playable species has it |
@@ -778,7 +781,7 @@ catalogue row, not engine code.
 | Magic Powder | `port` | registry: effects/moves.ts |
 | Magic Room | `port` | registry: effects/moves.ts |
 | Magical Leaf | `port` | data: basePower |
-| Magma Storm | `port` | data: volatileStatus |
+| Magma Storm | `port` | data: residual |
 | Magnet Bomb | `excluded` | no playable species has it |
 | Magnet Rise | `port` | data: volatileStatus |
 | Magnetic Flux | `excluded` | doubles/ally only |
@@ -962,7 +965,7 @@ catalogue row, not engine code.
 | Safeguard | `port` | registry: effects/moves.ts |
 | Salt Cure | `port` | data: basePower |
 | Sand Attack | `port` | data: boosts |
-| Sand Tomb | `port` | data: volatileStatus |
+| Sand Tomb | `port` | data: residual |
 | Sandsear Storm | `port` | data: secondaries |
 | Sandstorm | `port` | data: weather |
 | Sappy Seed | `excluded` | no playable species has it |
@@ -1021,7 +1024,7 @@ catalogue row, not engine code.
 | Smelling Salts | `port` | data: basePower |
 | Smog | `port` | data: secondaries |
 | Smokescreen | `port` | data: boosts |
-| Snap Trap | `port` | data: volatileStatus |
+| Snap Trap | `port` | data: residual |
 | Snarl | `port` | data: secondaries |
 | Snatch | `port` | data: volatileStatus |
 | Snipe Shot | `port` | data: basePower |
@@ -1122,7 +1125,7 @@ catalogue row, not engine code.
 | Thrash | `port` | data: basePower |
 | Throat Chop | `port` | data: basePower |
 | Thunder | `port` | data: secondaries |
-| Thunder Cage | `port` | data: volatileStatus |
+| Thunder Cage | `port` | data: residual |
 | Thunder Fang | `port` | data: secondaries |
 | Thunder Punch | `port` | data: secondaries |
 | Thunder Shock | `port` | data: secondaries |
@@ -1176,7 +1179,7 @@ catalogue row, not engine code.
 | Waterfall | `port` | data: secondaries |
 | Wave Crash | `port` | data: recoil |
 | Weather Ball | `port` | registry: effects/moves.ts |
-| Whirlpool | `port` | data: volatileStatus |
+| Whirlpool | `port` | data: residual |
 | Whirlwind | `excluded` | no forced-switch mechanic |
 | Wicked Blow | `port` | data: basePower |
 | Wide Guard | `excluded` | doubles/ally only |
@@ -1190,7 +1193,7 @@ catalogue row, not engine code.
 | Wood Hammer | `port` | data: recoil |
 | Work Up | `port` | data: boosts |
 | Worry Seed | `port` | registry: effects/moves.ts |
-| Wrap | `port` | data: volatileStatus |
+| Wrap | `port` | data: residual |
 | Wring Out | `port` | damage: damage.ts |
 | X-Scissor | `port` | data: basePower |
 | Yawn | `port` | data: volatileStatus |
@@ -1199,7 +1202,7 @@ catalogue row, not engine code.
 | Zing Zap | `port` | data: secondaries |
 | Zippy Zap | `excluded` | no playable species has it |
 
-## Items — 316 total (164 port, 71 no-op, 81 excluded)
+## Items — 316 total (165 port, 70 no-op, 81 excluded)
 
 | Effect | Status | Note |
 | --- | --- | --- |
@@ -1222,7 +1225,7 @@ catalogue row, not engine code.
 | Big Nugget | `port` | in the run catalogue (`src/data/items.ts`) |
 | Big Pearl | `port` | in the run catalogue (`src/data/items.ts`) |
 | Big Root | `no-op` | reachable, not modelled yet |
-| Binding Band | `no-op` | reachable, not modelled yet |
+| Binding Band | `port` | in the run catalogue (`src/data/items.ts`) |
 | Black Belt | `port` | in the run catalogue (`src/data/items.ts`) |
 | Black Glasses | `port` | in the run catalogue (`src/data/items.ts`) |
 | Black Sludge | `no-op` | reachable, not modelled yet |

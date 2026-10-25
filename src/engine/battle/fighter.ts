@@ -29,6 +29,9 @@ export type MoveSlot = {
   maxPp: number;
 };
 
+/** A binding move's own record on the victim (`Task-159`). */
+export type PartialTrap = Readonly<{ turns: number; moveId: string }>;
+
 export type Volatiles = {
   confusion: number;
   flinched: boolean;
@@ -152,6 +155,13 @@ export type Volatiles = {
   addedType: string | null;
   /** The holder's own types before a move rewrote them, restored on switch-out. */
   baseTypes: readonly string[] | null;
+  /**
+   * The binding move holding the fighter: how many residual ticks are left and the
+   * move that set it (`null` when nothing binds it). Replaces the old "it is only
+   * `trapped`" reading: `trapped` is still set while it holds, so `isTrapped` and the
+   * AI's switch rules keep working.
+   */
+  partiallyTrapped: PartialTrap | null;
 };
 
 /** The pre-Transform shape, restored when the holder leaves the field. */
@@ -356,6 +366,7 @@ export function emptyVolatiles(): Volatiles {
     grounded: false,
     addedType: null,
     baseTypes: null,
+    partiallyTrapped: null,
   };
 }
 

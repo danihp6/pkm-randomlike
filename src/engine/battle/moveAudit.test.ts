@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getMove } from '../../data/dex';
 import { MOVE_COVERAGE, unportedMoveIds } from '../../data/moveCoverage';
 import type { Command } from './commands';
 import { activeFighter, type BattleState } from './state';
@@ -8,11 +9,16 @@ import {
   boostsVector,
   fieldConditionsVector,
   probeMove,
+  probeResidual,
   sideConditionsVector,
   type MoveAuditRow,
   type MoveAuditSetup,
   type MoveProbe,
 } from './moveAudit';
+import { RESIDUAL_VOLATILES } from './volatile';
+
+/** The dex's volatile ids arrive CamelCased; the engine's own ids carry no case or space. */
+const normalizeVolatileId = (id: string): string => id.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 /**
  * The ledger's two verses. `MOVE_AUDIT_ROWS` covers every move the ledger calls
@@ -150,12 +156,23 @@ describe('the probe', () => {
       expect(() => probeMove(entry.id), entry.id).not.toThrow();
     }
   });
+
+  it('runs the following turn from the same board and seed', () => {
+    expect(probeResidual('bind')).toEqual(probeResidual('bind'));
+    expect(probeResidual('splash')).toEqual(probeResidual('splash'));
+  });
 });
 
 function probeRow(row: MoveAuditRow): MoveProbe {
   const probe = probeMove(row.moveId, row.setup);
   for (const key of Object.keys(row.expected) as (keyof MoveProbe)[]) {
     expect(probe[key], `${row.moveId}.${key}`).toEqual(row.expected[key]);
+  }
+  if (row.residual) {
+    const residual = probeResidual(row.moveId, row.setup);
+    for (const key of Object.keys(row.residual) as (keyof MoveProbe)[]) {
+      expect(residual[key], `${row.moveId}.residual.${key}`).toEqual(row.residual[key]);
+    }
   }
   return probe;
 }
@@ -192,6 +209,14 @@ describe('the audit table', () => {
     for (const moveId of [...LEDGER_TARGETS]) {
       expect(classified.has(moveId), `${moveId}: not in the ledger`).toBe(true);
       expect(rows.has(moveId) !== noOps.has(moveId), `${moveId}: a row or a no-op`).toBe(true);
+    }
+  });
+
+  it('demands a residual expectation from every move that sets a residual volatile', () => {
+    for (const row of MOVE_AUDIT_ROWS) {
+      const move = getMove(row.moveId);
+      const volatile = move?.volatileStatus ? normalizeVolatileId(move.volatileStatus) : '';
+      if (RESIDUAL_VOLATILES.includes(volatile)) expect(row.residual, row.moveId).toBeDefined();
     }
   });
 });

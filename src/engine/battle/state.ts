@@ -426,7 +426,8 @@ export function hasHealthy(state: BattleState, side: SideId): boolean {
 /** True while `side`'s active Pokémon cannot switch out or flee (trap volatile or ability). */
 export function isTrapped(state: BattleState, side: SideId): boolean {
   const holder = activeFighter(state, side);
-  if (holder.volatiles.trapped) return true;
+  if (holder.volatiles.noretreat || holder.volatiles.octolock) return true;
+  if (holder.volatiles.trapped && !holder.types.includes('Ghost')) return true;
   if (holder.volatiles.ingrain) return true;
   if (state.field.fairylock > 0) return true;
   return trappedBy(opponent(state, side), holder);

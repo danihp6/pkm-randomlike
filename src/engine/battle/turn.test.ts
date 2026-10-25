@@ -8,6 +8,7 @@ import {
   createBattle,
   emptyRoomField,
   hasHealthy,
+  isTrapped,
   type BattleState,
   type RoomFieldEffects,
 } from './state';
@@ -778,5 +779,57 @@ describe('the four team-type bonuses in the turn loop', () => {
       return event.amount;
     };
     expect(dealt(['Fire'])).toBe(dealt());
+  });
+});
+
+/** Every log line's key, in log order. */
+const textKeys = (state: BattleState): readonly string[] =>
+  state.log.flatMap((event) => (event.kind === 'text' ? [event.key] : []));
+
+describe('the partial trap (Task-159)', () => {
+  it('pays the trap on the following turn, never on the landing turn', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 30, moves: ['bind', 'splash'] }],
+      [{ id: 'e', speciesId: 'snorlax', level: 30, moves: ['splash'] }],
+    );
+    const enemy = activeFighter(state, 'enemy');
+    const full = enemy.hp;
+
+    useMove(state, 'player', fight(0));
+    const landed = enemy.hp;
+    expect(landed).toBeLessThan(full);
+    expect(enemy.volatiles.partiallyTrapped?.moveId).toBe('bind');
+    expect(textKeys(state)).not.toContain('battle.log.partiallyTrapped');
+
+    takeTurn(state, fight(1), fight(0));
+    expect(enemy.hp).toBe(landed - Math.max(1, Math.floor(enemy.maxHp / 8)));
+    expect(textKeys(state)).toContain('battle.log.partiallyTrapped');
+  });
+
+  it('still hurts a Ghost with the trap but no longer pins it', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 30, moves: ['firespin', 'splash'] }],
+      [{ id: 'e', speciesId: 'shuppet', level: 30, ability: 'Insomnia', moves: ['splash'] }],
+    );
+    const ghost = activeFighter(state, 'enemy');
+    const full = ghost.hp;
+
+    useMove(state, 'player', fight(0));
+    const landed = ghost.hp;
+    expect(landed).toBeLessThan(full);
+    expect(ghost.volatiles.trapped).toBe(true);
+    expect(isTrapped(state, 'enemy')).toBe(false);
+
+    takeTurn(state, fight(1), fight(0));
+    expect(ghost.hp).toBe(landed - Math.max(1, Math.floor(ghost.maxHp / 8)));
+    expect(isTrapped(state, 'enemy')).toBe(false);
+
+    const plain = build(
+      [{ id: 'p', speciesId: 'charmander', level: 30, moves: ['firespin', 'splash'] }],
+      [{ id: 'e', speciesId: 'charmander', level: 30, ability: 'Insomnia', moves: ['splash'] }],
+    );
+    useMove(plain, 'player', fight(0));
+    expect(activeFighter(plain, 'enemy').volatiles.trapped).toBe(true);
+    expect(isTrapped(plain, 'enemy')).toBe(true);
   });
 });

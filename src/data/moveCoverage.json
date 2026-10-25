@@ -341,7 +341,7 @@
       "id": "bind",
       "name": "Bind",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "bite",
@@ -653,7 +653,7 @@
       "id": "clamp",
       "name": "Clamp",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "clangingscales",
@@ -1427,7 +1427,7 @@
       "id": "firespin",
       "name": "Fire Spin",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "firstimpression",
@@ -2189,7 +2189,7 @@
       "id": "infestation",
       "name": "Infestation",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "ingrain",
@@ -2495,7 +2495,7 @@
       "id": "magmastorm",
       "name": "Magma Storm",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "magnetbomb",
@@ -3599,7 +3599,7 @@
       "id": "sandtomb",
       "name": "Sand Tomb",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "sandsearstorm",
@@ -3953,7 +3953,7 @@
       "id": "snaptrap",
       "name": "Snap Trap",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "snarl",
@@ -4559,7 +4559,7 @@
       "id": "thundercage",
       "name": "Thunder Cage",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "thunderfang",
@@ -4883,7 +4883,7 @@
       "id": "whirlpool",
       "name": "Whirlpool",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "whirlwind",
@@ -4967,7 +4967,7 @@
       "id": "wrap",
       "name": "Wrap",
       "status": "port",
-      "note": "data: volatileStatus"
+      "note": "data: residual"
     },
     {
       "id": "wringout",
