@@ -6,18 +6,14 @@ cycle itself, with no runner minutes, no dispatched workflows and no cron. The c
 semantics do not change — `main` plus the live `task-<ID>` branches are still the only
 state — only who executes the ritual changes.
 
-## Where this stands (2026-10-22)
+## Where this stands (2026-10-25)
 
-The code is merged and the box is not born yet. Oracle's Madrid region answers
-`OUT_OF_HOST_CAPACITY` for every shape, so the launch is waiting on a slot: `oci / retry`
-waits from CI around the clock, one launch every ~7 minutes, chaining its own runs. Meanwhile:
-
-- the repository is **public**, so Actions minutes are free again and the billing block
-  that parked the loop overnight is gone;
-- `AUTOPILOT` is **`on`** for a timed window, so cycles run and `main` moves while the wait
-  is going on;
-- when the instance appears, the `oci-ready` issue carries its IP and the bootstrap in
-  this file turns it into the host.
+The code is merged and the box is not provisioned: hosting it is a human's call, and today
+the loop runs on GitHub Actions, whose minutes are free while the repository is public. The
+VM host stays as the fallback for the day Actions stops being enough — a private
+repository's billable minutes, the six-hour job cap or a cron that fires too rarely — and
+nothing in the repository has to change to adopt it: the scripts below plus the bootstrap in
+this file are the whole host.
 
 ## Why a box
 
@@ -32,11 +28,10 @@ Three measured facts pushed the loop off Actions:
   again, so this one is currently moot — it is the reason the box is worth having the day
   the repository goes private for good.
 
-The Oracle Always Free Ampere shape — 2 OCPU / 12 GB on a free account, 4 OCPU / 24 GB on
-pay-as-you-go, 200 GB of block storage, no monthly bill — removes all three. It also keeps
-`node_modules`, the Playwright browser
-and the asset store warm between cycles, which is most of the setup time a runner pays
-every time.
+A cheap always-on box — 2–4 cores, 12–24 GB, 100 GB of disk — removes all three. It also
+keeps `node_modules`, the Playwright browser and the asset store warm between cycles, which
+is most of the setup time a runner pays every time. Any provider will do: the scripts below
+take no cloud CLI and make no provider-specific call.
 
 ## The shape
 
@@ -61,159 +56,6 @@ last-cycle.md    the markdown summary of the last one
 lock             flock target: one cycle at a time
 alerts           "title:date" lines, so a parked loop nags once a day, not every wake-up
 ```
-
-## Provisioning on Oracle Cloud
-
-Always Free, not a trial: the account needs a card for verification but this shape does
-not bill. Everything below is in the console; the CLI equivalents are the same calls.
-
-1. **Create the instance.** Compute → Instances → Create instance.
-   - Image: **Canonical Ubuntu 24.04** (aarch64).
-   - Shape: **Ampere → VM.Standard.A1.Flex**, **2 OCPU / 12 GB** on an Always Free account
-     (that is the whole A1 allowance since August 2026, so do not split it with another
-     instance). A pay-as-you-go account can ask for 4 OCPU / 24 GB inside the free allowance.
-   - Boot volume: 100 GB (200 GB is the free ceiling).
-   - Networking: let it create a VCN with a public subnet, and **assign a public IPv4**.
-     That is what you SSH to.
-   - SSH keys: upload yours (the console can generate a pair and hand you the private
-     key once).
-2. **Close the firewall.** The default security list opens nothing but SSH on 22. Keep
-   it that way: the box needs **no inbound port at all**. Do not add 80/443.
-3. **Note the shape's two realities.** A1 capacity is regional and often exhausted — the
-   create call answers `Out of host capacity` and the only lever is to retry. Madrid has
-   **one** availability domain (`gcgh:EU-MADRID-1-AD-1`, the sole entry from
-   `oci iam availability-domain list`), so there is no other AD to rotate to; the shape is
-   offered there (`VM.Standard.A1.Flex` answers from `oci compute shape list`), the region is
-   just full. And Always Free compute exists **only in the tenancy's home region**, which
-   Oracle does not change: a different region is a different tenancy or a paid instance, so
-   the wait is in Madrid or nowhere. Always Free compute can also be reclaimed when it has
-   been idle for a week (low CPU, low network); a loop that parks with an empty backlog is
-   exactly that pattern, so treat a vanished instance as possible and keep the repo the
-   source of truth (it already is).
-
-The same thing through the CLI, once `~/.oci/config` holds an API key:
-
-```bash
-oci network vcn create --compartment-id "$T" --cidr-block 10.0.0.0/16 \
-  --display-name pkm-vcn --dns-label pkmvcn --wait-for-state AVAILABLE
-oci network internet-gateway create --compartment-id "$T" --vcn-id "$VCN" \
-  --is-enabled true --display-name pkm-igw --wait-for-state AVAILABLE
-oci network route-table update --rt-id "$RT" --force \
-  --route-rules '[{"destination":"0.0.0.0/0","destinationType":"CIDR_BLOCK","networkEntityId":"'$IGW'"}]'
-oci network security-list update --security-list-id "$SL" --force \
-  --ingress-security-rules '[{"protocol":"6","source":"<your.ip>/32","sourceType":"CIDR_BLOCK","isStateless":false,"tcpOptions":{"destinationPortRange":{"min":22,"max":22}}}]'
-oci network subnet create --compartment-id "$T" --vcn-id "$VCN" --cidr-block 10.0.1.0/24 \
-  --display-name pkm-subnet --dns-label pkmsubnet --route-table-id "$RT" \
-  --security-list-ids "[\"$SL\"]" --wait-for-state AVAILABLE
-oci compute instance launch --compartment-id "$T" \
-  --availability-domain "$AD" --shape VM.Standard.A1.Flex \
-  --shape-config '{"ocpus":4,"memoryInGBs":24}' --image-id "$IMAGE" \
-  --subnet-id "$SUBNET" --assign-public-ip true --display-name pkm-autopilot \
-  --ssh-authorized-keys-file ~/.ssh/pkm_vm.pub --boot-volume-size-in-gbs 100
-```
-
-`VM.Standard.A1.Flex` is the only shape that matters, and its free size depends on the
-account: **2 OCPU / 12 GB** since Oracle cut the Always Free Ampere entitlement in August
-2026, or still 4 OCPU / 24 GB on a pay-as-you-go account, inside the free allowance. The
-retry asks for that ceiling on two attempts out of three and for **1/6** on the third
-(`SHAPES`): asking for less spends none of the allowance, and a half-size box today beats a
-full-size one that never appears.
-
-## Waiting for capacity from CI
-
-`oci / retry` (`.github/workflows/oci-retry.yml`) is **the** wait: one continuous chain of
-runs in CI. A local loop used to run alongside it every ~6 minutes; it was retired on
-2026-10-22 because two loops against one tenancy share a single launch rate limiter, and the
-one that asks second gets `TooManyRequests`. One loop asking every ~7 minutes beats two
-asking every ~5.
-
-The workflow **cannot supply the cadence from its schedule**. A `cron: '*/10 * * * *'` is a
-request, not a promise: this repository's `*/30` fired every 1.5 to 5 hours over two days,
-and the new workflow's first scheduled tick came five hours after it went live. So a run
-holds the cadence itself — `scripts/agent/vm/oci-launch.sh` takes `ATTEMPTS` (8 in CI; the
-default of 1 is a one-shot probe), `ATTEMPT_SLEEP` (300 s), `THROTTLE_SLEEP` (600 s),
-`START_DELAY` (300 s) and
-`BUDGET` (3 600 s), and walks through its attempts on a rotation, `2/12 2/12 1/6`. `SHAPES` is
-the knob: it takes a list of `<ocpus>/<gb>` and rotates one per attempt, so the day the
-account goes pay-as-you-go it is `SHAPES: 4/24 2/12 1/6` and nothing else changes. Writing an
-entry twice is how the rotation is weighted. A misspelt entry, or a memory outside the shape's
-own 1–6 GB per OCPU, answers `InvalidParameter` instead of "no capacity": the script treats
-that as a real error and stops the chain, so a typo silently costs the wait until somebody
-reads the red run.
-`timeout-minutes: 75` sits above the script's own budget, so the job ends itself instead of
-being killed mid-launch.
-
-**And a run that ends without a slot hands the baton to the next one**, the same way
-`agent-cycle.yml` keeps its loop alive. That is what makes the wait continuous rather than
-bursty: one launch every ~7 minutes, around the clock, ~200 a day, two API calls each (the
-`RUNNING` check and the `launch`). Actions minutes are free while the repository is public.
-The chain stops by itself the moment an instance exists; `concurrency` keeps exactly one run
-alive, so a chained run and a cron tick can never overlap. The brake is the repository
-variable **`OCI_RETRY=off`**: the run then attempts nothing and chains nothing, and the cron
-ticks into an empty job until it is turned back on. A run whose attempts step *failed* (bad
-credential, missing variable) also does not chain, so a misconfiguration cannot spin.
-
-**The spacing is rate limiting, not patience.** A launch call takes ~1 min 40 s to answer
-either way. At one attempt every ~2 min 30 s, half of them came back `TooManyRequests`
-("too many requests for the user") instead of "out of host capacity", and at ~5 min it still
-did: Oracle throttles the launch API long before the region is out of shapes, and the
-interval people doing this wait settle on is 5 to 10 minutes. Two more things matter as much
-as the gap between attempts. A **throttle costs 10 minutes**, not 5. And a chained run opens
-with a **5 min warm-up** (`START_DELAY`), because without it the last attempt of one run and
-the first of the next land a minute apart — two launches back to back, which is exactly the
-pattern that earns the 429. A throttled attempt is logged and counted as such instead of
-being counted as a full region.
-
-**The launch carries a public key.** `OCI_SSH_PUBLIC_KEY` is a repository variable with the
-public half of the key you log in with, passed as `--metadata '{"ssh_authorized_keys": …}'`.
-Without it the script exits `2` and launches nothing: a slot spent on a box nobody can SSH
-into is worse than a red run, and A1 slots do not come back often.
-
-Each attempt parks the run by finding the instance already `RUNNING` — it keeps no state
-of its own — so once a slot opens the chained runs keep coming, find the instance, announce
-it and stop chaining. That is what lets the `oci-ready` issue still be opened by a later run
-if the one that launched died before announcing: the address is read again, never stored.
-When a slot opens the run waits for the IP and opens an `oci-ready` issue with the instance,
-the shape and the address.
-
-It authenticates as a dedicated OCI user, not the operator's:
-
-- user `pkm-ci` in the `pkm-ci` group, API key only, no console password;
-- a policy that allows `manage instances`, `use` the network plumbing the launch needs,
-  and `read instance-images`, and nothing else;
-- the private key is the only secret (`OCI_CLI_KEY_CONTENT`); the identifiers are
-  repository variables (`OCI_CLI_USER`, `OCI_CLI_FINGERPRINT`, `OCI_CLI_TENANCY`,
-  `OCI_CLI_REGION`, `OCI_COMPARTMENT_ID`, `OCI_SUBNET_ID`, `OCI_IMAGE_ID`, `OCI_AD`), and
-  `OCI_SSH_PUBLIC_KEY` is one too because a public key is not a secret.
-
-Rotating the key is a human's job: `oci iam user api-key delete`, upload a new one, and
-`gh secret set OCI_CLI_KEY_CONTENT < new-key.pem`. The workflow spends no model tokens;
-each attempt is one `launch` call, and a `TooManyRequests` or a full region exits `0` on
-purpose so the runs list does not turn red while the answer is simply "not yet".
-
-## Growing a 1/6 box to 2/12
-
-The retry parks on **any** `RUNNING` instance, so when the rotation's 1/6 slot lands the wait
-is over: 1 OCPU still leaves half the allowance free, and growing is a separate, deliberate
-step. Brake the chain first — a `STOPPED` instance is `RUNNING` to nobody, so a live retry
-would read the box as gone and launch a second one beside it, and two instances over the
-2 OCPU / 12 GB ceiling are a bill:
-
-```bash
-gh variable set OCI_RETRY --body off
-oci compute instance action --instance-id "$ID" --action STOP --wait-for-state STOPPED
-oci compute instance update --instance-id "$ID" --force \
-  --shape-config '{"ocpus":2,"memoryInGBs":12}'
-oci compute instance action --instance-id "$ID" --action START --wait-for-state RUNNING
-gh variable set OCI_RETRY --body on
-```
-
-The `update` is where the wait resumes: a bigger shape needs a host with room for it, so it
-answers `OutOfHostCapacity` exactly like a `launch` and wants the same patience and the same
-spacing — never a tight loop, and never while the retry chain is running. The instance keeps
-its IP, its boot volume and everything installed on it, so a failed resize costs a stop and a
-start, not the bootstrap. If the box has to work in the meantime, `START` it back at 1/6 with
-the same call and try again another day.
 
 ## Bootstrap
 

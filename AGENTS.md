@@ -125,8 +125,8 @@ tasks it integrates.
 - **Host.** The loop has two hosts, documented in `docs/agent-ci.md` and
   `docs/agent-vm.md`: GitHub Actions (the repository is public, so its minutes are free)
   and an always-on VM whose code lives in `scripts/agent/vm/` — the cycle, the driver,
-  the brake and the Orchestrator's prompt. The VM's instance is still waiting on Oracle
-  capacity; the `agent-*.yml` workflows stay live and read the same prompt, so the two
+  the brake and the Orchestrator's prompt. The VM is a fallback nobody has provisioned
+  yet; the `agent-*.yml` workflows stay live and read the same prompt, so the two
   hosts cannot drift apart. Whichever runs, the brake starts **off**.
 - **QA runs in two waves.** **Task QA** — one QA subagent **per task**, launched
   **together in one wave** (never one after another), each from its own

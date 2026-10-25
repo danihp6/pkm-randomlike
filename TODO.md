@@ -1465,9 +1465,10 @@ battle lane interleaves its five into the same batches.
   `61` 129/130/131 + 140, `62` 132/133/134 + 141, `63` 135/136/137 + 142, `64` 138/139 + 143 + 145.
   A route task owns only its own `src/scenes/panels/<name>.ts` and its own
   `src/ui/hud/panels/<name>/`; a battle task owns `src/scenes/BattleScene.ts`, so **one per batch**.
-- **Batch 65 — `[Task-144]`, `[Task-146]`, `[Task-147]`, `[Task-148]`.** The message box (the last
-  `BattleScene.ts` slot, and the one that changes pacing), the stats screens, the starter and run
-  over.
+- **Batch 65 — `[Task-144]`, `[Task-147]`, `[Task-148]`.** The message box (the last
+  `BattleScene.ts` slot, and the one that changes pacing), the starter and run over. `[Task-146]`
+  was cut out of this batch on `2026-10-25`: it had no screen and no store to migrate, so it is now
+  `[Task-152]` (the store) and `[Task-155]` (the screen) in Phase 13, and Batch 65 shipped three.
 
 **What keeps this phase honest.** Every screen ships with a fixture and a diff, and a screen that
 cannot pass keeps its Phaser version with the flag still pointing at it (`D49`); no batch closes
@@ -2767,8 +2768,9 @@ atlas frame. What follows is the cut's own record.
   run field, so **no `SAVE_VERSION`** step. `D43` is amended for moves and abilities only:
   Pokémon species, items and biomes stay English.
 
-### Batch 23a2 - the 61 descriptions the base-game dump does not carry *(blocked)*
-- [!] **[Task-113]** `Task-112` left 18 moves and 43 abilities with an English description because
+### Batch 23a2 - the 61 descriptions the base-game dump does not carry *(closed — carried by `[Task-149]`)*
+- [x] **[Task-113]** *(superseded by `[Task-149]` on `2026-10-25`: the human authorised Spanish authored
+  in the repo; see the decision line in the item's own entry.)* `Task-112` left 18 moves and 43 abilities with an English description because
   PokeAPI's dump and the base Scarlet/Violet text have no Spanish for those DLC rows; fill them
   from the game's own Spanish text, never a machine translation, and empty `MISSING_ES`.
 - **Hot files:** `src/data/i18n/es/moves.json`, `abilities.json` and `meta.json` →
@@ -3983,7 +3985,8 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
 
 > Completed work for this phase is archived in `CHANGELOG.md`.
 
-- [!] **[Task-28] Activate the ESLint half of `npm run lint`.** Task-01 shipped
+- [x] **[Task-28] Activate the ESLint half of `npm run lint`.** *(Closed `2026-10-25`: the half is
+      dropped, not deferred — see the decision line.)* Task-01 shipped
       `eslint.config.mjs` committed and **dormant**: the flat config for `src/**/*.ts`
       and `vite.config.ts` (plus `vite`/`infra`/`public`/`sprite-sources`/`coverage`/
       `.agent_specs`/`scripts` ignores), written so that switching it on is a
@@ -4001,8 +4004,12 @@ note. The one ID without a batch is not a question: `[Task-28]` waits on an upst
       rules off in `eslint.config.mjs`, never edit a file it reports. Linting
       `scripts/**` stays out of scope: the config ignores them on purpose.
       *Dependencies:* none inside this repo — it waits on the upstream release.
-      *Decision:* **Dormant and unscheduled.** The blocker is upstream: `typescript-eslint` peers `typescript <6.1` while the repo pins 7. Neither a second toolchain nor dropping the half. **BLOCKED:** upstream — every `typescript-eslint` release up to 8.71.2 peers `typescript <6.1.0` while the repo pins native `typescript@7.0.2`, so `@typescript-eslint/parser` throws at import and `npx eslint .` exits 2; unschedulable until a human decides a second toolchain or dropping the ESLint half.
-      **Unscheduled** (no batch).
+      *Decision (`2026-10-25`): **the ESLint half is dropped for good** (`D51`).* The human chose one
+      compiler over a second toolchain: native `typescript@7` stays the only TypeScript in the repo,
+      `eslint.config.mjs` is deleted with this entry, and the lint gate is `prettier --check .` plus
+      `tsc --noEmit`, which `npm run build` already runs. If a lint net is wanted again it must be a
+      linter with no TypeScript API dependency as its own task — never this one.
+      **Closed** (no batch).
 - [x] **[Task-29] The Prettier reformat pass.** Task-01 shipped the format gate over a
       **ledger** rather than rewrite a file a batch-mate owned: `.prettierignore` was a
       132-entry file, and its `src/**` block is **104 individual files** (plus the five
@@ -5791,7 +5798,8 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       `docs/tech-decisions.md` `D43` and `docs/data-spec.md` §1; it is **the first batch after
       Batch 23**, in **Batch 23a**, before Batch 24, because it holds the two scenes the room wave
       needs. *(Batch 23a)*
-- [!] **[Task-113] The 61 descriptions the base-game dump does not carry.**
+- [x] **[Task-113] The 61 descriptions the base-game dump does not carry.** *(Superseded by
+      `[Task-149]` on `2026-10-25` — see the decision line at the end of this entry.)*
       **The gap.** `[Task-112]` shipped the official Spanish name of all 835 moves and 311
       abilities and the official description of 817 moves and 268 abilities. The remaining
       **18 moves** and **43 abilities** are DLC rows whose `move_flavor_text` /
@@ -5822,6 +5830,12 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       empties and the DLC spot-checks are added. Nothing else blocks it: the accessors, the UI
       wiring and the English fallback already ship, and no rule, RNG draw or run field moves,
       so there is still **no `SAVE_VERSION`** step.
+      **Decision (`2026-10-25`): the 61 get Spanish authored in the repo (`D52`).** The human chose
+      authored Spanish over waiting for a DLC dump, so `[Task-149]` fills the two lists and this entry
+      closes as **superseded**. The "never a machine translation" rule stays intact for everything
+      else: these 61 are written as content (from the dex's own English `desc`/`shortDesc`) and
+      reviewed as content, never emitted by a generator, and the DLC dump remains welcome as a later
+      correction if one appears.
 - [x] **[Task-64] A casino room: a Team Rocket grunt, a slot machine the player pays to spin, and
       its prizes.** Reported in play: «añade tarea para añadir habitacion casino, aparece un sprite
       de un recluta team rocket, aparece una tragaperras y pagas por tiradas con posibilidad de
@@ -6587,8 +6601,9 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       (the modifiers the consumables write), `[Task-95]` (the heal they reuse) and `[Task-106]` — the
       Tera Crystal's holder override is the same "wherever a fighter's types are read" reader that
       task freezes (Batch 32), so the two cannot be written independently of each other. *(Batch 47)*
-- [!] **[Task-104] The damage-model abilities: the type-chart-breaking pair, and the four team-type
-      bonuses.** Two rules the damage model cannot express. Nothing in `src/engine/battle/damage.ts`
+- [x] **[Task-104] The damage-model abilities: the type-chart-breaking pair, and the four team-type
+      bonuses.** *(Split on `2026-10-25` into `[Task-150]`, `[Task-151]`, `[Task-153]` and
+      `[Task-154]` — see the decision line at the end of this entry.)* Two rules the damage model cannot express. Nothing in `src/engine/battle/damage.ts`
       can ignore the type chart, and the run's party composition never reaches a battle
       (`BattleSetup` carries no team fact, `src/engine/battle/state.ts` 120-128).
       **Fix shape.** The **two abilities** the human asks for («pokes oscuros: habilidad que ignora
@@ -6615,6 +6630,13 @@ into these floors and adds the Poké Dollar economy. Source of truth:
       table the generated dex accepts, or two existing ids with exact semantics). The same
       blocker is recorded in Batch 29's and Batch 30's fill records. The task stays out of the
       queue (`[!]`) until it is answered; its Batch 31 mate `[Task-89]` shipped alone.
+      **Decision (`2026-10-25`): split, and the dark rule is two abilities, not one.** The human's
+      wish is that a **dark Pokémon carries the type-chart-ignoring ability *and* a second, random
+      one**, so the entry divides into `[Task-150]` (the four team-type bonuses — fully specified, no
+      content gap), `[Task-151]` (the custom `darkmatter` row: one hand-authored ability table the
+      generated dex accepts, with its `onModifyEffectiveness` handler), `[Task-153]` (the engine's
+      second ability slot) and `[Task-154]` (the dark flag on the run's members, which is what makes
+      the pair spawn). The four team rules ship first and nothing here waits on a dump or a name.
 - [x] **[Task-107] The 2vs2 boss battle, engine half: the double-battle rules.** The human's last
       and largest wish — «Bosses 2vs2» — cannot ride on today's engine: every side is one active
       (`activeFighter(state, side)`, `src/engine/battle/state.ts`), a command carries no target and
@@ -7476,18 +7498,23 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       `src/ui/hud/panels/main-menu/`, and `src/scenes/MainMenuScene.ts` keeps the scene and the
       navigation. Claims `src/scenes/MainMenuScene.ts`, `src/ui/hud/panels/main-menu/**` and its
       fixture. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`. *(Batch 64)*
-- [!] **[Task-146] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
+- [x] **[Task-146] Stats and ranking are the HUD's.** *(Split on `2026-10-25` into `[Task-152]` and
+      `[Task-155]` — see the decision line at the end of this entry.)* `08`, `08b`, `08c`, `09` and `09b` in
       `src/ui/hud/panels/stats/`, including the monthly global record row; the numbers stay the ones
       `src/ui/runSummary.ts` already derives. Claims `src/ui/hud/panels/stats/**` and its fixtures;
       `src/scenes/MainMenuScene.ts` only if the screens still live there, in which case
       `[Task-145]` runs first. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`,
       `[Task-145]`. *(Batch 65)*
-      *BLOCKED: there is no stats/ranking screen to migrate and no cross-run or per-Pokémon record
-      to draw — `RunStats` is `{catches, casualties}` (`src/engine/run/state.ts` 30-33), the save
-      keeps one run, and frames 08/08b/08c/09/09b need run history, playtime, per-species KOs/damage
-      and a monthly ranking, i.e. a run-history store with a `SAVE_VERSION` step that Phase 12
-      forbids (`TODO.md` lines 1474-1475). Needs a human decision: an engine task ahead of it, or a
-      re-scope to a current-run screen with empty states. Issue #51.*
+      **The finding that blocked it:** there is no stats/ranking screen to migrate and no cross-run or
+      per-Pokémon record to draw — `RunStats` is `{catches, casualties}` (`src/engine/run/state.ts`
+      30-33), the save kept one run, and frames 08/08b/08c/09/09b need run history, playtime,
+      per-species KOs/damage and a monthly ranking.
+      **Decision (`2026-10-25`): split into a store and a screen.** `[Task-152]` adds the run-history
+      store and the `SAVE_VERSION` 24 step (last 50 runs: seed, map reached, catches, casualties,
+      playtime, per-species KOs and damage) with no UI; `[Task-155]` renders the five frames from it,
+      with the monthly record kept locally. Phase 12's "no `SAVE_VERSION`" line was a property of the
+      HUD cut, not a rule of the game, and the bump is routine: `save.ts` already carries 23
+      migrations. Issue #51 closes with this decision.
 - [x] **[Task-147] The starter picker is the HUD's.** `04`: the three cards, their types and the
       confirmation in `src/ui/hud/panels/starter/`, with `src/scenes/StarterScene.ts` keeping the
       pick. Claims `src/scenes/StarterScene.ts`, `src/ui/hud/panels/starter/**` and its fixture.
@@ -7497,6 +7524,114 @@ geometry and the frame → node map — are in `docs/hud-fidelity.md`.**
       permadeath wording unchanged. Claims `src/scenes/RunOverScene.ts`,
       `src/ui/hud/panels/run-over/**` and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`,
       `[Task-125]`. *(Batch 65)*
+
+---
+
+## Phase 13 - The dark Pokémon and the run history
+
+The backlog the human decided on **`2026-10-25`**, cut out of the four `[!]` entries Phase 12 ended
+on: the ESLint half is dropped (`[Task-28]`, `D51`), the 61 DLC descriptions are written in the repo
+instead of waiting for a dump (`[Task-149]`, `D52`), and `[Task-104]` / `[Task-146]` are split so no
+task waits on content it cannot get. The wish behind `[Task-104]` is the phase's spine: a **dark
+Pokémon carries `darkmatter` and a second, random ability**, which takes a custom ability row
+(`[Task-151]`), a second ability slot in the battle engine (`[Task-153]`) and a flag on the run's
+members (`[Task-154]`). The run history (`[Task-152]`) and its screen (`[Task-155]`) close the last
+Phase 12 screen without pretending a screen exists to migrate.
+
+### Batch 66 - the queue restarts here
+
+- **`[Task-149]`** owns `src/data/i18n/es/**` and `src/i18n/content.test.ts`: content, no code path.
+- **`[Task-150]`** owns `src/engine/battle/{state,damage,turn}.ts` and `docs/battle-spec.md`.
+- **`[Task-151]`** owns the custom row and its handler — `src/data/dex/**`,
+  `src/engine/battle/effects/abilities.ts`, `docs/data-spec.md` and the regenerated coverage table —
+  and **re-pins** the fixed-seed ability draw, which no other task in the batch reads.
+- **`[Task-152]`** owns `src/engine/run/history.ts` and `src/engine/save.ts`, and is the batch's only
+  `SAVE_VERSION` step (24). `[Task-154]` reads it later and takes 25.
+- Four disjoint path sets, four dev slots and four QA slots; no task needs a file a batch-mate
+  produces, so the batch runs as one wave.
+
+### Batch 67 - the second ability slot and the stats screen
+
+- **`[Task-153]` and `[Task-155]`.** The engine's second slot and the stats screen share nothing
+  (`src/engine/battle/**` against `src/ui/hud/panels/stats/**` + `src/scenes/MainMenuScene.ts`), and
+  `[Task-155]` needs only `[Task-152]`, which Batch 66 merged. Two slots.
+
+### Batch 68 - the dark Pokémon
+
+- **`[Task-154]` alone**, and the empty slots are a dependency, not a preference: it reads
+  `[Task-151]`'s row and `[Task-153]`'s second slot, so it cannot start before Batch 67 lands. It is
+  the last task of the phase and the reason the phase exists.
+
+- [ ] **[Task-149] The 61 DLC descriptions, authored in the repo.** Fill `description` and
+      `shortDescription` in `src/data/i18n/es/moves.json` and `abilities.json` for exactly the 18
+      moves and 43 abilities `MISSING_ES` names; regenerate `meta.json` so both `missingDescriptions`
+      lists are empty and `MISSING_ES` is `[]`. **The text is written in the repo, in Spanish, from
+      the dex's own English `desc`/`shortDesc`** — the human authorised authored Spanish over official
+      text (`D52`) — so it is content review, never a generator, and every string must read as Spanish
+      prose. Spot-checks in `src/i18n/content.test.ts` (`alluringvoice` = `Canto Encantador`,
+      `dragoncheer` = `Bendición Dragón`, `malignantchain` = `Cadena Maligna`) plus one assertion per
+      file that no English sentence survives. Claims `src/data/i18n/es/**` and
+      `src/i18n/content.test.ts`. *Dependencies:* none — `D43`'s tables and accessors are shipped. It
+      adds no run field and draws no RNG: **no `SAVE_VERSION`** step. *(Batch 66)*
+
+- [ ] **[Task-150] The four team-type bonuses.** `BattleSetup.teamTypes` (`src/engine/battle/state.ts`
+      120-128) is filled by the launch from the party's **living** members; two living Fire members
+      give a Fire move **+10 %** damage and **+20 %** burn chance, with Ice (freeze), Electric
+      (paralysis) and Poison (poison) the same. The damage half multiplies inside `damage.ts` next to
+      STAB, and the status half is one helper in `turn.ts` that the existing secondary roll also
+      calls, so the two can never disagree. **Docs:** `docs/battle-spec.md` §10/§11. Claims
+      `src/engine/battle/state.ts`, `src/engine/battle/damage.ts`, `src/engine/battle/turn.ts`, their
+      tests and `docs/battle-spec.md`. *Dependencies:* none — `damage.ts` and the roll are shipped.
+      *(Batch 66)*
+
+- [ ] **[Task-151] The custom ability row: `darkmatter`.** The generated dex has no Gen 9 row that
+      ignores the type chart, so the repo gets **one hand-authored ability table the accessors
+      accept**: `src/data/dex/customAbilities.ts` with `darkmatter` — EN *Dark Matter*, ES *Materia
+      Oscura*, "The holder's moves ignore the type chart: no weaknesses, no resistances, no
+      immunities." Its `onModifyEffectiveness` handler in `src/engine/battle/effects/abilities.ts`
+      returns `1`, which `turn.ts` already dispatches before the chart is applied; `getAbility`
+      resolves the row, `meta.json` counts it, `docs/data-spec.md` gets its line and
+      `npm run docs:coverage` regenerates `docs/balance/effect-coverage.md`. Adding an id to
+      `randomAbilityPool()` changes every draw, so the fixed-seed regression test is **re-pinned** in
+      this task, never left stale. Claims `src/data/dex/customAbilities.ts`,
+      `src/data/dex/abilities.ts`, `src/data/dex/meta.json`,
+      `src/engine/battle/effects/abilities.ts`, `src/engine/battle/randomAbility.test.ts`,
+      `docs/data-spec.md` and `docs/balance/effect-coverage.md`. *Dependencies:* none. *(Batch 66)*
+
+- [ ] **[Task-152] The run-history store.** `src/engine/run/history.ts`: one record per finished run
+      — seed, map reached, catches, casualties, playtime, and per-species KOs and damage — appended
+      to `save.history` and capped at the last 50, so a screen can show totals, the run list and the
+      Pokémon table without reading a live run. `SAVE_VERSION` 24 with migration `23 → 24` seeding
+      `history: []`; the round-trip, the cap and the migration's on-disk shape are unit-tested. No UI
+      and no scene. Claims `src/engine/run/history.ts`, `src/engine/run/README.md`,
+      `src/engine/save.ts`, `src/engine/save.test.ts`, `src/engine/README.md`. *Dependencies:* none.
+      *(Batch 66)*
+
+- [ ] **[Task-153] The engine accepts a second ability.** `BattleFighter.secondAbility?: string` and
+      one `hasAbility(fighter, id)` helper; `ownedEffects` (`src/engine/battle/effects/registry.ts`)
+      yields both abilities' effects, and the handlers that compare `foe.ability === '...'` move to
+      the helper so a fighter's second ability is never a no-op. The snapshot round-trip preserves it
+      and a battle test proves its effect fires. Claims `src/engine/battle/fighter.ts`,
+      `src/engine/battle/effects/registry.ts`, `src/engine/battle/effects/abilities.ts` and their
+      tests. *Dependencies:* `[Task-151]` (the row it makes reachable). *(Batch 67)*
+
+- [ ] **[Task-154] The dark Pokémon.** A run member can be **dark** (`RunMember.dark`, `SAVE_VERSION`
+      **25** with migration `24 → 25` seeding `false`): its ability is always `darkmatter` and its
+      `secondAbility` is the random draw the rest of the run already makes, which `[Task-153]` reads.
+      The encounter roll marks a share of wilds dark (`src/data/run.ts`), the catch keeps the flag, the
+      party and the route show it (a tint, no new atlas), and the rule lands in `docs/design-spec.md`
+      and `docs/battle-spec.md`. A dark member's panel shows both abilities. Claims
+      `src/engine/run/state.ts`, `src/engine/run/roster.ts`, `src/engine/routes/encounters.ts`,
+      `src/data/run.ts`, their tests, `docs/design-spec.md` and `docs/battle-spec.md`.
+      *Dependencies:* `[Task-151]`, `[Task-153]`. *(Batch 68)*
+
+- [ ] **[Task-155] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
+      `src/ui/hud/panels/stats/`, read from `[Task-152]`'s store: the totals, the run list, the
+      Pokémon table and the monthly local record, with empty states when the history is empty. The
+      main menu's frame-only STATS row (`src/scenes/MainMenuScene.ts`) becomes live. Claims
+      `src/ui/hud/panels/stats/**`, `src/scenes/MainMenuScene.ts`, `src/i18n/en.ts`, `src/i18n/es.ts`
+      and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`, `[Task-145]`,
+      `[Task-152]`. *(Batch 67)*
 
 ---
 
