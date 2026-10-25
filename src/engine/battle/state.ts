@@ -198,6 +198,8 @@ export type BattleState = {
    * The post-battle fold reads it (Task-101); it draws no RNG.
    */
   usedFighterIds: string[];
+  /** The player's repeated party types; the enemy side never gets this bonus. */
+  teamTypes: readonly string[];
 };
 
 export type BattleSetup = Readonly<{
@@ -230,6 +232,8 @@ export type BattleSetup = Readonly<{
   double?: boolean;
   /** Stat stages the enemy's lead starts with (the exorcist's curse). */
   enemyBoosts?: Partial<Record<BoostId, number>>;
+  /** The party types the launch's living members repeat (at least two each). Default `[]`. */
+  teamTypes?: readonly string[];
 }>;
 
 /**
@@ -317,6 +321,7 @@ export function createBattle(setup: BattleSetup): BattleState {
     noFlee: setup.noFlee ?? false,
     bannedSpecies,
     usedFighterIds: [],
+    teamTypes: [...(setup.teamTypes ?? [])],
   };
 
   // The exorcist's curse: the enemy's lead starts a stage down, applied once its

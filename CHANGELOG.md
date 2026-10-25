@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The four team-type bonuses.** `[Task-150]`, the second of Phase 13: a battle carries the
+      player party's repeated types as `BattleSetup.teamTypes` / `BattleState.teamTypes`
+      (default `[]`), and while two living members share a type a move of that type deals **+10 %**
+      (`TEAM_TYPE_DAMAGE`, applied inside `computeDamage` right after STAB and mirrored in
+      `estimateDamage` so the AI and the real hit agree) and its status side-effect gets **+20**
+      percentage points (`TEAM_TYPE_STATUS_BONUS`), Fire→burn, Ice→freeze, Electric→paralysis,
+      Poison→poison, through one exported helper the secondary roll calls — the two halves cannot
+      disagree. The enemy context never receives the bonus, and with `teamTypes` absent every number
+      is byte-identical to before (no seed was re-pinned). `docs/battle-spec.md` gains §13 with the
+      rule and the four pairs, because in this base §10 is Gigantamax and §11 the enemy AI. The
+      launch that fills the field from the party's living members is still a follow-up (the call site
+      is `src/scenes/RouteScene.ts`, outside the task's paths), so the rule ships reachable and
+      tested but not yet visible in game. `npm test` 4242 passed / 68 skipped, `npm run build` green.
 - [x] **The 61 Spanish descriptions are written, not waited for.** `[Task-149]`, the first of
       Phase 13 (`D52`): the 18 moves and 43 abilities `MISSING_ES` named now carry a `description` and
       a `shortDescription` authored in the repo from the dex's own English copy, so

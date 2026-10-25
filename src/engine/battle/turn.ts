@@ -458,17 +458,52 @@ function applyVolatileEffect(
   return applied;
 }
 
+/** Percentage points a repeated party type adds to its status side-effect's chance. */
+export const TEAM_TYPE_STATUS_BONUS = 20;
+
+/** The status each repeated party type boosts: the four the team-type rule covers. */
+const TEAM_TYPE_STATUS: Readonly<Record<string, string>> = {
+  Fire: 'brn',
+  Ice: 'frz',
+  Electric: 'par',
+  Poison: 'psn',
+};
+
+/**
+ * The chance a status side-effect actually rolls, in whole percent: `chance` plus
+ * `TEAM_TYPE_STATUS_BONUS` when `moveType` is in `state.teamTypes` and `status` is
+ * that type's status (Fire→brn, Ice→frz, Electric→par, Poison→psn). Clamped to
+ * 0..100. Pure; never reads the RNG.
+ */
+export function teamTypeStatusChance(
+  state: BattleState,
+  moveType: string,
+  status: string | undefined,
+  chance: number,
+): number {
+  if (status === undefined) return chance;
+  if (TEAM_TYPE_STATUS[moveType] !== status) return chance;
+  if (!state.teamTypes.includes(moveType)) return chance;
+  return Math.max(0, Math.min(100, chance + TEAM_TYPE_STATUS_BONUS));
+}
+
 function applySecondary(
   state: BattleState,
   side: SideId,
   effect: MoveEffect,
   attacker: BattleFighter,
   defender: BattleFighter,
+  moveType: string,
 ): void {
   if (effect.chance !== undefined) {
-    const chance = runModifySecondaryChance(
-      makeContext(state, side, { source: attacker, target: defender }),
-      effect.chance,
+    const chance = teamTypeStatusChance(
+      state,
+      moveType,
+      effect.status,
+      runModifySecondaryChance(
+        makeContext(state, side, { source: attacker, target: defender }),
+        effect.chance,
+      ),
     );
     if (state.rng.int(1, 100) > chance) return;
   }
@@ -577,7 +612,7 @@ function applyMoveEffects(
   const sheerForce = acting.ability === 'Sheer Force' && move.basePower > 0;
   if (defenderDamaged && !sheerForce) {
     for (const secondary of secondaries) {
-      applySecondary(state, actingSide, secondary, acting, effectTargetOfMove);
+      applySecondary(state, actingSide, secondary, acting, effectTargetOfMove, move.type);
     }
   }
 
@@ -1170,6 +1205,7 @@ function resolveMove(
           targetMovedFirst: state.movedSides.includes(opponentOf(side)),
           userDamagedThisTurn:
             attacker.volatiles.physicalDamageTaken + attacker.volatiles.specialDamageTaken > 0,
+          ...(side === 'player' ? { teamTypes: state.teamTypes } : {}),
           ...statContext,
           effectiveness: runModifyEffectiveness(
             makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),

@@ -11,7 +11,7 @@ import {
   type BattleState,
   type RoomFieldEffects,
 } from './state';
-import { autoReplace, needsReplacement, takeTurn, useMove } from './turn';
+import { autoReplace, needsReplacement, takeTurn, teamTypeStatusChance, useMove } from './turn';
 
 const build = (
   player: readonly FighterInput[],
@@ -675,5 +675,68 @@ describe('the relative-damage half in the turn loop', () => {
     takeTurn(hit, fight(), fight());
     expect(damageEvents(hit)[0].amount).toBe(28);
     expect(activeFighter(hit, 'enemy').hp).toBe(12);
+  });
+});
+
+describe('the four team-type bonuses in the turn loop', () => {
+  const launch = (teamTypes?: readonly string[]) =>
+    createBattle({
+      player: [createFighter({ id: 'p', speciesId: 'charmander', level: 20, moves: ['ember'] })],
+      enemy: [createFighter({ id: 'e', speciesId: 'bulbasaur', level: 40, moves: ['growl'] })],
+      rng: new Rng(2),
+      isWild: false,
+      ...(teamTypes ? { teamTypes } : {}),
+    });
+
+  it('defaults to no repeated type and carries the launch’s list', () => {
+    expect(launch().teamTypes).toEqual([]);
+    expect(launch(['Fire']).teamTypes).toEqual(['Fire']);
+  });
+
+  it('adds twenty points to its own status and nothing to the rest', () => {
+    const fire = launch(['Fire']);
+    const plain = launch();
+    const pairs: readonly (readonly [string, string])[] = [
+      ['Fire', 'brn'],
+      ['Ice', 'frz'],
+      ['Electric', 'par'],
+      ['Poison', 'psn'],
+    ];
+    for (const [type, status] of pairs) {
+      expect(teamTypeStatusChance(launch([type]), type, status, 10), type).toBe(30);
+      expect(teamTypeStatusChance(plain, type, status, 10), type).toBe(10);
+    }
+    expect(teamTypeStatusChance(fire, 'Fire', 'par', 10)).toBe(10);
+    expect(teamTypeStatusChance(fire, 'Ice', 'brn', 10)).toBe(10);
+    expect(teamTypeStatusChance(fire, 'Fire', undefined, 10)).toBe(10);
+    expect(teamTypeStatusChance(fire, 'Fire', 'brn', 90)).toBe(100);
+  });
+
+  it('lands a secondary roll with the bonus that misses without it', () => {
+    // Seed 2's Ember secondary draws 11-30: over the printed 10 % and under the 30 %.
+    const status = (teamTypes?: readonly string[]) => {
+      const state = launch(teamTypes);
+      takeTurn(state, fight(), fight());
+      return activeFighter(state, 'enemy').status;
+    };
+    expect(status()).toBeNull();
+    expect(status(['Fire'])).toBe('brn');
+  });
+
+  it('never gives the enemy the damage bonus', () => {
+    const dealt = (teamTypes?: readonly string[]) => {
+      const state = createBattle({
+        player: [createFighter({ id: 'p', speciesId: 'sentret', level: 40, moves: ['growl'] })],
+        enemy: [createFighter({ id: 'e', speciesId: 'charmander', level: 20, moves: ['ember'] })],
+        rng: new Rng(2),
+        isWild: false,
+        ...(teamTypes ? { teamTypes } : {}),
+      });
+      takeTurn(state, fight(), fight());
+      const event = state.log.find((entry) => entry.kind === 'damage' && entry.side === 'player');
+      if (event?.kind !== 'damage') throw new Error('the hit never landed');
+      return event.amount;
+    };
+    expect(dealt(['Fire'])).toBe(dealt());
   });
 });

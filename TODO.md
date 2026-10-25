@@ -7574,7 +7574,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       `src/i18n/content.test.ts`. *Dependencies:* none — `D43`'s tables and accessors are shipped. It
       adds no run field and draws no RNG: **no `SAVE_VERSION`** step. *(Batch 66)*
 
-- [ ] **[Task-150] The four team-type bonuses.** `BattleSetup.teamTypes` (`src/engine/battle/state.ts`
+- [x] **[Task-150] The four team-type bonuses.** `BattleSetup.teamTypes` (`src/engine/battle/state.ts`
       120-128) is filled by the launch from the party's **living** members; two living Fire members
       give a Fire move **+10 %** damage and **+20 %** burn chance, with Ice (freeze), Electric
       (paralysis) and Poison (poison) the same. The damage half multiplies inside `damage.ts` next to
