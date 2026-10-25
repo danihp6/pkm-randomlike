@@ -42,6 +42,7 @@ import {
   type Settings,
   type StorageLike,
 } from './save';
+import type { RunHistoryRecord } from './run/history';
 
 class MemoryStorage implements StorageLike {
   readonly data = new Map<string, string>();
@@ -104,8 +105,13 @@ describe('defaults', () => {
     });
   });
 
-  it('an empty save holds the defaults and no run', () => {
-    expect(emptySave()).toEqual({ version: SAVE_VERSION, settings: defaultSettings(), run: null });
+  it('an empty save holds the defaults, no run and no finished runs', () => {
+    expect(emptySave()).toEqual({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: null,
+      history: [],
+    });
   });
 });
 
@@ -126,6 +132,7 @@ describe('encodeSave', () => {
         language: DEFAULT_LANGUAGE,
       },
       run,
+      history: [],
     });
     expect(JSON.parse(encoded).version).toBe(SAVE_VERSION);
 
@@ -323,14 +330,14 @@ describe('settings validation', () => {
 
   it('keeps the reduce-flashing preference through a round trip', () => {
     const settings: Settings = { ...defaultSettings(), reducedFlash: true };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null, history: [] }));
     expect(decoded.settings.reducedFlash).toBe(true);
   });
 
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(23);
+    expect(SAVE_VERSION).toBe(24);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -341,7 +348,7 @@ describe('settings validation', () => {
 
   it('keeps the hard difficulty through a round trip', () => {
     const settings: Settings = { ...defaultSettings(), aiLevel: 'hard' };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: null, history: [] }));
     expect(decoded.settings.aiLevel).toBe('hard');
   });
 
@@ -352,7 +359,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(23);
+    expect(SAVE_VERSION).toBe(24);
   });
 
   it('starts on the source table', () => {
@@ -369,7 +376,7 @@ describe('settings validation', () => {
 
   it('keeps the Spanish language through a round trip with the run', () => {
     const settings: Settings = { ...defaultSettings(), language: 'es' };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: sampleRun() }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: sampleRun(), history: [] }));
     expect(decoded.settings.language).toBe('es');
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -384,7 +391,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(23);
+    expect(SAVE_VERSION).toBe(24);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -408,6 +415,7 @@ describe('settings validation', () => {
       '20',
       '21',
       '22',
+      '23',
     ]);
   });
 
@@ -550,7 +558,7 @@ describe('run validation', () => {
 
   it('round-trips a current-schema route catch', () => {
     const run: RunState = { ...sampleRun(), pcCatch: { roomInMap: 3, memberId: 'boxed' } };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.pcCatch).toEqual({ roomInMap: 3, memberId: 'boxed' });
   });
 
@@ -574,7 +582,7 @@ describe('run validation', () => {
       pcCatch: { roomInMap: 2, memberId: 'wild' },
       stats: { catches: 2, casualties: 0 },
     };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(['wild', 'catch-1']);
     expect(decoded.run?.pcCatch).toEqual({ roomInMap: 2, memberId: 'catch-1' });
     expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 0 });
@@ -582,7 +590,7 @@ describe('run validation', () => {
 
   it('round-trips a run whose ids are already unique', () => {
     const run = sampleRun();
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(
       run.party.map((member) => member.fighter.id),
     );
@@ -636,7 +644,7 @@ describe('migrateDocument', () => {
     const run = sampleRun();
     const legacy = JSON.stringify({ textSpeed: 'fast', volume: 0.25, run });
     // One step per version boundary, because the test starts at v0 and the
-    // current schema is v23.
+    // current schema is v24.
     const migrations: Migrations = {
       0: (doc) => ({ ...doc, version: 1, settings: { textSpeed: doc.textSpeed, volume: doc.volume } }),
       1: (doc) => ({ ...doc, version: 2 }),
@@ -664,7 +672,8 @@ describe('migrateDocument', () => {
       19: (doc) => ({ ...doc, version: 20 }),
       20: (doc) => ({ ...doc, version: 21 }),
       21: (doc) => ({ ...doc, version: 22 }),
-      22: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      22: (doc) => ({ ...doc, version: 23 }),
+      23: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -751,7 +760,7 @@ describe('map-position migration', () => {
     delete run.pcCatch;
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(23);
+    expect(emptySave().version).toBe(24);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.pcCatch).toBeNull();
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
@@ -779,7 +788,7 @@ describe('the RIP list', () => {
       stats: { catches: 2, casualties: 1 },
     };
     const decoded = document(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: withFallen }),
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: withFallen, history: [] }),
     );
     expect(decoded.run?.rip.map((member) => member.fighter.id)).toEqual(['fallen']);
     expect(decoded.run?.rip[0].fighter.hp).toBe(0);
@@ -800,7 +809,7 @@ describe('the caught-species record', () => {
 
   it('round-trips the record unchanged on the current schema', () => {
     const run: RunState = { ...sampleRun(), caughtSpecies: ['sentret', 'raichualola'] };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.caughtSpecies).toEqual(['sentret', 'raichualola']);
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -821,7 +830,7 @@ describe('the floor mission', () => {
       hpLost: 4,
       floorCasualties: 1,
     };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.mission).toEqual({ id: 'flawless', progress: 2, completed: true });
     expect(decoded.run?.missionsCompleted).toBe(3);
     expect(decoded.run?.hpLost).toBe(4);
@@ -879,8 +888,8 @@ describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(23);
-    expect(decoded.version).toBe(23);
+    expect(SAVE_VERSION).toBe(24);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
     expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');
@@ -896,7 +905,7 @@ describe('nickname migration', () => {
       ),
     };
     const decoded = document(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: named }),
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: named, history: [] }),
     );
     expect(decoded.run?.party[0].fighter.nickname).toBe('Sparky');
     expect(decoded.run?.party[1].fighter.nickname).toBeUndefined();
@@ -941,7 +950,7 @@ describe('the NPC member words', () => {
 
   it('round-trips both words on a party, a box and a rip member, byte-stable', () => {
     const run = editedRun();
-    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run });
+    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] });
     const decoded = decodeSave(encoded);
     expect(decoded.run?.party[0].taughtMoves).toEqual(['earthquake', 'roost']);
     expect(decoded.run?.party[0].secondAbility).toBe('Pickup');
@@ -958,11 +967,13 @@ describe('the NPC member words', () => {
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decoded.run!,
+      history: [],
     });
     const again = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decodeSave(canonical).run!,
+      history: [],
     });
     expect(again).toBe(canonical);
     const stored = JSON.parse(canonical);
@@ -970,11 +981,11 @@ describe('the NPC member words', () => {
     expect(Object.keys(stored.run.party[1])).toEqual(['fighter']);
   });
 
-  it('migrates a v19 run to v23 with no taught moves and no second ability', () => {
+  it('migrates a v19 run to v24 with no taught moves and no second ability', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
       expect('taughtMoves' in member).toBe(false);
@@ -1029,6 +1040,7 @@ describe('storage', () => {
       version: SAVE_VERSION,
       settings,
       run: null,
+      history: [],
     });
   });
 
@@ -1106,27 +1118,29 @@ describe('the run modifiers', () => {
     return JSON.stringify({ version: SAVE_VERSION, run });
   }
 
-  it('stamps version 23', () => {
-    expect(SAVE_VERSION).toBe(23);
-    expect(emptySave().version).toBe(23);
+  it('stamps version 24', () => {
+    expect(SAVE_VERSION).toBe(24);
+    expect(emptySave().version).toBe(24);
     expect(SAVE_MIGRATIONS[20]).toBeDefined();
   });
 
   it('round-trips a run carrying all three facts', () => {
     const run: RunState = { ...sampleRun(), modifiers: MODIFIERS };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.modifiers).toEqual(MODIFIERS);
     // Byte-stable: the record the decoder reads re-encodes to the same document.
     const canonical = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decoded.run!,
+      history: [],
     });
     expect(
       encodeSave({
         version: SAVE_VERSION,
         settings: defaultSettings(),
         run: decodeSave(canonical).run!,
+        history: [],
       }),
     ).toBe(canonical);
   });
@@ -1175,7 +1189,7 @@ describe('the run modifiers', () => {
     delete run.modifiers;
     const legacy = JSON.stringify({ version: 20, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -1185,7 +1199,7 @@ describe('the run modifiers', () => {
     delete run.modifiers;
     const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
@@ -1196,8 +1210,8 @@ describe('the run modifiers', () => {
 });
 
 describe('the per-member usage counter', () => {
-  it('stamps version 23 and carries the 21 step', () => {
-    expect(SAVE_VERSION).toBe(23);
+  it('stamps version 24 and carries the 21 step', () => {
+    expect(SAVE_VERSION).toBe(24);
     expect(SAVE_MIGRATIONS[21]).toBeDefined();
   });
 
@@ -1208,20 +1222,22 @@ describe('the per-member usage counter', () => {
         index === 0 ? { ...member, battlesUsed: 3 } : member,
       ),
     };
-    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run });
+    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] });
     const decoded = document(encoded);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.party[0].battlesUsed).toBe(3);
     const canonical = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decoded.run!,
+      history: [],
     });
     // A second round trip is byte-stable: the counter's own place survives.
     const twice = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: document(canonical).run!,
+      history: [],
     });
     expect(twice).toBe(canonical);
     expect(canonical).toContain('"battlesUsed":3');
@@ -1232,6 +1248,7 @@ describe('the per-member usage counter', () => {
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: sampleRun(),
+      history: [],
     });
     expect(encoded).not.toContain('battlesUsed');
     const decoded = document(encoded);
@@ -1243,7 +1260,7 @@ describe('the per-member usage counter', () => {
   it('migrates a v21 run with no counter and no field written', () => {
     const legacy = JSON.stringify({ version: 21, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
       expect('battlesUsed' in member).toBe(false);
@@ -1263,8 +1280,8 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     return { ...run, party: [{ ...first, fighter }, ...rest] };
   }
 
-  it('stamps version 23 and carries the 22 step', () => {
-    expect(SAVE_VERSION).toBe(23);
+  it('stamps version 24 and carries the 22 step', () => {
+    expect(SAVE_VERSION).toBe(24);
     expect(SAVE_MIGRATIONS[22]).toBeDefined();
   });
 
@@ -1275,16 +1292,17 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
         index === 0 ? { ...member, fighter: { ...member.fighter, statTreats: atkAndSpe } } : member,
       ),
     };
-    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run });
+    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] });
     const decoded = document(encoded);
     expect(decoded.run?.party[0].fighter.statTreats).toEqual(atkAndSpe);
     const canonical = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decoded.run!,
+      history: [],
     });
     expect(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run! }),
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run!, history: [] }),
     ).toBe(canonical);
     expect(canonical).toContain('"statTreats":{"atk":1,"spe":-1}');
   });
@@ -1294,6 +1312,7 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: sampleRun(),
+      history: [],
     });
     expect(encoded).not.toContain('statTreats');
     for (const member of document(encoded).run?.party ?? []) {
@@ -1316,15 +1335,16 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
 
   it('round-trips the discovered candy set in order', () => {
     const run: RunState = { ...sampleRun(), discoveredCandy: ['red', 'blue'] };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run }));
+    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
     expect(decoded.run?.discoveredCandy).toEqual(['red', 'blue']);
     const canonical = encodeSave({
       version: SAVE_VERSION,
       settings: defaultSettings(),
       run: decoded.run!,
+      history: [],
     });
     expect(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run! }),
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run!, history: [] }),
     ).toBe(canonical);
   });
 
@@ -1341,15 +1361,172 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     );
   });
 
-  it('migrates a v22 run to v23 with no treats and an empty discovered set', () => {
+  it('migrates a v22 run to v24 with no treats and an empty discovered set', () => {
     const legacy = JSON.stringify({ version: 22, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(23);
+    expect(decoded.version).toBe(24);
     expect(decoded.run?.discoveredCandy).toEqual([]);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of [...(decoded.run?.party ?? []), ...(decoded.run?.box ?? [])]) {
       expect('statTreats' in member.fighter).toBe(false);
     }
+  });
+});
+
+describe('the run history (Task-152)', () => {
+  const IVS = { hp: 15, atk: 15, def: 15, spa: 15, spd: 15, spe: 15 };
+  const EVS = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
+
+  const FINISHED: RunHistoryRecord = {
+    seed: 'seed-a',
+    mode: 'finite',
+    mapReached: 3,
+    catches: 5,
+    casualties: 2,
+    playtimeMs: 540000,
+    won: false,
+    endedAt: '2026-10-25T12:00:00.000Z',
+    species: [{ speciesId: 'pikachu', kos: 7, damage: 412 }],
+  };
+
+  const WON: RunHistoryRecord = {
+    ...FINISHED,
+    seed: 'seed-b',
+    mode: 'infinite',
+    mapReached: 9,
+    won: true,
+    endedAt: '2026-10-24T08:30:00.000Z',
+    species: [],
+  };
+
+  /** A v23 document written out in full: settings, a one-member run and no history. */
+  const V23_DOCUMENT = JSON.stringify({
+    version: 23,
+    settings: {
+      textSpeed: 'normal',
+      volume: 0.8,
+      alwaysRun: true,
+      reducedFlash: false,
+      aiLevel: 'normal',
+      language: 'en',
+    },
+    run: {
+      seed: 'seed-a',
+      mode: 'finite',
+      routeIndex: 1,
+      party: [
+        {
+          fighter: {
+            id: 'p0',
+            speciesId: 'charmander',
+            level: 5,
+            nature: 'hardy',
+            ability: 'Blaze',
+            gender: 'male',
+            shiny: false,
+            heldItem: null,
+            ivs: IVS,
+            evs: EVS,
+            moves: [{ moveId: 'scratch', pp: 35, maxPp: 35 }],
+            hp: 20,
+            status: null,
+            statusCounter: 0,
+          },
+        },
+      ],
+      box: [],
+      bag: [],
+    },
+  });
+
+  /** A v24 document whose run is the sample one and whose history is as given. */
+  function historyDocument(history: unknown): string {
+    return JSON.stringify({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: sampleRun(),
+      history,
+    });
+  }
+
+  it('stamps version 24 and carries the 23 step', () => {
+    expect(SAVE_VERSION).toBe(24);
+    expect(emptySave().version).toBe(24);
+    expect(SAVE_MIGRATIONS[23]).toBeDefined();
+  });
+
+  it('moves a v23 document onto version 24 with an empty history, run intact', () => {
+    const decoded = decodeSave(V23_DOCUMENT);
+    expect(decoded.version).toBe(24);
+    expect(decoded.history).toEqual([]);
+    expect(decoded.run?.seed).toBe('seed-a');
+    expect(decoded.run?.routeIndex).toBe(1);
+    expect(decoded.run?.party).toHaveLength(1);
+    expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
+    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
+  });
+
+  it('adds the empty history in the 23 step itself', () => {
+    expect(SAVE_MIGRATIONS[23]?.({ version: 23, run: null })).toEqual({
+      version: 24,
+      run: null,
+      history: [],
+    });
+  });
+
+  it('round-trips a current-schema history byte-identically', () => {
+    const encoded = encodeSave({
+      version: SAVE_VERSION,
+      settings: defaultSettings(),
+      run: sampleRun(),
+      history: [FINISHED, WON],
+    });
+    const decoded = decodeSave(encoded);
+    expect(decoded.history).toEqual([FINISHED, WON]);
+    expect(decoded.run).toEqual(sampleRun());
+    // The decoder's own document is canonical: re-encoding it is stable, and the
+    // history travels as the last top-level key.
+    const canonical = encodeSave({ ...decoded });
+    expect(encodeSave({ ...decodeSave(canonical) })).toBe(canonical);
+    expect(JSON.parse(canonical).history).toEqual([FINISHED, WON]);
+    expect(canonical).toContain(
+      '"history":[{"seed":"seed-a","mode":"finite","mapReached":3,"catches":5,"casualties":2,"playtimeMs":540000,"won":false,"endedAt":"2026-10-25T12:00:00.000Z","species":[{"speciesId":"pikachu","kos":7,"damage":412}]}',
+    );
+  });
+
+  it('reads a junk, a broken row or a missing history as empty, keeping the run', () => {
+    const run = sampleRun();
+    const junk = document(historyDocument('nope'));
+    expect(junk.history).toEqual([]);
+    expect(junk.run).toEqual(run);
+
+    const withoutSeed: Record<string, unknown> = { ...FINISHED };
+    delete withoutSeed.seed;
+    const broken = document(historyDocument([withoutSeed]));
+    expect(broken.history).toEqual([]);
+    expect(broken.run).toEqual(run);
+
+    const mixed = document(historyDocument([FINISHED, withoutSeed, 7, null]));
+    expect(mixed.history).toEqual([FINISHED]);
+    expect(mixed.run).toEqual(run);
+
+    const absent = document(
+      JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run }),
+    );
+    expect(absent.history).toEqual([]);
+    expect(absent.run).toEqual(run);
+  });
+
+  it('keeps the history across the run and the settings being written', () => {
+    const storage = new MemoryStorage();
+    storeSave(storage, { ...emptySave(), history: [FINISHED] });
+    storeRun(storage, sampleRun());
+    expect(loadSave(storage).history).toEqual([FINISHED]);
+    storeSettings(storage, { ...defaultSettings(), volume: 0.1 });
+    expect(loadSave(storage).history).toEqual([FINISHED]);
+    expect(loadSave(storage).run).toEqual(sampleRun());
+    clearRun(storage);
+    expect(loadSave(storage).history).toEqual([FINISHED]);
   });
 });
 

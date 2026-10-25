@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The save remembers the runs that already ended.** `[Task-152]`, the fourth of Phase 13:
+      `src/engine/run/history.ts` holds the **last 50** finished runs — seed, mode, floor reached,
+      catches, casualties, playtime, win flag and per-species KOs and damage, newest first — as a
+      pure store (`pushHistory`, `makeHistoryRecord`, `MAX_HISTORY`), and `src/engine/save.ts` carries
+      it as `SAVE_VERSION` **24** with a `23 → 24` migration that seeds an empty list: an old save has
+      no record of the runs it already lost, so it starts empty and keeps the run in progress intact.
+      `decodeSave` drops a malformed row instead of repairing it, and never costs the player the run
+      it is carrying. `makeHistoryRecord` takes its clock as an argument, so it reads neither
+      `Date.now()` nor the RNG. Nothing writes the store yet — the end-of-run call site and the
+      per-species tally are the follow-up that makes it live for `[Task-155]`. `npm test` 4266
+      passed / 68 skipped, `npm run build` green.
 - [x] **The repo owns an ability the dex does not carry.** `[Task-151]`, the third of Phase 13:
       `src/data/dex/customAbilities.ts` hand-authors **`darkmatter`** (*Dark Matter* / *Materia
       Oscura*) — the holder's moves ignore the type chart — and the whole pipeline accepts it.

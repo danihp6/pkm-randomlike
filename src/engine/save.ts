@@ -18,6 +18,7 @@ import type { AiLevel } from './battle/ai';
 import type { FighterSnapshot, Gender, MoveSlot, StatusId } from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
+import type { RunHistoryRecord, RunSpeciesRecord } from './run/history';
 import type { MissionProgress } from './run/missions';
 import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
@@ -51,14 +52,18 @@ export type Settings = Readonly<{
 }>;
 
 /**
- * The whole on-disk document: the settings and the run in progress. `run` is
- * null between runs (a fresh boot, or after a loss), so the settings are the
- * one thing that always survives (D5: a lost run carries over nothing).
+ * The whole on-disk document: the settings, the run in progress and the record of
+ * the runs that already ended. `run` is null between runs (a fresh boot, or after
+ * a loss), so the settings are the one thing that always survives (D5: a lost run
+ * carries over nothing); `history` is a record the run-over screen reads, never a
+ * save a run is restored from.
  */
 export type SaveDocument = Readonly<{
   version: number;
   settings: Settings;
   run: RunState | null;
+  /** The last finished runs, newest first (`src/engine/run/history.ts`). */
+  history: readonly RunHistoryRecord[];
 }>;
 
 /** The minimal slice of the Web Storage API the save needs, so it is testable. */
@@ -69,7 +74,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -108,9 +113,9 @@ export function defaultSettings(): Settings {
   };
 }
 
-/** A save with nothing in it: default settings and no run. */
+/** A save with nothing in it: default settings, no run and no finished runs. */
 export function emptySave(): SaveDocument {
-  return { version: SAVE_VERSION, settings: defaultSettings(), run: null };
+  return { version: SAVE_VERSION, settings: defaultSettings(), run: null, history: [] };
 }
 
 /**
@@ -169,7 +174,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * which added the coloured candy (`Task-103`) — the run's `discoveredCandy` list
  * starts **empty** and the members' optional `statTreats` need no write at all,
  * because the decoder leaves an absent one out, so an old run gets **no treats on
- * any member and an empty discovered set**.
+ * any member and an empty discovered set**; `23` moves a v23 document onto the v24
+ * schema, which added the **run-history store** (`Task-152`) — an old save never
+ * recorded the runs that already ended, so its history starts **empty**.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -317,6 +324,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 23,
     run: isRecord(document.run) ? { ...document.run, discoveredCandy: [] } : document.run,
   }),
+  // The run history: an old save has no record of the runs that already ended,
+  // so the store starts empty and only the next finished run fills it.
+  23: (document) => ({
+    ...document,
+    version: 24,
+    history: [],
+  }),
 };
 
 /**
@@ -413,6 +427,7 @@ export function encodeSave(document: SaveDocument): string {
     version: SAVE_VERSION,
     settings: document.settings,
     run: document.run,
+    history: document.history,
   });
 }
 
@@ -446,12 +461,14 @@ export function decodeSave(raw: string | null, migrations: Migrations = SAVE_MIG
 
   // Settings are read per-field, so they can be salvaged even from a document we
   // cannot migrate (an older build's leftover, or a newer build's downgrade).
-  // The run is only read from a document this build actually understands.
+  // The run and the history are only read from a document this build actually
+  // understands, so a newer build's shapes never reach the run-over screen.
   const source = document ?? parsed;
   return {
     version: SAVE_VERSION,
     settings: parseSettings(source.settings),
     run: document ? parseRun(document.run) : null,
+    history: document ? parseHistory(document.history) : [],
   };
 }
 
@@ -980,4 +997,60 @@ function parseRun(value: unknown): RunState | null {
     modifiers: parseModifiers(value.modifiers),
     stats,
   });
+}
+
+/**
+ * Reads the run-history store (`Task-152`): the last finished runs, newest first.
+ * A non-array reads as the empty store, and a row that is not a record with every
+ * required primitive field is **dropped**, never repaired — the store is the
+ * record of what happened, so a half-read row would draw a lie — while the rest
+ * of the document, and the run in progress, survive untouched (`run` never
+ * depends on this field).
+ */
+function parseHistory(value: unknown): readonly RunHistoryRecord[] {
+  const history: RunHistoryRecord[] = [];
+  if (!Array.isArray(value)) return history;
+  for (const entry of value) {
+    const record = parseHistoryRecord(entry);
+    if (record) history.push(record);
+  }
+  return history;
+}
+
+function parseHistoryRecord(value: unknown): RunHistoryRecord | null {
+  if (!isRecord(value)) return null;
+  if (!isString(value.seed) || value.seed === '') return null;
+  if (value.mode !== 'finite' && value.mode !== 'infinite') return null;
+  if (!isInteger(value.mapReached) || value.mapReached < 0) return null;
+  if (!isInteger(value.catches) || value.catches < 0) return null;
+  if (!isInteger(value.casualties) || value.casualties < 0) return null;
+  if (!isNumber(value.playtimeMs) || value.playtimeMs < 0) return null;
+  if (typeof value.won !== 'boolean') return null;
+  if (!isString(value.endedAt) || value.endedAt === '') return null;
+  return {
+    seed: value.seed,
+    mode: value.mode,
+    mapReached: value.mapReached,
+    catches: value.catches,
+    casualties: value.casualties,
+    playtimeMs: value.playtimeMs,
+    won: value.won,
+    endedAt: value.endedAt,
+    // A record's species rows are a summary: a malformed list costs the rows it
+    // cannot read, never the run (`species: []` is a legal record).
+    species: parseSpeciesRecords(value.species),
+  };
+}
+
+function parseSpeciesRecords(value: unknown): readonly RunSpeciesRecord[] {
+  const rows: RunSpeciesRecord[] = [];
+  if (!Array.isArray(value)) return rows;
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    if (!isString(entry.speciesId) || entry.speciesId === '') continue;
+    if (!isInteger(entry.kos) || entry.kos < 0) continue;
+    if (!isNumber(entry.damage) || entry.damage < 0) continue;
+    rows.push({ speciesId: entry.speciesId, kos: entry.kos, damage: entry.damage });
+  }
+  return rows;
 }

@@ -7598,7 +7598,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       `src/engine/battle/effects/abilities.ts`, `src/engine/battle/randomAbility.test.ts`,
       `docs/data-spec.md` and `docs/balance/effect-coverage.md`. *Dependencies:* none. *(Batch 66)*
 
-- [ ] **[Task-152] The run-history store.** `src/engine/run/history.ts`: one record per finished run
+- [x] **[Task-152] The run-history store.** `src/engine/run/history.ts`: one record per finished run
       — seed, map reached, catches, casualties, playtime, and per-species KOs and damage — appended
       to `save.history` and capped at the last 50, so a screen can show totals, the run list and the
       Pokémon table without reading a live run. `SAVE_VERSION` 24 with migration `23 → 24` seeding
