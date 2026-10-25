@@ -96,7 +96,20 @@ export type DamageContext = Readonly<{
   targetMovedFirst?: boolean;
   /** The user has been hit by a damaging move this turn (Avalanche, Revenge). */
   userDamagedThisTurn?: boolean;
+  /** The player's repeated party types (the four team-type bonuses). */
+  teamTypes?: readonly string[];
 }>;
+
+/** The damage multiplier a repeated party type adds to a move of that type. */
+export const TEAM_TYPE_DAMAGE = 1.1;
+
+/**
+ * The multiplier a move of `moveType` earns from `teamTypes`: `TEAM_TYPE_DAMAGE`
+ * when the type is listed, `1` otherwise. Never reads the RNG.
+ */
+export function teamTypeDamageMultiplier(moveType: string, teamTypes: readonly string[]): number {
+  return teamTypes.includes(moveType) ? TEAM_TYPE_DAMAGE : 1;
+}
 
 export type DamageResult = Readonly<{
   damage: number;
@@ -413,6 +426,7 @@ export function computeDamage(
   const defenderTypes = context.overrideType ? [context.overrideType] : defender.types;
   const stab = attackerTypes.includes(move.type);
   if (stab) damage = Math.floor(damage * 1.5);
+  damage = Math.floor(damage * teamTypeDamageMultiplier(move.type, context.teamTypes ?? []));
 
   const typeEffectiveness = context.effectiveness ?? effectiveness(move.type, defenderTypes);
   damage = Math.floor(damage * typeEffectiveness);
@@ -453,6 +467,7 @@ export function estimateDamage(
   );
   const stab = attacker.types.includes(move.type);
   if (stab) damage = Math.floor(damage * 1.5);
+  damage = Math.floor(damage * teamTypeDamageMultiplier(move.type, context.teamTypes ?? []));
   const typeEffectiveness = effectiveness(move.type, defender.types);
   damage = Math.floor(damage * typeEffectiveness);
   if (physical && attacker.status === 'brn') damage = Math.floor(damage * 0.5);

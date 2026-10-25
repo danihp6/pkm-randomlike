@@ -8,6 +8,7 @@ import {
   isFixedDamageMove,
   resolveBasePower,
   resolvesToDamage,
+  teamTypeDamageMultiplier,
   type DamageContext,
 } from './damage';
 import { createFighter, type BattleFighter } from './fighter';
@@ -164,6 +165,40 @@ describe('the room’s all-types change', () => {
     });
     expect(result.stab).toBe(true);
     expect(result.effectiveness).toBe(0.5);
+  });
+});
+
+describe('the four team-type damage bonuses', () => {
+  const ember = (teamTypes?: readonly string[]) =>
+    computeDamage(fighter('charmander', 30), fighter('sentret', 20), move('ember'), new Rng(24), {
+      critical: false,
+      ...(teamTypes ? { teamTypes } : {}),
+    });
+
+  it('gives a listed type ×1.1 and every other type nothing', () => {
+    expect(teamTypeDamageMultiplier('Fire', ['Fire'])).toBe(1.1);
+    expect(teamTypeDamageMultiplier('Fire', [])).toBe(1);
+    expect(teamTypeDamageMultiplier('Fire', ['Ice'])).toBe(1);
+  });
+
+  it('floors the ×1.1 number once, right after STAB', () => {
+    // Seed 24's only hit draw is the 85-100 roll and it comes out at exactly 100,
+    // so the plain number is the STAB figure and the ×1.1 term is the only change.
+    const plain = ember();
+    const boosted = ember(['Fire']);
+    expect(plain).toMatchObject({ crit: false, stab: true, effectiveness: 1 });
+    expect(plain.damage).toBe(27);
+    expect(boosted.damage).toBe(29);
+    expect(boosted.damage).toBe(Math.floor(27 * 1.1));
+    expect(ember(['Ice']).damage).toBe(27);
+    expect(ember([]).damage).toBe(27);
+  });
+
+  it('applies the same multiplier on the AI’s deterministic estimate', () => {
+    const attacker = fighter('charmander', 30);
+    const defender = fighter('sentret', 20);
+    expect(estimateDamage(attacker, defender, move('ember')).damage).toBe(31);
+    expect(estimateDamage(attacker, defender, move('ember'), { teamTypes: ['Fire'] }).damage).toBe(34);
   });
 });
 

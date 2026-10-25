@@ -740,3 +740,45 @@ target, as it always has. `takeDoubleTurn` resolves the two player commands and 
 `takeTurn` stays the single battle's own call, so no seed, stream or key moves and a
 single battle's screen, log and return are unchanged.
 
+
+## 13. The four team-type bonuses
+
+A battle carries the **player party's repeated types** on `BattleState.teamTypes`
+(`src/engine/battle/state.ts`), seeded from `BattleSetup.teamTypes` and defaulting
+to `[]`. A type is listed when **two living members** of the player's party share
+it, and while it stays listed it buys two things: a move of that type deals
+**+10 %** damage, and that type's status side-effect rolls **+20 percentage points**
+of chance. The **enemy side never gets either bonus** — the rule is the party's, not
+the field's. `state.teamTypes` is the battle's own copy, not the run's, and the
+launch that fills it from the party's living members is a follow-up.
+
+**The damage half** multiplies inside `computeDamage`
+(`src/engine/battle/damage.ts`), immediately **after STAB** and before the type
+chart: `teamTypeDamageMultiplier(move.type, context.teamTypes ?? [])` returns
+`TEAM_TYPE_DAMAGE` (`1.1`) for a listed type and `1` for every other, floored with
+`Math.floor` like every other term. `teamTypes` rides in the `DamageContext`, so
+`computeDamage` stays state-free; `turn.ts` sets it on the **player's** damage
+context only, and `estimateDamage` — the AI's deterministic path — applies the same
+multiplier from the same field, so a prediction and the real hit agree. **The status
+half** is one helper, `teamTypeStatusChance(state, moveType, status, chance)`
+(`src/engine/battle/turn.ts`), which wraps the shipped
+`runModifySecondaryChance(...)` result at the secondary roll: it adds
+`TEAM_TYPE_STATUS_BONUS` (`20`) when `moveType` is listed **and** `status` is that
+type's own status, clamps the sum at 100, and returns the chance untouched otherwise
+— so the two halves can never disagree and no call site picks its own number.
+
+| repeated type | damage | status side-effect |
+|---|---|---|
+| Fire | Fire moves ×1.1 | `brn` +20 pp |
+| Ice | Ice moves ×1.1 | `frz` +20 pp |
+| Electric | Electric moves ×1.1 | `par` +20 pp |
+| Poison | Poison moves ×1.1 | `psn` +20 pp |
+
+The ids are dex types as the dex spells them (`'Fire'`, `'Ice'`, `'Electric'`,
+`'Poison'` — the capitalisation `effectiveness()` uses), never lowercase keys. Both
+halves are **pure and draw no RNG** (`D11`): the secondary's one `rng.int(1, 100)` is
+unchanged and stays in the same order, only its threshold moves, so with
+`teamTypes` absent or empty every number and every fixed-seed log is byte-identical
+to before the rule existed. The two constants and the four-pair map live in engine
+code today because this rule owns no `src/data/` path; a balance pass would move
+them to `src/data/`.
