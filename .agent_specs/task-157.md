@@ -35,6 +35,16 @@ Nothing outside this list. No other task in this batch claims any of these paths
 - `src/engine/routes/validate.test.ts`
 - `src/engine/routes/terrain.test.ts` (only if a chamber fixture belongs in it; prefer
   `sketch.test.ts`)
+- `src/engine/routes/walls.test.ts` (**added at dev time, 2026-10-25** — the plan's
+  claim is `walls.ts`, and the tidy's border-strip assertion is the one rule a
+  chamber's widest row legitimately touches; the file is exempted cell by cell, never
+  weakened)
+- `src/engine/routes/secretShop.test.ts` (**added at dev time, 2026-10-25** — its
+  dead-end fixture's mouth/pocket are a fixed-seed pin and moved with the chamber)
+- `src/engine/run/curve.test.ts` (**added at dev time, 2026-10-25** — only its
+  `MEASURED_FILL` column: the dead ends' trainers move into the chamber's pockets, so
+  the measured per-floor fill changes; every value stays inside the rule's 1.05–1.5
+  window, so no `trainerXp` factor is re-solved)
 - `docs/routes-spec.md` (**this task's alone** — §2 only, see Coordination)
 - `docs/maps-spec.md` §2 "Topology: a closed room graph on a grid (D30)" — **only** §2
 
