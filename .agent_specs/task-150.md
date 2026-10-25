@@ -16,6 +16,7 @@
   secondary roll calls, so the two can never disagree. `docs/battle-spec.md` §10/§11
   document the rule.
 - **Environment:** worktree `../wt-pkm-150`, branch `task-150`.
+- **Local toolchain:** `node_modules` is already present in this worktree as a **symlink** to the main checkout's install. Do **not** run `npm ci` or `npm install`; run `npm test` / `npm run build` directly.
 - **Dependencies:** none. `damage.ts` and the secondary roll are shipped.
 
 **Read this before coding:** `BattleSetup` has no `teamTypes` field today (the backlog
