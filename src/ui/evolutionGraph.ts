@@ -54,12 +54,9 @@ export function formeDisplayName(dexName: string): string {
   return [base, ...forme].join(' ');
 }
 
-/** The copy a Mega's row carries: the forme plus the stone it evolves with. */
+/** The copy a Mega's row carries: the stone it evolves with, and nothing else. */
 function megaRowName(mega: MegaForm): string {
-  return t('detail.megaEvolvesWith', {
-    forme: formeDisplayName(mega.name),
-    stone: mega.stoneName,
-  });
+  return t('detail.megaEvolvesWith', { stone: mega.stoneName });
 }
 
 /** The copy a Gigantamax's row carries: the forme plus the stone it needs (D44). */
