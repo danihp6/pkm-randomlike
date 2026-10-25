@@ -7,6 +7,7 @@ import {
   BOOST_IDS,
   effectiveStat,
   emptyBoosts,
+  hasAbility,
   isGrounded,
   moveContacts,
   rewriteTypes,
@@ -116,8 +117,8 @@ export function protectBlocks(state: BattleState, side: SideId, move: Move): boo
 
   // Unseen Fist lets contact moves break through protection (unless suppressed).
   if (
-    attacker.ability === 'Unseen Fist' &&
-    defender.ability !== 'Neutralizing Gas' &&
+    hasAbility(attacker, 'Unseen Fist') &&
+    !hasAbility(defender, 'Neutralizing Gas') &&
     moveContacts(attacker, move)
   ) {
     pushText(state, 'battle.log.brokeProtection', { name: attacker.name });

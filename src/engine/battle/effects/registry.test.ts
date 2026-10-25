@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getMove } from '../../../data/dex';
 import { Rng } from '../../rng';
 import { createFighter } from '../fighter';
@@ -260,5 +260,104 @@ describe('the radiant room turns the ability dispatcher off', () => {
 
     expect(player.hp).toBe(before + Math.floor(player.maxHp / 16));
     expect(player.heldItem).toBe('leftovers');
+  });
+});
+
+describe('the second ability slot (Task-153)', () => {
+  it('dispatches one handler per slot, each owned by the fighter', () => {
+    const seen: string[] = [];
+    registerEffect(effect('Alpha', { onSwitchIn: (ctx) => seen.push(`alpha:${ctx.owner.id}`) }));
+    registerEffect(effect('Beta', { onSwitchIn: (ctx) => seen.push(`beta:${ctx.owner.id}`) }));
+
+    createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'charmander',
+          level: 20,
+          ability: 'Alpha',
+          secondAbility: 'Beta',
+          moves: ['ember'],
+        }),
+      ],
+      enemy: [
+        createFighter({
+          id: 'enemy',
+          speciesId: 'bulbasaur',
+          level: 18,
+          ability: 'Overgrow',
+          moves: ['tackle'],
+        }),
+      ],
+      rng: new Rng(4242),
+      isWild: true,
+    });
+
+    expect(seen).toEqual(['alpha:player', 'beta:player']);
+  });
+
+  it('runs a row named by both slots exactly once', () => {
+    let calls = 0;
+    registerEffect(effect('Alpha', { onSwitchIn: () => (calls += 1) }));
+    const fighter = createFighter({
+      id: 'player',
+      speciesId: 'charmander',
+      level: 20,
+      ability: 'Alpha',
+      moves: ['ember'],
+    });
+    // Both slots naming the same row: the dispatcher dedupes by effect id.
+    fighter.secondAbility = 'alpha';
+
+    createBattle({
+      player: [fighter],
+      enemy: [
+        createFighter({
+          id: 'enemy',
+          speciesId: 'bulbasaur',
+          level: 18,
+          ability: 'Overgrow',
+          moves: ['tackle'],
+        }),
+      ],
+      rng: new Rng(4242),
+      isWild: true,
+    });
+
+    expect(calls).toBe(1);
+  });
+
+  it('pages the coverage warning for an unregistered second ability beside a registered primary', async () => {
+    vi.resetModules();
+    vi.stubEnv('ENVIRONMENT', 'develop');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const registry = await import('./registry');
+      const { createBattle: makeBattle } = await import('../state');
+      const { createFighter: build } = await import('../fighter');
+      const { Rng: Seed } = await import('../../rng');
+      await import('./abilities');
+
+      const player = build({
+        id: 'player',
+        speciesId: 'charmander',
+        level: 20,
+        ability: 'Blaze',
+        secondAbility: 'Ball Fetch',
+      });
+      const enemy = build({ id: 'enemy', speciesId: 'squirtle', level: 18, ability: 'Torrent' });
+      const state = makeBattle({
+        player: [player],
+        enemy: [enemy],
+        rng: new Seed(1),
+        isWild: true,
+      });
+      registry.runSwitchIn(registry.makeContext(state, 'player', { source: player }));
+
+      expect(warn).toHaveBeenCalledWith('[coverage] ability "Ball Fetch" has no ported effect (D16).');
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllEnvs();
+    }
   });
 });

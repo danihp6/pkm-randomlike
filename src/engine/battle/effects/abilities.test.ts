@@ -2687,3 +2687,71 @@ describe('ported reachable abilities', () => {
     expect(effectiveWeather(state)).toBe('rain');
   });
 });
+
+describe('a second ability slot (Task-153)', () => {
+  it('Intimidate lowers the foe Attack from the second slot', () => {
+    const granted = createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'charmander',
+          level: 20,
+          ability: 'Blaze',
+          secondAbility: 'Intimidate',
+        }),
+      ],
+      enemy: [fighter('enemy', 'bulbasaur', 'Overgrow')],
+      rng: new Rng(1234),
+      isWild: true,
+    });
+    expect(activeFighter(granted, 'enemy').boosts.atk).toBe(-1);
+
+    const primaryOnly = createBattle({
+      player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, ability: 'Blaze' })],
+      enemy: [fighter('enemy', 'bulbasaur', 'Overgrow')],
+      rng: new Rng(1234),
+      isWild: true,
+    });
+    expect(activeFighter(primaryOnly, 'enemy').boosts.atk).toBe(0);
+  });
+
+  it('Dark Matter pierces an immunity from the second slot', () => {
+    const state = makeBattle(
+      createFighter({
+        id: 'player',
+        speciesId: 'charmander',
+        level: 20,
+        ability: 'Blaze',
+        secondAbility: 'Dark Matter',
+        moves: ['scratch'],
+      }),
+      fighter('enemy', 'gastly', 'Levitate'),
+    );
+    const ctx = moveCtxOf(state, 'player', 'scratch');
+    expect(runModifyEffectiveness(ctx, getMove('scratch')!, 0)).toBe(1);
+
+    const primedOnly = makeBattle(
+      fighter('player', 'charmander', 'Blaze', ['scratch']),
+      fighter('enemy', 'gastly', 'Levitate'),
+    );
+    expect(
+      runModifyEffectiveness(moveCtxOf(primedOnly, 'player', 'scratch'), getMove('scratch')!, 0),
+    ).toBe(0);
+  });
+
+  it('reads an ability check through both slots (Levitate as the second one)', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      createFighter({
+        id: 'enemy',
+        speciesId: 'gastly',
+        level: 20,
+        ability: 'Cursed Body',
+        secondAbility: 'Levitate',
+      }),
+    );
+    const ctx = ctxOf(state, 'player');
+    expect(runTryHit(ctx, getMove('earthquake')!)).toBe(false);
+    expect(runTryHit(ctx, getMove('tackle')!)).toBe(true);
+  });
+});

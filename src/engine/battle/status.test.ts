@@ -75,6 +75,34 @@ describe('Corrosion', () => {
   });
 });
 
+describe('the second ability slot (Task-153)', () => {
+  it('Corrosion in the second slot lets a Steel type be poisoned', () => {
+    const magnemite = createFighter({
+      id: 'm',
+      speciesId: 'magnemite',
+      level: 20,
+      ability: 'Sturdy',
+      secondAbility: 'Corrosion',
+    });
+    expect(canApplyStatus(magnemite, 'psn')).toBe(true);
+    expect(canApplyStatus(magnemite, 'tox')).toBe(true);
+  });
+
+  it('Early Bird in the second slot halves the sleep counter', () => {
+    const doduo = createFighter({
+      id: 'd',
+      speciesId: 'doduo',
+      level: 20,
+      ability: 'Run Away',
+      secondAbility: 'Early Bird',
+    });
+    applyStatus(doduo, 'slp', new Rng(1));
+    doduo.statusCounter = 2;
+    expect(beforeMoveStatus(doduo, new Rng(1))).toEqual({ cured: 'slp' });
+    expect(doduo.status).toBeNull();
+  });
+});
+
 describe('residualDamage', () => {
   it('ticks burn and poison by max HP', () => {
     const burned = make('charmander');

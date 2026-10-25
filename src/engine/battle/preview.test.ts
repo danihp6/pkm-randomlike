@@ -65,6 +65,14 @@ describe('movePreview', () => {
     expect(movePreview(state, 'player', 0)).toMatchObject({ accuracyStage: -1, accuracy: 75 });
   });
 
+  it('reads Mind’s Eye from the second ability slot into the hit percentage', () => {
+    const attacker = player(['tackle'], { ability: 'Blaze', secondAbility: "Mind's Eye" });
+    const state = battle(attacker);
+    const defender = state.sides.enemy.party[0];
+    defender.boosts.evasion = 1;
+    expect(movePreview(state, 'player', 0)).toMatchObject({ accuracyStage: 0, accuracy: 100 });
+  });
+
   it('reads a never-miss move as no accuracy', () => {
     const preview = movePreview(battle(player(['swift'])), 'player', 0);
     expect(preview?.baseAccuracy).toBeNull();

@@ -9,6 +9,8 @@ import {
   defaultMoveset,
   effectiveSpeed,
   effectiveStat,
+  fighterAbilities,
+  hasAbility,
   isGrounded,
   resetBattleState,
   restoreFighter,
@@ -285,5 +287,67 @@ describe('type writes and grounding', () => {
     expect(isGrounded(grounded)).toBe(true);
     grounded.volatiles.telekinesis = 3;
     expect(isGrounded(grounded)).toBe(false);
+  });
+});
+
+describe('the second ability (Task-153)', () => {
+  it('keeps a granted second ability across create, snapshot and restore', () => {
+    const fighter = createFighter({
+      id: 'c',
+      speciesId: 'charmander',
+      level,
+      ability: 'Blaze',
+      secondAbility: 'Intimidate',
+    });
+    expect(fighter.ability).toBe('Blaze');
+    expect(fighter.secondAbility).toBe('Intimidate');
+    expect(fighterAbilities(fighter)).toEqual(['Blaze', 'Intimidate']);
+    expect(hasAbility(fighter, 'blaze')).toBe(true);
+    expect(hasAbility(fighter, 'intimidate')).toBe(true);
+    expect(hasAbility(fighter, 'overgrow')).toBe(false);
+
+    const snapshot = snapshotFighter(fighter);
+    expect(snapshot.secondAbility).toBe('Intimidate');
+    const restored = restoreFighter(snapshot);
+    expect(restored.ability).toBe('Blaze');
+    expect(restored.secondAbility).toBe('Intimidate');
+    expect(hasAbility(restored, 'Intimidate')).toBe(true);
+  });
+
+  it('drops an empty or duplicated second ability and writes no snapshot key', () => {
+    for (const secondAbility of ['', '   ', 'Blaze', 'blaze', 'BLAZE!']) {
+      const fighter = createFighter({
+        id: 'c',
+        speciesId: 'charmander',
+        level,
+        ability: 'Blaze',
+        secondAbility,
+      });
+      expect(fighter.secondAbility).toBeUndefined();
+      expect('secondAbility' in fighter).toBe(false);
+      expect('secondAbility' in snapshotFighter(fighter)).toBe(false);
+    }
+  });
+
+  it('compares ability ids case- and punctuation-insensitively in both slots', () => {
+    const fighter = createFighter({
+      id: 'c',
+      speciesId: 'charmander',
+      level,
+      ability: 'Dark Matter',
+      secondAbility: 'Levitate',
+    });
+    expect(hasAbility(fighter, 'darkmatter')).toBe(true);
+    expect(hasAbility(fighter, 'DARK-MATTER')).toBe(true);
+    expect(hasAbility(fighter, 'Levitate')).toBe(true);
+    expect(hasAbility(fighter, '')).toBe(false);
+    expect(fighterAbilities(fighter)).toEqual(['Dark Matter', 'Levitate']);
+  });
+
+  it('reads a fighter with no abilities as an empty list', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level });
+    fighter.ability = '';
+    expect(fighterAbilities(fighter)).toEqual([]);
+    expect(hasAbility(fighter, 'Blaze')).toBe(false);
   });
 });

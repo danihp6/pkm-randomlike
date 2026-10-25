@@ -7612,7 +7612,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       `src/engine/save.ts`, `src/engine/save.test.ts`, `src/engine/README.md`. *Dependencies:* none.
       *(Batch 66)*
 
-- [ ] **[Task-153] The engine accepts a second ability.** `BattleFighter.secondAbility?: string` and
+- [x] **[Task-153] The engine accepts a second ability.** `BattleFighter.secondAbility?: string` and
       one `hasAbility(fighter, id)` helper; `ownedEffects` (`src/engine/battle/effects/registry.ts`)
       yields both abilities' effects, and the handlers that compare `foe.ability === '...'` move to
       the helper so a fighter's second ability is never a no-op. The snapshot round-trip preserves it

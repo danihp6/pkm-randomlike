@@ -187,6 +187,8 @@ export type BattleFighter = {
   level: number;
   nature: string;
   ability: string;
+  /** The second ability a run grants beside the primary one, or absent. */
+  secondAbility?: string;
   /** Gender, for Rivalry and flavour; the run assigns it in Phase 6. */
   gender: Gender;
   /** A shiny rolled the alternate-palette art; purely cosmetic. */
@@ -226,6 +228,7 @@ export type FighterInput = Readonly<{
   level: number;
   nature?: string;
   ability?: string;
+  secondAbility?: string;
   heldItem?: string;
   gender?: Gender;
   shiny?: boolean;
@@ -245,6 +248,43 @@ export type FighterInput = Readonly<{
    */
   learnsetSeed?: string;
 }>;
+
+/** The one id normaliser: lowercase, every non `[a-z0-9]` dropped. */
+export function normalizeAbilityId(id: string): string {
+  return id.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const NO_ABILITIES: readonly string[] = [];
+
+/**
+ * The fighter's abilities, primary first; the second only when it is set and
+ * differs from the primary. Never carries an empty entry, so an ability-less
+ * species reads as none.
+ */
+export function fighterAbilities(fighter: BattleFighter): readonly string[] {
+  const primary = fighter.ability;
+  const second = fighter.secondAbility;
+  if (typeof second !== 'string' || second === '') {
+    return primary === '' ? NO_ABILITIES : [primary];
+  }
+  if (normalizeAbilityId(second) === normalizeAbilityId(primary)) {
+    return primary === '' ? NO_ABILITIES : [primary];
+  }
+  return primary === '' ? [second] : [primary, second];
+}
+
+/** True when the fighter owns `id` in either slot, compared by `normalizeAbilityId`. */
+export function hasAbility(fighter: BattleFighter, id: string): boolean {
+  if (id === '') return false;
+  // The literal names are the common case and cost no allocation; only a slot
+  // that spells the id differently pays for the normalisation.
+  if (fighter.ability === id) return true;
+  const second = fighter.secondAbility;
+  if (typeof second === 'string' && second === id) return true;
+  const wanted = normalizeAbilityId(id);
+  if (normalizeAbilityId(fighter.ability) === wanted) return true;
+  return typeof second === 'string' && normalizeAbilityId(second) === wanted;
+}
 
 export function emptyBoosts(): Boosts {
   return { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 };
@@ -466,6 +506,19 @@ function resolveAbility(species: Species, moves: readonly MoveSlot[], input: Fig
 }
 
 /**
+ * The second ability a run grants (`Task-153`): kept only when it is a real id
+ * that differs from the primary, so a blank or duplicated grant never reaches
+ * the field — an old save and a member with one ability stay readable.
+ */
+function resolveSecondAbility(primary: string, second: string | undefined): string | undefined {
+  if (typeof second !== 'string') return undefined;
+  const trimmed = second.trim();
+  if (trimmed === '') return undefined;
+  if (normalizeAbilityId(trimmed) === normalizeAbilityId(primary)) return undefined;
+  return trimmed;
+}
+
+/**
  * Swaps a fighter into a battle-only forme (Zero to Hero, Schooling...), reusing
  * the Mega backup so the run snapshot keeps the base species. A fighter already
  * in a forme keeps the first backup, so a Mega's base is never lost. `keepAbility`
@@ -536,6 +589,7 @@ export function createFighter(input: FighterInput): BattleFighter {
   // The ability is resolved after the moveset so the No Guard / OHKO guard can
   // read the moves the fighter actually carries.
   const ability = resolveAbility(species, moves, input);
+  const secondAbility = resolveSecondAbility(ability, input.secondAbility);
 
   return {
     id: input.id,
@@ -545,6 +599,7 @@ export function createFighter(input: FighterInput): BattleFighter {
     level,
     nature,
     ability,
+    ...(secondAbility ? { secondAbility } : {}),
     gender: input.gender ?? defaultGender(species.genderRatio),
     shiny: input.shiny ?? false,
     heldItem: input.heldItem ?? null,
@@ -591,7 +646,7 @@ export function isGrounded(fighter: BattleFighter): boolean {
   if (fighter.volatiles.grounded) return true;
   if (fighter.volatiles.magnetRise > 0 || fighter.volatiles.telekinesis > 0) return false;
   if (fighter.types.includes('Flying')) return false;
-  return fighter.ability !== 'Levitate';
+  return !hasAbility(fighter, 'Levitate');
 }
 
 /**
@@ -616,13 +671,13 @@ export function moveContacts(
   attacker: BattleFighter,
   move: Readonly<{ flags: Readonly<Record<string, number>> }>,
 ): boolean {
-  if (attacker.ability === 'Long Reach') return false;
+  if (hasAbility(attacker, 'Long Reach')) return false;
   return Boolean(move.flags.contact);
 }
 
 /** Magic Guard only takes damage from attacks; status, weather, recoil and the rest are ignored. */
 export function takesIndirectDamage(fighter: BattleFighter): boolean {
-  return fighter.ability !== 'Magic Guard';
+  return !hasAbility(fighter, 'Magic Guard');
 }
 
 /**
@@ -631,10 +686,10 @@ export function takesIndirectDamage(fighter: BattleFighter): boolean {
  * types); Neutralizing Gas on the victim switches the trap off.
  */
 export function trappedBy(foe: BattleFighter, holder: BattleFighter): boolean {
-  if (holder.ability === 'Neutralizing Gas') return false;
-  if (foe.ability === 'Shadow Tag') return !holder.types.includes('Ghost');
-  if (foe.ability === 'Arena Trap') return isGrounded(holder) && !holder.types.includes('Ghost');
-  if (foe.ability === 'Magnet Pull') return holder.types.includes('Steel');
+  if (hasAbility(holder, 'Neutralizing Gas')) return false;
+  if (hasAbility(foe, 'Shadow Tag')) return !holder.types.includes('Ghost');
+  if (hasAbility(foe, 'Arena Trap')) return isGrounded(holder) && !holder.types.includes('Ghost');
+  if (hasAbility(foe, 'Magnet Pull')) return holder.types.includes('Steel');
   return false;
 }
 
@@ -751,6 +806,8 @@ export type FighterSnapshot = Readonly<{
   level: number;
   nature: string;
   ability: string;
+  /** Absent when the fighter has no second ability; never an empty string. */
+  secondAbility?: string;
   gender: Gender;
   shiny: boolean;
   heldItem: string | null;
@@ -773,6 +830,7 @@ export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
   // so the snapshot reads the pre-Mega shape the battle stored.
   const mega = fighter.megaBackup;
   const treats = fighter.treats;
+  const second = fighter.secondAbility;
   return {
     id: fighter.id,
     speciesId: mega?.speciesId ?? fighter.speciesId,
@@ -782,6 +840,7 @@ export function snapshotFighter(fighter: BattleFighter): FighterSnapshot {
     level: fighter.level,
     nature: fighter.nature,
     ability: mega?.ability ?? fighter.ability,
+    ...(second ? { secondAbility: second } : {}),
     gender: fighter.gender,
     shiny: fighter.shiny,
     heldItem: fighter.heldItem,
@@ -808,6 +867,7 @@ export function restoreFighter(snapshot: FighterSnapshot): BattleFighter {
     level: snapshot.level,
     nature: snapshot.nature,
     ability: snapshot.ability,
+    ...(snapshot.secondAbility ? { secondAbility: snapshot.secondAbility } : {}),
     gender: snapshot.gender,
     shiny: snapshot.shiny,
     ivs: snapshot.ivs,

@@ -1,5 +1,5 @@
 import type { Move } from '../../../data/dex';
-import type { BattleFighter } from '../fighter';
+import { fighterAbilities, normalizeAbilityId, type BattleFighter } from '../fighter';
 import { pushText, type BattleState, type BattleTextKey, type WeatherId } from '../state';
 import { normalizeEffectId, registerEffects, type EffectDefinition } from './registry';
 
@@ -64,7 +64,9 @@ const SAND_IMMUNE_ABILITIES: readonly string[] = [
 export function weatherImmune(fighter: BattleFighter, weather: WeatherId): boolean {
   if (weather !== 'sand') return true;
   if (fighter.types.some((type) => SAND_IMMUNE_TYPES.includes(type))) return true;
-  return SAND_IMMUNE_ABILITIES.includes(normalizeEffectId(fighter.ability));
+  return fighterAbilities(fighter).some((ability) =>
+    SAND_IMMUNE_ABILITIES.includes(normalizeAbilityId(ability)),
+  );
 }
 
 /** Chip damage a weather deals at the end of the turn (sand only in Gen 9). */

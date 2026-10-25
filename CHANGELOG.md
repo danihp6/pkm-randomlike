@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A fighter can carry a second ability.** `[Task-153]`, the fifth of Phase 13:
+      `BattleFighter`, `FighterInput` and `FighterSnapshot` gain the optional
+      `secondAbility`, and `src/engine/battle/fighter.ts` exports the one pair of helpers
+      every ability check now asks — `fighterAbilities` and `hasAbility`, normalised by
+      `normalizeAbilityId` — so a granted second ability is never a silent no-op. The
+      effect dispatcher (`ownedEffects`) yields **both** slots' handlers, each owned by
+      the fighter, deduped by effect id, and its coverage warning is now evaluated per
+      slot (a registered primary no longer hides an unregistered second). Every literal
+      `x.ability === '<Id>'` comparison in `src/engine/battle/**` moved to the helper, as
+      did `save.ts`'s `parseFighter`, which keeps a valid second ability in a member's
+      snapshot and drops an empty or duplicate one without costing the member — an
+      additive optional field, so **`SAVE_VERSION` stays 24**. The copy/swap handlers
+      (Trace, Role Play, Skill Swap, Transform, …) still act on the primary slot alone,
+      and nothing draws RNG: `golden.test.ts`'s log is byte-identical. The run→battle
+      plumbing that fills the slot is `[Task-154]`'s. `npm test` 4287 passed / 68
+      skipped, `npm run build` green.
 - [x] **The save remembers the runs that already ended.** `[Task-152]`, the fourth of Phase 13:
       `src/engine/run/history.ts` holds the **last 50** finished runs — seed, mode, floor reached,
       catches, casualties, playtime, win flag and per-species KOs and damage, newest first — as a
