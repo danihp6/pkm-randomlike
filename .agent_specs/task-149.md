@@ -16,6 +16,7 @@
   resolves to `[]`. `src/i18n/content.test.ts` flips from "these ids are missing" to
   "nothing is missing, and the authored text is Spanish prose".
 - **Environment:** worktree `../wt-pkm-149`, branch `task-149`.
+- **Local toolchain:** `node_modules` is already present in this worktree as a **symlink** to the main checkout's install. Do **not** run `npm ci` or `npm install`; run `npm test` / `npm run build` directly.
 - **Dependencies:** none. `D43`'s tables and accessors are shipped.
 
 ### Exclusive paths (single writer)
