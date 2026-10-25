@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The stats screen reads the run history.** `[Task-155]`, the sixth of Phase 13:
+      the five board frames `08`, `08b`, `08c`, `09` and `09b` ship as one DOM panel,
+      `src/ui/hud/panels/stats/` (`view.ts` + its test, `statsPanel.tsx`, `stats.css`,
+      `mount.tsx`, `preview.ts`, `fixture.test.ts`, `README.md`), reading
+      `SaveDocument.history` — the totals grid (12 figures), the run list, the Pokémon
+      table and the **local** monthly record, with a deliberate em dash for every figure
+      the store does not record (formes the board invented stay in the fixtures only).
+      The main menu's frame-only STATS row is live under `?hud=dom`: choosing it swaps
+      the menu panel for the stats panel and BACK returns; the canvas fallback keeps its
+      three rows, and `src/main.ts` registers no new scene. Five
+      `design/fixtures/08…`–`09b…json` payloads paint the frames, their `state` blocks
+      pass `isHudState`, and the panel's rect is the board's to the pixel (0 px at
+      1280×800 and 390×844, measured over CDP). The store still has **no production
+      writer** — `[Task-152]`'s follow-up (`RunState` timestamp, end-of-run call site and
+      per-species tally) is not in this task, so a played run shows the empty state until
+      it lands; the five frames are exercised through the fixtures. `npm test` 4326
+      passed / 68 skipped, `npm run build` green.
 - [x] **A fighter can carry a second ability.** `[Task-153]`, the fifth of Phase 13:
       `BattleFighter`, `FighterInput` and `FighterSnapshot` gain the optional
       `secondAbility`, and `src/engine/battle/fighter.ts` exports the one pair of helpers

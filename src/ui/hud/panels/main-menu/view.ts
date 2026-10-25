@@ -7,8 +7,8 @@ import { runPositionLabel } from '../../../runSummary';
 export const MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats'] as const;
 export type MainMenuRowId = (typeof MAIN_MENU_ROW_IDS)[number];
 
-/** The rows the scene can navigate today. `stats` is frame-only (see Coordination). */
-export const MAIN_MENU_ACTIONS = ['continue', 'new', 'options'] as const;
+/** The rows the scene can navigate. `stats` opens the stats panel on the DOM path. */
+export const MAIN_MENU_ACTIONS = ['continue', 'new', 'options', 'stats'] as const;
 export type MainMenuAction = (typeof MAIN_MENU_ACTIONS)[number];
 
 export type MainMenuRowView = Readonly<{
@@ -118,6 +118,7 @@ export function liveMainMenuView(run: RunState | null, index: number): MainMenuV
   }
   rows.push({ id: 'new', label: t('menu.new'), value: '', enabled: true });
   rows.push({ id: 'options', label: t('menu.options'), value: '', enabled: true });
+  rows.push({ id: 'stats', label: t('menu.stats'), value: '', enabled: true });
 
   const last = rows.length - 1;
   const at = Math.min(Math.max(0, Math.trunc(index)), last);

@@ -24,6 +24,6 @@ its Phaser counterpart in the same task (`D49`).
 - `battle-switch/` — the battle SWITCH window: one row per party member.
 - `battle-log/` — the battle message box: the frame feed, the typewriter and the waiting beats.
 - `main-menu/` — the title screen: the entries and the run seed prompt.
-- `stats/` — the stats/ranking screen: the run's counters and lines.
+- `stats/` — the stats/ranking screen: the run-history store's totals, run list, Pokémon table and monthly record (`view.ts`, `view.test.ts`, `statsPanel.tsx`, `stats.css`, `mount.tsx`, `preview.ts`, `preview.test.ts`, `fixture.test.ts`, `index.ts`).
 - `starter/` — the starter pick: the three cards and the confirm.
 - `run-over/` — the run-over summary, with the permadeath release beats.

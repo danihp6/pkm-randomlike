@@ -15,10 +15,14 @@ carries over.
 
 - The game opens on a **main menu**: **New run**, **Continue** (only when the save
   holds a run with a living party, and it shows the map it stands on, that map's
-  biome and a portrait per party member, in party order) and **Options** (the
-  settings screen). Starting a new run only replaces the saved one once its
-  starter is picked, so cancelling at the starter pick returns to the menu with
-  the run in progress intact.
+  biome and a portrait per party member, in party order), **Options** (the
+  settings screen) and **STATS** (the stats and ranking screen). Starting a new run
+  only replaces the saved one once its starter is picked, so cancelling at the
+  starter pick returns to the menu with the run in progress intact. **STATS** opens
+  over the menu on the history of every finished run — the totals across every run,
+  the run list, the Pokémon table and the local monthly record, each with its own
+  empty state — and **BACK** returns to the menu; the DOM HUD draws the row, the
+  canvas fallback keeps its three.
 - **Options** (the settings screen) lists a **step row** per preference — text
   speed, a **volume slider** (click or drag the bar), always-run and Transparent
   HUD — over one **keybind row** per action. A keybind row is hidden on a touch
@@ -601,7 +605,7 @@ the route HUD changed.
 | Battle bag list and pockets | `BattleScene.handleAction` | arrows walk the bag's five-column grid, `confirm` uses the selected stack, a click on a cell selects, `[` / `]` or a tab click change pockets; the filter field takes typed text and keeps every command shortcut off | keyboard (new) |
 | Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ | keyboard (new) |
 | Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
-| Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` | keyboard |
+| Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` (with the STATS overlay open, only `cancel`, and it closes the overlay) | keyboard |
 | Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt | keyboard |
 | Settings rows and volume | `SettingsScene` | arrows, `confirm`, `cancel`; volume steps with `left`/`right` | keyboard |
 | Run-over screen | `RunOverScene` | `confirm` | keyboard |

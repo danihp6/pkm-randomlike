@@ -1,0 +1,137 @@
+{
+  "slug": "08-stats-totals",
+  "state": {
+    "party": [],
+    "bag": [
+      {
+        "itemId": "poke-ball",
+        "name": "Poké Ball",
+        "count": 6,
+        "category": "balls"
+      },
+      {
+        "itemId": "potion",
+        "name": "Potion",
+        "count": 3,
+        "category": "medicine"
+      }
+    ],
+    "money": 1240,
+    "route": {
+      "mode": "normal",
+      "mapIndex": 3,
+      "routeInMap": 4,
+      "routeIndex": 13,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 22,
+      "squadLevel": 16,
+      "xp": 0,
+      "xpFraction": 0,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [1, 2, 3, 4],
+      "mission": null,
+      "missionsCompleted": 1,
+      "stats": {
+        "catches": 3,
+        "casualties": 0
+      }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "stats": {
+    "mode": "totals",
+    "title": "GLOBAL STATS",
+    "blurb": "TOTALS ACROSS EVERY RUN.",
+    "tabs": [
+      {
+        "id": "totals",
+        "label": "TOTALS"
+      },
+      {
+        "id": "runs",
+        "label": "RUNS"
+      },
+      {
+        "id": "pokemon",
+        "label": "POKEMON"
+      }
+    ],
+    "figures": [
+      {
+        "id": "runsPlayed",
+        "label": "RUNS PLAYED",
+        "value": "24"
+      },
+      {
+        "id": "runsWon",
+        "label": "RUNS WON",
+        "value": "9"
+      },
+      {
+        "id": "winRate",
+        "label": "BEST ELITE STRIKE",
+        "value": "4"
+      },
+      {
+        "id": "bestFloor",
+        "label": "ROUTES CLEARED",
+        "value": "214"
+      },
+      {
+        "id": "caught",
+        "label": "ENEMIES FAINTED",
+        "value": "388"
+      },
+      {
+        "id": "lost",
+        "label": "POKEMON CAUGHT",
+        "value": "43"
+      },
+      {
+        "id": "playtime",
+        "label": "POKEMON LOST",
+        "value": "27"
+      },
+      {
+        "id": "avgRun",
+        "label": "TOTAL PLAYTIME",
+        "value": "41H 20M"
+      },
+      {
+        "id": "longestRun",
+        "label": "AVG RUN",
+        "value": "1H 43M"
+      },
+      {
+        "id": "kos",
+        "label": "POKEDEX SEEN",
+        "value": "68"
+      },
+      {
+        "id": "dealt",
+        "label": "LONGEST RUN",
+        "value": "8 ROUTES"
+      },
+      {
+        "id": "lastRun",
+        "label": "CATCH RATE",
+        "value": "61%"
+      }
+    ],
+    "columns": [],
+    "rows": [],
+    "empty": null,
+    "month": null,
+    "actions": [
+      {
+        "id": "back",
+        "label": "BACK"
+      }
+    ]
+  }
+}

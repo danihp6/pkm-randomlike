@@ -1,0 +1,101 @@
+{
+  "slug": "08c-stats-pokemon",
+  "state": {
+    "party": [],
+    "bag": [
+      {
+        "itemId": "poke-ball",
+        "name": "Poké Ball",
+        "count": 6,
+        "category": "balls"
+      },
+      {
+        "itemId": "potion",
+        "name": "Potion",
+        "count": 3,
+        "category": "medicine"
+      }
+    ],
+    "money": 1240,
+    "route": {
+      "mode": "normal",
+      "mapIndex": 3,
+      "routeInMap": 4,
+      "routeIndex": 13,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 22,
+      "squadLevel": 16,
+      "xp": 0,
+      "xpFraction": 0,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [1, 2, 3, 4],
+      "mission": null,
+      "missionsCompleted": 1,
+      "stats": {
+        "catches": 3,
+        "casualties": 0
+      }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "stats": {
+    "mode": "pokemon",
+    "title": "GLOBAL STATS",
+    "blurb": "EVERY POKEMON YOU HAVE RAISED.",
+    "tabs": [
+      {
+        "id": "totals",
+        "label": "TOTALS"
+      },
+      {
+        "id": "runs",
+        "label": "RUNS"
+      },
+      {
+        "id": "pokemon",
+        "label": "POKEMON"
+      }
+    ],
+    "figures": [],
+    "columns": ["POKEMON", "RUNS", "KOs", "DMG DEALT", "DMG TANKED"],
+    "rows": [
+      {
+        "id": "charizard",
+        "cells": ["CHARIZARD", "12", "8", "4,120", "—"]
+      },
+      {
+        "id": "bulbasaur",
+        "cells": ["BULBASAUR", "9", "6", "2,980", "—"]
+      },
+      {
+        "id": "abra",
+        "cells": ["ABRA", "7", "5", "1,860", "—"]
+      },
+      {
+        "id": "pikachu",
+        "cells": ["PIKACHU", "11", "4", "2,300", "—"]
+      },
+      {
+        "id": "psyduck",
+        "cells": ["PSYDUCK", "5", "4", "1,520", "—"]
+      },
+      {
+        "id": "gastly",
+        "cells": ["GASTLY", "3", "2", "640", "—"]
+      }
+    ],
+    "empty": null,
+    "month": null,
+    "actions": [
+      {
+        "id": "back",
+        "label": "BACK"
+      }
+    ]
+  }
+}

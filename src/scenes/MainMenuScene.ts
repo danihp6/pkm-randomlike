@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { playMusic } from '../audio/audio';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_SIZE, portraitFor } from '../data/portraits';
+import type { RunHistoryRecord } from '../engine/run/history';
 import { hasLivingParty, type RunState } from '../engine/run';
 import { randomSeed } from '../engine/rng';
 import { loadSave, type Settings } from '../engine/save';
@@ -29,16 +30,28 @@ import {
   type MainMenuIntent,
   type MainMenuView,
 } from '../ui/hud/panels/main-menu';
+import {
+  installStatsPreview,
+  liveStatsView,
+  mountStats,
+  statsMonths,
+  statsPreviewRequested,
+  type StatsHandle,
+  type StatsIntent,
+  type StatsMode,
+  type StatsView,
+} from '../ui/hud/panels/stats';
 import { runPositionLabel } from '../ui/runSummary';
 
-/** The three things the menu can do; `continue` only exists with a saved run. */
-type MenuAction = 'continue' | 'new' | 'options';
+/** The four things the menu can do; `continue` only exists with a saved run. */
+type MenuAction = 'continue' | 'new' | 'options' | 'stats';
 
 /** The row labels as keys: a table of translated strings would freeze the locale. */
 const MENU_LABELS: Readonly<Record<MenuAction, TranslationKey>> = {
   continue: 'menu.continue',
   new: 'menu.new',
   options: 'menu.options',
+  stats: 'menu.stats',
 };
 
 function menuLabel(action: MenuAction): string {
@@ -71,6 +84,7 @@ type RowView = {
  */
 const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 installMainMenuPreview(typeof window === 'undefined' ? '' : window.location.search);
+installStatsPreview(typeof window === 'undefined' ? '' : window.location.search);
 
 /** The number of display objects the menu draws right now: 0 under `?hud=dom`. */
 export function mainMenuDrawnObjectCount(scene: Phaser.Scene): number {
@@ -99,6 +113,13 @@ export class MainMenuScene extends Phaser.Scene {
   private dom = false;
   /** The mounted DOM menu (`?hud=dom`): the one emit point of the drawn menu. */
   private controller: MainMenuHandle | null = null;
+  /** The finished runs the stats panel draws, read from the save on `create`. */
+  private history: readonly RunHistoryRecord[] = [];
+  /** The mounted stats panel and the mode and month it is drawn for. */
+  private stats: StatsHandle | null = null;
+  private statsOpen = false;
+  private statsMode: StatsMode = 'totals';
+  private statsMonth: string | null = null;
 
   constructor() {
     super('MainMenu');
@@ -108,6 +129,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.settings = loadSettings();
     const save = loadSave(browserStorage());
     this.run = save.run && hasLivingParty(save.run) ? save.run : null;
+    this.history = save.history;
     // Offer "continue" first when there is a run to resume, then "new run".
     this.items = this.run ? ['continue', 'new', 'options'] : ['new', 'options'];
     this.index = 0;
@@ -139,9 +161,14 @@ export class MainMenuScene extends Phaser.Scene {
     const view = liveMainMenuView(this.run, 0);
     this.items = MAIN_MENU_ACTIONS.filter((id) => view.rows.some((row) => row.id === id));
     this.index = 0;
-    // The fixture preview paints the frame's own copy and owns the layer; the
-    // scene then steps aside instead of mounting a second menu on top of it.
-    if (mainMenuPreviewRequested(window.location.search)) return;
+    // Either fixture preview paints its own frame and owns the layer; the scene then
+    // steps aside instead of mounting a second panel on top of it.
+    if (
+      mainMenuPreviewRequested(window.location.search) ||
+      statsPreviewRequested(window.location.search)
+    ) {
+      return;
+    }
     this.mountPanel(view);
     if (this.controller === null) return;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
@@ -230,9 +257,77 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   private disposePanel(): void {
+    this.disposeStats();
     if (this.controller === null) return;
     this.controller.dispose();
     this.controller = null;
+  }
+
+  private disposeStats(): void {
+    if (this.stats === null) return;
+    this.stats.dispose();
+    this.stats = null;
+  }
+
+  /**
+   * Swaps the menu panel for the stats one, opened on TOTALS and the newest month.
+   * The menu's save, its history and every navigation stay here: the panel only
+   * paints the view and answers an intent.
+   */
+  private openStats(): void {
+    if (!this.dom || this.statsOpen || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposePanel();
+    this.statsMode = 'totals';
+    this.statsMonth = statsMonths(this.history, new Date())[0]?.key ?? null;
+    this.stats = mountStats(host, this.statsView(), (intent) => this.handleStatsIntent(intent));
+    this.statsOpen = true;
+  }
+
+  /** Drops the stats panel and puts the menu back where it was. */
+  private closeStats(): void {
+    if (!this.statsOpen) return;
+    this.disposeStats();
+    this.statsOpen = false;
+    this.mountPanel(liveMainMenuView(this.run, this.index));
+  }
+
+  /** The live panel's view for the mode and month this scene holds. */
+  private statsView(): StatsView {
+    return liveStatsView(this.history, this.statsMode, this.statsMonth, new Date());
+  }
+
+  /** A tab, an action or a month step: the scene owns the mode and the month. */
+  private handleStatsIntent(intent: StatsIntent): void {
+    switch (intent.type) {
+      case 'tab':
+        this.statsMode = intent.mode;
+        break;
+      case 'action':
+        switch (intent.id) {
+          case 'back':
+            this.closeStats();
+            return;
+          case 'ranking':
+          case 'ranking-players':
+            this.statsMode = 'ranking';
+            break;
+          case 'ranking-pokemon':
+            this.statsMode = 'ranking-pokemon';
+            break;
+        }
+        break;
+      case 'month': {
+        const months = statsMonths(this.history, new Date());
+        const at = months.findIndex((month) => month.key === this.statsMonth);
+        const from = at < 0 ? 0 : at;
+        const next = Math.min(Math.max(0, from + intent.delta), months.length - 1);
+        this.statsMonth = months[next]?.key ?? null;
+        break;
+      }
+    }
+    this.stats?.update(this.statsView());
   }
 
   /** The right-hand value of a row: the map a saved run stands on and its biome. */
@@ -243,6 +338,12 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The player's intent behind one shared action, from a key or the touch pad. */
   private handleAction(action: KeybindAction): void {
+    // The stats panel owns the layer: only cancel leaves it, and no movement key
+    // may walk the menu that is hidden under it.
+    if (this.statsOpen) {
+      if (action === 'cancel') this.closeStats();
+      return;
+    }
     switch (action) {
       case 'up':
         this.move(-1);
@@ -272,8 +373,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.pickRow('options');
         return;
       case 'stats':
-        // Frame-only row: there is no stats screen yet (`Task-146` routes it), so
-        // the intent is received and not navigated.
+        this.openStats();
         return;
     }
   }
@@ -305,6 +405,9 @@ export class MainMenuScene extends Phaser.Scene {
       case 'options':
         this.openOptions();
         return;
+      case 'stats':
+        this.openStats();
+        return;
     }
   }
 
@@ -318,6 +421,8 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   private render(): void {
+    // The stats panel owns the layer while it is open; the menu behind it is gone.
+    if (this.statsOpen) return;
     if (this.dom) {
       this.controller?.update(liveMainMenuView(this.run, this.index));
       return;

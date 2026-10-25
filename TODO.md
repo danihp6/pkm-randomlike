@@ -7630,7 +7630,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       `src/data/run.ts`, their tests, `docs/design-spec.md` and `docs/battle-spec.md`.
       *Dependencies:* `[Task-151]`, `[Task-153]`. *(Batch 68)*
 
-- [ ] **[Task-155] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
+- [x] **[Task-155] Stats and ranking are the HUD's.** `08`, `08b`, `08c`, `09` and `09b` in
       `src/ui/hud/panels/stats/`, read from `[Task-152]`'s store: the totals, the run list, the
       Pokémon table and the monthly local record, with empty states when the history is empty. The
       main menu's frame-only STATS row (`src/scenes/MainMenuScene.ts`) becomes live. Claims
