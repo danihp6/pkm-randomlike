@@ -16,6 +16,7 @@
   includes it, and `meta.json` counts it. `docs/data-spec.md` gets its line and
   `docs/balance/effect-coverage.md` is regenerated with `npm run docs:coverage`.
 - **Environment:** worktree `../wt-pkm-151`, branch `task-151`.
+- **Local toolchain:** `node_modules` is already present in this worktree as a **symlink** to the main checkout's install. Do **not** run `npm ci` or `npm install`; run `npm test` / `npm run build` directly.
 - **Dependencies:** none.
 
 ### Exclusive paths (single writer)
