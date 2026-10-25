@@ -16,7 +16,7 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
 - `tileset.ts` — the atlas contract every biome tileset satisfies (`D10`), read by the frame resolver.
 - `tileFrames.ts` — a map value and its neighbours turned into an atlas frame: autotiling and variants.
 - `frameMap.ts` — the dev "Map" tool's per-cell frame dump and the codec that round-trips it.
-- `save.ts` — the versioned save codec: migrations, settings and the run, against a storage interface.
+- `save.ts` — the versioned save codec: migrations, settings, the run and the run history, against a storage interface.
 - `index.ts` — the barrel re-exporting the top level; each subfolder has its own.
 - `battle/` — the menu battle and its effects: `battle/fighter.ts`, `battle/state.ts`,
   `battle/order.ts`, `battle/damage.ts`, `battle/moveType.ts`, `battle/accuracy.ts`,
