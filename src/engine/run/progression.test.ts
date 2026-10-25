@@ -269,6 +269,19 @@ describe('adoptAtLevel', () => {
       ),
     );
   });
+  it('keeps a granted second ability across the rebuild (`Task-154`)', () => {
+    const caught = createRunPokemon({
+      id: 'wild',
+      speciesId: 'charmander',
+      level: 3,
+      moves: ['scratch'],
+      secondAbility: 'Levitate',
+    });
+    expect(caught.fighter.secondAbility).toBe('Levitate');
+    const adopted = adoptAtLevel(caught, 12);
+    expect(adopted.fighter.secondAbility).toBe('Levitate');
+    expect(adopted.fighter.level).toBe(12);
+  });
 });
 
 describe('evolvePokemon', () => {

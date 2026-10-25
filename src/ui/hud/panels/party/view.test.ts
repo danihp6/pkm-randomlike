@@ -43,6 +43,7 @@ function member(id: string, overrides: Partial<HudPartyRow> = {}): HudPartyRow {
     heldItem: null,
     heldItemName: null,
     shiny: false,
+    dark: false,
     hpFraction: 0.5,
     ...overrides,
   };
@@ -166,6 +167,22 @@ describe('partyPanelView', () => {
   it('draws no row and selects nothing for an empty party', () => {
     const view = partyPanelView(hudState([]), initialPartyPanelUi(), DESKTOP);
     expect(view.rows).toEqual([]);
+  });
+
+  it('marks a dark row without moving a single rect (`Task-154`)', () => {
+    const plain = partyPanelView(hudState([member('a'), member('b')]), initialPartyPanelUi(), DESKTOP);
+    const marked = partyPanelView(
+      hudState([member('a', { dark: true }), member('b')]),
+      initialPartyPanelUi(),
+      DESKTOP,
+    );
+    expect(marked.rows[0]!.dark).toBe(true);
+    expect(marked.rows[1]!.dark).toBe(false);
+    expect(plain.rows[0]!.dark).toBe(false);
+    for (const key of ['row', 'portrait', 'hpBar'] as const) {
+      expect(marked.rows[0]![key], key).toEqual(plain.rows[0]![key]);
+      expect(marked.rows[1]![key], key).toEqual(plain.rows[1]![key]);
+    }
   });
 
   it('leaves the header empty without a route', () => {

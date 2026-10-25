@@ -10,12 +10,15 @@ import {
   BOX_PAGE_SIZE,
   boxRows,
   cyclePane,
+  DARK_PORTRAIT_TINT,
   dragTo,
   dropGrabbed,
   grabAt,
   initialPartyUi,
   partyInput,
+  partyRow,
   partyRows,
+  portraitTint,
   ripRows,
   stepCursorWithHeader,
   swapAcross,
@@ -95,6 +98,23 @@ describe('rows', () => {
     const named = { ...starter, fighter: { ...starter.fighter, nickname: 'Sparky' } };
     expect(partyRows({ ...runWith(['starter']), party: [named] })[0].name).toBe('Sparky');
     expect(boxRows({ ...runWith(['starter'], []), box: [named] })[0].name).toBe('Sparky');
+  });
+
+  it('answers the dark mark from the member, absent meaning not dark (`Task-154`)', () => {
+    const dark = { ...starter, dark: true };
+    const rows = partyRows({ ...runWith(['starter']), party: [dark, member('plain')] });
+    expect(rows[0].dark).toBe(true);
+    expect(rows[1].dark).toBe(false);
+    expect(partyRow(member('plain')).dark).toBe(false);
+    expect(ripRows({ ...runWith(['starter'], [], []), rip: [dark] })[0].dark).toBe(true);
+  });
+});
+
+describe('the dark portrait tint (`Task-154`)', () => {
+  it('pins the mark’s colour and answers null for a plain member', () => {
+    expect(DARK_PORTRAIT_TINT).toBe(0x8b5cf6);
+    expect(portraitTint(true)).toBe(DARK_PORTRAIT_TINT);
+    expect(portraitTint(false)).toBeNull();
   });
 });
 
@@ -317,6 +337,7 @@ describe('RIP', () => {
     const moveKeys = Object.keys(dead?.moves[0] ?? {}).sort();
     expect(detailKeys).toEqual([
       'ability',
+      'ability2',
       'abilityDesc',
       'caughtLabel',
       'evolutions',

@@ -57,6 +57,8 @@ seed (`D11`).
 - `trade.test.ts` — the eligibility, the roll and the member the trade leaves behind.
 - `history.ts` — the record of the last finished runs: seed, mode, reach, catches, casualties, playtime and per-species KOs and damage (`Task-152`).
 - `history.test.ts` — the 50-run cap, the pure record builder and its species rows.
+- `dark.ts` — the dark Pokémon: the catch's own roll and the member it turns `Dark Matter`-first (`Task-154`).
+- `dark.test.ts` — the roll's share over 10 000 catches, its pinned seeds and the member it rewrites.
 - `curve.test.ts` — the route-curve regression: the XP a floor's award pays, checked against the floor chain.
 - `README.md` — this map.
 

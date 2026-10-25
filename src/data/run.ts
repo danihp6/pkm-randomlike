@@ -153,3 +153,9 @@ export type StartingItem = Readonly<{ itemId: string; count: number }>;
  * still earned along the way.
  */
 export const STARTING_BAG: readonly StartingItem[] = [{ itemId: 'pokeball', count: 10 }];
+
+/**
+ * Share of **caught** wilds born dark (`Task-154`). One catch per room, so this is
+ * the share of catches, not of encounters. Balanced here, never in engine code.
+ */
+export const DARK_CHANCE = 0.05;

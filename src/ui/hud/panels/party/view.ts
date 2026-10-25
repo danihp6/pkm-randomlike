@@ -25,6 +25,8 @@ export type PartyRowView = Readonly<{
   hpFraction: number;
   statusLabel: string | null;
   heldItemName: string | null;
+  /** A dark Pokémon: the card marks its portrait cell. */
+  dark: boolean;
   selected: boolean;
   /** Panel-relative: the whole row, the portrait cell and the HP bar. */
   row: Rect;
@@ -161,6 +163,7 @@ function rowView(member: HudState['party'][number], index: number, selected: boo
     hpFraction: clampFraction(member.hpFraction),
     statusLabel: member.statusLabel,
     heldItemName: member.heldItemName,
+    dark: member.dark === true,
     selected,
     row,
     portrait: portraitBox(row),

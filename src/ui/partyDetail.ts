@@ -9,6 +9,7 @@ import {
 } from '../i18n/content';
 import { t, type TranslationKey } from '../i18n';
 import {
+  fighterAbilities,
   restoreFighter,
   type BattleFighter,
   type MoveSlot,
@@ -16,7 +17,13 @@ import {
 } from '../engine/battle/fighter';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem, teraTypeOf } from '../data/items';
-import { moveMoves, type CatchLocation, type RunPokemon, type RunState } from '../engine/run';
+import {
+  memberAbilities,
+  moveMoves,
+  type CatchLocation,
+  type RunPokemon,
+  type RunState,
+} from '../engine/run';
 import { statusAbbreviation } from './metrics';
 import { evolutionGraph, type FamilyNode } from './evolutionGraph';
 import { FRLG_NEGATIVE, FRLG_POSITIVE } from './frlg';
@@ -85,6 +92,11 @@ export type MemberDetail = Readonly<{
    * id is unknown.
    */
   abilityDesc: string | null;
+  /**
+   * The second ability's localised name, or null/absent when the member carries one
+   * only (`[Task-153]`'s slot, or a dark member's rolled ability).
+   */
+  ability2?: string | null;
   hp: number;
   maxHp: number;
   status: StatusId | null;
@@ -158,8 +170,12 @@ function moveDetails(
 export function memberDetail(run: RunState, memberId: string): MemberDetail | null {
   const member = memberById(run, memberId);
   if (!member) return null;
+  const second = memberAbilities(member)[1];
   return {
     ...fighterDetail(restoreFighter(member.fighter)),
+    // The run-level word wins where the two disagree: a granted second ability
+    // lives on the member, and a dark member's rolled one beside `Dark Matter`.
+    ability2: second === undefined ? null : abilityNameFromEnglish(second),
     caughtLabel: catchLabel(member.caughtAt),
     evolutions: evolutionGraph(member.fighter.speciesId, member.fighter.level),
   };
@@ -196,6 +212,8 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
   // A held Tera Crystal replaces the holder's types, so the panel reads the same
   // item rule the battle does instead of the species' own pair (`Task-103`).
   const crystal = teraTypeOf(fighter.heldItem);
+  const abilities = fighterAbilities(fighter);
+  const second = abilities[1];
   return {
     id: fighter.id,
     speciesId: fighter.speciesId,
@@ -205,6 +223,7 @@ export function fighterDetail(fighter: BattleFighter): MemberDetail {
     types: crystal ? [crystal] : (species?.types ?? fighter.types),
     nature: fighter.nature,
     ability: abilityNameFromEnglish(fighter.ability),
+    ability2: second === undefined ? null : abilityNameFromEnglish(second),
     abilityDesc: abilityDescription(fighter.ability),
     hp: fighter.hp,
     maxHp: fighter.maxHp,

@@ -4,6 +4,7 @@ import { createRunPokemon, type RunPokemon } from '../engine/run/progression';
 import { resolveBattle } from '../engine/run/resolve';
 import type { BattleReturn } from '../engine/run/battleLink';
 import { createFighter } from '../engine/battle/fighter';
+import { asDark } from '../engine/run/dark';
 import { getAbility } from '../data/dex';
 import {
   CLOSED_DETAIL,
@@ -236,6 +237,96 @@ describe('fighterDetail', () => {
     expect(fighterDetail(fighter).abilityDesc).toBe(
       'Always escapes from a wild Pokémon. A trapping effect still stops it.',
     );
+  });
+
+  it('fills the second ability from the fighter slots and keeps the first as the primary (`Task-154`)', () => {
+    const fighter = createFighter({
+      id: 'two',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember'],
+      ability: 'Blaze',
+      secondAbility: 'Levitate',
+    });
+    const detail = fighterDetail(fighter);
+    expect(detail.ability).toBe('Blaze');
+    expect(detail.ability2).toBe('Levitate');
+    expect(detail.abilityDesc).toBe(getAbility('blaze')!.shortDesc || getAbility('blaze')!.desc);
+  });
+
+  it('leaves the second ability null for a fighter with one slot', () => {
+    const fighter = createFighter({
+      id: 'one',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember'],
+      ability: 'Blaze',
+    });
+    expect(fighterDetail(fighter).ability2).toBeNull();
+  });
+});
+
+describe('the run-level second ability (`Task-154`)', () => {
+  function withSecond(member: RunPokemon, secondAbility: string): RunPokemon {
+    return { ...member, secondAbility };
+  }
+
+  it('wins over the snapshot slot where the two disagree', () => {
+    const snapshot = createRunPokemon({
+      id: 'two',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember'],
+      ability: 'Blaze',
+      secondAbility: 'Levitate',
+    });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [withSecond(snapshot, 'Static')],
+    };
+    const detail = memberDetail(run, 'two');
+    expect(detail?.ability).toBe('Blaze');
+    expect(detail?.ability2).toBe('Static');
+    expect(detail?.abilityDesc).toBe(getAbility('blaze')!.shortDesc || getAbility('blaze')!.desc);
+  });
+
+  it('reads the run member’s own word as the authority, not the snapshot’s', () => {
+    const snapshot = createRunPokemon({
+      id: 'two',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['ember'],
+      ability: 'Blaze',
+      secondAbility: 'Levitate',
+    });
+    const run = { ...createRun({ seed: 'run-a', starter }), party: [snapshot] };
+    // `memberAbilities` answers the pair the run keeps; a slot that only ever lived
+    // on the snapshot is not a run-level grant, so the panel prints the primary alone.
+    expect(memberDetail(run, 'two')?.ability).toBe('Blaze');
+    expect(memberDetail(run, 'two')?.ability2).toBeNull();
+  });
+
+  it('reads Dark Matter first and the rolled ability second, describing the primary', () => {
+    const dark = asDark(
+      createRunPokemon({
+        id: 'dark',
+        speciesId: 'sentret',
+        level: 4,
+        moves: ['tackle'],
+        ability: 'Keen Eye',
+      }),
+    );
+    const run = { ...createRun({ seed: 'run-a', starter }), party: [dark] };
+    const detail = memberDetail(run, 'dark');
+    expect(detail?.ability).toBe('Dark Matter');
+    expect(detail?.ability2).toBe('Keen Eye');
+    expect(detail?.abilityDesc).toBe(
+      getAbility('darkmatter')!.shortDesc || getAbility('darkmatter')!.desc,
+    );
+  });
+
+  it('leaves a one-ability member without a second name', () => {
+    expect(memberDetail(runWith(), 'starter')?.ability2).toBeNull();
   });
 });
 

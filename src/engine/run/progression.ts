@@ -45,6 +45,8 @@ export type RunPokemon = Readonly<{
    * carries.
    */
   battlesUsed?: number;
+  /** A dark Pokémon (`Task-154`): always born `Dark Matter`, its rolled ability second. Absent means not dark. */
+  dark?: boolean;
 }>;
 
 /**
@@ -164,6 +166,7 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
     evs: f.evs,
     ...(f.statTreats ? { treats: f.statTreats } : {}),
     ...(f.heldItem ? { heldItem: f.heldItem } : {}),
+    ...(f.secondAbility ? { secondAbility: f.secondAbility } : {}),
     ...(learnsetSeed ? { learnsetSeed } : {}),
   });
   // `createFighter` starts the rebuilt fighter at its full maximum, so `rebuilt.hp`

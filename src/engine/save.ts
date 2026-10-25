@@ -74,7 +74,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -176,7 +176,10 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * because the decoder leaves an absent one out, so an old run gets **no treats on
  * any member and an empty discovered set**; `23` moves a v23 document onto the v24
  * schema, which added the **run-history store** (`Task-152`) — an old save never
- * recorded the runs that already ended, so its history starts **empty**.
+ * recorded the runs that already ended, so its history starts **empty**; `24` moves
+ * a v24 run onto the v25 schema, which added the **dark Pokémon** (`Task-154`) —
+ * every member an old run stored starts not-dark, and the decoder drops the `false`
+ * on the next write.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -331,6 +334,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 24,
     history: [],
   }),
+  // The dark Pokémon (`Task-154`): a v24 run predates the flag, so every stored
+  // member starts not-dark; the decoder drops the `false` on the next write.
+  24: (document) => ({
+    ...document,
+    version: 25,
+    run: isRecord(document.run) ? withDarkFlag(document.run) : document.run,
+  }),
 };
 
 /**
@@ -387,6 +397,15 @@ function withPcCatch(run: Record<string, unknown>): Record<string, unknown> {
   delete next.pcUnlocked;
   next.pcCatch = null;
   return next;
+}
+
+/** Writes `dark: false` on every member a v24 run stored (party, box and rip). */
+function withDarkFlag(run: Record<string, unknown>): Record<string, unknown> {
+  const mark = (list: unknown): unknown =>
+    Array.isArray(list)
+      ? list.map((entry) => (isRecord(entry) ? { dark: false, ...entry } : entry))
+      : list;
+  return { ...run, party: mark(run.party), box: mark(run.box), rip: mark(run.rip) };
 }
 
 /**
@@ -752,13 +771,15 @@ function parsePokemon(value: unknown): RunPokemon | null {
   const battlesUsed =
     isInteger(value.battlesUsed) && value.battlesUsed > 0 ? value.battlesUsed : null;
   // Each optional word is written only when it carries something, so a v21 round trip
-  // stays byte-stable and a v20 document decodes to none.
+  // stays byte-stable and a v20 document decodes to none. The dark mark (`Task-154`)
+  // is only ever written when true, the `shiny` precedent.
   return {
     fighter,
     ...(caughtAt ? { caughtAt } : {}),
     ...(taughtMoves.length > 0 ? { taughtMoves } : {}),
     ...(secondAbility !== null ? { secondAbility } : {}),
     ...(battlesUsed !== null ? { battlesUsed } : {}),
+    ...(value.dark === true ? { dark: true } : {}),
   };
 }
 

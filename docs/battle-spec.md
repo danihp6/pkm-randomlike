@@ -382,7 +382,18 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   **second ability** — the one a sacrifice grants — is what the run's ability readers
   see: `partyHasAbility`, `runPassives` and the band's No Guard guard all ask
   `memberAbilities`, which answers the primary first and the second one after it,
-  while the battle's own dispatch keeps fighting with `fighter.ability` alone (D48).
+  while the battle's own dispatch reads both slots through `hasAbility` and
+  `ownedEffects`, so the second ability works in battle too (D48).
+- A **dark** member (`RunPokemon.dark`, `Task-154`) is born at the catch: one in twenty
+  caught wilds (`DARK_CHANCE`, `src/data/run.ts`) comes back dark, its
+  `fighter.ability` rewritten to **Dark Matter** and the ability the wild had rolled
+  moved into the second slot (`fighter.secondAbility` on the snapshot and
+  `secondAbility` on the run member alike), so `hasAbility`/`ownedEffects` field it
+  beside the primary exactly like a sacrifice's grant. The roll is `isDarkCatch`'s own
+  stream, minted from `(seed, mapIndex, routeInMap, catchId)` at the catch, so it
+  advances no other draw and a replay answers the same; `asDark` reads no RNG and is
+  applied **after** the catch is adopted at the squad's level, so the level rebuild
+  cannot drop the slots it writes.
 - **Evolution is manual and level-only.** Every evolution in the dex — level-up,
   stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
   `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the
