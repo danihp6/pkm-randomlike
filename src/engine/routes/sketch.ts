@@ -23,6 +23,7 @@ import {
   DEFAULT_SHAPE,
   LAYOUTS,
   SHAPES,
+  chamberFor,
   entryIndex,
   shapeForEdges,
   specForOpenings,
@@ -130,6 +131,11 @@ export type RouteRequest = Readonly<{
    * draw the floor the run already opened. Absent for every other room.
    */
   gate?: 'sealed' | 'open';
+  /**
+   * Force the centre chamber on or off. Absent, the room's opening set decides
+   * (`chamberFor`): the entry room and every leaf carve one, everything else does not.
+   */
+  chamber?: boolean;
 }>;
 
 type MutableMap = number[][];
@@ -469,6 +475,78 @@ function nearestNetwork(network: ReadonlySet<string>, target: Tile): Tile | unde
 /** One carved branch: its intended far end and every tile the lane opened. */
 type BranchCarve = Readonly<{ target: Tile; tiles: readonly string[] }>;
 
+/** One room's centre chamber: the tiles it opened and the loot spots it owns. */
+export type ChamberCarve = Readonly<{
+  /** Every tile the chamber opened, as `tileKey` strings. */
+  tiles: ReadonlySet<string>;
+  /** The pockets it owns, in draw order: the two lateral extremes of its widest row. */
+  pockets: readonly Readonly<{ x: number; y: number }>[];
+  /** The radius the room drew, before the room's own clamp (`4` … `6`). */
+  radius: number;
+}>;
+
+/**
+ * The centre chamber a room with no through-lane grows around its middle
+ * (`docs/routes-spec.md` §2): a diamond whose rows are re-rolled per seed, so it
+ * is **never** the perfect rhombus of its radius, and which stops at the walls
+ * instead of stamping over the border ring, a lane or an opening band. Every draw
+ * comes from the room's own `chamber` stream, so the outline is a pure function of
+ * `(seed, routeIndex, attempt)` and can never move a lane the layout pass placed.
+ * Cells it opens join the room's spine, which is what keeps grass and ledges off it.
+ */
+export function carveChamber(
+  tiles: number[][],
+  shape: ShapeSpec,
+  width: number,
+  height: number,
+  rng: Rng,
+  margin: number,
+): ChamberCarve | null {
+  if (shape.chamber === 'none') return null;
+  const cx = Math.floor(width / 2);
+  const cy = Math.floor(height / 2);
+  const minX = margin;
+  const maxX = width - margin - 1;
+  const minY = margin;
+  const maxY = height - margin - 1;
+  const drawn = rng.int(4, 6);
+  const radius = Math.max(2, Math.min(drawn, Math.floor((Math.min(maxX - minX, maxY - minY) - 1) / 2)));
+  // The rows are all drawn top to bottom before a cell is written: the outline is
+  // one pass over the stream, and the centre row always carries one extra tile.
+  const half: number[] = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    half.push(radius - Math.abs(dy) + (dy === 0 ? 1 : rng.int(0, 1)));
+  }
+
+  const opened = new Set<string>();
+  for (let dy = -radius; dy <= radius; dy++) {
+    const y = cy + dy;
+    if (y < minY || y > maxY) continue;
+    const reach = half[dy + radius];
+    // Each side walks out from the centre and stops at the wall, so a row is one
+    // contiguous run through the room's middle and the chamber stays one floor.
+    for (const direction of [-1, 1]) {
+      for (let step = 0; step <= reach; step++) {
+        const x = cx + direction * step;
+        if (x < minX || x > maxX) break;
+        if (tiles[y][x] !== WALL) continue;
+        tiles[y][x] = FLOOR;
+        opened.add(tileKey({ x, y }));
+      }
+    }
+  }
+
+  const centreHalf = half[radius];
+  return {
+    tiles: opened,
+    pockets: [
+      { x: cx - centreHalf, y: cy },
+      { x: cx + centreHalf, y: cy },
+    ],
+    radius,
+  };
+}
+
 /**
  * Secondary paths. A **network** is the spine plus every lane carved so far, and
  * the count depends on the map size (`branchCountForSize`). For each path, pick a
@@ -476,7 +554,7 @@ type BranchCarve = Readonly<{ target: Tile; tiles: readonly string[] }>;
  * network tile (never running along it). Because the network grows, a later path
  * can root on **an earlier lane** as well as on the spine, so branches can grow
  * off branches. The lane is at least two tiles wide and, on a roomy map, opens
- * into a small chamber at its far end; that far end is a **pocket** (a loot spot).
+ * into a small cul-de-sac at its far end; that far end is a **pocket** (a loot spot).
  * Branches are optional; the spine alone always solves the route.
  */
 function carveBranches(
@@ -525,7 +603,7 @@ function carveBranches(
 
     const branchMin = Math.max(shape.branchMin, Math.round(maxAway * 0.25));
     const branchMax = Math.max(shape.branchMax, branchMin + 1, Math.round(maxAway * 0.7));
-    const chamber = branchWidth >= 3 ? branchWidth + 1 : 0;
+    const culDeSac = branchWidth >= 3 ? branchWidth + 1 : 0;
 
     const candidates: Tile[] = [];
     for (let y = margin; y < height - margin; y++) {
@@ -557,11 +635,11 @@ function carveBranches(
         carved.push(key);
       }
     }
-    // A roomy map opens the far end into a chamber instead of a bare cul-de-sac.
-    if (chamber > 0) {
-      const roomX = clamp(target.x - (chamber >> 1), margin, width - margin - chamber);
-      const roomY = clamp(target.y - (chamber >> 1), margin, height - margin - chamber);
-      for (const opened of carveSquare(tiles, roomX, roomY, chamber, branchBounds)) {
+    // A roomy map opens the far end into a cul-de-sac instead of a bare stub.
+    if (culDeSac > 0) {
+      const roomX = clamp(target.x - (culDeSac >> 1), margin, width - margin - culDeSac);
+      const roomY = clamp(target.y - (culDeSac >> 1), margin, height - margin - culDeSac);
+      for (const opened of carveSquare(tiles, roomX, roomY, culDeSac, branchBounds)) {
         const key = tileKey(opened);
         branches.add(key);
         network.add(key);
@@ -1045,11 +1123,12 @@ function solidWallNeighbours(tiles: TileMap, x: number, y: number, walkableTips:
 }
 
 /**
- * The loot spot for each branch: the **deepest** walkable tile - the one nearest
- * the branch's far end - preferring the most wall-hugging one on a tie, and never
- * sharing a tile with an earlier pocket. So an item sits as far down the path as
- * it can. When a branch's own lane holds no tile (it was walled off), the search
- * falls back to the wider branch network.
+ * The loot spot for each carve - a branch's far end or a centre chamber's lateral
+ * extreme: the **deepest** walkable tile, the one nearest the carve's target,
+ * preferring the most wall-hugging one on a tie, and never sharing a tile with an
+ * earlier pocket. So an item sits as deep into the carve as it can. When a carve's
+ * own tiles hold no free one (the lane already covered it), the search falls back to
+ * the wider branch network.
  */
 function choosePockets(
   tiles: TileMap,
@@ -1099,9 +1178,10 @@ function bestSpot(
 }
 
 /**
- * Places the ground items. An optional path (a `pocket`) holds an item only with
- * `itemChance` probability, and a pocket a hazard sealed (or that is no longer
- * walkable) is skipped, so loot is never stranded. The draw order is the
+ * Places the ground items. A `pocket` - an optional path's far end or a centre
+ * chamber's extreme - holds an item only with `itemChance` probability, and a pocket
+ * a hazard sealed (or that is no longer walkable) is skipped, so loot is never
+ * stranded. The draw order is the
  * deterministic `pockets` order: the item id is `item-<routeIndex>-<n>` and the
  * contents plus the hidden flag come from the `populate` stream, so
  * `(seed, routeIndex)` fixes what lies at each pocket (D11).
@@ -1414,14 +1494,31 @@ function placeTrainers(
  * The shape a build uses: the plan's opening set when one is given (the edges
  * pick the shape and the links join them), else the rolled `shape` (or the
  * default). Keeps `sketchRoute` source-compatible while the plan takes over.
+ * Either way the spec carries the chamber the opening set asks for, so the entry
+ * room (no opening to read a shape from) still grows one.
  */
 function resolveShape(request: RouteRequest): Readonly<{ shapeKey: RouteShape; shape: ShapeSpec }> {
-  if (request.openings && request.openings.length > 0) {
-    const edges = request.openings.map((opening) => opening.edge);
-    return { shapeKey: shapeForEdges(edges), shape: specForOpenings(request.openings) };
+  const openings = request.openings;
+  if (openings !== undefined && openings.length > 0) {
+    const edges = openings.map((opening) => opening.edge);
+    return {
+      shapeKey: shapeForEdges(edges),
+      shape: specForOpenings(openings, request.chamber),
+    };
   }
   const shapeKey = request.shape ?? DEFAULT_SHAPE;
-  return { shapeKey, shape: SHAPES[shapeKey] };
+  const template = SHAPES[shapeKey];
+  if (openings === undefined) {
+    // A shape-driven build keeps the template's own chamber: a `dead-end` carves one
+    // and the other five do not.
+    return { shapeKey, shape: { ...template, chamber: chamberFor(template.openings, request.chamber) } };
+  }
+  // An explicit but empty opening set carves no lane: it keeps the template's feel
+  // and only the chamber its (empty) set asks for — the map's entry room.
+  return {
+    shapeKey,
+    shape: { ...template, openings: [], links: [], chamber: chamberFor([], request.chamber) },
+  };
 }
 
 function attemptRoute(
@@ -1480,6 +1577,19 @@ function attemptRoute(
       if (nearest) carveLine(tiles, spine, entry, nearest, shape.pathWidth, true);
     }
     snapshot('spine', 'carve spine');
+    // The centre chamber (`docs/routes-spec.md` §2): a diamond grown from the room's
+    // own middle on the `chamber` stream, so it stops at the walls and never moves a
+    // lane the spine already placed. Its pockets are the loot spots a branch would
+    // have carried, and its tiles join the spine so the terrain and pocket passes keep
+    // off it.
+    const chamber = carveChamber(tiles, shape, width, height, streams.chamber, margin);
+    const chamberCarves: BranchCarve[] = chamber
+      ? chamber.pockets.map((target) => ({ target, tiles: [...chamber.tiles] }))
+      : [];
+    if (chamber) {
+      for (const key of chamber.tiles) spine.add(key);
+      snapshot('branches', 'carve chamber');
+    }
     const branched = carveBranches(
       tiles,
       streams.layout,
@@ -1491,7 +1601,7 @@ function attemptRoute(
       margin,
     );
     branches = branched.branches;
-    carves = branched.carves;
+    carves = [...chamberCarves, ...branched.carves];
     snapshot('branches', 'carve branches');
   }
 
@@ -1516,7 +1626,7 @@ function attemptRoute(
   // The anchor of each opening is the cell just placed; a room whose spawn is its
   // centre (no opening) contributes nothing, which `borderEdge`'s null expresses.
   // The whole band joins the hazard forbids, so the terrain never lands on an
-  // opening at all (`docs/routes-spec.md` §2 step 3).
+  // opening at all (`docs/routes-spec.md` §2 step 4).
   const bandKeys = new Set<string>();
   for (const anchor of ends) {
     const edge = borderEdge(anchor, width, height);
@@ -1658,8 +1768,9 @@ export function wantsTrainers(request: RouteRequest): boolean {
 
 /**
  * Dev only: one snapshot per build phase (`walls` → `access` → `spine` →
- * `branches` → `terrain` → `final`), so the debug panel can render the generator
- * one step at a time. It replays attempts from 0 until the same gate `sketchRoute`
+ * `branches` → `terrain` → `final`), plus the centre chamber's own `branches` frame
+ * (`carve chamber`) when the room carves one, so the debug panel can render the
+ * generator one step at a time. It replays attempts from 0 until the same gate `sketchRoute`
  * uses accepts, then returns **that** attempt's steps, so the steps match the route
  * on screen whenever attempt 0 passes the same gate. When all `MAX_ATTEMPTS` fail
  * it returns the last attempt's steps (the stepper never throws).

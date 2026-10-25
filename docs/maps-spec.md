@@ -128,6 +128,17 @@ The **shape** of a room follows from its opening set (its count and edges):
 | 4 | `cross` | a crossing |
 | 2, opposite, branchy | `straight` | the older wide route with optional branches |
 
+A room with **no through-lane** also carries a **centre chamber**
+(`docs/routes-spec.md` §2): the map's **entry room** and every `dead-end` leaf carve
+one because their opening set is narrower than two doors, and the **boss room** asks
+for one explicitly (`chamber: true`) — its link plus the sealed portal is otherwise
+two openings. A `dead-end` no longer carves optional branches: its ground items, and
+the trainer that guards them, sit in the chamber's two pockets, one at each lateral
+extreme of its widest row, so a leaf reads as one room holding its hoard. The
+chamber comes off the room's own `chamber` stream, so it never moves a lane the
+spine already placed, and it stops at the walls instead of stamping over the border
+ring, an opening band or a neighbour's door.
+
 ## 3. Composition (shipped algorithm)
 
 Everything a map is comes from one **map stream** keyed `(seed, "map", mapIndex)`,

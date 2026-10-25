@@ -76,16 +76,23 @@ const START_LEVEL = 5;
  * 1.17, 1.13, 1.26 and 1.17 on maps 1-8. Every floor stays inside the rule's
  * `1.05 – 1.5` window, so no factor is re-solved (a re-solve is a balance task, not
  * a room task) and this column is the walk as it now stands.
+ *
+ * **Re-walked by Task-157 with the centre chamber.** A dead-end room loses its
+ * optional branches and grows a chamber in its middle, and its content moves into
+ * the chamber's pockets, so it fields a trainer more or less: the column now reads
+ * 1.25, 1.14, 1.34, 1.25, 1.17, 1.06, 1.26 and 1.25 on maps 1-8. Every floor stays
+ * inside the rule's `1.05 – 1.5` window, so no factor is re-solved and this column
+ * is the walk as it now stands.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
   2: 1.14,
   3: 1.34,
-  4: 1.17,
+  4: 1.25,
   5: 1.17,
-  6: 1.13,
+  6: 1.06,
   7: 1.26,
-  8: 1.17,
+  8: 1.25,
 };
 
 /** The lowest share a floor may pay: the window's floor. */

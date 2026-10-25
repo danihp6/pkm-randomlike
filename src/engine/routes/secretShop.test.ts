@@ -29,14 +29,18 @@ import { secretShopGateOpen, secretShopSealId, secretShopStock } from './secretS
  * **Re-pinned by Task-117**: the slot machine's room retired, so this seed's floor 3
  * hangs the leaf one room earlier and its vault carves on a different site (a pond
  * instead of a rock).
+ *
+ * **Re-pinned by Task-157 with the centre chamber.** The leaf is a dead-end room, so
+ * it now grows a chamber in its middle and loses its optional branches; the vault
+ * pass reads the room's tiles, so the deepest free site moved with it (still a pond).
  */
 export const SECRET_SHOP_QA = {
   seed: 'secret-shop-qa-3',
   mapIndex: 3,
   roomId: 9,
   obstacle: 'water',
-  mouth: { x: 15, y: 21 },
-  pocket: { x: 13, y: 21 },
+  mouth: { x: 12, y: 19 },
+  pocket: { x: 10, y: 19 },
   direction: 'W',
 } as const;
 
