@@ -24,4 +24,8 @@ read, the keyboard cursor and every navigation, and this panel paints the view i
 2. The card wrapper and the row wrappers are the measured nodes; the kit `Panel` and `Row` they wrap are the skins. That is why the paint and the board's 1 px edges sit on the wrapper and the row box is the same box as its button within 1 px.
 3. `portraits` is read from the payload's `state.party`, never from `rows`: the frame, not the payload, decides whether a CONTINUE row is drawn.
 4. The portrait cells are placeholders in party order — the board's sprite pixels are the canvas's, the rule the party, trade and detail panels already follow.
-5. The STATS row, the footer's figures and the version line are the frame's own copy: the live menu draws the three rows it can navigate, `stats: []` and `version: null` until the stats screen exists.
+5. The footer's figures and the version line are the frame's own copy: the live menu draws
+   the four rows of `MAIN_MENU_ACTIONS` — CONTINUE (with a run), NEW RUN, OPTIONS and STATS —
+   and `stats: []` and `version: null` until a footer figure exists. The STATS row opens the
+   stats panel (`src/ui/hud/panels/stats/`) in the scene; the canvas fallback keeps three rows
+   (or two without a run).

@@ -1,0 +1,726 @@
+/*
+ * The stats and ranking screen (`D49`, frames `08` / `08b` / `08c` / `09` / `09b`
+ * and their `m…` twins). Every value the board carries and `styles/root.css` does
+ * not is declared once here, next to the frame's node name; the rest come from the
+ * `--hud-*` tokens. The stage is the board's page — 1280 × 800 on the desk,
+ * 390 × 844 on a phone — and every offset below is a coordinate of the matching
+ * frame measured from the panel's own top-left corner, because the board's strokes
+ * sit inside the box (`docs/hud-fidelity.md` §3).
+ */
+.stats {
+  /* 08 / 09 · board background */
+  --stats-screen: #05070c;
+  /* 08 · panel highlight */
+  --stats-highlight: rgb(255 255 255 / 14%);
+  /* 08 · the rule under a figure */
+  --stats-rule: rgb(255 255 255 / 8%);
+  /* 08b / 08c / 09 · the row cards */
+  --stats-row-fill: rgb(255 255 255 / 4%);
+  /* 08 · title */
+  --stats-title-size: 28px;
+  --stats-title-line: 36px;
+  /* 08 · blurb */
+  --stats-blurb-size: 14px;
+  --stats-blurb-line: 18px;
+  /* 08 · tab label */
+  --stats-tab-size: 8px;
+  --stats-tab-line: 16px;
+  /* 08 · stat label and value */
+  --stats-label-size: 12px;
+  --stats-label-line: 16px;
+  --stats-value-size: 24px;
+  --stats-value-line: 31px;
+  /* 08b / 08c / 09 · table headers and cells */
+  --stats-header-size: 8px;
+  --stats-header-line: 12px;
+  --stats-cell-size: 11px;
+  --stats-cell-line: 15px;
+  /* 09 · the month chip */
+  --stats-month-size: 11px;
+  --stats-month-line: 14px;
+  /* 08 · the one action */
+  --stats-action-size: 12px;
+  --stats-action-line: 16px;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--stats-screen);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.stats,
+.stats *,
+.stats *::before,
+.stats *::after {
+  box-sizing: border-box;
+}
+
+/* The layer takes every click except the tabs, the month steps and the actions. */
+.stats * {
+  pointer-events: none;
+}
+
+.stats__stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1280px;
+  height: 800px;
+  transform: translate(-50%, -50%);
+}
+
+/* 08 / 09 · run over panel: the measured node, the kit panel is its skin */
+.stats__panel {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+  width: 1120px;
+  height: 680px;
+  overflow: hidden;
+  border-radius: var(--hud-panel-radius);
+  outline: 1px solid var(--hud-panel-border);
+  outline-offset: -1px;
+  background: var(--hud-panel-fill);
+}
+
+.stats__panel > .kit-panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.stats__panel > .kit-panel::before {
+  display: none;
+}
+
+/* 08 · panel highlight: 12 px inside the top edge */
+.stats__highlight {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: var(--stats-highlight);
+}
+
+/* 08 · the accent rule over the title */
+.stats__accent {
+  position: absolute;
+  top: 6px;
+  left: 536px;
+  width: 48px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--hud-accent);
+}
+
+/* 08 · run over title */
+.stats__title {
+  position: absolute;
+  top: 26px;
+  left: 80px;
+  width: 960px;
+  height: 36px;
+  margin: 0;
+  color: var(--hud-text-ink);
+  font-size: var(--stats-title-size);
+  font-weight: 700;
+  line-height: var(--stats-title-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 08 · run over blurb */
+.stats__blurb {
+  position: absolute;
+  top: 66px;
+  left: 80px;
+  width: 960px;
+  height: 20px;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-blurb-size);
+  line-height: var(--stats-blurb-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 08 · tab totals / tab pokemon / tab pokemon3 */
+.stats__tabs {
+  position: absolute;
+  top: 106px;
+  left: 40px;
+  display: flex;
+  gap: 12px;
+}
+
+.stats__tab {
+  width: 120px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: 6px;
+  background: var(--hud-row-fill);
+  color: var(--hud-text-muted);
+  font-family: var(--hud-font);
+  font-size: var(--stats-tab-size);
+  font-weight: 700;
+  line-height: var(--stats-tab-line);
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stats__tab[data-hud-stats-tab='runs'] {
+  width: 110px;
+}
+
+.stats__tab[data-hud-stats-tab='pokemon'] {
+  width: 130px;
+}
+
+.stats__tab[data-selected='true'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+  color: var(--hud-accent);
+}
+
+/* 09 / 09b · month chip */
+.stats__month {
+  position: absolute;
+  top: 110px;
+  left: 920px;
+  display: flex;
+  width: 160px;
+  height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: 6px;
+  background: var(--hud-row-fill);
+}
+
+.stats__month-label {
+  color: var(--hud-text-ink);
+  font-size: var(--stats-month-size);
+  line-height: var(--stats-month-line);
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stats__month-step {
+  width: 14px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--hud-accent);
+  font-family: var(--hud-font);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.stats__month-step:disabled {
+  color: var(--hud-text-faint);
+  cursor: default;
+}
+
+/* 08 · the twelve figures: three columns of 320 px on a 360 px pitch */
+.stats__figures {
+  position: absolute;
+  top: 170px;
+  left: 40px;
+  display: grid;
+  grid-template-columns: repeat(3, 320px);
+  column-gap: 40px;
+  row-gap: 72px;
+}
+
+.stats__figure {
+  position: relative;
+  width: 320px;
+  height: 16px;
+}
+
+.stats__figure-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-label-size);
+  line-height: var(--stats-label-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stats__figure-value {
+  position: absolute;
+  top: -2px;
+  left: 140px;
+  width: 180px;
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--stats-value-size);
+  font-weight: 700;
+  line-height: var(--stats-value-line);
+  white-space: nowrap;
+}
+
+/* 08b / 08c / 09 · the table: headers, then one card per row */
+.stats__table {
+  position: absolute;
+  left: 40px;
+  width: 1040px;
+}
+
+.stats__columns {
+  position: absolute;
+  left: 0;
+  display: grid;
+  width: 1040px;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-header-size);
+  line-height: var(--stats-header-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.stats__column {
+  overflow: hidden;
+}
+
+.stats__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats__row {
+  position: relative;
+  width: 1040px;
+  border-radius: 8px;
+  outline: 1px solid var(--hud-row-border);
+  outline-offset: -1px;
+  background: var(--stats-row-fill);
+}
+
+.stats__cell {
+  overflow: hidden;
+  color: var(--hud-text-ink);
+  font-size: var(--stats-cell-size);
+  line-height: var(--stats-cell-line);
+  white-space: nowrap;
+}
+
+/* 08b · run rows: a badge, the seed, the day on the right and the meta under it */
+.stats[data-mode='runs'] .stats__table {
+  top: 170px;
+}
+
+.stats[data-mode='runs'] .stats__row {
+  height: 54px;
+}
+
+.stats[data-mode='runs'] .stats__rows {
+  gap: 8px;
+}
+
+.stats[data-mode='runs'] .stats__cell {
+  position: absolute;
+}
+
+.stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='0'] {
+  top: 18px;
+  left: 14px;
+  width: 56px;
+  height: 18px;
+  padding-top: 1px;
+  border: 1px solid var(--hud-row-border);
+  border-radius: 6px;
+  color: var(--hud-text-secondary);
+  font-size: var(--stats-header-size);
+  line-height: var(--stats-header-line);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='1'] {
+  top: 10px;
+  left: 82px;
+  width: 420px;
+  height: 18px;
+}
+
+.stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='2'] {
+  top: 20px;
+  left: 820px;
+  width: 80px;
+  height: 13px;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-header-size);
+  line-height: var(--stats-header-line);
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='3'] {
+  top: 30px;
+  left: 82px;
+  width: 420px;
+  height: 13px;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-header-size);
+  line-height: var(--stats-header-line);
+  text-transform: uppercase;
+}
+
+/* 08c · the Pokédex-style table: 52 px in, then 468 / 120 / 120 / 180 / 100 */
+.stats[data-mode='pokemon'] .stats__table {
+  top: 232px;
+}
+
+.stats[data-mode='pokemon'] .stats__rows {
+  gap: 10px;
+}
+
+.stats[data-mode='pokemon'] .stats__row {
+  display: grid;
+  height: 40px;
+  grid-template-columns: 468px 120px 120px 180px 100px;
+  align-items: center;
+  padding-left: 52px;
+}
+
+.stats[data-mode='pokemon'] .stats__columns {
+  top: -20px;
+  grid-template-columns: 468px 120px 120px 180px 100px;
+  padding-left: 52px;
+}
+
+/* 09 / 09b · the ranking tables: 60 px in, then 640 / 120 / 110 / 110 */
+.stats[data-mode='ranking'] .stats__table,
+.stats[data-mode='ranking-pokemon'] .stats__table {
+  top: 171px;
+}
+
+.stats[data-mode='ranking'] .stats__rows,
+.stats[data-mode='ranking-pokemon'] .stats__rows {
+  gap: 6px;
+}
+
+.stats[data-mode='ranking'] .stats__row,
+.stats[data-mode='ranking-pokemon'] .stats__row {
+  display: grid;
+  height: 40px;
+  grid-template-columns: 640px 120px 110px 110px;
+  align-items: center;
+  padding-left: 60px;
+}
+
+.stats[data-mode='ranking'] .stats__columns,
+.stats[data-mode='ranking-pokemon'] .stats__columns {
+  top: -23px;
+  padding-left: 60px;
+}
+
+.stats[data-mode='ranking'] .stats__columns {
+  grid-template-columns: 640px 120px 110px 110px;
+}
+
+.stats[data-mode='ranking-pokemon'] .stats__columns,
+.stats[data-mode='ranking-pokemon'] .stats__row {
+  grid-template-columns: 640px 90px 90px 160px;
+}
+
+/* 08 · the empty state, under the figures or the table */
+.stats__empty {
+  position: absolute;
+  top: 500px;
+  left: 40px;
+  width: 1040px;
+  margin: 0;
+  color: var(--hud-text-muted);
+  font-size: var(--stats-blurb-size);
+  line-height: var(--stats-blurb-line);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* 09 · the one action, centred on the panel like the frames' BACK button */
+.stats__actions {
+  position: absolute;
+  top: 590px;
+  left: 0;
+  display: flex;
+  width: 1120px;
+  height: 40px;
+  justify-content: center;
+  gap: 24px;
+}
+
+.stats__action {
+  width: 200px;
+  height: 40px;
+  min-height: 0;
+  border-color: var(--hud-panel-border);
+  border-radius: var(--hud-row-radius);
+  color: var(--hud-text-secondary);
+  font-size: var(--stats-action-size);
+  line-height: var(--stats-action-line);
+  text-transform: uppercase;
+}
+
+.stats .stats__action {
+  pointer-events: auto;
+}
+
+/* The screens the frames do not draw (see the folder README) are the accent action. */
+.stats .stats__action[data-hud-stats-action='ranking'],
+.stats .stats__action[data-hud-stats-action='ranking-players'],
+.stats .stats__action[data-hud-stats-action='ranking-pokemon'] {
+  border-color: var(--hud-accent);
+  background: rgb(125 211 252 / 16%);
+  color: var(--hud-accent);
+}
+
+@media (max-width: 600px) {
+  .stats {
+    /* m08 · board title */
+    --stats-title-size: 18px;
+    --stats-title-line: 26px;
+    /* m08 · board subtitle */
+    --stats-blurb-size: 9px;
+    --stats-blurb-line: 12px;
+    /* m08 · tab labels */
+    --stats-tab-size: 9px;
+    --stats-tab-line: 13px;
+    /* m08 · stat labels and values */
+    --stats-label-size: 10px;
+    --stats-label-line: 12px;
+    --stats-value-size: 16px;
+    --stats-value-line: 20px;
+    /* m08b / m08c / m09b · headers and cells */
+    --stats-header-size: 8px;
+    --stats-header-line: 11px;
+    --stats-cell-size: 10px;
+    --stats-cell-line: 13px;
+    /* m09 · m month chip */
+    --stats-month-size: 10px;
+    --stats-month-line: 13px;
+    /* m08 · m button */
+    --stats-action-size: 10px;
+    --stats-action-line: 13px;
+  }
+
+  .stats__stage {
+    width: 390px;
+    height: 844px;
+  }
+
+  /* m08 / m09 · m panel */
+  .stats__panel {
+    top: 47px;
+    left: 8px;
+    width: 374px;
+    height: 750px;
+    border-radius: 12px;
+    background: rgb(16 22 31 / 90%);
+  }
+
+  /* No phone frame draws the top-edge highlight. */
+  .stats__highlight {
+    display: none;
+  }
+
+  /* m08 · m accent */
+  .stats__accent {
+    top: 21px;
+    left: 167px;
+    width: 40px;
+  }
+
+  /* m08 · board title and subtitle */
+  .stats__title {
+    top: 33px;
+    left: 0;
+    width: 374px;
+    height: 26px;
+  }
+
+  .stats__blurb {
+    top: 59px;
+    left: 0;
+    width: 374px;
+    height: 12px;
+  }
+
+  /* m08 · m tab TOTALS / m tab RUNS / m tab POKEMON */
+  .stats__tabs {
+    top: 71px;
+    left: 24px;
+    gap: 8px;
+  }
+
+  .stats__tab,
+  .stats__tab[data-hud-stats-tab='runs'],
+  .stats__tab[data-hud-stats-tab='pokemon'] {
+    width: 82px;
+    height: 30px;
+    border-radius: 7px;
+  }
+
+  /* m09 / m09b · m month chip */
+  .stats__month {
+    top: 65px;
+    left: 216px;
+    width: 134px;
+    height: 26px;
+    border-radius: 13px;
+  }
+
+  /* m08 · the twelve figures in two columns of 165 px */
+  .stats__figures {
+    top: 131px;
+    left: 24px;
+    grid-template-columns: repeat(2, 165px);
+    column-gap: 4px;
+    row-gap: 50px;
+  }
+
+  .stats__figure {
+    width: 165px;
+    height: 12px;
+  }
+
+  .stats__figure-label,
+  .stats__figure-value {
+    width: 165px;
+  }
+
+  .stats__figure-value {
+    top: 18px;
+    left: 0;
+  }
+
+  .stats__table {
+    left: 24px;
+    width: 334px;
+  }
+
+  .stats__columns,
+  .stats__row {
+    width: 334px;
+  }
+
+  .stats[data-mode='runs'] .stats__table {
+    top: 220px;
+  }
+
+  .stats[data-mode='runs'] .stats__row {
+    height: 56px;
+  }
+
+  .stats[data-mode='runs'] .stats__rows {
+    gap: 6px;
+  }
+
+  .stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='0'] {
+    top: 9px;
+    left: 12px;
+    width: 44px;
+  }
+
+  .stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='1'] {
+    top: 9px;
+    left: 66px;
+    width: 150px;
+  }
+
+  .stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='2'] {
+    top: 9px;
+    left: 250px;
+    width: 72px;
+  }
+
+  .stats[data-mode='runs'] .stats__cell[data-hud-stats-cell='3'] {
+    top: 24px;
+    left: 66px;
+    width: 220px;
+  }
+
+  .stats[data-mode='pokemon'] .stats__table,
+  .stats[data-mode='ranking'] .stats__table,
+  .stats[data-mode='ranking-pokemon'] .stats__table {
+    top: 200px;
+  }
+
+  .stats[data-mode='pokemon'] .stats__row,
+  .stats[data-mode='ranking'] .stats__row,
+  .stats[data-mode='ranking-pokemon'] .stats__row {
+    height: 56px;
+    padding-left: 16px;
+  }
+
+  .stats[data-mode='pokemon'] .stats__row,
+  .stats[data-mode='pokemon'] .stats__columns {
+    grid-template-columns: 1fr 36px 36px 56px 44px;
+  }
+
+  .stats[data-mode='ranking'] .stats__row,
+  .stats[data-mode='ranking'] .stats__columns {
+    grid-template-columns: 1fr 40px 44px 44px;
+  }
+
+  .stats[data-mode='ranking-pokemon'] .stats__row,
+  .stats[data-mode='ranking-pokemon'] .stats__columns {
+    grid-template-columns: 1fr 40px 36px 52px;
+  }
+
+  .stats[data-mode='pokemon'] .stats__columns,
+  .stats[data-mode='ranking'] .stats__columns,
+  .stats[data-mode='ranking-pokemon'] .stats__columns {
+    top: -22px;
+    padding-left: 16px;
+  }
+
+  .stats__empty {
+    top: 600px;
+    left: 24px;
+    width: 334px;
+  }
+
+  /* m08 · m button */
+  .stats__actions {
+    top: 697px;
+    width: 374px;
+    height: 40px;
+    gap: 12px;
+  }
+
+  .stats__action {
+    width: 160px;
+    height: 40px;
+    border-radius: 9px;
+  }
+
+  .stats__action:only-child {
+    width: 200px;
+  }
+}

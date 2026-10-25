@@ -5,7 +5,7 @@ import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../
 import { t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
-import { liveMainMenuView } from './view';
+import { MAIN_MENU_ACTIONS, liveMainMenuView } from './view';
 
 const SEED = 'pkm-145';
 
@@ -31,23 +31,38 @@ function savedRun(): RunState {
 }
 
 describe('liveMainMenuView', () => {
-  it('draws the three navigable rows, in board order, with the run’s position', () => {
+  it('draws the four navigable rows, in board order, with the run’s position', () => {
     const run = savedRun();
     const view = liveMainMenuView(run, 0);
 
-    expect(view.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options']);
+    expect(view.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats']);
+    expect(view.rows.map((row) => row.id)).toEqual([...MAIN_MENU_ACTIONS]);
     expect(view.rows.every((row) => row.enabled)).toBe(true);
     expect(view.rows.map((row) => row.label)).toEqual([
       t('menu.continue'),
       t('menu.new'),
       t('menu.options'),
+      t('menu.stats'),
     ]);
     expect(view.rows[0]!.value).toBe(runPositionLabel(run));
     expect(view.rows[0]!.value).toContain(getBiome(biomeForMap(run.seed, run.mapIndex)).name);
-    expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '']);
+    expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '', '']);
     expect(view.title).toBe(t('menu.title'));
     expect(view.stats).toEqual([]);
     expect(view.version).toBeNull();
+  });
+
+  it('pushes the STATS row with and without a run', () => {
+    for (const run of [savedRun(), null]) {
+      const rows = liveMainMenuView(run, 0).rows;
+
+      expect(rows.at(-1)).toEqual({
+        id: 'stats',
+        label: t('menu.stats'),
+        value: '',
+        enabled: true,
+      });
+    }
   });
 
   it('carries one portrait per party member, in party order', () => {
@@ -67,7 +82,7 @@ describe('liveMainMenuView', () => {
   it('drops the CONTINUE row and every portrait without a run', () => {
     const view = liveMainMenuView(null, 0);
 
-    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options']);
+    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
     expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
     expect(view.portraits).toEqual([]);
     expect(view.stats).toEqual([]);
@@ -80,10 +95,12 @@ describe('liveMainMenuView', () => {
     expect(liveMainMenuView(run, 0).selected).toBe('continue');
     expect(liveMainMenuView(run, 1).selected).toBe('new');
     expect(liveMainMenuView(run, 2).selected).toBe('options');
-    expect(liveMainMenuView(run, 9).selected).toBe('options');
+    expect(liveMainMenuView(run, 3).selected).toBe('stats');
+    expect(liveMainMenuView(run, 9).selected).toBe('stats');
     expect(liveMainMenuView(run, -4).selected).toBe('continue');
     expect(liveMainMenuView(null, 0).selected).toBe('new');
-    expect(liveMainMenuView(null, 9).selected).toBe('options');
+    expect(liveMainMenuView(null, 2).selected).toBe('stats');
+    expect(liveMainMenuView(null, 9).selected).toBe('stats');
   });
 
   it('is pure: the same input is deep-equal and JSON round-trips unchanged', () => {

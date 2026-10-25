@@ -1,0 +1,100 @@
+{
+  "slug": "09-ranking",
+  "state": {
+    "party": [],
+    "bag": [
+      {
+        "itemId": "poke-ball",
+        "name": "Poké Ball",
+        "count": 6,
+        "category": "balls"
+      },
+      {
+        "itemId": "potion",
+        "name": "Potion",
+        "count": 3,
+        "category": "medicine"
+      }
+    ],
+    "money": 1240,
+    "route": {
+      "mode": "normal",
+      "mapIndex": 3,
+      "routeInMap": 4,
+      "routeIndex": 13,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 22,
+      "squadLevel": 16,
+      "xp": 0,
+      "xpFraction": 0,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [1, 2, 3, 4],
+      "mission": null,
+      "missionsCompleted": 1,
+      "stats": {
+        "catches": 3,
+        "casualties": 0
+      }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "stats": {
+    "mode": "ranking",
+    "title": "RANKING",
+    "blurb": "MONTHLY LEADERBOARDS · ALL PLAYERS.",
+    "tabs": [],
+    "figures": [],
+    "columns": ["PLAYER", "WINS", "BEST STRIKE", "PARTY"],
+    "rows": [
+      {
+        "id": "rank-0",
+        "cells": ["NOVA", "12", "7", ""]
+      },
+      {
+        "id": "rank-1",
+        "cells": ["KAI", "9", "5", ""]
+      },
+      {
+        "id": "rank-2",
+        "cells": ["RIVEN", "8", "4", ""]
+      },
+      {
+        "id": "rank-3",
+        "cells": ["DAX", "7", "4", ""]
+      },
+      {
+        "id": "rank-4",
+        "cells": ["YOU", "6", "3", ""]
+      },
+      {
+        "id": "rank-5",
+        "cells": ["JUNO", "5", "3", ""]
+      },
+      {
+        "id": "rank-6",
+        "cells": ["ELI", "4", "2", ""]
+      },
+      {
+        "id": "rank-7",
+        "cells": ["SABLE", "3", "2", ""]
+      }
+    ],
+    "empty": null,
+    "month": {
+      "label": "OCT 2026",
+      "canPrev": true,
+      "canNext": true
+    },
+    "actions": [
+      {
+        "id": "back",
+        "label": "BACK"
+      }
+    ]
+  }
+}

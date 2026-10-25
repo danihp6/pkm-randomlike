@@ -1,0 +1,70 @@
+# `src/ui/hud/panels/stats/` — the stats and ranking screen (`08` / `08b` / `08c` / `09` / `09b` and their `m…` twins)
+
+The run-history screen as Preact over the `#hud` layer (`D49`): the title and blurb, the
+TOTALS / RUNS / POKEMON tabs, the twelve-figure totals grid, the run list, the
+Pokédex-style Pokémon table and the local monthly record, with an empty state per view.
+The rule never lives here: `src/scenes/MainMenuScene.ts` keeps the save's history, the
+mode, the selected month and every navigation, and this panel paints the view it is
+handed.
+
+## Layout
+
+- `view.ts` — the panel's value model: `liveStatsView` (the totals, the run rows, the
+  species aggregation and the monthly record, from the run-history store),
+  `fixtureStatsView` (the frame's own copy and its structural guards), `statsMonths`,
+  both boards' rects, the slugs, the modes and the three formats (`statsDuration`,
+  `statsDate`, `statsMonthLabel`, `statsDay`).
+- `view.test.ts` — the twelve totals figures and their em dashes, the run rows and their
+  re-sort, the species aggregation and both sort orders, the month list, the selector's
+  clamp and fallback, the empty states, both boards and the purity checks, headless.
+- `statsPanel.tsx` — the panel itself: the card with its highlight and accent, the title
+  and blurb, the tab strip, the month chip, the figures grid, the table, the empty line
+  and the actions.
+- `stats.css` — the frames' measured geometry and paint, one scoped custom property per
+  board value, then the phone column under the 600 px breakpoint.
+- `mount.tsx` — `mountStats`: renders the panel into a host element, repaints it on
+  `update`, and returns the handle the scene disposes.
+- `preview.ts` — `statsPreviewRequested` and `installStatsPreview`: the frame's panel
+  behind `?hud=dom&hudFixture=<slug>`, one payload per slug.
+- `preview.test.ts` — `statsPreviewRequested`'s truth table, headless.
+- `fixture.test.ts` — the five fixtures against `design/frames/08`, `08b`, `08c`, `09`,
+  `09b` and the `m…` twins: the copy, the figures, the rows, the boards and the payload
+  guards.
+- `index.ts` — the barrel the scene and the preview import.
+- `README.md` — this map.
+
+## Rules
+
+1. **The store is the only source.** The twelve figures, the run rows and the species
+   rows are read from `SaveDocument.history` (`src/engine/run/history.ts`), so a finished
+   run the store never recorded is invisible. `Task-152` shipped the store with no writer
+   yet and `RunState` carries no timestamp, so a real playthrough shows the empty states;
+   the five frames are exercised through the fixtures only.
+2. **Data honesty.** A record carries no damage taken, so the tanked column — and only
+   that column — is the em dash (`\u2014`, U+2014). The fixtures' DMG TANKED figures
+   belong to the frame, not to the model, and no code derives them.
+3. **It is the local record, not a leaderboard.** There are no other players, so `09`
+   shows one `YOU` row for the month it holds and `09b` says ALL RUNS; the frames' names
+   and figures exist only in `design/fixtures/`.
+4. The panel is data: no scene, no run, no RNG, no clock, no storage and no Phaser. Every
+   label arrives in the `StatsView` (the i18n call sites live in `view.ts`), and a fixture
+   payload's own copy wins when it carries one.
+5. The `data-hud-stats-*` attributes are the measurement surface (`docs/hud-fidelity.md`):
+   the panel root carries `data-hud-panel="stats"` and sits on the board's `panel` rect,
+   the figures, the tabs, the table, the month chip, the empty line and the actions each
+   carry the attribute their criterion reads. The actions are plain `<button>`s with the
+   kit's `.kit-button` skin, because the hook has to sit on the clickable node itself.
+6. The month chip's arrows belong to its label: the label prints `‹ OCT 2026 ›` while a
+   month step is possible and the two ends of the chip are the buttons, so the selector's
+   own text stays the month (or `ALL RUNS` with both steps off).
+7. `08c` draws a `SEARCH POKEMON...` field the model does not have: a text input is an
+   intent plus a re-render loop this screen does not ask for, so the table ships complete
+   and unsorted-by-query. The frame's per-row `N RUNS · N CAUGHT` line is not modelled
+   either: the run list already carries the meta and the table carries the figures.
+8. The rows a mode draws are the frame's own block — `runs` has no header row, `pokemon`
+   and both ranking tables do — so the table's header, row height and pitch switch on
+   `data-mode`, the same signal the fixtures use.
+9. `08`'s `SINCE 2026-09-14 · ALL RUNS INCLUDED` line has no field in the view, so it is
+   not painted; its fixture keeps `empty: null`. The fixture's twelve figures carry the
+   model's ids in the model's order and `08`'s own labels and values, which is what lets
+   the frame be replayed while the ids stay the contract the live panel keys on.

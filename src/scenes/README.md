@@ -10,7 +10,8 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 
 - `BootScene.ts` — generates the placeholder textures and registers the animation tables
   before the first scene runs.
-- `MainMenuScene.ts` — new run / continue, and the run's seed and mode.
+- `MainMenuScene.ts` — new run / continue, the run's seed and mode, and (on the DOM HUD) the
+  STATS overlay over the run history.
 - `StarterScene.ts` — picks the starter pool and opens the seed prompt.
 - `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the room
   panel slot, the pointer dispatch, the run's battles and the touch controls. Its

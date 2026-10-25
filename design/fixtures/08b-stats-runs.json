@@ -1,0 +1,101 @@
+{
+  "slug": "08b-stats-runs",
+  "state": {
+    "party": [],
+    "bag": [
+      {
+        "itemId": "poke-ball",
+        "name": "Poké Ball",
+        "count": 6,
+        "category": "balls"
+      },
+      {
+        "itemId": "potion",
+        "name": "Potion",
+        "count": 3,
+        "category": "medicine"
+      }
+    ],
+    "money": 1240,
+    "route": {
+      "mode": "normal",
+      "mapIndex": 3,
+      "routeInMap": 4,
+      "routeIndex": 13,
+      "biomeId": "forest",
+      "biomeName": "Deep Forest",
+      "levelCap": 22,
+      "squadLevel": 16,
+      "xp": 0,
+      "xpFraction": 0,
+      "pokevialCharges": 2,
+      "pokevialMax": 3,
+      "bossDefeated": false,
+      "entryDeparted": true,
+      "discoveredRooms": [1, 2, 3, 4],
+      "mission": null,
+      "missionsCompleted": 1,
+      "stats": {
+        "catches": 3,
+        "casualties": 0
+      }
+    },
+    "battle": null,
+    "notice": null
+  },
+  "stats": {
+    "mode": "runs",
+    "title": "GLOBAL STATS",
+    "blurb": "EVERY RUN, NEWEST FIRST.",
+    "tabs": [
+      {
+        "id": "totals",
+        "label": "TOTALS"
+      },
+      {
+        "id": "runs",
+        "label": "RUNS"
+      },
+      {
+        "id": "pokemon",
+        "label": "POKEMON"
+      }
+    ],
+    "figures": [],
+    "columns": [],
+    "rows": [
+      {
+        "id": "run-0",
+        "cells": ["WIN", "PKRL-1-F-7F3A-2C", "OCT 18", "8 ROUTES · 37 KO · 2 LOST"]
+      },
+      {
+        "id": "run-1",
+        "cells": ["LOSS", "PKRL-1-F-91C4-8B", "OCT 17", "3 ROUTES · 11 KO · 6 LOST"]
+      },
+      {
+        "id": "run-2",
+        "cells": ["WIN", "PKRL-1-F-4D21-9E", "OCT 15", "8 ROUTES · 29 KO · 3 LOST"]
+      },
+      {
+        "id": "run-3",
+        "cells": ["LOSS", "PKRL-1-F-2A88-1B", "OCT 14", "5 ROUTES · 16 KO · 6 LOST"]
+      },
+      {
+        "id": "run-4",
+        "cells": ["WIN", "PKRL-1-F-6C03-77", "OCT 11", "8 ROUTES · 41 KO · 1 LOST"]
+      },
+      {
+        "id": "run-5",
+        "cells": ["LOSS", "PKRL-1-F-0B5E-3A", "OCT 09", "2 ROUTES · 7 KO · 6 LOST"]
+      }
+    ],
+    "empty": null,
+    "month": null,
+    "actions": [
+      {
+        "id": "back",
+        "label": "BACK"
+      }
+    ]
+  }
+}
