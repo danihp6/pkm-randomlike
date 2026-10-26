@@ -5,6 +5,7 @@ import {
   LAYOUTS,
   ROUTE_SHAPES,
   SHAPES,
+  chamberFor,
   entryAccess,
   entryIndex,
   isLayoutStyle,
@@ -12,8 +13,15 @@ import {
   linksForEdges,
   shapeForEdges,
   specForOpenings,
+  type Access,
   type ShapeSpec,
 } from './layout';
+
+const leaf: readonly Access[] = [{ edge: 'W', role: 'entry' }];
+const door: readonly Access[] = [
+  { edge: 'W', role: 'entry' },
+  { edge: 'E', role: 'exit' },
+];
 
 describe('layout registry', () => {
   it('covers every style and keeps the default among them', () => {
@@ -120,5 +128,44 @@ describe('opening sets', () => {
     expect(spec.openings.map((opening) => opening.edge)).toEqual(['N', 'S']);
     expect(spec.links).toEqual([[0, 1]]);
     expect(spec).toMatchObject({ pathWidth: SHAPES.corridor.pathWidth, branchCount: 0 });
+  });
+});
+
+describe('centre chambers', () => {
+  it('asks for a chamber only from a room with fewer than two openings', () => {
+    expect(chamberFor([])).toBe('diamond');
+    expect(chamberFor(leaf)).toBe('diamond');
+    expect(chamberFor(door)).toBe('none');
+    expect(chamberFor([...door, { edge: 'N', role: 'exit' }])).toBe('none');
+  });
+
+  it('lets an explicit override win over the opening set', () => {
+    expect(chamberFor([], true)).toBe('diamond');
+    expect(chamberFor(door, true)).toBe('diamond');
+    expect(chamberFor([], false)).toBe('none');
+    expect(chamberFor(leaf, false)).toBe('none');
+    expect(chamberFor(door, false)).toBe('none');
+  });
+
+  it('gives the dead-end template no branches and a chamber, leaving the other five alone', () => {
+    expect(SHAPES['dead-end'].branchCount).toBe(0);
+    expect(SHAPES['dead-end'].chamber).toBe('diamond');
+    const others = (['corridor', 'bend', 'tee', 'cross', 'straight'] as const).map(
+      (shape) => SHAPES[shape].branchCount,
+    );
+    expect(others).toEqual([0, 2, 2, 3, 2]);
+    for (const shape of ['corridor', 'bend', 'tee', 'cross', 'straight'] as const) {
+      expect(SHAPES[shape].chamber, shape).toBe('none');
+    }
+  });
+
+  it('carries the chamber the opening set asks for into its spec', () => {
+    const deadEnd = specForOpenings(leaf);
+    expect(deadEnd.chamber).toBe('diamond');
+    expect(deadEnd.branchCount).toBe(0);
+    expect(specForOpenings(door).chamber).toBe('none');
+    expect(specForOpenings(door, true).chamber).toBe('diamond');
+    expect(specForOpenings(door, false).chamber).toBe('none');
+    expect(specForOpenings(leaf, false).chamber).toBe('none');
   });
 });

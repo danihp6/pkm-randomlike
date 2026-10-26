@@ -26,6 +26,9 @@ export type Link = readonly [number, number];
 
 export type RouteShape = 'dead-end' | 'corridor' | 'bend' | 'tee' | 'cross' | 'straight';
 
+/** The centre chamber a room carves: none, or a jittered diamond. */
+export type ChamberKind = 'none' | 'diamond';
+
 export type ShapeSpec = Readonly<{
   openings: readonly Access[];
   /** Pairs of `openings` the spine joins (a `+` joins both of its axes). */
@@ -38,6 +41,8 @@ export type ShapeSpec = Readonly<{
   branchCount: number;
   branchMin: number;
   branchMax: number;
+  /** The centre chamber this room carves (`Task-157`). */
+  chamber: ChamberKind;
 }>;
 
 /** Opposite edges: a link leaves one room by an edge and enters the next by this one. */
@@ -54,9 +59,10 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     links: [],
     pathWidth: 2,
     jitter: 2,
-    branchCount: 2,
+    branchCount: 0,
     branchMin: 4,
     branchMax: 12,
+    chamber: 'diamond',
   },
   corridor: {
     openings: [
@@ -69,6 +75,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 0,
     branchMin: 4,
     branchMax: 12,
+    chamber: 'none',
   },
   bend: {
     openings: [
@@ -81,6 +88,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 2,
     branchMin: 4,
     branchMax: 14,
+    chamber: 'none',
   },
   tee: {
     openings: [
@@ -97,6 +105,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 2,
     branchMin: 4,
     branchMax: 12,
+    chamber: 'none',
   },
   cross: {
     openings: [
@@ -114,6 +123,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 3,
     branchMin: 4,
     branchMax: 12,
+    chamber: 'none',
   },
   straight: {
     openings: [
@@ -126,6 +136,7 @@ export const SHAPES: Readonly<Record<RouteShape, ShapeSpec>> = {
     branchCount: 2,
     branchMin: 4,
     branchMax: 14,
+    chamber: 'none',
   },
 };
 
@@ -177,13 +188,29 @@ export function linksForEdges(edges: readonly AccessEdge[]): readonly Link[] {
 }
 
 /**
- * The shape spec for a room's **actual** opening set from the map plan: the
- * template's feel (path width, branch count) with the plan's edges and the links
- * that join them (`docs/routes-spec.md` §2).
+ * The chamber a room's own opening set asks for: an explicit `override` wins
+ * (`true` → diamond, `false` → none); otherwise a room with **fewer than two**
+ * openings — the map's entry room (0) and every leaf (1) — carves one.
  */
-export function specForOpenings(openings: readonly Access[]): ShapeSpec {
+export function chamberFor(openings: readonly Access[], override?: boolean): ChamberKind {
+  if (override !== undefined) return override ? 'diamond' : 'none';
+  return openings.length < 2 ? 'diamond' : 'none';
+}
+
+/**
+ * The shape spec for a room's **actual** opening set from the map plan: the
+ * template's feel (path width, branch count, chamber) with the plan's edges, the
+ * links that join them and the chamber the opening set (or `chamber`) asks for
+ * (`docs/routes-spec.md` §2).
+ */
+export function specForOpenings(openings: readonly Access[], chamber?: boolean): ShapeSpec {
   const edges = openings.map((opening) => opening.edge);
-  return { ...SHAPES[shapeForEdges(edges)], openings, links: linksForEdges(edges) };
+  return {
+    ...SHAPES[shapeForEdges(edges)],
+    openings,
+    links: linksForEdges(edges),
+    chamber: chamberFor(openings, chamber),
+  };
 }
 
 /** The single opening a shape marks as the player's arrival point. */

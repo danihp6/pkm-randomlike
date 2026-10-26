@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The centre chamber, and the dead ends lose their branches.** `[Task-157]`, the
+      first of Phase 14: every room with no through-lane — the map's entry, its boss room
+      and every `dead-end` leaf — now carves one **central chamber**, a diamond grown from
+      the room's own centre that is **never** a perfect rhombus (the centre row always
+      carries one extra tile, every other row re-rolls its width), drawn from a fourth
+      stream of its own, `route:<room>:chamber`, so no shipped draw moved. The carve runs
+      between the spine and the branches, writes only over `WALL` cells inside the margin
+      the room already computes, and therefore **stops at the walls** instead of stamping a
+      rhombus over a ledge or an opening's band; its tiles join `RouteMap.spine`, so the
+      hazard passes and `validateRoute` still see one floor. Dead ends lose their optional
+      branches (`branchCount` 2 → 0) and the loot and trainers those branches carried move
+      into the chamber's own two pockets, the lateral extremes of its widest row.
+      `ShapeSpec.chamber` and `chamberFor` carry the rule, and `RouteRequest.chamber`
+      forces it on or off for the next batch. `npm test` 4398 passed / 68 skipped,
+      `npm run build` green.
 - [x] **The double-battle roll: 25 % for the boss, 10 % for the mini-boss.** `[Task-156]`,
       the eighth of Phase 13: whether a floor's hand-placed fight fields two actives per
       side is now a roll of the run's own seed, not a constant. `BOSS_PARTY[kind].double`

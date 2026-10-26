@@ -51,7 +51,24 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    gap in the ring. An opening also keeps a clearance of the motif's footprint
    (`2 * cols`) from every map corner, so a corner tree is never bitten into a
    partial or one-tile piece.
-2. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
+2. **Centre chamber**: a room with **no through-lane** — the map's **entry room**
+   and every `dead-end` leaf, i.e. a room with fewer than two openings — grows one
+   **centre chamber** from its own middle (`chamberFor` in
+   `src/engine/routes/layout.ts`; a room that knows it needs one forces it on with
+   `RouteRequest.chamber`, which the **boss room** takes while its sealed portal is
+   part of its opening set). `carveChamber` (`src/engine/routes/sketch.ts`) draws the
+   radius once (`4` … `6`, clamped into the room's `wallMargin` box) and then one
+   half-width per row on the room's own **`chamber` stream**, following
+   `|dx| ≤ radius − |dy| + jitter(row)`; the **centre row always carries one extra
+   tile**, so the outline is a diamond and **never** the perfect rhombus of its
+   radius. Each row is walked out from the centre and **stops at the walls**: a cell
+   is written only while the room's `wallMargin` box still holds it and it is solid
+   tree, so the chamber never bites the border ring, a lane or an opening's band, and
+   a cell that was already floor is kept as it is. The chamber's tiles join the room's
+   **spine**, so the tidy, the terrain pass and the pocket rules see one floor; the
+   two lateral extremes of its widest row are its **pockets**, which is where a
+   dead-end's loot and trainers now live.
+3. **Wall tidy**: `cleanWalls` (`src/engine/routes/walls.ts`) removes any wall
    remnant the tileset's wall motif would draw cut off. The motif's footprint
    (`WallFootprint`, taken from the tileset's `wallPattern`) gives the width a run
    needs to show a whole object and the shortest whole-object height; a lane that
@@ -67,7 +84,7 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    working and the openings stay reachable. A cell on the one-tile border ring is
    only dropped to widen an opening (a lane already reaches the ring beside it), so
    the map stays fenced.
-3. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
+4. **Terrain pass**: `terrain` in `src/data/biomes.ts` sets how many tall grass
    patches and ledge lines a biome stamps, and those **base counts scale in tiers
    with the map size** (`MAP_SIZE_TIERS` in `src/data/mapSize.ts`): the map's
    area in tiles falls in `small` (terrain ×1), `medium` (×2) or `large` (×3), so a
@@ -91,7 +108,7 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    outside its left or right cap is wall), so it reads as a lip on the terrain
    instead of a rock floating in open floor. Grass is walkable; a ledge only gives
    way downward. Water is decoration (`D18`), not a terrain pass.
-4. **Population (trainers + ground items)**: a route places **trainers** and
+5. **Population (trainers + ground items)**: a route places **trainers** and
    **one item at the far end of each optional path** (a `pocket`), drawn from the
    level band's weighted loot pool (`ROUTE_LOOT` in `src/data/loot.ts`) on the
    `populate` stream. The room's **role** (`MapRoom.role`, `docs/maps-spec.md` §2)
@@ -128,7 +145,7 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    `docs/maps-spec.md` §2/§6/§7) — skips the terrain and population passes
    entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
    are carved.
-5. **Validation pass**: `validateRoute` (`src/engine/routes/validate.ts`) reports a
+6. **Validation pass**: `validateRoute` (`src/engine/routes/validate.ts`) reports a
    checklist instead of throwing, and its `ok` flag is what gates the reroll. It
    gates the exit flood-fill **with** the trainers in the way (`blockedByTrainers`)
    and **avoiding** them (`unreachable`) — the trainer-free fill is what guarantees
@@ -137,7 +154,7 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    guaranteed lane stays floor), `borderBreaches` (the ring opens only where an
    opening justifies it), `borderBandGaps` (every declared opening's whole band is
    `FLOOR` and exits, so a route the tidy left half-open is re-rolled) and
-   `trainerIssues` (every pose rule in step 4 above).
+   `trainerIssues` (every pose rule in step 5 above).
    `unreachablePockets` is **reported, never gated**: a pocket the entry cannot
    reach is a finding, not a failure, because `placeItems` may skip a pocket a
    hazard sealed. A route whose `ok` is false is rerolled by `sketchRoute`
@@ -146,14 +163,15 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    (8), then it throws rather than return a bad map. This validation is what makes
    the generator safe to call blind.
 
-Every build pass draws from its own `Rng` stream, all derived from
-`(seed, routeIndex, attempt)` (`src/engine/routes/streams.ts`), so `(seed,
-routeIndex)` fully determines the map and a reroll can never shift an earlier
-attempt. Adding a roll to the terrain pass cannot move the path the layout pass
-already placed.
+Every build pass draws from its own `Rng` stream — `layout`, `terrain`, `populate`
+and `chamber` — all derived from `(seed, routeIndex, attempt)`
+(`src/engine/routes/streams.ts`), so `(seed, routeIndex)` fully determines the map
+and a reroll can never shift an earlier attempt. Adding a roll to the terrain pass
+cannot move the path the layout pass already placed, and a chamber re-roll cannot
+move a lane.
 
-Routes scatter **ground items** again, one per optional path (step 4 above), and
-now also **trainers**: the generated map holds the carved tiles (spine, branches,
+Routes scatter **ground items** again, one per optional path or chamber pocket (step
+5 above), and now also **trainers**: the generated map holds the carved tiles (spine, branches,
 pockets and the terrain flavour), the entry, its exits, the items and the
 trainers. The trainer archetypes (`src/data/trainers.ts`) and the roster builder
 (`src/engine/run/roster.ts`) field a team per trainer, and the route scene draws
@@ -171,9 +189,10 @@ at once: there is no fog of war, like the originals (`D6`).
 (`BIOME_ORDER = ['forest']` in `src/data/biomes.ts`), so every route uses its
 tileset and encounter table. A route's **shape** — the set of openings that join
 it to its grid neighbours — is a first-class generator input: the registry in
-`src/engine/routes/layout.ts` defines `dead-end` (1 opening), `corridor` (2
-opposite, no branches), `straight` (2 opposite, branchy), `bend` (2 adjacent),
-`tee` (3) and `cross` (4), each with its `openings` (an edge and a role) and
+`src/engine/routes/layout.ts` defines `dead-end` (1 opening, **no** branches and a
+centre chamber), `corridor` (2 opposite, no branches), `straight` (2 opposite,
+branchy), `bend` (2 adjacent), `tee` (3) and `cross` (4), each with its `openings`
+(an edge and a role) and
 the `links` the spine joins, and `RouteMap` carries an `entry`, a list of
 `exits`, the `spine` and the optional `branches`/`pockets`.
 The **biome, size and the opening set now come from the map plan**
@@ -188,11 +207,14 @@ secondary paths are then carved off the **network** (the spine plus every lane
 already carved, so a branch can grow off another branch, not only off the spine):
 the count is the shape's base `branchCount` plus a map-size tier bonus, lanes are
 **at least two tiles wide** and scale with the free space, opening into a small
-**chamber** on a roomy map. The far end is the **pocket** — the loot spot.
+**cul-de-sac** on a roomy map. The far end is the **pocket** — the loot spot. A
+**`dead-end` carves none of them** (`branchCount: 0`): its ground items, and the
+trainer that guards them, sit in the **centre chamber's** two pockets (step 2), so a
+leaf reads as one room holding its hoard instead of a trunk with side tunnels.
 Branches stay inside the one-tile
 border. The interior is solid tree, so the carved spine, branches and pockets are
 the visible lanes; the terrain pass and the population pass keep them clear and
-populate them (steps 3-4). The `hedges` and `maze` carvers stay parked in
+populate them (steps 4-5). The `hedges` and `maze` carvers stay parked in
 `src/engine/routes/sketch.ts` for later biomes (`D6`).
 
 **Map passives (room entry and a win).** A party member's **ability** also acts

@@ -13,6 +13,8 @@ export type RouteStreams = Readonly<{
   layout: Rng;
   terrain: Rng;
   populate: Rng;
+  /** The centre chamber's own pass (`Task-157`): `route:<room>:chamber`. */
+  chamber: Rng;
 }>;
 
 export type RouteStreamPass = keyof RouteStreams;
@@ -28,5 +30,6 @@ export function routeStreams(seed: string, routeIndex: number, attempt: number):
     layout: new Rng(hashSeed(`${base}:layout`)),
     terrain: new Rng(hashSeed(`${base}:terrain`)),
     populate: new Rng(hashSeed(`${base}:populate`)),
+    chamber: new Rng(hashSeed(`${base}:chamber`)),
   };
 }

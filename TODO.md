@@ -7675,7 +7675,7 @@ bare centre tile.
   `[Task-157]` writes and moves the boss's cell and the entry's spawn, so it cannot start before
   Batch 70 lands.
 
-- [ ] **[Task-157] The centre chamber, and the dead ends lose their branches.** Every room with no
+- [x] **[Task-157] The centre chamber, and the dead ends lose their branches.** Every room with no
       through-lane — the entry, the boss and any `dead-end` — gets one **central chamber**: a
       diamond grown from the room's centre, **never a perfect one**. `ShapeSpec` gains
       `chamber: 'none' | 'diamond'`; the carve runs after the spine and before the terrain, from a

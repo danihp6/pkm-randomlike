@@ -1,18 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { LEDGE, TALL_GRASS, WALL, isWalkable } from '../map';
+import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable } from '../map';
 import type { Tile } from '../grid';
-import { ROUTE_SHAPES, SHAPES, type Access, type AccessEdge, type RouteShape } from './layout';
+import {
+  ROUTE_SHAPES,
+  SHAPES,
+  chamberFor,
+  specForOpenings,
+  type Access,
+  type AccessEdge,
+  type RouteShape,
+  type ShapeSpec,
+} from './layout';
 import {
   ROUTE_HEIGHT,
   ROUTE_WIDTH,
+  carveChamber,
   cornerClearance,
   sketchRoute,
   sketchRouteSteps,
+  wallMargin,
   wantsTrainers,
   type RouteRequest,
+  type RouteStep,
 } from './sketch';
 import type { RouteMap } from './routeMap';
+import { borderEdge, openingBandCells } from './doors';
 import { reachableTiles, validateRoute } from './validate';
+import { routeStreams } from './streams';
 
 const CARDINAL_DIRS: readonly Tile[] = [
   { x: 1, y: 0 },
@@ -465,17 +479,14 @@ describe('sketchRoute', () => {
     for (const shape of ROUTE_SHAPES) {
       const stepRequest = request('steps-a', 2, shape);
       const steps = sketchRouteSteps(stepRequest);
-      expect(steps.map((step) => step.phase)).toEqual([
-        'walls',
-        'access',
-        'spine',
-        'branches',
-        'clean',
-        'terrain',
-        'trainers',
-        'items',
-        'final',
-      ]);
+      const phases: RouteStep['phase'][] = ['walls', 'access', 'spine', 'branches'];
+      // A chamber room paints one more frame, on the existing `branches` phase.
+      if (SHAPES[shape].chamber === 'diamond') phases.push('branches');
+      phases.push('clean', 'terrain', 'trainers', 'items', 'final');
+      expect(steps.map((step) => step.phase)).toEqual(phases);
+      expect(steps.filter((step) => step.phase === 'branches').map((step) => step.label)).toEqual(
+        SHAPES[shape].chamber === 'diamond' ? ['carve chamber', 'carve branches'] : ['carve branches'],
+      );
       expect(steps[0].tiles.every((row) => row.every((value) => value === WALL))).toBe(true);
       expect(steps.at(-1)!.tiles).toEqual(sketchRoute(stepRequest).tiles);
     }
@@ -660,17 +671,15 @@ describe('sketchRoute', () => {
   });
 
   it('replays the attempt sketchRoute ships, with and without an archetype pool', () => {
-    const phases = [
-      'walls',
-      'access',
-      'spine',
-      'branches',
-      'clean',
-      'terrain',
-      'trainers',
-      'items',
-      'final',
-    ];
+    const phasesOf = (sized: RouteRequest): RouteStep['phase'][] => {
+      const template = SHAPES[sized.shape ?? 'straight'];
+      const phases: RouteStep['phase'][] = ['walls', 'access', 'spine', 'branches'];
+      if (chamberFor(sized.openings ?? template.openings, sized.chamber) === 'diamond') {
+        phases.push('branches');
+      }
+      phases.push('clean', 'terrain', 'trainers', 'items', 'final');
+      return phases;
+    };
     const archetypeRequest: RouteRequest = {
       ...request('steps-archetype', 3, 'cross'),
       width: 30,
@@ -688,7 +697,7 @@ describe('sketchRoute', () => {
     const plainRequest: RouteRequest = { ...request('steps-plain', 3, 'cross'), width: 30, height: 30 };
     for (const sized of [archetypeRequest, rerolledRequest, plainRequest]) {
       const steps = sketchRouteSteps(sized);
-      expect(steps.map((step) => step.phase)).toEqual(phases);
+      expect(steps.map((step) => step.phase)).toEqual(phasesOf(sized));
       expect(steps.at(-1)!.tiles).toEqual(sketchRoute(sized).tiles);
     }
     expect(sketchRoute(rerolledRequest).trainers.length).toBeGreaterThan(0);
@@ -851,4 +860,298 @@ describe('sketchRoute', () => {
       // with it; only the **no-gate** builds above are pinned, as the pass promises.
     }
   }, 60_000);
+});
+
+/** A solid wall grid: the room's interior before any lane is carved into it. */
+function wallGrid(width: number, height: number): number[][] {
+  return Array.from({ length: height }, () => new Array<number>(width).fill(WALL));
+}
+
+/** The rows a tile set covers, top to bottom, as `[y, [x…]]` in column order. */
+function rowsOf(keys: Iterable<string>): Array<[number, number[]]> {
+  const byRow = new Map<number, number[]>();
+  for (const key of keys) {
+    const [x, y] = key.split(',').map(Number);
+    byRow.set(y, [...(byRow.get(y) ?? []), x]);
+  }
+  return [...byRow.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([y, xs]) => [y, xs.sort((a, b) => a - b)]);
+}
+
+/** The tiles a room's chamber opens, taken from its own `chamber` stream. */
+function carveOf(seed: string, routeIndex: number, spec: ShapeSpec, size = 30) {
+  return carveChamber(
+    wallGrid(size, size),
+    spec,
+    size,
+    size,
+    routeStreams(seed, routeIndex, 0).chamber,
+    wallMargin(undefined),
+  )!;
+}
+
+const DEAD_END_OPENINGS: readonly Access[] = [{ edge: 'W', role: 'entry' }];
+
+/** The tiles the chamber opened in a built room, read off the debug stepper. */
+function openedChamber(stepRequest: RouteRequest): Set<string> {
+  const steps = sketchRouteSteps(stepRequest);
+  const before = steps.find((step) => step.label === 'carve spine')!;
+  const after = steps.find((step) => step.label === 'carve chamber')!;
+  const opened = new Set<string>();
+  for (let y = 0; y < before.tiles.length; y++) {
+    for (let x = 0; x < before.tiles[y].length; x++) {
+      if (before.tiles[y][x] === WALL && after.tiles[y][x] !== WALL) opened.add(`${x},${y}`);
+    }
+  }
+  return opened;
+}
+
+const keyOf = (tile: Tile): string => `${tile.x},${tile.y}`;
+
+describe('the centre chamber', () => {
+  it('pins the exact outline a dead-end room opens at a written seed', () => {
+    const spec = specForOpenings(DEAD_END_OPENINGS);
+    expect(spec.chamber).toBe('diamond');
+    const chamber = carveOf('chamber-a', 3, spec);
+    expect(chamber.radius).toBe(5);
+    expect(chamber.pockets).toEqual([
+      { x: 9, y: 15 },
+      { x: 21, y: 15 },
+    ]);
+    expect(rowsOf(chamber.tiles)).toEqual([
+      [10, [15]],
+      [11, [14, 15, 16]],
+      [12, [12, 13, 14, 15, 16, 17, 18]],
+      [13, [12, 13, 14, 15, 16, 17, 18]],
+      [14, [11, 12, 13, 14, 15, 16, 17, 18, 19]],
+      [15, [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]],
+      [16, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]],
+      [17, [12, 13, 14, 15, 16, 17, 18]],
+      [18, [13, 14, 15, 16, 17]],
+      [19, [13, 14, 15, 16, 17]],
+      [20, [14, 15, 16]],
+    ]);
+
+    // The same room built for real opens every one of those tiles and keeps them on
+    // its spine, so the pinned outline is the floor the player actually walks.
+    const route = sketchRoute({
+      ...request('chamber-a', 3),
+      openings: DEAD_END_OPENINGS,
+      width: 30,
+      height: 30,
+    });
+    expect(validateRoute(route).ok).toBe(true);
+    const spine = new Set(route.spine.map(keyOf));
+    for (const key of chamber.tiles) {
+      const [x, y] = key.split(',').map(Number);
+      expect(route.tiles[y][x], key).toBe(FLOOR);
+      expect(spine.has(key), `${key} on spine`).toBe(true);
+    }
+  });
+
+  it('never repeats an outline: four seeds, four different (radius, tiles) pairs', () => {
+    const spec = specForOpenings(DEAD_END_OPENINGS);
+    const built = ['chamber-a', 'chamber-b', 'chamber-c', 'chamber-d'].map((seed) => {
+      const chamber = carveOf(seed, 3, spec);
+      return {
+        radius: chamber.radius,
+        key: [...chamber.tiles].sort().join('|'),
+      };
+    });
+    expect(built.every((pair) => pair.key.length > 0)).toBe(true);
+    for (let i = 0; i < built.length; i++) {
+      for (let j = i + 1; j < built.length; j++) {
+        expect(`${built[i].radius}/${built[i].key}`, `seeds ${i} and ${j}`).not.toBe(
+          `${built[j].radius}/${built[j].key}`,
+        );
+      }
+    }
+  });
+
+  it('is never a perfect rhombus: the centre row carries one extra tile', () => {
+    const spec = specForOpenings(DEAD_END_OPENINGS);
+    const cx = 15;
+    const cy = 15;
+    for (let i = 0; i < 20; i++) {
+      const chamber = carveOf(`chamber-sweep-${i}`, 3, spec);
+      const centreRow = [...chamber.tiles]
+        .map((key) => key.split(',').map(Number))
+        .filter(([, y]) => y === cy)
+        .map(([x]) => x);
+      expect(Math.max(...centreRow) - cx, `seed ${i} centre row`).toBe(chamber.radius + 1);
+      expect(cx - Math.min(...centreRow), `seed ${i} centre row`).toBe(chamber.radius + 1);
+      const perfect = new Set<string>();
+      for (let dy = -chamber.radius; dy <= chamber.radius; dy++) {
+        const half = chamber.radius - Math.abs(dy);
+        for (let dx = -half; dx <= half; dx++) perfect.add(`${cx + dx},${cy + dy}`);
+      }
+      expect([...chamber.tiles].sort(), `seed ${i} rhombus`).not.toEqual([...perfect].sort());
+    }
+  });
+
+  it('stops at the walls: inside the margin, off the ring and out of every opening band', () => {
+    const margin = wallMargin(undefined);
+    const requests: RouteRequest[] = [];
+    for (let i = 0; i < 20; i++) {
+      requests.push({
+        ...request(`chamber-wall-${i}`, 4),
+        openings: DEAD_END_OPENINGS,
+        width: 30,
+        height: 30,
+      });
+      requests.push({
+        ...request(`chamber-wall-${i}`, 4),
+        openings: [],
+        width: 30,
+        height: 30,
+      });
+    }
+    for (const stepRequest of requests) {
+      const route = sketchRoute(stepRequest);
+      const opened = openedChamber(stepRequest);
+      expect(opened.size, `${stepRequest.seed} carves`).toBeGreaterThan(0);
+      const band = new Set<string>();
+      for (const anchor of [route.entry, ...route.exits]) {
+        const edge = borderEdge(anchor, 30, 30);
+        if (!edge) continue;
+        for (const cell of openingBandCells(edge, anchor, 30, 30, 2)) band.add(keyOf(cell));
+      }
+      for (const key of opened) {
+        const [x, y] = key.split(',').map(Number);
+        expect(route.tiles[y][x], `${stepRequest.seed} ${key} floor`).toBe(FLOOR);
+        expect(x, `${stepRequest.seed} ${key} ring x`).not.toBe(0);
+        expect(x, `${stepRequest.seed} ${key} ring x`).not.toBe(29);
+        expect(y, `${stepRequest.seed} ${key} ring y`).not.toBe(0);
+        expect(y, `${stepRequest.seed} ${key} ring y`).not.toBe(29);
+        expect(x, `${stepRequest.seed} ${key} margin x`).toBeGreaterThanOrEqual(margin);
+        expect(x, `${stepRequest.seed} ${key} margin x`).toBeLessThanOrEqual(29 - margin);
+        expect(y, `${stepRequest.seed} ${key} margin y`).toBeGreaterThanOrEqual(margin);
+        expect(y, `${stepRequest.seed} ${key} margin y`).toBeLessThanOrEqual(29 - margin);
+        expect(band.has(key), `${stepRequest.seed} ${key} opening band`).toBe(false);
+      }
+    }
+  });
+
+  it('clamps into a room too tight for the radius it drew', () => {
+    const spec = specForOpenings(DEAD_END_OPENINGS);
+    const tile = carveChamber(
+      wallGrid(16, 16),
+      spec,
+      16,
+      16,
+      routeStreams('tight-room', 3, 0).chamber,
+      wallMargin(undefined),
+    )!;
+    expect(tile.radius).toBeGreaterThanOrEqual(2);
+    for (const key of tile.tiles) {
+      const [x, y] = key.split(',').map(Number);
+      expect(x, key).toBeGreaterThanOrEqual(3);
+      expect(y, key).toBeGreaterThanOrEqual(3);
+      expect(x, key).toBeLessThanOrEqual(12);
+      expect(y, key).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('is one floor with the room: on the spine, reachable and validated', () => {
+    for (const seed of ['chamber-a', 'chamber-b', 'chamber-c', 'chamber-d']) {
+      const stepRequest: RouteRequest = {
+        ...request(seed, 3),
+        openings: DEAD_END_OPENINGS,
+        width: 30,
+        height: 30,
+      };
+      const route = sketchRoute(stepRequest);
+      expect(validateRoute(route).ok, `${seed} valid`).toBe(true);
+      const opened = openedChamber(stepRequest);
+      const spine = new Set(route.spine.map(keyOf));
+      const reached = reachableTiles(route.tiles, route.entry);
+      for (const key of opened) {
+        expect(spine.has(key), `${seed} ${key} on spine`).toBe(true);
+        expect(reached.has(key), `${seed} ${key} reachable`).toBe(true);
+      }
+    }
+  });
+
+  it('fields no branch on a dead end and still holds its loot on the chamber', () => {
+    const stepRequest: RouteRequest = {
+      ...request('chamber-loot', 3),
+      openings: DEAD_END_OPENINGS,
+      width: 30,
+      height: 30,
+      loot: [{ itemId: 'potion', weight: 1 }],
+      itemChance: 1,
+    };
+    const route = sketchRoute(stepRequest);
+    expect(route.branches).toEqual([]);
+    expect(route.pockets).toHaveLength(2);
+    const opened = openedChamber(stepRequest);
+    for (const pocket of route.pockets) {
+      expect(opened.has(keyOf(pocket)), `${pocket.x},${pocket.y} chamber tile`).toBe(true);
+    }
+    expect(route.items.length).toBeGreaterThan(0);
+    for (const item of route.items) {
+      expect(route.pockets.some((pocket) => keyOf(pocket) === keyOf(item.position))).toBe(true);
+    }
+  });
+
+  it('moves nothing else: a straight, a cross and a two-opening corridor keep their tiles', () => {
+    const digestOf = (route: RouteMap): string => {
+      const text = JSON.stringify({
+        shape: route.shape,
+        tiles: route.tiles,
+        entry: route.entry,
+        exits: route.exits,
+        spine: route.spine,
+        branches: route.branches,
+        pockets: route.pockets,
+      });
+      let h = 2166136261;
+      for (let i = 0; i < text.length; i++) {
+        h ^= text.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(16).padStart(8, '0');
+    };
+    // Read off the engine before the chamber existed: `chamberFor` answers `none` for
+    // every one of these opening sets, so their `chamber` stream is never drawn.
+    const pinned: Readonly<Record<string, string>> = {
+      'straight:no-move-a': '3eb52e7a',
+      'straight:no-move-b': '9d69139c',
+      'cross:no-move-a': 'd7f3eb93',
+      'cross:no-move-b': '0df237ce',
+      'corridor:no-move-a': '155255f2',
+      'corridor:no-move-b': '0171b6ff',
+      'corridor-ns:no-move-a': '70950b84',
+      'corridor-ns:no-move-b': '5008478f',
+    };
+    const actual: Record<string, string> = {};
+    for (const seed of ['no-move-a', 'no-move-b']) {
+      for (const [label, extra] of [
+        ['straight', { shape: 'straight' as const }],
+        ['cross', { shape: 'cross' as const }],
+        ['corridor', { shape: 'corridor' as const }],
+        [
+          'corridor-ns',
+          {
+            openings: [
+              { edge: 'N', role: 'entry' },
+              { edge: 'S', role: 'exit' },
+            ] as readonly Access[],
+          },
+        ],
+      ] as const) {
+        const route = sketchRoute({
+          seed,
+          routeIndex: 4,
+          biomeId: 'forest',
+          width: 30,
+          height: 30,
+          ...extra,
+        });
+        actual[`${label}:${seed}`] = digestOf(route);
+      }
+    }
+    expect(actual).toEqual(pinned);
+  });
 });
