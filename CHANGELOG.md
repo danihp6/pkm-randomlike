@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Dig and Dive dodge on the charge turn, and the second turn never asks for a
+      command.** `[Task-168]`, the first of Batch 76: `volatiles.semiInvulnerable` marks
+      the fighter for the six charge moves that leave the field (`dig`, `dive`, `fly`,
+      `bounce`, `phantomforce`, `shadowforce`), set when the charge lands and cleared
+      when it fires, and one pure `semiInvulnerableOutcome` decides the aim before the
+      accuracy roll — any move misses (`battle.log.missed`) except
+      `earthquake`/`magnitude` against Dig and `gust`/`twister` against Fly and Bounce,
+      which double. `chargingCommand(state, side)` (`src/engine/battle/commands.ts`)
+      answers the locked move, so `finishFeed` submits it instead of opening the menu
+      the engine was about to throw away. No new RNG draw, so no shipped seed moved; the
+      audit's five charge rows gain the flag in their expected volatiles.
+      `docs/battle-spec.md` §4 states the rule. `npm test` 4469 passed / 69 skipped,
+      `npm run build` green; measured live over CDP on the live canvas
+      (`renderer.snapshotArea` + `getImageData`, 1280×800): Dig resolved on turn two
+      with `charging` and `semiInvulnerable` back to `null` and the scene never returned
+      to `menu`.
 - [x] **No wild or static whose evolution line the run already holds.**
       `[Task-175]`, the last of Batch 75: `wildExclusions` now reads the run's
       **members** — `party`, `box` and `rip` `fighter.speciesId` — beside

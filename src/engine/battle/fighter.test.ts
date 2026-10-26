@@ -9,6 +9,7 @@ import {
   defaultMoveset,
   effectiveSpeed,
   effectiveStat,
+  emptyVolatiles,
   fighterAbilities,
   hasAbility,
   isGrounded,
@@ -255,6 +256,25 @@ describe('the permanent treats (Task-103)', () => {
     expect(restored.treats).toEqual({ atk: 1, spe: -1 });
     expect(restored.stats.atk).toBe(statAtLevel(species, level, 'serious').atk + 1);
     expect(restored.stats.spe).toBe(statAtLevel(species, level, 'serious').spe - 1);
+  });
+});
+
+describe('the semi-invulnerable field', () => {
+  it('starts empty and rides on a fighter built by createFighter', () => {
+    expect(emptyVolatiles().semiInvulnerable).toBeNull();
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level });
+    expect(fighter.volatiles.semiInvulnerable).toBeNull();
+    expect('semiInvulnerable' in fighter.volatiles).toBe(true);
+  });
+
+  it('is battle-only: a reset and a snapshot both drop it', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level, moves: ['dig'] });
+    fighter.volatiles.charging = 'dig';
+    fighter.volatiles.semiInvulnerable = 'dig';
+    expect('volatiles' in snapshotFighter(fighter)).toBe(false);
+    resetBattleState(fighter);
+    expect(fighter.volatiles.semiInvulnerable).toBeNull();
+    expect(fighter.volatiles.charging).toBeNull();
   });
 });
 

@@ -15,6 +15,7 @@ import {
 import { autoReplace, needsReplacement, takeTurn, teamTypeStatusChance, useMove } from './turn';
 import { makeContext, runModifyMultihit } from './effects/registry';
 import { multiHitPower } from './modifiers';
+import { SEMI_INVULNERABLE_COUNTER_MULTIPLIER } from './volatile';
 
 const build = (
   player: readonly FighterInput[],
@@ -980,5 +981,85 @@ describe('the per-hit rule of the multiaccuracy moves (Task-160)', () => {
         10,
       ),
     ).toBe(10);
+  });
+});
+
+/** The damage a side took, in log order. */
+const damageTaken = (state: BattleState, side: 'player' | 'enemy'): readonly number[] =>
+  state.log.flatMap((event) => (event.kind === 'damage' && event.side === side ? [event.amount] : []));
+
+/** A fast Dugtrio charging Dig against a slow Bulbasaur carrying the two counters. */
+function digBoard(seed: number): BattleState {
+  return build(
+    [{ id: 'p', speciesId: 'dugtrio', level: 20, moves: ['dig', 'tackle', 'splash'] }],
+    [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['tackle', 'earthquake', 'splash'] }],
+    seed,
+  );
+}
+
+describe('the semi-invulnerable charge turn (Task-168)', () => {
+  it('dodges every aimed move behind Dig and fires on the second turn (seed 1)', () => {
+    const state = digBoard(1);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    const startPlayerHp = player.hp;
+    const startEnemyHp = enemy.hp;
+
+    takeTurn(state, fight(0), fight(0));
+    expect(player.volatiles.charging).toBe('dig');
+    expect(player.volatiles.semiInvulnerable).toBe('dig');
+    expect(player.volatiles.semiInvulnerable).toBe(player.volatiles.charging);
+    expect(textKeys(state)).toContain('battle.log.missed');
+    expect(player.hp).toBe(startPlayerHp);
+    expect(enemy.hp).toBe(startEnemyHp);
+
+    takeTurn(state, fight(1), fight(0));
+    expect(player.volatiles.charging).toBeNull();
+    expect(player.volatiles.semiInvulnerable).toBeNull();
+    expect(player.hp).toBe(startPlayerHp - 9);
+    expect(enemy.hp).toBe(startEnemyHp - 36);
+  });
+
+  it('lets Earthquake reach Dig, does not roll its aim away and doubles it (seed 1)', () => {
+    const quake = digBoard(1);
+    const quakePlayer = activeFighter(quake, 'player');
+    const startPlayerHp = quakePlayer.hp;
+
+    takeTurn(quake, fight(0), fight(1));
+    expect(textKeys(quake)).not.toContain('battle.log.missed');
+    expect(damageTaken(quake, 'player')).toEqual([34]);
+    expect(quakePlayer.hp).toBe(startPlayerHp - 34);
+
+    const control = digBoard(1);
+    takeTurn(control, fight(0), fight(0));
+    expect(textKeys(control)).toContain('battle.log.missed');
+    const controlTaken = damageTaken(control, 'player');
+    const quakeTaken = damageTaken(quake, 'player');
+    const sum = (amounts: readonly number[]): number =>
+      amounts.reduce((total, amount) => total + amount, 0);
+    expect(sum(quakeTaken)).toBeGreaterThan(sum(controlTaken));
+    expect(controlTaken).toEqual([]);
+
+    // The doubling itself: the same seed with the target visible rolls the same hit
+    // and pays exactly the multiplier, so the counter connects for twice as much.
+    const visible = digBoard(1);
+    takeTurn(visible, fight(2), fight(1));
+    expect(damageTaken(visible, 'player')).toHaveLength(1);
+    expect(quakeTaken).toEqual([
+      damageTaken(visible, 'player')[0]! * SEMI_INVULNERABLE_COUNTER_MULTIPLIER,
+    ]);
+  });
+
+  it('leaves a charge that does not hide reachable, and no stale flag behind it', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'bulbasaur', level: 20, moves: ['solarbeam'] }],
+      [{ id: 'e', speciesId: 'charmander', level: 20, moves: ['tackle'] }],
+      1,
+    );
+    takeTurn(state, fight(0), fight(0));
+    const player = activeFighter(state, 'player');
+    expect(player.volatiles.charging).toBe('solarbeam');
+    expect(player.volatiles.semiInvulnerable).toBeNull();
+    expect(player.hp).toBeLessThan(player.maxHp);
   });
 });

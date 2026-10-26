@@ -237,7 +237,8 @@ new field in `fighter.ts`/`state.ts`, which is a task of its own.
 Primary status: burn, poison, badly poisoned, paralysis, sleep, freeze.
 Volatiles: confusion, flinch, Leech Seed, Substitute, trapped, Taunt, Encore,
 perish count, protection (Protect and friends), charge state (a two-turn move
-waiting to fire), Yawn countdown, stat stages (−6..+6). Effects live in
+waiting to fire) and the semi-invulnerable flag that charge hides behind, Yawn
+countdown, stat stages (−6..+6). Effects live in
 `src/engine/battle/effects/` and follow Showdown's semantics, ported category by
 category (see `docs/showdown-reuse.md` for the coverage table).
 
@@ -357,8 +358,26 @@ and with no event logged) and is spent by the battle it starts.
 Special move shapes:
 
 - **Two-turn charge moves** (Solar Beam, Fly, Dig...) lock the user for one
-  turn; the next turn the move fires regardless of the chosen command. Solar
-  Beam and Solar Blade skip the charge in harsh sunlight.
+  turn; the next turn the move fires regardless of the chosen command, so the
+  screen never asks for that second command at all (`chargingCommand` in
+  `src/engine/battle/commands.ts` answers the locked `fight` command itself, and
+  a double battle keeps asking). Solar Beam and Solar Blade skip the charge in
+  harsh sunlight.
+- **Semi-invulnerability**: six of those charges take the user off the field for
+  the charge turn — Dig, Dive, Fly, Bounce, Phantom Force and Shadow Force
+  (`SEMI_INVULNERABLE_CHARGES`). `volatiles.semiInvulnerable` holds the same move
+  id as `volatiles.charging`, written in the same two statements, and stays
+  `null` for a charge that does not hide (Solar Beam, Solar Blade, Meteor Beam,
+  Electro Shot, Sky Attack, Freeze Shock, Ice Burn, Razor Wind). A move aimed at
+  a hiding fighter **misses before its accuracy roll** (`semiInvulnerableOutcome`
+  in `src/engine/battle/volatile.ts`), so the dodge draws **no** RNG and cannot
+  move a fixed-seed log, and it prints the shipped `battle.log.missed` line; a
+  self-aimed move is never dodged by its own user. The four counters the
+  cartridge gives it — Earthquake and Magnitude against Dig, Gust and Twister
+  against Fly and Bounce (`SEMI_INVULNERABLE_COUNTERS`) — connect instead for
+  **×2** damage (`SEMI_INVULNERABLE_COUNTER_MULTIPLIER`), every hit included;
+  Dive, Phantom Force and Shadow Force have no counter, No Guard and Lock-On do
+  not beat it, and the AI still scores a hiding target as reachable.
 - **Damage counters** (Counter, Mirror Coat, Metal Burst, Comeuppance) pay back
   the damage taken earlier in the turn: 2x the physical/special damage for the
   first pair, 1.5x the total for the second. They fail with no damage banked.

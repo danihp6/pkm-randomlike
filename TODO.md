@@ -7981,7 +7981,7 @@ run-integrity defects first, the presentation and economy last.
   no `package.json` is claimed.
 - **No `SAVE_VERSION` step**; the four slots are full and no two tasks share a path.
 
-- [ ] **[Task-168] Dig and Dive dodge on the charge turn, and the second turn never asks for a
+- [x] **[Task-168] Dig and Dive dodge on the charge turn, and the second turn never asks for a
       command.** «excavar, buceo deberia esquivar y ademas no poder usar el menu pasan dos turnos
       auto». The charge half ships: `move.flags.charge` sets `volatiles.charging = move.id` and
       returns after the charge line (`turn.ts` 1033-1044, the verbs at 731-745) and the next turn's

@@ -243,6 +243,24 @@ export function replacementOwed(state: BattleState): boolean {
   return state.sides.player.awaitingReplacement;
 }
 
+/**
+ * The locked command a charging fighter answers by itself, or null when it must
+ * choose: null when the battle is over, when the side owes a replacement, when its
+ * lead is not charging, or when the locked move is no longer in its moveset.
+ * Ignores PP, Taunt and Disable on purpose — the engine's own charge lock
+ * (`chosenMove`) already ignores the chosen command.
+ */
+export function chargingCommand(state: BattleState, side: SideId): FightCommand | null {
+  if (state.winner !== null) return null;
+  if (state.sides[side].awaitingReplacement) return null;
+  const fighter = activeFighter(state, side);
+  const charging = fighter.volatiles.charging;
+  if (charging === null) return null;
+  const moveIndex = findMoveIndex(fighter, charging);
+  if (moveIndex < 0) return null;
+  return { type: 'fight', moveIndex };
+}
+
 export function validateCommand(state: BattleState, side: SideId, command: Command): string | null {
   if (state.winner !== null) return 'The battle is over.';
 

@@ -1,6 +1,40 @@
+import type { Move } from '../../data/dex';
 import type { Rng } from '../rng';
 import { confusionDamage } from './damage';
 import { applyDamage, takesIndirectDamage, type BattleFighter } from './fighter';
+
+/** The charge moves whose charge turn takes the user off the field. */
+export const SEMI_INVULNERABLE_CHARGES: ReadonlySet<string> = new Set([
+  'dig',
+  'dive',
+  'fly',
+  'bounce',
+  'phantomforce',
+  'shadowforce',
+]);
+
+/** For each of those moves, the move ids that still connect — and double. */
+export const SEMI_INVULNERABLE_COUNTERS: Readonly<Record<string, readonly string[]>> = {
+  dig: ['earthquake', 'magnitude'],
+  fly: ['gust', 'twister'],
+  bounce: ['gust', 'twister'],
+};
+
+/** The multiplier a counter move's damage takes. */
+export const SEMI_INVULNERABLE_COUNTER_MULTIPLIER = 2;
+
+export type SemiInvulnerableOutcome = 'miss' | 'hit' | 'double';
+
+/**
+ * What a move aimed at `defender` does this turn: 'miss' when it cannot reach a
+ * hiding fighter, 'double' when it is one of that move's counters, 'hit' otherwise.
+ * Reads no RNG and mutates nothing.
+ */
+export function semiInvulnerableOutcome(defender: BattleFighter, move: Move): SemiInvulnerableOutcome {
+  const hiding = defender.volatiles.semiInvulnerable;
+  if (hiding === null) return 'hit';
+  return (SEMI_INVULNERABLE_COUNTERS[hiding] ?? []).includes(move.id) ? 'double' : 'miss';
+}
 
 export function applyConfusion(fighter: BattleFighter, rng: Rng): boolean {
   if (fighter.volatiles.confusion > 0) return false;

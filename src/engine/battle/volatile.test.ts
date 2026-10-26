@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { getMove } from '../../data/dex';
 import { Rng } from '../rng';
 import './effects/items';
 import { makeContext, runModifyTrapDamage } from './effects/registry';
@@ -27,12 +28,80 @@ import {
   PARTIAL_TRAP_FRACTION,
   PARTIAL_TRAP_TURNS,
   RESIDUAL_VOLATILES,
+  SEMI_INVULNERABLE_CHARGES,
+  SEMI_INVULNERABLE_COUNTER_MULTIPLIER,
+  SEMI_INVULNERABLE_COUNTERS,
+  semiInvulnerableOutcome,
   tickPartialTrap,
   tickPerish,
 } from './volatile';
 
 const make = (speciesId = 'charmander', level = 20) =>
   createFighter({ id: speciesId, speciesId, level });
+
+describe('the semi-invulnerable charge turn', () => {
+  const moveOf = (moveId: string) => getMove(moveId)!;
+  const hidingBehind = (moveId: string | null) => {
+    const fighter = make();
+    fighter.volatiles.semiInvulnerable = moveId;
+    return fighter;
+  };
+
+  it('names the six charges and the four counters the cartridge gives them', () => {
+    expect([...SEMI_INVULNERABLE_CHARGES].sort()).toEqual([
+      'bounce',
+      'dig',
+      'dive',
+      'fly',
+      'phantomforce',
+      'shadowforce',
+    ]);
+    expect(SEMI_INVULNERABLE_CHARGES.size).toBe(6);
+    expect(SEMI_INVULNERABLE_COUNTERS).toEqual({
+      dig: ['earthquake', 'magnitude'],
+      fly: ['gust', 'twister'],
+      bounce: ['gust', 'twister'],
+    });
+    expect(SEMI_INVULNERABLE_COUNTER_MULTIPLIER).toBe(2);
+  });
+
+  it('hits a reachable fighter with anything', () => {
+    const fighter = hidingBehind(null);
+    expect(semiInvulnerableOutcome(fighter, moveOf('tackle'))).toBe('hit');
+    expect(semiInvulnerableOutcome(fighter, moveOf('earthquake'))).toBe('hit');
+  });
+
+  it('misses an unrelated move for every one of the six charges', () => {
+    for (const moveId of SEMI_INVULNERABLE_CHARGES) {
+      expect(semiInvulnerableOutcome(hidingBehind(moveId), moveOf('tackle')), moveId).toBe('miss');
+    }
+  });
+
+  it('lets the four counters connect and double', () => {
+    for (const moveId of ['earthquake', 'magnitude']) {
+      expect(semiInvulnerableOutcome(hidingBehind('dig'), moveOf(moveId)), moveId).toBe('double');
+    }
+    for (const hiding of ['fly', 'bounce']) {
+      for (const moveId of ['gust', 'twister']) {
+        expect(semiInvulnerableOutcome(hidingBehind(hiding), moveOf(moveId)), moveId).toBe('double');
+      }
+    }
+  });
+
+  it('leaves the three charges with no counter unreachable, Gust and Twister included', () => {
+    for (const hiding of ['dive', 'phantomforce', 'shadowforce']) {
+      expect(semiInvulnerableOutcome(hidingBehind(hiding), moveOf('earthquake')), hiding).toBe('miss');
+      expect(semiInvulnerableOutcome(hidingBehind(hiding), moveOf('gust')), hiding).toBe('miss');
+    }
+    expect(semiInvulnerableOutcome(hidingBehind('dive'), moveOf('earthquake'))).toBe('miss');
+  });
+
+  it('never mutates the fighter it reads', () => {
+    const fighter = hidingBehind('dig');
+    semiInvulnerableOutcome(fighter, moveOf('earthquake'));
+    expect(fighter.volatiles.semiInvulnerable).toBe('dig');
+  });
+});
 
 describe('confusion', () => {
   it('lasts 2-5 turns and snaps out at zero', () => {
