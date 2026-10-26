@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Natural Gift's power follows its berry, not only its type.** `[Task-177]`, the third of
+      Batch 78: a new pure `effectiveMovePower` (`src/engine/battle/movePower.ts`) is the number
+      side of `effectiveMoveType` — it reads the same held-item rows, so a berry gives Natural Gift
+      its dex `naturalGift.basePower` while `UNMODELLED_ITEMS` and every other move keep the dex
+      number — and the party panel's MOVES tab builds its power from it instead of the raw dex row.
+      `docs/battle-spec.md` §4's item-retype bullet and `src/engine/README.md`'s `battle/` line
+      record it. `npm test` 4527 passed / 69 skipped, `npm run build` green; measured live over CDP
+      on `[data-hud-detail-slot]`: with a Sitrus Berry the Natural Gift row read `PWR 80` and the
+      `Psychic` badge, after the bag's own unequip it read `PWR --` and `Normal`, and re-equipping
+      brought `PWR 80` back.
+
 - [x] **The battle Bag's arrows reach the pockets, and one click spends a stack.** `[Task-169]`, the
       second of Batch 78: `ArrowUp` from the grid's top row moves the focus to the pocket row,
       `←`/`→` there cycle the pockets on offer with wrap and `↓` returns to the grid's first stack,

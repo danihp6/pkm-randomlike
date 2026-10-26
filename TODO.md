@@ -8240,7 +8240,7 @@ run-integrity defects first, the presentation and economy last.
       one-press here (the report says the click does nothing today); if the human wants the DOM's
       arm-then-use kept, only `cellPressIntent`'s line changes. *(Batch 78)*
 
-- [ ] **[Task-177] Natural Gift's power follows its berry, not only its type.** «move don natural se
+- [x] **[Task-177] Natural Gift's power follows its berry, not only its type.** «move don natural se
       actualiza tipo al llevar equipado baya pero deberia tambien actualizar poder». The move is
       **`naturalgift`** (*Don Natural*, `src/data/i18n/es/moves.json` 2342-2346). The type half ships
       twice — `effectiveMoveType` reads the berry's `naturalGift.type` (`src/engine/battle/moveType.ts`

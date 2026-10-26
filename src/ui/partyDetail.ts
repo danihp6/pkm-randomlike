@@ -15,6 +15,7 @@ import {
   type MoveSlot,
   type StatusId,
 } from '../engine/battle/fighter';
+import { effectiveMovePower } from '../engine/battle/movePower';
 import { effectiveMoveType } from '../engine/battle/moveType';
 import { getItem, teraTypeOf } from '../data/items';
 import {
@@ -148,7 +149,7 @@ function moveDetails(
   return slots.map((slot) => {
     const move = getMove(slot.moveId);
     const accuracy = move && move.accuracy !== true ? move.accuracy : null;
-    const basePower = move?.basePower ?? 0;
+    const basePower = move ? effectiveMovePower(heldItem, move, ivs) : 0;
     return {
       moveId: slot.moveId,
       name: moveName(slot.moveId),
