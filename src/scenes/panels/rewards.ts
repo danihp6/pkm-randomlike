@@ -388,7 +388,7 @@ function buildMiniBossReward(host: RoutePanelHost, rows: readonly RewardRow[]): 
  * stays in the bag); a Pokémon lands through the **shipped placement** —
  * `createRunPokemon` adopted at the squad's level into `addPokemon` (a full
  * party sends it to the box) — and is **not a catch**: no room capture is spent,
- * no `stats.catches` moves and no `pcCatch` is recorded. Any other drop leaves
+ * `stats.catches` moves and nothing is recorded about the room. Any other drop leaves
  * the card up and changes nothing.
  */
 function takeMiniBossReward(host: RoutePanelHost, row: RewardRow, drop: RoomDrop): void {

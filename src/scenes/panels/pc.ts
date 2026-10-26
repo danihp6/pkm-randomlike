@@ -273,7 +273,7 @@ function refreshBox(host: RoutePanelHost): void {
     // The dead wear the lock veil on every filled cell; a locked box cell keeps
     // the shipped rule.
     cell.lock.setVisible(
-      pane === 'rip' ? member !== undefined : member !== undefined && !pcMemberEditable(run, member.id),
+      pane === 'rip' ? member !== undefined : member !== undefined && !pcMemberEditable(run),
     );
     cell.highlight.setVisible(ui.grabbed?.pane === pane && ui.index === index);
   });
@@ -299,7 +299,7 @@ function pcRow(run: RunState, pane: PcPane, row: PartyRow): PcRow {
     hp: row.hp,
     maxHp: row.maxHp,
     statusLabel: row.statusLabel,
-    locked: pane === 'box' && !pcMemberEditable(run, row.id),
+    locked: pane === 'box' && !pcMemberEditable(run),
   };
 }
 
@@ -378,7 +378,7 @@ function pressDomCell(host: RoutePanelHost, memberId: string): void {
   const index = rows.findIndex((row) => row.id === memberId);
   if (index < 0) return;
   if (ui.index !== index) host.setUi({ ...ui, index });
-  if (pane !== 'box' || !pcMemberEditable(run, memberId)) {
+  if (pane !== 'box' || !pcMemberEditable(run)) {
     host.refreshHud();
     return;
   }

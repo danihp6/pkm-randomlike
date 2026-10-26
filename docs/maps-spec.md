@@ -404,7 +404,7 @@ leaves the run **on purpose** (`docs/routes-spec.md` §6). Its content:
   `speciesPool(band, 'wild')` off its own stream
   (`${seed}:trade:${mapIndex}:${roomId}`), and joins at `squadLevel` through
   `adoptAtLevel` with **full HP/PP**: the catch rule it copies is the **level**, not
-  the damage share. It is **not a catch** (`stats.catches`, `caughtSpecies`, `pcCatch`
+  the damage share. It is **not a catch** (`stats.catches`, `caughtSpecies`
   and the room's capture untouched) and lands in the party (the box would only take
   it on a full party, which the trade's own removal makes impossible).
 
@@ -795,7 +795,7 @@ neither sells nor buys it and it never appears in a sell list). It hatches on th
 run, which removes **one** Egg and places **one** member of the new floor's
 `speciesPool(band, 'wild')` at the squad's level through the shipped reward path
 (`addPokemon`, so a full party sends it to the box, `D7`). It is **not a catch** —
-no `stats.catches`, no `caughtSpecies`, no `capturedRooms`, no `pcCatch` — and a
+no `stats.catches`, no `caughtSpecies`, no `capturedRooms` — and a
 band whose pool resolves to nothing leaves the Egg in the bag for the next floor.
 
 ### A room's battle condition

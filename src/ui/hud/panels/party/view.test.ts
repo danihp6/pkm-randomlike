@@ -63,7 +63,6 @@ const ROUTE: HudRoute = {
   pokevialCharges: 2,
   pokevialMax: 3,
   bossDefeated: false,
-  entryDeparted: true,
   discoveredRooms: [0, 1],
   mission: null,
   missionsCompleted: 0,

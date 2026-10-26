@@ -23,7 +23,7 @@ import type { MissionProgress } from './run/missions';
 import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
-import { dedupeMemberIds, emptyRunStats, type PcCatch, type RunState, type RunStats } from './run/state';
+import { dedupeMemberIds, emptyRunStats, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -144,8 +144,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * `captureUsed` boolean into the per-floor `capturedRooms` list; `9` moves a v9
  * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
  * starts with a full vial); `10` moves a v10 run onto the v11 schema, which added
- * the PC-lock state (`entryDeparted`, `pcUnlocked`), an old run starting unlocked
- * only in its entry room; `11` moves a v11 settings onto the v12 schema, which
+ * the PC-lock state (the floor-scoped list of the members swappable in the entry
+ * room), an old run starting unlocked only in its entry room; `11` moves a v11
+ * settings onto the v12 schema, which
  * added the four HUD-panel keys (`party`/`bag`/`map`/`box`) and moved `settings`
  * off its old `O` default to `Tab` (the old `O` becomes the PC box key); `12`
  * moves a v12 run onto the v13 schema, which replaced the per-member XP with the
@@ -153,9 +154,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * v13 run onto the v14 schema, which added the `money` counter (an old run starts
  * with none); `14` moves a v14 run onto the v15 schema, which added the optional
  * per-member `nickname` (a v14 run has none, so it shows species names); `15` moves
- * a v15 run onto the v16 schema, which replaced the floor-scoped `pcUnlocked` list
- * with the route-scoped `pcCatch` (an old run's list cannot be re-scoped — the room
- * it was caught in was never stored — so it starts with no pending catch); `16` moves
+ * a v15 run onto the v16 schema, which replaced the floor-scoped PC lock list with
+ * the route-scoped rule (an old run's list cannot be re-scoped — the room it was
+ * caught in was never stored — so it starts with no pending catch); `16` moves
  * a v16 run onto the v17 schema, which added the `rip` list of the fallen (an old
  * run's dead were never stored, so it starts empty); `17` moves a v17 run onto the
  * v18 schema, which added the `caughtSpecies` record of every successful catch (an
@@ -237,9 +238,7 @@ export const SAVE_MIGRATIONS: Migrations = {
   10: (document) => ({
     ...document,
     version: 11,
-    run: isRecord(document.run)
-      ? { ...document.run, entryDeparted: false, pcUnlocked: [] }
-      : document.run,
+    run: isRecord(document.run) ? { ...document.run, pcUnlocked: [] } : document.run,
   }),
   11: (document) => ({
     ...document,
@@ -270,12 +269,12 @@ export const SAVE_MIGRATIONS: Migrations = {
     ...document,
     version: 15,
   }),
-  // The floor-scoped catch list becomes the route-scoped catch: the room the old
-  // list's member was caught in was never stored, so the new field starts empty.
+  // The floor-scoped PC lock list retires: the room the old list's member was caught
+  // in was never stored, so there is no window to reopen and nothing to carry over.
   15: (document) => ({
     ...document,
     version: 16,
-    run: isRecord(document.run) ? withPcCatch(document.run) : document.run,
+    run: isRecord(document.run) ? withoutPcUnlocked(document.run) : document.run,
   }),
   // The RIP list: a v16 run lost members it never recorded, so the list starts
   // empty - the dead of an old save are not reconstructed.
@@ -388,14 +387,12 @@ function withCapturedRooms(run: Record<string, unknown>): Record<string, unknown
 }
 
 /**
- * Drops a v15 run's floor-scoped `pcUnlocked` list and writes the v16 `pcCatch`
- * field: the room a member of the old list was caught in was never stored, so
- * there is no window to reopen and the field starts null.
+ * Drops a v15 run's floor-scoped PC lock list: the room a member of it was caught
+ * in was never stored, so there is no window to reopen and no field to write.
  */
-function withPcCatch(run: Record<string, unknown>): Record<string, unknown> {
+function withoutPcUnlocked(run: Record<string, unknown>): Record<string, unknown> {
   const next = { ...run };
   delete next.pcUnlocked;
-  next.pcCatch = null;
   return next;
 }
 
@@ -784,18 +781,6 @@ function parsePokemon(value: unknown): RunPokemon | null {
 }
 
 /**
- * Reads the route's own catch: the room it was caught in and the member it is. A
- * malformed field (a bad room id or an empty member id) reads as no catch, so a
- * hand-edited or truncated document cannot strand the run.
- */
-function parsePcCatch(value: unknown): PcCatch | null {
-  if (!isRecord(value)) return null;
-  if (!isInteger(value.roomInMap) || value.roomInMap < 0) return null;
-  if (!isString(value.memberId) || value.memberId === '') return null;
-  return { roomInMap: value.roomInMap, memberId: value.memberId };
-}
-
-/**
  * Reads the floor's mission: a row id the table still carries, a non-negative
  * integer progress and a boolean completed. Anything else reads as no mission, so a
  * hand-edited document cannot hang the HUD on a row that does not exist.
@@ -961,13 +946,8 @@ function parseRun(value: unknown): RunState | null {
 
   const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
 
-  // The PC lock: a run away from the entry room has necessarily left it, so an
-  // old save without the flag reads as departed; the route's own catch defaults
-  // to none (nothing is swappable beyond the entry room's first visit).
-  const entryDeparted = value.entryDeparted === true || routeInMap !== plan.entryRoom;
-  // A v15 document's floor-scoped `pcUnlocked` list is ignored: it cannot be
-  // re-scoped onto a room, so the catch window opens empty.
-  const pcCatch = parsePcCatch(value.pcCatch);
+  // The retired PC-lock fields (`Task-179`) read as nothing: a document that still
+  // carries them decodes exactly like one that does not, and neither is written back.
 
   const pokevialCharges = isInteger(value.pokevialCharges)
     ? Math.max(0, Math.min(POKEVIAL_MAX_CHARGES, value.pokevialCharges))
@@ -1003,8 +983,6 @@ function parseRun(value: unknown): RunState | null {
     arrivalEdge,
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
-    entryDeparted,
-    pcCatch,
     levelCap: levelCapForMap(mapIndex),
     pokevialCharges,
     xp,

@@ -4263,8 +4263,6 @@ export class RouteScene extends Phaser.Scene {
       arrivalEdge: plan.entryEdge,
       discoveredRooms: [plan.entryRoom],
       bossDefeated: false,
-      entryDeparted: false,
-      pcCatch: null,
       levelCap: levelCapForMap(floor),
       defeatedTrainers: [],
       pickedItems: [],

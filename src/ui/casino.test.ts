@@ -376,11 +376,10 @@ describe('hatchEgg', () => {
     expect(member.fighter.id).toBe('catch-1');
     expect(speciesPool(bandForMap(run.mapIndex), 'wild')).toContain(member.fighter.speciesId);
     expect(member.fighter.speciesId).toBe('obstagoon');
-    // It is not a catch: no counter, no record, no room, no PC window.
+    // It is not a catch: no counter, no record, no room.
     expect(next.stats.catches).toBe(run.stats.catches);
     expect(next.caughtSpecies).toEqual(run.caughtSpecies);
     expect(next.capturedRooms).toEqual([]);
-    expect(next.pcCatch).toBeNull();
     // The run's own pokémon are untouched.
     expect(next.party[0]).toBe(run.party[0]);
     expect(next.money).toBe(run.money);
@@ -401,7 +400,6 @@ describe('hatchEgg', () => {
     const { run: next, member } = hatch!;
     expect(next.party).toHaveLength(MAX_PARTY_SIZE);
     expect(next.box).toEqual([member]);
-    expect(next.pcCatch).toBeNull();
     expect(next.bag).toEqual([]);
   });
 

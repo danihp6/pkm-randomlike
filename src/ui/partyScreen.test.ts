@@ -216,6 +216,54 @@ describe('partyInput managing', () => {
   });
 });
 
+describe('PC editing: the entry room only', () => {
+  it('refuses a deposit and a withdraw outside the entry room, leaving the run alone', () => {
+    const entry = runWith(['a', 'b'], ['x']);
+    const away: RunState = { ...entry, routeInMap: 1 };
+    const picked = feed(away, initialPartyUi(), ['confirm']);
+    expect(picked.ui.grabbed).not.toBeNull();
+    const deposit = partyInput(picked.run, picked.ui, 'right');
+    expect(deposit.run).toBe(away);
+    expect(deposit.ui.grabbed).not.toBeNull();
+
+    const boxUi: PartyUiState = { pane: 'box', index: 0, grabbed: null };
+    expect(partyInput(away, boxUi, 'confirm').ui.grabbed).toBeNull();
+    expect(grabAt(away, boxUi, 'box', 0).run).toBe(away);
+    expect(grabAt(away, boxUi, 'box', 0).ui.grabbed).toBeNull();
+    expect(feed(away, boxUi, ['confirm', 'left']).run).toBe(away);
+  });
+
+  it('allows the whole across-swap in the entry room: party, box and back by id', () => {
+    const run = runWith(['a', 'b'], ['x']);
+    expect(run.routeInMap).toBe(0);
+    const deposited = feed(run, initialPartyUi(), ['confirm', 'right']);
+    expect(deposited.run.party.map((member) => member.fighter.id)).toEqual(['b']);
+    expect(deposited.run.box.map((member) => member.fighter.id)).toEqual(['x', 'a']);
+
+    const back = partyInput(deposited.run, deposited.ui, 'confirm');
+    expect(back.ui.grabbed).toEqual({ pane: 'box', origin: 1 });
+    const withdrawn = partyInput(back.run, back.ui, 'left');
+    expect(withdrawn.run.party.map((member) => member.fighter.id)).toEqual(['b', 'a']);
+    expect(withdrawn.run.box.map((member) => member.fighter.id)).toEqual(['x']);
+  });
+
+  it('allows a pointer swap in the entry room and refuses it one room away', () => {
+    const entry = runWith(['a'], ['x']);
+    const grabbed = grabAt(entry, { pane: 'box', index: 0, grabbed: null }, 'box', 0);
+    expect(grabbed.ui.grabbed).toEqual({ pane: 'box', origin: 0 });
+    expect(swapAcross(grabbed.run, grabbed.ui, 0).run.party.map((member) => member.fighter.id)).toEqual([
+      'x',
+    ]);
+
+    const away: RunState = { ...entry, routeInMap: 2 };
+    const refused = { pane: 'box' as const, index: 0, grabbed: { pane: 'box' as const, origin: 0 } };
+    const noGrab = grabAt(away, { pane: 'box', index: 0, grabbed: null }, 'box', 0);
+    expect(noGrab.run).toBe(away);
+    expect(noGrab.ui.grabbed).toBeNull();
+    expect(swapAcross(away, refused, 0)).toEqual({ run: away, ui: refused });
+  });
+});
+
 describe('pointer drag', () => {
   it('grabs the pressed row and reorders straight to the drop slot', () => {
     const run = runWith(['a', 'b', 'c', 'd']);

@@ -43,9 +43,9 @@ export function canTrade(run: RunState): boolean {
  * `memberId` names — `party` first, else `box` — and nothing else. Unlike
  * `releaseFainted` it is not a loss: `stats.casualties`, `stats.catches`, `rip`,
  * `caughtSpecies` and `xp` are untouched, and the party's remaining order is kept.
- * A miss returns the **same run reference** and `removed: null`. A `pcCatch`
- * naming the removed member is left alone: it is inert, exactly as
- * `dedupeMemberIds` documents (`state.ts` 363-365).
+ * A miss returns the **same run reference** and `removed: null`. Nothing else about
+ * the run is bookkept for the member: no PC window follows it out, because the
+ * boxes read the entry room, not a member (`pcMemberEditable`, `state.ts`).
  */
 export function removeMember(
   run: RunState,

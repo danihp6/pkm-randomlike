@@ -54,7 +54,6 @@ export type HudRoute = Readonly<{
   pokevialCharges: number;
   pokevialMax: number;
   bossDefeated: boolean;
-  entryDeparted: boolean;
   discoveredRooms: readonly number[];
   mission: HudMission | null;
   missionsCompleted: number;
@@ -210,7 +209,6 @@ function projectRoute(run: RunState, notice: Notice | null): HudState {
       pokevialCharges: run.pokevialCharges,
       pokevialMax: POKEVIAL_MAX_CHARGES,
       bossDefeated: run.bossDefeated,
-      entryDeparted: run.entryDeparted,
       discoveredRooms: [...run.discoveredRooms],
       mission: hudMission(run),
       missionsCompleted: run.missionsCompleted,

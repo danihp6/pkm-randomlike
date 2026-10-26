@@ -192,7 +192,7 @@ describe('resolveBattle', () => {
     expect(placed?.caughtAt).toEqual(catchLocation);
   });
 
-  it('places a catch in the party when there is room, with no PC window', () => {
+  it('places a catch in the party when there is room', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const catchLocation = { biomeId: 'forest', mapIndex: 2, routeInMap: 1 };
@@ -204,7 +204,6 @@ describe('resolveBattle', () => {
     expect(result.capture?.member.caughtAt).toEqual(catchLocation);
     expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1']);
     expect(result.run.box).toEqual([]);
-    expect(result.run.pcCatch).toBeNull();
   });
 
   it('counts every fainted member as a casualty', () => {
@@ -219,7 +218,7 @@ describe('resolveBattle', () => {
     expect(result.run.stats.casualties).toBe(2);
   });
 
-  it('sends a catch to the box when the party is full, opening its route window', () => {
+  it('sends a catch to the box when the party is full', () => {
     const full: RunState = { ...createRun({ seed: 's', starter }), party: Array(6).fill(starter) };
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(full, returned(full, 'capture', { captured: caught.fighter }), wild);
@@ -227,7 +226,6 @@ describe('resolveBattle', () => {
     expect(result.run.box.map((member) => member.fighter.id)).toEqual(['catch-1']);
     expect(result.capture?.toPc).toBe(true);
     expect(result.capture?.member.fighter.id).toBe('catch-1');
-    expect(result.run.pcCatch).toEqual({ roomInMap: full.routeInMap, memberId: 'catch-1' });
     // The room's single capture is spent and the catch counted.
     expect(result.run.capturedRooms).toContain(full.routeInMap);
     expect(result.run.stats.catches).toBe(1);

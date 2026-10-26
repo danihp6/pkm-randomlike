@@ -70,7 +70,10 @@ carries over.
   across the two panels to move it between them. Dropping a member **onto** a
   member of the other panel **swaps** the two, so a boxed Pokémon can replace a
   party member even when the party is full (the one it replaces takes the box
-  slot). A plain **click** on a member
+  slot). Crossing between the two panels is allowed **only in the floor's entry
+  room**, on every visit (`docs/routes-spec.md` §6): everywhere else both
+  directions are refused and the boxed members read as locked. A plain **click**
+  on a member
   opens a **detail panel** (its own window) with **STATS** — HP, the five battle
   stats (the one a nature raises painted green, the one it lowers red), nature,
   ability, held item and the member's **evolution graph**: its whole family from

@@ -141,12 +141,11 @@ describe('tradePokemon success', () => {
     expect(result.run.pickedItems).toEqual([ID]);
   });
 
-  it('books no catch: stats, rip, caughtSpecies, pcCatch and xp stay put', () => {
+  it('books no catch: stats, rip, caughtSpecies and xp stay put', () => {
     const { run, result } = trade();
     expect(result.run.stats).toEqual(run.stats);
     expect(result.run.rip).toEqual(run.rip);
     expect(result.run.caughtSpecies).toEqual(run.caughtSpecies);
-    expect(result.run.pcCatch).toBeNull();
     expect(result.run.xp).toBe(run.xp);
   });
 
@@ -264,16 +263,6 @@ describe('the trade and the run’s other books', () => {
     const result = tradePokemon(run, { memberId: 'member-0', mapIndex: MAP_INDEX, roomId: ROOM_ID });
     if (!result.ok) throw new Error('expected a trade');
     expect(result.run.capturedRooms).toEqual(run.capturedRooms);
-  });
-
-  it('does not touch a `pcCatch` naming the member that left', () => {
-    const run: RunState = {
-      ...runWith(['caterpie', 'metapod']),
-      pcCatch: { roomInMap: 4, memberId: 'member-0' },
-    };
-    const result = tradePokemon(run, { memberId: 'member-0', mapIndex: MAP_INDEX, roomId: ROOM_ID });
-    if (!result.ok) throw new Error('expected a trade');
-    expect(result.run.pcCatch).toEqual({ roomInMap: 4, memberId: 'member-0' });
   });
 
   it('keeps the rest of the party in order when the lead leaves', () => {

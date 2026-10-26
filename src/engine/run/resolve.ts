@@ -100,7 +100,7 @@ export function resolveBattle(
       ? asDark(adopted)
       : adopted;
     const placed = addCaughtPokemon(next, caught);
-    // Read the placement back off the run, so it cannot disagree with `pcCatch`.
+    // Read the placement back off the run, so it cannot disagree with the box.
     capture = {
       member: caught,
       toPc: placed.box.some((member) => member.fighter.id === caught.fighter.id),
