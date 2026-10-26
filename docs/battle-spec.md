@@ -106,7 +106,10 @@ and the two resolvers decide which half of the rule it is.
   also carries the moves whose power still derives from the dex number but is
   **multiplied** by a condition — Eruption, Hex, Facade, the weight- and
   HP-relative powers and the rest of `3.3` — which is why their ledger note stays
-  `data: basePower` while their real power comes from this resolver.
+  `data: basePower` while their real power comes from this resolver. Rage Fist is
+  the one `3.3` member that does not derive from its dex number at all: the
+  resolver computes the number outright, so the ledger records it as
+  `damage: damage.ts`.
 
 The fixed amounts (`'fixed'`):
 
@@ -144,6 +147,7 @@ The resolved powers (`'power'`):
 | Return, Frustration | 102 |
 | Present | the dex power when the turn loop has rolled one, else 40 |
 | Spit Up | `100 × stockpile charges` |
+| Rage Fist | `min(350, 50 + 50 × hits taken)`; the count is capped at six, so 50 at none and 350 from the sixth |
 
 **Triple Kick and Triple Axel ramp per hit.** Both keep their dex `basePower` and the
 hit loop multiplies it by `hit + 1` on the 0-based hit index, so Triple Kick pays
@@ -179,6 +183,21 @@ Fishious Rend read whether the target has already moved this turn or the user ha
 already been hit; and Expanding Force, Rising Voltage, Grassy Glide and Psyblade
 read the terrain. Their ledger note is `data: basePower` because their power still
 comes from that number, and `damage.test.ts` is their evidence.
+
+**Rage Fist** is the member whose power is not its dex number multiplied but
+recomputed from it: `50 + 50 × hits`, where `hits` is how many hits its user has
+taken since it last switched in, capped at six. So a clean switch-in hits at 50,
+two hits make it 150, and from the sixth hit on it takes the 350 cap. A hit counts
+once per **hit**, not per move — a ten-hit move is ten hits, capped the same — and
+whatever the category; only a hit the fighter itself took raises the count, so a
+hit a **Substitute** absorbs and a hit that deals 0 damage do not. The count lives
+in `Volatiles.timesHit` (`src/engine/battle/fighter.ts`), which is why it survives
+the whole stay on the field — it is not cleared at the start of a turn, unlike the
+Counter/Mirror Coat pair — and resets on switch-out, because `clearVolatiles`
+builds a fresh object. `resolveBasePower` owns the number, `DAMAGE_RESOLVERS` names
+`ragefist`, and the ledger therefore records it as `damage: damage.ts`; the FIGHT
+menu's `power` is the same number the hit will use, while its `basePower` stays the
+dex 50.
 
 Two moves swap the stat the hit reads, through one helper that the battle and the
 AI share so they cannot disagree: **Body Press** is physical and reads the user's
@@ -226,11 +245,12 @@ stay **excluded** rather than claiming a port they do not have: **Fling** needs 
 held item's fling power, which `DexItem` does not expose; **Bide** needs a two-turn
 damage accumulator no fighter carries; and **Spotlight** needs a redirection
 mechanic the engine does not model at all (Follow Me and Rage Powder are out for
-the same reason). Four more keep their plain dex power because the trigger they
+the same reason). Three more keep their plain dex power because the trigger they
 would read is not recorded anywhere in the battle state: **Retaliate** (an ally
-fainted last turn), **Round** (an ally's Round this turn), **Echoed Voice** (a
-consecutive-use streak) and **Rage Fist** (the number of hits taken). Each needs a
-new field in `fighter.ts`/`state.ts`, which is a task of its own.
+fainted last turn), **Round** (an ally's Round this turn) and **Echoed Voice** (a
+consecutive-use streak). Each needs a new field in `fighter.ts`/`state.ts`, which
+is a task of its own. Rage Fist has left that list: `Volatiles.timesHit` now records
+the hits its user has taken, so the move is resolved rather than plain (§3.3).
 
 ## 4. Status and volatility
 

@@ -3329,7 +3329,7 @@
       "id": "ragefist",
       "name": "Rage Fist",
       "status": "port",
-      "note": "data: basePower"
+      "note": "damage: damage.ts"
     },
     {
       "id": "ragepowder",

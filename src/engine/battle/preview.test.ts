@@ -131,4 +131,19 @@ describe('the relative-damage moves in the preview', () => {
     movePreview(state, 'player', 1);
     expect(state.rng.next()).toBe(new Rng(1).next());
   });
+
+  it('reads Rage Fist’s power off the hits its user has taken, over the dex number', () => {
+    const attacker = player(['ragefist']);
+    const state = battle(attacker);
+    expect(movePreview(state, 'player', 0)).toMatchObject({ basePower: 50, power: 50 });
+    attacker.volatiles.timesHit = 2;
+    expect(movePreview(state, 'player', 0)).toMatchObject({ basePower: 50, power: 150 });
+  });
+
+  it('reads Rage Fist without a draw', () => {
+    const state = battle(player(['ragefist']));
+    state.sides.player.party[0].volatiles.timesHit = 2;
+    expect(movePreview(state, 'player', 0)?.power).toBe(150);
+    expect(state.rng.next()).toBe(new Rng(1).next());
+  });
 });

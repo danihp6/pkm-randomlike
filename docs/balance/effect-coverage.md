@@ -920,7 +920,7 @@ catalogue row, not engine code.
 | Quick Guard | `excluded` | doubles/ally only |
 | Quiver Dance | `port` | data: boosts |
 | Rage | `port` | data: basePower |
-| Rage Fist | `port` | data: basePower |
+| Rage Fist | `port` | damage: damage.ts |
 | Rage Powder | `excluded` | doubles/ally only |
 | Raging Bull | `port` | data: basePower |
 | Raging Fury | `port` | data: basePower |

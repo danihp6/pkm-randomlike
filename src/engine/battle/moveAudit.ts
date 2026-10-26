@@ -62,6 +62,8 @@ export interface MoveAuditSetup {
   terrain?: TerrainId | null;
   /** Stockpile charges the player starts with, clamped to `0..3`. Default `0`. */
   playerStockpile?: number;
+  /** The hits the player has already taken before the move runs, 0..6. Default 0. */
+  playerTimesHit?: number;
 }
 
 /** One snapshot of the board after the single move has resolved. */
@@ -197,6 +199,7 @@ function probeBoard(setup: Partial<MoveAuditSetup>, playerMoves: readonly string
   withStatus(player, setup.playerStatus ?? null);
   withStatus(enemy, setup.enemyStatus ?? null);
   player.volatiles.stockpile = Math.max(0, Math.min(3, Math.floor(setup.playerStockpile ?? 0)));
+  player.volatiles.timesHit = Math.max(0, Math.min(6, Math.floor(setup.playerTimesHit ?? 0)));
 
   const weather = setup.weather ?? null;
   const terrain = setup.terrain ?? null;
@@ -325,7 +328,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'aurawheel',
     expected: {
       playerBoosts: [0, 0, 0, 0, 1, 0, 0],
-      enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken'],
+      enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'timesHit'],
     },
   },
   { moveId: 'aurorabeam', expected: { events: ['move', 'damage'] } },
@@ -353,7 +356,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'bind',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'physicalDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 98 },
   },
@@ -407,7 +416,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'chatter',
     expected: {
       events: ['move', 'damage'],
-      enemyVolatiles: ['confusion', 'lastDamageTaken', 'specialDamageTaken'],
+      enemyVolatiles: ['confusion', 'lastDamageTaken', 'specialDamageTaken', 'timesHit'],
     },
   },
   {
@@ -418,7 +427,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'clamp',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'physicalDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 92 },
   },
@@ -499,7 +514,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'dynamicpunch',
     expected: {
       events: ['move', 'damage'],
-      enemyVolatiles: ['confusion', 'lastDamageTaken', 'physicalDamageTaken'],
+      enemyVolatiles: ['confusion', 'lastDamageTaken', 'physicalDamageTaken', 'timesHit'],
     },
   },
   { moveId: 'earthpower', expected: { events: ['move', 'damage'] } },
@@ -544,7 +559,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     moveId: 'fakeout',
     expected: {
       events: ['move', 'damage'],
-      enemyVolatiles: ['flinched', 'lastDamageTaken', 'physicalDamageTaken'],
+      enemyVolatiles: ['flinched', 'lastDamageTaken', 'physicalDamageTaken', 'timesHit'],
     },
   },
   { moveId: 'faketears', expected: { enemyBoosts: [0, 0, 0, -2, 0, 0, 0] } },
@@ -573,7 +588,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'firespin',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'specialDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 92 },
   },
@@ -699,7 +720,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'infestation',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'specialDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 100 },
   },
@@ -708,7 +735,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'irondefense', expected: { playerBoosts: [0, 2, 0, 0, 0, 0, 0] } },
   { moveId: 'ironhead', expected: { events: ['move', 'damage'] } },
   { moveId: 'irontail', expected: { events: ['move', 'damage'] } },
-  { moveId: 'judgment', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  {
+    moveId: 'judgment',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'timesHit'] },
+  },
   {
     moveId: 'junglehealing',
     setup: { playerHp: 60, playerStatus: 'brn' },
@@ -760,7 +790,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'magmastorm',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'specialDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 65 },
   },
@@ -815,7 +851,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [0, 0, 0, 0, 0, -1, 0] },
   },
   { moveId: 'mudsport', expected: { fieldConditions: [0, 0, 0, 0, 0, 5, 0], events: ['move'] } },
-  { moveId: 'multiattack', expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken'] } },
+  {
+    moveId: 'multiattack',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'timesHit'] },
+  },
   {
     moveId: 'mysticalfire',
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [0, 0, -1, 0, 0, 0, 0] },
@@ -935,6 +974,17 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'pyroball', expected: { events: ['move', 'damage'] } },
   { moveId: 'quash', expected: { enemyVolatiles: ['quash'], events: ['move'] } },
   { moveId: 'quiverdance', expected: { playerBoosts: [0, 0, 1, 1, 1, 0, 0] } },
+  // Rage Fist: 50 + 50 per hit taken, six at most. Two hits → 150 power, six → 350
+  // (docs/battle-spec.md §3.3); a Ghost move needs a non-Normal target to land.
+  {
+    moveId: 'ragefist',
+    setup: { enemySpecies: 'mew', playerTimesHit: 2 },
+    expected: { events: ['move', 'damage'], damageAmounts: [68] },
+    scenario: {
+      setup: { playerTimesHit: 6 },
+      expected: { events: ['move', 'damage'], damageAmounts: [158] },
+    },
+  },
   { moveId: 'raindance', expected: { weather: 'rain' } },
   {
     moveId: 'rapidspin',
@@ -962,7 +1012,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     expected: { playerStatus: 'slp', playerHp: 123, events: ['move', 'status', 'heal'] },
   },
   { moveId: 'return', expected: { events: ['move', 'damage'] } },
-  { moveId: 'revelationdance', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  {
+    moveId: 'revelationdance',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'timesHit'] },
+  },
   { moveId: 'reversal', expected: { events: ['move', 'damage'] } },
   { moveId: 'revivalblessing', expected: { events: ['move'] } },
   { moveId: 'rockblast', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
@@ -987,7 +1040,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'sandtomb',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'physicalDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 92 },
   },
@@ -1051,7 +1110,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'smackdown',
     expected: {
-      enemyVolatiles: ['grounded', 'lastDamageTaken', 'physicalDamageTaken'],
+      enemyVolatiles: ['grounded', 'lastDamageTaken', 'physicalDamageTaken', 'timesHit'],
       events: ['move', 'damage'],
     },
   },
@@ -1060,7 +1119,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'snaptrap',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'physicalDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 93 },
   },
@@ -1160,17 +1225,29 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'taunt', expected: { enemyVolatiles: ['taunt'] } },
   { moveId: 'tearfullook', expected: { enemyBoosts: [-1, 0, -1, 0, 0, 0, 0] } },
   { moveId: 'teatime', setup: { heldItem: 'sitrusberry' }, expected: { playerItem: null } },
-  { moveId: 'technoblast', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  {
+    moveId: 'technoblast',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'timesHit'] },
+  },
   { moveId: 'teeterdance', expected: { enemyVolatiles: ['confusion'] } },
   { moveId: 'telekinesis', expected: { enemyVolatiles: ['telekinesis'], events: ['move'] } },
   { moveId: 'teleport', expected: { events: ['move'] } },
-  { moveId: 'terrainpulse', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  {
+    moveId: 'terrainpulse',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'timesHit'] },
+  },
   { moveId: 'thunder', expected: { events: ['move', 'damage'] } },
   { moveId: 'thunderbolt', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'thundercage',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'specialDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 73 },
   },
@@ -1245,7 +1322,7 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
     setup: { enemyMoves: ['quickattack', 'tackle'] },
     expected: {
       events: ['move', 'damage'],
-      enemyVolatiles: ['flinched', 'lastDamageTaken', 'physicalDamageTaken'],
+      enemyVolatiles: ['flinched', 'lastDamageTaken', 'physicalDamageTaken', 'timesHit'],
     },
     scenario: {
       setup: { enemyMoveIndex: 1 },
@@ -1272,11 +1349,20 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'watershuriken', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
   { moveId: 'watersport', expected: { fieldConditions: [0, 0, 0, 0, 0, 0, 5], events: ['move'] } },
   { moveId: 'wavecrash', expected: { events: ['move', 'damage', 'damage'] } },
-  { moveId: 'weatherball', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
+  {
+    moveId: 'weatherball',
+    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'timesHit'] },
+  },
   {
     moveId: 'whirlpool',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'specialDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 92 },
   },
@@ -1292,7 +1378,13 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'wrap',
     expected: {
-      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+      enemyVolatiles: [
+        'lastDamageTaken',
+        'partiallyTrapped',
+        'physicalDamageTaken',
+        'timesHit',
+        'trapped',
+      ],
     },
     residual: { enemyHp: 98 },
   },

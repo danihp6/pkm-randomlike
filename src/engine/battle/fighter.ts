@@ -63,6 +63,13 @@ export type Volatiles = {
   physicalDamageTaken: number;
   /** Special damage taken since the turn started (Mirror Coat). */
   specialDamageTaken: number;
+  /**
+   * The hits this fighter has taken since it last switched in, capped at six.
+   * Rage Fist's power reads it. Battle-long inside one stay on the field: it is
+   * NOT cleared at the start of a turn and IS cleared when the fighter switches
+   * out (`clearVolatiles` builds a fresh object) like every other volatile.
+   */
+  timesHit: number;
   /** Turns left before Yawn puts this fighter to sleep (0 = none). */
   yawn: number;
   /** Slow Start halves Attack and Speed while above zero. */
@@ -322,6 +329,7 @@ export function emptyVolatiles(): Volatiles {
     semiInvulnerable: null,
     physicalDamageTaken: 0,
     specialDamageTaken: 0,
+    timesHit: 0,
     yawn: 0,
     slowStart: 0,
     iceFace: false,

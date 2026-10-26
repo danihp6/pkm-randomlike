@@ -14,6 +14,7 @@ import {
 } from './state';
 import { autoReplace, needsReplacement, takeTurn, teamTypeStatusChance, useMove } from './turn';
 import { makeContext, runModifyMultihit } from './effects/registry';
+import { resolveBasePower } from './damage';
 import { multiHitPower } from './modifiers';
 import { SEMI_INVULNERABLE_COUNTER_MULTIPLIER } from './volatile';
 
@@ -1061,5 +1062,89 @@ describe('the semi-invulnerable charge turn (Task-168)', () => {
     expect(player.volatiles.charging).toBe('solarbeam');
     expect(player.volatiles.semiInvulnerable).toBeNull();
     expect(player.hp).toBeLessThan(player.maxHp);
+  });
+});
+
+describe('the hits a fighter has taken (Task-173)', () => {
+  it('counts one per hit, so a three-hit move raises it by three', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 5, moves: ['tripledive'] }],
+      1,
+    );
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'player').volatiles.timesHit).toBe(3);
+  });
+
+  it('raises it by one on a single hit', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 5, moves: ['tackle'] }],
+      1,
+    );
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'player').volatiles.timesHit).toBe(1);
+  });
+
+  it('caps it at six however many hits land', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 5, moves: ['populationbomb'] }],
+      44,
+    );
+    const player = activeFighter(state, 'player');
+    player.maxHp = 100000;
+    player.hp = 100000;
+    activeFighter(state, 'enemy').volatiles.lockOn = true;
+    takeTurn(state, fight(), fight());
+    expect(damageTaken(state, 'player')).toHaveLength(10);
+    expect(player.volatiles.timesHit).toBe(6);
+  });
+
+  it('does not count a hit a Substitute absorbed', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 5, moves: ['tackle'] }],
+      1,
+    );
+    activeFighter(state, 'player').volatiles.substitute = 40;
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'player').volatiles.timesHit).toBe(0);
+  });
+});
+
+describe('Rage Fist in a fixed-seed turn (Task-173)', () => {
+  const rageFistBoard = (seed: number): BattleState =>
+    build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['splash', 'ragefist'] }],
+      [{ id: 'e', speciesId: 'mew', level: 50, moves: ['doublekick', 'splash'] }],
+      seed,
+    );
+
+  const play = (seed: number): BattleState => {
+    const state = rageFistBoard(seed);
+    takeTurn(state, fight(0), fight(0));
+    takeTurn(state, fight(1), fight(1));
+    return state;
+  };
+
+  it('pays the power the live fighter has earned, once, and keeps the count', () => {
+    const state = rageFistBoard(7);
+    const player = activeFighter(state, 'player');
+    takeTurn(state, fight(0), fight(0));
+    expect(player.volatiles.timesHit).toBe(2);
+    expect(damageTaken(state, 'player')).toHaveLength(2);
+
+    const before = state.log.length;
+    takeTurn(state, fight(1), fight(1));
+    const hits = state.log.slice(before).filter((event) => event.kind === 'damage');
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatchObject({ side: 'enemy' });
+    expect(resolveBasePower(player, activeFighter(state, 'enemy'), getMove('ragefist')!)).toBe(150);
+    expect(player.volatiles.timesHit).toBe(2);
+  });
+
+  it('replays the identical log on the same seed', () => {
+    expect(play(7).log).toEqual(play(7).log);
   });
 });

@@ -1327,6 +1327,9 @@ function resolveMove(
         totalDamage += dealt;
         if (perHitMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
         else if (perHitMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
+        // One per *hit*, not per move: a 10-hit move is ten hits taken, and the cap is
+        // the reference's six. Rage Fist reads it (docs/battle-spec.md §3.3).
+        hitTarget.volatiles.timesHit = Math.min(6, hitTarget.volatiles.timesHit + 1);
         pushEvent(state, {
           kind: 'damage',
           side: aim.side,
