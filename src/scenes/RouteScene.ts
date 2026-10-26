@@ -959,6 +959,7 @@ export class RouteScene extends Phaser.Scene {
       facing: this.facingFromTo(position, this.route.entry),
       sight: DEFAULT_TRAINER_SIGHT,
       archetypeId: 'ace',
+      aggro: false,
     };
   }
 

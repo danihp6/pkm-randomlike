@@ -43,6 +43,13 @@ export type RouteTrainer = Readonly<{
   archetypeId: string;
   /** Facings a spinner cycles through (2+); absent on a fixed trainer. */
   turns?: readonly Facing[];
+  /**
+   * Whether a line of sight can open a fight. **Absent means `true`** (every trainer
+   * that ever shipped). `false` draws, blocks and is talked to exactly as before, but
+   * its sight never triggers the spotted/chase path: the map boss and the mini-boss
+   * are fought only by interacting with them.
+   */
+  aggro?: boolean;
 }>;
 
 /**

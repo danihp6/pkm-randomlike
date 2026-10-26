@@ -121,6 +121,7 @@ describe('the mini-boss room', () => {
           facing: 'N',
           sight: DEFAULT_TRAINER_SIGHT,
           archetypeId: 'ace',
+          aggro: false,
         },
       ],
     });

@@ -8329,7 +8329,7 @@ run-integrity defects first, the presentation and economy last.
       canvas card. Claims `src/scenes/panels/detail.ts`, `src/ui/partyDetail.ts` +
       `src/ui/partyDetail.test.ts`, `docs/design-spec.md` §3. *Dependencies:* none. *(Batch 79)*
 
-- [ ] **[Task-180] The map boss and the mini-boss never open a battle by looking at the player.**
+- [x] **[Task-180] The map boss and the mini-boss never open a battle by looking at the player.**
       «el boss y miniboss no tienen rango para iniciar combate es solo interactuando». Both are ordinary
       `RouteTrainer`s with a live line of sight, so both aggro: the boss is appended to
       `route.trainers` facing the door with `sight: DEFAULT_TRAINER_SIGHT` (`bossTrainer`,

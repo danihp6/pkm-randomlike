@@ -179,6 +179,27 @@ describe('trainer line of sight', () => {
   });
 });
 
+describe('a trainer with its line of sight switched off', () => {
+  const player: Tile = { x: 3, y: 2 };
+
+  it('never answers spotted for `aggro: false`, and keeps the shipped rule otherwise', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const trainer = route.trainers[0];
+    expect(seesPlayer(route, { ...trainer, aggro: false }, player)).toBe(false);
+    expect(seesPlayer(route, { ...trainer, aggro: true }, player)).toBe(true);
+    expect(seesPlayer(route, trainer, player)).toBe(true);
+  });
+
+  it('still draws its cone: a spun facing changes nothing for `aggro: false`', () => {
+    const route = fixture('S', { x: 3, y: 1 });
+    const trainer = route.trainers[0];
+    for (const facing of ['S', 'E', 'N', 'W'] as const) {
+      expect(seesPlayer(route, { ...trainer, facing, aggro: false }, player), facing).toBe(false);
+    }
+    expect(sightLine(route, { ...trainer, aggro: false })).toEqual([{ x: 3, y: 2 }]);
+  });
+});
+
 describe('route trainer placement', () => {
   it('places no trainers without an archetype pool', () => {
     expect(sketchRoute({ seed: 'none', routeIndex: 2, biomeId: 'forest' }).trainers).toEqual([]);

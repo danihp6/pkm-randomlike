@@ -1361,3 +1361,69 @@ describe('the room chamber on the route', () => {
     expect(bossChamberTile(crossed)).toEqual({ x: 10, y: 12 });
   });
 });
+
+/**
+ * The boss room's anti-soft-lock argument, on the engine's own terms: the boss is
+ * fought only by interacting with it, so the player must always be able to stand on
+ * a tile next to it and press the key. Twenty literal seeds keep that a pin instead
+ * of a sweep.
+ */
+const BOSS_GUARD_SEEDS: readonly string[] = [
+  'boss-guard-01',
+  'boss-guard-02',
+  'boss-guard-03',
+  'boss-guard-04',
+  'boss-guard-05',
+  'boss-guard-06',
+  'boss-guard-07',
+  'boss-guard-08',
+  'boss-guard-09',
+  'boss-guard-10',
+  'boss-guard-11',
+  'boss-guard-12',
+  'boss-guard-13',
+  'boss-guard-14',
+  'boss-guard-15',
+  'boss-guard-16',
+  'boss-guard-17',
+  'boss-guard-18',
+  'boss-guard-19',
+  'boss-guard-20',
+];
+
+describe('the boss room never soft-locks on the boss', () => {
+  const shapes: readonly RouteShape[] = ['straight', 'cross', 'corridor'];
+  const CARDINAL_NEIGHBOURS: readonly Tile[] = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+
+  it('keeps a walkable neighbour of the boss tile on the entry BFS tree, on 20 seeds', () => {
+    for (const seed of BOSS_GUARD_SEEDS) {
+      for (const shape of shapes) {
+        const route = sketchRoute({
+          seed,
+          routeIndex: 4,
+          biomeId: 'forest',
+          width: 30,
+          height: 30,
+          shape,
+          chamber: true,
+        });
+        const label = `${seed} ${shape}`;
+        expect(route.chamber, `${label} chamber`).toBeDefined();
+        const boss = bossChamberTile(route);
+        expect(boss, `${label} boss tile`).not.toBeNull();
+        const reached = reachableTiles(route.tiles, route.entry);
+        expect(reached.has(`${boss!.x},${boss!.y}`), `${label} boss tile reachable`).toBe(true);
+        const standable = CARDINAL_NEIGHBOURS.some((vector) => {
+          const neighbour = { x: boss!.x + vector.x, y: boss!.y + vector.y };
+          return isWalkable(route.tiles, neighbour) && reached.has(`${neighbour.x},${neighbour.y}`);
+        });
+        expect(standable, `${label} reachable neighbour of ${boss!.x},${boss!.y}`).toBe(true);
+      }
+    }
+  }, 120_000);
+});

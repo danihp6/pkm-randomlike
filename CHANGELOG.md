@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The map boss and the mini-boss only fight when spoken to.** `[Task-180]`, the second of
+      Batch 79: `RouteTrainer` gains an optional `aggro` flag (absent means true) and `seesPlayer`
+      answers `false` for a trainer that turns it off before it reads any geometry, so the one gate
+      both triggers already share — the per-step `trainerSpotted()` scan and the spinner tick —
+      stops opening a fight; `bossTrainer` and the mini-boss fixture set `aggro: false` while their
+      id, tile, facing and `sight` stay byte-identical, so no seed, topology or roster draw moves.
+      With the "it walks over" fallback gone, the sealed boss room's anti-soft-lock argument is
+      re-pinned on the engine's own terms: on 20 fixed seeds and the three chamber shapes the boss's
+      tile keeps a walkable cardinal neighbour on the entry's BFS tree, so it can always be reached
+      and spoken to. `docs/routes-spec.md` §2 and `docs/maps-spec.md` §6 own the rule, no
+      `SAVE_VERSION` step. `npm test` 4557 passed / 69 skipped, `npm run build` green; measured live
+      over CDP on map 2 (seed `qa180-aggro-map2`) by reading the scene state: five idle seconds in
+      the boss's lane and in the mini-boss's opened no battle, one step toward each opened none, and
+      `E` facing each opened the battle with 6 and 3 enemy party members.
+
 - [x] **A held berry costs the held tier, and a bought shop row leaves the shelf.** `[Task-178]`, the
       fourth of Batch 78: the rule freezes as "a `kind: 'held'` item without `consumed: true` costs
       at least 1000", the eleven berry-class no-ops (`NOOP_BERRY_ITEMS`: custap, enigma, jaboca, kee,
