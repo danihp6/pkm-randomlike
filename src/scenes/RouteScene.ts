@@ -223,7 +223,6 @@ import {
   eggHatchNotice,
   itemPickupNotice,
   itemUsedNotice,
-  levelUpNotice,
   missionCompleteNotice,
   type Notice,
 } from '../ui/notice';
@@ -3928,16 +3927,7 @@ export class RouteScene extends Phaser.Scene {
       onUpdate: paint,
       onComplete: () => {
         clearPartyPortraitTints();
-        // Every level-up says so, not only the ones that crossed a move. One
-        // notice: a second beat replaces the first rather than stacking.
-        for (const beat of beats) {
-          const member = this.run.party.find((entry) => entry.fighter.id === beat.id);
-          this.showNotice(
-            levelUpNotice(member ? this.memberName(member) : t('common.unknownPokemon'), beat.toLevel),
-          );
-        }
         this.refreshHud();
-        // Announce each move crossed on the way up, now that the counter landed.
         showLearnPopup(this.panelHost, beats);
       },
     });

@@ -842,7 +842,6 @@ export const es: Readonly<Record<TranslationKey, string>> = {
     'Tu equipo está lleno: {name} se ha ido al PC. Puedes cambiarlo antes de salir de esta ruta.',
   'notice.itemObtained': '¡Has obtenido {name}!',
   'notice.itemUsed': 'Has usado {name}.',
-  'notice.levelUp': '¡{name} ha subido al nivel {level}!',
   'notice.eggHatch': '¡El Huevo eclosionó en {name}!',
   'notice.noHealRoom': '¡En esta sala no se pueden usar objetos ni movimientos de curación!',
   'notice.bannedRoom': '¡Esta sala bloquea a {name}!',

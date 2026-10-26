@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A level-up that crossed no move raises no panel.**
+      `[Task-164]`, the second of Batch 75: `playLevelUp` no longer raises the
+      transient "X grew to Lv N!" notice for every beat — the loop and the
+      `levelUpNotice` factory are gone and the `notice.levelUp` key is retired from
+      both locales, while the counter tween, the portrait flash, the learn modal and
+      the evolution popup all stay. The only panel a level-up raises is the one that
+      names a move, which **reverses** `[Task-50]`'s decision;
+      `docs/design-spec.md` §3 drops the notice sentence. `npm test` 4439 passed /
+      69 skipped, `npm run build` green; measured live over CDP at 390×844, 18 samples
+      per win: no `/grew to Lv/` text anywhere and `learnPopupOpenNow()` false for a
+      move-less level-up, the modal reading `Charmander learned Tackle!` for a
+      move-crossing one.
 - [x] **A back press never orders a turn the player did not order.**
       `[Task-163]`, the first of Batch 75: while the player owes a replacement the
       switch grid is the only menu a back press may reach. One predicate,

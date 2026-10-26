@@ -836,7 +836,6 @@ export const en = {
     'Your party is full — {name} went to the PC. You can swap it in before you leave this route.',
   'notice.itemObtained': 'Obtained {name}!',
   'notice.itemUsed': 'Used {name}.',
-  'notice.levelUp': '{name} grew to Lv {level}!',
   'notice.eggHatch': 'The Egg hatched into {name}!',
   'notice.noHealRoom': 'No items or healing moves in this room!',
   'notice.bannedRoom': 'This room bars {name}!',

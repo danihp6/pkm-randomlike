@@ -7941,7 +7941,7 @@ run-integrity defects first, the presentation and economy last.
       `docs/maps-spec.md` §7. *Dependencies:* none — `[Task-52]`'s record ships and is only extended.
       *(Batch 75)*
 
-- [ ] **[Task-164] A level-up that crossed no move shows no panel at all.** «no deberia salir panel sube
+- [x] **[Task-164] A level-up that crossed no move shows no panel at all.** «no deberia salir panel sube
       de nivel, solo debe existir panel has aprendido nuevos movimientos». `playLevelUp`
       (`src/scenes/RouteScene.ts` 3909-3944) already gates the learn modal — `showLearnPopup` returns
       at `detail.ts` 1338 when no beat carries a learned id — but its tween completion raises a

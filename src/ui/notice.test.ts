@@ -10,7 +10,6 @@ import {
   gateOpenedNotice,
   itemPickupNotice,
   itemUsedNotice,
-  levelUpNotice,
   missionCompleteNotice,
   noHealRoomNotice,
   bannedRoomNotice,
@@ -81,24 +80,6 @@ describe('itemUsedNotice', () => {
   it('passes the name through untouched', () => {
     expect(itemUsedNotice('Mr. Mime').text).toBe('Used Mr. Mime.');
     expect(itemUsedNotice("King's Rock").text).toBe("Used King's Rock.");
-  });
-});
-
-describe('levelUpNotice', () => {
-  it('writes the fixed sentence with the member name, its new level and the shared hold', () => {
-    expect(levelUpNotice('Growlithe', 21)).toEqual({
-      text: 'Growlithe grew to Lv 21!',
-      holdMs: NOTICE_HOLD_MS,
-    });
-  });
-
-  it('holds a notice for 2.6 seconds', () => {
-    expect(levelUpNotice('Charmander', 6).holdMs).toBe(2600);
-  });
-
-  it('passes the name and the level through untouched', () => {
-    expect(levelUpNotice("Farfetch'd 2", 5).text).toBe("Farfetch'd 2 grew to Lv 5!");
-    expect(levelUpNotice('Mr. Mime', 100).text).toBe('Mr. Mime grew to Lv 100!');
   });
 });
 
@@ -192,11 +173,11 @@ describe('staticLegendaryNotice', () => {
       catchToPcNotice('Sentret'),
       itemPickupNotice('Potion'),
       itemUsedNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
       noHealRoomNotice(),
+      bannedRoomNotice('Pidgeot'),
       missionCompleteNotice('Flawless floor'),
       staticSealLockedNotice('water'),
     ].map((notice) => notice.text);
@@ -229,7 +210,7 @@ describe('noHealRoomNotice', () => {
     const others = [
       catchToPcNotice('Sentret'),
       itemPickupNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
+      itemUsedNotice('Potion'),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
@@ -264,7 +245,7 @@ describe('bannedRoomNotice', () => {
     const others = [
       catchToPcNotice('Pidgeot'),
       itemPickupNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
+      itemUsedNotice('Potion'),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
@@ -323,7 +304,7 @@ describe('the puzzle room’s notices', () => {
     const others = [
       catchToPcNotice('Sentret'),
       itemPickupNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
+      itemUsedNotice('Potion'),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
@@ -358,11 +339,11 @@ describe('missionCompleteNotice', () => {
       catchToPcNotice('Sentret'),
       itemPickupNotice('Potion'),
       itemUsedNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
       noHealRoomNotice(),
+      bannedRoomNotice('Pidgeot'),
     ].map((notice) => notice.text);
     expect(others).not.toContain(missionCompleteNotice('Flawless floor').text);
   });
@@ -394,7 +375,6 @@ describe('areaEntryNotice', () => {
       catchToPcNotice('Sentret'),
       itemPickupNotice('Potion'),
       itemUsedNotice('Potion'),
-      levelUpNotice('Growlithe', 21),
       eggHatchNotice('Sentret'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),
@@ -437,7 +417,6 @@ describe('areaEntryNotice', () => {
       catchToPcNotice('Deep Forest'),
       itemPickupNotice('Deep Forest'),
       itemUsedNotice('Deep Forest'),
-      levelUpNotice('Deep Forest', 5),
       eggHatchNotice('Deep Forest'),
       gateLockedNotice('bush'),
       gateOpenedNotice(),

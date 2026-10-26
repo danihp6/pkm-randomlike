@@ -86,11 +86,14 @@ describe('levelUpBeats', () => {
     expect(beat.forgotten).toEqual([]);
   });
 
-  it('reads an empty learned list for a level-up that crossed no move', () => {
+  it('reads an empty learned list for a level-up that crossed no move, and still counts up', () => {
     const before = [member('a', 5)];
     const after = [member('a', 6)];
     const events: readonly ProgressionEvent[] = [{ kind: 'level', level: 6 }];
-    expect(levelUpBeats(before, after, events)[0].learned).toEqual([]);
+    const beat = levelUpBeats(before, after, events)[0];
+    expect(beat.learned).toEqual([]);
+    expect(beat.fromLevel).toBe(5);
+    expect(beat.toLevel).toBe(6);
   });
 
   it('ignores a learn event of a member that is not in the party', () => {
