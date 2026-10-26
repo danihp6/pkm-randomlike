@@ -186,7 +186,7 @@ export type EggHatch = Readonly<{ run: RunState; member: RunPokemon }>;
  * `createRunPokemon({ id: nextMemberId(run), speciesId, level: squadLevel(run),
  * learnsetSeed: run.seed })` → `adoptAtLevel(member, squadLevel(run), run.seed)` →
  * `addPokemon` (a full party sends it to the box, `D7`). It is **not a catch**: no
- * `stats.catches`, no `caughtSpecies`, no `capturedRooms`, no `pcCatch`. Pure, like
+ * `stats.catches`, no `caughtSpecies`, no `capturedRooms`. Pure, like
  * the rest of the run.
  */
 export function hatchEgg(run: RunState): EggHatch | null {

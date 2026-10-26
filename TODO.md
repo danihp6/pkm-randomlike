@@ -8376,7 +8376,7 @@ run-integrity defects first, the presentation and economy last.
 - **No `SAVE_VERSION` step** — the task **removes** two run fields and adds none; the argument is in
   its entry's `*Decision:*` line.
 
-- [ ] **[Task-179] The PC swaps only in the floor's entry room, always, and never as part of a catch.**
+- [x] **[Task-179] The PC swaps only in the floor's entry room, always, and never as part of a catch.**
       «cambiar funcionamiento panel pc para que sea, solo se puede intercambiar pokes pc a party o
       viceversa en la sala de inicio de piso, quita lo de que al capturar se pueda hacer el cambio pero
       en sala inicial siempre se puede». The rule is two predicates in

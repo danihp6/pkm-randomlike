@@ -108,7 +108,6 @@ describe('projectHud on the route', () => {
       xp: 250,
       pokevialCharges: 1,
       bossDefeated: true,
-      entryDeparted: true,
       discoveredRooms: [0, 2, 3],
       money: 1234,
       bag: [
@@ -139,7 +138,6 @@ describe('projectHud on the route', () => {
     expect(route.pokevialCharges).toBe(run.pokevialCharges);
     expect(route.pokevialMax).toBe(POKEVIAL_MAX_CHARGES);
     expect(route.bossDefeated).toBe(run.bossDefeated);
-    expect(route.entryDeparted).toBe(run.entryDeparted);
     expect(route.discoveredRooms).toStrictEqual(run.discoveredRooms);
     expect(route.mission).toStrictEqual({
       id: 'flawless',

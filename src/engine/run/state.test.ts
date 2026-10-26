@@ -514,24 +514,15 @@ describe('dedupeMemberIds', () => {
     expect(next.box.map((entry) => entry.fighter.id)).toEqual(['catch-3']);
   });
 
-  it('gives a re-keyed member its new id in the route catch that named the old one', () => {
+  it('re-keys a colliding box member against the party ids', () => {
     const run = {
       ...createRun({ seed: 'run-a', starter }),
-      party: [member('wild'), member('wild')],
-      pcCatch: { roomInMap: 2, memberId: 'wild' },
-    };
-    expect(dedupeMemberIds(run).pcCatch).toEqual({ roomInMap: 2, memberId: 'catch-1' });
-  });
-
-  it('leaves a route catch that never named the re-keyed member alone', () => {
-    const run = {
-      ...createRun({ seed: 'run-a', starter }),
-      party: [member('wild'), member('wild')],
-      pcCatch: { roomInMap: 2, memberId: 'nobody' },
+      party: [member('starter'), member('catch-2')],
+      box: [member('catch-2'), member('catch-2')],
     };
     const next = dedupeMemberIds(run);
-    expect(next.party.map((entry) => entry.fighter.id)).toEqual(['wild', 'catch-1']);
-    expect(next.pcCatch).toEqual({ roomInMap: 2, memberId: 'nobody' });
+    expect(next.party.map((entry) => entry.fighter.id)).toEqual(['starter', 'catch-2']);
+    expect(next.box.map((entry) => entry.fighter.id)).toEqual(['catch-1', 'catch-3']);
   });
 
   it('touches nothing but the id of a re-keyed member', () => {
@@ -707,7 +698,7 @@ describe('held items', () => {
   });
 });
 
-describe('PC lock and the route catch', () => {
+describe('PC editing rights', () => {
   const full = () => {
     let run = createRun({ seed: 'pc-a', starter });
     for (let i = 1; i < MAX_PARTY_SIZE; i++) {
@@ -716,57 +707,61 @@ describe('PC lock and the route catch', () => {
     return run;
   };
   const caught = () => createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
-  // A full party that has already walked one room on, where the PC is locked
-  // except for the room's own catch.
-  const away = () => advanceRoute(full(), 1);
 
-  it('is fully editable only on the first visit to the entry room', () => {
+  it('opens the box in the entry room on every visit, and nowhere else', () => {
     const run = createRun({ seed: 'pc-a', starter });
-    expect(run.entryDeparted).toBe(false);
+    expect(run.routeInMap).toBe(0);
     expect(pcFullyEditable(run)).toBe(true);
+    expect(pcMemberEditable(run)).toBe(true);
 
-    const awayFromEntry = advanceRoute(run, 1);
-    expect(awayFromEntry.entryDeparted).toBe(true);
-    expect(pcFullyEditable(awayFromEntry)).toBe(false);
+    const away = advanceRoute(run, 1);
+    expect(pcFullyEditable(away)).toBe(false);
+    expect(pcMemberEditable(away)).toBe(false);
 
-    // Returning to the entry room does not reopen the PC for the rest of the floor.
-    const back = advanceRoute(awayFromEntry, 0);
-    expect(pcFullyEditable(back)).toBe(false);
+    // The rule is the room, not the history: coming back reopens the whole PC.
+    const back = advanceRoute(away, 0);
+    expect(back.routeInMap).toBe(0);
+    expect(pcFullyEditable(back)).toBe(true);
+    expect(pcMemberEditable(back)).toBe(true);
   });
 
-  it('reopens the PC on the next floor and forgets the route catch', () => {
-    const placed = addCaughtPokemon(away(), caught());
-    expect(placed.pcCatch).toEqual({ roomInMap: 1, memberId: 'catch' });
+  it('answers false in every other room of the same floor', () => {
+    const run = createRun({ seed: 'pc-a', starter });
+    for (const room of [1, 2, 3]) {
+      const away = advanceRoute(run, room);
+      expect(pcFullyEditable(away)).toBe(false);
+      expect(pcMemberEditable(away)).toBe(false);
+    }
+  });
 
-    const next = advanceMap(placed);
+  it("reopens the PC in the next floor's entry room", () => {
+    const away = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
+    const next = advanceMap(away);
+    expect(next.routeInMap).toBe(0);
     expect(pcFullyEditable(next)).toBe(true);
-    expect(next.pcCatch).toBeNull();
-    // The new floor's entry room reopens the whole PC, but the catch's own window
-    // is closed: one door in, the box is locked again.
-    expect(pcMemberEditable(advanceRoute(next, 1), 'catch')).toBe(false);
+    expect(pcMemberEditable(next)).toBe(true);
   });
 
-  it('sends a full-party catch to the PC, swappable in the room it was caught in only', () => {
-    const placed = addCaughtPokemon(away(), caught());
-    expect(placed.box.map((member) => member.fighter.id)).toEqual(['catch']);
-    expect(placed.pcCatch).toEqual({ roomInMap: 1, memberId: 'catch' });
-    expect(pcMemberEditable(placed, 'catch')).toBe(true);
-    expect(pcMemberEditable(placed, 'p1')).toBe(false);
+  it('lets a boxed catch be withdrawn only from the room it was caught in, when that is the entry room', () => {
+    const inEntry = addCaughtPokemon(full(), caught());
+    expect(inEntry.box.map((member) => member.fighter.id)).toEqual(['catch']);
+    expect(pcMemberEditable(inEntry)).toBe(true);
 
-    // The first door closes the window, and coming back does not reopen it.
-    const out = advanceRoute(placed, 2);
-    expect(out.pcCatch).toBeNull();
-    expect(pcMemberEditable(out, 'catch')).toBe(false);
-    expect(pcMemberEditable(advanceRoute(out, 1), 'catch')).toBe(false);
+    const away = advanceRoute(full(), 1);
+    const inRoom = addCaughtPokemon(away, caught());
+    expect(inRoom.box.map((member) => member.fighter.id)).toEqual(['catch']);
+    expect(pcMemberEditable(inRoom)).toBe(false);
+    expect(pcMemberEditable(advanceRoute(inRoom, 2))).toBe(false);
+
+    // Walking back into the entry room does not read the catch: it reads the room.
+    expect(pcMemberEditable(advanceRoute(inRoom, 0))).toBe(true);
   });
 
-  it('leaves the catch window closed when the catch landed in the party', () => {
+  it('places a catch in the party first and only boxes it on a full party', () => {
     const run = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
     const placed = addCaughtPokemon(run, caught());
     expect(placed.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch']);
     expect(placed.box).toEqual([]);
-    expect(placed.pcCatch).toBeNull();
-    expect(pcMemberEditable(placed, 'catch')).toBe(false);
   });
 });
 

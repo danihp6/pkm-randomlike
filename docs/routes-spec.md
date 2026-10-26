@@ -367,9 +367,10 @@ switches, its reward tile and its press order identical on every visit.
 - When a catch leaves the party still **full**, a **capture screen** opens: the
   caught Pokémon's stats sit beside the party so the player can compare, then
   **swap it for a party member** (the replaced member goes to the PC) or **send it
-  to the PC**. The floor's catch stays swappable out of the PC for the rest of the
-  floor (`docs/routes-spec.md` §6), and its STATS tab shows the biome and route it
-  was caught in.
+  to the PC**. A catch that lands in the box is then withdrawable **only** in the
+  floor's entry room, exactly like any other boxed member
+  (`docs/routes-spec.md` §6) — never in the room that took it unless that room is
+  the entry room — and its STATS tab shows the biome and route it was caught in.
 - The **static species** of a static leaf (`docs/maps-spec.md` §7) is fought through
   the same wild path but is **not** drawn from the wild table — its species comes
   from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary variant) minus the
@@ -458,17 +459,16 @@ restored, no resurrection. The stop no longer opens a screen; the party and the
 PC box are managed from the route HUD.
 
 **The PC (the HUD's BOX window) is always viewable, but swapping between the
-party and the PC is locked** except in two windows (`docs/maps-spec.md` §7):
+party and the PC is locked** except in one window (`docs/maps-spec.md` §7):
 
-- on the **first visit to a floor's entry room** the PC is fully editable, so a
-  player can rearrange the party and the box before setting off;
-- a catch that lands in the PC while the party is full — the engine places the
-  catch itself, party first, PC second — stays swappable out of the PC **only
-  while the run still stands in the room it was caught in**: the first door or
-  portal closes that window (`RunState.pcCatch`), so a catch is never locked in
-  the room that took it and never follows the run out of it. Leaving the entry
-  room and coming back locks the PC for the rest of the floor, and a new floor
-  resets both windows.
+- in the floor's **entry room** the PC is fully editable, on **every** visit — the
+  first one and any return — so a player can rearrange the party and the box
+  before setting off and again on the way back. Anywhere else on the floor both
+  directions are refused: a party member cannot be sent to the box and a boxed
+  member cannot be withdrawn. A catch that lands in the PC while the party is full
+  — the engine places the catch itself, party first, PC second — is therefore
+  withdrawable **only** from the entry room, never from the room that took it
+  unless that room is the entry room; a new floor opens its own entry room.
 
 A boxed member the player cannot swap reads as **locked** (a dim veil on its
 cell), and reordering the party within itself stays free. A catch that goes to

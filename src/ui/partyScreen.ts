@@ -121,23 +121,22 @@ function memberAt(run: RunState, pane: PaneId, index: number): RunPokemon | unde
 
 /**
  * True when a member may be picked up. The party always reorders; a **box**
- * member is only grabbable while the PC is editable (`pcMemberEditable`), so a
- * locked PC cannot be rearranged. The box opens wholesale in the floor's entry
- * room on its first visit, and otherwise only for the route's own catch, while
- * the run still stands in the room it was caught in (`docs/routes-spec.md` §6).
- * The **RIP** pane is never grabbed: the dead are read-only (D5).
+ * member is only grabbable in the floor's **entry room**, where the PC is editable
+ * (`pcMemberEditable`) — on every visit, first or a return
+ * (`docs/routes-spec.md` §6). The **RIP** pane is never grabbed: the dead are
+ * read-only (D5).
  */
 function canGrab(run: RunState, pane: PaneId, index: number): boolean {
   if (pane === 'rip') return false;
   const member = memberAt(run, pane, index);
   if (!member) return false;
-  return pane === 'party' || pcMemberEditable(run, member.fighter.id);
+  return pane === 'party' || pcMemberEditable(run);
 }
 
 /** True when a grabbed member may cross between the party and the PC. */
 function canSwapAcross(run: RunState, pane: PaneId, member: RunPokemon | undefined): boolean {
   if (pane === 'rip') return false;
-  return member !== undefined && pcMemberEditable(run, member.fighter.id);
+  return member !== undefined && pcMemberEditable(run);
 }
 
 function reorder(run: RunState, pane: PaneId, from: number, to: number): RunState {

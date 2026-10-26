@@ -37,14 +37,6 @@ export function emptyRunStats(): RunStats {
 }
 
 /**
- * The room the run's own catch was caught in, and the member it is, while the run
- * still stands in that room (`docs/routes-spec.md` §6). Replaces the floor-scoped
- * `pcUnlocked`: the window closes on the first door or portal, not at the next
- * floor.
- */
-export type PcCatch = Readonly<{ roomInMap: number; memberId: string }>;
-
-/**
  * The run: everything that survives a route. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
  * `money` is the Poké Dollars beat out of trainers, `defeatedTrainers` /
@@ -74,18 +66,6 @@ export type RunState = Readonly<{
   discoveredRooms: readonly number[];
   /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
   bossDefeated: boolean;
-  /**
-   * True once the run has left the floor's entry room. The PC can be rearranged
-   * freely only on the **first** visit to the entry room, so a return visit finds
-   * the box locked (`docs/routes-spec.md` §6). Resets per map.
-   */
-  entryDeparted: boolean;
-  /**
-   * The route's own catch and the room it was caught in, while the run still
-   * stands there: a catch that went to the PC stays swappable until the first
-   * door or portal (`docs/routes-spec.md` §6). Null once nothing is pending.
-   */
-  pcCatch: PcCatch | null;
   /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
   levelCap: number;
   /**
@@ -116,7 +96,7 @@ export type RunState = Readonly<{
   /**
    * The species id of every **successful** catch, in catch order, deduped. A run-long
    * fact: `advanceRoute` and `advanceMap` never clear it (unlike `defeatedTrainers`,
-   * `pickedItems`, `capturedRooms`, `pcCatch` and `bossDefeated`); only a fresh run
+   * `pickedItems`, `capturedRooms` and `bossDefeated`); only a fresh run
    * starts it empty. A different fact from `rip` (the dead **members**) and from
    * `stats.casualties`.
    */
@@ -181,8 +161,6 @@ export function createRun(init: RunInit): RunState {
     arrivalEdge: plan.entryEdge,
     discoveredRooms: [entryRoom],
     bossDefeated: false,
-    entryDeparted: false,
-    pcCatch: null,
     levelCap: levelCapForMap(FIRST_MAP),
     pokevialCharges: POKEVIAL_MAX_CHARGES,
     xp: init.xp ?? xpForLevel(init.starter.fighter.level),
@@ -215,6 +193,10 @@ export function createRun(init: RunInit): RunState {
  * `arrivalEdge` is the door the player arrives through (the opposite of the one
  * they left by); it is kept when it is a real door of the room, else the
  * plan-derived arrival is used so a bad value never opens a wall onto nothing.
+ *
+ * Walking does not lock the PC: the box is editable in the floor's entry room on
+ * **every** visit, so the rule is the room the run stands in, not where it has
+ * been (`pcFullyEditable`, `docs/routes-spec.md` §6).
  */
 export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
@@ -227,11 +209,6 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
     routeIndex: run.routeIndex + 1,
     routeInMap: room,
     arrivalEdge: arrival,
-    // Leaving a room (even the entry back into another) departs the entry room,
-    // so the PC is only fully editable on the very first visit; it also closes the
-    // room's own catch window, which never follows the run through a door.
-    entryDeparted: true,
-    pcCatch: null,
     discoveredRooms: discoverRoom(run.discoveredRooms, room),
   };
 }
@@ -261,8 +238,6 @@ export function advanceMap(run: RunState): RunState {
     arrivalEdge: plan.entryEdge,
     discoveredRooms: [plan.entryRoom],
     bossDefeated: false,
-    entryDeparted: false,
-    pcCatch: null,
     levelCap: levelCapForMap(mapIndex),
     defeatedTrainers: [],
     pickedItems: [],
@@ -359,10 +334,9 @@ export function nextMemberId(run: RunState): string {
  * Re-keys every party/box member whose id another member already holds, in party-then-box
  * order. The **first** member holding an id keeps it; a later one is re-minted with an id
  * that is guaranteed not to collide with any id the run held when the repair started.
- * `pcCatch` follows the member it names: a re-keyed catch is recorded under its new id,
- * while the room it was caught in stays. Pure and deterministic — the same run always
- * repairs to the same ids — and a run whose ids are already unique is returned **as the
- * same object** (`===`), so a decoder call site is free.
+ * Pure and deterministic — the same run always repairs to the same ids — and a run whose
+ * ids are already unique is returned **as the same object** (`===`), so a decoder call
+ * site is free.
  */
 export function dedupeMemberIds(run: RunState): RunState {
   const original = new Set<string>();
@@ -370,7 +344,6 @@ export function dedupeMemberIds(run: RunState): RunState {
   for (const member of run.box) original.add(member.fighter.id);
 
   const claimed = new Set<string>();
-  const rekeyed: { oldId: string; newId: string }[] = [];
   let counter = 0;
   const mint = (): string => {
     let candidate = '';
@@ -390,7 +363,6 @@ export function dedupeMemberIds(run: RunState): RunState {
       }
       const newId = mint();
       claimed.add(newId);
-      rekeyed.push({ oldId: id, newId });
       touched = true;
       return { ...member, fighter: { ...member.fighter, id: newId } };
     });
@@ -399,15 +371,8 @@ export function dedupeMemberIds(run: RunState): RunState {
 
   const party = dedupeList(run.party);
   const box = dedupeList(run.box);
-  if (rekeyed.length === 0) return run;
-
-  // The catch follows the member it names; a `pcCatch` naming an id no member holds
-  // is left alone (it is inert: `pcMemberEditable` can only match a live member id).
-  const pcCatch = run.pcCatch;
-  const rekeyedCatch = pcCatch ? rekeyed.find(({ oldId }) => oldId === pcCatch.memberId) : undefined;
-  const nextCatch = pcCatch && rekeyedCatch ? { ...pcCatch, memberId: rekeyedCatch.newId } : pcCatch;
-
-  return { ...run, party, box, pcCatch: nextCatch };
+  if (party === run.party && box === run.box) return run;
+  return { ...run, party, box };
 }
 
 /** Replaces a party or box member by id; a miss leaves the run untouched. */
@@ -520,38 +485,29 @@ export function useCapture(run: RunState): RunState {
 }
 
 /**
- * True while the PC is fully editable: the run still stands in the floor's
- * **entry room** on its first visit (`docs/routes-spec.md` §6). Leaving the room
- * and coming back locks it for the rest of the floor. The entry room is id 0.
+ * True in the floor's **entry room** on every visit, first or a return: the one
+ * place the party and the PC may trade members (`docs/routes-spec.md` §6). The rule
+ * is the room the run stands in — `planMap(...).entryRoom` is `0` — so walking out
+ * and back reopens the box instead of locking it for the rest of the floor.
  */
 export function pcFullyEditable(run: RunState): boolean {
-  return !run.entryDeparted && run.routeInMap === 0;
+  return run.routeInMap === 0;
 }
 
-/**
- * True when `memberId` may be moved between the party and the PC: either the PC is
- * fully editable, or the member is the room's own catch and the run still stands
- * in the room it was caught in (`docs/routes-spec.md` §6).
- */
-export function pcMemberEditable(run: RunState, memberId: string): boolean {
-  return (
-    pcFullyEditable(run) ||
-    (run.pcCatch !== null &&
-      run.pcCatch.roomInMap === run.routeInMap &&
-      run.pcCatch.memberId === memberId)
-  );
+/** The same rule under the name the boxes call: the entry room, on every visit. */
+export function pcMemberEditable(run: RunState): boolean {
+  return pcFullyEditable(run);
 }
 
 /**
  * Places a caught Pokémon, the classic way (D7): the party while it has room, else
- * the PC. A catch that landed in the box records the room it is swappable in
- * (`pcCatch`), so the BOX panel lets the player take it back **only** while the run
- * stays there (`docs/routes-spec.md` §6). Pure, like the rest of the run (D11).
+ * the PC. A catch that lands in the box is withdrawable from the floor's entry room
+ * like any other boxed member, and never from the room that took it unless that
+ * room is the entry room (`pcMemberEditable`, `docs/routes-spec.md` §6). Pure, like
+ * the rest of the run (D11).
  */
 export function addCaughtPokemon(run: RunState, pokemon: RunPokemon): RunState {
-  const placed = addPokemon(run, pokemon);
-  if (placed.box.length === run.box.length) return placed;
-  return { ...placed, pcCatch: { roomInMap: run.routeInMap, memberId: pokemon.fighter.id } };
+  return addPokemon(run, pokemon);
 }
 
 /**

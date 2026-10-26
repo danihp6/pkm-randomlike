@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The PC swaps only in the floor's entry room, and never as part of a catch.**
+      `[Task-179]`, Batch 80 and the last task of the round: the party↔PC trade loses its
+      second window and its conditional first one. `pcFullyEditable(run)` is now
+      `run.routeInMap === 0` — the entry room, on every visit, a return included — and
+      `pcMemberEditable(run)` is exactly the same predicate, so the `memberId` parameter and
+      the per-room catch window retire from all six call sites (the DOM PC card, the canvas
+      party screen and their tests). Both run fields leave with their last readers rather
+      than linger: `RunState.entryDeparted` and `RunState.pcCatch` (and the `PcCatch` type)
+      go from the type, from `createRun`/`advanceRoute`/`advanceMap`, from
+      `dedupeMemberIds`'s re-key and from the debug floor teleport's object literal, the
+      HUD's route projection stops carrying `entryDeparted`, and the decoder drops
+      `parsePcCatch` and its two uses while migrations 10 and 15 keep their other work and
+      stop seeding the retired keys — no `SAVE_VERSION` step, the chain stays **25**, because
+      both keys were optional and an old document simply decodes them away.
+      `docs/routes-spec.md` §3 (the capture screen `[Task-31]` deleted) and §6 (one window,
+      not two), `docs/design-spec.md` §3's swap bullet and the two `docs/maps-spec.md`
+      parentheticals that still named `pcCatch` own the rule. `npm test` 4560 passed / 69
+      skipped, `npm run build` green; measured live over CDP on the DOM HUD (`?hud=dom`,
+      seed `1qaoquu`, debug teleport between rooms) by counting
+      `[data-hud-pc-grid] [data-hud-pc-cell][data-locked="true"]`: **0** in map 1's entry
+      room, **1** of **1** filled box cell one door away (one `.pc__cell-veil`), and **0**
+      again back in the entry room.
+
 - [x] **The MOVES tab belongs to the panel, not to the member.** `[Task-171]`, the first of
       Batch 79: a new pure `carriedDetailTab(state)` beside `openDetail`
       (`src/ui/partyDetail.ts`) answers the panel's own tab while a member is shown and
