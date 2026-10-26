@@ -2,6 +2,7 @@ import type { GateKind } from '../../data/gates';
 import type { Tile } from '../grid';
 import type { TileMap } from '../map';
 import type { RouteShape } from './layout';
+import type { RouteSign } from './signs';
 
 /** The four cardinals a trainer can look along. */
 export type Facing = 'N' | 'E' | 'S' | 'W';
@@ -106,6 +107,12 @@ export type RouteMap = Readonly<{
   gate?: RouteGate;
   /** The room's centre chamber, present only when the build carved one. */
   chamber?: RouteChamber;
+  /**
+   * The static signs the room drew: the boss door's own sign on the room that links
+   * into the boss room (`docs/routes-spec.md` §2). Absent when the build was not
+   * asked for one, so every shipped fixture stays valid.
+   */
+  signs?: readonly RouteSign[];
 }>;
 
 export function tileKey(tile: Tile): string {

@@ -163,6 +163,19 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    (8), then it throws rather than return a bad map. This validation is what makes
    the generator safe to call blind.
 
+**The boss door's sign is a fixture, not a pass.** The room whose opening links
+into the map's boss room carries **one static sign** (`bossSign` in
+`src/engine/routes/signs.ts`) on its approach side: one tile inward from that
+opening's own anchor, so it stands in the lane's mouth off the border band while
+the lane's other half still lets the door be walked through. The build places it
+from the plan and **no RNG** (`RouteRequest.signEdge`, which no other room passes):
+its cell joins the hazards' forbids exactly like the spine (no tall grass, no
+ledge, no trainer and no item may land on it) and `RouteMap.signs` is present only
+when one was drawn, so a route that asks for none is unchanged. The sign is
+**solid** — the route scene blocks its tile — and the interact key opens the room's
+NPC card with the `boss.sign` key as its title and an empty body; there is one per
+floor and nowhere else.
+
 Every build pass draws from its own `Rng` stream — `layout`, `terrain`, `populate`
 and `chamber` — all derived from `(seed, routeIndex, attempt)`
 (`src/engine/routes/streams.ts`), so `(seed, routeIndex)` fully determines the map

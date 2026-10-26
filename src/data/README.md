@@ -16,8 +16,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   English strings stay in the dex (`D43` amended for these two kinds).
 - `tilesets/` — one file per biome tileset — the forest's row in `frlg.ts`, wired
   by the `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`,
-  the procedural sheet kept as a **test fixture**. Contract in
-  `docs/tileset-spec.md`.
+  the procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame
+  static props a route draws on a tile, starting with the boss door's 16x16 sign).
+  Contract in `docs/tileset-spec.md`.
 - `biomes.ts` — biome → tileset and terrain flavour.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a

@@ -35,6 +35,7 @@ import {
   type ShapeSpec,
 } from './layout';
 import { routeStreams, type RouteStreams } from './streams';
+import { bossSign, type RouteSign } from './signs';
 import { cleanWalls, type WallFootprint } from './walls';
 import { reachableAvoiding, reachableTiles, validateRoute } from './validate';
 
@@ -136,6 +137,12 @@ export type RouteRequest = Readonly<{
    * (`chamberFor`): the entry room and every leaf carve one, everything else does not.
    */
   chamber?: boolean;
+  /**
+   * The edge of the room whose opening leads into the boss room, so it gets a sign
+   * (`docs/routes-spec.md` §2). The scene derives it from the plan; an edge the room
+   * does not open on draws no sign rather than throwing.
+   */
+  signEdge?: AccessEdge;
 }>;
 
 type MutableMap = number[][];
@@ -265,6 +272,22 @@ function exitTiles(shape: ShapeSpec, openings: readonly Tile[]): Tile[] {
     .map((opening, index) => ({ opening, index }))
     .filter(({ opening }) => opening.role === 'exit')
     .map(({ index }) => openings[index]);
+}
+
+/**
+ * The one sign the build places, or null: `edge` must be one of the opening edges
+ * the shape actually carved, so a plan that names an edge the room does not open on
+ * draws no sign instead of throwing. Reads no RNG.
+ */
+function signForEdge(
+  shape: ShapeSpec,
+  openings: readonly Tile[],
+  edge: AccessEdge | undefined,
+): RouteSign | null {
+  if (edge === undefined) return null;
+  const index = shape.openings.findIndex((opening) => opening.edge === edge);
+  if (index < 0) return null;
+  return bossSign(edge, openings[index]);
 }
 
 /** A deterministic per-cell cost in `[1, COST_NOISE]`, drawn once per route. */
@@ -1242,11 +1265,14 @@ function placeItems(
   hiddenChance: number,
   itemChance: number,
   rng: Rng,
+  sign?: Tile,
 ): RouteItem[] {
   if (!loot || loot.length === 0) return [];
   const items: RouteItem[] = [];
   for (const position of pockets) {
     if (!reached.has(tileKey(position)) || !isWalkable(tiles, position)) continue;
+    // The boss door's sign is a fixture, never a loot spot.
+    if (sign && position.x === sign.x && position.y === sign.y) continue;
     if (rng.next() >= itemChance) continue;
     const itemId = pickWeighted(loot, rng).itemId;
     const hidden = rng.next() < hiddenChance;
@@ -1372,6 +1398,7 @@ function placeTrainers(
   walkableTips: boolean,
   role: MapRoomRole,
   rng: Rng,
+  sign?: Tile,
 ): RouteTrainer[] {
   // A wild room spends no `populate` draw at all, so its items keep the shipped
   // draw order.
@@ -1435,6 +1462,8 @@ function placeTrainers(
   const candidateOk = (tile: Tile): boolean => {
     const key = tileKey(tile);
     if (blocked.has(key) || endKeys.has(key) || crowded(tile)) return false;
+    // The boss door's sign is a fixture, never a trainer's tile.
+    if (sign && tile.x === sign.x && tile.y === sign.y) return false;
     if (!isFloor(tile) || solidWallNeighbours(tiles, tile.x, tile.y, walkableTips) === 0) return false;
     if (entryDistance(tile) < TRAINER_ENTRY_GAP) return false;
     if (openFacings(tiles, tile).length === 0) return false;
@@ -1589,6 +1618,7 @@ function attemptRoute(
   let branches = new Set<string>();
   let carves: ReadonlyArray<BranchCarve> = [];
   let chamber: ChamberCarve | null = null;
+  let sign: RouteSign | null = null;
   const corner = cornerClearance(request.wall);
   const band = request.wall?.cols ?? TREE_MARGIN;
 
@@ -1608,6 +1638,10 @@ function attemptRoute(
   } else {
     const openings = placeAccess(tiles, shape, streams.layout, width, height, corner, band);
     snapshot('access', 'place openings');
+    // The boss door's sign (`docs/routes-spec.md` §2): the room that links into the
+    // boss room carries one, one tile inward from that opening's anchor. It is
+    // placed from the plan and no RNG, so it never shifts a draw.
+    sign = signForEdge(shape, openings, request.signEdge);
     // A plan room always names a door to spawn at; the map entry room has none and
     // spawns at its centre (`docs/maps-spec.md` §2), a lane carved to the network.
     const entryIdx = shape.openings.findIndex((opening) => opening.role === 'entry');
@@ -1685,6 +1719,9 @@ function attemptRoute(
     }
   }
   const openKeys = new Set([...spine, ...ends.map(tileKey), ...bandKeys]);
+  // A sign's cell is as untouchable as the spine it stands on: no tall grass, no
+  // ledge and no population may land on it.
+  if (sign) openKeys.add(tileKey(sign));
   // A pocket is a loot spot: tall grass may not cover it (an item never spawns on
   // grass) and a ledge may not seal it. Grass is otherwise free to fill the lanes.
   const grassForbid = new Set([...openKeys, ...pocketKeys]);
@@ -1745,6 +1782,7 @@ function attemptRoute(
     request.wall !== undefined,
     request.role ?? 'trainers',
     streams.populate,
+    sign ?? undefined,
   );
   snapshot('trainers', 'place trainers');
   const items = placeItems(
@@ -1756,6 +1794,7 @@ function attemptRoute(
     quiet ? 0 : (request.hiddenChance ?? 0),
     quiet ? 0 : (request.itemChance ?? 1),
     streams.populate,
+    sign ?? undefined,
   );
   snapshot('items', 'populate items');
 
@@ -1775,6 +1814,7 @@ function attemptRoute(
     items,
     trainers,
     ...(gate ? { gate } : {}),
+    ...(sign ? { signs: [sign] } : {}),
     ...(chamber
       ? {
           chamber: {

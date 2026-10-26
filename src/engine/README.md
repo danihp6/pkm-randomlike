@@ -38,7 +38,9 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   falls and the floor's one free heal) and `routes/bannedRoom.ts` (the species the
   banned-species room bars: the party's most-used member's species, box never read),
   and `routes/puzzle.ts` (the puzzle room's layout — its row, switch tiles, press
-  order and reward tile — its press rule and its two per-floor ids).
+  order and reward tile — its press rule and its two per-floor ids),
+  plus `routes/signs.ts` (the boss door's static sign: its i18n key and the cell
+  one tile inward from the opening it watches).
 - `run/` — the run state and its books: `run/state.ts` (party, box, bag and money),
   `run/progression.ts` (XP and levels), `run/battleLink.ts` + `run/resolve.ts` (the post-battle
   resolve), `run/roster.ts` + `run/pool.ts` (rosters, the species pool and the variant roll

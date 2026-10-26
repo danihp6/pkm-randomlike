@@ -234,6 +234,9 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'trade.close': 'CERRAR',
   'trade.complete': 'COMPLETO',
 
+  // sign — the boss door's sign on the room that links into the boss room
+  'boss.sign': 'SALA DEL JEFE',
+
   // npc — the special-NPC cards: the shell's last row, the merchant, and the
   // member-edit rows with the sacrifice
   'npc.leave': 'SALIR',

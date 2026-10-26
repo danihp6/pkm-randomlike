@@ -231,6 +231,9 @@ export const en = {
   'trade.close': 'CLOSE',
   'trade.complete': 'COMPLETE',
 
+  // sign — the boss door's sign on the room that links into the boss room
+  'boss.sign': 'BOSS ROOM',
+
   // npc — the special-NPC cards: the shell's last row, the merchant, and the
   // member-edit rows with the sacrifice
   'npc.leave': 'LEAVE',

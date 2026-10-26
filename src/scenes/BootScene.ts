@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import placeholderMoveFxUrl from '../assets/placeholders/moves.png';
 import { packedAtlasUrl } from '../assets/optional';
 import { GROUND_ITEM_TEXTURE_KEY, GROUND_ITEM_URL } from '../data/groundItemSprite';
+import { PROP_SIGN_SIZE, PROP_SIGN_TEXTURE_KEY, PROP_SIGN_URL } from '../data/tilesets/props';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, ITEM_ICON_TEXTURE_KEY } from '../data/itemIcons';
 import {
   OVERWORLD_SPRITE_ATLAS_URL,
@@ -141,6 +142,12 @@ export class BootScene extends Phaser.Scene {
       frameHeight: ITEM_ICON_SIZE,
     });
     this.load.image(GROUND_ITEM_TEXTURE_KEY, GROUND_ITEM_URL);
+    // The boss door's sign is its own 16x16 prop, loaded as a one-frame sheet so
+    // the scene draws it by frame like every other cropped prop.
+    this.load.spritesheet(PROP_SIGN_TEXTURE_KEY, PROP_SIGN_URL, {
+      frameWidth: PROP_SIGN_SIZE,
+      frameHeight: PROP_SIGN_SIZE,
+    });
     this.load.spritesheet(TRAINER_SPRITE_TEXTURE_KEY, TRAINER_SPRITE_ATLAS_URL, {
       frameWidth: TRAINER_SPRITE_SIZE,
       frameHeight: TRAINER_SPRITE_SIZE,

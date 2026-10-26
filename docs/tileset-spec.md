@@ -67,6 +67,13 @@ Every biome ships two images:
   biome, for the tiles that mean the same thing everywhere: trap, chest, item,
   carpet (and a stair slot that no map value maps to while the route `EXIT` art
   is deferred — the `EXIT` tile currently draws plain ground).
+- **props**: a static prop a route draws over a tile is its **own** 16x16 texture,
+  never a 14th atlas row, so the route can draw it whatever sheet its biome uses.
+  The boss door's sign is `src/assets/frlg/sign.png` — the field sheet's cell
+  `23,3` (a 17px-pitch block grid with a 1px origin), cropped by
+  `scripts/frlg/build-sign.mjs` **with its own alpha kept** (68 of its 256 pixels
+  are transparent, all four corners among them), read through
+  `src/data/tilesets/props.ts` and loaded as a one-frame 16x16 spritesheet.
 
 A tileset declares:
 

@@ -263,6 +263,13 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   at the far end from the door (`bossChamberTile`), with `DEFAULT_TRAINER_SIGHT`, so
   it walks over and opens the fight on its own, and a loss in the room is a normal
   loss (`D5`).
+- That door has a **sign on the approach side** (`docs/routes-spec.md` §2): the room
+  that links **into** the boss room draws one static sign one tile inside that
+  opening's band (`bossSign`), so it reads before the player steps through. The sign
+  is solid, blocks its tile, and sits on the same cell on every visit and on a
+  reload (the build reads the plan and no RNG). The interact key opens the room's NPC
+  card with the one title `boss.sign` ("BOSS ROOM" / "SALA DEL JEFE"); it adds no run
+  field, no save step and no stream.
 - The party and the box take **one free heal** when the room is first built on a
   floor — HP and PP only, never a resurrection (`D5`) — through
   `bossRoomHeal(run, mapIndex)`, recorded as the `pickedItems` mark
