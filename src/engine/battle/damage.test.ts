@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { effectiveness, getMove, type Move } from '../../data/dex';
 import { Rng } from '../rng';
 import {
+  DAMAGE_RESOLVERS,
   computeDamage,
   estimateDamage,
   fixedDamage,
@@ -220,7 +221,7 @@ describe('the relative-damage predicates', () => {
   });
 });
 
-describe('resolveBasePower — the sixteen resolved powers', () => {
+describe('resolveBasePower — the resolved powers', () => {
   const user = special('ditto');
   const foe = special('ditto');
 
@@ -296,6 +297,26 @@ describe('resolveBasePower — the sixteen resolved powers', () => {
   it('leaves every straight-damage move on its dex number', () => {
     expect(power(user, foe, 'tackle')).toBe(40);
     expect(power(user, foe, 'thunderbolt')).toBe(90);
+  });
+
+  it('adds 50 to Rage Fist for every hit its user has taken, up to six', () => {
+    const taker = special('ditto');
+    expect(power(taker, foe, 'ragefist')).toBe(50);
+    const steps: readonly (readonly [number, number])[] = [
+      [1, 100],
+      [2, 150],
+      [3, 200],
+      [6, 350],
+      [9, 350],
+    ];
+    for (const [hits, value] of steps) {
+      taker.volatiles.timesHit = hits;
+      expect(power(taker, foe, 'ragefist'), `${hits} hits`).toBe(value);
+    }
+  });
+
+  it('owns Rage Fist’s amount in the engine table, not the dex number', () => {
+    expect(DAMAGE_RESOLVERS.ragefist).toBe('power');
   });
 });
 

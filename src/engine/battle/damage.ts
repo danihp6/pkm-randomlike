@@ -54,6 +54,7 @@ export const DAMAGE_RESOLVERS: Readonly<Record<string, DamageResolver>> = {
   nightshade: 'fixed',
   present: 'power',
   psywave: 'fixed',
+  ragefist: 'power',
   reversal: 'power',
   return: 'power',
   ruination: 'fixed',
@@ -217,6 +218,10 @@ export function resolveBasePower(
       return move.basePower > 0 ? move.basePower : 40;
     case 'spitup':
       return 100 * attacker.volatiles.stockpile;
+    case 'ragefist':
+      // The reference's own numbers: 50, +50 per hit the user has taken, six hits at
+      // most (docs/battle-spec.md §3.3).
+      return Math.min(350, 50 + 50 * attacker.volatiles.timesHit);
     case 'eruption':
     case 'waterspout':
     case 'dragonenergy':

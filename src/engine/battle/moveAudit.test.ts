@@ -3,6 +3,8 @@ import { getMove } from '../../data/dex';
 import { MOVE_COVERAGE, unportedMoveIds } from '../../data/moveCoverage';
 import type { Command } from './commands';
 import { activeFighter, type BattleState } from './state';
+import { resolveBasePower } from './damage';
+import { createFighter } from './fighter';
 import { formatBattleLog, scriptedBattle } from './harness';
 import {
   MOVE_AUDIT_ROWS,
@@ -43,7 +45,6 @@ const BASE_POWER_SETUPS: Partial<Record<string, Partial<MoveAuditSetup>>> = {
   lastrespects: { enemySpecies: 'mew' },
   moongeistbeam: { enemySpecies: 'mew' },
   poltergeist: { enemySpecies: 'mew' },
-  ragefist: { enemySpecies: 'mew' },
   shadowclaw: { enemySpecies: 'mew' },
   shadowpunch: { enemySpecies: 'mew' },
   shadowsneak: { enemySpecies: 'mew' },
@@ -261,6 +262,44 @@ describe('the conditional fail', () => {
     expect(fails.damageAmounts).toEqual([]);
     expect(fails.enemyVolatiles).toEqual([]);
     expect(fails.playerPp).toEqual([14]);
+  });
+});
+
+/**
+ * The Rage Fist row's pinned damage is only half the evidence: the row's own
+ * arithmetic has to answer too, or a `resolveBasePower` change could move both
+ * pinned amounts and the row would happily follow (`docs/battle-spec.md` §3.3).
+ */
+describe('Rage Fist’s arithmetic', () => {
+  it('reads 150 at two hits and 350 at six on the row’s own board', () => {
+    const row = MOVE_AUDIT_ROWS.find((entry) => entry.moveId === 'ragefist');
+    expect(row).toBeDefined();
+    if (!row) return;
+    const board = (timesHit: number) => {
+      const player = createFighter({
+        id: 'audit-player',
+        speciesId: row.setup?.playerSpecies ?? 'ditto',
+        level: row.setup?.level ?? 50,
+        ability: 'Run Away',
+        moves: ['ragefist'],
+      });
+      player.volatiles.timesHit = timesHit;
+      const enemy = createFighter({
+        id: 'audit-enemy',
+        speciesId: row.setup?.enemySpecies ?? 'ditto',
+        level: row.setup?.level ?? 50,
+        moves: ['splash'],
+      });
+      return { player, enemy };
+    };
+
+    const two = board(row.setup?.playerTimesHit ?? 0);
+    expect(two.player.volatiles.timesHit).toBe(2);
+    expect(resolveBasePower(two.player, two.enemy, getMove('ragefist')!)).toBe(150);
+
+    const six = board(row.scenario?.setup?.playerTimesHit ?? 0);
+    expect(six.player.volatiles.timesHit).toBe(6);
+    expect(resolveBasePower(six.player, six.enemy, getMove('ragefist')!)).toBe(350);
   });
 });
 

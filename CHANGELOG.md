@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Rage Fist's power climbs with the hits its user has taken.** `[Task-173]`, the third of
+      Batch 77: `volatiles.timesHit` counts the hits a fighter takes (one per hit, capped at six,
+      cleared on switch-out) and `resolveBasePower`'s new `ragefist` case turns it into
+      `min(350, 50 + 50 × hits)` — the single function the damage formula and the FIGHT preview
+      read — while the audit gains `playerTimesHit` and a two-scenario `ragefist` row, and the
+      regenerated coverage pair moves the move to `damage: damage.ts`. `docs/battle-spec.md`
+      §3.1/§3.3 own the numbers. `npm test` 4505 passed / 69 skipped, `npm run build` green;
+      pinned headlessly: powers 50/100/150/200/350 at 0/1/2/3/6 hits, a preview `power` of 150 at
+      two hits with `basePower` 50, and a fixed-seed turn that lands the 150-power punch once.
+
 - [x] **Every floor, map 1 included, posts one merchant.** `[Task-170]`, the second of Batch 77:
       the table's one guaranteed row moves to `guaranteedFromMap: 1`, so the Mart's merchant
       stands in each floor's first trainer room from the first floor on; `src/data/npcs.test.ts`

@@ -8093,7 +8093,7 @@ run-integrity defects first, the presentation and economy last.
 - **No `SAVE_VERSION` step**: the TM rule and the merchant guarantee both read shipped state and the
   plan. Four slots, four devs, no shared path.
 
-- [ ] **[Task-173] Rage Fist's power climbs with the hits its user has taken, in the menu and in the
+- [x] **[Task-173] Rage Fist's power climbs with the hits its user has taken, in the menu and in the
       damage.** «el move puño furia en menu no veo se actualice el poder al recibir golpe». The move is
       **`ragefist`** (*Puño Furia*, `src/data/i18n/es/moves.json` 2772-2776), and the engine treats it
       as its dex `basePower` 50: `resolveBasePower`'s switch has no `ragefist` case
