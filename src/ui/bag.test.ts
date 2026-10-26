@@ -13,7 +13,10 @@ import {
   cycleBagCategory,
   filterBagStacks,
   stepBagCursor,
+  stepBagFocus,
   stepBagGrid,
+  stepBagTab,
+  type BagCategory,
   type BagGridRect,
 } from './bag';
 
@@ -240,6 +243,69 @@ describe('stepBagGrid', () => {
 
   it('clamps an index past the list before stepping', () => {
     expect(stepBagGrid(12, 'left', 7)).toBe(5);
+  });
+});
+
+describe('stepBagFocus', () => {
+  it('climbs from the grid s top row to the pockets, keeping the grid index', () => {
+    expect(stepBagFocus('grid', 0, 'up', 8)).toStrictEqual({ focus: 'tabs', index: 0 });
+    expect(stepBagFocus('grid', 4, 'up', 8)).toStrictEqual({ focus: 'tabs', index: 4 });
+  });
+
+  it('keeps the grid on a lower row and steps it one row up', () => {
+    expect(stepBagFocus('grid', 5, 'up', 8)).toStrictEqual({ focus: 'grid', index: 0 });
+    expect(stepBagFocus('grid', 7, 'up', 8)).toStrictEqual({ focus: 'grid', index: 2 });
+  });
+
+  it('walks the grid for every other direction, with the shipped rule', () => {
+    expect(stepBagFocus('grid', 0, 'down', 8)).toStrictEqual({ focus: 'grid', index: 5 });
+    expect(stepBagFocus('grid', 0, 'left', 8)).toStrictEqual({ focus: 'grid', index: 4 });
+    expect(stepBagFocus('grid', 4, 'right', 8)).toStrictEqual({ focus: 'grid', index: 0 });
+    expect(stepBagFocus('grid', 2, 'down', 7)).toStrictEqual({ focus: 'grid', index: 6 });
+  });
+
+  it('returns from the pockets to the grid s first stack and otherwise holds still', () => {
+    expect(stepBagFocus('tabs', 6, 'down', 8)).toStrictEqual({ focus: 'grid', index: 0 });
+    expect(stepBagFocus('tabs', 6, 'up', 8)).toStrictEqual({ focus: 'tabs', index: 6 });
+    expect(stepBagFocus('tabs', 6, 'left', 8)).toStrictEqual({ focus: 'tabs', index: 6 });
+    expect(stepBagFocus('tabs', 6, 'right', 8)).toStrictEqual({ focus: 'tabs', index: 6 });
+  });
+
+  it('keeps the shipped 0 for a grid with no stacks', () => {
+    expect(stepBagFocus('grid', 3, 'down', 0)).toStrictEqual({ focus: 'grid', index: 0 });
+    expect(stepBagFocus('grid', 3, 'left', 0)).toStrictEqual({ focus: 'grid', index: 0 });
+  });
+
+  it('reads a non-positive column count as one column', () => {
+    expect(stepBagFocus('grid', 2, 'up', 6, 0)).toStrictEqual({ focus: 'grid', index: 1 });
+  });
+});
+
+describe('stepBagTab', () => {
+  const TWO: readonly BagCategory[] = ['consumable', 'ball'];
+  const FOUR: readonly BagCategory[] = ['equipment', 'consumable', 'machine', 'ball'];
+
+  it('wraps both ways over the two pockets a battle can offer', () => {
+    expect(stepBagTab(TWO, 'consumable', 'right')).toBe('ball');
+    expect(stepBagTab(TWO, 'ball', 'right')).toBe('consumable');
+    expect(stepBagTab(TWO, 'consumable', 'left')).toBe('ball');
+    expect(stepBagTab(TWO, 'ball', 'up')).toBe('consumable');
+    expect(stepBagTab(TWO, 'consumable', 'down')).toBe('ball');
+  });
+
+  it('wraps both ways over a four-pocket list', () => {
+    expect(stepBagTab(FOUR, 'equipment', 'right')).toBe('consumable');
+    expect(stepBagTab(FOUR, 'equipment', 'left')).toBe('ball');
+    expect(stepBagTab(FOUR, 'ball', 'right')).toBe('equipment');
+    expect(stepBagTab(FOUR, 'machine', 'up')).toBe('consumable');
+    expect(stepBagTab(FOUR, 'machine', 'down')).toBe('ball');
+  });
+
+  it('answers itself for a one-pocket list, and for no pockets at all', () => {
+    expect(stepBagTab(['consumable'], 'consumable', 'left')).toBe('consumable');
+    expect(stepBagTab(['consumable'], 'consumable', 'right')).toBe('consumable');
+    expect(stepBagTab(['consumable'], 'consumable', 'down')).toBe('consumable');
+    expect(stepBagTab([], 'consumable', 'right')).toBe('consumable');
   });
 });
 

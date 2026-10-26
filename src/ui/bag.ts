@@ -60,6 +60,22 @@ export function bagForCategory(bag: readonly BagCounts[], category: BagCategory)
   return bag.filter((stack) => bagCategoryFor(stack.itemId) === category);
 }
 
+/**
+ * The pocket one arrow press selects, wrapped over the pockets on offer
+ * (`left`/`up` = previous, `right`/`down` = next). A one-pocket list answers itself.
+ */
+export function stepBagTab(
+  pockets: readonly BagCategory[],
+  category: BagCategory,
+  action: BagGridDirection,
+): BagCategory {
+  if (pockets.length === 0) return category;
+  const found = pockets.indexOf(category);
+  const from = found >= 0 ? found : 0;
+  const offset = action === 'left' || action === 'up' ? -1 : 1;
+  return pockets[(from + offset + pockets.length) % pockets.length];
+}
+
 /** The pocket `offset` steps from `category`, wrapping through the whole list. */
 export function cycleBagCategory(category: BagCategory, offset: number): BagCategory {
   const index = BAG_CATEGORIES.indexOf(category);
@@ -205,6 +221,31 @@ export function stepBagGrid(
   else if (direction === 'left') nextColumn = (column - 1 + cols) % cols;
   else nextColumn = (column + 1) % cols;
   return Math.min(nextRow * cols + nextColumn, stacks - 1);
+}
+
+/** Where the bag's cursor sits: on the pocket row or in the stack grid. */
+export type BagFocus = 'tabs' | 'grid';
+
+/**
+ * One arrow press while the bag is open, for the **focus** it lands in and the
+ * grid cursor that goes with it. `count`/`columns` describe the stacks on screen
+ * (the shipped `stepBagGrid` rule); a focus that stays on the tabs keeps `index`.
+ * `up` from the grid's top row climbs to the pockets, `down` from them returns to
+ * the first stack, so the pocket row is reachable with the arrows alone.
+ */
+export function stepBagFocus(
+  focus: BagFocus,
+  index: number,
+  action: BagGridDirection,
+  count: number,
+  columns: number = BAG_GRID_COLS,
+): Readonly<{ focus: BagFocus; index: number }> {
+  if (focus === 'tabs') {
+    return action === 'down' ? { focus: 'grid', index: 0 } : { focus: 'tabs', index };
+  }
+  const cols = Math.max(1, Math.trunc(columns));
+  if (action === 'up' && Math.floor(index / cols) === 0) return { focus: 'tabs', index };
+  return { focus: 'grid', index: stepBagGrid(index, action, count, columns) };
 }
 
 /**

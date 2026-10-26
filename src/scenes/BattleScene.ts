@@ -90,8 +90,10 @@ import {
   bagGridLayout,
   filterBagStacks,
   stepBagCursor,
-  stepBagGrid,
+  stepBagFocus,
+  stepBagTab,
   type BagCategory,
+  type BagFocus,
   type BagGridDebugState,
   type BagGridMetrics,
   type BagGridRect,
@@ -676,6 +678,8 @@ export class BattleScene extends Phaser.Scene {
   /** The bag's pockets (consumable, and balls while a wild can be caught). */
   private bagCategories: readonly BagCategory[] = ['consumable'];
   private bagCategory: BagCategory = 'consumable';
+  /** Where the bag's cursor sits: the pocket row or the stack grid. */
+  private bagFocus: BagFocus = 'grid';
   private bagTabs: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
   /** The pocket's drawn stacks (filtered, capped), which `menuIndex` walks. */
   private bagStacks: readonly BagSlot[] = [];
@@ -1350,7 +1354,7 @@ export class BattleScene extends Phaser.Scene {
       }).setVisible(false);
       return { bg, icon, badgeBg, badge };
     });
-    // A click selects a cell; it never spends the stack the way a row click did.
+    // A click on a cell selects the stack and uses it, the same one press `confirm` is.
     this.bagZones = Array.from({ length: MENU_BAG_CAP }, (_, index) => {
       const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
       zone.setInteractive({ useHandCursor: true });
@@ -2716,6 +2720,7 @@ export class BattleScene extends Phaser.Scene {
     this.bagSearchFocused = false;
     this.mode = 'bag';
     this.menuIndex = 0;
+    this.bagFocus = 'grid';
     this.setBagItems(this.bagCategory);
   }
 
@@ -2772,12 +2777,18 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * A click on a grid cell selects it. It never submits: the confirming gesture
-   * stays the confirm action (or the ◀ back control's sibling rows).
+   * A click on a grid cell selects it and spends it, exactly as `confirm` does on
+   * the selected stack: one press, one use. A press on an empty cell — past the
+   * last stack — only does nothing.
    */
   private selectBagCell(index: number): void {
     if (index < 0 || index >= this.bagStacks.length) return;
     this.menuIndex = index;
+    const item = this.menuItems[index];
+    if (item?.enabled) {
+      item.onSelect();
+      return;
+    }
     this.refreshHud();
   }
 
@@ -2949,11 +2960,20 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     if (this.mode === 'bag') {
-      const next = stepBagGrid(this.menuIndex, action, this.bagStacks.length);
-      if (next !== this.menuIndex) {
-        this.menuIndex = next;
-        this.refreshHud();
+      const step = stepBagFocus(this.bagFocus, this.menuIndex, action, this.bagStacks.length);
+      this.bagFocus = step.focus;
+      this.menuIndex = step.index;
+      // On the pocket row a sideways press cycles the pockets on offer, wrapping;
+      // `selectBagTab` resets the grid cursor to the first stack it can show.
+      if (step.focus === 'tabs' && (action === 'left' || action === 'right')) {
+        const category = stepBagTab(this.bagCategories, this.bagCategory, action);
+        const slot = this.bagCategories.indexOf(category);
+        if (slot >= 0 && category !== this.bagCategory) {
+          this.selectBagTab(slot);
+          return;
+        }
       }
+      this.refreshHud();
       return;
     }
     if (this.mode === 'moves' || this.mode === 'menu' || this.mode === 'partner') {
