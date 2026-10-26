@@ -6,6 +6,7 @@ import type { BattleReturn } from '../engine/run/battleLink';
 import { createFighter } from '../engine/battle/fighter';
 import { asDark } from '../engine/run/dark';
 import { getAbility } from '../data/dex';
+import { detailPanelView, initialDetailPanelUi } from './hud/panels/detail/view';
 import {
   CLOSED_DETAIL,
   DETAIL_TABS,
@@ -354,6 +355,63 @@ describe('Hidden Power type', () => {
     });
     const run = { ...createRun({ seed: 'run-a', starter }), party: [member] };
     expect(memberDetail(run, 'hp')?.moves[0]?.type).toBe('Fire');
+  });
+});
+
+describe("the MOVES row reads the berry's Natural Gift (Task-177)", () => {
+  const gifted = createRunPokemon({
+    id: 'gifted',
+    speciesId: 'charmander',
+    level: 5,
+    moves: ['naturalgift'],
+    heldItem: 'sitrusberry',
+  });
+
+  it("prints the berry's power while the type stays the berry's", () => {
+    const run = { ...createRun({ seed: 'run-a', starter: gifted }), party: [gifted] };
+    const row = memberDetail(run, 'gifted')?.moves[0];
+    expect(row).toMatchObject({
+      moveId: 'naturalgift',
+      type: 'Psychic',
+      power: 80,
+      basePower: 80,
+    });
+  });
+
+  it('prints the same power on the MOVES tab through the HUD view', () => {
+    const run = { ...createRun({ seed: 'run-a', starter: gifted }), party: [gifted] };
+    const detail = memberDetail(run, 'gifted');
+    const view = detailPanelView(
+      detail,
+      [],
+      { ...initialDetailPanelUi(), tab: 'moves' },
+      { width: 390, height: 844 },
+    );
+    expect(view.moves[0]).toMatchObject({ type: 'Psychic', power: 'PWR 80' });
+  });
+
+  it('reads the dex power with no berry equipped', () => {
+    const plain = createRunPokemon({
+      id: 'plain',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['naturalgift'],
+    });
+    const run = { ...createRun({ seed: 'run-a', starter: plain }), party: [plain] };
+    const row = memberDetail(run, 'plain')?.moves[0];
+    expect(row).toMatchObject({ type: 'Normal', power: 0, basePower: 0 });
+  });
+
+  it('reads it on a live battle fighter too', () => {
+    const fighter = createFighter({
+      id: 'live',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['naturalgift'],
+      heldItem: 'sitrusberry',
+    });
+    const row = fighterDetail(fighter).moves[0];
+    expect(row).toMatchObject({ type: 'Psychic', power: 80, basePower: 80 });
   });
 });
 

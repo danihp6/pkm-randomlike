@@ -408,7 +408,10 @@ Special move shapes:
   rewrites the one move that belongs to it — Judgment, Multi-Attack, Techno Blast
   and Natural Gift. Natural Gift takes its type and base power from the berry's
   dex `naturalGift` pair and spends the berry once the move has resolved
-  (`src/engine/battle/effects/items.ts`).
+  (`src/engine/battle/effects/items.ts`); the party panel reads the same pair for
+  the number through `effectiveMovePower` (`src/engine/battle/movePower.ts`), the
+  power-side twin of `effectiveMoveType`, so a berry holder's MOVES row prints the
+  berry's power instead of the dex `0`.
 
 A replacement the player owes owns the screen's menus: while the lead has fainted
 with a healthy reserve left, the **switch grid is the only menu a back press can
