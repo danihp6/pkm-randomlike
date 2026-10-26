@@ -314,13 +314,14 @@ switches, its reward tile and its press order identical on every visit.
   with a hand-authored **variant family** (Eiscue, Morpeko, Minior) keeps its
   single row: the roll picks which forme the individual is generated as, on its own
   stream, so the band's table and its weights do not move (`D38`).
-- The grass never offers a species the run has already **caught**: the run keeps a
-  run-long record of every species a successful catch brought in
-  (`RunState.caughtSpecies`; death does not clear it, `D5`) and the table drops
-  those species together with their whole evolution line and every forme sharing
-  their national dex number. A table the exclusions would empty falls back to the
-  unfiltered band, so the grass keeps rolling; the trainer pools are not narrowed,
-  so a trainer may still field a line the player owns.
+- The grass never offers a species the run already **holds**: the table drops every
+  species the run holds or held together with its whole evolution line and every
+  forme sharing its national dex number — the party, the box and the rip members
+  (`RunPokemon.fighter.speciesId`) plus the run-long record of every successful
+  catch (`RunState.caughtSpecies`; death does not clear it, `D5`). A table the
+  exclusions would empty falls back to the unfiltered band, so the grass keeps
+  rolling; the trainer pools are not narrowed, so a trainer may still field a line
+  the player owns.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
 - The **magician's type** (`RunState.modifiers.nextWildType`, `docs/maps-spec.md` §7)
@@ -329,7 +330,7 @@ switches, its reward tile and its press order identical on every visit.
   band carries falls back to the whole band, so a narrowed table is never empty.
 - The **berry tree's** wild is a **second wild source**, not grass: its own
   `${seed}:npc:<roomId>:<npcId>:wild` stream, the room's live table (so the
-  magician's type and the caught-species exclusions still apply), the same
+  magician's type and the held-species exclusions still apply), the same
   `rollWildLevel` and floor cap, `BERRY_TREE_ENEMY_BOOSTS` on the enemy lead and
   `noFlee`; it spends the room's single capture exactly like a grass step.
 - A wild encounter's **level** is `clamp(floor(squadLevel(run) × fraction), 1, cap)`
@@ -361,7 +362,8 @@ switches, its reward tile and its press order identical on every visit.
   was caught in.
 - The **static species** of a static leaf (`docs/maps-spec.md` §7) is fought through
   the same wild path but is **not** drawn from the wild table — its species comes
-  from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary variant), so
+  from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary variant) minus the
+  evolution lines the run already **holds** (`docs/maps-spec.md` §7), so
   `WILD_BANNED_TAGS` and `speciesPool` are unchanged and the room's capture rule is
   the shipped one: the battle that starts spends it.
 

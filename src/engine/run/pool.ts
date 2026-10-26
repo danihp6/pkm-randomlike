@@ -25,16 +25,22 @@ function isBanned(species: Species, roster: PoolRoster): boolean {
 }
 
 /**
- * The ids the wild table must not offer: every recorded species expanded to its line
- * (`evolutionFamily`) and its formes (`formeFamily`). Empty for a run that has caught
- * nothing; an unknown recorded id contributes nothing. Pure — draws no RNG (D11).
+ * The ids the wild table must not offer: every species the run **holds or held** —
+ * the party, the box and the rip (`fighter.speciesId`), plus every recorded catch —
+ * each expanded to its line (`evolutionFamily`) and its formes (`formeFamily`). Empty
+ * for a run with no members and no catch record; an unknown id contributes nothing.
+ * Pure — draws no RNG (D11).
  */
 export function wildExclusions(run: RunState): ReadonlySet<string> {
   const excluded = new Set<string>();
-  for (const speciesId of run.caughtSpecies) {
+  const addLine = (speciesId: string): void => {
     for (const id of evolutionFamily(speciesId)) excluded.add(id);
     for (const id of formeFamily(speciesId)) excluded.add(id);
-  }
+  };
+  for (const speciesId of run.caughtSpecies) addLine(speciesId);
+  for (const member of run.party) addLine(member.fighter.speciesId);
+  for (const member of run.box) addLine(member.fighter.speciesId);
+  for (const member of run.rip) addLine(member.fighter.speciesId);
   return excluded;
 }
 

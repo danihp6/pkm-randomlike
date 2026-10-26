@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **No wild or static whose evolution line the run already holds.**
+      `[Task-175]`, the last of Batch 75: `wildExclusions` now reads the run's
+      **members** — `party`, `box` and `rip` `fighter.speciesId` — beside
+      `caughtSpecies`, so the starter, a trade-in, an egg and a lost member all narrow
+      the table exactly as a catch does, and `staticRoomContent` filters its list by
+      that set before the species draw (falling back to the unfiltered list when the
+      filter would empty it, so a late floor never fields nothing). No new run field,
+      no extra RNG draw and no `SAVE_VERSION` step; `docs/routes-spec.md`'s encounter
+      rule and `docs/maps-spec.md` §7 now say "holds", not "caught". `npm test` 4451
+      passed / 69 skipped, `npm run build` green.
 - [x] **Upper Hand fails unless the target is using a priority move.**
       `[Task-167]`, the third of Batch 75: `CONDITIONAL_FAILS`
       (`src/engine/battle/effects/moves.ts`) keys `upperhand` to a predicate answered

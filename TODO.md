@@ -7917,7 +7917,7 @@ run-integrity defects first, the presentation and economy last.
       `src/data/moveCoverage.json`. *Dependencies:* none — the command map and the priority hook ship.
       *(Batch 75)*
 
-- [ ] **[Task-175] No wild or static whose evolution line the run already holds.** «no debe salir como
+- [x] **[Task-175] No wild or static whose evolution line the run already holds.** «no debe salir como
       poke capturado estatico o salvaje uno que ya tienes a alguno de su linea evolutiva».
       `wildExclusions` (`src/engine/run/pool.ts` 32-39) already expands a recorded id to its whole
       line — `evolutionFamily` walks `prevo` up and `evos` down (`src/data/dex/evolutions.ts`

@@ -448,7 +448,11 @@ Its content:
   species before its battle starts — so a revisit and a reload agree.
 - the far side holds **one species** from `STATIC_SPECIES` (the first stage of each
   pseudo-legendary line) at `squadLevel(run)`, drawn on its own
-  `…:static-species:<roomId>` stream. Its interact starts a **normal wild battle**
+  `…:static-species:<roomId>` stream over the list minus the evolution lines the run
+  already **holds** (the party, box and rip members plus `caughtSpecies`, read
+  through `wildExclusions` exactly like the grass); a filter that would empty the
+  list falls back to the unfiltered list, so the room always fields a species. Its
+  interact starts a **normal wild battle**
   through the scene's own wild path (`RoomHost.startWildBattle` → `startBattle`), so
   it spends the room's single capture exactly like a tall grass step and inherits the
   catch rule, the level cap and the moveset/ability roll. It is **not** drawn from the
