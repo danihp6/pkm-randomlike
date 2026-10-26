@@ -138,6 +138,7 @@ import {
   RouteEncounters,
   bannedSpeciesOf,
   borderEdge,
+  bossChamberTile,
   chefTrade,
   encounterTableFor,
   exitEdgeAt,
@@ -943,13 +944,14 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * The map boss: a themed `ace` trainer at the room's farthest walkable tile,
-   * fielding a fixed six-member party (three on map 1) at the map's `maxLevel`. It
-   * stands only while the map's boss is alive, so the portal stays sealed until it
-   * falls.
+   * The map boss: a themed `ace` trainer standing in the room's centre chamber
+   * (its tile farthest from the door), fielding a fixed six-member party (three on
+   * map 1) at the map's `maxLevel`. It falls back to the room's farthest walkable
+   * tile when the room carved no chamber. It stands only while the map's boss is
+   * alive, so the portal stays sealed until it falls.
    */
   private bossTrainer(view: RoomView): RouteTrainer | null {
-    const position = this.farthestRoomTile();
+    const position = bossChamberTile(this.route) ?? this.farthestRoomTile();
     if (!position) return null;
     return {
       id: bossTrainerId(view.mapIndex),
@@ -1043,6 +1045,10 @@ export class RouteScene extends Phaser.Scene {
       // (`docs/maps-spec.md` §2/§6) and a special carries only its own content
       // (§7).
       quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
+      // The boss room is a two-door line (its link plus the sealed portal), so its
+      // centre chamber is asked for explicitly; the entry room and every leaf read
+      // theirs off the opening set (`docs/maps-spec.md` §2/§6).
+      ...(params.room?.boss === true ? { chamber: true } : {}),
       // The gated room's vault is sealed until the floor's own mark says otherwise, so a
       // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7). The
       // static and secret-shop leaves carve the same vault and read their own records.

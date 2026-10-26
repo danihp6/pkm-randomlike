@@ -7695,7 +7695,7 @@ bare centre tile.
       `src/engine/routes/{sketch,layout,walls,validate}.ts`, their tests and the two docs.
       *Dependencies:* none. *(Batch 70)*
 
-- [ ] **[Task-158] The boss room is a two-door line with the chamber, and the boss lives in it.**
+- [x] **[Task-158] The boss room is a two-door line with the chamber, and the boss lives in it.**
       The boss room stops being a dead-end leaf: the plan gives it **two openings** — the incoming
       link and the **portal** — so its shape is `corridor`, and `[Task-157]`'s chamber sits in the
       middle of that line. The **boss is placed inside the chamber** (`bossTrainer`, `RouteScene`

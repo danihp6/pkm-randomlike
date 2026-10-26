@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FINITE_MAPS } from '../../data/maps';
 import { TALL_GRASS } from '../map';
+import { bossRoomSealed } from '../routes/bossRoom';
 import { sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
 import {
@@ -103,9 +104,7 @@ describe('arrivalEdgeFor / roomView', () => {
           for (const portalOpen of [false, true]) {
             const view = roomView(plan, room.id, portalOpen);
             expect(view.role, `${seed} map ${mapIndex} room ${room.id}`).toBe(plan.rooms[room.id].role);
-            expect(['trainers', 'wild'], `${seed} map ${mapIndex} room ${room.id}`).toContain(
-              view.role,
-            );
+            expect(['trainers', 'wild'], `${seed} map ${mapIndex} room ${room.id}`).toContain(view.role);
           }
         }
       }
@@ -244,6 +243,30 @@ describe('portal', () => {
     }
   });
 
+  it("opens it on the plan's own portal edge and keeps the room sealed", () => {
+    for (const seed of SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const label = `${seed} map ${mapIndex}`;
+        const portal = plan.rooms[plan.bossRoom].openings.find((opening) => opening.kind === 'portal');
+        expect(portal, label).toBeDefined();
+        const view = roomView(plan, plan.bossRoom, false);
+        // The portal is the plan's opening, never a second pick off `freeEdges`.
+        expect(portalEdgeFor(plan, plan.bossRoom), label).toBe(portal!.edge);
+        expect(view.portalEdge, label).toBe(portal!.edge);
+        expect(view.portalOpen, label).toBe(false);
+        // One usable exit while sealed: everything but the portal is the link.
+        const usable = view.openings.filter((opening) => opening.edge !== view.portalEdge);
+        expect(usable, label).toHaveLength(1);
+        expect(linkedNeighbour(plan, plan.bossRoom, usable[0].edge), label).toBeDefined();
+        // The seal itself is untouched by the new opening.
+        expect(bossRoomSealed(true, false), label).toBe(true);
+        expect(bossRoomSealed(false, false), label).toBe(false);
+        expect(bossRoomSealed(true, true), label).toBe(false);
+      }
+    }
+  });
+
   it('carves the portal from the start and only opens it when the boss falls', () => {
     const plan = planMap('progress-a', 3);
     const sealed = roomView(plan, plan.bossRoom, false);
@@ -279,7 +302,7 @@ describe('portal', () => {
     }
   });
 
-  it('is a quiet dead-end: one usable exit, no trainers and no tall grass', () => {
+  it('is a quiet two-door line: one usable exit, no trainers and no tall grass', () => {
     for (const seed of SEEDS) {
       for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
         const plan = planMap(seed, mapIndex);

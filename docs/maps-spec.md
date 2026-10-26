@@ -77,31 +77,39 @@ one room's wall lines up with the neighbour's opposite door:
   from and always lets the player walk straight back;
 - the plan must be **connected** and **closed into at least one cycle** (the rooms
   form a loop, not a bare tree), and no opening may dangle;
-- the **entry room** and the **boss room** are both **single-door leaves**: each
-  joins the floor through exactly one link, so the entry has a single exit forward
-  and the boss has a single exit until its portal opens. The cycle lives in the
-  rest of the floor, so a floor needs at least **six rooms** (the two leaves plus a
-  four-room core, `src/data/maps.ts`).
+- the **entry room** is a **single-door leaf**: it joins the floor through exactly
+  one link, so it has a single exit forward. The **boss room** hangs the same way,
+  off that one link, but its plan records a second opening on the wall **opposite**
+  it — the `portal` — so it reads **`corridor`** while only the link is usable
+  until the portal opens. The cycle lives in the rest of the floor, so a floor needs
+  at least **six rooms** (the two leaves plus a four-room core, `src/data/maps.ts`).
 
 An opening is one of:
 
 | Opening | Where | Meaning |
 | --- | --- | --- |
 | **entry** | exactly one, on the entry room | the map entrance; a fresh run or a portal step spawns the player at the room's **centre** (no carved outward door) |
-| **portal** | exactly one, on the boss room | sealed until the boss falls, then the way to the next map |
+| **portal** | exactly one, on the boss room, on the wall opposite its link | sealed until the boss falls, then the way to the next map |
 | **link** | 0–4 per room | joins two rooms; its counterpart is the neighbour's opposite link |
+
+The **portal's edge derives from the boss room's own link** — it is
+`OPPOSITE_EDGE` of it, never a fresh pick off the room's free walls — so recording
+it takes no draw and a fixed seed's floor does not move. No other room carries one.
 
 **No outward door on the entry room:** the entry is the map's origin, not a way
 back off it, so the route builder leaves that wall solid and the run starts the
 player in the middle of the room. The entry room's only other opening is the
 single `link` that joins it to the floor, so it too is a **single-door leaf**.
 Walking **back** into the entry room through that link spawns the player at the
-link like any other room. Every other opening is a `link`.
+link like any other room. Every other opening on a regular room is a `link`; the
+boss room's second one is its `portal`.
 
 **No dangling openings:** every `link` is joined to another room. A room whose
 only opening is a single `link` is a **dead-end room** — a deliberate leaf, not an
 exit into nothing. Dead-end rooms hold the same content as any optional room:
-trainers, ground items and tall grass (`docs/routes-spec.md` §2).
+trainers, ground items and tall grass (`docs/routes-spec.md` §2). The `portal` is
+not a `link` and never dangles: it leads to the next map, not to a room, so the
+cell beyond it stays whatever the grid says.
 
 Content is seeded per room and it **persists while the run is on the floor**: a
 beaten trainer, a taken ground item and a spent capture stay spent when the room
@@ -168,11 +176,14 @@ planMap(seed, mapIndex): MapPlan
     #    MAP_MIN_ROOM_SIZE, MAP_MAX_ROOM_SIZE), a corridor's long side following
     #    its opening axis. The entry, boss and special leaves stay 30x30.
     # 4. boss: the farthest regular room; hang the boss room off it as an extra
-    #    dead-end leaf, so the boss has a single door and the floor keeps its cycle.
-    #    Both the entry and the boss are single-door leaves.
-    # 5. portal: the boss room's portal is carved on a free wall from the start and
-    #    sealed until the boss falls. A fresh arrival spawns the player at the entry
-    #    room's centre; walking back in through its link spawns at that door.
+    #    leaf, so its one `link` is the way in and the floor keeps its cycle.
+    # 5. portal: the boss room's plan opening is the wall **opposite** its link (no
+    #    draw: `OPPOSITE_EDGE` of the link), so the room reads `corridor` and keeps a
+    #    single usable exit. The carve opens that door from the start on a free wall
+    #    and the scene seals it until the boss falls; the room forces
+    #    `RouteRequest.chamber`, because its link plus the sealed portal is otherwise
+    #    two openings. A fresh arrival spawns the player at the entry room's centre;
+    #    walking back in through its link spawns at that door.
     # 6. specials: hang the special rooms off the tree (see §7).
     # 7. roles: shuffle the regular rooms that are neither the entry nor the boss
     #    (one draw per candidate beyond the first, on the same stream) and tag the
@@ -239,17 +250,19 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
 
 ## 6. Boss & portal (D31)
 
-- The **boss room** is a **dead-end leaf** hung off the farthest regular room, so
-  its only door is the way in (`docs/maps-spec.md` §2). It is deliberately **quiet**:
-  **no tall grass, no ledges, no ground items and no regular trainers**, just the
-  boss. The map's **entry room** is quiet the same way, so the run starts and ends
-  each floor in a clean room.
+- The **boss room** is a **two-door line** in the plan (`docs/maps-spec.md` §2): one
+  `link`, the way in, plus a `portal` on the wall **opposite** it. It reads
+  `corridor` and is deliberately **quiet**: **no tall grass, no ledges, no ground
+  items and no regular trainers**, just the boss in the centre chamber it forces with
+  `RouteRequest.chamber`. The map's **entry room** is quiet the same way, so the run
+  starts and ends each floor in a clean room.
 - That door is **sealed** while the boss stands: `bossRoomSealed(boss, bossDefeated)`
   (`src/engine/routes/bossRoom.ts`) refuses the step back out until the boss falls,
   and it is the **portal**, never this door, that carries the run to the next floor.
-  The seal cannot soft-lock a run: the boss starts at the room's farthest tile with
-  `DEFAULT_TRAINER_SIGHT`, so it walks over and opens the fight on its own, and a loss
-  in the room is a normal loss (`D5`).
+  The seal cannot soft-lock a run: the boss stands on the chamber's **middle line**,
+  at the far end from the door (`bossChamberTile`), with `DEFAULT_TRAINER_SIGHT`, so
+  it walks over and opens the fight on its own, and a loss in the room is a normal
+  loss (`D5`).
 - The party and the box take **one free heal** when the room is first built on a
   floor — HP and PP only, never a resurrection (`D5`) — through
   `bossRoomHeal(run, mapIndex)`, recorded as the `pickedItems` mark
@@ -265,10 +278,11 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   `${seed}:double:<kind>:<mapIndex>:room:<roomId>`, so it is stable per floor and
   room and no other floor draw moves (D11). A one-member party on a double fight
   still degrades to the single layout (`secondActiveIndex = -1`).
-- The portal is **carved from the start** on a free wall of the boss room and stays
-  **sealed** while the boss stands, so the room looks the same before and after.
-  Once the boss falls the portal opens; stepping through it advances the run to the
-  next map (heal stop intact: HP/PP only, never a resurrection).
+- The portal is **carved from the start** on the plan's `portal` opening — the wall
+  opposite the room's link — and stays **sealed** while the boss stands, so the room
+  looks the same before and after. Once the boss falls the portal opens; stepping
+  through it advances the run to the next map (heal stop intact: HP/PP only, never a
+  resurrection).
 - The last map of a finite run holds the **final boss**: there is no portal, and
   beating it wins the run. Infinite mode reopens the portal forever.
 - The boss room **always** begins its battles under one of the two **openings** of
@@ -885,10 +899,13 @@ names its answer and the Phase 9 step (or the later batch) that landed it.
 - **O-M2 — Discovery.** Resolved by Phase 9 steps 6 and 8: the run tracks the
   rooms it has entered (`RunState.discoveredRooms`), a room reveals when it is
   **entered**, and a link is drawn only once **both** its ends are known.
-- **O-M3 — Portal.** Resolved by Phase 9 step 7: the portal is **carved from the
-  start** on a free wall of the boss room and stays **sealed** while the boss
-  stands, so the room looks identical before and after; once the boss falls it
-  opens, and stepping through it advances the run to the next map.
+- **O-M3 — Portal.** Resolved by Phase 9 step 7 and pinned to the plan by Task-158:
+  the boss room's `portal` is a **plan opening** on the wall opposite its one `link`
+  (`OPPOSITE_EDGE`, no draw), so the room reads `corridor`, its carve opens both
+  doors from the start and the scene seals the portal while the boss stands — so the
+  room looks identical before and after; once the boss falls it opens, and stepping
+  through it advances the run to the next map. `portalEdgeFor` reads the plan's
+  `portal` opening and only falls back to a free-wall pick for a plan with none.
 - **O-M4 — Special probabilities.** Resolved by the plan's special pass and the
   rooms' own content (archived in `CHANGELOG.md`): the mini-boss leaf rolls at
   **50%** and the mega-stone leaf at **15%** — the mega-stone only **from map 3

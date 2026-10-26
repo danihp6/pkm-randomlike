@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The boss room is a two-door line with the chamber, and the boss lives in it.**
+      `[Task-158]`, the second of Phase 14: the map plan now gives the boss room **two
+      openings** — its single `link` plus a `portal` on the opposite wall, derived from
+      that link and **no new draw** — so the room reads `corridor` instead of `dead-end`.
+      `MapOpeningKind` gains `'portal'`, `portalEdgeFor` reads the plan's own opening (the
+      old `freeEdges` pick survives only as a fallback for plans without one), and the
+      minimap keeps the sealed portal off the room's exit count until `portalOpen`. The
+      room builder forces `RouteRequest.chamber` on the boss room, `RouteMap.chamber`
+      exposes the carve's `tiles`/`pockets`/`radius`, and `bossChamberTile` returns the
+      chamber tile farthest from the entry, so the boss stands **inside its chamber** on
+      every floor instead of on `farthestRoomTile`; the entry's centre spawn `(15,15)` is
+      guaranteed chamber floor. `bossRoomSealed` and the portal→next-map step are
+      untouched. The three pinned floors re-pin only the boss room's `dead-end` →
+      `corridor`; every other room, link, size and special stays byte-identical. Measured
+      live over CDP at seed `1mxcv19`: the entry spawn `(15,15)` reads chamber floor
+      (1296/1296 base pixels, no wall-motif pixel) and the boss sprite sits at cell
+      `(20,15)` = `bossChamberTile`. `npm test` 4420 passed / 68 skipped, `npm run build`
+      green.
 - [x] **Trap moves damage their target every turn, and the audit learns to see it.**
       `[Task-159]`, the first of Phase 15: the ten binding moves — Sand Tomb, Fire Spin,
       Whirlpool, Wrap, Bind, Infestation, Magma Storm, Thunder Cage, Snap Trap, Clamp — no
