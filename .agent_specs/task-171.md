@@ -17,11 +17,14 @@
   info popup, nickname edit, learn drag, `grab`) is byte-identical to today. The rule is
   expressed once, as a pure function beside `openDetail`, so it is unit-testable
   headless, and it reaches both entry points (the canvas row press and the `?hud=dom`
-  party row) because both funnel through `openMemberDetail`.
+  party row) — the DOM one already funnels through `openMemberDetail`, and the canvas
+  one does too **once the press stops closing the detail first**, which is the one
+  `RouteScene` line this task changes.
 - **Environment:** worktree `../wt-pkm-171`, branch `task-171`.
-- **Dependencies:** none. No earlier task produced a file this task reads, and the
-  batch's other task (the boss/mini-boss aggro rule) touches disjoint paths — see
-  Coordination.
+- **Dependencies:** none. No earlier task produced a file this task reads. The batch's
+  other task (the boss/mini-boss aggro rule) is already **merged**; it held
+  `src/scenes/RouteScene.ts` while the batch was cut, which is why this task claims it
+  only now — see Coordination.
 
 ### Exclusive paths (single writer)
 
@@ -32,6 +35,12 @@ from a directory this task populates is always allowed.
 - `src/ui/partyDetail.ts`
 - `src/ui/partyDetail.test.ts`
 - `src/scenes/panels/detail.ts`
+- `src/scenes/RouteScene.ts` — **only** the press-close inside `private pressHudDrags`
+  (the `const target = this.hudTarget(pointer);` block, ~line 1478-1503). Nothing else in
+  this file may change. This path was added after the first Task QA pass: the canvas row
+  press closed the detail panel *before* the release that re-opens it, so the carried-tab
+  rule never reached the canvas card. `[Task-180]` held this hot file in the first half of
+  the batch and is now **merged**, so this task is its only remaining writer.
 - `docs/design-spec.md` — **§3 only** (`## 3. The party`, lines 65–252). One sentence is
   added to the detail-panel bullet; **no other line of that file changes** and no other
   section may be touched (`[Task-179]` owns §3's swap bullet in another batch; that
@@ -49,9 +58,6 @@ Files this task may read, and only these, beyond `AGENTS.md` itself.
 
 - `docs/design-spec.md` (the file it edits — read §3 in full before touching it)
 - `docs/agent-spec-template.md`
-- `src/scenes/RouteScene.ts` — **only** the canvas row press that calls
-  `openMemberDetail` (around lines 1822–1827) and its `hudPress` bookkeeping. This file
-  is **not** edited by this task.
 - `src/scenes/panels/hud.ts` — the panel record, `panelById`, `panelExpanded`,
   `makeHudPanel`, and the layout constants the live probe reads.
 - `src/scenes/panels/pc.ts` — `boxLeft()`/`boxTop()`, which dock the detail window.
@@ -126,9 +132,41 @@ export function openMemberDetail(host: RoutePanelHost, memberId: string): void;
 - `hudDetailState` remains a module-scope `let` in this file; no new module state, no
   new exported symbol from `detail.ts`, and `closeMemberDetail` still funnels through
   `closeDetail` (so a closed panel answers `'stats'` on the next open).
-- Both entry points are already wired and are **not** edited: `RouteScene`'s canvas row
-  release calls `openMemberDetail(this.panelHost, memberId)`, and the DOM card's
-  delegated press (`installPartyOpener`) calls `openMemberDetail(host, memberId)`.
+- Both entry points end at `openMemberDetail`: `RouteScene`'s canvas row release calls
+  `openMemberDetail(this.panelHost, memberId)` and the DOM card's delegated press
+  (`installPartyOpener`) calls `openMemberDetail(host, memberId)`. **One** thing must
+  change in `src/scenes/RouteScene.ts`, inside `private pressHudDrags`, and nothing else
+  in that file:
+  - Today the block reads:
+    ```ts
+    const target = this.hudTarget(pointer);
+    const grabbed = this.hudUi.grabbed;
+    ...
+    if (detailOpen()) closeMemberDetail(this.panelHost);
+    if (grabbed) { ... }
+    ...
+    const memberId = this.memberIdAt(target);
+    if (memberId === null) return;
+    ```
+    so a press on **any** interactive target (including the party/box/rip row the release
+    will turn into a new member) closes the detail first, and the release then opens the
+    new member from `CLOSED_DETAIL` — which is STATS.
+  - The exact change: compute the row's member **before** the close and skip the close
+    when the press is a member-row press that is not completing an item grab:
+    ```ts
+    const memberId = target.pane === 'rip' ? null : this.memberIdAt(target);
+    if (detailOpen() && (grabbed || memberId === null)) closeMemberDetail(this.panelHost);
+    ```
+    and then reuse that `memberId` in the deferred-grab block (`if (memberId === null)
+    return;` — delete the later `const memberId = this.memberIdAt(target);`). The reason
+    `grabbed` keeps the old close: a press that *drops* an item does not re-open the
+    detail, so its panel must close as before. `rip` is excluded exactly as
+    `handleHudPointerRelease` excludes it; a RIP row never opens a member.
+  - Nothing else in `pressHudDrags` changes: the empty-interior branch (`owner?.id !==
+    'detail' && detailOpen()`) still closes the detail when the press lands anywhere
+    outside its own panel, which is the ruled "closed panel opens on STATS" path; the
+    item-stack branch, the deferred grab, the drag slop and the release path stay
+    byte-identical.
 - **Determinism:** reads no RNG. No `Rng` stream is created, read or advanced; the tab is
   in-memory panel state and is **not** persisted, so no run field and no `SAVE_VERSION`
   step.
@@ -184,7 +222,8 @@ read the rest of the spec is not a criterion.
         `npx vitest run src/ui/partyDetail.test.ts` must list all three.
   - [ ] `[unit]` Nothing outside the exclusive paths was touched: the diff is exactly
         `src/ui/partyDetail.ts`, `src/ui/partyDetail.test.ts`,
-        `src/scenes/panels/detail.ts` and the one added sentence in `docs/design-spec.md`
+        `src/scenes/panels/detail.ts`, the `pressHudDrags` block of
+        `src/scenes/RouteScene.ts` and the one added sentence in `docs/design-spec.md`
         §3. `git diff --name-only main...task-171` prints no fourth code file, and
         `git diff main...task-171 -- docs/design-spec.md` shows one added sentence inside
         §3 and nothing else (no deleted lines, no changed lines in §1, §2, §4–§10).
@@ -225,6 +264,9 @@ depends on that is not in the Contract above.
 - **For the Architect:** this task frees nothing and blocks nothing in Batch 79 —
   `panels/detail.ts` and `partyDetail.ts` are the batch's hot files it holds, and its
   only document is `docs/design-spec.md` §3, which the batch's other task never touches.
+  `src/scenes/RouteScene.ts` is claimed by this task **after** `[Task-180]` merged: while
+  the batch was cut it was 180's, which is exactly why the first QA pass on the canvas
+  criterion found a red that could not be fixed inside the original four paths.
   No `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or generated file
   is claimed, and the batch needs no `SAVE_VERSION` step.
 - **For the next batch (`[Task-179]`, Batch 80):** §3 is shared by section, not by
