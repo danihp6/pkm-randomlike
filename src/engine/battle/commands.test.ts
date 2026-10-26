@@ -4,6 +4,7 @@ import { getItem } from '../../data/items';
 import { Rng } from '../rng';
 import {
   barredMovesFor,
+  chargingCommand,
   findMoveIndex,
   legalMoveIndices,
   replacementOwed,
@@ -140,6 +141,67 @@ describe('replacementOwed', () => {
     takeDoubleTurn(state, {}, {});
     expect(state.sides.enemy.awaitingReplacement).toBe(true);
     expect(replacementOwed(state)).toBe(false);
+  });
+});
+
+describe('chargingCommand', () => {
+  const board = (): BattleState =>
+    createBattle({
+      player: [
+        make({ id: 'player', speciesId: 'dugtrio', level: 20, moves: ['dig', 'tackle', 'growl'] }),
+        make({ id: 'reserve', speciesId: 'squirtle', level: 20, moves: ['tackle'] }),
+      ],
+      enemy: [
+        make({ id: 'enemy', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }),
+        make({ id: 'foe2', speciesId: 'geodude', level: 20, moves: ['tackle'] }),
+      ],
+      rng: new Rng(1),
+      isWild: true,
+    });
+
+  it('answers nothing while the lead is not charging', () => {
+    expect(chargingCommand(board(), 'player')).toBeNull();
+  });
+
+  it('hands back the charge move as the turn it is locked into', () => {
+    const state = board();
+    state.sides.player.party[0].volatiles.charging = 'dig';
+    expect(chargingCommand(state, 'player')).toEqual({ type: 'fight', moveIndex: 0 });
+    const command = chargingCommand(state, 'player');
+    expect(Object.keys(command ?? {}).sort()).toEqual(['moveIndex', 'type']);
+  });
+
+  it('names the slot the charge move actually sits in', () => {
+    const state = board();
+    state.sides.player.party[0].volatiles.charging = 'growl';
+    expect(chargingCommand(state, 'player')).toEqual({ type: 'fight', moveIndex: 2 });
+  });
+
+  it('answers nothing when the locked move left the moveset', () => {
+    const state = board();
+    state.sides.player.party[0].volatiles.charging = 'fly';
+    expect(chargingCommand(state, 'player')).toBeNull();
+  });
+
+  it('answers nothing while the side owes a replacement', () => {
+    const state = board();
+    state.sides.player.party[0].volatiles.charging = 'dig';
+    state.sides.player.awaitingReplacement = true;
+    expect(chargingCommand(state, 'player')).toBeNull();
+  });
+
+  it('answers nothing once the battle is over', () => {
+    const state = board();
+    state.sides.player.party[0].volatiles.charging = 'dig';
+    state.winner = 'player';
+    expect(chargingCommand(state, 'player')).toBeNull();
+  });
+
+  it('reads its own side only', () => {
+    const state = board();
+    state.sides.enemy.party[0].volatiles.charging = 'tackle';
+    expect(chargingCommand(state, 'player')).toBeNull();
+    expect(chargingCommand(state, 'enemy')).toEqual({ type: 'fight', moveIndex: 0 });
   });
 });
 

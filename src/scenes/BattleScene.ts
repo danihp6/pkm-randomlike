@@ -15,6 +15,7 @@ import { getTrainerArchetype, type AiFlag } from '../data/trainers';
 import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerSprites';
 import {
   barredMovesFor,
+  chargingCommand,
   legalMoveIndices,
   replacementOwed,
   switchablePartyIndices,
@@ -1837,6 +1838,15 @@ export class BattleScene extends Phaser.Scene {
       autoReplace(this.state);
       this.startFeed(() => this.finishFeed());
       return;
+    }
+    // A charging fighter answers its own second turn: the engine locks the move and
+    // discards a command anyway, so no menu is opened for it.
+    if (!this.double) {
+      const locked = chargingCommand(this.state, 'player');
+      if (locked) {
+        this.submit(locked);
+        return;
+      }
     }
     this.openMenu();
   }

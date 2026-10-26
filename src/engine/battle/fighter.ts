@@ -57,6 +57,8 @@ export type Volatiles = {
   wonderGuard: boolean;
   /** A charge move (Solar Beam, Fly...) is charging and will fire next turn. */
   charging: string | null;
+  /** The move a charge turn is hiding behind (Dig, Fly...), or null when reachable. */
+  semiInvulnerable: string | null;
   /** Physical damage taken since the turn started (Counter). */
   physicalDamageTaken: number;
   /** Special damage taken since the turn started (Mirror Coat). */
@@ -317,6 +319,7 @@ export function emptyVolatiles(): Volatiles {
     disguise: false,
     wonderGuard: false,
     charging: null,
+    semiInvulnerable: null,
     physicalDamageTaken: 0,
     specialDamageTaken: 0,
     yawn: 0,

@@ -125,6 +125,9 @@ import {
   makeSubstitute,
   nightmareDamage,
   PARTIAL_TRAP_FRACTION,
+  SEMI_INVULNERABLE_CHARGES,
+  SEMI_INVULNERABLE_COUNTER_MULTIPLIER,
+  semiInvulnerableOutcome,
   tickPartialTrap,
   tickPerish,
 } from './volatile';
@@ -1048,6 +1051,7 @@ function resolveMove(
   if (move.flags.charge) {
     if (attacker.volatiles.charging !== move.id && !chargesInstantly(state, move)) {
       attacker.volatiles.charging = move.id;
+      attacker.volatiles.semiInvulnerable = SEMI_INVULNERABLE_CHARGES.has(move.id) ? move.id : null;
       pushText(state, chargeVerb(move.id).key, { name: attacker.name });
       const chargeBoosts = CHARGE_SELF_BOOSTS[move.id];
       if (chargeBoosts) {
@@ -1056,6 +1060,7 @@ function resolveMove(
       return;
     }
     attacker.volatiles.charging = null;
+    attacker.volatiles.semiInvulnerable = null;
   }
 
   if (moveSlot) moveSlot.pp = Math.max(0, moveSlot.pp - ppCost(state, side, move));
@@ -1123,6 +1128,12 @@ function resolveMove(
   for (const aim of aims) {
     const defender = activeFighter(state, aim.side, aim.slot);
     if (protectStops(state, side, move, defender)) continue;
+
+    const hiding = aim.side === side ? 'hit' : semiInvulnerableOutcome(defender, move);
+    if (hiding === 'miss') {
+      pushText(state, 'battle.log.missed', { name: attacker.name });
+      continue;
+    }
 
     const sure = lockedOn || (defender.volatiles.telekinesis > 0 && move.ohko !== true);
     if (move.category !== 'Status' && !sure && !rollHitWith(state, side, move, attacker, defender)) {
@@ -1288,6 +1299,7 @@ function resolveMove(
           result.effectiveness,
           result.crit,
         );
+        if (hiding === 'double') damage = damage * SEMI_INVULNERABLE_COUNTER_MULTIPLIER;
         // The Endure move spares the user for the rest of the turn, even at 1 HP,
         // and drops off before the next one. The room's `endure` condition lasts
         // the whole battle, so it only spares a target still above 1 HP: clamping
