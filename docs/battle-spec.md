@@ -732,6 +732,12 @@ a won battle pays Honey Gather, once per room per floor. Registering the two row
 widens `randomAbilityPool` by two ids, so the abilities a seed rolls are re-rolled
 **once**; a run that already stored one keeps it, and no battle rule changes.
 
+A registered row makes an ability **reachable**, not **rolled**. `darkmatter` is
+registered (its `onModifyEffectiveness` row) and still banned from the pool
+(`BANNED` in `src/engine/battle/randomAbility.ts`), because
+`src/engine/run/dark.ts`'s `asDark` grants it on a dark catch and nothing else
+may; a re-pin of the pool's fixed-seed draws follows a pool change of any size.
+
 ## 12. Double battles
 
 The map boss's fight is a **double battle** on **25 %** of floors and the mini-boss's

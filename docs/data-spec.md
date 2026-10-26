@@ -94,7 +94,7 @@ cycle with the cue table.
 | File | What it holds | Phase |
 | --- | --- | --- |
 | `src/data/dex/natures.ts` | typed view over `dex/natures.json` | 1 |
-| `src/data/dex/customAbilities.ts` | the hand-authored ability rows the generated dex does not carry — `darkmatter` (*Dark Matter*, *Materia Oscura*): the holder's moves ignore the type chart. `abilities.ts` merges them at lookup (`getAbility`, `allAbilitiesWithCustom`) while `allAbilities()` stays the 311 generated rows, and `meta.json`'s `counts.customAbilities` counts them | 13 |
+| `src/data/dex/customAbilities.ts` | the hand-authored ability rows the generated dex does not carry — `darkmatter` (*Dark Matter*, *Materia Oscura*): the holder's moves ignore the type chart. `abilities.ts` merges them at lookup (`getAbility`, `allAbilitiesWithCustom`) while `allAbilities()` stays the 311 generated rows, and `meta.json`'s `counts.customAbilities` counts them, and the random ability pool never rolls it — `BANNED` in `src/engine/battle/randomAbility.ts` — because the dark catch is its only grant (`Task-172`) | 13 |
 | `src/data/tilesets/*.ts` | one biome tileset config + palette per biome | 0 |
 | `src/data/biomes.ts` | biome → tileset, layout and terrain flavour | 2 |
 | `src/data/maps.ts` | per-map tuning: level range, room-count range and room width/height range, plus the infinite-run step | 9 |
