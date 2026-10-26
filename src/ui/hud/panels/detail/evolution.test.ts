@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { evolutionGraph, type FamilyNode } from '../../../evolutionGraph';
 import {
   EVO_INDENT,
+  EVO_LEVEL_CHAR_W,
+  EVO_LEVEL_INSET,
   EVO_MAX_ROWS,
   EVO_PAD_X,
   EVO_PORTRAIT,
   EVO_ROW_H,
   evolutionView,
+  levelColumnWidth,
 } from './evolution';
 
 function node(overrides: Partial<FamilyNode> & Readonly<{ id: string }>): FamilyNode {
@@ -159,5 +162,34 @@ describe('evolutionView', () => {
     const view = evolutionView(family, 420);
     expect(family).toHaveLength(3);
     expect(view.rows).toHaveLength(3);
+  });
+});
+
+describe('levelColumnWidth', () => {
+  it('reserves nothing on a row with no right column', () => {
+    expect(levelColumnWidth(null)).toBe(0);
+  });
+
+  it('pins the per-character floor and the band inset', () => {
+    expect(EVO_LEVEL_CHAR_W).toBe(6);
+    expect(EVO_LEVEL_INSET).toBe(12);
+    expect(levelColumnWidth('Charizardite G')).toBe(96);
+    expect(levelColumnWidth('Lv 36')).toBe(42);
+  });
+
+  it('clears every right column measured on the 390 x 844 card', () => {
+    // The rendered widths of the live DOM card (390×844, `?hud=dom`), level `<text>`
+    // right edge to left edge. The level ends `EVO_PAD_X` inside the band, so the
+    // reserve has to hold the inset as well as the text for the columns to clear.
+    const rendered: Readonly<Record<string, number>> = {
+      'Charizardite X': 83.27,
+      'Charizardite Y': 83.27,
+      'Charizardite G': 82.14,
+      'Lv 16': 30.39,
+      'Lv 36': 31.52,
+    };
+    for (const [level, width] of Object.entries(rendered)) {
+      expect(levelColumnWidth(level), level).toBeGreaterThanOrEqual(EVO_PAD_X + width);
+    }
   });
 });
