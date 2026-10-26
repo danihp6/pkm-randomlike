@@ -9,7 +9,8 @@ import {
   type BattleFighter,
   type BoostId,
 } from '../fighter';
-import type { BattleState, SideId } from '../state';
+import type { Command } from '../commands';
+import type { BattleState, SideId, Slot } from '../state';
 
 export type EffectKind = 'ability' | 'item' | 'move' | 'weather' | 'terrain' | 'status' | 'volatile';
 
@@ -22,6 +23,13 @@ export type EffectContext = Readonly<{
   rng: Rng;
   /** The fighter the running effect is attached to (ability or held item). */
   owner: BattleFighter;
+  /**
+   * Both sides' commands for this turn, when the caller has them. Optional: a
+   * residual, entry or switch-in context has no turn to read, and every shipped
+   * caller keeps its shape. `commands[side][slot]` is a `Command` from
+   * `commands.ts`.
+   */
+  commands?: Readonly<Record<SideId, Readonly<Partial<Record<Slot, Command>>>>>;
 }>;
 
 export type MovePayload = Readonly<{ move: Move; hit: boolean; contact: boolean }>;
@@ -101,6 +109,7 @@ export type ContextOptions = Readonly<{
   source: BattleFighter;
   target?: BattleFighter | null;
   move?: Move | null;
+  commands?: Readonly<Record<SideId, Readonly<Partial<Record<Slot, Command>>>>>;
 }>;
 
 const REGISTRY = new Map<string, EffectDefinition>();
@@ -141,6 +150,7 @@ export function makeContext(state: BattleState, side: SideId, options: ContextOp
     move: options.move ?? null,
     rng: state.rng,
     owner: options.source,
+    ...(options.commands ? { commands: options.commands } : {}),
   };
 }
 

@@ -1102,3 +1102,60 @@ describe('Pain Split', () => {
     expect(kinds).toEqual(['heal', 'damage']);
   });
 });
+
+/**
+ * Upper Hand is the first move whose outcome reads the **turn's commands**: the
+ * foe's own pick decides whether the punch lands. A flinch is spent either when it
+ * blocks the foe's move (`beforeMoveVolatile`) or on the end-of-turn pass, so the
+ * volatile itself is only observable on a board where the foe has not acted yet.
+ */
+describe('Upper Hand', () => {
+  const fight = { type: 'fight', moveIndex: 0 } as const;
+  const commands = { player: { 0: fight }, enemy: { 0: fight } };
+
+  it('lands and leaves the foe flinched when the foe picked a priority move', () => {
+    const state = battle(['upperhand'], ['quickattack']);
+    const enemy = activeFighter(state, 'enemy');
+    const before = enemy.hp;
+
+    useMove(state, 'player', fight, commands);
+
+    expect(enemy.hp).toBeLessThan(before);
+    expect(enemy.volatiles.flinched).toBe(true);
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
+      false,
+    );
+  });
+
+  it('costs the foe its own priority move on the turn it flinches', () => {
+    const state = battle(['upperhand'], ['quickattack']);
+    const enemy = activeFighter(state, 'enemy');
+    const before = enemy.hp;
+    const playerHp = activeFighter(state, 'player').hp;
+
+    takeTurn(state, fight, fight);
+
+    expect(enemy.hp).toBeLessThan(before);
+    expect(activeFighter(state, 'player').hp).toBe(playerHp);
+    expect(
+      state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.flinched'),
+    ).toBe(true);
+  });
+
+  it('fails, spends the PP and deals nothing when the foe picked a plain move', () => {
+    const state = battle(['upperhand'], ['tackle']);
+    const player = activeFighter(state, 'player');
+    const enemy = activeFighter(state, 'enemy');
+    const pp = player.moves[0].pp;
+
+    takeTurn(state, fight, fight);
+
+    expect(player.moves[0].pp).toBe(pp - 1);
+    expect(
+      state.log.filter((event) => event.kind === 'text' && event.key === 'battle.log.fail'),
+    ).toHaveLength(1);
+    expect(state.log.some((event) => event.kind === 'damage' && event.side === 'enemy')).toBe(false);
+    expect(enemy.hp).toBe(enemy.maxHp);
+    expect(enemy.volatiles.flinched).toBe(false);
+  });
+});

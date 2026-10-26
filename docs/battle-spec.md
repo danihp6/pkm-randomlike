@@ -185,6 +185,17 @@ AI share so they cannot disagree: **Body Press** is physical and reads the user'
 Defense (with its own stage and the attack aura), and **Foul Play** is physical and
 reads the **target's** Attack through the target's stages.
 
+One move **fails** on its own terms rather than scaling: **Upper Hand** only lands
+on a target that is already winding up. The turn loop hands both sides' commands to
+the effect context (`EffectContext.commands`), and the conditional-fail table
+(`CONDITIONAL_FAILS` in `src/engine/battle/effects/moves.ts`) reads the foe's own
+pick: it must be a damaging move whose effective priority — after
+`runModifyPriority`, so Prankster and Gale Wings count — is above zero. A foe on
+Tackle, a Bag item, a switch or a run makes it `But it failed!` before anything is
+aimed, with the PP already spent and no damage dealt; the 100% flinch stays the
+move's own `secondaries` on a hit. The read is a command lookup, never a roll, so a
+seed keeps its turn.
+
 ### 3.4 Determinism and the ledger
 
 Three members draw and nothing else does: **Psywave** rolls its 5..15 multiplier

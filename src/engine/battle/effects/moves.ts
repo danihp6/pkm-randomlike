@@ -38,6 +38,7 @@ import { applyHeldItemEffect } from './items';
 import {
   makeContext,
   registerEffects,
+  runModifyPriority,
   type EffectContext,
   type EffectDefinition,
   type EffectHandlers,
@@ -95,6 +96,37 @@ export const CHARGE_SELF_BOOSTS: Readonly<Record<string, Partial<Record<BoostId,
   meteorbeam: { spa: 1 },
   electroshot: { spa: 1 },
   skullbash: { def: 1 },
+};
+
+/**
+ * The moves that can fail outright, keyed by move id (`Task-167`). A predicate
+ * answers `true` when the move must fail this turn: the turn loop logs
+ * `battle.log.fail` where `Spit Up` already does — PP already spent, nothing
+ * aimed — and returns before any damage, secondary or after-move hook. A
+ * predicate reads the turn's commands, never the RNG.
+ */
+export const CONDITIONAL_FAILS: Readonly<Record<string, (ctx: EffectContext) => boolean>> = {
+  /**
+   * Upper Hand only catches a target already winding up: the foe's own command
+   * must be a damaging move whose effective priority (Prankster and friends
+   * included) is above zero. A missing command map, a Bag item, a switch, a run
+   * or a plain move all fail it.
+   */
+  upperhand: (ctx) => {
+    const foeSide = opponentOf(ctx.side);
+    const command = ctx.commands?.[foeSide]?.[0];
+    if (!command || command.type !== 'fight') return true;
+    const foe = activeFighter(ctx.state, foeSide);
+    const chosen = foe.moves[command.moveIndex];
+    const chosenMove = chosen ? getMove(chosen.moveId) : undefined;
+    if (!chosenMove || chosenMove.category === 'Status') return true;
+    const foeCtx = makeContext(ctx.state, foeSide, {
+      source: foe,
+      target: ctx.source,
+      move: chosenMove,
+    });
+    return runModifyPriority(foeCtx, chosenMove, chosenMove.priority) <= 0;
+  },
 };
 
 const FOE_TARGETS = new Set(['normal', 'any', 'adjacentFoe']);
