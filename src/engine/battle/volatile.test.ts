@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Rng } from '../rng';
+import './effects/items';
+import { makeContext, runModifyTrapDamage } from './effects/registry';
 import { createFighter } from './fighter';
+import { activeFighter, createBattle, type BattleState } from './state';
 import {
   absorbWithSubstitute,
   applyConfusion,
@@ -11,6 +14,7 @@ import {
   applyNightmare,
   applyNoRetreat,
   applyOctolock,
+  applyPartialTrap,
   applyQuash,
   applyTaunt,
   applyTelekinesis,
@@ -20,6 +24,10 @@ import {
   leechSeedDamage,
   makeSubstitute,
   nightmareDamage,
+  PARTIAL_TRAP_FRACTION,
+  PARTIAL_TRAP_TURNS,
+  RESIDUAL_VOLATILES,
+  tickPartialTrap,
   tickPerish,
 } from './volatile';
 
@@ -127,5 +135,106 @@ describe('the status-half volatiles', () => {
     const vowed = make();
     expect(applyNoRetreat(vowed)).toBe(true);
     expect(vowed.volatiles.trapped).toBe(true);
+  });
+});
+
+/** A battle whose enemy lead holds `heldItem`, so the residual context has a board. */
+function trapBoard(heldItem?: string): BattleState {
+  return createBattle({
+    player: [createFighter({ id: 'player', speciesId: 'charmander', level: 20, moves: ['tackle'] })],
+    enemy: [
+      createFighter({
+        id: 'enemy',
+        speciesId: 'squirtle',
+        level: 20,
+        moves: ['splash'],
+        ...(heldItem ? { heldItem } : {}),
+      }),
+    ],
+    rng: new Rng(1),
+    isWild: true,
+  });
+}
+
+describe('partial trapping', () => {
+  it('draws 4-5 turns from the battle stream, in exactly one draw', () => {
+    const four = make();
+    const fourRng = new Rng(7);
+    const draws = vi.spyOn(fourRng, 'next');
+    expect(applyPartialTrap(four, 'bind', fourRng)).toBe(true);
+    expect(four.volatiles.partiallyTrapped).toEqual({ turns: 4, moveId: 'bind' });
+    expect(draws).toHaveBeenCalledTimes(1);
+
+    const five = make();
+    applyPartialTrap(five, 'wrap', new Rng(1));
+    expect(five.volatiles.partiallyTrapped).toEqual({ turns: 5, moveId: 'wrap' });
+
+    expect(PARTIAL_TRAP_TURNS).toEqual({ min: 4, max: 5 });
+  });
+
+  it('pays an eighth of max HP, and a sixth through Binding Band', () => {
+    expect(RESIDUAL_VOLATILES).toContain('partiallytrapped');
+    expect(PARTIAL_TRAP_FRACTION).toBe(8);
+
+    const bare = trapBoard();
+    const victim = activeFighter(bare, 'enemy');
+    expect(victim.maxHp).toBe(53);
+    const base = Math.max(1, Math.floor(victim.maxHp / PARTIAL_TRAP_FRACTION));
+    expect(base).toBe(6);
+    const bareCtx = makeContext(bare, 'enemy', {
+      source: victim,
+      target: activeFighter(bare, 'player'),
+    });
+    expect(runModifyTrapDamage(bareCtx, base)).toBe(6);
+
+    const banded = trapBoard('bindingband');
+    const bandedVictim = activeFighter(banded, 'enemy');
+    expect(bandedVictim.maxHp).toBe(53);
+    const bandedCtx = makeContext(banded, 'enemy', {
+      source: bandedVictim,
+      target: activeFighter(banded, 'player'),
+    });
+    expect(runModifyTrapDamage(bandedCtx, base)).toBe(8);
+  });
+
+  it('counts four ticks down and releases the trap at zero', () => {
+    const fighter = make();
+    applyPartialTrap(fighter, 'bind', new Rng(7));
+    expect(tickPartialTrap(fighter)).toBe(3);
+    expect(tickPartialTrap(fighter)).toBe(2);
+    expect(tickPartialTrap(fighter)).toBe(1);
+    expect(fighter.volatiles.trapped).toBe(true);
+    expect(tickPartialTrap(fighter)).toBe(0);
+    expect(fighter.volatiles.partiallyTrapped).toBeNull();
+    expect(fighter.volatiles.trapped).toBe(false);
+    expect(tickPartialTrap(fighter)).toBe(0);
+  });
+
+  it('keeps the holder trapped while Octolock or No Retreat still holds it', () => {
+    const octolocked = make();
+    applyOctolock(octolocked);
+    applyPartialTrap(octolocked, 'bind', new Rng(7));
+    for (let tick = 0; tick < 4; tick++) tickPartialTrap(octolocked);
+    expect(octolocked.volatiles.partiallyTrapped).toBeNull();
+    expect(octolocked.volatiles.trapped).toBe(true);
+
+    const vowed = make();
+    applyNoRetreat(vowed);
+    applyPartialTrap(vowed, 'sandtomb', new Rng(7));
+    for (let tick = 0; tick < 4; tick++) tickPartialTrap(vowed);
+    expect(vowed.volatiles.partiallyTrapped).toBeNull();
+    expect(vowed.volatiles.trapped).toBe(true);
+  });
+
+  it('replaces a trap already holding the fighter instead of stacking', () => {
+    const fighter = make();
+    applyPartialTrap(fighter, 'bind', new Rng(1));
+    expect(fighter.volatiles.partiallyTrapped).toEqual({ turns: 5, moveId: 'bind' });
+    tickPartialTrap(fighter);
+    tickPartialTrap(fighter);
+    expect(fighter.volatiles.partiallyTrapped).toEqual({ turns: 3, moveId: 'bind' });
+
+    applyPartialTrap(fighter, 'wrap', new Rng(7));
+    expect(fighter.volatiles.partiallyTrapped).toEqual({ turns: 4, moveId: 'wrap' });
   });
 });

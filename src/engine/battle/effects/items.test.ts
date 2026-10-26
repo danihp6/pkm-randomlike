@@ -5,7 +5,7 @@ import { ITEMS, getItem, type ItemDef } from '../../../data/items';
 import { Rng } from '../../rng';
 import { createFighter, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
-import { takeTurn, performSwitch } from '../turn';
+import { takeTurn, performSwitch, useMove } from '../turn';
 import { movePreview } from '../preview';
 import {
   getEffect,
@@ -857,5 +857,47 @@ describe('the Tera Crystals (Task-103)', () => {
     const ctx = { ...playerContext(state), owner: state.sides.player.party[1] };
     getEffect('teracrystalfire')?.handlers.onStart?.(ctx);
     expect(lead.types).toEqual(['Grass', 'Poison']);
+  });
+});
+
+describe('Binding Band (Task-159)', () => {
+  it('is registered as an item effect, never a no-op row', () => {
+    expect(UNMODELLED_ITEMS).not.toContain('bindingband');
+    const effect = getEffect('bindingband');
+    expect(effect?.kind).toBe('item');
+    expect(effect?.handlers.onModifyTrapDamage).toBeTypeOf('function');
+  });
+
+  it('makes a trapped holder pay a sixth instead of an eighth', () => {
+    const state = createBattle({
+      player: [
+        createFighter({
+          id: 'player',
+          speciesId: 'charmander',
+          level: 30,
+          moves: ['bind', 'splash'],
+        }),
+      ],
+      enemy: [
+        createFighter({
+          id: 'enemy',
+          speciesId: 'squirtle',
+          level: 20,
+          heldItem: 'bindingband',
+          moves: ['splash'],
+        }),
+      ],
+      rng: new Rng(3),
+      isWild: true,
+    });
+    const enemy = activeFighter(state, 'enemy');
+    expect(enemy.maxHp).toBe(53);
+
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+    const landed = enemy.hp;
+    expect(enemy.volatiles.partiallyTrapped?.moveId).toBe('bind');
+
+    takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+    expect(enemy.hp).toBe(landed - 8);
   });
 });

@@ -7756,7 +7756,7 @@ they pass the ledger and deal no damage at all.
 - **`[Task-159]` alone**: it owns `turn.ts`'s volatile case and the residual pass, the volatile's
   shape and the audit's expectations, so no other battle task may run beside it.
 
-- [ ] **[Task-159] Trap moves damage their target every turn, and the audit learns to see it.** Sand
+- [x] **[Task-159] Trap moves damage their target every turn, and the audit learns to see it.** Sand
       Tomb, Fire Spin, Whirlpool, Wrap, Bind, Infestation, Magma Storm, Thunder Cage, Snap Trap and
       Clamp all carry `volatileStatus: 'partiallytrapped'`, and the engine treats it as `trapped`:
       `turn.ts` 347-350 sends both ids to `applyTrap` (`volatile.ts` 39), which only sets a boolean,

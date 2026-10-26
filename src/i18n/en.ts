@@ -451,6 +451,8 @@ export const en = {
   'battle.log.wishCameTrue': "{name}'s wish came true!",
   'battle.log.leechSeed': "{name}'s health is sapped by Leech Seed!",
   'battle.log.nightmare': '{name} is locked in a nightmare!',
+  'battle.log.partiallyTrapped': '{name} is hurt by the trap!',
+  'battle.log.partiallyTrappedEnd': '{name} is free of the trap!',
   'battle.log.curse': '{name} is afflicted by the curse!',
   'battle.log.liquidOoze': '{name} sucked up the liquid ooze!',
   'battle.log.energyDrained': '{name} had its energy drained!',

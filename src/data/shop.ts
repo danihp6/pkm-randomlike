@@ -102,6 +102,7 @@ export const SHOP_ROTATION: Readonly<Record<BandId, readonly ShopEntry[]>> = {
   ],
   late: [
     e('sitrusberry', 1),
+    e('bindingband', 1),
     e('lumberry', 1),
     e('leftovers', 1),
     e('blackglasses', 1),

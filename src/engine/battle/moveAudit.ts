@@ -12,12 +12,13 @@ import {
   activeFighter,
   createBattle,
   type BattleEvent,
+  type BattleState,
   type FieldConditionId,
   type SideConditionId,
   type TerrainId,
   type WeatherId,
 } from './state';
-import { useMove } from './turn';
+import { useMove, takeTurn } from './turn';
 
 /**
  * The headless instrument the move ledger is judged by: one move against a clean
@@ -92,6 +93,11 @@ export interface MoveProbe {
 export interface MoveAuditRow {
   moveId: string;
   expected: Partial<MoveProbe>;
+  /**
+   * What the move does on the **following** turn (`Task-159`): a binding move pays its
+   * residual there, so a row that only writes a volatile can no longer pass as `port`.
+   */
+  residual?: Partial<MoveProbe>;
   setup?: Partial<MoveAuditSetup>;
   /** The engine does not satisfy this row today. */
   knownGap?: true;
@@ -144,11 +150,10 @@ export function fieldConditionsVector(
 }
 
 /**
- * Builds the clean board, runs one move and snapshots it. The probe reads exactly
- * one stream, `new Rng(PROBE_SEED)`, created inside the call, so two calls with
- * the same move and setup return the same snapshot.
+ * Builds the clean board. The probe reads exactly one stream, `new Rng(PROBE_SEED)`,
+ * created inside the call, so two calls with the same setup return the same board.
  */
-export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): MoveProbe {
+function probeBoard(setup: Partial<MoveAuditSetup>, playerMoves: readonly string[]): BattleState {
   const level = setup.level ?? DEFAULT_LEVEL;
   const player = createFighter({
     id: 'audit-player',
@@ -156,7 +161,7 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
     level,
     ability: 'Run Away',
     ...(setup.heldItem ? { heldItem: setup.heldItem } : {}),
-    moves: [moveId],
+    moves: [...playerMoves],
   });
   const enemy = createFighter({
     id: 'audit-enemy',
@@ -176,7 +181,7 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
 
   const weather = setup.weather ?? null;
   const terrain = setup.terrain ?? null;
-  const state = createBattle({
+  return createBattle({
     player: [player],
     enemy: [enemy],
     rng: new Rng(PROBE_SEED),
@@ -184,9 +189,9 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
     ...(weather ? { weather: { id: weather, turns: PROBE_WEATHER_TURNS } } : {}),
     ...(terrain ? { terrain: { id: terrain, turns: PROBE_TERRAIN_TURNS } } : {}),
   });
+}
 
-  useMove(state, 'player', { type: 'fight', moveIndex: 0 });
-
+function snapshotState(state: BattleState): MoveProbe {
   const playerAfter = activeFighter(state, 'player');
   const enemyAfter = activeFighter(state, 'enemy');
   return {
@@ -213,6 +218,29 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
     enemyPp: enemyAfter.moves.map((slot) => slot.pp),
     events: state.log.filter((event) => event.kind !== 'text').map((event) => event.kind),
   };
+}
+
+/**
+ * Builds the clean board, runs one move and snapshots it. The probe reads exactly
+ * one stream, `new Rng(PROBE_SEED)`, created inside the call, so two calls with
+ * the same move and setup return the same snapshot.
+ */
+export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): MoveProbe {
+  const state = probeBoard(setup, [moveId]);
+  useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+  return snapshotState(state);
+}
+
+/**
+ * `probeMove` plus one more full turn: the player holds `splash` in slot 1, the audited
+ * move runs from slot 0, then `takeTurn` runs the player's `splash` and the enemy's,
+ * which is where the residual pass pays. Same seed, same board, same snapshot shape.
+ */
+export function probeResidual(moveId: string, setup: Partial<MoveAuditSetup> = {}): MoveProbe {
+  const state = probeBoard(setup, [moveId, 'splash']);
+  useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+  takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
+  return snapshotState(state);
 }
 
 /**
@@ -295,7 +323,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   },
   {
     moveId: 'bind',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 98 },
   },
   { moveId: 'bite', expected: { events: ['move', 'damage'] } },
   { moveId: 'bitterblade', setup: { playerHp: 40 }, expected: { events: ['move', 'damage', 'heal'] } },
@@ -357,7 +388,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'chillyreception', expected: { weather: 'snow', events: ['move'] } },
   {
     moveId: 'clamp',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 92 },
   },
   {
     moveId: 'clangoroussoul',
@@ -509,7 +543,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'firepunch', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'firespin',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 92 },
   },
   {
     moveId: 'fissure',
@@ -632,7 +669,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'inferno', expected: { events: ['move', 'damage', 'status'], enemyStatus: 'brn' } },
   {
     moveId: 'infestation',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 100 },
   },
   { moveId: 'ingrain', expected: { playerVolatiles: ['ingrain'] } },
   { moveId: 'instruct', expected: { events: ['move'] } },
@@ -690,7 +730,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'magicroom', expected: { fieldConditions: [0, 0, 5, 0, 0, 0, 0], events: ['move'] } },
   {
     moveId: 'magmastorm',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 65 },
   },
   { moveId: 'magnetrise', expected: { playerVolatiles: ['magnetRise'] } },
   { moveId: 'makeitrain', expected: { playerBoosts: [0, 0, -1, 0, 0, 0, 0] } },
@@ -923,7 +966,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'sandstorm', expected: { weather: 'sand' } },
   {
     moveId: 'sandtomb',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 92 },
   },
   { moveId: 'scald', expected: { events: ['move', 'damage'] } },
   { moveId: 'scaleshot', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
@@ -990,7 +1036,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'smokescreen', expected: { enemyBoosts: [0, 0, 0, 0, 0, -1, 0] } },
   {
     moveId: 'snaptrap',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 93 },
   },
   {
     moveId: 'snarl',
@@ -1097,7 +1146,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'thunderbolt', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'thundercage',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 73 },
   },
   { moveId: 'thunderfang', expected: { events: ['move', 'damage'] } },
   {
@@ -1177,7 +1229,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'weatherball', expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken'] } },
   {
     moveId: 'whirlpool',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'specialDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'specialDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 92 },
   },
   { moveId: 'wildboltstorm', expected: { events: ['move', 'damage'] } },
   { moveId: 'wildcharge', expected: { events: ['move', 'damage', 'damage'] } },
@@ -1190,7 +1245,10 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'worryseed', expected: { enemyAbility: 'Insomnia', events: ['move'] } },
   {
     moveId: 'wrap',
-    expected: { enemyVolatiles: ['lastDamageTaken', 'physicalDamageTaken', 'trapped'] },
+    expected: {
+      enemyVolatiles: ['lastDamageTaken', 'partiallyTrapped', 'physicalDamageTaken', 'trapped'],
+    },
+    residual: { enemyHp: 98 },
   },
   { moveId: 'wringout', expected: { events: ['move', 'damage'] } },
   { moveId: 'yawn', expected: { enemyVolatiles: ['yawn'] } },

@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Trap moves damage their target every turn, and the audit learns to see it.**
+      `[Task-159]`, the first of Phase 15: the ten binding moves — Sand Tomb, Fire Spin,
+      Whirlpool, Wrap, Bind, Infestation, Magma Storm, Thunder Cage, Snap Trap, Clamp — no
+      longer collapse into `trapped`. `volatiles.partiallyTrapped` is its own record
+      `{ turns, moveId }`, its **4-5 turn** duration is one draw from the battle's seeded
+      `Rng` when the move lands (a second bind resets the counter instead of stacking), the
+      residual pass pays **1/8** of max HP (`1/6` with **Binding Band**, which stops being a
+      `no-op` item) after the status/weather/ability passes, and the volatile clears and
+      releases `trapped` at zero. A **Ghost** still takes the damage but is not prevented
+      from switching, ported from Showdown and pinned by a test. The move audit gains a
+      `residual` expectation — `probeResidual` plays one more full turn — so a handler that
+      exists but does nothing can never read `port` again, `RESIDUAL_VOLATILES` is the seam
+      the coverage table reads, and the ten rows plus Binding Band were regenerated
+      (`npm run docs:coverage`). `npm test` 4411 passed / 68 skipped, `npm run build` green.
 - [x] **The centre chamber, and the dead ends lose their branches.** `[Task-157]`, the
       first of Phase 14: every room with no through-lane — the map's entry, its boss room
       and every `dead-end` leaf — now carves one **central chamber**, a diamond grown from
