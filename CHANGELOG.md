@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The double-battle roll: 25 % for the boss, 10 % for the mini-boss.** `[Task-156]`,
+      the eighth of Phase 13: whether a floor's hand-placed fight fields two actives per
+      side is now a roll of the run's own seed, not a constant. `BOSS_PARTY[kind].double`
+      became `doubleChance` (**0.25** for the map boss, **0.1** for the mini-boss) and
+      `bossIsDouble(kind, seed, mapIndex, routeKey)` beside the table answers it from a
+      stream of its own — `hashSeed(\`${seed}:double:${kind}:${mapIndex}:${routeKey}\`)` —
+      so no existing draw moves and a replay rebuilds the same floor. The mini-boss's
+      trainer launch (`RouteScene.startTrainerBattle`) now carries the flag the boss room
+      already carried, through a new `BattleExtras.double` rolled **once** per fight, so a
+      boss room's wild battle and the Mega Stone keeper stay single; the screen, the second
+      slot, the target step and the AI needed no change, because all of them read
+      `BattleLaunch.double`. The answer is derived, so it stores nothing and takes no
+      `SAVE_VERSION` step. Measured rate over `s0`…`s9999`: 24.6 % and 9.7 %.
+      `npm test` 4385 passed / 68 skipped, `npm run build` green.
 - [x] **The dark Pokémon.** `[Task-154]`, the seventh of Phase 13:
       a run member can be **dark** (`RunPokemon.dark`, `SAVE_VERSION` **25** with a
       `24 → 25` migration that seeds `false` on every stored party, box and rip entry):

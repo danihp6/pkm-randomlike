@@ -7638,7 +7638,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       and its fixtures. *Dependencies:* `[Task-127]`, `[Task-124]`, `[Task-125]`, `[Task-145]`,
       `[Task-152]`. *(Batch 67)*
 
-- [ ] **[Task-156] The double-battle roll: 25 % for the boss, 10 % for the mini-boss.** Today
+- [x] **[Task-156] The double-battle roll: 25 % for the boss, 10 % for the mini-boss.** Today
       `BOSS_PARTY` hard-codes `double: true` for the map boss and `false` for the mini-boss, and the
       launch only reads the room flag (`RouteScene` 3410), so a mini-boss never rolls one at all.
       **Decision (`2026-10-25`): both kinds roll, from the run's own seed** — **25 %** for the boss,

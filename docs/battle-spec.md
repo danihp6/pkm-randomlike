@@ -673,8 +673,10 @@ widens `randomAbilityPool` by two ids, so the abilities a seed rolls are re-roll
 
 ## 12. Double battles
 
-The map boss's fight is a **double battle**: each side fields **two active slots**
-at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
+The map boss's fight is a **double battle** on **25 %** of floors and the mini-boss's
+on **10 %**, rolled from the run's own seed (`src/data/bosses.ts`): a double fight
+puts **two active slots** at once on each side (`DOUBLE_ACTIVES = 2`), every other
+hand-placed fight stays single. The engine half is the
 `double` flag on `BattleSetup` (`src/engine/battle/state.ts`); it defaults to
 `false`, so every single battle keeps slot 0 and its exact log.
 
@@ -726,16 +728,23 @@ at once (`DOUBLE_ACTIVES = 2`, `src/data/bosses.ts`). The engine half is the
   change; an emptied or fainted slot asks for a `switch` when a reserve exists.
   Mega Evolution and Gigantamax stay once per side per battle across both slots,
   never once per slot.
-- **Data.** `BOSS_PARTY[kind]` carries `double`: the **boss** row is `true`
-  (`3/6` members) and the **mini-boss** stays single (`2/3`), through
-  `bossIsDouble(kind)`; `bossPartySize` is unchanged. The battle screen that reads
-  the flag is the screen task's, not this rule's.
+- **Data.** `BOSS_PARTY[kind]` carries `doubleChance`: a probability in `0..1` that
+  this kind's fight fields two actives per side — **25 %** for the boss (`3/6`
+  members) and **10 %** for the mini-boss (`2/3`). `bossIsDouble(kind, seed,
+  mapIndex, routeKey)` answers the roll from its own stream,
+  `${seed}:double:<kind>:<mapIndex>:<routeKey>`, created inside the call and never
+  shared, so no existing draw moves and a replay rebuilds the same answer (D11);
+  the caller passes the room's own key, `room:<roomId>`, so the same floor answers
+  the same way on every visit and from a reload. `bossPartySize` is unchanged, and
+  a `doubleChance` of `0` or `1` is legal and makes the roll constant. The battle
+  screen that reads the flag is the screen task's, not this rule's.
 - **Out of scope.** Full Showdown doubles: friend guard, Helping Hand, redirection,
   spread damage reduction, per-slot side conditions and two Megas or two
   Gigantamaxes.
 
-The **screen** reads one flag and adds no rule: `BattleLaunch.double` (`true` only
-for a launch whose room is the boss's) rides into `createBattle({ ..., double })`,
+The **screen** reads one flag and adds no rule: `BattleLaunch.double` (`true` when
+the launch's fight rolled a double battle — the map boss on 25 % of floors, the
+mini-boss on 10 %) rides into `createBattle({ ..., double })`,
 and everything the battle draws follows the engine's own answers. Both actives of a
 side are on screen — two enemy sprites on the foe platform, two enemy HP windows
 side by side and two player windows stacked, the second of each pair mirroring the
