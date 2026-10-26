@@ -108,14 +108,10 @@ carries over.
   `Lv##` or `TM###` as it was; a member's **last remaining move cannot be removed**,
   and no confirmation is asked because the delete is free and reversible.
   A member with **no** moves at all reads `no moves` and draws
-  no container. When the squad levels up a
-  modal pops up announcing **"X learned Y!"** for every move a member crossed on
-  the way, dismissed with any key or a click. Every level-up also says so in a
-  **transient notice** at the top of the screen — `Charmander grew to Lv 6!`, naming
-  the member (its nickname when it has one, else its species) and the level it
-  reached — holding 2.6 s, dismissed by itself, taking no key and blocking no
-  movement, the way a boxed catch does (`docs/routes-spec.md` §6); the modal keeps
-  the move names. The party is never left empty and
+  no container. When the squad levels up the **only** panel it raises is a
+  modal announcing **"X learned Y!"** for every move a member crossed on
+  the way, dismissed with any key or a click — a level-up that crossed no move
+  raises no panel at all. The party is never left empty and
   the box is never required to be full.
 - A member can also be **edited by a special NPC** (`docs/maps-spec.md` §7): a
   **tutor** teaches one move of its six, and the move waits in the MOVES tab's band
