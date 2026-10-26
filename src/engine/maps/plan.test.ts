@@ -8,9 +8,11 @@ import {
   mapTuning,
   roomSizeForShape,
 } from '../../data/maps';
-import type { Access } from '../routes/layout';
-import { sketchRoute } from '../routes/sketch';
+import { ROUTE_SHAPES, type Access } from '../routes/layout';
+import { bossChamberTile, sketchRoute } from '../routes/sketch';
 import { validateRoute } from '../routes/validate';
+import { FLOOR } from '../map';
+import { routeIndexForRoom } from '../run/floors';
 import { Rng } from '../rng';
 import {
   MAP_EDGES,
@@ -26,6 +28,7 @@ import {
   type MapPlan,
   type MapRoom,
 } from './plan';
+import { portalEdgeFor, roomView } from './progress';
 
 const SEEDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel'];
 
@@ -143,10 +146,15 @@ function assertPlan(plan: MapPlan): void {
     }
   }
 
-  // No dangling opening: every link opening resolves to a joined neighbour.
+  // No dangling opening: every link opening resolves to a joined neighbour, and
+  // the boss room's portal resolves to none (it is a wall, not a door).
   for (const room of plan.rooms) {
     for (const opening of room.openings) {
       if (opening.kind === 'entry') continue;
+      if (opening.kind === 'portal') {
+        expect(linkedNeighbour(plan, room.id, opening.edge)).toBeUndefined();
+        continue;
+      }
       expect(linkedNeighbour(plan, room.id, opening.edge)).toBeDefined();
     }
   }
@@ -159,11 +167,25 @@ function assertPlan(plan: MapPlan): void {
   // The boss is the farthest room from the entry.
   expect(plan.bossRoom).toBe(expectedBoss(plan));
 
-  // The boss is a dead-end leaf: its only door is the single link, so it has one
-  // exit until the portal opens (`docs/maps-spec.md` §6).
+  // The boss is a **two-door line** (`docs/maps-spec.md` §2/§6): one `link` for the
+  // way in and one `portal` on the opposite wall, so it reads `corridor` and keeps a
+  // single usable exit until the portal opens.
   const boss = plan.rooms[plan.bossRoom];
-  expect(boss.openings.filter((opening) => opening.kind === 'link')).toHaveLength(1);
-  expect(boss.shape).toBe('dead-end');
+  const bossLinks = boss.openings.filter((opening) => opening.kind === 'link');
+  expect(bossLinks).toHaveLength(1);
+  const bossPortals = boss.openings.filter((opening) => opening.kind === 'portal');
+  expect(bossPortals).toHaveLength(1);
+  expect(bossPortals[0].edge).toBe(OPPOSITE_EDGE[bossLinks[0].edge]);
+  expect(boss.shape).toBe('corridor');
+
+  // No other room carries a portal: the exit to the next map is the boss's alone.
+  for (const room of plan.rooms) {
+    if (room.id === plan.bossRoom) continue;
+    expect(
+      room.openings.some((opening) => opening.kind === 'portal'),
+      `room ${room.id}`,
+    ).toBe(false);
+  }
 
   // The entry room is a single-door leaf too: its only **link** opening is the one
   // into the floor (its plan shape also counts the outward entry edge, which the
@@ -297,7 +319,7 @@ describe('planMap', () => {
     entryEdge: 'S',
     bossRoom: 8,
     rooms:
-      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:bend:-|3:0,-2:cross:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:dead-end:-|9:0,-3:dead-end:mega-stone|10:-1,-1:dead-end:no-heal|11:-1,-2:dead-end:static',
+      '0:0,0:corridor:-|1:0,-1:cross:-|2:1,-1:bend:-|3:0,-2:cross:-|4:1,-2:cross:-|5:1,-3:bend:-|6:2,-3:tee:-|7:2,-2:bend:-|8:2,-4:corridor:-|9:0,-3:dead-end:mega-stone|10:-1,-1:dead-end:no-heal|11:-1,-2:dead-end:static',
     links: '0-1|1-2|1-3|1-10|2-4|3-4|3-9|3-11|4-5|4-7|5-6|6-7|6-8',
     specials: '9:mega-stone|10:no-heal|11:static',
   } as const;
@@ -450,11 +472,11 @@ describe('room roles', () => {
    */
   const SHIPPED_FLOORS: Readonly<Record<string, string>> = {
     'alpha:1':
-      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
+      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:corridor:-|6:-1,1:30x30:dead-end:mini-boss',
     'alpha:8':
-      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone|10:-1,-1:30x30:dead-end:no-heal|11:-1,-2:30x30:dead-end:static',
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:corridor:-|9:0,-3:30x30:dead-end:mega-stone|10:-1,-1:30x30:dead-end:no-heal|11:-1,-2:30x30:dead-end:static',
     'role-seed:5':
-      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-',
+      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:corridor:-',
   };
 
   /**
@@ -466,18 +488,19 @@ describe('room roles', () => {
    */
   const PRE_TASK_ROOMS: Readonly<Record<string, string>> = {
     'alpha:1':
-      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:dead-end:-|6:-1,1:30x30:dead-end:mini-boss',
+      '0:0,0:30x30:corridor:-|1:-1,0:30x30:cross:-|2:-1,-1:30x30:bend:-|3:-2,0:30x30:bend:-|4:-2,-1:30x30:tee:-|5:-2,-2:30x30:corridor:-|6:-1,1:30x30:dead-end:mini-boss',
     'alpha:8':
-      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:dead-end:-|9:0,-3:30x30:dead-end:mega-stone',
+      '0:0,0:30x30:corridor:-|1:0,-1:40x40:cross:-|2:1,-1:44x44:bend:-|3:0,-2:40x40:cross:-|4:1,-2:40x40:cross:-|5:1,-3:44x44:bend:-|6:2,-3:40x48:tee:-|7:2,-2:44x44:bend:-|8:2,-4:30x30:corridor:-|9:0,-3:30x30:dead-end:mega-stone',
     'role-seed:5':
-      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:dead-end:-',
+      '0:0,0:30x30:corridor:-|1:0,1:30x31:tee:-|2:-1,1:30x30:bend:-|3:0,2:30x30:bend:-|4:-1,2:30x31:tee:-|5:-1,3:30x30:corridor:-',
   };
 
   it('leaves every regular room, its id and its size where `main` had them', () => {
     const untouched = (seed: string, mapIndex: number): string =>
       planMap(seed, mapIndex)
         .rooms.filter(
-          (room) => room.special === null || room.special === 'mini-boss' || room.special === 'mega-stone',
+          (room) =>
+            room.special === null || room.special === 'mini-boss' || room.special === 'mega-stone',
         )
         .map(
           (room) =>
@@ -1423,4 +1446,169 @@ describe('plan -> route connections', () => {
       }
     }
   }, 30_000);
+});
+
+/** Twenty fixed seeds, so the boss room's chamber and its portal are pinned by seed. */
+const CHAMBER_SEEDS = Array.from({ length: 20 }, (_, index) => `boss-chamber-${index}`);
+
+describe('the boss room is a two-door line with the chamber', () => {
+  it('opens its portal on the wall opposite its link, on every seed and map 1-4', () => {
+    for (const seed of CHAMBER_SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const boss = plan.rooms[plan.bossRoom];
+        const link = boss.openings.find((opening) => opening.kind === 'link')!;
+        const portal = boss.openings.find((opening) => opening.kind === 'portal')!;
+        const label = `${seed} map ${mapIndex}`;
+        expect(portal.edge, label).toBe(OPPOSITE_EDGE[link.edge]);
+        expect(portalEdgeFor(plan, plan.bossRoom), label).toBe(portal.edge);
+        expect(boss.shape, label).toBe('corridor');
+      }
+    }
+  });
+
+  /**
+   * The boss room's **production** request, exactly as `RouteScene.buildRoute`
+   * assembles it: the plan's opening set, the room's size, `chamber: true` because
+   * its two openings would otherwise read as a plain corridor, and the quiet wild
+   * role the room carries.
+   */
+  it('carves the boss room a chamber and puts the boss inside it', () => {
+    for (const seed of CHAMBER_SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const view = roomView(plan, plan.bossRoom, false);
+        const route = sketchRoute({
+          seed,
+          routeIndex: routeIndexForRoom(plan, plan.bossRoom),
+          biomeId: view.biomeId,
+          openings: view.openings,
+          width: view.width,
+          height: view.height,
+          chamber: true,
+          quiet: true,
+          role: 'wild',
+        });
+        const label = `${seed} map ${mapIndex}`;
+        const chamber = route.chamber;
+        expect(chamber, label).toBeDefined();
+        if (!chamber) continue;
+        // Row-major, by y then x, as the contract promises.
+        expect(chamber.tiles, label).toEqual([...chamber.tiles].sort((a, b) => a.y - b.y || a.x - b.x));
+        for (const tile of chamber.tiles) {
+          expect(route.tiles[tile.y][tile.x], `${label} ${tile.x},${tile.y}`).toBe(FLOOR);
+        }
+        const centre = { x: Math.floor(route.width / 2), y: Math.floor(route.height / 2) };
+        expect(
+          chamber.tiles.some((tile) => tile.x === centre.x && tile.y === centre.y),
+          `${label} centre`,
+        ).toBe(true);
+        const boss = bossChamberTile(route);
+        expect(boss, label).not.toBeNull();
+        expect(chamber.tiles, label).toContainEqual(boss);
+        expect(boss, label).not.toEqual(route.entry);
+        // The chamber keeps the room's border margin, so the boss never stands on
+        // the ring or in an opening band.
+        expect(boss!.x, `${label} west`).toBeGreaterThanOrEqual(3);
+        expect(boss!.y, `${label} north`).toBeGreaterThanOrEqual(3);
+        expect(boss!.x, `${label} east`).toBeLessThanOrEqual(route.width - 4);
+        expect(boss!.y, `${label} south`).toBeLessThanOrEqual(route.height - 4);
+        // ...and on the chamber's middle line, in front of the portal.
+        expect(
+          boss!.x === centre.x || boss!.y === centre.y,
+          `${label} middle line ${boss!.x},${boss!.y}`,
+        ).toBe(true);
+      }
+    }
+  }, 60_000);
+
+  it('pins the entry room centre as chamber floor', () => {
+    for (const seed of CHAMBER_SEEDS) {
+      for (const mapIndex of [1, 4]) {
+        const plan = planMap(seed, mapIndex);
+        const view = roomView(plan, plan.entryRoom, false);
+        const label = `${seed} map ${mapIndex}`;
+        // The entry room is asked for no chamber: its diamond comes from `chamberFor`
+        // reading the opening set. Builder-style with no openings ...
+        const bare = sketchRoute({
+          seed,
+          routeIndex: routeIndexForRoom(plan, plan.entryRoom),
+          biomeId: view.biomeId,
+          openings: [],
+          width: view.width,
+          height: view.height,
+          quiet: true,
+          role: 'wild',
+        });
+        // ... and the scene's own request, whose only opening is the way back into the
+        // floor (the outward entry edge is never carved).
+        const production = sketchRoute({
+          seed,
+          routeIndex: routeIndexForRoom(plan, plan.entryRoom),
+          biomeId: view.biomeId,
+          openings: view.openings,
+          width: view.width,
+          height: view.height,
+          quiet: true,
+          role: 'wild',
+        });
+        for (const route of [bare, production]) {
+          const chamber = route.chamber;
+          expect(chamber, label).toBeDefined();
+          if (!chamber) continue;
+          expect(route.entry, label).toEqual({ x: 15, y: 15 });
+          expect(chamber.tiles, `${label} spawn`).toContainEqual({ x: 15, y: 15 });
+          // Every row of the chamber is one contiguous run of floor: no wall splits it
+          // from the centre out.
+          const byRow = new Map<number, number[]>();
+          for (const tile of chamber.tiles) {
+            const row = byRow.get(tile.y) ?? [];
+            row.push(tile.x);
+            byRow.set(tile.y, row);
+          }
+          for (const [y, xs] of byRow) {
+            const min = Math.min(...xs);
+            const max = Math.max(...xs);
+            for (let x = min; x <= max; x++) {
+              expect(route.tiles[y][x], `${label} ${x},${y}`).toBe(FLOOR);
+            }
+          }
+        }
+      }
+    }
+  }, 60_000);
+
+  it('validates the boss route and a chambered route of every shape', () => {
+    for (const seed of CHAMBER_SEEDS) {
+      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
+        const plan = planMap(seed, mapIndex);
+        const view = roomView(plan, plan.bossRoom, false);
+        const bossRoute = sketchRoute({
+          seed,
+          routeIndex: routeIndexForRoom(plan, plan.bossRoom),
+          biomeId: view.biomeId,
+          openings: view.openings,
+          width: view.width,
+          height: view.height,
+          chamber: true,
+          quiet: true,
+          role: 'wild',
+        });
+        expect(validateRoute(bossRoute).ok, `${seed} map ${mapIndex} boss`).toBe(true);
+      }
+      for (const shape of ROUTE_SHAPES) {
+        const route = sketchRoute({
+          seed,
+          routeIndex: 7,
+          biomeId: 'forest',
+          shape,
+          width: 30,
+          height: 30,
+          chamber: true,
+        });
+        expect(route.chamber, `${seed} ${shape} chamber`).toBeDefined();
+        expect(validateRoute(route).ok, `${seed} ${shape}`).toBe(true);
+      }
+    }
+  }, 120_000);
 });

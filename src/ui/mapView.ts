@@ -157,13 +157,20 @@ function layoutRects(plan: MapPlan): Map<number, Rect> {
   return rects;
 }
 
-/** Every wall opening of a room: its plan openings plus the portal when it is open. */
+/**
+ * Every wall opening of a room: its plan openings plus the portal when it is open.
+ * The plan's `portal` opening is dropped until the boss falls, so the sealed boss
+ * room draws one door and the open one re-adds the portal on `portalEdgeFor`'s edge
+ * exactly once.
+ */
 function roomOpenings(plan: MapPlan, rect: Rect, room: MapRoom, portalOpen: boolean): MapViewOpening[] {
-  const openings: MapViewOpening[] = room.openings.map((opening) => ({
-    edge: opening.edge,
-    kind: opening.kind === 'entry' ? 'entry' : 'link',
-    ...wallMidpoint(rect, opening.edge),
-  }));
+  const openings: MapViewOpening[] = room.openings
+    .filter((opening) => opening.kind !== 'portal')
+    .map((opening) => ({
+      edge: opening.edge,
+      kind: opening.kind === 'entry' ? 'entry' : 'link',
+      ...wallMidpoint(rect, opening.edge),
+    }));
   if (portalOpen && room.id === plan.bossRoom) {
     const edge = portalEdgeFor(plan, room.id);
     if (edge) openings.push({ edge, kind: 'portal', ...wallMidpoint(rect, edge) });

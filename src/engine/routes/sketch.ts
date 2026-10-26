@@ -475,10 +475,16 @@ function nearestNetwork(network: ReadonlySet<string>, target: Tile): Tile | unde
 /** One carved branch: its intended far end and every tile the lane opened. */
 type BranchCarve = Readonly<{ target: Tile; tiles: readonly string[] }>;
 
-/** One room's centre chamber: the tiles it opened and the loot spots it owns. */
+/** One room's centre chamber: the region it covers, the tiles it opened and its loot spots. */
 export type ChamberCarve = Readonly<{
   /** Every tile the chamber opened, as `tileKey` strings. */
   tiles: ReadonlySet<string>;
+  /**
+   * Every tile the chamber **covers**, as `tileKey` strings: the opened cells plus
+   * the ones a lane had already made floor inside its outline, so the room's centre
+   * is part of the chamber however the lane crosses it.
+   */
+  covered: ReadonlySet<string>;
   /** The pockets it owns, in draw order: the two lateral extremes of its widest row. */
   pockets: readonly Readonly<{ x: number; y: number }>[];
   /** The radius the room drew, before the room's own clamp (`4` … `6`). */
@@ -519,6 +525,7 @@ export function carveChamber(
   }
 
   const opened = new Set<string>();
+  const covered = new Set<string>();
   for (let dy = -radius; dy <= radius; dy++) {
     const y = cy + dy;
     if (y < minY || y > maxY) continue;
@@ -529,6 +536,7 @@ export function carveChamber(
       for (let step = 0; step <= reach; step++) {
         const x = cx + direction * step;
         if (x < minX || x > maxX) break;
+        covered.add(tileKey({ x, y }));
         if (tiles[y][x] !== WALL) continue;
         tiles[y][x] = FLOOR;
         opened.add(tileKey({ x, y }));
@@ -539,12 +547,51 @@ export function carveChamber(
   const centreHalf = half[radius];
   return {
     tiles: opened,
+    covered,
     pockets: [
       { x: cx - centreHalf, y: cy },
       { x: cx + centreHalf, y: cy },
     ],
     radius,
   };
+}
+
+/**
+ * The chamber tile farthest (Manhattan) from the room's `entry`: where the map boss
+ * stands, in the middle of its chamber instead of on the room's farthest walkable
+ * tile (`docs/maps-spec.md` §6). Null for a route that carved no chamber. Pure,
+ * reads no RNG.
+ *
+ * Among the tiles tied on distance it prefers the chamber's **middle line** (the
+ * centre row or column), then lower y, then lower x. Task-157 jitters every
+ * non-centre row by up to one tile, so without that preference a broad band of tiles
+ * ties the middle row and the lower-y rule would put the boss beside the middle line
+ * — and the boss must guard the chamber's middle, in front of the portal.
+ */
+export function bossChamberTile(route: RouteMap): Tile | null {
+  const chamber = route.chamber;
+  if (!chamber) return null;
+  const middleX = Math.floor(route.width / 2);
+  const middleY = Math.floor(route.height / 2);
+  let best: Tile | null = null;
+  let bestDistance = -1;
+  let bestMiddle = false;
+  for (const tile of chamber.tiles) {
+    const distance = Math.abs(tile.x - route.entry.x) + Math.abs(tile.y - route.entry.y);
+    const middle = tile.x === middleX || tile.y === middleY;
+    const closer =
+      distance > bestDistance ||
+      (distance === bestDistance &&
+        (middle !== bestMiddle
+          ? middle
+          : best !== null && (tile.y < best.y || (tile.y === best.y && tile.x < best.x))));
+    if (closer) {
+      best = tile;
+      bestDistance = distance;
+      bestMiddle = middle;
+    }
+  }
+  return best;
 }
 
 /**
@@ -1541,6 +1588,7 @@ function attemptRoute(
   let spine: Set<string>;
   let branches = new Set<string>();
   let carves: ReadonlyArray<BranchCarve> = [];
+  let chamber: ChamberCarve | null = null;
   const corner = cornerClearance(request.wall);
   const band = request.wall?.cols ?? TREE_MARGIN;
 
@@ -1582,12 +1630,13 @@ function attemptRoute(
     // lane the spine already placed. Its pockets are the loot spots a branch would
     // have carried, and its tiles join the spine so the terrain and pocket passes keep
     // off it.
-    const chamber = carveChamber(tiles, shape, width, height, streams.chamber, margin);
-    const chamberCarves: BranchCarve[] = chamber
-      ? chamber.pockets.map((target) => ({ target, tiles: [...chamber.tiles] }))
+    const carved = carveChamber(tiles, shape, width, height, streams.chamber, margin);
+    chamber = carved;
+    const chamberCarves: BranchCarve[] = carved
+      ? carved.pockets.map((target) => ({ target, tiles: [...carved.tiles] }))
       : [];
-    if (chamber) {
-      for (const key of chamber.tiles) spine.add(key);
+    if (carved) {
+      for (const key of carved.tiles) spine.add(key);
       snapshot('branches', 'carve chamber');
     }
     const branched = carveBranches(
@@ -1726,6 +1775,15 @@ function attemptRoute(
     items,
     trainers,
     ...(gate ? { gate } : {}),
+    ...(chamber
+      ? {
+          chamber: {
+            tiles: [...chamber.covered].map(keyToTile).sort((a, b) => a.y - b.y || a.x - b.x),
+            pockets: chamber.pockets.map(({ x, y }) => ({ x, y })),
+            radius: chamber.radius,
+          },
+        }
+      : {}),
   };
   snapshot('final', 'final map');
   return route;

@@ -56,8 +56,12 @@ const PERPENDICULAR: Readonly<Record<MapEdge, readonly [MapEdge, MapEdge]>> = {
  */
 export type MapRoomShape = 'dead-end' | 'corridor' | 'bend' | 'tee' | 'cross' | 'straight';
 
-/** A `link` joins a grid neighbour; the single `entry` opens the map from outside. */
-export type MapOpeningKind = 'link' | 'entry';
+/**
+ * A `link` joins a grid neighbour; the single `entry` opens the map from outside;
+ * the boss room's single `portal` is the exit to the next map, carved on the wall
+ * opposite its link from the start and sealed until the boss falls.
+ */
+export type MapOpeningKind = 'link' | 'entry' | 'portal';
 
 export type MapOpening = Readonly<{ edge: MapEdge; kind: MapOpeningKind }>;
 
@@ -103,7 +107,10 @@ export type MapRoom = Readonly<{
   width: number;
   height: number;
   shape: MapRoomShape;
-  /** Every opening, cardinally ordered; a link per joined neighbour, plus the entry edge. */
+  /**
+   * Every opening, cardinally ordered; a link per joined neighbour, plus the entry
+   * edge and the boss room's portal.
+   */
   openings: readonly MapOpening[];
   /** The special this room holds, or null for a regular room (`docs/maps-spec.md` §7). */
   special: MapRoomSpecial | null;
@@ -407,9 +414,10 @@ function appendBoss(
 /**
  * Rolls a floor's full plan: biome, room count, the grid topology (connected,
  * closed into at least one cycle, no dangling opening), every room's openings and
- * shape-derived size, and the boss room. The boss is an extra dead-end leaf so it
- * always has a single exit. A pure function of `(seed, mapIndex)`
- * (`docs/maps-spec.md` §1/§3, D29).
+ * shape-derived size, and the boss room. The boss is an extra leaf so its only
+ * `link` is the way in, and it carries a `portal` on the opposite wall, so it reads
+ * `corridor` while it keeps a single usable exit until the portal opens. A pure
+ * function of `(seed, mapIndex)` (`docs/maps-spec.md` §1/§3, D29).
  */
 export function planMap(seed: string, mapIndex: number): MapPlan {
   const index = Math.max(1, Math.floor(mapIndex));
@@ -437,6 +445,13 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
   const blocked = new Set<string>([cellKey(step(cells[0], entryEdge))]);
   const hung = appendBoss(cells, links, byCell, blocked, regularCount);
   const bossRoom = hung >= 0 ? cells.length - 1 : farthestRoom(regularCount, links);
+  // The boss room is a **two-door line** (`docs/maps-spec.md` §2/§6): its single
+  // `link` plus a `portal` on the opposite wall, so it reads `corridor` and both
+  // doors are part of the geometry from the start (the scene seals the portal until
+  // the boss falls). The portal edge derives from the link, so no RNG draw moves. A
+  // floor with no cell to hang the leaf on keeps the farthest regular room as its
+  // boss and gains no portal.
+  const portalEdge = hung >= 0 ? OPPOSITE_EDGE[edgeBetween(cells[bossRoom], cells[hung])] : null;
 
   // Special leaves, hung off the regular graph beyond the boss (`docs/maps-spec.md`
   // §7, D33). They are added last, so the regular rooms and the boss never move;
@@ -572,6 +587,13 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     if (id === 0) edges.push(entryEdge);
     return edges.sort((a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b));
   });
+  // The boss room's two openings are its link and the portal opposite it, so its
+  // shape is `corridor` (a two-door line) and its size stays the pinned 30x30.
+  if (portalEdge !== null) {
+    edgesByRoom[bossRoom] = [...edgesByRoom[bossRoom], portalEdge].sort(
+      (a, b) => MAP_EDGES.indexOf(a) - MAP_EDGES.indexOf(b),
+    );
+  }
 
   // The entry, the boss and every special leaf are the floor's quiet leaves: all
   // pinned to the minimum size so they read the same whatever range the map rolls
@@ -591,7 +613,12 @@ export function planMap(seed: string, mapIndex: number): MapPlan {
     const edges = edgesByRoom[id];
     const openings: MapOpening[] = edges.map((edge) => ({
       edge,
-      kind: id === 0 && edge === entryEdge ? 'entry' : 'link',
+      kind:
+        id === 0 && edge === entryEdge
+          ? 'entry'
+          : id === bossRoom && edge === portalEdge
+            ? 'portal'
+            : 'link',
     }));
     return {
       id,

@@ -58,6 +58,24 @@ export type RouteGate = Readonly<{
 }>;
 
 /**
+ * The centre chamber a room carved (`docs/routes-spec.md` §2, `Task-157`): the
+ * diamond grown from the room's middle, present only when one was carved, so a
+ * chamber-less route still equals what it did before.
+ */
+export type RouteChamber = Readonly<{
+  /**
+   * Every tile the chamber covers, row-major (by y, then x): the cells it opened
+   * plus the ones a lane had already made floor inside its outline, so the room's
+   * centre is always part of it.
+   */
+  tiles: readonly Tile[];
+  /** The two loot spots: the widest row's lateral extremes. */
+  pockets: readonly Tile[];
+  /** The radius the room drew, before the room's own clamp (4 … 6). */
+  radius: number;
+}>;
+
+/**
  * A generated route, complete enough that the scene never re-derives it: the
  * tiles, the entry, every exit and the ground items.
  */
@@ -86,6 +104,8 @@ export type RouteMap = Readonly<{
   trainers: readonly RouteTrainer[];
   /** The room's gated vault, present only when the build was asked for one. */
   gate?: RouteGate;
+  /** The room's centre chamber, present only when the build carved one. */
+  chamber?: RouteChamber;
 }>;
 
 export function tileKey(tile: Tile): string {

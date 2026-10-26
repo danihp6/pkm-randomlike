@@ -48,11 +48,16 @@ export function bannedTrainerId(mapIndex: number): string {
 
 /**
  * The edge the boss room's portal opens onto, or null when `roomId` is not the
- * boss room (or has no free wall, which the floor graph never produces). The pick
- * is deterministic, so a fixed seed always opens the same door.
+ * boss room (or has no free wall, which the floor graph never produces). The plan
+ * records the portal on the wall **opposite** the boss room's link, and that
+ * opening wins; only a plan with none falls back to the deterministic free-wall
+ * pick, so a fixed seed always opens the same door.
  */
 export function portalEdgeFor(plan: MapPlan, roomId: number): MapEdge | null {
   if (plan.bossRoom !== roomId) return null;
+  const room = plan.rooms[roomId];
+  const portal = room?.openings.find((opening) => opening.kind === 'portal');
+  if (portal) return portal.edge;
   const free = freeEdges(plan, roomId);
   if (free.length === 0) return null;
   return free[roomId % free.length];

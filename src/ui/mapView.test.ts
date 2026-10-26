@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAP_EDGES, OPPOSITE_EDGE, planMap, type MapPlan } from '../engine/maps';
+import { MAP_EDGES, OPPOSITE_EDGE, planMap, portalEdgeFor, type MapPlan } from '../engine/maps';
 import { MAP_VIEW_GAP, buildMapView, type MapRoomMarker, type MapViewRoom } from './mapView';
 
 const SEEDS = ['map-view-a', 'map-view-b', 'map-view-c', 'map-view-d', 'map-view-e'];
@@ -184,6 +184,7 @@ describe('buildMapView boss, portal and specials', () => {
       expect(openBoss.portal).toBe(true);
       const portal = openBoss.openings.filter((opening) => opening.kind === 'portal');
       expect(portal).toHaveLength(1);
+      expect(portal[0].edge).toBe(portalEdgeFor(plan, plan.bossRoom));
       expect(open.rooms.filter((room) => room.portal)).toHaveLength(1);
       // The portal only ever opens on the boss room.
       for (const room of sealed.rooms) {
@@ -203,7 +204,11 @@ describe('buildMapView boss, portal and specials', () => {
       for (const room of view.rooms) {
         const source = plan.rooms[room.id];
         const hasPortal = room.portal ? 1 : 0;
-        expect(room.openings).toHaveLength(source.openings.length + hasPortal);
+        // The plan's `portal` opening is dropped until the boss falls, and the open
+        // minimap re-adds it on `portalEdgeFor`'s edge, so it never doubles.
+        const planLinks = source.openings.filter((opening) => opening.kind !== 'portal');
+        expect(room.openings).toHaveLength(planLinks.length + hasPortal);
+        expect(room.openings.filter((opening) => opening.kind === 'portal')).toHaveLength(hasPortal);
         const entry = room.openings.filter((opening) => opening.kind === 'entry');
         if (room.id === plan.entryRoom) {
           expect(entry).toHaveLength(1);

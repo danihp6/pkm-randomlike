@@ -14,6 +14,7 @@ import {
 import {
   ROUTE_HEIGHT,
   ROUTE_WIDTH,
+  bossChamberTile,
   carveChamber,
   cornerClearance,
   sketchRoute,
@@ -1153,5 +1154,112 @@ describe('the centre chamber', () => {
       }
     }
     expect(actual).toEqual(pinned);
+  });
+});
+
+describe('the room chamber on the route', () => {
+  const chambered = (seed: string, extra: Partial<RouteRequest> = {}): RouteMap =>
+    sketchRoute({
+      seed,
+      routeIndex: 4,
+      biomeId: 'forest',
+      width: 30,
+      height: 30,
+      ...extra,
+    });
+
+  it('rides the route only when one was carved, row-major', () => {
+    const plain = chambered('chamber-carry', { shape: 'straight' });
+    expect(plain).not.toHaveProperty('chamber');
+
+    const route = chambered('chamber-carry', { shape: 'straight', chamber: true });
+    const chamber = route.chamber;
+    expect(chamber).toBeDefined();
+    if (!chamber) return;
+    expect(chamber.tiles.length).toBeGreaterThan(0);
+    expect(chamber.tiles).toEqual([...chamber.tiles].sort((a, b) => a.y - b.y || a.x - b.x));
+    expect(chamber.pockets).toHaveLength(2);
+    // The pockets are the widest row's lateral extremes, on the room's middle row.
+    const centreY = Math.floor(route.height / 2);
+    expect(chamber.pockets.every((pocket) => pocket.y === centreY)).toBe(true);
+    expect(chamber.radius).toBeGreaterThanOrEqual(4);
+    expect(chamber.radius).toBeLessThanOrEqual(6);
+    for (const tile of chamber.tiles) {
+      expect(route.tiles[tile.y][tile.x]).toBe(FLOOR);
+    }
+  });
+
+  it('answers no boss tile for a route that carved no chamber', () => {
+    expect(bossChamberTile(chambered('boss-tile-none', { shape: 'straight' }))).toBeNull();
+  });
+
+  it('puts the boss on the chamber tile farthest from the entry', () => {
+    const route = chambered('boss-tile-far', { shape: 'cross', chamber: true });
+    const boss = bossChamberTile(route);
+    expect(boss).not.toBeNull();
+    const distance = (tile: Tile): number =>
+      Math.abs(tile.x - route.entry.x) + Math.abs(tile.y - route.entry.y);
+    const farthest = Math.max(...route.chamber!.tiles.map(distance));
+    expect(distance(boss!)).toBe(farthest);
+    expect(route.chamber!.tiles).toContainEqual(boss);
+  });
+
+  it('breaks a distance tie on the middle line, then by lower y and lower x', () => {
+    const width = 20;
+    const height = 20;
+    const flat = (): RouteMap => ({
+      seed: 'boss-tile-tie',
+      routeIndex: 0,
+      biomeId: 'forest',
+      shape: 'corridor',
+      width,
+      height,
+      tiles: Array.from({ length: height }, () => new Array<number>(width).fill(FLOOR)),
+      entry: { x: 0, y: 10 },
+      exits: [],
+      spine: [],
+      branches: [],
+      pockets: [],
+      items: [],
+      trainers: [],
+      chamber: {
+        // The off-line tile ties the middle row's far end on distance.
+        tiles: [
+          { x: 14, y: 6 },
+          { x: 18, y: 10 },
+          { x: 10, y: 4 },
+        ],
+        pockets: [],
+        radius: 4,
+      },
+    });
+    expect(bossChamberTile(flat())).toEqual({ x: 18, y: 10 });
+
+    const tied = flat();
+    const both = {
+      ...tied,
+      chamber: {
+        tiles: [
+          { x: 10, y: 16 },
+          { x: 10, y: 4 },
+        ],
+        pockets: [],
+        radius: 4,
+      },
+    };
+    expect(bossChamberTile(both)).toEqual({ x: 10, y: 4 });
+
+    const crossed = {
+      ...tied,
+      chamber: {
+        tiles: [
+          { x: 10, y: 12 },
+          { x: 8, y: 10 },
+        ],
+        pockets: [],
+        radius: 4,
+      },
+    };
+    expect(bossChamberTile(crossed)).toEqual({ x: 10, y: 12 });
   });
 });
