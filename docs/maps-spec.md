@@ -260,9 +260,10 @@ rooms at 30x30, map 6's corridor at 37x30 and map 8's corridor at 52x30
   (`src/engine/routes/bossRoom.ts`) refuses the step back out until the boss falls,
   and it is the **portal**, never this door, that carries the run to the next floor.
   The seal cannot soft-lock a run: the boss stands on the chamber's **middle line**,
-  at the far end from the door (`bossChamberTile`), with `DEFAULT_TRAINER_SIGHT`, so
-  it walks over and opens the fight on its own, and a loss in the room is a normal
-  loss (`D5`).
+  at the far end from the door (`bossChamberTile`), with `DEFAULT_TRAINER_SIGHT` and
+  `aggro: false`, so it never opens the fight by sight: it can always be **reached
+  and spoken to** — its tile keeps a walkable cardinal neighbour on the entry's own
+  BFS tree, pinned on 20 seeds — and a loss in the room is a normal loss (`D5`).
 - That door has a **sign on the approach side** (`docs/routes-spec.md` §2): the room
   that links **into** the boss room draws one static sign one tile inside that
   opening's band (`bossSign`), so it reads before the player steps through. The sign

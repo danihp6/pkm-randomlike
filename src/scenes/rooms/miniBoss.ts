@@ -25,6 +25,7 @@ export const descriptor: RoomDescriptor = {
           facing: host.facingFromTo(position, host.entryTile()),
           sight: DEFAULT_TRAINER_SIGHT,
           archetypeId: 'ace',
+          aggro: false,
         },
       ],
     };

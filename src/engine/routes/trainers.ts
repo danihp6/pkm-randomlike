@@ -56,7 +56,8 @@ export function sightLine(
  * True when the player stands in the trainer's line: straight ahead along its
  * facing, within `sight`, with nothing impassable or another trainer between
  * them. Walking into that line is what opens the battle. `tiles` is the movement
- * map (see `sightLine`).
+ * map (see `sightLine`). A trainer whose `aggro` is `false` is never spotted: its
+ * line still draws (`sightLine`), but only the interact key opens its fight.
  */
 export function seesPlayer(
   route: RouteMap,
@@ -64,6 +65,7 @@ export function seesPlayer(
   player: Tile,
   tiles: TileMap = route.tiles,
 ): boolean {
+  if (trainer.aggro === false) return false;
   const vector = FACING_VECTORS[trainer.facing];
   const delta = { x: player.x - trainer.position.x, y: player.y - trainer.position.y };
   const cross = delta.x * vector.y - delta.y * vector.x;

@@ -125,7 +125,10 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    straight cardinal line that stops at a wall, a ledge,
    water or another trainer, though a walkable tree tip is open), and some cycle
    their facing on a timer like a
-   "spinning" trainer. Placement never plugs a passage: a trainer is kept only
+   "spinning" trainer. Two trainers never open a fight by sight at all: the **map
+   boss** and the **mini-boss** stand with their line still drawn and `aggro: false`
+   on the `RouteTrainer` record, so they are fought only by speaking to them
+   (`docs/maps-spec.md` §6). Placement never plugs a passage: a trainer is kept only
    while every tile the entry could reach stays reachable with the trainers as
    blockers (ledges and water count as impassable), no two trainers stand in
    neighbouring tiles, and no trainer spawns watching — or able to spin and watch —
