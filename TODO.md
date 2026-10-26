@@ -8156,7 +8156,7 @@ run-integrity defects first, the presentation and economy last.
       `src/ui/moveGrid.ts` + test, `src/ui/partyGrid.ts` + test, `docs/design-spec.md` §10.3 (two
       rows). *Dependencies:* none. *(Batch 77)*
 
-- [ ] **[Task-170] Every floor, map 1 included, posts one merchant.** «en todos los pisos deberia salir
+- [x] **[Task-170] Every floor, map 1 included, posts one merchant.** «en todos los pisos deberia salir
       1 npc mercader que vende items». The framework ships and is honest about the gap: the merchant
       is the table's one guaranteed row with `guaranteedFromMap: 2` (`src/data/npcs.ts` 92-102) and
       `mapIndex` is **1-based** (`effectiveNpcChance` reads `mapIndex - 1`,

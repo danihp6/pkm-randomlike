@@ -49,7 +49,7 @@ carries over.
   the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they field
   **two trainer rooms** where the late floors field four
   (`src/data/population.ts`), and no floor hangs a shop leaf: the Mart is the
-  floor's guaranteed merchant NPC from map 2 on. Each map's boss closes it and
+  floor's guaranteed merchant NPC on every floor, map 1 included. Each map's boss closes it and
   opens the **portal** to the next, and the **last map's final boss** wins the
   run. An **infinite mode** reuses the same
   generator without the finish line.
@@ -401,12 +401,11 @@ clears its route; a loss does not, and nothing carries over (D5).
 Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
 leaves with only their own content (`docs/maps-spec.md` §7):
 
-- the **Mart**, carried by the floor's **merchant** special NPC (one per floor
-  **from map 2 on**; map 1 is the run's on-ramp and holds none: no money for a
-  counter and already a 10-ball pack): the merchant stands in the floor's first
-  trainer room and its `TRADE` row opens a **Pokémon Mart-style shop panel in the
-  HUD**, which closes back onto the route and can be opened again on the same
-  floor;
+- the **Mart**, carried by the floor's **merchant** special NPC (one per floor, the
+  on-ramp's first floor included, selling the shipped early band's stock with the
+  money the run has): the merchant stands in the floor's first trainer room and its
+  `TRADE` row opens a **Pokémon Mart-style shop panel in the HUD**, which closes
+  back onto the route and can be opened again on the same floor;
 - a **mini-boss** room (50% chance): one strong trainer fielding a fixed party of
   **three** (**two** on map 1) that, when beaten, offers **one window of six
   rows**: three **items** and three **Pokémon presented only by their highest stat
@@ -439,8 +438,8 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   **one modal card** — the NPC's name as its title, one paragraph, a column of at
   most six choices and a `LEAVE` row — the same shell every NPC uses. A chosen row
   is recorded for the rest of the floor, so a revisit knows it was taken; the
-  merchant is the floor's one **guaranteed** NPC (from map 2 on, in the floor's
-  first trainer room, never rolled) and its `TRADE` row opens the Mart instead of
+  merchant is the floor's one **guaranteed** NPC (on every floor, map 1 included,
+  in the floor's first trainer room, never rolled) and its `TRADE` row opens the Mart instead of
   recording a use. The **Team Rocket grunt** is the second row that carries a room's
   content: rolled from map 2 on (3 % per trainer room, +3 points a floor), it stands
   in a trainer room and its one row opens the **slot machine** — a cabinet with

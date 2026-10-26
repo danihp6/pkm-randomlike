@@ -590,7 +590,7 @@ filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
 
 Beyond its K regular rooms, a Binding of Isaac floor can hold **special rooms**:
 extra `dead-end` leaves that carry **only their own content** — a guaranteed
-**shop** near the entry (from map 2 on), a **mini-boss** room (medium chance) whose strong
+**shop** near the entry (on every floor, map 1 included), a **mini-boss** room (medium chance) whose strong
 trainer offers a **choice of items**, and a **mega-stone** room (low chance) that
 hands out a random **Mega Stone**. They count outside K and are discovered on
 entry like any room (`docs/maps-spec.md` §7).

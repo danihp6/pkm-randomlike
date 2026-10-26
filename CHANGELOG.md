@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every floor, map 1 included, posts one merchant.** `[Task-170]`, the second of Batch 77:
+      the table's one guaranteed row moves to `guaranteedFromMap: 1`, so the Mart's merchant
+      stands in each floor's first trainer room from the first floor on; `src/data/npcs.test.ts`
+      now asserts the merchant's overworld frame resolves, closing the silent drop in
+      `rollRoomNpc`, and the flipped placement tests cover maps 1-8 on six seeds.
+      `docs/maps-spec.md` §7, `docs/design-spec.md` §2/§7 and `D33`'s parenthetical record the
+      rule. `npm test` 4494 passed / 69 skipped, `npm run build` green; measured live over CDP
+      through the page's own modules: a fresh run's floor 1 and its floor 2 both read
+      `npc.row.id === 'merchant'` on a walkable tile of a `trainers` room with the `mart` choice.
+
 - [x] **The arrows reach a disabled row instead of jumping over it.** `[Task-166]`, the first of
       Batch 77: the battle's command and switch grids step over every index through two new pure
       cursor helpers (`stepMoveGridCursor`, `stepPartyCursor`), so the cursor stops on a dimmed row
