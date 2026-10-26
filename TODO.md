@@ -157,6 +157,11 @@ and claims no scene at all — and the per-entry lists written before that round
 task per batch to **Batch 50** and adds the plan's next five steps, and the twenty-eighth round
 below adds the queue's last link, **Batch 51**, so it now runs 19 → 51 and the `SAVE_VERSION` chain
 reads **14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23**; its own paragraph and table are below.
+The **thirty-third round** (Phase 16, Batches 75–80) adds the queue's next four links — Batch 75's
+`[Task-164]`, Batch 77's `[Task-176]`, Batch 79's `[Task-180]` and Batch 80's `[Task-179]` — so it
+reads 19 → 51 → 75 → 77 → 79 → 80, and it adds **no** `SAVE_VERSION` step at all: `main` reads **25**
+(`src/engine/save.ts` 77) and every one of the nineteen refuses a new run field on purpose — the last
+of them **removes** two (`pcCatch`, `entryDeparted`) instead.
 
 The items registered since the first plan add one link each, and one batch that is not a
 link at all. `Task-35` (the enemy AI, Batch 8b) reads the reusable scripted-battle
@@ -7806,6 +7811,626 @@ they pass the ledger and deal no damage at all.
 
 ---
 
+## Phase 16 - The play-report round
+
+The human's **nineteen play reports of `2026-10-26`** — the seventeen of the first sitting plus the
+two that followed — registered as `[Task-162]`–`[Task-180]` and cut into **six batches, 75 to 80**.
+**Every one is a defect** — no wishes in the set — and none duplicates a shipped task: each entry
+names the shipped behaviour (and, where one exists, the task) it repairs (`[Task-21]`'s evolution
+information rows, `[Task-50]`'s level-up notice, `[Task-161]`'s boss-door sign, `[Task-08]`'s keyboard
+rule, `[Task-119]`'s move audit, `[Task-142]`/`[Task-143]`'s battle cards, `[Task-132]`'s detail card,
+`[Task-52]`'s catch record, `[Task-31]`'s capture-screen removal) and registers only the residual
+defect.
+
+**The set adds no dependency edge at all** — no task needs a file a batch-mate produces, and no task
+needs one a later batch produces — and **no `SAVE_VERSION` step**: `main` reads **25**
+(`src/engine/save.ts` 77) and stays there. Three reports look like state and are not: the wild-table
+exclusion re-reads the members the run already saves (`party`, `box`, `rip` and `caughtSpecies`), the
+Mart's sold-out rows ride the shipped per-floor `pickedItems` marks
+(`src/engine/run/state.ts` 588-595), and **the PC rule removes** two fields (`pcCatch`,
+`entryDeparted`) instead of adding one, which needs no step because the decoder is field-by-field and
+both keys are optional today (`save.test.ts` 545-549). Everything else is a rule, a data row or
+presentation.
+
+What serialises the work is **hot files, not depth**: `src/scenes/BattleScene.ts` four tasks (163,
+168, 166, 169), `src/engine/battle/turn.ts` four (167, 168, 173, 174), `src/scenes/RouteScene.ts`
+**four** (164 in 75, 176 in 77, 180 in 79, 179 in 80 — never two in one batch), `src/scenes/panels/detail.ts`
+two (162, 171), `src/ui/partyDetail.ts` two (171, 177), the i18n pair two (162, 164), the generated
+coverage pair twice, one per batch (167, 173), `docs/routes-spec.md` **§2** by 175 (75), 176 (77) and
+180 (79), one batch apart, and its **§3/§6** by 179 (80), and once each `src/data/items.ts` (178), the
+shop card (178), the sign packer (165), the NPC table (170) and `src/engine/save.ts` (179). Every batch
+below is an antichain and names its holder for each. Batches run in priority order: the rules and
+run-integrity defects first, the presentation and economy last.
+
+### Batch 75 - a back press that orders a turn, a move that never fails, a duplicated line, a panel nobody wants
+
+- **`[Task-163]`** claims `src/scenes/BattleScene.ts` (the batch's one) and
+  `src/engine/battle/commands.ts` + test.
+- **`[Task-167]`** claims `src/engine/battle/turn.ts`, `effects/registry.ts`, `effects/moves.ts` +
+  tests, `src/engine/battle/moveAudit.ts` + test and the **generated** coverage pair — the batch's
+  only claimant of that pair and of `src/engine/battle/turn.ts`.
+- **`[Task-175]`** claims `src/engine/run/pool.ts` + test and `src/engine/routes/staticSpecies.ts` +
+  test.
+- **`[Task-164]`** claims `src/scenes/RouteScene.ts` (the batch's one), `src/ui/notice.ts` + test and
+  the **i18n pair**.
+- **Four disjoint path sets, four dev slots and four QA slots.** `docs/battle-spec.md` is held by
+  **two** tasks **by section** — 167 writes **§3.3**, 163 writes **§4** — and by no one else; 175
+  writes `docs/routes-spec.md` §2 and `docs/maps-spec.md` §7, 164 writes `docs/design-spec.md` §3.
+  No `package.json`, `src/main.ts`, `vite.config.ts` or `src/data/dex/**` is claimed.
+- **No `SAVE_VERSION` step**, and no task waits on another: the first batch depends on nothing and
+  every task in it is fully specified at cut time.
+
+- [ ] **[Task-163] A back press never orders a turn the player did not order.** «al retroceder no
+      deberia salir el move que utiliza el rival». When the lead faints the party grid is a **forced**
+      switch (`finishFeed`, `src/scenes/BattleScene.ts` 1829-1834 sets `forcedSwitch` and calls
+      `openParty()`), but both back paths route a `party` mode to `openMenu()` (`onBack` 5049-5051,
+      `onCancel` 1661-1663) and `openMenu` (2417-2449) reads neither `forcedSwitch` nor
+      `state.sides.player.awaitingReplacement`, so it opens a command grid with FIGHT enabled (2432).
+      Confirming it reaches `submit` (2783-2804) and `takeDoubleTurn`'s validation **throws**
+      (`validateCommand` 244 → `turn.ts` 1834-1841), and the scene has no `try`/`catch` anywhere: the
+      press that escapes the forced switch is a dead end, and the turn the player is owed a
+      replacement for can never be resolved cleanly. **Fix shape:** one rule,
+      `replacementOwed(state)` in `src/engine/battle/commands.ts` (a one-line read of
+      `state.sides.player.awaitingReplacement`, the field `needsReplacement` filters at `turn.ts`
+      1950-1952 and `faint` sets at 855), and both entry points obey it: `onCancel` and `onBack`
+      re-open the party grid and never `openMenu` while it holds, and `openMenu` returns to the grid
+      instead of building a command menu — the grid is the only menu while a replacement is owed, so
+      the press described in the report has nothing to fall into. The grid's `enabled` gate and the
+      "no reserve → the run ends" path are untouched (`sideNeedsReplacement` answers false on a last
+      Pokémon, `double.test.ts` 166). **Docs:** `docs/battle-spec.md` §4 (the forced-switch paragraph:
+      a replacement comes before any command). **Tests:** `[unit]` `commands.test.ts` — a fainted lead
+      leaves `replacementOwed` true and a completed switch clears it, on one board with a reserve and
+      one without; `[unit]` the scene's decision exposed as a dev read (the
+      `battleBagDrawnObjectCount` pattern, `BattleScene.ts` 5088-5094) answering the mode a back press
+      opens while a replacement is owed against the mode it opens after the switch; `[live]` a wild
+      battle: faint the lead, then Esc and ◀ three times — the switch grid stays up and no feed starts.
+      Claims `src/scenes/BattleScene.ts`, `src/engine/battle/commands.ts`,
+      `src/engine/battle/commands.test.ts`, `docs/battle-spec.md` §4. *Dependencies:* none.
+      *Decision:* open — this forced-switch path is the one place the named gesture can break the
+      turn, and it is the recommended reading; if the human instead means a **revealed move name**
+      (the foe's move printed or floated on a back press) the fix moves to the message/log seam, so QA
+      runs the repro before the dev starts and the batch does not depend on the answer. *(Batch 75)*
+
+- [ ] **[Task-167] Upper Hand fails unless the target is using a priority move.** «palma rauda debe
+      fallar si no usa move prioridad». The move is **`upperhand`** (*Palma Rauda*,
+      `src/data/i18n/es/moves.json` 3952-3956; dex name *Upper Hand*), and it ships as a data-only
+      move: its ledger row is `port` on `data: secondaries` (`src/data/moveCoverage.json` 4751-4755)
+      and `MOVE_AUDIT_ROWS` pins only `move` + `damage` + the two flinch volatiles
+      (`src/engine/battle/moveAudit.ts` 1211-1217), so nothing reads the target's command and the
+      punch always lands. The engine holds both halves it needs: the turn's commands are in hand at
+      `takeDoubleTurn` (`turn.ts` 1829-1832, validated 1834-1841) and a move's effective priority is
+      `runModifyPriority(ctx, move, move.priority)` (1904). **Fix shape:** a conditional-fail table
+      beside the other move tables, keyed `upperhand`, answered from the target's command — a `fight`
+      command whose move's `runModifyPriority` is **> 0** — reached through a new
+      `EffectContext.commands` (`effects/registry.ts` 16-26, kept optional so no existing test
+      changes); a failed read logs `battle.log.fail`, spends the PP and deals nothing, while the
+      flinch stays the move's `secondaries` on a success. **Docs:** `docs/battle-spec.md` §3.3 (the
+      conditional table gains the conditional **fail**) and the regenerated
+      `docs/balance/effect-coverage.md`. **Tests:** `[unit]` `effects/moves.test.ts` — one turn with
+      the foe picking `quickattack` lands damage and the flinch, one with the foe picking `tackle`
+      logs the fail and leaves the foe at full HP; `[unit]` the audit row splits in two, so a move
+      that never fails can no longer pass (`moveAudit.test.ts`); `[unit]` both turns pinned on fixed
+      seeds, because the flinch roll is a draw (`npm test -- moves moveAudit`). Claims
+      `src/engine/battle/turn.ts`, `src/engine/battle/effects/registry.ts`,
+      `src/engine/battle/effects/moves.ts` + test, `src/engine/battle/moveAudit.ts` + test,
+      `docs/battle-spec.md` §3.3 and the generated `docs/balance/effect-coverage.md` +
+      `src/data/moveCoverage.json`. *Dependencies:* none — the command map and the priority hook ship.
+      *(Batch 75)*
+
+- [ ] **[Task-175] No wild or static whose evolution line the run already holds.** «no debe salir como
+      poke capturado estatico o salvaje uno que ya tienes a alguno de su linea evolutiva».
+      `wildExclusions` (`src/engine/run/pool.ts` 32-39) already expands a recorded id to its whole
+      line — `evolutionFamily` walks `prevo` up and `evos` down (`src/data/dex/evolutions.ts`
+      225-252) and `formeFamily` adds the formes (261-267) — but it reads **only `run.caughtSpecies`**,
+      which `recordCatch` writes on a catch alone (`src/engine/run/state.ts` 559-565). So the starter,
+      a trade-in (`src/engine/run/trade.ts`), an egg and any member the run did not catch are
+      invisible to it, and the static-species leaf never consults it at all: `staticRoomContent`
+      draws straight off `STATIC_SPECIES` (`src/engine/routes/staticSpecies.ts` 70-72). **Fix shape:**
+      `wildExclusions(run)` reads the run's **members** (`party`, `box` and `rip`
+      `fighter.speciesId`) beside `caughtSpecies`, and `staticRoomContent` filters its list by that
+      set before the draw — the filtered list keeps the roll shape, and an empty filter falls back to
+      the unfiltered list so a late floor never fields nothing. No run field: party, box, RIP and
+      `caughtSpecies` all ship and are saved, so **no `SAVE_VERSION` step**. **Docs:**
+      `docs/routes-spec.md` §2 (the encounter table's exclusion rule) and `docs/maps-spec.md` §7 (the
+      static room's species). **Tests:** `[unit]` `pool.test.ts` — a run holding `pikachu` excludes
+      `pichu`, `pikachu`, `raichu` and `raichualola`, and a run whose **starter** is `charmander`
+      excludes its line with no catch record at all; `[unit]` `staticSpecies.test.ts` — 20 seeds on a
+      run holding `pikachu` never draw that line; `[unit]` a fixed seed still picks the same species
+      when nothing is excluded (the draw is a filter, not a re-roll). Claims `src/engine/run/pool.ts`
+      + test, `src/engine/routes/staticSpecies.ts` + test, `docs/routes-spec.md` §2,
+      `docs/maps-spec.md` §7. *Dependencies:* none — `[Task-52]`'s record ships and is only extended.
+      *(Batch 75)*
+
+- [ ] **[Task-164] A level-up that crossed no move shows no panel at all.** «no deberia salir panel sube
+      de nivel, solo debe existir panel has aprendido nuevos movimientos». `playLevelUp`
+      (`src/scenes/RouteScene.ts` 3909-3944) already gates the learn modal — `showLearnPopup` returns
+      at `detail.ts` 1338 when no beat carries a learned id — but its tween completion raises a
+      `levelUpNotice` for **every** beat (3933-3938), and that transient is the "sube de nivel" panel
+      the human rejects. The line is `[Task-50]`'s (Batch 16) and its own comment says so ("Every
+      level-up says so, not only the ones that crossed a move", 3931-3932), so the report reverses a
+      decision rather than contradicting a defect. **Fix shape:** delete the notice loop and the
+      `levelUpNotice` import from `RouteScene`; retire `levelUpNotice` (`src/ui/notice.ts` 73-82) and
+      the `notice.levelUp` key in both locales if nothing else reads them (today `RouteScene` 3936
+      and `notice.test.ts` are the only two readers); the level-counter tween, the portrait flash, the
+      learn modal and the evolution popup all stay. **Docs:** `docs/design-spec.md` §3, lines 111-119
+      — the "Every level-up also says so in a transient notice … holding 2.6 s" sentence goes, the
+      modal's sentence stays. **Tests:** `[unit]` `notice.test.ts` and the i18n parity suite drop the
+      retired key and function (`npm test -- notice i18n`); `[unit]` `beats.test.ts` keeps pinning
+      `learned: []` for a move-less level-up and gains the assertion that the beat still reports
+      `fromLevel`/`toLevel`, so the counter still animates; `[live]` one trainer win that levels with
+      no move (silence — no notice, no modal) and one that crosses a move (the modal alone). Claims
+      `src/scenes/RouteScene.ts`, `src/ui/notice.ts`, `src/ui/notice.test.ts`, `src/i18n/en.ts`,
+      `src/i18n/es.ts`, `docs/design-spec.md` §3. *Dependencies:* none. *(Batch 75)*
+
+### Batch 76 - the dodge the charge turn never had, the evolution rows' two columns, Dark Matter's gate, the sign's black square
+
+- **`[Task-168]`** claims `src/scenes/BattleScene.ts` (the batch's one),
+  `src/engine/battle/{turn,fighter,volatile,commands}.ts` + their tests and `docs/battle-spec.md`
+  **§4** — the batch's only claimant of `src/engine/battle/turn.ts`.
+- **`[Task-162]`** claims `src/scenes/panels/detail.ts`, `src/ui/evolutionGraph.ts` + test,
+  `src/ui/hud/panels/detail/{evolution.ts,evolution.test.ts,detailPanel.tsx}`, the **i18n pair** and
+  `docs/design-spec.md` **§3**.
+- **`[Task-172]`** claims `src/engine/battle/randomAbility.ts` + test, `docs/data-spec.md` **§3** and
+  `docs/battle-spec.md` **§11.1**.
+- **`[Task-165]`** claims `scripts/frlg/build-sign.mjs`, `scripts/assets/build-placeholders.mjs`,
+  `src/assets/placeholders/frlg/sign.png`, `src/data/tilesets/props.ts` + test,
+  `src/scenes/BootScene.ts` and `docs/tileset-spec.md` **§2**.
+- **The hot files:** `BattleScene.ts` and `turn.ts` → 168; `panels/detail.ts` and the i18n pair →
+  162; `src/data/tilesets/props.ts` → 165. `docs/battle-spec.md` is split **by section** again (§4
+  by 168, §11.1 by 172) and is the only shared document. No generated file, no `src/data/dex/**` and
+  no `package.json` is claimed.
+- **No `SAVE_VERSION` step**; the four slots are full and no two tasks share a path.
+
+- [ ] **[Task-168] Dig and Dive dodge on the charge turn, and the second turn never asks for a
+      command.** «excavar, buceo deberia esquivar y ademas no poder usar el menu pasan dos turnos
+      auto». The charge half ships: `move.flags.charge` sets `volatiles.charging = move.id` and
+      returns after the charge line (`turn.ts` 1033-1044, the verbs at 731-745) and the next turn's
+      command is discarded in favour of `lockedMove` (758-773). Two things never happen: the fighter
+      is **hittable** on the charge turn — no flag is set or read, and neither `moveAims` nor the
+      damage loop (1225-1263) asks — and the scene still opens the command menu on the second turn
+      (`finishFeed` 1840 → `openMenu`), so the player picks a move the engine then throws away.
+      **Fix shape:** `volatiles.semiInvulnerable: string | null` on `BattleFighter` (`fighter.ts`
+      58-59 is the `charging` sibling), set on the charge turn for `dig`, `dive`, `fly`, `bounce`,
+      `phantomforce` and `shadowforce` and cleared when the move fires; a move aimed at a
+      semi-invulnerable target **misses** (`battle.log.missed`) except `earthquake`/`magnitude`
+      against Dig and `gust`/`twister` against Fly/Bounce, which double, as the dex says; and one
+      pure `chargingCommand(state, side)` in `commands.ts` lets `finishFeed` submit the locked move
+      for a charging slot instead of opening the menu, so both turns run themselves. **Docs:**
+      `docs/battle-spec.md` §4 (the volatile and the two-turn rule). **Tests:** `[unit]`
+      `turn.test.ts` — a fixed seed where the foe's Tackle misses the Digging fighter on the charge
+      turn and lands on the second; `[unit]` a fixed seed where the foe's `earthquake` still hits
+      Dig; `[unit]` `commands.test.ts` — `chargingCommand` answers `dig` while `charging === 'dig'`
+      and null otherwise; `[live]` Dig into a trainer and watch the menu never open on turn two.
+      Claims `src/engine/battle/turn.ts`, `src/engine/battle/fighter.ts`,
+      `src/engine/battle/volatile.ts`, `src/engine/battle/commands.ts` + their tests,
+      `src/scenes/BattleScene.ts`, `docs/battle-spec.md` §4. *Dependencies:* none. *(Batch 76)*
+
+- [ ] **[Task-162] A Mega and a G-Max row read like a species row: name left, stone right.** «el texto
+      de megas en panel evolucion debera ser izquierda nombre y derecha donde sale el nivel nombre
+      piedra, igual para gigamax». `evolutionGraph` gives each battle-only row its whole copy as the
+      **name**: `megaRowName` returns `t('detail.megaEvolvesWith', { stone })` — `'{stone}'` in both
+      locales (`src/i18n/en.ts` 352-353, `src/i18n/es.ts` 355-356) — and `gmaxRowName` returns
+      `'{forme} · {stone}'` (`src/ui/evolutionGraph.ts` 57-68), while `pushForme` leaves `level: null`
+      (114-129). The row therefore prints the stone (Mega) or "Gigantamax X · stone" (G-Max) in the
+      **left** column and nothing in the right one, which draws `''` for a null level in Phaser
+      (`detail.ts` 607) and no `<text>` at all in the DOM (`detail/evolution.ts` 51,
+      `detailPanel.tsx` 250-254). `[Task-21]` (Batch 9) put the copy there on purpose. **Fix shape:**
+      `FamilyNode` gains `note: string | null` — the right column's text — with `name` = the forme's
+      readable name (`formeDisplayName`, 48-55) and `note` = `mega.stoneName` / `gmax.stoneName`;
+      both renderers print `node.level === null ? (node.note ?? '') : t('detail.evoLevel', { level })`
+      right-aligned, so Mega, G-Max and species rows share one arithmetic. The two i18n keys shrink to
+      the bare stone (or retire if the note carries it directly). **Docs:** `docs/design-spec.md` §3
+      (the STATS tab's evolution bullet gains the two-column rule). **Tests:** `[unit]`
+      `evolutionGraph.test.ts` — the two name expectations flip and a new one asserts name/note for
+      Mega X, Mega Y and G-Max; `[unit]` `detail/evolution.test.ts` — a Mega row's right column is
+      the stone, not null; `[live]` a Charizard's STATS tab at 390×844 with both rows legible and the
+      stone right-aligned. Claims `src/ui/evolutionGraph.ts` + test, `src/scenes/panels/detail.ts`,
+      `src/ui/hud/panels/detail/{evolution.ts,evolution.test.ts,detailPanel.tsx}`, `src/i18n/en.ts`,
+      `src/i18n/es.ts`, `docs/design-spec.md` §3. *Dependencies:* none. *(Batch 76)*
+
+- [ ] **[Task-172] Dark Matter is reachable only through a dark catch.** «me ha salido en hierba un poke
+      con habilidad materia oscura, pero esta solo deberia salir con huevo oscuro del team rocket».
+      `randomAbilityPool` (`src/engine/battle/randomAbility.ts` 31-40) is built from **every
+      registered ability effect**, and `[Task-151]`'s hand-authored row registers `darkmatter` like any
+      other (`onModifyEffectiveness` in `effects/abilities.ts`), so a plain wild rolls it; `BANNED`
+      (15-22) is the only filter and does not name it. The dark path grants it explicitly and needs
+      nothing from the pool (`asDark`, `src/engine/run/dark.ts` 31-45, `DARK_ABILITY` at 7). **Fix
+      shape:** `darkmatter` joins `BANNED` with the reason written beside it ("the dark catch is the
+      only grant"), and the pool's fixed-seed expectations are **re-pinned** in this task rather than
+      left stale, as `[Task-151]`'s own entry demands. **Docs:** `docs/data-spec.md` §3 (the
+      `customAbilities.ts` row gains the grant rule) and `docs/battle-spec.md` §11.1 (the pool
+      paragraph, 699-716). **Tests:** `[unit]` `randomAbility.test.ts` — the pool holds no
+      `darkmatter` and 10 000 seeds never yield it, while a seeded dark catch still carries it;
+      `[unit]` `dark.test.ts` — `asDark` still gives `Dark Matter` plus its rolled second ability;
+      `[unit]` the re-pinned draws (`npm test -- randomAbility dark`). Claims
+      `src/engine/battle/randomAbility.ts` + test, `docs/data-spec.md` §3, `docs/battle-spec.md`
+      §11.1. *Dependencies:* none — `[Task-151]`, `[Task-153]` and `[Task-154]` all shipped.
+      *(Batch 76)*
+
+- [ ] **[Task-165] The boss door's sign is never an opaque square.** «tarea cartel del boss el sprite
+      sale mal sale cuadrado negro». `PROP_SIGN_URL` falls back to
+      `src/assets/placeholders/frlg/sign.png` whenever the gitignored packed crop is absent
+      (`src/data/tilesets/props.ts` 17-19), and the placeholder generator paints **every** atlas as
+      one opaque `FILL` square with a lighter border and alpha 255
+      (`scripts/assets/build-placeholders.mjs` 47-70) — and the sign is a 16×16 prop scaled to a 24px
+      tile at depth 5 (`RouteScene.drawSigns`, 2143-2155), so a checkout whose pack predates
+      `[Task-161]`'s new `assets:pack` step draws a solid slate-black block on the door. Nothing
+      catches it: `build-sign.mjs` copies the cell as-is with no key and no uniformity check (32-40),
+      and the only test is `describe.skipIf(!hasArt('frlg/sign.png'))` and counts alpha 0 alone
+      (`props.test.ts` 21-40). **Fix shape:** (a) the placeholder generator grows a per-atlas branch
+      for `frlg/sign.png` that writes a **transparent** 16×16 signboard-with-post silhouette (alpha 0
+      outside it), so a clean clone can never paint a solid square; (b) `build-sign.mjs` fails loudly
+      when the crop is flat — fewer than three distinct opaque colours, or more than 40 % near-black
+      pixels — and prints the source cell it cut; (c) `props.test.ts`'s always-run half asserts the
+      placeholder's four corners are alpha 0 and its opaque pixel count sits between 40 and 200, and
+      the packed half keeps the 68-transparent-pixel pin *and* gains the colour-spread assertion.
+      **Docs:** `docs/tileset-spec.md` §2 (the prop texture's alpha and its placeholder). **Tests:**
+      `[unit]` `props.test.ts`'s two halves (`npm test -- props`), the packed half running only where
+      the art exists and the placeholder half always; `[unit]` the packer's guard is a
+      `node scripts/frlg/build-sign.mjs` gate QA runs against a synthetic flat cell; `[live]` the boss
+      door's sign in a packed checkout, 16×16 with the ground visible at its corners. Claims
+      `scripts/frlg/build-sign.mjs`, `scripts/assets/build-placeholders.mjs`,
+      `src/assets/placeholders/frlg/sign.png`, `src/data/tilesets/props.ts` + `props.test.ts`,
+      `src/scenes/BootScene.ts`, `docs/tileset-spec.md` §2. *Dependencies:* none — `[Task-161]`
+      shipped; this repairs its prop. *(Batch 76)*
+
+### Batch 77 - Rage Fist's climbing power, a TM that cannot be rolled twice, disabled rows the arrows can reach, a merchant on every floor
+
+- **`[Task-173]`** claims `src/engine/battle/{turn,fighter,damage,preview,moveAudit}.ts` + their
+  tests, the **generated** coverage pair and `docs/battle-spec.md` **§3.1** — the batch's only
+  claimant of `src/engine/battle/turn.ts` and of the generated pair.
+- **`[Task-176]`** claims `src/scenes/RouteScene.ts` (the batch's one),
+  `src/engine/routes/sketch.ts` + test, `src/engine/run/items.ts` + test and
+  `docs/routes-spec.md` **§2**.
+- **`[Task-166]`** claims `src/scenes/BattleScene.ts` (the batch's one), `src/ui/moveGrid.ts` + test,
+  `src/ui/partyGrid.ts` + test and `docs/design-spec.md` **§10.3** (the command and switch rows only).
+- **`[Task-170]`** claims `src/data/npcs.ts` + `src/data/npcs.test.ts`,
+  `src/engine/routes/npcs.test.ts` and `docs/maps-spec.md` **§7** (the guaranteed-NPC paragraph
+  only).
+- **The hot files:** `turn.ts` and the generated coverage pair → 173; `RouteScene.ts` → 176;
+  `BattleScene.ts` → 166. Four disjoint path sets. `docs/routes-spec.md` §2 is 176's (175 took the
+  same file in Batch 75, a different batch) and `docs/maps-spec.md` §7 is 170's paragraph only.
+- **No `SAVE_VERSION` step**: the TM rule and the merchant guarantee both read shipped state and the
+  plan. Four slots, four devs, no shared path.
+
+- [ ] **[Task-173] Rage Fist's power climbs with the hits its user has taken, in the menu and in the
+      damage.** «el move puño furia en menu no veo se actualice el poder al recibir golpe». The move is
+      **`ragefist`** (*Puño Furia*, `src/data/i18n/es/moves.json` 2772-2776), and the engine treats it
+      as its dex `basePower` 50: `resolveBasePower`'s switch has no `ragefist` case
+      (`src/engine/battle/damage.ts` 190-260) and `MOVE_AUDIT_ROWS` only probes it against a Mew
+      (`moveAudit.test.ts` 46), so nothing counts the hits; `preview.ts` calls the same
+      `resolveBasePower` (82), so the battle's grid prints the flat number too. **Fix shape:**
+      `volatiles.timesHit` on `BattleFighter`, incremented in the damage loop beside
+      `physicalDamageTaken` (`turn.ts` 1276-1280, once per **hit**, capped at 6), and one
+      `case 'ragefist': return Math.min(350, 50 + 50 * attacker.volatiles.timesHit)` in
+      `resolveBasePower` — the single function the formula **and** `movePreview` read, so the menu can
+      never disagree with the hit. The audit row gains the arithmetic: two hits taken → 150, six →
+      350. **Docs:** `docs/battle-spec.md` §3.1 (the number the formula multiplies). **Tests:**
+      `[unit]` `damage.test.ts` — 0/1/3/9 hits read 50/100/200/350; `[unit]` `preview.test.ts` — the
+      preview's `basePower` after two hits is 150 in the same state the turn uses; `[unit]` a
+      fixed-seed turn where the user is hit twice and then lands the 150-power punch; `[unit]` the
+      audit row. Claims `src/engine/battle/fighter.ts`, `src/engine/battle/turn.ts`,
+      `src/engine/battle/damage.ts`, `src/engine/battle/preview.ts`,
+      `src/engine/battle/moveAudit.ts` + their tests, the generated
+      `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, `docs/battle-spec.md` §3.1.
+      *Dependencies:* none. *(Batch 77)*
+
+- [ ] **[Task-176] A TM is never generated twice as a ground item in one run.** «no debe poder salir
+      una mt de objeto dos veces». The ground items are rolled from the band's pool with `pickWeighted`
+      and no memory (`src/engine/routes/sketch.ts` 1264-1282), and a TM is a **reusable key**
+      (`src/data/tms.ts` 10-13), so a second copy is dead weight: the pools carry two to four TM ids
+      per band (`src/data/loot.ts` 50, 63, 77-78, 122-123, 173-174, 215-216) and the same id can be
+      drawn on two rooms of a run or twice inside one room's item list. **Fix shape:** the sketch
+      request gains `lootExclude?: readonly string[]` (the ids the run already owns) and the item pass
+      threads a `taken` set that both seeds from it and drops an id from the weighted pool once used;
+      `RouteScene`'s build site passes the bag's TM ids through a new pure `ownedTmIds(run)` in
+      `src/engine/run/items.ts`. Only the TM subset is filtered — a second Potion stays legal — so the
+      weighted table moves for TM-bearing pools alone. **Docs:** `docs/routes-spec.md` §2 (the loot
+      rule gains "a TM is unique to the run"). **Tests:** `[unit]` `items.test.ts` — `ownedTmIds`
+      reads `tm###` ids and nothing else; `[unit]` `sketch.test.ts` — 40 fixed seeds with the full TM
+      pool never place one TM twice in a route; `[unit]` a **fixed-seed regression** pinning the
+      route's item list before and after, because the filtered pool shifts the draw (the seed is
+      re-pinned in this task, never left stale). Claims `src/engine/routes/sketch.ts` + test,
+      `src/engine/run/items.ts` + test, `src/scenes/RouteScene.ts`, `docs/routes-spec.md` §2.
+      *Dependencies:* none — a filter over the shipped pools, and `[Task-52]`'s `pickedItems` idiom
+      ships. *(Batch 77)*
+
+- [ ] **[Task-166] The arrows reach a disabled row instead of jumping over it.** «en menu combate con
+      flechas deberias poder pasar por item menu aun que esta disabled, igual con pokes en switch».
+      `moveMenu` (`src/scenes/BattleScene.ts` 2887-2896) advances until an `enabled` row, so the
+      SWITCH grid skips a fainted party member, and `moveMenuGrid` (2922-2992) does the same at 2987,
+      so the command grid skips a disabled BAG / SWITCH / RUN. Both skips are the shipped accessibility
+      rule (`docs/design-spec.md` §10.3, `[Task-08]`) and `[Task-143]`'s switch card inherits it, so
+      this is a decision change, not a regression: the cursor must stop on a dimmed row, and
+      `confirmMenu`'s `item?.enabled` gate (3007-3008) already refuses it. **Fix shape:** the party
+      list and the command grid step over **every** index; the moves grid keeps its skip (a 0 PP or
+      barred move must not be reachable), expressed as one flag on the grid step
+      (`skipDisabled: this.mode === 'moves'`), and the party list gets a pure
+      `stepPartyCursor(index, delta, count)` in `src/ui/partyGrid.ts` that never skips. **Docs:**
+      `docs/design-spec.md` §10.3, the **command grid** and **switch grid** rows only — each gains
+      "the cursor visits a disabled row and `confirm` declines it". **Tests:** `[unit]`
+      `partyGrid.test.ts` — a fainted row in the middle is reachable from both sides and the list
+      wraps; `[unit]` `moveGrid.test.ts` — the grid step lands on index 1 even when it is disabled
+      with the flag off and skips it with the flag on; `[live]` one screenshot with the cursor on a
+      disabled BAG row and one on a fainted party row. Claims `src/scenes/BattleScene.ts`,
+      `src/ui/moveGrid.ts` + test, `src/ui/partyGrid.ts` + test, `docs/design-spec.md` §10.3 (two
+      rows). *Dependencies:* none. *(Batch 77)*
+
+- [ ] **[Task-170] Every floor, map 1 included, posts one merchant.** «en todos los pisos deberia salir
+      1 npc mercader que vende items». The framework ships and is honest about the gap: the merchant
+      is the table's one guaranteed row with `guaranteedFromMap: 2` (`src/data/npcs.ts` 92-102) and
+      `mapIndex` is **1-based** (`effectiveNpcChance` reads `mapIndex - 1`,
+      `src/engine/routes/npcs.ts` 62-65), so floor 1 has none — and two tests pin exactly that
+      (`npcs.test.ts` 169-186, "leaves map 1 merchant-free"; `src/data/npcs.test.ts` 63).
+      `guaranteedNpc` places it in `firstTrainerRoom(plan)` (`routes/npcs.ts` 122-134,
+      `plan.ts` 660-665), which every shipped floor holds because `TRAINER_ROOMS_PER_MAP` is 2+.
+      **Fix shape:** `guaranteedFromMap: 1`, the two tests flipped, and the one silent failure the
+      entry closes: `RouteScene.rollRoomNpc` drops the placement whole when the sprite is missing
+      (`RouteScene` 774), so `npcs.test.ts` asserts `overworldSpriteFrame('merchant')` is not null at
+      build time and the runtime skip stays a last resort. No run field and no state: the guarantee
+      reads the plan, so **no `SAVE_VERSION` step**. **Docs:** `docs/maps-spec.md` §7 (the guaranteed
+      NPC paragraph, "from map 2 on" becomes every floor). **Tests:** `[unit]` `npcs.test.ts` — maps
+      1…8 all answer the merchant and map 1's room is still a `trainers` room on 20 seeds;
+      `[unit]` `npcs.test.ts` — a table with one `fromMap 1` row and one `fromMap 3` row still
+      resolves in table order; `[live]` a fresh run's first floor shows the merchant and its card opens
+      the Mart. Claims `src/data/npcs.ts`, `src/data/npcs.test.ts`, `src/engine/routes/npcs.test.ts`,
+      `docs/maps-spec.md` §7 (the guaranteed-NPC paragraph). *Dependencies:* none. *(Batch 77)*
+
+### Batch 78 - the field that must break, the bag's keys and its click, Don Natural's power, the Mart's prices and its sold-out rows
+
+- **`[Task-174]`** claims `src/engine/battle/{turn,fighter}.ts` + their tests, `docs/battle-spec.md`
+  **§4** and `docs/maps-spec.md` **§7**'s `endure` row.
+- **`[Task-169]`** claims `src/scenes/BattleScene.ts` (the batch's one), `src/ui/bag.ts` + test,
+  `src/ui/hud/panels/battle-bag/{battleBagPanel.tsx,view.ts,view.test.ts}` and
+  `docs/design-spec.md` **§10.3** (the bag row only).
+- **`[Task-177]`** claims the new `src/engine/battle/movePower.ts` + test, `src/ui/partyDetail.ts` +
+  `partyDetail.test.ts`, `src/engine/README.md` and `docs/battle-spec.md` **§2**.
+- **`[Task-178]`** claims `src/data/items.ts` + test, `src/ui/shop.ts` + test,
+  `src/scenes/rooms/shop.ts`, `src/scenes/panels/shop.ts`, `docs/balance/economy.md` and
+  `docs/maps-spec.md` **§7**'s Mart-stock paragraph.
+- **The hot files:** `turn.ts` → 174; `BattleScene.ts` → 169; `partyDetail.ts` → 177;
+  `src/data/items.ts` and `docs/balance/economy.md` → 178. `docs/maps-spec.md` §7 is split **by
+  block** — 174 the room-effect table's `endure` row, 178 the Mart stock paragraph — and
+  `docs/battle-spec.md` by section (§4 by 174, §2 by 177); Integration QA reads the combined §7 for
+  lost lines. No generated file, no `src/main.ts` and no `package.json` is claimed.
+- **No `SAVE_VERSION` step**: the sold-out marks ride `pickedItems`, the field break is battle-local
+  and the price is a data row. Four slots, four devs.
+
+- [ ] **[Task-174] The room's Endure spares a hit only at full HP, and breaks when it does.** «el campo
+      que hace resistir a 1 hp solo debe ser si tiene toda la vida es como tener 1 cinta aguante que se
+      rompe». The effect is the **field** condition `endure` (`src/data/battlefields.ts` 15/61, a
+      battlefield the route seeds into `state.roomField`; `src/data/bosses.ts` 94 names it among the
+      boss-room fields) — not the move `Endure` and not Sturdy, whose own line is
+      `battle.log.ability.sturdy`. `turn.ts` 1254-1263 clamps the damage when
+      `state.roomField.endure && hitTarget.hp > 1`, i.e. at **any** HP above 1, and it re-arms on
+      every hit of the whole battle. **Fix shape:** the gate becomes "the target entered the hit at
+      full HP" (`hitTarget.hp === hitTarget.maxHp`) **and** the field has not already been spent by
+      that fighter — a new `volatiles.roomEndureUsed` written where the clamp fires — so a second
+      lethal hit KOs; the item twin is the shipped `survive` row (`src/data/items.ts` 466). The move
+      and the ability are untouched. **Docs:** `docs/battle-spec.md` §4 (the room field's paragraph)
+      and `docs/maps-spec.md` §7's **`endure` row only** (not the Mart paragraph beside it).
+      **Tests:** `[unit]` `turn.test.ts` — a full-HP target survives a lethal hit at 1 and a second
+      lethal hit KOs; a target at 70 % is KO'd by the first; `[unit]` a fixed seed pins the two lines'
+      order and the exact 1 HP; `[live]` the boss arena breaks once per Pokémon. Claims
+      `src/engine/battle/turn.ts` + `turn.test.ts`, `src/engine/battle/fighter.ts` +
+      `fighter.test.ts`, `docs/battle-spec.md` §4, `docs/maps-spec.md` §7 (the `endure` row).
+      *Dependencies:* none. *Decision:* resolved — the report says "el campo", the field is the only
+      battle-long spare, and Sturdy already reads as its own ability line. *(Batch 78)*
+
+- [ ] **[Task-169] The battle Bag's keys reach the pocket row, and a click picks a stack.** «en menu
+      combate items con las teclas deberias poder subir a las categorias para moverte y seleccionar
+      item con click ahora solo va con enter». Two seams: `navigateMenu`'s bag branch only steps the
+      stack grid (`BattleScene` 2904-2910 → `stepBagGrid`, `src/ui/bag.ts` 188-208), so **no key
+      reaches the pocket tabs** — they answer the pointer and `[`/`]` alone (2720-2729, 1545-1550) —
+      and a canvas click on a stack only **selects** it (`selectBagCell` 2731-2739, whose comment says
+      "It never submits"), while the DOM card arms and uses on a second press
+      (`cellPressIntent`, `battle-bag/battleBagPanel.tsx` 47-52). **Fix shape:** one
+      `bagFocus: 'tabs' | 'grid'` beside `bagCategory`, with a pure stepper in `src/ui/bag.ts`
+      (`stepBagFocus(focus, index, action, count, columns)`) — `up` from the grid's top row moves to
+      the tabs, `left`/`right` there cycle the pockets through the shipped `cycleBagTab`, `down`
+      returns to the grid — and a click on a stack selects **and uses** it, so the canvas answers
+      exactly as `confirm` does and `cellPressIntent` always answers `use` for a stack. The
+      arm/use split and the disabled rows' rule stay. **Docs:** `docs/design-spec.md` §10.3, the
+      **bag row** only. **Tests:** `[unit]` `bag.test.ts` — the focus walks grid → tabs → grid and
+      the pocket cycle wraps; `[unit]` `battle-bag`'s view test — `cellPressIntent` answers `use` for
+      a stack and `select` only for an empty cell; `[live]` arrows up into the tabs and switch
+      pockets, then one click on a Potion spends it. Claims `src/scenes/BattleScene.ts`,
+      `src/ui/bag.ts` + test, `src/ui/hud/panels/battle-bag/{battleBagPanel.tsx,view.ts,view.test.ts}`,
+      `docs/design-spec.md` §10.3 (the bag row). *Dependencies:* none. *Decision:* the click is
+      one-press here (the report says the click does nothing today); if the human wants the DOM's
+      arm-then-use kept, only `cellPressIntent`'s line changes. *(Batch 78)*
+
+- [ ] **[Task-177] Natural Gift's power follows its berry, not only its type.** «move don natural se
+      actualiza tipo al llevar equipado baya pero deberia tambien actualizar poder». The move is
+      **`naturalgift`** (*Don Natural*, `src/data/i18n/es/moves.json` 2342-2346). The type half ships
+      twice — `effectiveMoveType` reads the berry's `naturalGift.type` (`src/engine/battle/moveType.ts`
+      93-104) and the engine's own `onModifyMove` rewrites **both** type and `basePower`
+      (`effects/items.ts` 389-412) — but the **panel** builds its power from the dex alone:
+      `moveDetails` takes `basePower = move?.basePower ?? 0` and only the type through
+      `effectiveMoveType` (`src/ui/partyDetail.ts` 142-167), so the MOVES tab prints Natural Gift's dex
+      0 for a berry it has already retyped. **Fix shape:** a new pure
+      `effectiveMovePower(ability, itemId, move, ivs)` beside `effectiveMoveType` (new
+      `src/engine/battle/movePower.ts`) that applies the same held-item rows the type does —
+      `naturalgift` → the berry's `naturalGift.basePower`, every other id unchanged — and `moveDetails`
+      calls it for `basePower`/`power`; the engine's `onModifyMove` stays the in-battle authority, and
+      one test asserts the two agree for the eleven hand-authored berries and for a berry-less holder.
+      **Docs:** `docs/battle-spec.md` §2 (the item-retype table, `D37`) and `src/engine/README.md`'s
+      `battle/` line for the new module. **Tests:** `[unit]` `movePower.test.ts` — `sitrusberry`
+      gives Natural Gift its berry power and `null` leaves the dex value; `[unit]`
+      `partyDetail.test.ts` — the detail's move row carries the berry power with the berry equipped;
+      `[unit]` the agreement test against `runModifyMove`; `[live]` the MOVES tab with and without
+      the berry. Claims `src/engine/battle/movePower.ts` (new) + test, `src/ui/partyDetail.ts` +
+      `src/ui/partyDetail.test.ts`, `src/engine/README.md`, `docs/battle-spec.md` §2.
+      *Dependencies:* none. *(Batch 78)*
+
+- [ ] **[Task-178] A held berry costs what a held item costs, and a bought shop row leaves the shelf.**
+      Two coupled fixes in the Mart. **Price:** «el precio de las bayas equipables deberia ser mas alto
+      ya que ... no se consumen» — every berry the engine never spends is a permanent held slot at
+      **200** (`NOOP_BERRY_ITEMS`, `src/data/items.ts` 772-785, the eleven ids the `mid`/`high`/`late`
+      rotation sells, `src/data/shop.ts` 72-136), while a permanent held item costs 1000-4000 (Silk
+      Scarf 1527-1534, Leftovers 1489-1496), so the rule freezes as "a `kind: 'held'` item without
+      `consumed: true` costs at least the 1000 tier" and the eleven move to 1000; the **consumed**
+      berries keep their 100-200 (Sitrus 1497-1506) because they are spent. **Shelf:** «al comprar 1
+      objeto en la tienda ... deberia desaparecer de las opciones de compra» — `buyRows` renders the
+      whole stock (`src/ui/shop.ts` 142-159) and `buyItem` (100-105) adds the units with no record, so
+      the row returns on the next open of either card (`src/scenes/rooms/shop.ts` 144-182,
+      `src/scenes/panels/shop.ts`). **Fix shape:** `buyItem(run, slot, floorKey)` marks
+      `shop-<mapIndex>-<itemId>` through the shipped `markItemPicked` (`src/engine/run/state.ts`
+      588-595) and `buyRows(run, stock, mapIndex)` drops the rows whose mark is set — the 10× pack and
+      the potion rung as much as a held row — with both cards passing `host.run.mapIndex`. **No run
+      field**: `pickedItems` is already saved, so **no `SAVE_VERSION` step**. **Docs:**
+      `docs/balance/economy.md` (the held-tier floor and the sold-out rule) and `docs/maps-spec.md`
+      §7's **Mart-stock paragraph only** (not the `endure` row beside it). **Tests:** `[unit]`
+      `items.test.ts` — no `kind: 'held'` item without `consumed` costs under 1000; `[unit]`
+      `shop.test.ts` — a purchase marks the row and the same floor's next `buyRows` drops it, a second
+      floor keeps its own shelf, and the pack drops whole; `[live]` buy the 10× pack, close and reopen
+      the Mart and the row is gone. Claims `src/data/items.ts` + `src/data/items.test.ts`,
+      `src/ui/shop.ts` + `src/ui/shop.test.ts`, `src/scenes/rooms/shop.ts`, `src/scenes/panels/shop.ts`,
+      `docs/balance/economy.md`, `docs/maps-spec.md` §7 (the Mart-stock paragraph).
+      *Dependencies:* none. *(Batch 78)*
+
+### Batch 79 - the MOVES tab stays, and the boss fights only when spoken to
+
+- **`[Task-171]`** claims `src/scenes/panels/detail.ts`, `src/ui/partyDetail.ts` +
+  `partyDetail.test.ts` and `docs/design-spec.md` **§3**.
+- **`[Task-180]`** claims `src/scenes/RouteScene.ts` (the batch's one),
+  `src/engine/routes/{routeMap,trainers}.ts` + `trainers.test.ts`,
+  `src/engine/routes/sketch.test.ts` (the boss-tile adjacency pin, test-only),
+  `src/scenes/rooms/miniBoss.ts` and `docs/routes-spec.md` **§2** + `docs/maps-spec.md` **§6**.
+- **Why 180 rides here:** the round's last two reports both need
+  `src/scenes/RouteScene.ts`, so they can never share a batch, and 79 is the **earliest pending
+  batch that still has a free slot** with the scene free — 75 holds the scene (164) and 77 holds it
+  (176), while 76 and 78 are **full** at four tasks each even though their scene slot is open. 180's
+  paths are disjoint from 171's, so the batch is an antichain and runs as one dev wave and one QA
+  wave. Folding it here fills the round's widest gap and keeps the boss fix in the **fifth** wave
+  instead of a sixth.
+- **The hot files:** `panels/detail.ts` and `partyDetail.ts` → 171; `RouteScene.ts` and
+  `docs/routes-spec.md` → 180 (179 takes the same document's §3/§6 in Batch 80, a different batch).
+  No generated file, no `src/data/dex/**` and no `package.json` is claimed.
+- **No `SAVE_VERSION` step**: the tab is in-memory and the aggro flag is a route record, not a run
+  field. Two slots, two devs, disjoint paths.
+
+- [ ] **[Task-171] The MOVES tab survives a change of member.** «si estas en info poke en pestaña move y
+      seleccionas otro poke mantenerte en tab move y no pasar a stats». `openMemberDetail` always
+      builds the state with the default tab — `hudDetailState = openDetail(memberId)`
+      (`src/scenes/panels/detail.ts` 1089-1108) and `openDetail(memberId, tab = 'stats')`
+      (`src/ui/partyDetail.ts` 254-256) — so every pick snaps to STATS even when the panel is already
+      open on MOVES. Both entry points funnel through it: the canvas row press (`RouteScene`
+      1822-1827) and the DOM party row (`detail.ts` 1797-1812), and `[Task-132]`'s card is the one
+      window either way. **Fix shape:** `openMemberDetail` keeps the tab it already has
+      (`hudDetailState.memberId !== null ? hudDetailState.tab : 'stats'`) and passes it to
+      `openDetail(memberId, tab)`; a closed panel still opens on STATS, and the drag, the search field,
+      the query and the nickname edit still reset exactly as they do now. **Docs:**
+      `docs/design-spec.md` §3 (the detail window's tab sentence gains "the tab belongs to the panel,
+      so picking another member keeps it"). **Tests:** `[unit]` `partyDetail.test.ts` — the carried
+      tab through a new `carriedDetailTab(state)` beside `openDetail` (`'moves'` stays `'moves'`, a
+      closed state answers `'stats'`); `[unit]` the re-open keeps `grab: null` and the new member id;
+      `[live]` MOVES → click another party row → MOVES is still selected, on `?hud=dom` and on the
+      canvas card. Claims `src/scenes/panels/detail.ts`, `src/ui/partyDetail.ts` +
+      `src/ui/partyDetail.test.ts`, `docs/design-spec.md` §3. *Dependencies:* none. *(Batch 79)*
+
+- [ ] **[Task-180] The map boss and the mini-boss never open a battle by looking at the player.**
+      «el boss y miniboss no tienen rango para iniciar combate es solo interactuando». Both are ordinary
+      `RouteTrainer`s with a live line of sight, so both aggro: the boss is appended to
+      `route.trainers` facing the door with `sight: DEFAULT_TRAINER_SIGHT` (`bossTrainer`,
+      `src/scenes/RouteScene.ts` 954-964, appended at 703-706) and the mini-boss's fixture does the same
+      (`src/scenes/rooms/miniBoss.ts` 16-29, `sight` at 26), while `trainerSpotted()` (2690-2699) scans
+      **every** undefeated trainer through `seesPlayer` after each step (2547-2548) and the spinner tick
+      repeats the check on a facing change (4452-4470); `seesPlayer` is the one gate
+      (`src/engine/routes/trainers.ts` 61-75). The interact path already opens both: `tryInteract` →
+      `liveTrainerAt` → `startTrainerBattle` (2907-2925), which resolves `boss`/`miniboss` by id
+      (2835-2837). **Fix shape:** `RouteTrainer` gains `aggro?: boolean` (absent = true,
+      `src/engine/routes/routeMap.ts` 35-46) and `seesPlayer` answers `false` when it is `false` — one
+      gate for both triggers, `sightLine` and the placement validation untouched; `bossTrainer` and the
+      mini-boss fixture set `aggro: false` and keep their `sight`, `facing` and ids byte-identical, so
+      no seed, topology or validation moves. **The soft-lock guard the rule needs:** with the "it walks
+      over" fallback gone, the sealed boss room must still be winnable, so the boss's tile keeps a
+      walkable cardinal neighbour reachable from the room entry and the spec pins it on 20 seeds (the
+      mini-boss's `farthestRoomTile()` is on the entry's BFS tree by construction, so its neighbour is
+      free); the docs' anti-soft-lock argument is reworded from "it walks over" to "it can always be
+      reached and spoken to". **Docs:** `docs/routes-spec.md` §2 (the line-of-sight paragraph, 116-133,
+      gains "the map boss and the mini-boss never watch") and `docs/maps-spec.md` §6 (262-265: the
+      sentence that says the boss "walks over and opens the fight on its own"). **Tests:** `[unit]`
+      `trainers.test.ts` — a trainer facing the player one tile away answers `false` with `aggro: false`
+      and `true` without it, and the same for a spun facing; `[unit]` `sketch.test.ts` — on 20 fixed
+      seeds the boss's tile has a walkable cardinal neighbour on the entry's BFS tree; `[unit]` the
+      mini-boss fixture answers `aggro === false` (`fixtures.test.ts`); `[live]` stand three tiles down
+      the boss's lane for five seconds with no key (no battle, no chase), then press `E` facing it (the
+      battle opens with the six/three-member roster); the same two steps on a mini-boss. Claims
+      `src/engine/routes/routeMap.ts`, `src/engine/routes/trainers.ts` + `trainers.test.ts`,
+      `src/engine/routes/sketch.test.ts`, `src/scenes/RouteScene.ts`,
+      `src/scenes/rooms/miniBoss.ts`, `src/scenes/rooms/fixtures.test.ts` (its `toEqual` fixture gains
+      the flag), `docs/routes-spec.md` §2, `docs/maps-spec.md` §6.
+      *Dependencies:* none. *(Batch 79)*
+
+### Batch 80 - the PC swaps only in the floor's entry room, and the capture-time swap is gone
+
+- **`[Task-179]` alone**, and the constraint is the one this round cannot fill: every other pending
+  task is already scheduled, and its hot file `src/scenes/RouteScene.ts` is **180's in Batch 79** and
+  the two batches before that (164 in 75, 176 in 77), so no legal mate exists in 78 or 79 — 78 is full
+  besides. It is the round's last task, and the only one that touches `src/engine/save.ts`.
+- **The hot files:** `src/scenes/RouteScene.ts` (the debug teleport's two lines), `src/engine/save.ts`
+  and `src/engine/run/state.ts`; `docs/routes-spec.md` §3 and §6 are free here (180 wrote §2 in 79),
+  and `docs/design-spec.md` §3 is free too though 171 wrote its tab sentence in 79 and 162 its
+  evolution bullet in 76 — 179 takes the **swap bullet** only.
+- **No `SAVE_VERSION` step** — the task **removes** two run fields and adds none; the argument is in
+  its entry's `*Decision:*` line.
+
+- [ ] **[Task-179] The PC swaps only in the floor's entry room, always, and never as part of a catch.**
+      «cambiar funcionamiento panel pc para que sea, solo se puede intercambiar pokes pc a party o
+      viceversa en la sala de inicio de piso, quita lo de que al capturar se pueda hacer el cambio pero
+      en sala inicial siempre se puede». The rule is two predicates in
+      `src/engine/run/state.ts`: `pcFullyEditable` (527-529) refuses the entry room after a return
+      because it also requires `!run.entryDeparted`, and `pcMemberEditable` (536-543) grants a second
+      window to the room's own catch through `pcCatch` — the capture-time swap the report kills
+      (recorded by `addCaughtPokemon`, 551-555; set by `advanceRoute` at 233-234; migrated from the v15
+      `pcUnlocked` at `src/engine/save.ts` 390-400). Every gate reads those two functions: the DOM PC
+      card (`src/scenes/panels/pc.ts` 276, 302, 381) and the canvas party/PC screen's `canGrab` /
+      `canSwapAcross` (`src/ui/partyScreen.ts` 130-141), so no UI file owns the rule. **Fix shape:**
+      `pcFullyEditable(run)` becomes `run.routeInMap === 0` (the documented entry id, 522-526) and
+      `pcMemberEditable(run)` becomes exactly it — the `memberId` parameter retires, and each call site
+      passes the run alone; a catch that lands in the PC is then withdrawable only from the entry room,
+      on the first visit or a return. **Then the two fields retire with their last readers**, because
+      "delete the seam" is this repo's rule (`[Task-31]` did it to the capture screen): `RunState.pcCatch`
+      (83-88) and `RunState.entryDeparted` (77-82) leave the type, `createRun`/`advanceRoute`/`advanceMap`
+      stop writing them (184-185, 233-234, 264-265), `dedupeMemberIds`'s `pcCatch` re-key (362-410) goes,
+      the decoder stops reading both (`parsePcCatch` at `save.ts` 791, its two uses at 970/1007, the
+      `entryDeparted` derivation at 967 and the `PcCatch` type's import at 26), the HUD view model drops
+      `entryDeparted` (`src/ui/hud/state.ts` 57/213), and the two migrations that **seed** the fields stop
+      writing them — step 10 (`save.ts` 237-243, `entryDeparted`) and the v16 `withPcCatch`
+      (`save.ts` 278/395-400, `pcCatch`) — while keeping their other work, so no chain produces a key
+      the run type cannot hold. **Docs:**
+      `docs/routes-spec.md` **§6** (448-464: "two windows" becomes one room, always) and **§3**
+      (356-361: the paragraph still promises a **capture screen** that `[Task-31]` deleted — it is
+      rewritten to the shipped behaviour, party first, PC second, no swap on the spot), plus
+      `docs/design-spec.md` §3's **swap bullet only** (68-73, which reads as an unconditional
+      party/PC drag and gains "only in the floor's entry room"). **Tests:**
+      `[unit]` `state.test.ts` — `pcFullyEditable` is true in the entry room on the first visit **and**
+      on a return, false in any other room, true again on the next floor; `pcMemberEditable` answers the
+      same for a boxed catch in the room it was caught in (false) and in the entry room (true);
+      `[unit]` `save.test.ts` — a v16–v25 document carrying both keys still decodes, a document without
+      them still decodes, and no field is emitted; `[unit]` `partyScreen.test.ts` — no across-swap
+      outside the entry room and a full one inside it; `[live]` open the PC in the entry room (no veiled
+      cell), walk one room away (every box cell veiled), catch with a full party (the caught cell is
+      veiled in the room it was caught and un-veiled only back at the entry). Claims
+      `src/engine/run/state.ts` + `state.test.ts`, `src/engine/save.ts` + `save.test.ts`,
+      `src/engine/run/{resolve,trade}.ts` + `trade.test.ts` (the prose mention and its two assertions),
+      `src/ui/hud/state.ts` + `state.test.ts`, `src/ui/hud/panels/party/view.test.ts` (fixture only),
+      `src/ui/partyScreen.ts` + `partyScreen.test.ts`, `src/ui/casino.ts` + `casino.test.ts`,
+      `src/scenes/panels/{pc,rewards}.ts`, `src/scenes/RouteScene.ts`, `docs/routes-spec.md` §3 and §6,
+      `docs/design-spec.md` §3 (the swap bullet).
+      *Dependencies:* none. *Decision:* resolved reading — the "capture-time swap" is the `pcCatch`
+      window (no capture screen exists since `[Task-31]`), and the **no `SAVE_VERSION` step** follows
+      from the decoder being field-by-field: both keys are optional today (`save.test.ts` 545-549), so
+      an old save keeps decoding and a new one simply omits them. *(Batch 80)*
+
+
+
+
+
+
+---
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
@@ -8211,6 +8836,85 @@ the twenty-seventh round (`[Task-86]`'s and `[Task-88]`'s hot files, both sectio
 task, alone") — with **no batch label moved**, no cycle found, no
 batch left outside the antichain rule and `[Task-28]` still the plan's only unscheduled ID. The full
 measurement (per-batch path sets, hot-file holders and the version chain) is in the batch plan above.
+
+A **thirty-third round** is **nineteen play reports from one sitting (`2026-10-26`)** — seventeen of
+them in its first half and two more in its second — the largest defect round the backlog has taken,
+and **every one is a defect**: none is a wish, and each was registered against the code that ships it,
+as `[Task-162]`–`[Task-180]` in the new **Phase 16**, cut into **six batches, 75 to 80**. They group
+by family. **Battle UI (five):** a Mega/G-Max row's name
+and its stone swap columns (`[Task-162]`, against `[Task-21]`'s information rows, whose copy rides
+`node.name`, `src/ui/evolutionGraph.ts` 57-68 / 114-129 and `detail.ts` 607); arrows that jump over a
+disabled BAG row or a fainted party member (`[Task-166]`, `moveMenu` 2887-2896 and `moveMenuGrid`
+2987, a decision change on `[Task-08]`'s §10.3 rule, with `confirmMenu` 3007-3008 already declining
+them); a battle Bag whose keys never reach the pocket row and whose click does not use a stack
+(`[Task-169]`, `navigateMenu`'s bag branch 2904-2910 and `selectBagCell` 2731-2739 against the DOM
+card's arm-then-use `cellPressIntent`); a detail panel that snaps back to STATS when another member is
+picked (`[Task-171]`, `openMemberDetail` 1089-1108 with `openDetail`'s default tab,
+`partyDetail.ts` 254-256); and a boss-door sign drawn as a black square (`[Task-165]`, `[Task-161]`'s
+prop falling to the placeholder that `scripts/assets/build-placeholders.mjs` 47-70 paints fully
+opaque). **Battle rules (six):** Upper Hand never fails (`[Task-167]`; `upperhand` is `port` on
+`data: secondaries`, `moveCoverage.json` 4751-4755, and the audit pins only damage + flinch,
+`moveAudit.ts` 1211-1217); Dig and Dive neither dodge nor lock the menu (`[Task-168]`, `charging` is
+set at `turn.ts` 1033-1044 but nothing is semi-invulnerable and `finishFeed` 1840 still opens the
+menu); Rage Fist's power never climbs (`[Task-173]`, no case in `resolveBasePower`,
+`damage.ts` 190-260, so `preview.ts` 82 prints the flat 50 too); the room's Endure spares any HP above
+1 forever instead of only a full-HP hit once (`[Task-174]`, `turn.ts` 1254-1263); and Natural Gift's
+type follows its berry while its power does not (`[Task-177]`, `effectiveMoveType` reads the berry,
+`moveType.ts` 93-104, but `moveDetails` takes the dex power, `partyDetail.ts` 142-167); and the map
+boss and the mini-boss aggro from their line of sight instead of waiting to be spoken to
+(`[Task-180]`, both are ordinary `RouteTrainer`s with `sight: DEFAULT_TRAINER_SIGHT` —
+`bossTrainer` `RouteScene` 954-964, appended at 703-706, and `rooms/miniBoss.ts` 16-29 — read by
+`trainerSpotted` 2690-2699 and the spinner tick 4452-4470 through `seesPlayer`,
+`routes/trainers.ts` 61-75). **World and economy (five):** a back press out of the forced switch lands
+on a menu the engine refuses (`[Task-163]`,
+`onBack` 5049-5051 / `onCancel` 1661-1663 into `openMenu` 2417-2449, whose FIGHT command
+`validateCommand`'s replacement rule at `commands.ts` 244 then throws on); no merchant on floor 1
+(`[Task-170]`,
+`guaranteedFromMap: 2` in `src/data/npcs.ts` 92-102 with a 1-based `mapIndex`, pinned by
+`npcs.test.ts` 169-186 — the test literally says "leaves map 1 merchant-free"); a level-up that crosses
+no move still raises a transient panel (`[Task-164]`, `[Task-50]`'s notice loop,
+`RouteScene` 3933-3938); and a Mart that sells never-consumed berries at 200 and re-stocks a row after
+it is bought (`[Task-178]`, `NOOP_BERRY_ITEMS` `items.ts` 772-785 against the 1000+ held tier, and
+`buyRows`/`buyItem` `ui/shop.ts` 100-159 writing no record); and the PC swaps only in the entry room on
+the first visit, with the capture-time swap still open (`[Task-179]`, `pcFullyEditable` requires
+`!entryDeparted` at `state.ts` 527-529 and `pcMemberEditable` grants the caught room a second window
+through `pcCatch`, 536-543, recorded by `addCaughtPokemon` 551-555). **Data (three):** Dark Matter is in the
+random ability pool although only a dark catch grants it (`[Task-172]`, `randomAbilityPool`
+31-40 over every registered effect); a wild or static can be a species the run already holds the line
+of, because `wildExclusions` reads only `caughtSpecies` and the static leaf reads nothing (`[Task-175]`,
+`pool.ts` 32-39, `staticSpecies.ts` 70-72); and a TM can be rolled twice as a ground item
+(`[Task-176]`, `sketch.ts` 1264-1282 draws with no memory over reusable keys, `tms.ts` 10-13).
+
+**Five readings the round settles from the code, and one it leaves open.** The «campo que hace
+resistir a 1 hp» is the **battlefield** `endure` and not the move or Sturdy (`battlefields.ts` 15/61,
+`bosses.ts` 94, the clamp at `turn.ts` 1254-1263), so `[Task-174]` is written against the field and
+says so. «Palma Rauda» is `upperhand` and «Don Natural» is `naturalgift`, both resolved by id from
+`src/data/i18n/es/moves.json` (3952-3956 and 2342-2346) rather than from the Spanish name, with their
+dex rows read for the rule (the target must be using a priority move; the berry supplies the power).
+The Mart's second half is scoped **per floor** because each floor's stock is its own roll
+(`buildShop`, `ui/shop.ts` 55-83, keyed `${seed}:${mapIndex}` at `rooms/shop.ts` 152-155), and both
+halves of «bayas equipables … no se consumen» resolve to the **eleven no-op berries** the rotation
+sells — the only `kind: 'held'` berries the engine never spends — which is why `[Task-178]` reprices
+those and leaves the consumed ones alone. «quita lo de que al capturar se pueda hacer el cambio» is the
+**`pcCatch` window**, not a screen: `[Task-31]` deleted the capture screen, so the only capture-time
+swap left is the caught room's permission (`pcMemberEditable`, `state.ts` 536-543) and `[Task-179]`
+removes that window — and the stale §3 paragraph still promising the screen with it. And «el boss y
+miniboss no tienen rango» is read as **no aggro at all**: both keep the line of sight their placement
+and validation use, but `seesPlayer` refuses them through `aggro: false`, which turns the sealed boss
+room's anti-soft-lock argument from "it walks over" into a reachability guarantee pinned on 20 seeds.
+**The one open reading is `[Task-163]`'s symptom:** the
+forced-switch back path is a proven defect (a menu the engine refuses, then a throw), but the report's
+«sale el move que utiliza el rival» could also name a *revealed* move; the entry carries the
+forced-switch fix as the recommendation with `*Decision:*` open, and QA runs the repro before the dev
+starts. **Nothing here adds a dependency edge or a `SAVE_VERSION` step** — `main` reads **25** and
+stays there: the reports that look like state re-read what the run already saves
+(`party`/`box`/`rip`/`caughtSpecies` and `pickedItems`), and the last state-shaped one **removes**
+`pcCatch` and `entryDeparted` rather than adding a field, which the field-by-field decoder absorbs with
+no step — the round claims `src/scenes/RouteScene.ts` **four times** (Batch 75's Task-164, 77's
+Task-176, 79's Task-180 and 80's Task-179, so the scene's queue reads
+19 → 51 → 75 → 77 → 79 → 80), `src/scenes/BattleScene.ts`, `src/engine/battle/turn.ts`,
+`src/scenes/panels/detail.ts` and `src/ui/partyDetail.ts` once per batch, and nothing re-plans
+`Task-38`–`Task-161`.
 
 ---
 
