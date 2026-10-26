@@ -359,8 +359,11 @@ The room table's other six whole-field conditions seed `state.roomField` through
 - **All-types change**: every fighter's types become one type
   (`ALL_TYPES_OVERRIDE`, today `Normal`); STAB and the type chart both read the
   override, and the run's member keeps its species types after the battle.
-- **Endure**: a lethal hit leaves the target at exactly **1 HP**, for the whole
-  battle, on both sides.
+- **Endure**: the first lethal hit a fighter takes **at full HP** leaves it at
+  exactly **1 HP**, once per stay on the field, on both sides. The fighter is then
+  spent: the next lethal hit faints it (at 1 HP it is already below `maxHp`), and a
+  switch out and back re-arms the spare. The move `Endure` and Sturdy keep their
+  own rules.
 - **+1 crit stage** (`ROOM_CRIT_STAGE`): added to every move's crit ratio before
   the roll, so the base 1/24 step becomes 1/8.
 

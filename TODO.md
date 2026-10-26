@@ -8196,7 +8196,7 @@ run-integrity defects first, the presentation and economy last.
 - **No `SAVE_VERSION` step**: the sold-out marks ride `pickedItems`, the field break is battle-local
   and the price is a data row. Four slots, four devs.
 
-- [ ] **[Task-174] The room's Endure spares a hit only at full HP, and breaks when it does.** «el campo
+- [x] **[Task-174] The room's Endure spares a hit only at full HP, and breaks when it does.** «el campo
       que hace resistir a 1 hp solo debe ser si tiene toda la vida es como tener 1 cinta aguante que se
       rompe». The effect is the **field** condition `endure` (`src/data/battlefields.ts` 15/61, a
       battlefield the route seeds into `state.roomField`; `src/data/bosses.ts` 94 names it among the

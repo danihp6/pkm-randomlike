@@ -336,7 +336,7 @@ describe('the room’s whole-field rules in the turn loop', () => {
     expect(overridden.amount).toBeLessThan(plain.amount);
   });
 
-  it('leaves the target at exactly 1 HP under the Endure room', () => {
+  it('leaves a full-HP target at exactly 1 HP under the Endure room', () => {
     const run = (roomField?: Partial<RoomFieldEffects>) => {
       const state = build(
         [{ id: 'p', speciesId: 'charmander', level: 40, moves: ['ember'] }],
@@ -345,7 +345,6 @@ describe('the room’s whole-field rules in the turn loop', () => {
         false,
         roomField,
       );
-      state.sides.enemy.party[0].hp = 5;
       takeTurn(state, fight(), fight());
       return state;
     };
@@ -360,6 +359,76 @@ describe('the room’s whole-field rules in the turn loop', () => {
     const fainted = run();
     expect(activeFighter(fainted, 'enemy').hp).toBe(0);
     expect(fainted.winner).toBe('player');
+  });
+
+  it('spares one lethal hit at full HP, then faints on the next one', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 40, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] }],
+      5,
+      false,
+      { endure: true },
+    );
+    const enemy = activeFighter(state, 'enemy');
+
+    takeTurn(state, fight(), fight());
+    expect(enemy.hp).toBe(1);
+    expect(enemy.volatiles.roomEndureUsed).toBe(true);
+    expect(state.winner).toBeNull();
+
+    takeTurn(state, fight(), fight());
+    expect(enemy.hp).toBe(0);
+    expect(state.winner).toBe('player');
+    expect(textKeys(state).filter((key) => key === 'battle.log.enduredHit')).toHaveLength(1);
+  });
+
+  it('does not spare a target that enters the hit below full HP', () => {
+    const run = (roomField?: Partial<RoomFieldEffects>) => {
+      const state = build(
+        [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['seismictoss'] }],
+        [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+        3,
+        false,
+        roomField,
+      );
+      const enemy = activeFighter(state, 'enemy');
+      enemy.maxHp = 40;
+      enemy.hp = 28;
+      takeTurn(state, fight(), fight());
+      return state;
+    };
+
+    const stayed = run({ endure: true });
+    expect(activeFighter(stayed, 'enemy').hp).toBe(0);
+    expect(stayed.winner).toBe('player');
+    expect(
+      stayed.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
+    ).toBe(false);
+
+    const control = run();
+    expect(activeFighter(control, 'enemy').hp).toBe(0);
+    expect(control.winner).toBe('player');
+  });
+
+  it('pins the spared HP and the line order from the seed', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'charmander', level: 40, moves: ['ember'] }],
+      [{ id: 'e', speciesId: 'bulbasaur', level: 20, moves: ['growl'] }],
+      5,
+      false,
+      { endure: true },
+    );
+
+    takeTurn(state, fight(), fight());
+    expect(activeFighter(state, 'enemy').hp).toBe(1);
+
+    takeTurn(state, fight(), fight());
+    const keys = textKeys(state);
+    const spared = keys.indexOf('battle.log.enduredHit');
+    const fainted = keys.indexOf('battle.log.fainted');
+    expect(spared).toBeGreaterThanOrEqual(0);
+    expect(fainted).toBeGreaterThan(spared);
+    expect(activeFighter(state, 'enemy').hp).toBe(0);
   });
 
   it('faints a target that already sits at 1 HP under the Endure room', () => {
@@ -377,6 +446,28 @@ describe('the room’s whole-field rules in the turn loop', () => {
     expect(
       state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.enduredHit'),
     ).toBe(false);
+  });
+
+  it('keeps the move Endure’s own turn, which the room field does not extend', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['seismictoss'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['endure', 'splash'] }],
+      42,
+      false,
+      { endure: true },
+    );
+    const enemy = activeFighter(state, 'enemy');
+    enemy.maxHp = 40;
+    enemy.hp = 40;
+
+    takeTurn(state, fight(), fight());
+    expect(enemy.hp).toBe(1);
+    expect(enemy.volatiles.endure).toBe(false);
+    expect(enemy.volatiles.roomEndureUsed).toBe(true);
+
+    takeTurn(state, fight(), fight(1));
+    expect(enemy.hp).toBe(0);
+    expect(textKeys(state).filter((key) => key === 'battle.log.enduredHit')).toHaveLength(1);
   });
 
   it('crits with a +1 room stage whose roll the control misses', () => {

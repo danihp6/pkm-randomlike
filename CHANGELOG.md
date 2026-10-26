@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The room's Endure spares one hit, and only at full HP.** `[Task-174]`, the first of
+      Batch 78: the battlefield's `endure` clamp now requires the target to have entered the hit at
+      **full HP** and spends the spare through a new `volatiles.roomEndureUsed`, so a second lethal
+      hit on the same fighter KOs it and a target below full HP is never spared; switching out and
+      back re-arms it, and the move `Endure` and Sturdy keep their own rules untouched.
+      `docs/battle-spec.md` §4 and `docs/maps-spec.md` §7 record the rule. `npm test` 4521 passed /
+      69 skipped, `npm run build` green; measured live over CDP at a boss room whose live
+      `roomField` read `{ endure: true }` (Mewtwo Lv100 against a fresh party): the first lethal
+      hit on the full-HP lead left `[data-hud-hp-value]` at `1/20` with `endured the hit!` in
+      `[data-hud-battle-log-line]`, the second lethal hit on that same fighter read `0/20`, logged
+      `fainted!` with **no** second `endured` line, and opened the forced switch.
+
 - [x] **A TM is never generated twice as a ground item in one run.** `[Task-176]`, the fourth of
       Batch 77: `RouteRequest.lootExclude` and a `taken` set inside the item pass keep a TM unique
       to a route, and `ownedTmIds(run)` feeds the bag's TMs in from `RouteScene`, so a second room

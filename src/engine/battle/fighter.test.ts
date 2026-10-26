@@ -5,6 +5,7 @@ import {
   addType,
   applyBoosts,
   clampBoost,
+  clearVolatiles,
   createFighter,
   defaultMoveset,
   effectiveSpeed,
@@ -275,6 +276,23 @@ describe('the semi-invulnerable field', () => {
     resetBattleState(fighter);
     expect(fighter.volatiles.semiInvulnerable).toBeNull();
     expect(fighter.volatiles.charging).toBeNull();
+  });
+});
+
+describe('the room’s Endure flag', () => {
+  it('starts unspent on a fresh volatile set', () => {
+    expect(emptyVolatiles().roomEndureUsed).toBe(false);
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level });
+    expect(fighter.volatiles.roomEndureUsed).toBe(false);
+    expect('roomEndureUsed' in fighter.volatiles).toBe(true);
+  });
+
+  it('re-arms a spent flag when the fighter leaves the field', () => {
+    const fighter = createFighter({ id: 'c', speciesId: 'charmander', level });
+    fighter.volatiles.roomEndureUsed = true;
+    clearVolatiles(fighter);
+    expect(fighter.volatiles.roomEndureUsed).toBe(false);
+    expect('volatiles' in snapshotFighter(fighter)).toBe(false);
   });
 });
 

@@ -822,7 +822,9 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
   turn count and is a field condition, never a weather (`docs/battle-spec.md` §4).
 - The six whole-field rows (radiant, Dark Aura, Fairy Aura, all-types, Endure and
   the crit stage) last the **whole battle**, carry no turn count and draw **no**
-  RNG; their exact rules are `docs/battle-spec.md` §4.
+  RNG; their exact rules are `docs/battle-spec.md` §4. For `endure` that means one
+  spare per stay on the field, and only on a lethal hit the fighter takes at **full
+  HP**: the second such hit faints it, and a switch out and back re-arms it.
 - The route draws it as one **tinted filter** over the whole room, at the row's
   `tint` and `alpha`, so a conditioned room reads as such before any battle starts.
   It brings no player-facing text and no minimap marker.
