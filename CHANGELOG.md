@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The boss door's sign is never an opaque square.** `[Task-165]`, the fourth of
+      Batch 76: `build-placeholders.mjs` grows a per-atlas branch that paints a
+      **transparent** 16×16 signboard-with-post silhouette for `frlg/sign.png` — 82
+      opaque pixels, alpha 0 on all four corners — and refuses an unknown atlas by name,
+      so a checkout whose pack predates `[Task-161]` can no longer draw a slate-black
+      block on the door; `build-sign.mjs` refuses a flat crop loudly (fewer than three
+      distinct opaque colours or more than 40 % near-black pixels) and prints the cell it
+      cut, and `props.test.ts` measures the committed placeholder on **every** tree plus
+      the packed crop's colour spread where the art exists. `docs/tileset-spec.md` §2
+      owns the prop's alpha and its placeholder. `npm test` 4452 passed / 69 skipped,
+      `npm run build` green; measured live over CDP with `renderer.snapshotArea` at
+      1280×800 over 10 runs of floor 1: the sign's own 24×24 window matches no painted
+      square, while the pre-fix opaque placeholder produced 3 matches; the screen-wide
+      hits that remain are the pack-less tileset placeholder's wall band, 90 px away.
 - [x] **Dark Matter is reachable only through a dark catch.** `[Task-172]`, the third
       of Batch 76: `randomAbilityPool` is built from every registered ability effect, so
       `[Task-151]`'s hand-authored `darkmatter` row rolled on a plain wild; it joins

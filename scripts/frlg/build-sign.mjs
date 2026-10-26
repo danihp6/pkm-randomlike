@@ -39,6 +39,29 @@ for (let y = 0; y < SIZE; y++) {
   }
 }
 
+// A sign cell carries its own shading; a flat one means the grid shifted or the
+// crop landed on a blank block, which would draw as an opaque square on the boss
+// door. Refuse to write anything in that case.
+const MIN_OPAQUE_COLOURS = 3
+const MAX_NEAR_BLACK = 0.4
+const nearBlack = (r, g, b) => r <= 16 && g <= 16 && b <= 16
+const colours = new Set()
+let nearBlackCount = 0
+for (let i = 0; i < out.length; i += 4) {
+  if (out[i + 3] === 0) continue
+  colours.add(`${out[i]},${out[i + 1]},${out[i + 2]}`)
+  if (nearBlack(out[i], out[i + 1], out[i + 2])) nearBlackCount += 1
+}
+const nearBlackShare = nearBlackCount / (SIZE * SIZE)
+if (colours.size < MIN_OPAQUE_COLOURS || nearBlackShare > MAX_NEAR_BLACK) {
+  console.error(
+    `build-sign: flat crop at the source cell (${ORIGIN_X},${ORIGIN_Y}) = column ${COLUMN}, row ${ROW}: ` +
+      `${colours.size} distinct opaque colours, ${Math.round(nearBlackShare * 100)} % near-black pixels ` +
+      `— refusing to write src/assets/frlg/sign.png`,
+  )
+  process.exit(1)
+}
+
 mkdirSync(dirname(OUT_PATH), { recursive: true })
 writeFileSync(OUT_PATH, encodePng(SIZE, SIZE, out))
 console.log(`wrote src/assets/frlg/sign.png ${SIZE}x${SIZE}`)

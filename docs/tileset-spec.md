@@ -73,7 +73,18 @@ Every biome ships two images:
   `23,3` (a 17px-pitch block grid with a 1px origin), cropped by
   `scripts/frlg/build-sign.mjs` **with its own alpha kept** (68 of its 256 pixels
   are transparent, all four corners among them), read through
-  `src/data/tilesets/props.ts` and loaded as a one-frame 16x16 spritesheet.
+  `src/data/tilesets/props.ts` and loaded as a one-frame 16x16 spritesheet. A
+  **flat** crop is refused (exit 1, the source cell's origin, column and row
+  named): fewer than 3 distinct opaque colours, or more than 40 % near-black
+  pixels (all three channels ≤ 16), means the grid shifted and the cell is not a
+  sign, so nothing is written instead of a square. The committed fallback is art
+  too, not a blank: `src/assets/placeholders/frlg/sign.png` is a **transparent**
+  16x16 board-and-post silhouette (82 opaque pixels, the board `#7888A0` over the
+  post `#3A4252`), written by
+  `node scripts/assets/build-placeholders.mjs frlg/sign.png` — that generator
+  takes an optional atlas filter and branches per atlas whose fallback would
+  otherwise read as the wrong object — so a clone without the pack draws a
+  signpost as well.
 
 A tileset declares:
 

@@ -8047,7 +8047,7 @@ run-integrity defects first, the presentation and economy last.
       §11.1. *Dependencies:* none — `[Task-151]`, `[Task-153]` and `[Task-154]` all shipped.
       *(Batch 76)*
 
-- [ ] **[Task-165] The boss door's sign is never an opaque square.** «tarea cartel del boss el sprite
+- [x] **[Task-165] The boss door's sign is never an opaque square.** «tarea cartel del boss el sprite
       sale mal sale cuadrado negro». `PROP_SIGN_URL` falls back to
       `src/assets/placeholders/frlg/sign.png` whenever the gitignored packed crop is absent
       (`src/data/tilesets/props.ts` 17-19), and the placeholder generator paints **every** atlas as
