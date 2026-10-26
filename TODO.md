@@ -8005,7 +8005,7 @@ run-integrity defects first, the presentation and economy last.
       `src/engine/battle/volatile.ts`, `src/engine/battle/commands.ts` + their tests,
       `src/scenes/BattleScene.ts`, `docs/battle-spec.md` §4. *Dependencies:* none. *(Batch 76)*
 
-- [ ] **[Task-162] A Mega and a G-Max row read like a species row: name left, stone right.** «el texto
+- [x] **[Task-162] A Mega and a G-Max row read like a species row: name left, stone right.** «el texto
       de megas en panel evolucion debera ser izquierda nombre y derecha donde sale el nivel nombre
       piedra, igual para gigamax». `evolutionGraph` gives each battle-only row its whole copy as the
       **name**: `megaRowName` returns `t('detail.megaEvolvesWith', { stone })` — `'{stone}'` in both

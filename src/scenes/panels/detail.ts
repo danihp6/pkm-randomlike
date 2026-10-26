@@ -11,7 +11,8 @@ import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../../engi
 import { t } from '../../i18n';
 import { moveName, moveShortDescription } from '../../i18n/content';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../../ui/abilityInfo';
-import { type FamilyNode } from '../../ui/evolutionGraph';
+import { evolutionRowNote, type FamilyNode } from '../../ui/evolutionGraph';
+import { levelColumnWidth } from '../../ui/hud/panels/detail/evolution';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -546,6 +547,19 @@ export function detailTextFieldFocused(): boolean {
 }
 
 /**
+ * Draws `value` in `text`, shortened with an ellipsis when it would pass `limit`: the
+ * canvas has no text-overflow, and a name that runs under the row's level (or stone)
+ * is unreadable, so it is cut to the space the right column leaves free.
+ */
+function clampDrawnName(text: Phaser.GameObjects.BitmapText, value: string, limit: number): void {
+  text.setText(value);
+  if (text.width <= limit) return;
+  let end = value.length - 1;
+  while (end > 0 && text.setText(`${value.slice(0, end)}…`).width > limit) end -= 1;
+  text.setText(end > 0 ? `${value.slice(0, end)}…` : '');
+}
+
+/**
  * Paints the STATS tab's evolution graph from the member's family: the base
  * form down to every branch, indented by stage, with each edge's level. The
  * current species reads gold and a ready branch green and clickable; a branch
@@ -603,8 +617,10 @@ function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: M
     const portrait = portraitFor(node.id);
     cell.portrait.setVisible(visible && portrait !== null);
     if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
-    cell.name.setPosition(nodeX + 30, y + 6).setText(node.name);
-    cell.level.setText(node.level === null ? '' : t('detail.evoLevel', { level: node.level }));
+    cell.name.setPosition(nodeX + 30, y + 6);
+    const note = evolutionRowNote(node);
+    cell.level.setText(note);
+    clampDrawnName(cell.name, node.name, width - 30 - levelColumnWidth(note));
 
     if (node.ready) {
       cell.bg.setVisible(true).setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha);

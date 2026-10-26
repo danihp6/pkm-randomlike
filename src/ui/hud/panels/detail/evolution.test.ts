@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { FamilyNode } from '../../../evolutionGraph';
+import { evolutionGraph, type FamilyNode } from '../../../evolutionGraph';
 import {
   EVO_INDENT,
+  EVO_LEVEL_CHAR_W,
+  EVO_LEVEL_INSET,
   EVO_MAX_ROWS,
   EVO_PAD_X,
   EVO_PORTRAIT,
   EVO_ROW_H,
   evolutionView,
+  levelColumnWidth,
 } from './evolution';
 
 function node(overrides: Partial<FamilyNode> & Readonly<{ id: string }>): FamilyNode {
   return {
     name: overrides.id.toUpperCase(),
+    note: null,
     depth: 0,
     row: 0,
     level: null,
@@ -65,18 +69,66 @@ describe('evolutionView', () => {
   it('keeps a Mega and a Gmax branch on the same elbow arithmetic', () => {
     const family = [
       ...FAMILY.slice(0, 3).map((entry) => ({ ...entry })),
-      node({ id: 'charizardmegax', depth: 3, row: 3, parent: 2, kind: 'mega' }),
-      node({ id: 'charizardmegay', depth: 3, row: 4, parent: 2, kind: 'mega' }),
-      node({ id: 'charizardgmax', depth: 3, row: 5, parent: 2, kind: 'gmax' }),
+      node({
+        id: 'charizardmegax',
+        name: 'Mega Charizard X',
+        note: 'Charizardite X',
+        depth: 3,
+        row: 3,
+        parent: 2,
+        kind: 'mega',
+      }),
+      node({
+        id: 'charizardmegay',
+        name: 'Mega Charizard Y',
+        note: 'Charizardite Y',
+        depth: 3,
+        row: 4,
+        parent: 2,
+        kind: 'mega',
+      }),
+      node({
+        id: 'charizardgmax',
+        name: 'Gigantamax Charizard',
+        note: 'Charizardite G',
+        depth: 3,
+        row: 5,
+        parent: 2,
+        kind: 'gmax',
+      }),
     ];
     const view = evolutionView(family, 420);
     expect(view.rows).toHaveLength(6);
     expect(view.rows.slice(3).map((row) => row.x)).toEqual([110, 110, 110]);
-    expect(view.rows.slice(3).map((row) => row.level)).toEqual([null, null, null]);
+    expect(view.rows.slice(3).map((row) => row.level)).toEqual([
+      'Charizardite X',
+      'Charizardite Y',
+      'Charizardite G',
+    ]);
     expect(view.edges.slice(2)).toEqual([
       { fromRow: 2, toRow: 3, d: 'M 102 70 H 93 V 98 H 110' },
       { fromRow: 2, toRow: 4, d: 'M 102 70 H 93 V 126 H 110' },
       { fromRow: 2, toRow: 5, d: 'M 102 70 H 93 V 154 H 110' },
+    ]);
+  });
+
+  it('puts the stone in the right column of a real Charizard family', () => {
+    const view = evolutionView(evolutionGraph('charizard', 36), 420);
+    expect(view.rows.map((row) => row.name)).toEqual([
+      'Charmander',
+      'Charmeleon',
+      'Charizard',
+      'Mega Charizard X',
+      'Mega Charizard Y',
+      'Gigantamax Charizard',
+    ]);
+    expect(view.rows.map((row) => row.level)).toEqual([
+      null,
+      'Lv 16',
+      'Lv 36',
+      'Charizardite X',
+      'Charizardite Y',
+      'Charizardite G',
     ]);
   });
 
@@ -110,5 +162,34 @@ describe('evolutionView', () => {
     const view = evolutionView(family, 420);
     expect(family).toHaveLength(3);
     expect(view.rows).toHaveLength(3);
+  });
+});
+
+describe('levelColumnWidth', () => {
+  it('reserves nothing on a row with no right column', () => {
+    expect(levelColumnWidth(null)).toBe(0);
+  });
+
+  it('pins the per-character floor and the band inset', () => {
+    expect(EVO_LEVEL_CHAR_W).toBe(6);
+    expect(EVO_LEVEL_INSET).toBe(12);
+    expect(levelColumnWidth('Charizardite G')).toBe(96);
+    expect(levelColumnWidth('Lv 36')).toBe(42);
+  });
+
+  it('clears every right column measured on the 390 x 844 card', () => {
+    // The rendered widths of the live DOM card (390×844, `?hud=dom`), level `<text>`
+    // right edge to left edge. The level ends `EVO_PAD_X` inside the band, so the
+    // reserve has to hold the inset as well as the text for the columns to clear.
+    const rendered: Readonly<Record<string, number>> = {
+      'Charizardite X': 83.27,
+      'Charizardite Y': 83.27,
+      'Charizardite G': 82.14,
+      'Lv 16': 30.39,
+      'Lv 36': 31.52,
+    };
+    for (const [level, width] of Object.entries(rendered)) {
+      expect(levelColumnWidth(level), level).toBeGreaterThanOrEqual(EVO_PAD_X + width);
+    }
   });
 });

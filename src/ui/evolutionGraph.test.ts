@@ -4,7 +4,8 @@ import { GMAX_FORMES, gmaxFormForBase } from '../data/dex/gmaxes';
 import { MEGA_FORMES, megaFormsForBase } from '../data/dex/megas';
 import { portraitFor } from '../data/portraits';
 import fontData from '../data/ui/font.json';
-import { evolutionGraph, formeDisplayName, type FamilyNode } from './evolutionGraph';
+import { setLocale } from '../i18n';
+import { evolutionGraph, evolutionRowNote, formeDisplayName, type FamilyNode } from './evolutionGraph';
 
 // The band's geometry, mirrored from `RouteScene` (HUD_DETAIL_W, HUD_PAD_X =
 // FRLG_WINDOW_PADDING.x, HUD_DETAIL_EVO_INDENT; the name sits 30 px into the
@@ -73,7 +74,8 @@ describe('evolutionGraph', () => {
     expect(ready.every((node) => node.parent === 0 && node.level === 20)).toBe(true);
     expect(graph[9]).toMatchObject({
       id: 'eeveegmax',
-      name: 'Gigantamax Eevee · Eeveite G',
+      name: 'Gigantamax Eevee',
+      note: 'Eeveite G',
       kind: 'gmax',
       depth: 1,
       row: 9,
@@ -189,6 +191,40 @@ describe('formeDisplayName', () => {
   });
 });
 
+describe('evolutionRowNote', () => {
+  const row = (overrides: Partial<FamilyNode>): FamilyNode => ({
+    id: 'charizard',
+    name: 'Charizard',
+    note: null,
+    depth: 0,
+    row: 0,
+    level: null,
+    parent: null,
+    current: false,
+    ready: false,
+    kind: 'species',
+    ...overrides,
+  });
+
+  it('is empty for a row with neither a level nor a stone', () => {
+    expect(evolutionRowNote(row({}))).toBe('');
+  });
+
+  it('prints the stone an information row needs', () => {
+    expect(evolutionRowNote(row({ note: 'Charizardite X', kind: 'mega' }))).toBe('Charizardite X');
+  });
+
+  it('prints the level a species row evolves at', () => {
+    setLocale('en');
+    expect(evolutionRowNote(row({ level: 36 }))).toBe('Lv 36');
+  });
+
+  it('lets the level win when a node carries both', () => {
+    setLocale('en');
+    expect(evolutionRowNote(row({ level: 36, note: 'Charizardite X' }))).toBe('Lv 36');
+  });
+});
+
 describe('battle-only formes as information rows', () => {
   it('gives every Mega of the family a row under its base species', () => {
     for (const mega of MEGA_FORMES) {
@@ -198,7 +234,8 @@ describe('battle-only formes as information rows', () => {
       expect(base, mega.id).toBeDefined();
       expect(row, mega.id).toBeDefined();
       expect(row!.kind, mega.id).toBe('mega');
-      expect(row!.name, mega.id).toBe(mega.stoneName);
+      expect(row!.name, mega.id).toBe(formeDisplayName(mega.name));
+      expect(row!.note, mega.id).toBe(mega.stoneName);
       expect(row!.level, mega.id).toBeNull();
       expect(row!.current, mega.id).toBe(false);
       expect(row!.ready, mega.id).toBe(false);
@@ -216,7 +253,8 @@ describe('battle-only formes as information rows', () => {
       expect(base, gmax.id).toBeDefined();
       expect(row, gmax.id).toBeDefined();
       expect(row!.kind, gmax.id).toBe('gmax');
-      expect(row!.name, gmax.id).toBe(`${formeDisplayName(gmax.name)} · ${gmax.stoneName}`);
+      expect(row!.name, gmax.id).toBe(formeDisplayName(gmax.name));
+      expect(row!.note, gmax.id).toBe(gmax.stoneName);
       expect(row!.level, gmax.id).toBeNull();
       expect(row!.current, gmax.id).toBe(false);
       expect(row!.ready, gmax.id).toBe(false);
@@ -226,20 +264,32 @@ describe('battle-only formes as information rows', () => {
     }
   });
 
-  it('prints the exact copy, stone and all', () => {
+  it('prints the forme on the left and the stone on the right', () => {
     const graph = evolutionGraph('charizard', 36);
-    const [x, y] = megaFormsForBase('charizard');
-    expect(graph[3]!.name).toBe(x!.stoneName);
-    expect(graph[4]!.name).toBe(y!.stoneName);
-    expect(graph[3]!.name).toBe('Charizardite X');
-    expect(graph[4]!.name).toBe('Charizardite Y');
-    expect(graph[5]!.name).toBe('Gigantamax Charizard · Charizardite G');
-    expect(evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax')?.name).toBe(
-      'Gigantamax Corviknight · Corviknightite G',
-    );
+    expect(graph.slice(3).map((node) => [node.name, node.note])).toEqual([
+      ['Mega Charizard X', 'Charizardite X'],
+      ['Mega Charizard Y', 'Charizardite Y'],
+      ['Gigantamax Charizard', 'Charizardite G'],
+    ]);
+    expect(graph.slice(3).every((node) => node.level === null)).toBe(true);
     expect(
-      evolutionGraph('toxtricitylowkey', 100).find((node) => node.id === 'toxtricitylowkeygmax')?.name,
-    ).toBe('Gigantamax Toxtricity Low Key · Toxtricity-Low-Keyite G');
+      evolutionGraph('corviknight', 100).find((node) => node.id === 'corviknightgmax'),
+    ).toMatchObject({ name: 'Gigantamax Corviknight', note: 'Corviknightite G' });
+    expect(
+      evolutionGraph('toxtricitylowkey', 100).find((node) => node.id === 'toxtricitylowkeygmax'),
+    ).toMatchObject({ name: 'Gigantamax Toxtricity Low Key', note: 'Toxtricity-Low-Keyite G' });
+  });
+
+  it('leaves the note empty on every species row', () => {
+    const bases = new Set([...MEGA_FORMES, ...GMAX_FORMES].map((forme) => forme.baseSpeciesId));
+    expect(bases.size).toBeGreaterThan(0);
+    for (const baseId of bases) {
+      const species = evolutionGraph(baseId, 100).filter((node) => node.kind === 'species');
+      expect(
+        species.every((node) => node.note === null),
+        baseId,
+      ).toBe(true);
+    }
   });
 
   it('is the same graph from one stage behind, anchored on the owner species', () => {
@@ -300,17 +350,22 @@ describe('battle-only formes as information rows', () => {
 });
 
 /**
- * The G-Max row's copy is `{forme} · {stone}` (`D44`): the stone's own name is the
- * whole clause, because "Gigantamaxes with" pushed the two forme-of-a-forme rows
- * past the depth-2 box. No information row may leave its own background, so any
- * new copy that does fails the walk below.
+ * The left column and the right column share one row: the forme's name and the stone
+ * it needs draw as `{name} · {note}`, and that whole string is what has to stay inside
+ * the row's own background. No information row may leave its row, so any copy that
+ * does fails the walk below.
  */
 
 describe('information row widths', () => {
-  it('measures the pinned copies against the band\x27s depth-3 box', () => {
+  /** The whole row's drawn text, the way the two columns sit side by side. */
+  function rowText(node: FamilyNode): string {
+    return `${node.name} · ${node.note ?? ''}`;
+  }
+
+  it('measures the pinned rows against the band\x27s depth-3 box', () => {
     expect(evoBoxWidth(3)).toBe(288);
     expect(HUD_DETAIL_EVO_MAX_WIDTH).toBe(324);
-    expect(drawnWidth('Mega Charizard X · Mega Evolves with Charizardite X')).toBe(267);
+    expect(drawnWidth('Mega Charizard X · Charizardite X')).toBe(172);
     expect(drawnWidth('Gigantamax Corviknight · Corviknightite G')).toBe(207);
     expect(drawnWidth('Gigantamax Charizard · Charizardite G')).toBe(193);
     expect(drawnWidth('Gigantamax Pikachu · Pikachite G')).toBe(164);
@@ -319,11 +374,12 @@ describe('information row widths', () => {
     expect(evoBoxWidth(2)).toBe(322);
   });
 
-  it('rejects the longer clause: while holding overruns the depth-3 box', () => {
-    const longer = drawnWidth('Mega Charizard X · Mega Evolves while holding Charizardite X');
-    expect(longer).toBe(312);
-    expect(longer).toBeGreaterThan(evoBoxWidth(3));
-    expect(longer).toBeLessThan(HUD_DETAIL_EVO_MAX_WIDTH);
+  it('rejects a two-column row wider than the depth-3 box', () => {
+    const widest = informationRows('urshifu').find((node) => node.id === 'urshifurapidstrikegmax')!;
+    const text = rowText(widest);
+    expect(drawnWidth(text)).toBe(293);
+    expect(drawnWidth(text)).toBeGreaterThan(evoBoxWidth(3));
+    expect(drawnWidth(text)).toBeLessThan(HUD_DETAIL_EVO_MAX_WIDTH);
   });
 
   it('fits every information row inside its own row', () => {
@@ -332,10 +388,11 @@ describe('information row widths', () => {
     for (const forme of [...MEGA_FORMES, ...GMAX_FORMES]) {
       const row = informationRows(forme.baseSpeciesId).find((node) => node.id === forme.id);
       expect(row, forme.id).toBeDefined();
-      const width = drawnWidth(row!.name);
+      const text = rowText(row!);
+      const width = drawnWidth(text);
       const bound = Math.min(evoBoxWidth(row!.depth), HUD_DETAIL_EVO_MAX_WIDTH);
       if (width > bound) overruns[forme.id] = width;
-      copies.add(row!.name);
+      copies.add(text);
     }
     expect(copies.size).toBe(MEGA_FORMES.length + GMAX_FORMES.length);
     expect(overruns).toEqual({});

@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A Mega and a G-Max row read like a species row: name left, stone right.**
+      `[Task-162]`, the second of Batch 76: `FamilyNode` gains `note`, the right
+      column's text, so an information row's `name` is the forme's readable name
+      (`formeDisplayName`) and its `note` is `mega.stoneName` / `gmax.stoneName`, while
+      both renderers print `note` exactly where a species row prints its level — one
+      arithmetic for Mega, G-Max and species rows. The two `…EvolvesWith` i18n keys
+      retire from both locales, and `levelColumnWidth` reserves the stone column so the
+      name stops before it: the DOM span is bounded and ellipsised while its
+      `textContent` stays the full name, and the canvas renderer clamps the drawn text
+      with the same pure rule. `docs/design-spec.md` §3 gains the two-column rule.
+      `npm test` 4460 passed / 69 skipped, `npm run build` green; measured live over CDP
+      on the DOM HUD at 390×844: rows 3, 4 and 5 read `Mega Charizard X` /
+      `Charizardite X`, `Mega Charizard Y` / `Charizardite Y` and `Gigantamax
+      Charizard` / `Charizardite G`, with `name.right` 274 against `level.left` 278.7
+      and the stone ending at 362 inside a row that ends at 370.
 - [x] **Dig and Dive dodge on the charge turn, and the second turn never asks for a
       command.** `[Task-168]`, the first of Batch 76: `volatiles.semiInvulnerable` marks
       the fighter for the six charge moves that leave the field (`dig`, `dive`, `fly`,

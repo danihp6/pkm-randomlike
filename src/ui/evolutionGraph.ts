@@ -1,11 +1,4 @@
-import {
-  evolutionBranches,
-  getSpecies,
-  gmaxFormForBase,
-  megaFormsForBase,
-  type GmaxForm,
-  type MegaForm,
-} from '../data/dex';
+import { evolutionBranches, getSpecies, gmaxFormForBase, megaFormsForBase } from '../data/dex';
 import { t } from '../i18n';
 
 /**
@@ -22,7 +15,13 @@ export type FamilyNodeKind = 'species' | 'mega' | 'gmax';
 
 export type FamilyNode = Readonly<{
   id: string;
+  /** The left column: the species name, or the forme's readable name (`formeDisplayName`). */
   name: string;
+  /**
+   * The right column's text on an information row: the stone the forme needs.
+   * `null` on every species row, whose right column is its `level` instead.
+   */
+  note: string | null;
   /** How many evolutions lead to it (0 = base form); the tree's indent level. */
   depth: number;
   /** The row it draws at (pre-order, 0-based). */
@@ -54,17 +53,12 @@ export function formeDisplayName(dexName: string): string {
   return [base, ...forme].join(' ');
 }
 
-/** The copy a Mega's row carries: the stone it evolves with, and nothing else. */
-function megaRowName(mega: MegaForm): string {
-  return t('detail.megaEvolvesWith', { stone: mega.stoneName });
-}
-
-/** The copy a Gigantamax's row carries: the forme plus the stone it needs (D44). */
-function gmaxRowName(gmax: GmaxForm): string {
-  return t('detail.gmaxEvolvesWith', {
-    forme: formeDisplayName(gmax.name),
-    stone: gmax.stoneName,
-  });
+/**
+ * The right column of a graph row: the level a species row evolves at, or the stone
+ * an information row needs. Empty for a row that has neither (a base form).
+ */
+export function evolutionRowNote(node: FamilyNode): string {
+  return node.level === null ? (node.note ?? '') : t('detail.evoLevel', { level: node.level });
 }
 
 /**
@@ -100,6 +94,7 @@ export function evolutionGraph(speciesId: string, level: number): readonly Famil
     nodes.push({
       id: species.id,
       name: species.name,
+      note: null,
       depth,
       row: index,
       level: edgeLevel,
@@ -111,10 +106,11 @@ export function evolutionGraph(speciesId: string, level: number): readonly Famil
     for (const branch of evolutionBranches(species.id)) {
       visit(branch.into, depth + 1, branch.level, index);
     }
-    const pushForme = (kind: 'mega' | 'gmax', formeId: string, name: string): void => {
+    const pushForme = (kind: 'mega' | 'gmax', formeId: string, name: string, note: string): void => {
       nodes.push({
         id: formeId,
         name,
+        note,
         depth: depth + 1,
         row: nodes.length,
         level: null,
@@ -124,9 +120,11 @@ export function evolutionGraph(speciesId: string, level: number): readonly Famil
         kind,
       });
     };
-    for (const mega of megaFormsForBase(species.id)) pushForme('mega', mega.id, megaRowName(mega));
+    for (const mega of megaFormsForBase(species.id)) {
+      pushForme('mega', mega.id, formeDisplayName(mega.name), mega.stoneName);
+    }
     const gmax = gmaxFormForBase(species.id);
-    if (gmax) pushForme('gmax', gmax.id, gmaxRowName(gmax));
+    if (gmax) pushForme('gmax', gmax.id, formeDisplayName(gmax.name), gmax.stoneName);
   };
   visit(root.id, 0, null, null);
   return nodes;

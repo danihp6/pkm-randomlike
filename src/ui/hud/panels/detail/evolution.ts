@@ -1,5 +1,4 @@
-import type { FamilyNode } from '../../../evolutionGraph';
-import { t } from '../../../../i18n';
+import { evolutionRowNote, type FamilyNode } from '../../../evolutionGraph';
 import type { DetailEvolutionRowView } from './view';
 
 /**
@@ -16,6 +15,25 @@ export const EVO_INDENT = 34; // HUD_DETAIL_EVO_INDENT
 export const EVO_MAX_ROWS = 9; // HUD_DETAIL_EVO_MAX
 export const EVO_PORTRAIT = 26; // 64 × HUD_DETAIL_EVO_PORTRAIT_SCALE 0.4, rounded
 export const EVO_PAD_X = 8;
+
+/**
+ * The HUD's meta-size advance of one right-column glyph, rounded up: at 10 px the
+ * body font draws the Charizard stones at 5.87–5.95 px per character, so 6 is the
+ * floor every reserve below clears.
+ */
+export const EVO_LEVEL_CHAR_W = 6;
+
+/** The right column's inset from the band's edge plus the gap that keeps the two columns apart. */
+export const EVO_LEVEL_INSET = 12;
+
+/**
+ * The width the right column reserves on a row, from its text alone: nothing when the
+ * row draws no level and no stone, the stone's own width plus the band's inset otherwise.
+ * The name lane is clamped by this so a long forme cannot run into the level or stone.
+ */
+export function levelColumnWidth(level: string | null): number {
+  return level === null ? 0 : EVO_LEVEL_INSET + level.length * EVO_LEVEL_CHAR_W;
+}
 
 /** The vertical centre of row `row`, where an edge meets it. */
 function rowMid(row: number): number {
@@ -48,7 +66,7 @@ export function evolutionView(
     row: index,
     depth: node.depth,
     parent: node.parent,
-    level: node.level === null ? null : t('detail.evoLevel', { level: node.level }),
+    level: evolutionRowNote(node) || null,
     current: node.current,
     ready: node.ready,
     kind: node.kind,

@@ -21,7 +21,7 @@ import {
   type DetailStatView,
   type Rect,
 } from './view';
-import { EVO_PAD_X, EVO_PORTRAIT, EVO_ROW_H } from './evolution';
+import { EVO_PAD_X, EVO_PORTRAIT, EVO_ROW_H, levelColumnWidth } from './evolution';
 import './detail.css';
 
 export type DetailPanelProps = Readonly<{
@@ -262,7 +262,14 @@ function Evolution(
             class="detail__evo-name"
             data-evo-current={row.current ? 'true' : undefined}
             data-evo-ready={row.ready ? 'true' : undefined}
-            style={{ left: `${row.x + EVO_PORTRAIT + 6}px`, top: `${row.y + 4}px` }}
+            style={{
+              left: `${row.x + EVO_PORTRAIT + 6}px`,
+              top: `${row.y + 4}px`,
+              right: `${levelColumnWidth(row.level)}px`,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
           >
             {row.name}
           </span>
