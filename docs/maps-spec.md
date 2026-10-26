@@ -518,9 +518,9 @@ every special leaf are `wild` and never carry one.
   (`firstTrainerRoom`) — whenever the scene asks about that room
   (`guaranteedNpc`). It reads no RNG and no run state, so it cannot move any other
   stream, and it is never rolled twice. The **merchant** is that row:
-  `guaranteedFromMap: 2`, so map 1 is merchant-free (the run's on-ramp has no money
-  for a counter and already a 10-ball pack) and every floor from map 2 on holds
-  exactly one merchant. Its one `TRADE` row opens the **Mart** (§7's shop panel)
+  `guaranteedFromMap: 1`, so **every** floor of a run holds exactly one merchant —
+  the on-ramp's first floor included, selling the shipped early band's stock with
+  the money the run has. Its one `TRADE` row opens the **Mart** (§7's shop panel)
   without spending the card, so the merchant answers again for the rest of the floor.
 - **The roll** runs once per room build, on the room's own stream
   (`${seed}:npc:<roomId>`), so no map, route, encounter, roster or battle draw
@@ -576,8 +576,8 @@ merchant: `chance: 0` with `floorStep: 0.03`, so it is worth **0 on map 1** (a z
 weight is never rolled) and **3 % per trainer room on map 2, rising to 21 % on map
 8**; it is `repeatable`, because the machine's own `casino-spin-*`/`casino-lock-*`
 marks are its record, so a revisit can spin again until the floor's lock. Because
-the floor's **guaranteed merchant** already stands in the first trainer room from
-map 2 on, the roll reads the floor's *other* trainer rooms: measured over 2 000
+the floor's **guaranteed merchant** already stands in the first trainer room on
+every floor, the roll reads the floor's *other* trainer rooms: measured over 2 000
 seeds per floor on a run that has completed no mission (so the sacrifice is gated
 out), a floor holds the grunt **2.9 %** of the time on map 2, **10.9 %**
 on map 3, **16.1 %** on map 4, **22.6 %** on map 5, **38.0 %** on map 6, **45.6 %**
@@ -922,8 +922,8 @@ names its answer and the Phase 9 step (or the later batch) that landed it.
   **50%** and the mega-stone leaf at **15%** — the mega-stone only **from map 3
   on** — and the two may coincide on one floor. The guaranteed shop leaf the
   shop-from-map-2 rule once hung (Batch 5d, `Task-70`) is **retired**: the Mart is
-  the floor's guaranteed **merchant** NPC from map 2 on, so no floor hangs a shop
-  room and map 1 stays without one.
+  the floor's guaranteed **merchant** NPC on every floor, map 1 included, so no floor
+  hangs a shop room.
 - **O-M5 — Money numbers.** Resolved as balance, not design: the trainer
   base/jitter, the shop's per-band core and the valuables list/prices are defaults
   in data (the economy pass, `src/data/shop.ts` / `src/data/loot.ts`) that the

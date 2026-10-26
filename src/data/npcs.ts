@@ -75,9 +75,10 @@ export type NpcRow = Readonly<{
 }>;
 
 /**
- * Every special NPC. The **merchant** is the floor's one guaranteed row: from map 2
- * on it stands in the floor's first trainer room and opens the Mart, so the shop
- * room could retire and the run still has its counter (`docs/maps-spec.md` §7).
+ * Every special NPC. The **merchant** is the floor's one guaranteed row: on every
+ * floor, map 1 included, it stands in the floor's first trainer room and opens the
+ * Mart, so the shop room could retire and the run still has its counter
+ * (`docs/maps-spec.md` §7).
  * The **Team Rocket** grunt follows it in the table: it is the row that carries the
  * slot machine, so the casino room retired the way the shop room did. It is the only
  * choice-less row — the interact key opens the machine straight away, so no card is
@@ -96,7 +97,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     spriteKey: 'merchant',
     chance: 0,
     floorStep: 0,
-    guaranteedFromMap: 2,
+    guaranteedFromMap: 1,
     repeatable: true,
     choices: [{ id: 'mart', label: 'npc.merchant.trade' }],
   },

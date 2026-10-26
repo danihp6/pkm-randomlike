@@ -166,10 +166,10 @@ describe('guaranteedNpc', () => {
   const MAP_SEEDS = ['npc-a', 'npc-b', 'npc-c', 'npc-d', 'npc-e', 'npc-f'];
   const MERCHANT = getNpcRow('merchant');
 
-  it('places the merchant in the floor’s first trainer room from map 2 on', () => {
+  it('places the merchant in the floor’s first trainer room from map 1 on', () => {
     expect(MERCHANT).toBeDefined();
     for (const seed of MAP_SEEDS) {
-      for (let mapIndex = 2; mapIndex <= 8; mapIndex++) {
+      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
         const plan = planMap(seed, mapIndex);
         const room = firstTrainerRoom(plan);
         expect(room, `${seed} map ${mapIndex}`).toBeGreaterThanOrEqual(0);
@@ -179,10 +179,12 @@ describe('guaranteedNpc', () => {
     }
   });
 
-  it('leaves map 1 merchant-free', () => {
+  it('places the merchant on map 1 as well, the run’s first floor included', () => {
     for (const seed of MAP_SEEDS) {
       const plan = planMap(seed, 1);
-      expect(guaranteedNpc(plan, firstTrainerRoom(plan), 1), seed).toBeNull();
+      const room = firstTrainerRoom(plan);
+      expect(plan.rooms[room].role, seed).toBe('trainers');
+      expect(guaranteedNpc(plan, room, 1), seed).toBe(MERCHANT);
     }
   });
 
@@ -206,15 +208,23 @@ describe('guaranteedNpc', () => {
 
   it('takes the first guaranteed row of the table, in table order', () => {
     const later = row('medic', 0, 0, { guaranteedFromMap: 3 });
-    const sooner = row('merchant', 0, 0, { guaranteedFromMap: 2 });
+    const sooner = row('merchant', 0, 0, { guaranteedFromMap: 1 });
     const plan = planMap(MAP_SEEDS[2], 4);
     const first = firstTrainerRoom(plan);
     // Table order decides, not the smallest threshold: from map 3 on `medic` is the
-    // first eligible row of this table.
+    // first eligible row of this table, though `merchant`'s gate opened two floors sooner.
     expect(guaranteedNpc(plan, first, 4, [later, sooner])?.id).toBe('medic');
+    expect(guaranteedNpc(plan, first, 3, [later, sooner])?.id).toBe('medic');
     expect(guaranteedNpc(plan, first, 2, [later, sooner])?.id).toBe('merchant');
+    expect(guaranteedNpc(plan, first, 1, [later, sooner])?.id).toBe('merchant');
+    expect(guaranteedNpc(plan, first, 1, [sooner, later])?.id).toBe('merchant');
     expect(guaranteedNpc(plan, first, 3, [sooner, later])?.id).toBe('merchant');
-    expect(guaranteedNpc(plan, first, 1, [later, sooner])).toBeNull();
+    expect(guaranteedNpc(plan, first, 4, [sooner, later])?.id).toBe('merchant');
+    // A table whose earliest gate opens on map 2 still answers null on map 1, which is
+    // the only way to reach the null path now that the shipped row opens on map 1.
+    const fromTwo = row('medic', 0, 0, { guaranteedFromMap: 2 });
+    expect(guaranteedNpc(plan, first, 1, [fromTwo])).toBeNull();
+    expect(guaranteedNpc(plan, first, 2, [fromTwo])?.id).toBe('medic');
     expect(guaranteedNpc(plan, first, 4, [])).toBeNull();
   });
 });

@@ -4,7 +4,7 @@ import { TYPE_NAMES } from './dex/types';
 import { en, es, setLocale, t, translationParams } from '../i18n';
 import { normalizeId } from './dex/species';
 import { getItem } from './items';
-import { OVERWORLD_SPRITE_KEYS } from './overworldSprites';
+import { OVERWORLD_SPRITE_KEYS, overworldSpriteFrame } from './overworldSprites';
 import { effectiveNpcChance, roomNpc } from '../engine/routes/npcs';
 import {
   BERRY_IDS,
@@ -60,9 +60,12 @@ describe('the special-NPC table', () => {
     // A guaranteed row is placed, never rolled, so its chance stays 0.
     expect(MERCHANT.chance).toBe(0);
     expect(MERCHANT.floorStep).toBe(0);
-    expect(MERCHANT.guaranteedFromMap).toBe(2);
+    expect(MERCHANT.guaranteedFromMap).toBe(1);
     expect(MERCHANT.requires).toBeUndefined();
     expect(MERCHANT.choices).toEqual([{ id: 'mart', label: 'npc.merchant.trade' }]);
+    // The scene drops a placement whose sprite the sheet lacks, so a missing merchant
+    // frame would silently retire the Mart; this is the build-time check for it.
+    expect(overworldSpriteFrame(MERCHANT.spriteKey)).not.toBeNull();
   });
 
   it('ships the five member-edit rows and the sacrifice after the merchant, in table order', () => {
