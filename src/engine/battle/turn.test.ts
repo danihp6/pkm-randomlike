@@ -13,6 +13,8 @@ import {
   type RoomFieldEffects,
 } from './state';
 import { autoReplace, needsReplacement, takeTurn, teamTypeStatusChance, useMove } from './turn';
+import { makeContext, runModifyMultihit } from './effects/registry';
+import { multiHitPower } from './modifiers';
 
 const build = (
   player: readonly FighterInput[],
@@ -831,5 +833,152 @@ describe('the partial trap (Task-159)', () => {
     useMove(plain, 'player', fight(0));
     expect(activeFighter(plain, 'enemy').volatiles.trapped).toBe(true);
     expect(isTrapped(plain, 'enemy')).toBe(true);
+  });
+});
+
+/** The two ends of a dex multihit: a fixed count reads as both. */
+function hitRange(moveId: string): readonly [number, number] {
+  const multihit = getMove(moveId)?.multihit;
+  if (multihit === undefined) throw new Error(`${moveId} carries no multihit`);
+  return typeof multihit === 'number' ? [multihit, multihit] : [multihit[0], multihit[1]];
+}
+
+/** One move against a clean Ditto board on a fixed seed, the foe holding still. */
+function charge(moveId: string, seed: number, ability?: string): BattleState {
+  const state = build(
+    [
+      {
+        id: 'p',
+        speciesId: 'ditto',
+        level: 50,
+        ...(ability ? { ability } : {}),
+        moves: [moveId],
+      },
+    ],
+    [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+    seed,
+  );
+  useMove(state, 'player', fight());
+  return state;
+}
+
+describe('the per-hit rule of the multiaccuracy moves (Task-160)', () => {
+  it('pins the three dex facts the rule reads', () => {
+    expect(getMove('populationbomb')?.multiaccuracy).toBe(true);
+    expect(getMove('tripleaxel')?.multiaccuracy).toBe(true);
+    expect(getMove('triplekick')?.multiaccuracy).toBe(true);
+    expect(hitRange('populationbomb')).toEqual([10, 10]);
+    expect(hitRange('tripleaxel')).toEqual([3, 3]);
+    expect(hitRange('triplekick')).toEqual([3, 3]);
+    expect(getMove('pinmissile')?.multiaccuracy).toBeUndefined();
+  });
+
+  it('ramps the Triple pair and leaves a flat multi-hit alone', () => {
+    const powers = (moveId: string, hits: number): readonly number[] =>
+      Array.from({ length: hits }, (_, hit) => multiHitPower(getMove(moveId)!, hit));
+
+    expect(powers('triplekick', 3)).toEqual([10, 20, 30]);
+    expect(powers('tripleaxel', 3)).toEqual([20, 40, 60]);
+    expect(powers('populationbomb', 10)).toEqual([20, 20, 20, 20, 20, 20, 20, 20, 20, 20]);
+    expect(powers('pinmissile', 5)).toEqual([25, 25, 25, 25, 25]);
+  });
+
+  it('rolls before every hit after the first and stops the move on the first miss', () => {
+    // Seed 1's second per-hit roll lands over Triple Kick's 90 %, the first hit's aim roll under it.
+    const state = charge('triplekick', 1);
+    expect(damageEvents(state)).toEqual([{ amount: 16 }]);
+    expect(textKeys(state).filter((key) => key === 'battle.log.missed')).toHaveLength(1);
+  });
+
+  it('reports a rising per-hit sequence when all three Triple Kick hits land', () => {
+    const state = charge('triplekick', 2);
+    const amounts = damageEvents(state).map((event) => event.amount);
+    expect(amounts).toHaveLength(3);
+    expect(amounts[0]).toBeLessThan(amounts[1]!);
+    expect(amounts[1]).toBeLessThan(amounts[2]!);
+    const enemy = activeFighter(state, 'enemy');
+    expect(amounts.reduce((sum, amount) => sum + amount, 0)).toBe(enemy.maxHp - enemy.hp);
+    expect(textKeys(state)).not.toContain('battle.log.missed');
+  });
+
+  it('lands all ten Population Bomb hits on one seed and stops at the fourth on another', () => {
+    const landed = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['populationbomb'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      3,
+    );
+    const wall = activeFighter(landed, 'enemy');
+    wall.maxHp = 100000;
+    wall.hp = 100000;
+    useMove(landed, 'player', fight());
+    expect(damageEvents(landed)).toHaveLength(10);
+    expect(textKeys(landed)).not.toContain('battle.log.missed');
+    expect(damageEvents(landed).reduce((sum, event) => sum + event.amount, 0)).toBe(100000 - wall.hp);
+
+    // Seed 44's fifth per-hit roll lands over the 90 %, so only four hits are paid.
+    const stopped = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['populationbomb'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      44,
+    );
+    const target = activeFighter(stopped, 'enemy');
+    target.maxHp = 100000;
+    target.hp = 100000;
+    useMove(stopped, 'player', fight());
+    expect(damageEvents(stopped)).toHaveLength(4);
+    expect(textKeys(stopped).filter((key) => key === 'battle.log.missed')).toHaveLength(1);
+  });
+
+  it('spends one draw per hit after the first, and none under Lock-On', () => {
+    const draws = (moveId: string, seed: number): number => {
+      const rng = new CountingRng(seed);
+      const state = createBattle({
+        player: [createFighter({ id: 'p', speciesId: 'ditto', level: 50, moves: [moveId] })],
+        enemy: [createFighter({ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] })],
+        rng,
+        isWild: true,
+      });
+      useMove(state, 'player', fight());
+      return rng.draws;
+    };
+    // Seed 2 lands three hits for both moves; Triple Kick only adds its two per-hit rolls.
+    expect(draws('triplekick', 2) - draws('tripledive', 2)).toBe(2);
+
+    const locked = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, moves: ['triplekick'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      1,
+    );
+    activeFighter(locked, 'player').volatiles.lockOn = true;
+    useMove(locked, 'player', fight());
+    expect(damageEvents(locked)).toHaveLength(3);
+    expect(textKeys(locked)).not.toContain('battle.log.missed');
+  });
+
+  it('Skill Link keeps the full count and does not buy the rolls', () => {
+    const state = build(
+      [{ id: 'p', speciesId: 'ditto', level: 50, ability: 'Skill Link', moves: ['populationbomb'] }],
+      [{ id: 'e', speciesId: 'ditto', level: 50, moves: ['splash'] }],
+      44,
+    );
+    const target = activeFighter(state, 'enemy');
+    target.maxHp = 100000;
+    target.hp = 100000;
+    useMove(state, 'player', fight());
+    expect(damageEvents(state)).toHaveLength(4);
+    expect(textKeys(state).filter((key) => key === 'battle.log.missed')).toHaveLength(1);
+
+    const move = getMove('populationbomb')!;
+    expect(
+      runModifyMultihit(
+        makeContext(state, 'player', {
+          source: activeFighter(state, 'player'),
+          target,
+          move,
+        }),
+        move,
+        10,
+      ),
+    ).toBe(10);
   });
 });

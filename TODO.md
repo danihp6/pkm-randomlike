@@ -7784,7 +7784,7 @@ they pass the ledger and deal no damage at all.
 - **`[Task-160]` alone**: it owns the hit loop in `turn.ts` and the audit rows for the three
   `multiaccuracy` moves, so no other battle task may run beside it.
 
-- [ ] **[Task-160] Population Bomb and the two Triple moves check accuracy on every hit.** The dex
+- [x] **[Task-160] Population Bomb and the two Triple moves check accuracy on every hit.** The dex
       marks three moves `multiaccuracy: true` — **Population Bomb** (10 hits, 90 %), **Triple Axel**
       and **Triple Kick** (3 hits, 90 %) — and the engine reads the flag **nowhere**: `useMove` rolls
       one `rollHitWith` per target (`turn.ts` 1054) and then runs the whole `for hit < hits` loop

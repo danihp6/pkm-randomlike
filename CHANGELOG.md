@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Population Bomb and the two Triple moves check accuracy on every hit.**
+      `[Task-160]`, the second of Phase 15: the three moves the dex marks `multiaccuracy`
+      — **Population Bomb** (10 hits, 90 %) and **Triple Axel** / **Triple Kick** (3 hits,
+      90 %) — no longer land every hit on one roll. `Move` gains the optional
+      `multiaccuracy` flag, and the hit loop calls `rollHitWith` **before every hit after
+      the first** (the aim-level roll already covers hit 0, and Lock-On/Telekinesis/No
+      Guard still draw nothing), stopping the move on the first miss with exactly one
+      `battle.log.missed`. The same loop applies `multiHitPower`'s ramp —
+      `basePower × (hit + 1)` — so Triple Kick reads **10/20/30** and Triple Axel
+      **20/40/60**, while Population Bomb and every other multi-hit keep their dex power.
+      Skill Link still forces the full count and never buys the rolls. The audit learns to
+      see both halves: `MoveProbe.damageAmounts` records every `damage` amount in order,
+      and the three `MOVE_AUDIT_ROWS` under `PROBE_SEED = 2026` now pin a miss stop and a
+      rising per-hit sequence, so a flat multi-hit cannot pass again. Those three rows are
+      the only re-pinned seeds; the new tests fail against the pre-task `turn.ts`.
+      `npm test` 4418 passed / 68 skipped, `npm run build` green.
 - [x] **The boss room is a two-door line with the chamber, and the boss lives in it.**
       `[Task-158]`, the second of Phase 14: the map plan now gives the boss room **two
       openings** — its single `link` plus a `portal` on the opposite wall, derived from
