@@ -769,19 +769,23 @@ const PORT_SELF_STATUS_ITEMS: readonly ItemDef[] = [
   item({ id: 'toxicorb', name: 'Toxic Orb', kind: 'held', price: 4000, selfStatus: 'tox' }),
 ];
 
-/** The berry-class `no-op`s: catalogued for the art and the `D16` record, modelled by nothing. */
+/**
+ * The berry-class `no-op`s: catalogued for the art and the `D16` record, modelled by
+ * nothing. The engine never spends one, so it holds its slot for the whole run: that
+ * is a permanent held item, not a berry, and it costs the held tier's 1000 floor.
+ */
 const NOOP_BERRY_ITEMS: readonly ItemDef[] = [
-  item({ id: 'custapberry', name: 'Custap Berry', kind: 'held', price: 200 }),
-  item({ id: 'enigmaberry', name: 'Enigma Berry', kind: 'held', price: 200 }),
-  item({ id: 'jabocaberry', name: 'Jaboca Berry', kind: 'held', price: 200 }),
-  item({ id: 'keeberry', name: 'Kee Berry', kind: 'held', price: 200 }),
-  item({ id: 'lansatberry', name: 'Lansat Berry', kind: 'held', price: 200 }),
-  item({ id: 'leppaberry', name: 'Leppa Berry', kind: 'held', price: 200 }),
-  item({ id: 'marangaberry', name: 'Maranga Berry', kind: 'held', price: 200 }),
-  item({ id: 'persimberry', name: 'Persim Berry', kind: 'held', price: 200 }),
-  item({ id: 'rowapberry', name: 'Rowap Berry', kind: 'held', price: 200 }),
-  item({ id: 'starfberry', name: 'Starf Berry', kind: 'held', price: 200 }),
-  item({ id: 'tamatoberry', name: 'Tamato Berry', kind: 'held', price: 200 }),
+  item({ id: 'custapberry', name: 'Custap Berry', kind: 'held', price: 1000 }),
+  item({ id: 'enigmaberry', name: 'Enigma Berry', kind: 'held', price: 1000 }),
+  item({ id: 'jabocaberry', name: 'Jaboca Berry', kind: 'held', price: 1000 }),
+  item({ id: 'keeberry', name: 'Kee Berry', kind: 'held', price: 1000 }),
+  item({ id: 'lansatberry', name: 'Lansat Berry', kind: 'held', price: 1000 }),
+  item({ id: 'leppaberry', name: 'Leppa Berry', kind: 'held', price: 1000 }),
+  item({ id: 'marangaberry', name: 'Maranga Berry', kind: 'held', price: 1000 }),
+  item({ id: 'persimberry', name: 'Persim Berry', kind: 'held', price: 1000 }),
+  item({ id: 'rowapberry', name: 'Rowap Berry', kind: 'held', price: 1000 }),
+  item({ id: 'starfberry', name: 'Starf Berry', kind: 'held', price: 1000 }),
+  item({ id: 'tamatoberry', name: 'Tamato Berry', kind: 'held', price: 1000 }),
 ];
 
 /** The competitive held items nothing models yet; each id is also named in `UNMODELLED_ITEMS`. */

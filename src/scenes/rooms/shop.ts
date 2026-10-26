@@ -24,14 +24,10 @@ import {
   sellItem,
   sellRows,
   sellableStacks,
+  type ShopRow,
   type ShopSlot,
 } from '../../ui/shop';
-import {
-  closeShopCard,
-  noteShopDrawnObjects,
-  openShopCard,
-  pushShopCard,
-} from '../panels/shop';
+import { closeShopCard, noteShopDrawnObjects, openShopCard, pushShopCard } from '../panels/shop';
 import type { RoomDrop, RoomHost, RoomPanel } from './types';
 
 /**
@@ -165,7 +161,7 @@ export function openMart(host: RoomHost, stock?: MartStock): void {
     openShopCard(host, {
       title: t(title),
       mode: shopMode,
-      rows: buyRows(host.run, shopStock),
+      rows: buyRows(host.run, shopStock, host.run.mapIndex),
       scroll: shopScroll,
       selected: shopIndex,
       money: host.run.money,
@@ -306,14 +302,13 @@ function buildShopPanel(host: RoomHost, title: string): void {
         activateShop();
         return;
       }
-      const slot = shopStock[index];
-      const row = buyRows(host.run, shopStock)[index];
-      if (!slot || !row?.draggable) return;
+      const row = shelfRows(host)[index];
+      if (!row?.draggable) return;
       host.beginRowDrag?.({
-        itemId: slot.itemId,
+        itemId: row.itemId,
         label: row.name,
         pointer: { x: pointer.x, y: pointer.y },
-        onDrop: (drop) => dropBuyRow(host, slot, drop),
+        onDrop: (drop) => dropBuyRow(host, slotOf(row), drop),
       });
     });
     shopRows.push({ highlight, icon, name, price, count, zone });
@@ -342,6 +337,22 @@ function buildShopPanel(host: RoomHost, title: string): void {
   noteShopDrawnObjects(panel.root.list.length);
 }
 
+/**
+ * The BUY rows still on this floor's shelf, in stock order: a row the floor has
+ * already sold is gone, so the drawn index is the row index and the slot the press
+ * buys is the slot under the pointer.
+ */
+function shelfRows(host: RoomHost): readonly ShopRow[] {
+  return buyRows(host.run, shopStock, host.run.mapIndex);
+}
+
+/** A drawn BUY row read back as the slot it came from (`ShopRow` carries all three). */
+const slotOf = (row: ShopRow): ShopSlot => ({
+  itemId: row.itemId,
+  price: row.price,
+  count: row.count,
+});
+
 /** Repaints the Mart for the current tab, hover and the run's money and bag. */
 function refreshShop(): void {
   const host = panelHost;
@@ -350,7 +361,7 @@ function refreshShop(): void {
     return;
   }
   if (!shopPanel || !host) return;
-  const rows = shopMode === 'buy' ? buyRows(host.run, shopStock) : sellRows(host.run);
+  const rows = shopMode === 'buy' ? shelfRows(host) : sellRows(host.run);
   const total = rows.length;
   shopIndex = total === 0 ? -1 : Math.min(shopIndex, total - 1);
   shopScroll = Math.max(0, Math.min(shopScroll, Math.max(0, total - SHOP_ROWS)));
@@ -414,7 +425,7 @@ function handleShopWheel(
   if (pointX < listX || pointX > listX + listW || pointY < listY || pointY > listY + listH) {
     return;
   }
-  const total = shopMode === 'buy' ? shopStock.length : sellableStacks(host.run).length;
+  const total = shopMode === 'buy' ? shelfRows(host).length : sellableStacks(host.run).length;
   if (total <= SHOP_ROWS) return;
   const next = Math.max(0, Math.min(total - SHOP_ROWS, shopScroll + (dy > 0 ? 1 : -1)));
   if (next === shopScroll) return;
@@ -436,7 +447,7 @@ function switchShopMode(mode: ShopMode): void {
 function shopTotal(): number {
   const host = panelHost;
   if (!host) return 0;
-  return shopMode === 'buy' ? shopStock.length : sellableStacks(host.run).length;
+  return shopMode === 'buy' ? shelfRows(host).length : sellableStacks(host.run).length;
 }
 
 /** Sells the hovered row (the SELL tab's shipped click), then repaints the Mart. */
@@ -459,7 +470,7 @@ function activateShop(): void {
  */
 function dropBuyRow(host: RoomHost, slot: ShopSlot, drop: RoomDrop): void {
   if (drop.onto !== 'bag' && drop.onto !== 'member') return;
-  const trade = buyItem(host.run, slot);
+  const trade = buyItem(host.run, slot, host.run.mapIndex);
   if (!trade.ok) {
     shopMessage = t('mart.noMoney');
     refreshShop();

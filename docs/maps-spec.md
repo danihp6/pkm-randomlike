@@ -843,6 +843,10 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
   the catalogue `price` (`src/data/items.ts`). The band's **one TM** off `SHOP_TM`
   is appended after them at the catalogue 3000, so the counter shows **five rows**;
   a machine can therefore be bought at the counter, not only found on the ground.
+  A row **bought leaves that floor's shelf**: the purchase marks
+  `shop-<mapIndex>-<itemId>` in the run's per-floor `pickedItems` and `buyRows` drops
+  every marked row, so a second visit to the same Mart shows the rows it has left
+  while the next floor stocks its own shelf again. Selling marks nothing.
   The shop **buys any sellable item** at `sellPrice`, and a bought pack resold unit
   by unit returns exactly what it cost, so the pack is never a money loop.
   **Cures and X-items are no longer sold**: every `kind: 'status'` item (Antidote,
@@ -852,6 +856,15 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
   Only the new **valuables** (Nugget, Big Nugget, Pearl, Big Pearl, Stardust, Star
   Piece, …) are worth real money; anything else sells for a token, so the shop is a
   sink and valuables are the way to cash out.
+- **A held berry the engine never spends costs the held tier (1000)**, not the berry
+  tier: an item that is never consumed holds its slot for the whole run, so it is a
+  permanent held item. The eleven berry-class no-ops (Custap, Enigma, Jaboca, Kee,
+  Lansat, Leppa, Maranga, Persim, Rowap, Starf and Tamato Berry) are the only rows
+  that broke the rule — **no for-sale held item without `consumed: true` is priced
+  under 1000** — and they move 200 → 1000. Every berry the battle **spends** keeps
+  its 100–200 (Oran, Sitrus, Lum and the cure, pinch and resist berries). Those
+  eleven reach a run from the `mid` **ground-loot** pool alone and no band's Mart
+  stocks one, so this is a repricing and not a restock.
 - **Valuables** are ordinary items added to the **ground-item loot pool**
   (`src/data/loot.ts`), so they turn up in a room's pockets and are carried to the
   shop.

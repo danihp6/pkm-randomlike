@@ -130,7 +130,12 @@ describe('competitive held set', () => {
     expect(COMPETITIVE_HELD_IDS).toEqual(COMPETITIVE_HELD.map((row) => row.id));
     for (const row of COMPETITIVE_HELD) {
       expect(row.kind, row.id).toBe('held');
-      expect(row.price, row.id).toBe(getDexItem(row.id)?.isBerry ? 200 : 4000);
+      // A dex berry the battle spends is a 200 row. A berry-class no-op is spent by
+      // nothing, so it holds its slot for the run and pays the 1000 held tier
+      // (Task-178); everything else is a 4000 booster.
+      const berry = getDexItem(row.id)?.isBerry === true;
+      const expected = berry ? (row.consumed === true ? 200 : 1000) : 4000;
+      expect(row.price, row.id).toBe(expected);
       expect(row.shortDesc.length, row.id).toBeGreaterThan(0);
     }
   });
@@ -168,6 +173,64 @@ describe('competitive held set', () => {
       expect(plate.damageBoost, id).toBeUndefined();
       expect(plate.price, id).toBe(4000);
       expect(plate.shortDesc, id).toContain('Judgment');
+    }
+  });
+});
+
+describe('the held tier (Task-178)', () => {
+  /** The berry-class no-ops: held rows the engine never spends, so they never leave. */
+  const NOOP_BERRIES = [
+    'custapberry',
+    'enigmaberry',
+    'jabocaberry',
+    'keeberry',
+    'lansatberry',
+    'leppaberry',
+    'marangaberry',
+    'persimberry',
+    'rowapberry',
+    'starfberry',
+    'tamatoberry',
+  ];
+
+  it('never prices a held item the engine keeps under the 1000 held floor', () => {
+    // A Mega Stone is held and unsold at 0: `isForSale` is the line the rule reads,
+    // because a row no shop can sell has no price to set.
+    const cheap = ITEMS.filter(
+      (entry) =>
+        entry.kind === 'held' && entry.consumed !== true && isForSale(entry) && entry.price < 1000,
+    ).map((entry) => entry.id);
+    expect(cheap).toEqual([]);
+    expect(NOOP_BERRIES).toHaveLength(11);
+    for (const id of NOOP_BERRIES) {
+      const berry = getItem(id)!;
+      expect(berry, id).toBeDefined();
+      expect(berry.kind, id).toBe('held');
+      expect(berry.consumed, id).toBeUndefined();
+      expect(berry.price, id).toBe(1000);
+      expect(buyPrice(berry), id).toBe(1000);
+      expect(sellPrice(berry), id).toBe(500);
+    }
+  });
+
+  it('keeps every consumed berry at its 100-200, because the battle spends it', () => {
+    const samples = ['oranberry', 'sitrusberry', 'lumberry', 'pechaberry', 'chopleberry'] as const;
+    for (const id of samples) {
+      const berry = getItem(id)!;
+      expect(berry.consumed, id).toBe(true);
+      expect(berry.price, id).toBeLessThan(1000);
+      expect(berry.price, id).toBeGreaterThanOrEqual(100);
+    }
+    expect(getItem('oranberry')!.price).toBe(100);
+    expect(getItem('sitrusberry')!.price).toBe(200);
+    expect(getItem('lumberry')!.price).toBe(200);
+    const spentBerries = ITEMS.filter(
+      (entry) => entry.kind === 'held' && entry.consumed === true && / Berry$/.test(entry.name),
+    );
+    expect(spentBerries.length).toBeGreaterThanOrEqual(30);
+    for (const berry of spentBerries) {
+      expect(berry.price, berry.id).toBeGreaterThanOrEqual(100);
+      expect(berry.price, berry.id).toBeLessThanOrEqual(200);
     }
   });
 });

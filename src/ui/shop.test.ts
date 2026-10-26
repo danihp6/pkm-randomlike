@@ -13,7 +13,16 @@ import {
 import { isTmItemId } from '../data/tms';
 import { addItem, addMoney, createRun, createRunPokemon, itemCount } from '../engine/run';
 import { Rng, hashSeed } from '../engine/rng';
-import { buildShop, buyItem, buyRows, sellItem, sellPriceOf, sellRows, sellableStacks } from './shop';
+import {
+  buildShop,
+  buyItem,
+  buyRows,
+  sellItem,
+  sellPriceOf,
+  sellRows,
+  sellableStacks,
+  shopRowKey,
+} from './shop';
 
 const starter = createRunPokemon({
   id: 'starter',
@@ -198,7 +207,11 @@ describe('shop trades', () => {
       draggable: true,
     });
     run = buyItem(run, pack).run;
-    expect(buyRows(run, [pack])[0].owned).toBe(10);
+    expect(itemCount(run, 'pokeball')).toBe(10);
+    // The bought row is off this floor's shelf, so the owned count is read from the
+    // bag; a later floor would still show it.
+    expect(buyRows(run, [pack])).toEqual([]);
+    expect(buyRows(run, [pack], run.mapIndex + 1)[0].owned).toBe(10);
   });
 
   it('sells one unit and refuses what the shop will not buy', () => {
@@ -258,5 +271,90 @@ describe('shop trades', () => {
 
     const poor = createRun({ seed: 's', starter });
     expect(buyRows(poor, stock)[0]).toMatchObject({ affordable: false, draggable: false });
+  });
+});
+
+describe('the shelf (Task-178)', () => {
+  const rich = (money: number) => addMoney(createRun({ seed: 's', starter }), money);
+  const early = () => buildShop('early', new Rng(7));
+
+  it('keys a row by its floor: one row, one map', () => {
+    expect(shopRowKey(2, 'potion')).toBe('shop-2-potion');
+  });
+
+  it('marks the bought row on its own floor', () => {
+    const trade = buyItem(rich(1000), early()[1]!, 2);
+    expect(trade.ok).toBe(true);
+    expect(trade.run.pickedItems).toEqual(['shop-2-potion']);
+    // A different floor of the same item is a different key.
+    expect(buyItem(trade.run, early()[1]!, 3).run.pickedItems).toEqual([
+      'shop-2-potion',
+      'shop-3-potion',
+    ]);
+  });
+
+  it('drops the bought row from the same floor and keeps the rest in order', () => {
+    const stock = early();
+    let run = rich(20_000);
+    const before = buyRows(run, stock).map((row) => row.itemId);
+    expect(before).toEqual(stock.map((slot) => slot.itemId));
+    run = buyItem(run, stock[2]!).run;
+    const after = buyRows(run, stock);
+    expect(after.map((row) => row.itemId)).toEqual(before.filter((id) => id !== stock[2]!.itemId));
+    expect(after).toHaveLength(before.length - 1);
+  });
+
+  it('keeps another floor its own shelf: the mark is per map', () => {
+    const stock = early();
+    const run = buyItem(rich(20_000), stock[0]!, 2).run;
+    expect(buyRows(run, stock, 2)).toHaveLength(stock.length - 1);
+    expect(buyRows(run, stock, 3).map((row) => row.itemId)).toEqual(stock.map((slot) => slot.itemId));
+  });
+
+  it('retires the 10x pack whole in one purchase', () => {
+    const stock = early();
+    const pack = stock[0]!;
+    expect(pack.count).toBe(10);
+    let run = rich(20_000);
+    run = buyItem(run, pack).run;
+    expect(itemCount(run, pack.itemId)).toBe(10);
+    expect(run.pickedItems.filter((key) => key === shopRowKey(run.mapIndex, pack.itemId))).toHaveLength(
+      1,
+    );
+    const rows = buyRows(run, stock);
+    expect(rows.some((row) => row.name.includes('10x'))).toBe(false);
+    expect(rows.some((row) => row.itemId === pack.itemId)).toBe(false);
+    expect(rows).toHaveLength(stock.length - 1);
+  });
+
+  it('retires the potion rung the same way', () => {
+    const stock = early();
+    const potion = stock[1]!;
+    let run = rich(20_000);
+    run = buyItem(run, potion).run;
+    expect(buyRows(run, stock).map((row) => row.itemId)).not.toContain(potion.itemId);
+  });
+
+  it('marks nothing when the run cannot pay, so the row stays', () => {
+    const stock = early();
+    const poor = createRun({ seed: 's', starter });
+    const refused = buyItem(poor, stock[0]!);
+    expect(refused.ok).toBe(false);
+    expect(refused.run).toBe(poor);
+    expect(refused.run.pickedItems).toEqual([]);
+    expect(buyRows(refused.run, stock)).toHaveLength(stock.length);
+  });
+
+  it('leaves the sell side alone: a marked item still sells from the bag', () => {
+    const stock = early();
+    const potion = stock[1]!;
+    let run = rich(5000);
+    run = buyItem(run, potion).run;
+    expect(sellRows(run).map((row) => row.itemId)).toContain(potion.itemId);
+    const sold = sellItem(run, potion.itemId);
+    expect(sold.ok).toBe(true);
+    expect(sold.run.pickedItems).toEqual(run.pickedItems);
+    // A sale restocks nothing: the row stays sold out on its floor.
+    expect(buyRows(sold.run, stock)).toHaveLength(stock.length - 1);
   });
 });

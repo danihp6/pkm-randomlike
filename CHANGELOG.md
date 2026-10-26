@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A held berry costs the held tier, and a bought shop row leaves the shelf.** `[Task-178]`, the
+      fourth of Batch 78: the rule freezes as "a `kind: 'held'` item without `consumed: true` costs
+      at least 1000", the eleven berry-class no-ops (`NOOP_BERRY_ITEMS`: custap, enigma, jaboca, kee,
+      lansat, leppa, maranga, persim, rowap, starf, tamato) move 200 → 1000 while every spent berry
+      keeps its 100-200, and a purchase now marks its row per floor (`shop-<mapIndex>-<itemId>`
+      through the shipped `pickedItems`) so `buyRows` drops it — the 10× pack and the potion rung as
+      much as a held row, with a new floor keeping its own shelf and **no** `SAVE_VERSION` step.
+      `docs/balance/economy.md` and `docs/maps-spec.md` §7 own the rule. `npm test` 4525 passed / 69
+      skipped, `npm run build` green; measured live over CDP on `[data-hud-shop-row]`: floor 1's Mart
+      listed the `10x Poke Ball` row first, one press bought it (money ¥5000 → ¥4000) and the
+      reopened card listed the remaining four rows in their original order, while the next floor's
+      merchant had the pack back with `pickedItems` empty.
+
 - [x] **Natural Gift's power follows its berry, not only its type.** `[Task-177]`, the third of
       Batch 78: a new pure `effectiveMovePower` (`src/engine/battle/movePower.ts`) is the number
       side of `effectiveMoveType` — it reads the same held-item rows, so a berry gives Natural Gift

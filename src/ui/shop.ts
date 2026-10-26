@@ -14,7 +14,9 @@ import {
   addItem,
   addMoney,
   consumeItem,
+  isItemPicked,
   itemCount,
+  markItemPicked,
   spendMoney,
   type BagCounts,
   type RunState,
@@ -24,7 +26,9 @@ import {
  * The **shop model** (`docs/maps-spec.md` §7, D33): what a floor's Mart stocks and
  * the pure trades against a run. It is Phaser-free, so the scene only renders the
  * rows this module builds and the economy is unit-tested headless. The stock is a
- * pure function of `(bandId, rng)`, so a fixed run always opens the same Mart.
+ * pure function of `(bandId, rng)`, so a fixed run always opens the same Mart. A
+ * bought row is marked per floor in `pickedItems` and leaves that floor's shelf for
+ * good; selling marks nothing, so the bag side is unchanged.
  */
 
 /**
@@ -97,11 +101,28 @@ function weightedIndex(pool: readonly ShopEntry[], rng: Rng): number {
 /** A shop trade: the run afterwards, whether it happened, and the money moved. */
 export type ShopTrade = Readonly<{ run: RunState; ok: boolean; amount: number }>;
 
-/** Buys one row's units when the run can afford it; otherwise a no-op. */
-export function buyItem(run: RunState, slot: ShopSlot): ShopTrade {
+/**
+ * The `pickedItems` key a bought shop row marks: **one row, one floor**. The shelf is
+ * a per-floor thing and `pickedItems` is already cleared when the run advances a map,
+ * so a row is sold out on its own floor and back on the next one without a run field.
+ */
+export function shopRowKey(mapIndex: number, itemId: string): string {
+  return `shop-${mapIndex}-${itemId}`;
+}
+
+/**
+ * Buys one row's units when the run can afford it, and marks the row on its floor so
+ * `buyRows` stops listing it. A row the run cannot pay for is a no-op that marks
+ * nothing: a refused purchase leaves the shelf as it was.
+ */
+export function buyItem(run: RunState, slot: ShopSlot, mapIndex: number = run.mapIndex): ShopTrade {
   if (run.money < slot.price) return { run, ok: false, amount: 0 };
-  const paid = spendMoney(run, slot.price);
-  return { run: addItem(paid, slot.itemId, slot.count), ok: true, amount: slot.price };
+  const bought = addItem(spendMoney(run, slot.price), slot.itemId, slot.count);
+  return {
+    run: markItemPicked(bought, shopRowKey(mapIndex, slot.itemId)),
+    ok: true,
+    amount: slot.price,
+  };
 }
 
 /** The bag stacks the shop will buy: any catalogue stack worth real money, in bag order. */
@@ -153,9 +174,19 @@ const toRow = (run: RunState, slot: ShopSlot): ShopRow => {
   };
 };
 
-/** The buy rows for a stock, resolving names, prices and what the run already holds. */
-export function buyRows(run: RunState, stock: readonly ShopSlot[]): readonly ShopRow[] {
-  return stock.map((slot) => toRow(run, slot));
+/**
+ * The buy rows still on the shelf: the stock without the rows this floor has already
+ * sold, filtered **before** the rows are built so a row's index is the drawn index and
+ * a purchase removes its own row on the next repaint. Order is the stock's own.
+ */
+export function buyRows(
+  run: RunState,
+  stock: readonly ShopSlot[],
+  mapIndex: number = run.mapIndex,
+): readonly ShopRow[] {
+  return stock
+    .filter((slot) => !isItemPicked(run, shopRowKey(mapIndex, slot.itemId)))
+    .map((slot) => toRow(run, slot));
 }
 
 /** The sell rows: every sellable stack at its `sellPrice`, one unit at a time, in bag order. */

@@ -8263,7 +8263,7 @@ run-integrity defects first, the presentation and economy last.
       `src/ui/partyDetail.test.ts`, `src/engine/README.md`, `docs/battle-spec.md` §2.
       *Dependencies:* none. *(Batch 78)*
 
-- [ ] **[Task-178] A held berry costs what a held item costs, and a bought shop row leaves the shelf.**
+- [x] **[Task-178] A held berry costs what a held item costs, and a bought shop row leaves the shelf.**
       Two coupled fixes in the Mart. **Price:** «el precio de las bayas equipables deberia ser mas alto
       ya que ... no se consumen» — every berry the engine never spends is a permanent held slot at
       **200** (`NOOP_BERRY_ITEMS`, `src/data/items.ts` 772-785, the eleven ids the `mid`/`high`/`late`
