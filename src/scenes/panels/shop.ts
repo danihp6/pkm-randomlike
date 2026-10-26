@@ -102,9 +102,9 @@ function stockOf(rows: readonly ShopRow[]): readonly ShopSlot[] {
   return rows.map((row) => ({ itemId: row.itemId, price: row.price, count: row.count }));
 }
 
-/** The rows the current tab shows, from the live run. */
+/** The rows the current tab shows, from the live run: a bought row is off the shelf. */
 function rowsFor(host: RoomHost): readonly ShopRow[] {
-  return cardMode === 'buy' ? buyRows(host.run, cardStock) : sellRows(host.run);
+  return cardMode === 'buy' ? buyRows(host.run, cardStock, host.run.mapIndex) : sellRows(host.run);
 }
 
 /** Builds the view from the live run and this module's own tab, scroll and message. */
@@ -203,9 +203,11 @@ export function closeShopCard(): void {
 function buyPressed(host: RoomHost, itemId: string): void {
   const slot = cardStock.find((entry) => entry.itemId === itemId);
   if (slot === undefined) return;
-  const row = buyRows(host.run, cardStock).findIndex((entry) => entry.itemId === itemId);
+  const row = buyRows(host.run, cardStock, host.run.mapIndex).findIndex(
+    (entry) => entry.itemId === itemId,
+  );
   if (row >= 0) cardSelected = row;
-  const trade = buyItem(host.run, slot);
+  const trade = buyItem(host.run, slot, host.run.mapIndex);
   if (!trade.ok) {
     cardMessage = t('mart.noMoney');
     return;

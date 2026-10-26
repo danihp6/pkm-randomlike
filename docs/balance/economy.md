@@ -53,7 +53,7 @@ The catalogue as it stands. A row's price is what `buyPrice` charges and what
 | Type items (18x)                |               1000 | held, 1.2x to one type — one per type, Silk Scarf … Fairy Feather   |
 | Leftovers                       |               4000 | held, strongest sustain                                            |
 | Berries (Oran / Sitrus / Lum)   |      100 / 200 / 200 | held, single use                                                  |
-| Competitive held set (122 rows) |           200 / 4000 | held: a dex berry 200, the rest 4000                                |
+| Competitive held set (122 rows) | 200 / 1000 / 4000 | held: a spent berry 200, a berry-class no-op 1000, the rest 4000 |
 | Plates (17x)                    |               4000 | held, boss-tier treasure; retypes Judgment (D37)                   |
 | Memories and Drives (21x)       |               3000 | held, ground-only treasure; retypes Multi-Attack / Techno Blast (D37) |
 | Mega Stones                     |                  0 | never sold; held by a boss, a mini-boss or an `ace` (D34)          |
@@ -64,8 +64,23 @@ The catalogue as it stands. A row's price is what `buyPrice` charges and what
 Balls are priced in step with their catch bonus (200 / 600 / 1200 for 1 / 1.5 /
 2x), so a better ball is a real economy choice and not a strict upgrade you
 always afford. The held tiers are the catalogue's own, and `items.test.ts` pins
-them: a competitive row is `200` when the dex calls it a berry and `4000`
-otherwise, while a Memory or a Drive is its own ground-only `3000` row.
+them: a competitive row is `200` when the dex calls it a berry **and the battle
+spends it**, `1000` when it is a berry-class no-op the engine never spends, and
+`4000` otherwise, while a Memory or a Drive is its own ground-only `3000` row.
+
+**The held tier's 1000 floor (Task-178).** A `kind: 'held'` item the engine never
+consumes is a permanent held slot: it is not a berry in the economy's eyes, so it
+costs the held tier and never the berry tier. The rule is *no for-sale held item
+without `consumed: true` is priced under 1000* (an unsold Mega Stone keeps its `0`
+— it is priced for no shop at all). Exactly **eleven** rows broke it, the
+**berry-class no-ops** of `NOOP_BERRY_ITEMS` (`src/data/items.ts`, `D16` `no-op`):
+Custap, Enigma, Jaboca, Kee, Lansat, Leppa, Maranga, Persim, Rowap, Starf and
+Tamato Berry, each 200 → **1000** (sell 500). Every berry a battle *spends* keeps
+its 100–200 — Oran 100, Sitrus and Lum 200, the cures, the pinch and the resist
+berries — because it leaves the slot the turn it fires. The eleven are a `mid`
+**ground-loot** row and no band's Mart shelf (`SHOP_ROTATION` excludes every
+`UNMODELLED_ITEMS` id), so this pass reprices them and **restocks nothing**: no
+shelf row's price moves for an id no band sells.
 
 ## The Mart's stock
 
@@ -137,6 +152,16 @@ prices above:
   stone loses 4 000 and opens no money loop.
 - The stock is rolled **once per map** from the run seed
   (`${seed}:shop:${mapIndex}`) and never saved, so a Mart always reopens the same.
+- **A bought row leaves the shelf for the rest of the floor** (`Task-178`). A
+  successful `buyItem` marks `shop-<mapIndex>-<itemId>` in the run's
+  `pickedItems` (already saved, already cleared by `advanceMap`), and `buyRows`
+  drops every marked row before it builds the list — so the 10× pack and the
+  potion rung retire as completely as a held row, the mark names one row of one
+  floor, and the next floor's Mart stocks its own full shelf again. A refused
+  purchase (no money) marks nothing. Selling marks nothing: a marked item still
+  sells from the bag, and a sale never restocks a row. No new run field and no
+  save-version step — the per-floor bookkeeping the route already keeps carries
+  it.
 
 ## The trainer award
 
