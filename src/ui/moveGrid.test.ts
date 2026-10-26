@@ -5,6 +5,7 @@ import {
   moveGridIndexAt,
   moveGridInfoAt,
   padMoveGridCells,
+  stepMoveGridCursor,
   type MoveGridCell,
   type MoveGridOptions,
   type MoveGridSlot,
@@ -84,6 +85,49 @@ describe('moveGridCellRects', () => {
       expect(rect.y + rect.h).toBeLessThanOrEqual(HUD_WINDOW.y + HUD_WINDOW.h);
     }
     expect(moveGridCellRects(options([]))).toHaveLength(0);
+  });
+});
+
+describe('stepMoveGridCursor', () => {
+  it('lands on a disabled cell when the skip is off, and passes it when it is on', () => {
+    const enabled = [true, false, true, true];
+    expect(stepMoveGridCursor(0, 'right', enabled, 2, false)).toBe(1);
+    expect(stepMoveGridCursor(0, 'right', enabled, 2, true)).toBe(2);
+  });
+
+  it('passes over a run of disabled cells to the next enabled one', () => {
+    expect(stepMoveGridCursor(0, 'right', [true, false, false, true], 4, true)).toBe(3);
+    expect(stepMoveGridCursor(3, 'left', [true, false, false, true], 4, true)).toBe(0);
+  });
+
+  it('answers the starting index when no cell would be accepted', () => {
+    expect(stepMoveGridCursor(1, 'right', [false, false, false], 2, true)).toBe(1);
+  });
+
+  it('holds the row at the top and bottom edges of the grid', () => {
+    expect(stepMoveGridCursor(0, 'up', [true, true, true, true], 2, false)).toBe(0);
+    expect(stepMoveGridCursor(2, 'down', [true, true, true, true], 2, false)).toBe(2);
+  });
+
+  it('clamps a direction that would leave a partial last row back into it', () => {
+    expect(stepMoveGridCursor(0, 'down', [true, true, true], 2, false)).toBe(2);
+    expect(stepMoveGridCursor(1, 'down', [true, true, true], 2, false)).toBe(2);
+    expect(stepMoveGridCursor(1, 'down', [true, true, true], 2, true)).toBe(2);
+  });
+
+  it('wraps a horizontal step round its own row', () => {
+    expect(stepMoveGridCursor(1, 'right', [true, true, true, true], 2, false)).toBe(0);
+    expect(stepMoveGridCursor(0, 'left', [true, true, true, true], 2, false)).toBe(1);
+  });
+
+  it('answers 0 for an empty grid and reads cols under 1 as one column', () => {
+    expect(stepMoveGridCursor(0, 'down', [], 2, false)).toBe(0);
+    expect(stepMoveGridCursor(0, 'down', [true, true, true], 0, false)).toBe(1);
+  });
+
+  it('clamps an index outside the grid before the first step', () => {
+    expect(stepMoveGridCursor(Number.NaN, 'right', [true, true], 2, false)).toBe(1);
+    expect(stepMoveGridCursor(9, 'left', [true, true, true, true], 2, false)).toBe(2);
   });
 });
 

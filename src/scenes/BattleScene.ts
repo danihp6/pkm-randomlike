@@ -185,9 +185,15 @@ import {
   statLabel,
   type MemberDetail,
 } from '../ui/partyDetail';
-import { MoveGrid, moveInfoContent, padMoveGridCells, type MoveGridCell } from '../ui/moveGrid';
+import {
+  MoveGrid,
+  moveInfoContent,
+  padMoveGridCells,
+  stepMoveGridCursor,
+  type MoveGridCell,
+} from '../ui/moveGrid';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
-import { fitPartyLabel, partyGridFieldRows, partyGridLayout } from '../ui/partyGrid';
+import { fitPartyLabel, partyGridFieldRows, partyGridLayout, stepPartyCursor } from '../ui/partyGrid';
 import {
   AbilityInfoButton,
   ABILITY_INFO_SIZE,
@@ -2932,7 +2938,11 @@ export class BattleScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** Steps the cursor: the command and move grids move in 2D, other lists stay linear. */
+  /**
+   * Steps the cursor: the command and move grids move in 2D, other lists stay
+   * linear. A disabled command or switch row is reachable and `confirm` refuses
+   * it; only the moves grid's skip keeps a disabled move out of reach.
+   */
   private navigateMenu(action: 'up' | 'down' | 'left' | 'right'): void {
     if (this.mode === 'target') {
       this.moveTarget(action === 'left' || action === 'up' ? -1 : 1);
@@ -2948,19 +2958,33 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.mode === 'moves' || this.mode === 'menu' || this.mode === 'partner') {
       this.moveMenuGrid(action);
-    } else this.moveMenu(action === 'up' || action === 'left' ? -1 : 1);
+      return;
+    }
+    if (this.mode === 'party') {
+      const next = stepPartyCursor(
+        this.menuIndex,
+        action === 'up' || action === 'left' ? -1 : 1,
+        this.menuItems.length,
+      );
+      if (next !== this.menuIndex) {
+        this.menuIndex = next;
+        this.refreshHud();
+      }
+      return;
+    }
+    this.moveMenu(action === 'up' || action === 'left' ? -1 : 1);
   }
 
   /**
-   * Moves the cursor across the 2x2 moves grid, skipping disabled moves. A
-   * direction that would leave a partial last row clamps back into it, so with
-   * three moves `down` still lands on the third.
+   * Moves the cursor across the 2x2 moves grid, skipping disabled moves; the
+   * command and partner grids step onto a disabled cell and leave the refusal to
+   * `confirm`. A direction that would leave a partial last row clamps back into
+   * it, so with three moves `down` still lands on the third.
    */
   private moveMenuGrid(action: 'up' | 'down' | 'left' | 'right'): void {
     const count = this.menuItems.length;
     if (count === 0) return;
     const cols = MENU_GRID_COLS;
-    const rows = Math.max(1, Math.ceil(count / cols));
     const mega = this.mode === 'moves' && this.megaAvailable();
     const gmax = this.mode === 'moves' && this.gmaxAvailable();
     const info = this.mode === 'menu' || this.mode === 'partner';
@@ -2999,32 +3023,28 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    let index = this.menuIndex;
-    for (let step = 0; step < count; step++) {
-      const row = Math.floor(index / cols);
-      const col = index % cols;
-      if (action === 'right' && (mega || gmax) && (col === cols - 1 || index === count - 1)) {
-        if (gmax) this.gmaxSelected = true;
-        else this.megaSelected = true;
-        this.refreshHud();
-        return;
-      }
-      if (action === 'right' && info && (col === cols - 1 || index === count - 1)) {
-        this.infoSelected = true;
-        this.refreshHud();
-        return;
-      }
-      let nextRow = row;
-      let nextCol = col;
-      if (action === 'up') nextRow = (row - 1 + rows) % rows;
-      else if (action === 'down') nextRow = (row + 1) % rows;
-      else if (action === 'left') nextCol = (col - 1 + cols) % cols;
-      else nextCol = (col + 1) % cols;
-      index = Math.min(nextRow * cols + nextCol, count - 1);
-      if (this.menuItems[index].enabled) break;
+    const col = this.menuIndex % cols;
+    if (action === 'right' && (mega || gmax) && (col === cols - 1 || this.menuIndex === count - 1)) {
+      if (gmax) this.gmaxSelected = true;
+      else this.megaSelected = true;
+      this.refreshHud();
+      return;
     }
-    if (index === this.menuIndex) return;
-    this.menuIndex = index;
+    if (action === 'right' && info && (col === cols - 1 || this.menuIndex === count - 1)) {
+      this.infoSelected = true;
+      this.refreshHud();
+      return;
+    }
+
+    const next = stepMoveGridCursor(
+      this.menuIndex,
+      action,
+      this.menuItems.map((item) => item.enabled),
+      MENU_GRID_COLS,
+      this.mode === 'moves',
+    );
+    if (next === this.menuIndex) return;
+    this.menuIndex = next;
     this.refreshHud();
   }
 
