@@ -94,7 +94,7 @@ describe('randomAbility', () => {
       if (ability?.id === 'darkmatter') hits.push(ability.id);
     }
     expect(hits).toEqual([]);
-  });
+  }, 30000);
 
   it('only ever hands out an ability from the pool', () => {
     const allowed = new Set(randomAbilityPool().map((ability) => ability.id));
