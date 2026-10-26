@@ -605,11 +605,11 @@ the route HUD changed.
 | Pause menu | `RouteScene.handlePauseMenuAction` | `cancel`, arrows, `confirm` | keyboard |
 | Release overlay / level-up popup | `RouteScene.playReleaseBeats` | `confirm` advances, any input dismisses | keyboard |
 | Battle feed / result screen | `BattleScene.onConfirm` | `confirm` (click only advances) | keyboard |
-| Battle command grid | `BattleScene.moveMenuGrid` | arrows, `confirm`, `cancel` | keyboard |
+| Battle command grid | `BattleScene.moveMenuGrid` | arrows, `confirm`, `cancel`; the cursor **visits** a dimmed row (BAG with nothing usable, SWITCH with no bench, RUN when the battle cannot be fled) instead of hopping over it, and `confirm` declines it | keyboard |
 | Battle moves grid + ⓘ | `BattleScene.renderMoveMenu` | arrows, `confirm`, `run` toggles the ⓘ | keyboard (new) |
 | Battle MEGA / G-MAX cells | `BattleScene.moveMenuGrid` | `right` reaches them, `confirm` toggles | keyboard |
 | Battle bag list and pockets | `BattleScene.handleAction` | arrows walk the bag's five-column grid, `confirm` uses the selected stack, a click on a cell selects, `[` / `]` or a tab click change pockets; the filter field takes typed text and keeps every command shortcut off | keyboard (new) |
-| Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ | keyboard (new) |
+| Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ; the cursor **visits** a dimmed row (a fainted member, or one already on the field) instead of hopping over it, and `confirm` declines it | keyboard (new) |
 | Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
 | Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` (with the STATS overlay open, only `cancel`, and it closes the overlay) | keyboard |
 | Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt | keyboard |

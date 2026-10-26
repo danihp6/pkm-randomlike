@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The arrows reach a disabled row instead of jumping over it.** `[Task-166]`, the first of
+      Batch 77: the battle's command and switch grids step over every index through two new pure
+      cursor helpers (`stepMoveGridCursor`, `stepPartyCursor`), so the cursor stops on a dimmed row
+      and `confirm` declines it, while the moves grid keeps its skip behind one flag
+      (`skipDisabled` is the moves grid's alone). `docs/design-spec.md` §10.3's two table rows
+      state the new rule. `npm test` 4494 passed / 69 skipped, `npm run build` green; measured
+      live over CDP by reading the scene (`await import('/src/main.ts')`, no screenshot): a party
+      of one lands SWITCH on `menuIndex` 2 with `enabled === false` and the selected fill
+      `0x7DD3FC`, and `Enter` submits no turn; a party of two wraps the switch grid onto the
+      disabled active row with the same fill and its confirm switches nobody; with a 0-PP move the
+      moves grid still answers the next enabled cell.
+
 - [x] **The boss door's sign is never an opaque square.** `[Task-165]`, the fourth of
       Batch 76: `build-placeholders.mjs` grows a per-atlas branch that paints a
       **transparent** 16×16 signboard-with-post silhouette for `frlg/sign.png` — 82

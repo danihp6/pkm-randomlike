@@ -216,6 +216,75 @@ export function moveGridInfoAt(
   return localX >= bx && localX <= bx + INFO_SIZE && localY >= by && localY <= by + INFO_SIZE;
 }
 
+export type MoveGridDirection = 'up' | 'down' | 'left' | 'right';
+
+/** Which way a direction walks the cells when a skipped one has to be passed over. */
+const READING_ORDER: Readonly<Record<MoveGridDirection, number>> = {
+  up: -1,
+  down: 1,
+  left: -1,
+  right: 1,
+};
+
+/**
+ * The cell one direction step lands on: `rows = ceil(count / cols)`, `left` and
+ * `right` wrap their column, `up` and `down` hold their row — a grid that stops at
+ * its top and bottom row, so the cursor never jumps from the last row back to the
+ * first — and `Math.min(nextRow * cols + nextCol, count - 1)` clamps a partial last
+ * row back into it.
+ */
+function stepCell(
+  index: number,
+  action: MoveGridDirection,
+  cols: number,
+  rows: number,
+  count: number,
+): number {
+  const row = Math.floor(index / cols);
+  const col = index % cols;
+  let nextRow = row;
+  let nextCol = col;
+  if (action === 'up') nextRow = Math.max(0, row - 1);
+  else if (action === 'down') nextRow = Math.min(rows - 1, row + 1);
+  else if (action === 'left') nextCol = (col - 1 + cols) % cols;
+  else nextCol = (col + 1) % cols;
+  return Math.min(nextRow * cols + nextCol, count - 1);
+}
+
+/**
+ * One step of a 2D menu grid (the command, partner and moves grids share it).
+ * `enabled` is one flag per cell, so `enabled.length` is the cell count and the
+ * caller never passes a count it could disagree with. With `skipDisabled` a step
+ * that lands on a disabled cell keeps walking the row-major order, in the
+ * direction of travel, until it finds an enabled one (at most `count` cells); with
+ * it off the very first cell the step computes is accepted, flag or no flag, so
+ * the caller's `confirm` is what refuses a dimmed row. If no cell would be accepted
+ * the starting index is returned unchanged.
+ */
+export function stepMoveGridCursor(
+  index: number,
+  action: MoveGridDirection,
+  enabled: readonly boolean[],
+  cols: number,
+  skipDisabled: boolean,
+): number {
+  const count = enabled.length;
+  if (count === 0) return 0;
+  const columns = Number.isFinite(cols) ? Math.max(1, Math.trunc(cols)) : 1;
+  const rows = Math.max(1, Math.ceil(count / columns));
+  const from = Number.isFinite(index) ? Math.trunc(index) : 0;
+  const start = Math.min(Math.max(0, from), count - 1);
+
+  let next = stepCell(start, action, columns, rows, count);
+  if (!skipDisabled) return next;
+  const stride = READING_ORDER[action];
+  for (let step = 0; step < count; step++) {
+    if (enabled[next]) return next;
+    next = (((next + stride) % count) + count) % count;
+  }
+  return start;
+}
+
 /** The power line's colour: green raised above its base, red lowered, else ink. */
 function powerTint(cell: MoveGridCell): number {
   if (cell.power > cell.basePower) return STAT_UP;

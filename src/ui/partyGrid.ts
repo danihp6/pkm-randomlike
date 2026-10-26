@@ -87,6 +87,18 @@ function textWidth(text: string, size: number): number {
 }
 
 /**
+ * One linear step of the switch grid's cursor, in rows: it never skips a
+ * disabled row, because the caller decides what `confirm` does there. Wraps at
+ * both ends. `count <= 0` answers 0, and a non-finite index is treated as 0.
+ */
+export function stepPartyCursor(index: number, delta: number, count: number): number {
+  if (count <= 0) return 0;
+  const from = Number.isFinite(index) ? Math.trunc(index) : 0;
+  const current = Math.min(Math.max(0, from), count - 1);
+  return (((current + delta) % count) + count) % count;
+}
+
+/**
  * The party rows a battle marks as **on the field**, in slot order: slot 0's party
  * index first and slot 1's second, skipping `-1` and duplicates. A single battle
  * answers `[activeIndex]`; an empty side answers `[]`. Those rows are exactly the

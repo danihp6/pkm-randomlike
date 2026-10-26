@@ -8135,7 +8135,7 @@ run-integrity defects first, the presentation and economy last.
       *Dependencies:* none — a filter over the shipped pools, and `[Task-52]`'s `pickedItems` idiom
       ships. *(Batch 77)*
 
-- [ ] **[Task-166] The arrows reach a disabled row instead of jumping over it.** «en menu combate con
+- [x] **[Task-166] The arrows reach a disabled row instead of jumping over it.** «en menu combate con
       flechas deberias poder pasar por item menu aun que esta disabled, igual con pokes en switch».
       `moveMenu` (`src/scenes/BattleScene.ts` 2887-2896) advances until an `enabled` row, so the
       SWITCH grid skips a fainted party member, and `moveMenuGrid` (2922-2992) does the same at 2987,

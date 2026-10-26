@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { FRLG_WINDOW_PADDING } from './frlg';
 import { FRLG_FONT_SIZE, frlgFontData } from './frlgFont';
-import { fitPartyLabel, partyGridFieldRows, partyGridLayout, type PartyGridRect } from './partyGrid';
+import {
+  fitPartyLabel,
+  partyGridFieldRows,
+  partyGridLayout,
+  stepPartyCursor,
+  type PartyGridRect,
+} from './partyGrid';
 
 const FONT = frlgFontData();
 
@@ -22,6 +28,36 @@ const ROW_GAP = 8;
 function layout(menu: PartyGridRect) {
   return partyGridLayout(menu, { padding: FRLG_WINDOW_PADDING });
 }
+
+describe('stepPartyCursor', () => {
+  it('walks a five-row party one row at a time and wraps at both ends', () => {
+    expect(stepPartyCursor(2, 1, 5)).toBe(3);
+    expect(stepPartyCursor(4, 1, 5)).toBe(0);
+    expect(stepPartyCursor(0, -1, 5)).toBe(4);
+  });
+
+  it('reaches a disabled row from both sides', () => {
+    // Row 2 is the fainted member (or the lead on the field): the caller draws it
+    // dimmed and `confirm` refuses it, but the cursor still stops on it.
+    expect(stepPartyCursor(1, 1, 5)).toBe(2);
+    expect(stepPartyCursor(3, -1, 5)).toBe(2);
+  });
+
+  it('never reads a disabled flag: a one-row grid answers 0 for both deltas', () => {
+    expect(stepPartyCursor(0, 1, 1)).toBe(0);
+    expect(stepPartyCursor(0, -1, 1)).toBe(0);
+  });
+
+  it('answers 0 for an empty grid', () => {
+    expect(stepPartyCursor(0, 1, 0)).toBe(0);
+    expect(stepPartyCursor(3, -1, 0)).toBe(0);
+  });
+
+  it('treats a non-finite index as 0 and clamps one past the last row', () => {
+    expect(stepPartyCursor(Number.NaN, 1, 5)).toBe(1);
+    expect(stepPartyCursor(9, 1, 5)).toBe(0);
+  });
+});
 
 describe('partyGridFieldRows', () => {
   it('answers the single active alone when there is no second slot', () => {
