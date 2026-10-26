@@ -14,7 +14,7 @@ const spawnable = () => playableSpecies().filter((species) => species.battleOnly
 
 const starter = createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 3 });
 
-/** A run whose caught record is set directly: `wildExclusions` reads only that field. */
+/** A run whose caught record is set directly; its starter (charmander) is held too. */
 function runWithCaught(caughtSpecies: readonly string[]): RunState {
   return { ...createRun({ seed: 'pool-a', starter }), caughtSpecies };
 }
@@ -123,8 +123,16 @@ describe('encounterTableFor', () => {
 });
 
 describe('wildExclusions', () => {
-  it('is empty for a run that has caught nothing', () => {
-    expect(wildExclusions(createRun({ seed: 'pool-a', starter })).size).toBe(0);
+  it('is empty for a run with no members and no catch record', () => {
+    const empty = { ...createRun({ seed: 'pool-a', starter }), party: [] };
+    expect(wildExclusions(empty).size).toBe(0);
+  });
+
+  it('excludes the starter’s line with no catch record at all', () => {
+    const excluded = wildExclusions(createRun({ seed: 'pool-a', starter }));
+    for (const id of ['charmander', 'charmeleon', 'charizard']) {
+      expect(excluded.has(id), id).toBe(true);
+    }
   });
 
   it('expands a caught species to its whole line and its formes', () => {
@@ -141,8 +149,25 @@ describe('wildExclusions', () => {
     }
   });
 
+  it('excludes a boxed member’s line', () => {
+    const boxed = createRunPokemon({ id: 'boxed', speciesId: 'bulbasaur', level: 3 });
+    const excluded = wildExclusions({ ...createRun({ seed: 'pool-a', starter }), box: [boxed] });
+    for (const id of ['bulbasaur', 'ivysaur', 'venusaur']) {
+      expect(excluded.has(id), id).toBe(true);
+    }
+  });
+
+  it('excludes a fallen member’s line', () => {
+    const fallen = createRunPokemon({ id: 'fallen', speciesId: 'squirtle', level: 3 });
+    const excluded = wildExclusions({ ...createRun({ seed: 'pool-a', starter }), rip: [fallen] });
+    for (const id of ['squirtle', 'wartortle', 'blastoise']) {
+      expect(excluded.has(id), id).toBe(true);
+    }
+  });
+
   it('contributes nothing for an unknown recorded id', () => {
-    expect(wildExclusions(runWithCaught(['not-a-species'])).size).toBe(0);
+    const withoutUnknown = wildExclusions(createRun({ seed: 'pool-a', starter }));
+    expect(wildExclusions(runWithCaught(['not-a-species']))).toEqual(withoutUnknown);
   });
 });
 

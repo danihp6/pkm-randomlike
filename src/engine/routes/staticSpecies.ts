@@ -8,6 +8,7 @@ import {
 } from '../../data/staticSpecies';
 import { hashSeed, Rng } from '../rng';
 import { partyHasAbility, partyHasType } from '../run/party';
+import { wildExclusions } from '../run/pool';
 import { squadLevel, type RunState } from '../run/state';
 
 /**
@@ -53,6 +54,10 @@ export function staticGateOpen(run: RunState, gate: StaticGate): boolean {
  * (`missionsCompleted` and `mission.id`), never `missionMet`, `hpLost` or the
  * casualty count, so a mid-floor loss or a rebuild can never flip a room the run has
  * already seen into its legendary variant.
+ *
+ * The species draw runs over the variant's list minus the evolution lines the run
+ * already holds (`wildExclusions`), falling back to the unfiltered list when that
+ * would leave nothing, so a late floor never fields an empty room.
  */
 export function staticRoomContent(
   run: RunState,
@@ -68,8 +73,13 @@ export function staticRoomContent(
     new Rng(hashSeed(`${run.seed}:map:${floor}:static-variant:${roomId}`)).next() <
       LEGENDARY_ROOM.chance;
   const list = legendary ? LEGENDARY_SPECIES : STATIC_SPECIES;
+  const excluded = wildExclusions(run);
+  const available = list.filter((speciesId) => !excluded.has(speciesId));
+  const options = available.length === 0 ? list : available;
   const speciesId =
-    list[new Rng(hashSeed(`${run.seed}:map:${floor}:static-species:${roomId}`)).int(0, list.length - 1)];
+    options[
+      new Rng(hashSeed(`${run.seed}:map:${floor}:static-species:${roomId}`)).int(0, options.length - 1)
+    ];
   return {
     variant: legendary ? 'legendary' : 'ordinary',
     speciesId,

@@ -248,6 +248,64 @@ describe('staticRoomContent', () => {
     }
   });
 
+  it('keeps the pre-filter pick for a run whose lines miss the list', () => {
+    const content = staticRoomContent(
+      { ...runWith(['caterpie'], FLAWLESS), seed: 'probe-a' },
+      4,
+      0,
+      'rock',
+    );
+    expect(content.speciesId).toBe('goomy');
+  });
+
+  it('never fields the line a pikachu run holds, over 20 fixed seeds', () => {
+    const held: ReadonlySet<string> = new Set(['pichu', 'pikachu', 'raichu', 'raichualola']);
+    for (let i = 0; i < 20; i++) {
+      const content = staticRoomContent({ ...runWith(['pikachu']), seed: `held-${i}` }, 4, i, 'bush');
+      expect(content.variant, `held-${i}`).toBe('ordinary');
+      expect(held.has(content.speciesId), `held-${i}/${content.speciesId}`).toBe(false);
+    }
+  });
+
+  it('drops a held ordinary line while the rest of the list still draws', () => {
+    const held: ReadonlySet<string> = new Set(['larvitar', 'pupitar', 'tyranitar']);
+    const picked = new Set<string>();
+    for (let i = 0; i < 20; i++) {
+      const content = staticRoomContent(
+        { ...runWith(['larvitar']), seed: `larvitar-${i}` },
+        4,
+        i,
+        'bush',
+      );
+      expect(STATIC_SPECIES, `larvitar-${i}/${content.speciesId}`).toContain(content.speciesId);
+      expect(held.has(content.speciesId), `larvitar-${i}/${content.speciesId}`).toBe(false);
+      picked.add(content.speciesId);
+    }
+    expect(picked.size).toBeGreaterThan(1);
+  });
+
+  it('falls back to the unfiltered list when the run holds every ordinary line', () => {
+    const content = staticRoomContent(
+      { ...runWith([...STATIC_SPECIES], FLAWLESS), seed: 'probe-a' },
+      4,
+      0,
+      'rock',
+    );
+    expect(content.variant).toBe('ordinary');
+    expect(content.speciesId).toBe('goomy');
+  });
+
+  it('falls back to the unfiltered list when the run holds every legendary', () => {
+    const content = staticRoomContent(
+      { ...runWith([...LEGENDARY_SPECIES], FLAWLESS), seed: 'probe-b' },
+      4,
+      0,
+      'rock',
+    );
+    expect(content.variant).toBe('legendary');
+    expect(content.speciesId).toBe('moltres');
+  });
+
   it('reproduces itself: the same facts always give the same content', () => {
     const run = { ...runWith(['caterpie'], FLAWLESS), seed: 'probe-c' };
     expect(staticRoomContent(run, 4, 3, 'rock')).toEqual(staticRoomContent(run, 4, 3, 'rock'));
