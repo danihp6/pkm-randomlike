@@ -2,6 +2,7 @@ import { trainerXpMultiplierForMap } from '../../data/run';
 import type { TrainerItemReward } from '../../data/trainers';
 import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
+import { asDark, isDarkCatch } from './dark';
 import { chargePokevial } from './heal';
 import { releaseFainted } from './perms';
 import {
@@ -92,8 +93,12 @@ export function resolveBattle(
   let capture: BattleResolution['capture'] = null;
   if (result.captured) {
     const base = runPokemonFromSnapshot(result.captured, options?.catchLocation);
-    const keyed: RunPokemon = { ...base, fighter: { ...base.fighter, id: nextMemberId(next) } };
-    const caught = adoptAtLevel(keyed, squadLevel(next), next.seed);
+    const catchId = nextMemberId(next);
+    const keyed: RunPokemon = { ...base, fighter: { ...base.fighter, id: catchId } };
+    const adopted = adoptAtLevel(keyed, squadLevel(next), next.seed);
+    const caught = isDarkCatch(next.seed, next.mapIndex, next.routeInMap, catchId)
+      ? asDark(adopted)
+      : adopted;
     const placed = addCaughtPokemon(next, caught);
     // Read the placement back off the run, so it cannot disagree with `pcCatch`.
     capture = {

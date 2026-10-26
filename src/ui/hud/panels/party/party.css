@@ -206,6 +206,16 @@
   background: var(--hud-row-fill);
 }
 
+/*
+ * The dark mark (`Task-154`): the violet hairline and the near-black cell a dark
+ * member's portrait wears. Pinned literals so a test can read the colours the
+ * mark paints without loading the stylesheet.
+ */
+.party__portrait--dark {
+  border-color: #8b5cf6;
+  background: #1e1b2d;
+}
+
 .party__held {
   position: absolute;
   display: flex;

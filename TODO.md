@@ -7620,7 +7620,7 @@ Phase 12 screen without pretending a screen exists to migrate.
       `src/engine/battle/effects/registry.ts`, `src/engine/battle/effects/abilities.ts` and their
       tests. *Dependencies:* `[Task-151]` (the row it makes reachable). *(Batch 67)*
 
-- [ ] **[Task-154] The dark Pokémon.** A run member can be **dark** (`RunMember.dark`, `SAVE_VERSION`
+- [x] **[Task-154] The dark Pokémon.** A run member can be **dark** (`RunMember.dark`, `SAVE_VERSION`
       **25** with migration `24 → 25` seeding `false`): its ability is always `darkmatter` and its
       `secondAbility` is the random draw the rest of the run already makes, which `[Task-153]` reads.
       The encounter roll marks a share of wilds dark (`src/data/run.ts`), the catch keeps the flag, the

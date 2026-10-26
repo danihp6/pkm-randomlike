@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The dark Pokémon.** `[Task-154]`, the seventh of Phase 13:
+      a run member can be **dark** (`RunPokemon.dark`, `SAVE_VERSION` **25** with a
+      `24 → 25` migration that seeds `false` on every stored party, box and rip entry):
+      its primary ability is always **Dark Matter** (`darkmatter`) and the ability the
+      wild had rolled becomes its second slot, on the member **and** on its battle
+      snapshot, which `hasAbility`/`ownedEffects` already read. The catch folds the flag
+      in from a stream of its own — `hashSeed(\`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}\`)`
+      against `DARK_CHANCE = 0.05` in `src/data/run.ts` — so no existing draw moves and a
+      replay rebuilds the same catch. Both party render paths paint the mark with one
+      shared tint (`DARK_PORTRAIT_TINT = 0x8b5cf6`): the Phaser card tints the portrait,
+      the `D49` DOM card carries `data-hud-party-dark` and `.party__portrait--dark`, and
+      the detail panel prints both ability names through the existing `detail.ability`
+      key, so the task adds **no** player-facing string. `npm test` 4380 passed / 68
+      skipped, `npm run build` green.
 - [x] **The stats screen reads the run history.** `[Task-155]`, the sixth of Phase 13:
       the five board frames `08`, `08b`, `08c`, `09` and `09b` ship as one DOM panel,
       `src/ui/hud/panels/stats/` (`view.ts` + its test, `statsPanel.tsx`, `stats.css`,

@@ -4,9 +4,10 @@ import { levelCapForMap } from '../../data/maps';
 import { bandForLevel, trainerXpMultiplierForMap } from '../../data/run';
 import { memberDetail } from '../../ui/partyDetail';
 import type { BattleReturn, BattleOutcome } from './battleLink';
+import { DARK_ABILITY_NAME, isDarkCatch } from './dark';
 import { createRunPokemon, experienceAward, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
-import { createRun, type RunState } from './state';
+import { createRun, squadLevel, type RunState } from './state';
 
 const starter = createRunPokemon({
   id: 'starter',
@@ -380,6 +381,59 @@ describe('the per-member usage counter', () => {
     expect(lost.run.party[0].battlesUsed).toBe(1);
     const again = resolveBattle(lost.run, returned(lost.run, 'run', { used: ['starter'] }), wild);
     expect(again.run.party[0].battlesUsed).toBe(2);
+  });
+});
+
+describe('the dark catch (Task-154)', () => {
+  const wildCaught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+
+  /** The first seed whose first catch answers `wanted` for the run's own map and room. */
+  function seedWhere(wanted: boolean): string {
+    for (let i = 0; i < 400; i++) {
+      const seed = `dark-${i}`;
+      const run = createRun({ seed, starter });
+      if (isDarkCatch(run.seed, run.mapIndex, run.routeInMap, 'catch-1') === wanted) return seed;
+    }
+    throw new Error('no seed answered');
+  }
+
+  function catchUnder(seed: string): RunPokemon {
+    const run = createRun({ seed, starter });
+    const result = resolveBattle(run, returned(run, 'capture', { captured: wildCaught.fighter }), wild);
+    const placed = result.run.party.find((member) => member.fighter.id === 'catch-1');
+    if (!placed) throw new Error('the catch was not placed');
+    return placed;
+  }
+
+  it('folds a dark catch in as Dark Matter, with the rolled ability second', () => {
+    const placed = catchUnder(seedWhere(true));
+    expect(placed.dark).toBe(true);
+    expect(placed.fighter.ability).toBe(DARK_ABILITY_NAME);
+    expect(placed.fighter.secondAbility).toBe(wildCaught.fighter.ability);
+    expect(placed.secondAbility).toBe(wildCaught.fighter.ability);
+  });
+
+  it('keeps the catch at the squad level, so the rebuild cannot drop the slots', () => {
+    const seed = seedWhere(true);
+    const run = createRun({ seed, starter });
+    const placed = catchUnder(seed);
+    expect(placed.fighter.level).toBe(squadLevel(run));
+    expect(placed.dark).toBe(true);
+  });
+
+  it('leaves a plain catch with no dark key at all', () => {
+    const placed = catchUnder(seedWhere(false));
+    expect('dark' in placed).toBe(false);
+    expect(placed.fighter.ability).toBe(wildCaught.fighter.ability);
+    expect('secondAbility' in placed).toBe(false);
+  });
+
+  it('rolls on the id nextMemberId minted for that catch', () => {
+    const seed = seedWhere(true);
+    const run = createRun({ seed, starter });
+    const placed = catchUnder(seed);
+    expect(placed.fighter.id).toBe('catch-1');
+    expect(isDarkCatch(seed, run.mapIndex, run.routeInMap, placed.fighter.id)).toBe(true);
   });
 });
 

@@ -25,7 +25,7 @@ import {
 } from '../../ui/hud/panels/party';
 import { projectHud } from '../../ui/hud/state';
 import { hpColorInt, hpFraction } from '../../ui/metrics';
-import type { PaneId } from '../../ui/partyScreen';
+import { portraitTint, type PaneId } from '../../ui/partyScreen';
 import { PANEL_ICON_KEYS } from '../BootScene';
 import {
   HUD_PAD_BOTTOM,
@@ -89,6 +89,7 @@ let hudRows: {
   name: Phaser.GameObjects.BitmapText;
   bar: Phaser.GameObjects.Image;
   fill: Phaser.GameObjects.Rectangle;
+  dark: boolean;
 }[] = [];
 /** The party window's own top and height, which the bag window stacks under. */
 let hudPartyY = 0;
@@ -181,7 +182,13 @@ export function setPartyPortraitTint(index: number, tint: number): void {
 
 export function clearPartyPortraitTints(): void {
   if (DOM_HUD) return;
-  for (const row of hudRows) row.portrait.clearTint();
+  // Each row keeps its own mark: the level-up beat's flash must never erase the
+  // dark portrait's tint (`Task-154`).
+  for (const row of hudRows) {
+    const tint = portraitTint(row.dark);
+    if (tint === null) row.portrait.clearTint();
+    else row.portrait.setTint(tint);
+  }
 }
 
 /** The panel's own cursor: the party pane's index while it holds the cursor. */
@@ -293,6 +300,10 @@ function refreshParty(host: RoutePanelHost): void {
     const portrait = portraitFor(member.fighter.speciesId, member.fighter.shiny);
     row.portrait.setVisible(portrait !== null);
     if (portrait) row.portrait.setTexture(portrait.key, portrait.frame);
+    row.dark = member.dark === true;
+    const tint = portraitTint(row.dark);
+    if (tint === null) row.portrait.clearTint();
+    else row.portrait.setTint(tint);
     const statusFrame = member.fighter.status ? statusIconFrame(member.fighter.status) : null;
     row.status.setVisible(statusFrame !== null);
     if (statusFrame !== null) row.status.setFrame(statusFrame);
@@ -406,7 +417,7 @@ export const descriptor: RoutePanelDescriptor = {
         .rectangle(column, rowY + 28, 0, FRLG_HPBAR.fill.height * partyHpBarScale, 0x58d080)
         .setOrigin(0, 0)
         .setVisible(false);
-      hudRows.push({ highlight, portrait, held, status, name, bar, fill });
+      hudRows.push({ highlight, portrait, held, status, name, bar, fill, dark: false });
       partyChildren.push(highlight, portrait, held, name, status, bar, fill);
     }
     const partyBody = scene.add.container(0, 0, partyChildren);

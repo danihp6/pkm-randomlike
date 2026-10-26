@@ -375,6 +375,29 @@ describe('detailPanelView', () => {
     expect(none.abilityInfo).toBeNull();
   });
 
+  it('prints one ability when the member carries one only (`Task-154`)', () => {
+    const view = detailPanelView(detailOf(), [], uiOf(), DESKTOP);
+    expect(view.ability).toBe('ABILITY  Blaze');
+    expect(view.ability2).toBeNull();
+  });
+
+  it('joins a second ability onto the same line, and keeps it alone on the view', () => {
+    const view = detailPanelView(
+      detailOf({ ability: 'Dark Matter', ability2: 'Levitate' }),
+      [],
+      uiOf(),
+      DESKTOP,
+    );
+    expect(view.ability).toBe('ABILITY  Dark Matter / Levitate');
+    expect(view.ability2).toBe('Levitate');
+    expect(view.abilityDesc).toBe('Powers up Fire-type moves.');
+  });
+
+  it('gives an empty view no second ability at all', () => {
+    const view = detailPanelView(null, [], uiOf(), DESKTOP);
+    expect(view.ability2).toBeNull();
+  });
+
   it('closes on a null member with empty lists', () => {
     const view = detailPanelView(null, poolOf(4), uiOf({ tab: 'moves' }), DESKTOP);
     expect(view.open).toBe(false);

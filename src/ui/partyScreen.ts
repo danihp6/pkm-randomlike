@@ -47,7 +47,17 @@ export type PartyRow = Readonly<{
   heldItem: string | null;
   heldItemName: string | null;
   shiny: boolean;
+  /** A dark Pokémon (`Task-154`); the row's portrait wears the mark. */
+  dark: boolean;
 }>;
+
+/** The dark mark's portrait tint, shared by the canvas and the DOM card. */
+export const DARK_PORTRAIT_TINT = 0x8b5cf6;
+
+/** The tint a party portrait wears: the dark mark, or null for none. */
+export function portraitTint(dark: boolean): number | null {
+  return dark ? DARK_PORTRAIT_TINT : null;
+}
 
 export function partyRow(member: RunPokemon): PartyRow {
   const { fighter } = member;
@@ -64,6 +74,7 @@ export function partyRow(member: RunPokemon): PartyRow {
     heldItem: fighter.heldItem,
     heldItemName: held?.name ?? fighter.heldItem,
     shiny: fighter.shiny,
+    dark: member.dark === true,
   };
 }
 

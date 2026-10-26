@@ -699,7 +699,14 @@ export function refreshDetail(host: RoutePanelHost): void {
     if (effect !== 'neutral') row.label.setTint(tint);
   });
   nature.setText(t('detail.nature', { nature: capitalize(detail.nature) }));
-  ability.setText(t('detail.ability', { ability: detail.ability }));
+  // The ABILITY row prints both slots joined by ` / ` (`Task-153`'s granted one, or a
+  // dark member's rolled ability); the ⓘ beside it keeps explaining the primary.
+  const second = detail.ability2 ?? null;
+  ability.setText(
+    t('detail.ability', {
+      ability: second === null ? detail.ability : `${detail.ability} / ${second}`,
+    }),
+  );
   held.setText(t('detail.held', { held: detail.heldItemName ?? t('detail.none') }));
   caught.setText(t('detail.caughtLabel', { caught: detail.caughtLabel ?? t('detail.starter') }));
   nature.setVisible(stats);

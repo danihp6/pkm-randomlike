@@ -127,6 +127,8 @@ export type DetailPanelView = Readonly<{
   stats: readonly DetailStatView[];
   nature: string;
   ability: string;
+  /** The second ability's name alone, or null when the member carries one. */
+  ability2: string | null;
   abilityDesc: string | null;
   abilityInfo: Readonly<{ pinned: boolean; box: Rect }> | null;
   held: string;
@@ -285,6 +287,7 @@ function emptyView(box: Rect): DetailPanelView {
     stats: [],
     nature: '',
     ability: '',
+    ability2: null,
     abilityDesc: null,
     abilityInfo: null,
     held: '',
@@ -439,6 +442,7 @@ export function detailPanelView(
   const visible = movesTab ? poolWindow(pool, ui.page) : [];
   const poolCursor = visible.length === 0 ? -1 : clampInt(ui.poolCursor, 0, visible.length - 1);
   const nicknameX = DETAIL_CONTENT_LEFT + DETAIL_TYPE_W * 2 + DETAIL_TYPE_GAP + DETAIL_INFO_GAP;
+  const second = detail.ability2 ?? null;
 
   return {
     open: true,
@@ -469,7 +473,10 @@ export function detailPanelView(
     })),
     stats: statViews(padX, box.w, detail),
     nature: t('detail.nature', { nature: capitalize(detail.nature) }),
-    ability: t('detail.ability', { ability: detail.ability }),
+    ability: t('detail.ability', {
+      ability: second === null ? detail.ability : `${detail.ability} / ${second}`,
+    }),
+    ability2: second,
     abilityDesc: detail.abilityDesc,
     abilityInfo:
       detail.abilityDesc === null

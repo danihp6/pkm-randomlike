@@ -54,6 +54,7 @@ function PartyRow(
       type="button"
       class={row.selected ? 'party__row party__row--selected' : 'party__row'}
       data-hud-party-member={row.memberId}
+      data-hud-party-dark={row.dark ? 'true' : undefined}
       data-selected={row.selected ? 'true' : undefined}
       aria-label={label}
       style={boxStyle(row.row)}
@@ -61,7 +62,7 @@ function PartyRow(
     >
       <span class="party__row-face">
         <span
-          class="party__portrait"
+          class={row.dark ? 'party__portrait party__portrait--dark' : 'party__portrait'}
           data-hud-party-portrait
           style={innerStyle(row.portrait, row.row)}
         />
