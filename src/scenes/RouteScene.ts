@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
 import { getMove, getSpecies, normalizeId, TYPE_NAMES } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
+import { PROP_SIGN_FRAME, PROP_SIGN_SIZE, PROP_SIGN_TEXTURE_KEY } from '../data/tilesets/props';
 import { type HudPanelId } from '../data/hudLayout';
 import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
@@ -1017,6 +1018,10 @@ export class RouteScene extends Phaser.Scene {
     const biome = params.room ? getBiome(params.room.biomeId) : biomeForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
+    // The room that links into the boss room carries its sign (`docs/routes-spec.md`
+    // §2). The edge is derived from the plan, never from the arrival's role, so the
+    // sign's cell is the same whichever door the player walked in through.
+    const signEdge = this.bossLinkEdge(params.room);
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
     const wall = pattern
       ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
@@ -1049,6 +1054,7 @@ export class RouteScene extends Phaser.Scene {
       // centre chamber is asked for explicitly; the entry room and every leaf read
       // theirs off the opening set (`docs/maps-spec.md` §2/§6).
       ...(params.room?.boss === true ? { chamber: true } : {}),
+      ...(signEdge ? { signEdge } : {}),
       // The gated room's vault is sealed until the floor's own mark says otherwise, so a
       // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7). The
       // static and secret-shop leaves carve the same vault and read their own records.
@@ -1073,6 +1079,24 @@ export class RouteScene extends Phaser.Scene {
     const route = sketchRoute(request);
     this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
     this.applyRoute(route, params.room ?? null);
+  }
+
+  /**
+   * The edge of `room` whose opening leads into the boss room, or undefined when
+   * the room on screen has none: the boss room itself, the floor's entry, every
+   * leaf and every route built without a plan (the dev generator, a frame-map
+   * import). It walks **every** opening, the boss room's portal included — the
+   * portal's `roomAcross` is undefined, so only a real link can match — and never
+   * filters by `role === 'exit'`: the role belongs to the arrival and flips when
+   * the player walks in from the boss room, while the sign's cell must not.
+   */
+  private bossLinkEdge(room: RoomView | undefined): MapEdge | undefined {
+    const plan = this.plan;
+    if (!room || !plan) return undefined;
+    for (const opening of room.openings) {
+      if (roomAcross(plan, room.roomId, opening.edge) === plan.bossRoom) return opening.edge;
+    }
+    return undefined;
   }
 
   /**
@@ -2105,6 +2129,29 @@ export class RouteScene extends Phaser.Scene {
       created.push(sprite);
     }
     this.hudCamera?.ignore(created);
+    // The signs ride the same draw pass as the items on purpose: `drawItems` is the
+    // last draw every rebuild runs (`create`, `transitionTo`, `rebuildRoom` and the
+    // two debug rebuilds), so ending it here keeps the sign on screen everywhere.
+    this.drawSigns();
+  }
+
+  /**
+   * Draws the room's static signs (`docs/routes-spec.md` §2) on their cells: the
+   * boss door's sign is one image of the 16x16 FRLG prop, scaled up to the 24px
+   * world tile. A dev generator phase draws none, the same way it draws no items.
+   */
+  private drawSigns(): void {
+    if (this.generatorStepIndex !== null) return;
+    const created: Phaser.GameObjects.GameObject[] = [];
+    for (const sign of this.route.signs ?? []) {
+      const sprite = this.add
+        .image(this.centerX(sign.x), this.centerY(sign.y), PROP_SIGN_TEXTURE_KEY, PROP_SIGN_FRAME)
+        .setScale(TILE_SIZE / PROP_SIGN_SIZE)
+        .setDepth(5);
+      this.entitySprites.push(sprite);
+      created.push(sprite);
+    }
+    this.hudCamera?.ignore(created);
   }
 
   /**
@@ -2673,6 +2720,11 @@ export class RouteScene extends Phaser.Scene {
     return this.npc !== null && tile.x === this.npc.tile.x && tile.y === this.npc.tile.y;
   }
 
+  /** True when a static sign stands on `tile`, so it blocks like a fixture. */
+  private signBlocks(tile: Tile): boolean {
+    return (this.route.signs ?? []).some((sign) => sign.x === tile.x && sign.y === tile.y);
+  }
+
   /**
    * Starts the classic "spotted you" beat: the trainer faces the player and
    * walks toward them tile by tile, then the battle opens. The player's input is
@@ -2745,7 +2797,7 @@ export class RouteScene extends Phaser.Scene {
         continue;
       }
       if (!inBounds(this.moveMap, next) || !isWalkable(this.moveMap, next)) continue;
-      if (this.itemBlocks(next)) continue;
+      if (this.itemBlocks(next) || this.signBlocks(next)) continue;
       if (this.liveTrainerAt(next) || (next.x === target.x && next.y === target.y)) continue;
       return next;
     }
@@ -2861,6 +2913,8 @@ export class RouteScene extends Phaser.Scene {
     if (this.specialDescriptor()?.interact?.(this.roomHost(), ahead) === true) return;
     // The room's own special NPC answers next, before any trainer's sight.
     if (this.talkToNpc(ahead)) return;
+    // The boss door's sign answers next, and its card carries no choice (`LEAVE`).
+    if (this.talkToSign(ahead) || this.talkToSign(this.player)) return;
     // Talking to a trainer it is facing also opens the battle, like the originals.
     const trainer = this.liveTrainerAt(ahead);
     if (trainer) {
@@ -2879,6 +2933,24 @@ export class RouteScene extends Phaser.Scene {
     const npc = this.npc;
     if (!npc || npc.tile.x !== tile.x || npc.tile.y !== tile.y) return false;
     if (!this.panelOpen()) this.openNpcCard(npc);
+    return true;
+  }
+
+  /**
+   * Opens a static sign's card when the player faces it (or stands on it, which the
+   * blocker already prevents), consuming the key. The card is the NPC card with no
+   * choice: its title is the sign's own i18n key resolved **now**, so a locale
+   * switch shows the new string. False when no sign stands there, so the key falls
+   * through to the trainer and the ground-item checks unchanged.
+   */
+  private talkToSign(tile: Tile): boolean {
+    const sign = (this.route.signs ?? []).find(
+      (candidate) => candidate.x === tile.x && candidate.y === tile.y,
+    );
+    if (!sign) return false;
+    if (!this.panelOpen()) {
+      this.openNpcCardView({ title: t(sign.text as TranslationKey), paragraph: '' });
+    }
     return true;
   }
 
@@ -4356,7 +4428,8 @@ export class RouteScene extends Phaser.Scene {
       this.itemBlocks(result.to) ||
       this.liveTrainerAt(result.to) ||
       this.shopCounterAt(result.to) ||
-      this.npcBlocks(result.to)
+      this.npcBlocks(result.to) ||
+      this.signBlocks(result.to)
     ) {
       this.faceIdle(direction);
       return;

@@ -1,5 +1,6 @@
 export * from './routeMap';
 export * from './doors';
+export * from './signs';
 export * from './validate';
 export * from './encounters';
 export * from './layout';

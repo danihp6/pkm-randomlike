@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A sign at the door that leads into the boss room, and a popup that names it.**
+      `[Task-161]`, the last of Phase 14: the room whose **link leads into the boss
+      room** now carries one static sign beside that opening, one tile inward from its
+      anchor (`bossSign`/`inwardStep`, `src/engine/routes/signs.ts`) so it stands in the
+      lane's mouth, off the border band and out of the other half of the lane.
+      `RouteRequest.signEdge` fills the new optional `RouteMap.signs`, from the plan and
+      **no RNG**, so a rebuilt room and a reload put it in the same cell; the boss room,
+      the entry and every leaf carry none. The art is its own 16×16 prop — the
+      `tileset-2` cell at **col 23, row 3**, cut RGBA as-is by
+      `scripts/frlg/build-sign.mjs` into the gitignored `src/assets/frlg/sign.png` (68
+      transparent pixels, all four corners among them; the FRLG atlas is full, so no
+      14th row), with the committed blank in `src/assets/placeholders/`, a step in
+      `assets:pack`, and `src/data/tilesets/props.ts` naming the texture and its frame.
+      The scene draws it at the cell's centre, blocks it in both movement guards, and
+      the interact key opens the NPC card with the one new key `boss.sign`
+      (`BOSS ROOM` / `SALA DEL JEFE`). `npm test` 4440 passed / 68 skipped,
+      `npm run build` green; measured live over CDP: drawn at (684, 252) with 336
+      canvas bytes differing against the sprite hidden, solid while the free lane still
+      opens the door, and the card reading `BOSS ROOM`.
 - [x] **Population Bomb and the two Triple moves check accuracy on every hit.**
       `[Task-160]`, the second of Phase 15: the three moves the dex marks `multiaccuracy`
       — **Population Bomb** (10 hits, 90 %) and **Triple Axel** / **Triple Kick** (3 hits,

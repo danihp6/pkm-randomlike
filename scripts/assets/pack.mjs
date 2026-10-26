@@ -89,6 +89,12 @@ const STEPS = [
     env: true,
   },
   {
+    name: 'frlg boss-room sign',
+    script: 'scripts/frlg/build-sign.mjs',
+    needs: requires(['frlg/tileset-2.png']),
+    env: true,
+  },
+  {
     name: 'frlg type icons',
     script: 'scripts/frlg/build-type-icons.mjs',
     needs: requires(['anil/Graphics/UI/types.png']),

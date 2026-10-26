@@ -7715,7 +7715,7 @@ bare centre tile.
 - **`[Task-161]` alone**, and it lands **after** `[Task-158]`: both edit the boss room's own layout
   and `RouteScene`, so they cannot share a batch even though neither needs the other.
 
-- [ ] **[Task-161] A sign at the door that leads into the boss room, and a popup that names it.** The
+- [x] **[Task-161] A sign at the door that leads into the boss room, and a popup that names it.** The
       route gets a **static sign** beside the opening that enters the boss room — on the approach
       side, where the player sees it before stepping through — drawn from **`tileset-2`**, cell
       **`(col 23, row 3)`**: in the source sheet that is `x = 1 + 23·17 = 392`, `y = 1 + 3·17 = 52`,

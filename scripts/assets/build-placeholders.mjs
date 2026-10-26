@@ -34,6 +34,7 @@ const ATLASES = [
   'frlg/cursor.png',
   'frlg/move-categories.png',
   'frlg/ground-item.png',
+  'frlg/sign.png',
   'anil/item-icons.png',
   'moves.png',
   'wood.png',
