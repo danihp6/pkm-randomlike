@@ -234,6 +234,15 @@ function validateBag(state: BattleState, side: SideId, command: BagCommand): str
   return null;
 }
 
+/**
+ * True when the player side owes a replacement: its active fighter fainted and a
+ * healthy reserve exists, i.e. `state.sides.player.awaitingReplacement`. Pure;
+ * reads no RNG, no Phaser, no DOM.
+ */
+export function replacementOwed(state: BattleState): boolean {
+  return state.sides.player.awaitingReplacement;
+}
+
 export function validateCommand(state: BattleState, side: SideId, command: Command): string | null {
   if (state.winner !== null) return 'The battle is over.';
 

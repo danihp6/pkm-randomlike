@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A back press never orders a turn the player did not order.**
+      `[Task-163]`, the first of Batch 75: while the player owes a replacement the
+      switch grid is the only menu a back press may reach. One predicate,
+      `replacementOwed(state)` (`src/engine/battle/commands.ts`), reads
+      `state.sides.player.awaitingReplacement`, and both back paths (`onCancel`, the ◀
+      `onBack`) plus `openMenu` obey it — `openMenu` returns to the grid instead of
+      building a command menu, so the FIGHT that used to reach `validateCommand` and
+      throw ("A replacement must be sent out first.") has nothing left to fall into.
+      `docs/battle-spec.md` §4 states the rule. `npm test` 4442 passed / 69 skipped,
+      `npm run build` green; measured live over CDP on a wild battle at 390×844: with
+      the field set `battleBackPressMode` reads `party`, Escape and ◀ keep the scene in
+      `party` with the feed never starting, and with the field cleared both read
+      `menu` again.
 - [x] **A sign at the door that leads into the boss room, and a popup that names it.**
       `[Task-161]`, the last of Phase 14: the room whose **link leads into the boss
       room** now carries one static sign beside that opening, one tile inward from its

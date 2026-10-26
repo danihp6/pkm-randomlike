@@ -360,6 +360,14 @@ Special move shapes:
   dex `naturalGift` pair and spends the berry once the move has resolved
   (`src/engine/battle/effects/items.ts`).
 
+A replacement the player owes owns the screen's menus: while the lead has fainted
+with a healthy reserve left, the **switch grid is the only menu a back press can
+reach**. Esc and the ◀ control both route there, and `openMenu` returns to it
+*before* it builds a command grid, so the FIGHT that `validateCommand` would refuse
+("A replacement must be sent out first.") is never selectable in the first place.
+The rule reads one predicate, `replacementOwed` in
+`src/engine/battle/commands.ts`, over `state.sides.player.awaitingReplacement`.
+
 ## 5. Permadeath
 
 - Fainting removes the Pokémon from the run permanently: it leaves the party,

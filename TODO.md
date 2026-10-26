@@ -7860,7 +7860,7 @@ run-integrity defects first, the presentation and economy last.
 - **No `SAVE_VERSION` step**, and no task waits on another: the first batch depends on nothing and
   every task in it is fully specified at cut time.
 
-- [ ] **[Task-163] A back press never orders a turn the player did not order.** «al retroceder no
+- [x] **[Task-163] A back press never orders a turn the player did not order.** «al retroceder no
       deberia salir el move que utiliza el rival». When the lead faints the party grid is a **forced**
       switch (`finishFeed`, `src/scenes/BattleScene.ts` 1829-1834 sets `forcedSwitch` and calls
       `openParty()`), but both back paths route a `party` mode to `openMenu()` (`onBack` 5049-5051,
