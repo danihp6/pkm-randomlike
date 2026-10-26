@@ -8310,7 +8310,7 @@ run-integrity defects first, the presentation and economy last.
 - **No `SAVE_VERSION` step**: the tab is in-memory and the aggro flag is a route record, not a run
   field. Two slots, two devs, disjoint paths.
 
-- [ ] **[Task-171] The MOVES tab survives a change of member.** «si estas en info poke en pestaña move y
+- [x] **[Task-171] The MOVES tab survives a change of member.** «si estas en info poke en pestaña move y
       seleccionas otro poke mantenerte en tab move y no pasar a stats». `openMemberDetail` always
       builds the state with the default tab — `hudDetailState = openDetail(memberId)`
       (`src/scenes/panels/detail.ts` 1089-1108) and `openDetail(memberId, tab = 'stats')`

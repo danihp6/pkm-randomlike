@@ -94,8 +94,9 @@ carries over.
   is green and a click evolves the member into it — Eevee's eight forms sit
   side by side and the player picks the one they want — and **MOVES**, which
   always draws its **four slots** — an empty one is an empty container, with no
-  name and no **ⓘ**, that only takes a dragged move. The slotted moves can be
-  dragged to reorder them (that order is what the battle menu lists)
+  name and no **ⓘ**, that only takes a dragged move. The tab belongs to the panel,
+  so picking another member keeps it; a closed panel opens on STATS. The slotted
+  moves can be dragged to reorder them (that order is what the battle menu lists)
   over a **learnset** band: a search field and a full-width grid the wheel, the
   `<` / `>` pair or a drag on the band's own background scrolls a row at a time,
   of every move the member may equip — the level-up moves it has learned so far

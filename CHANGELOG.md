@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The MOVES tab belongs to the panel, not to the member.** `[Task-171]`, the first of
+      Batch 79: a new pure `carriedDetailTab(state)` beside `openDetail`
+      (`src/ui/partyDetail.ts`) answers the panel's own tab while a member is shown and
+      `'stats'` for a closed panel, `openDetail`'s `'stats'` default is untouched, and
+      `openMemberDetail` passes it, so picking another row keeps MOVES while every other
+      reset (search field, query, scroll, cursor, drag, `grab`, nickname edit) stays as it
+      was. The canvas path needed one more line: `pressHudDrags` no longer closes the
+      detail panel before a press that lands on a member row (it still closes when the
+      press is anywhere else, and when an item drop is being completed), so the release
+      reaches `openMemberDetail` with the tab intact. `docs/design-spec.md` §3 owns the
+      rule, no `SAVE_VERSION` step. `npm test` 4559 passed / 69 skipped, `npm run build`
+      green; measured live over CDP on two seeds: under `?hud=dom` the MOVES tab kept
+      `data-active="true"` (and STATS lost it) after picking another member, and on the
+      canvas at 1280×800 DPR 1 `renderer.snapshotArea` + `getImageData` counted **321**
+      pixels of `#7dd3fc` inside the MOVES rect against **0** inside STATS, from the
+      round-1 red of 26 / 307.
+
 - [x] **The map boss and the mini-boss only fight when spoken to.** `[Task-180]`, the second of
       Batch 79: `RouteTrainer` gains an optional `aggro` flag (absent means true) and `seesPlayer`
       answers `false` for a trainer that turns it off before it reads any geometry, so the one gate

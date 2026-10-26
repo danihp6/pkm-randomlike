@@ -1484,7 +1484,11 @@ export class RouteScene extends Phaser.Scene {
       }
       return;
     }
-    if (detailOpen()) closeMemberDetail(this.panelHost);
+    // The row's member is read before the close: a press that only picks a member
+    // keeps the open detail so its tab carries over, while a press that drops an
+    // item closes it as before.
+    const memberId = target.pane === 'rip' ? null : this.memberIdAt(target);
+    if (detailOpen() && (grabbed || memberId === null)) closeMemberDetail(this.panelHost);
     if (grabbed) {
       if (grabbed.pane === target.pane) {
         const next = dragTo(this.run, this.hudUi, target.index);
@@ -1499,7 +1503,6 @@ export class RouteScene extends Phaser.Scene {
     }
     // Defer the grab: a release without movement is a click that opens the detail
     // panel, a move past the slop is a drag that reorders (see pointermove).
-    const memberId = this.memberIdAt(target);
     if (memberId === null) return;
     this.hudPress = {
       pane: target.pane,

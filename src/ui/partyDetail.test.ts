@@ -10,6 +10,7 @@ import { detailPanelView, initialDetailPanelUi } from './hud/panels/detail/view'
 import {
   CLOSED_DETAIL,
   DETAIL_TABS,
+  carriedDetailTab,
   closeDetail,
   detailStops,
   dropMove,
@@ -427,6 +428,20 @@ describe('detail state', () => {
     expect(dropMove(grabbed).grab).toBeNull();
     expect(closeDetail(grabbed)).toEqual(CLOSED_DETAIL);
     expect(closeDetail(CLOSED_DETAIL)).toBe(CLOSED_DETAIL);
+  });
+});
+
+describe('the carried detail tab (Task-171)', () => {
+  it('keeps the MOVES tab, and answers STATS for a closed panel', () => {
+    expect(carriedDetailTab(CLOSED_DETAIL)).toBe('stats');
+    expect(carriedDetailTab(setDetailTab(openDetail('starter'), 'moves'))).toBe('moves');
+    expect(carriedDetailTab(closeDetail(setDetailTab(openDetail('starter'), 'moves')))).toBe('stats');
+  });
+
+  it('re-opens on another member keeping the tab and dropping the grab', () => {
+    expect(
+      openDetail('boxed', carriedDetailTab(grabMove(setDetailTab(openDetail('starter'), 'moves'), 1))),
+    ).toEqual({ memberId: 'boxed', tab: 'moves', grab: null });
   });
 });
 
