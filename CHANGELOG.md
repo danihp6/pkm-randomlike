@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Dark Matter is reachable only through a dark catch.** `[Task-172]`, the third
+      of Batch 76: `randomAbilityPool` is built from every registered ability effect, so
+      `[Task-151]`'s hand-authored `darkmatter` row rolled on a plain wild; it joins
+      `BANNED` with the reason written beside it ("the dark catch is the only grant") and
+      `asDark` keeps granting it explicitly, so a dark catch still carries `Dark Matter`
+      plus its rolled second ability. The pool's fixed-seed expectations are re-pinned in
+      the same task, as `[Task-151]` demanded, and the one other fixed-seed draw that
+      reads the pool (`memberEdits`) moves with it by a single asserted id.
+      `docs/data-spec.md` §3 and `docs/battle-spec.md` §11.1 state the grant rule.
+      `npm test` 4453 passed / 69 skipped, `npm run build` green.
 - [x] **A Mega and a G-Max row read like a species row: name left, stone right.**
       `[Task-162]`, the second of Batch 76: `FamilyNode` gains `note`, the right
       column's text, so an information row's `name` is the forme's readable name

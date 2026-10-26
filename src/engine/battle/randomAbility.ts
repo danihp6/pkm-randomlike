@@ -3,10 +3,12 @@ import { hashSeed, Rng } from '../rng';
 import { normalizeEffectId, registeredEffects } from './effects/registry';
 
 /**
- * Abilities a random roll must never hand out. They are **not functional** for
- * an arbitrary species: their whole effect is a forme or species change the
- * engine does not model — they are absent from the effect registry today, so
- * this list is a guard for the day one is ported. Downside abilities (Truant,
+ * Abilities a random roll must never hand out, for one of two reasons. Their
+ * whole effect may be a forme or species change the engine does not model — the
+ * six ids below are absent from the effect registry today, so that half of the
+ * list is a guard for the day one is ported — or their only source may be a
+ * single hand-authored grant, which is `darkmatter`: the dark catch's, written
+ * by `asDark` (`src/engine/run/dark.ts`). Downside abilities (Truant,
  * Slow Start, Stall, Klutz, Moody, Normalize...) are deliberately **kept**: a
  * worse ability is part of the random run, and the one that would be dead on an
  * arbitrary species is implemented generically instead (Wonder Guard — see
@@ -19,6 +21,9 @@ const BANNED: ReadonlySet<string> = new Set([
   'gulpmissile',
   'asoneglastrier',
   'asonespectrier',
+  // Dark Matter is not broken, it is gated: a dark catch is its only grant
+  // (`DARK_ABILITY`, `src/engine/run/dark.ts`), so a wild roll must never hand it out.
+  'darkmatter',
 ]);
 
 /**

@@ -15,6 +15,8 @@ import {
 } from '../../data/dex/abilities';
 import { getSpecies } from '../../data/dex/species';
 import { Rng } from '../rng';
+import { createRunPokemon } from '../run/progression';
+import { DARK_ABILITY, DARK_ABILITY_NAME, asDark } from '../run/dark';
 import { createFighter } from './fighter';
 import { randomAbility, randomAbilityPool } from './randomAbility';
 import { createBattle, type BattleState, type BattleEvent } from './state';
@@ -70,9 +72,9 @@ describe('randomAbilityPool', () => {
     expect(ids.length).toBeGreaterThan(200);
   });
 
-  it('carries the custom row exactly once', () => {
+  it('never carries the dark catch row', () => {
     const ids = randomAbilityPool().map((ability) => ability.id);
-    expect(ids.filter((id) => id === 'darkmatter')).toHaveLength(1);
+    expect(ids.filter((id) => id === 'darkmatter')).toHaveLength(0);
   });
 });
 
@@ -81,9 +83,18 @@ describe('randomAbility', () => {
     expect(randomAbility('charmander', 'seed-1')).toEqual(randomAbility('charmander', 'seed-1'));
   });
 
-  it('draws the same fixed-seed ability, pinned with the custom row in the pool', () => {
+  it('draws the same fixed-seed ability, re-pinned on the pool without the dark row', () => {
     expect(randomAbility('charmander', 'run-1')?.id).toBe('dragonsmaw');
   });
+
+  it('never rolls the dark catch ability across 10 000 seeds', () => {
+    const hits: string[] = [];
+    for (let i = 0; i < 10000; i++) {
+      const ability = randomAbility('charmander', `seed-${i}`);
+      if (ability?.id === 'darkmatter') hits.push(ability.id);
+    }
+    expect(hits).toEqual([]);
+  }, 30000);
 
   it('only ever hands out an ability from the pool', () => {
     const allowed = new Set(randomAbilityPool().map((ability) => ability.id));
@@ -172,6 +183,22 @@ describe('the custom ability row', () => {
     expect(abilityName('darkmatter')).toBe('Dark Matter');
     expect(abilityNameFromEnglish('Dark Matter')).toBe('Dark Matter');
     expect(abilityDescription('darkmatter')).toBe("The holder's moves ignore the type chart.");
+  });
+});
+
+describe('the dark catch grant', () => {
+  it('still grants Dark Matter to a member the pool cannot reach', () => {
+    const member = createRunPokemon({
+      id: 'wild',
+      speciesId: 'sentret',
+      level: 4,
+      moves: ['tackle'],
+      learnsetSeed: 'run-1',
+    });
+    const dark = asDark(member);
+    expect(dark.fighter.ability).toBe(DARK_ABILITY_NAME);
+    expect(dark.fighter.secondAbility).toBe(member.fighter.ability);
+    expect(randomAbilityPool().map((ability) => ability.id)).not.toContain(DARK_ABILITY);
   });
 });
 

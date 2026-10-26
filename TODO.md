@@ -8028,7 +8028,7 @@ run-integrity defects first, the presentation and economy last.
       `src/ui/hud/panels/detail/{evolution.ts,evolution.test.ts,detailPanel.tsx}`, `src/i18n/en.ts`,
       `src/i18n/es.ts`, `docs/design-spec.md` §3. *Dependencies:* none. *(Batch 76)*
 
-- [ ] **[Task-172] Dark Matter is reachable only through a dark catch.** «me ha salido en hierba un poke
+- [x] **[Task-172] Dark Matter is reachable only through a dark catch.** «me ha salido en hierba un poke
       con habilidad materia oscura, pero esta solo deberia salir con huevo oscuro del team rocket».
       `randomAbilityPool` (`src/engine/battle/randomAbility.ts` 31-40) is built from **every
       registered ability effect**, and `[Task-151]`'s hand-authored row registers `darkmatter` like any
