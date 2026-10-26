@@ -110,6 +110,8 @@ export type Volatiles = {
   dragonCheer: boolean;
   /** Endure survives the turn's hits at 1 HP. */
   endure: boolean;
+  /** The room's `endure` field has already spared this fighter since it entered the field. */
+  roomEndureUsed: boolean;
   /** Focus Energy raised the holder's crit ratio. */
   focusEnergy: boolean;
   /** Grudge: the move that faints the holder loses all its PP. */
@@ -350,6 +352,7 @@ export function emptyVolatiles(): Volatiles {
     destinyBond: false,
     dragonCheer: false,
     endure: false,
+    roomEndureUsed: false,
     focusEnergy: false,
     grudge: false,
     imprison: false,

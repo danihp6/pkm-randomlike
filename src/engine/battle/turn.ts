@@ -1302,12 +1302,17 @@ function resolveMove(
         if (hiding === 'double') damage = damage * SEMI_INVULNERABLE_COUNTER_MULTIPLIER;
         // The Endure move spares the user for the rest of the turn, even at 1 HP,
         // and drops off before the next one. The room's `endure` condition lasts
-        // the whole battle, so it only spares a target still above 1 HP: clamping
-        // `hp - 1` to 0 at 1 HP made it immortal and the boss arena unwinnable.
+        // the whole battle, but spares only a fighter that entered the hit at full
+        // HP, and only once per stay on the field: a second lethal hit KOs it, and
+        // `clearVolatiles` re-arms it when the fighter switches out and back.
         const moveEndure = hitTarget.volatiles.endure;
-        const roomEndure = state.roomField.endure && hitTarget.hp > 1;
+        const roomEndure =
+          state.roomField.endure &&
+          hitTarget.hp === hitTarget.maxHp &&
+          !hitTarget.volatiles.roomEndureUsed;
         if ((moveEndure || roomEndure) && damage >= hitTarget.hp) {
           damage = Math.max(0, hitTarget.hp - 1);
+          if (roomEndure) hitTarget.volatiles.roomEndureUsed = true;
           pushText(state, 'battle.log.enduredHit', { name: hitTarget.name });
         }
         const bypassSubstitute = runTrySubstitute(
