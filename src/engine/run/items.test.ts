@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter, type StatusId } from '../battle/fighter';
 import { CANDY_COLOURS, CANDY_STATS, getItem } from '../../data/items';
-import { candyTreat, itemAppliesTo, useItemOn } from './items';
+import { isTmItemId } from '../../data/tms';
+import { candyTreat, itemAppliesTo, ownedTmIds, useItemOn } from './items';
 import { FORCED_FIELD_FLOORS } from './modifiers';
 import { createRunPokemon, type RunPokemon } from './progression';
 import { createRun, itemCount, type RunState } from './state';
@@ -297,5 +298,44 @@ describe('the three route consumables (Task-103)', () => {
     for (const id of ['exorcistbottle', 'weatherbottle', 'medicbottle']) {
       expect(useItemOn(empty, 'lead', id), id).toBe(empty);
     }
+  });
+});
+
+describe('ownedTmIds', () => {
+  it('lists the bag’s TMs in bag order, deduped', () => {
+    const run = runWith([
+      { itemId: 'tm032', count: 1 },
+      { itemId: 'potion', count: 3 },
+      { itemId: 'tm001', count: 2 },
+      { itemId: 'tm032', count: 1 },
+    ]);
+    expect(ownedTmIds(run)).toEqual(['tm032', 'tm001']);
+  });
+
+  it('answers nothing for an empty bag', () => {
+    expect(ownedTmIds(runWith([]))).toEqual([]);
+  });
+
+  it('ignores a stack with no stock and an id that is no TM', () => {
+    const run = runWith([
+      { itemId: 'tm005', count: 0 },
+      { itemId: 'tm999', count: 2 },
+      { itemId: 'pokeball', count: 1 },
+    ]);
+    expect(ownedTmIds(run)).toEqual([]);
+  });
+
+  it('never answers a non-TM id', () => {
+    const run = runWith([
+      { itemId: 'potion', count: 2 },
+      { itemId: 'tm166', count: 1 },
+    ]);
+    expect(ownedTmIds(run)).toEqual(['tm166']);
+    expect(ownedTmIds(run).every(isTmItemId)).toBe(true);
+  });
+
+  it('reads no RNG or clock, so two calls answer the same list', () => {
+    const run = runWith([{ itemId: 'tm058', count: 1 }]);
+    expect(ownedTmIds(run)).toEqual(ownedTmIds(run));
   });
 });

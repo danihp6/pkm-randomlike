@@ -8,6 +8,15 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A TM is never generated twice as a ground item in one run.** `[Task-176]`, the fourth of
+      Batch 77: `RouteRequest.lootExclude` and a `taken` set inside the item pass keep a TM unique
+      to a route, and `ownedTmIds(run)` feeds the bag's TMs in from `RouteScene`, so a second room
+      of the run cannot roll one the run already owns; only TMs are filtered, so a second Potion
+      stays legal. `docs/routes-spec.md` §2 owns the rule. `npm test` 4515 passed / 69 skipped,
+      `npm run build` green; measured live over CDP (`await import('/src/main.ts')`, no
+      screenshot): with `tm032` and `tm001` in the bag, 8 regenerated routes placed none of them
+      and no route repeated a TM, while a control run with an empty bag did place `tm032`.
+
 - [x] **Rage Fist's power climbs with the hits its user has taken.** `[Task-173]`, the third of
       Batch 77: `volatiles.timesHit` counts the hits a fighter takes (one per hit, capped at six,
       cleared on switch-out) and `resolveBasePower`'s new `ragefist` case turns it into

@@ -8115,7 +8115,7 @@ run-integrity defects first, the presentation and economy last.
       `docs/balance/effect-coverage.md` + `src/data/moveCoverage.json`, `docs/battle-spec.md` §3.1.
       *Dependencies:* none. *(Batch 77)*
 
-- [ ] **[Task-176] A TM is never generated twice as a ground item in one run.** «no debe poder salir
+- [x] **[Task-176] A TM is never generated twice as a ground item in one run.** «no debe poder salir
       una mt de objeto dos veces». The ground items are rolled from the band's pool with `pickWeighted`
       and no memory (`src/engine/routes/sketch.ts` 1264-1282), and a TM is a **reusable key**
       (`src/data/tms.ts` 10-13), so a second copy is dead weight: the pools carry two to four TM ids
