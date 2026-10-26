@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable } from '../map';
 import type { Tile } from '../grid';
+import { ROUTE_LOOT } from '../../data/loot';
+import { isTmItemId } from '../../data/tms';
 import {
   ROUTE_SHAPES,
   SHAPES,
@@ -311,6 +313,102 @@ describe('sketchRoute', () => {
     const base = { ...request('item-chance', 2, 'cross'), width: 30, height: 30, loot };
     expect(sketchRoute({ ...base, itemChance: 0 }).items).toEqual([]);
     expect(sketchRoute({ ...base, itemChance: 1 }).items.length).toBeGreaterThan(0);
+  });
+
+  /** The `early` and `mid` pools joined: three TMs, the widest set a band can draw. */
+  const TM_POOL = [...ROUTE_LOOT.early.pool, ...ROUTE_LOOT.mid.pool];
+  const TM_SEEDS = Array.from({ length: 40 }, (_, i) => `tm-unique-${i}`);
+  const tmRoute = (seed: string, extra: Partial<RouteRequest> = {}): RouteMap =>
+    sketchRoute({
+      seed,
+      routeIndex: 2,
+      biomeId: 'forest',
+      shape: 'cross',
+      width: 30,
+      height: 30,
+      loot: TM_POOL,
+      hiddenChance: ROUTE_LOOT.early.hiddenChance,
+      itemChance: ROUTE_LOOT.mid.itemChance,
+      ...extra,
+    });
+  const itemIdsOf = (route: RouteMap): string[] => route.items.map((item) => item.itemId);
+
+  it('never places the same TM twice inside one route', () => {
+    for (const seed of TM_SEEDS) {
+      const tmIds = itemIdsOf(tmRoute(seed)).filter(isTmItemId);
+      expect(new Set(tmIds).size, seed).toBe(tmIds.length);
+    }
+  }, 20_000);
+
+  it('never places a TM the run already owns, while a Potion may still appear', () => {
+    let potions = 0;
+    for (const seed of TM_SEEDS) {
+      const ids = itemIdsOf(tmRoute(seed, { lootExclude: ['tm032'] }));
+      expect(ids, seed).not.toContain('tm032');
+      potions += ids.filter((id) => id === 'potion').length;
+    }
+    expect(potions).toBeGreaterThan(0);
+  }, 20_000);
+
+  it('filters TMs only: an excluded non-TM id changes nothing', () => {
+    const base = {
+      ...request('tm-filter', 2, 'cross'),
+      width: 30,
+      height: 30,
+      loot: [
+        { itemId: 'potion', weight: 1 },
+        { itemId: 'tm032', weight: 1 },
+      ],
+      itemChance: 1,
+    };
+    const plain = sketchRoute(base).items;
+    expect(plain.length).toBeGreaterThan(0);
+    expect(sketchRoute({ ...base, lootExclude: ['potion'] }).items).toEqual(plain);
+  });
+
+  it('stops drawing a TM it already placed: a two-TM pool fills one pocket each', () => {
+    const route = sketchRoute({
+      ...request('tm-dedupe-c', 2, 'cross'),
+      width: 40,
+      height: 30,
+      loot: [
+        { itemId: 'tm032', weight: 1 },
+        { itemId: 'tm058', weight: 1 },
+      ],
+      itemChance: 1,
+    });
+    expect(route.pockets.length).toBeGreaterThan(2);
+    expect(itemIdsOf(route).sort()).toEqual(['tm032', 'tm058']);
+  });
+
+  it('pins the shipped item list for a fixed seed, with and without the TM exclusion', () => {
+    const early = ROUTE_LOOT.early;
+    const pinned = (extra: Partial<RouteRequest> = {}): (string | boolean)[][] =>
+      sketchRoute({
+        seed: 'tm-unique-32',
+        routeIndex: 2,
+        biomeId: 'forest',
+        shape: 'straight',
+        width: 30,
+        height: 30,
+        loot: early.pool,
+        hiddenChance: early.hiddenChance,
+        itemChance: early.itemChance,
+        ...extra,
+      }).items.map((item) => [item.id, item.itemId, item.hidden]);
+
+    // This route draws no TM, so the rule leaves the shipped draw alone.
+    expect(pinned()).toEqual([
+      ['item-2-0', 'stardust', false],
+      ['item-2-1', 'pokeball', false],
+      ['item-2-2', 'potion', false],
+    ]);
+    // Filtering tm032 out of the pool moves the draw, so the new list is pinned too.
+    expect(pinned({ lootExclude: ['tm032'] })).toEqual([
+      ['item-2-0', 'antidote', false],
+      ['item-2-1', 'pokeball', false],
+      ['item-2-2', 'potion', false],
+    ]);
   });
 
   it('empties a quiet room: no grass, no ledges, no items and no trainers', () => {

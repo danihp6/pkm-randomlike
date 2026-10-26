@@ -138,7 +138,14 @@ branches), two adjacent a `bend`, three a T and four a crossing. The room
    optional paths), not its band. A pocket is kept clear of tall grass (an item
    never spawns on grass) and of ledges. Each item rolls a **hidden** flag from the
    band's `hiddenChance`; a hidden item shows the biome's own floor patch
-   (`TilesetConfig.hiddenItemFrame`) instead of a Poke Ball. Ids are stable
+   (`TilesetConfig.hiddenItemFrame`) instead of a Poke Ball. A **TM** is unique to
+   the run and to the route: the scene passes the bag's own TM ids as
+   `lootExclude` (`ownedTmIds` in `src/engine/run/items.ts`), and a TM the route has
+   already placed is never drawn again, so neither a second room of the run nor a
+   second pocket of the same route can hand out the same Technical Machine twice —
+   it is a reusable key the run never spends, so a second copy is dead weight.
+   Every **other** item may repeat (a second Potion is legal), so the weighted pool
+   only moves for TM-bearing bands. Ids are stable
    (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
    deterministic `pockets` order. A **quiet** room — the map's entry room, its boss
    room and its special rooms (mini-boss/mega-stone and the rest;

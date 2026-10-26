@@ -104,7 +104,7 @@ import {
   type MemberEditLine,
   type MemberEditRefusal,
 } from '../engine/run/memberEdits';
-import { useItemOn } from '../engine/run/items';
+import { ownedTmIds, useItemOn } from '../engine/run/items';
 import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
 import {
   FORCED_FIELD_FLOORS,
@@ -1040,6 +1040,7 @@ export class RouteScene extends Phaser.Scene {
       grassPatches: params.grassPatches,
       ledges: params.ledges,
       loot: loot.pool,
+      lootExclude: ownedTmIds(this.run),
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
       ...(params.room ? { role: params.room.role } : {}),

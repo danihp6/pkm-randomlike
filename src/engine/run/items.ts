@@ -7,6 +7,7 @@ import {
   type ItemDef,
   type RouteEffect,
 } from '../../data/items';
+import { isTmItemId } from '../../data/tms';
 import { restoreFighter, type FighterSnapshot } from '../battle/fighter';
 import { hashSeed, Rng } from '../rng';
 import { healParty } from './heal';
@@ -130,4 +131,20 @@ export function useItemOn(run: RunState, memberId: string, itemId: string): RunS
 
   const healed: RunPokemon = { ...member, fighter: { ...member.fighter, hp, status, statusCounter } };
   return updatePokemon(consumeItem(run, itemId), healed);
+}
+
+/**
+ * The Technical Machines the run owns, in bag order, deduped: every `bag` stack
+ * whose id is a TM (`isTmItemId`, `src/data/tms.ts`) and whose count is above
+ * zero. Reads no RNG and no clock, so two calls answer the same list.
+ */
+export function ownedTmIds(run: RunState): readonly string[] {
+  const ids: string[] = [];
+  for (const stack of run.bag) {
+    if (stack.count <= 0) continue;
+    if (!isTmItemId(stack.itemId)) continue;
+    if (ids.includes(stack.itemId)) continue;
+    ids.push(stack.itemId);
+  }
+  return ids;
 }

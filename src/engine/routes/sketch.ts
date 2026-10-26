@@ -1,6 +1,7 @@
 import type { LootEntry } from '../../data/loot';
 import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
 import { TRAINERS_PER_ROOM } from '../../data/population';
+import { isTmItemId } from '../../data/tms';
 import type { MapRoomRole } from '../maps/plan';
 import type { Tile } from '../grid';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, type TileMap } from '../map';
@@ -101,6 +102,11 @@ export type RouteRequest = Readonly<{
    * stays free of the band's loot table (the caller passes it).
    */
   loot?: readonly LootEntry[];
+  /**
+   * Item ids the caller's run already owns. A TM in this list is never placed as
+   * ground loot; every other id is ignored. Absent means nothing is excluded.
+   */
+  lootExclude?: readonly string[];
   /** Chance a placed item is hidden (drawn as the biome's floor patch). Defaults to `0`. */
   hiddenChance?: number;
   /** Chance an optional-path end actually holds an item. Defaults to `1`. */
@@ -1254,7 +1260,10 @@ function bestSpot(
  * stranded. The draw order is the
  * deterministic `pockets` order: the item id is `item-<routeIndex>-<n>` and the
  * contents plus the hidden flag come from the `populate` stream, so
- * `(seed, routeIndex)` fixes what lies at each pocket (D11).
+ * `(seed, routeIndex)` fixes what lies at each pocket (D11). A TM is unique to a
+ * route and to the run: the ids the run already owns (`lootExclude`, TMs only)
+ * and the ones this route has placed are never drawn again, so a second copy -
+ * dead weight, since the run never spends a TM - cannot be handed out.
  */
 function placeItems(
   tiles: TileMap,
@@ -1264,17 +1273,25 @@ function placeItems(
   loot: readonly LootEntry[] | undefined,
   hiddenChance: number,
   itemChance: number,
+  lootExclude: readonly string[] | undefined,
   rng: Rng,
   sign?: Tile,
 ): RouteItem[] {
   if (!loot || loot.length === 0) return [];
+  const taken = new Set<string>();
+  for (const itemId of lootExclude ?? []) {
+    if (isTmItemId(itemId)) taken.add(itemId);
+  }
   const items: RouteItem[] = [];
   for (const position of pockets) {
     if (!reached.has(tileKey(position)) || !isWalkable(tiles, position)) continue;
     // The boss door's sign is a fixture, never a loot spot.
     if (sign && position.x === sign.x && position.y === sign.y) continue;
     if (rng.next() >= itemChance) continue;
-    const itemId = pickWeighted(loot, rng).itemId;
+    const candidates = taken.size === 0 ? loot : loot.filter((entry) => !taken.has(entry.itemId));
+    if (candidates.length === 0) continue;
+    const itemId = pickWeighted(candidates, rng).itemId;
+    if (isTmItemId(itemId)) taken.add(itemId);
     const hidden = rng.next() < hiddenChance;
     items.push({ id: `item-${routeIndex}-${items.length}`, position: { ...position }, itemId, hidden });
   }
@@ -1793,6 +1810,7 @@ function attemptRoute(
     request.loot,
     quiet ? 0 : (request.hiddenChance ?? 0),
     quiet ? 0 : (request.itemChance ?? 1),
+    request.lootExclude,
     streams.populate,
     sign ?? undefined,
   );
