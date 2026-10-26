@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Upper Hand fails unless the target is using a priority move.**
+      `[Task-167]`, the third of Batch 75: `CONDITIONAL_FAILS`
+      (`src/engine/battle/effects/moves.ts`) keys `upperhand` to a predicate answered
+      from the target's command — a `fight` command whose `runModifyPriority` is above
+      zero — reached through the new optional `EffectContext.commands` that
+      `takeDoubleTurn` threads into the move path, so no existing caller changes shape.
+      A failed read logs `battle.log.fail` at the shipped `spitup` fail site, spends
+      the PP and deals nothing; the flinch stays the move's `secondaries` on a success.
+      The audit row gains a second scenario (a plain foe command expecting `move` and
+      the fail text, no damage, no flinch), so a move that never fails can no longer
+      pass, while `MOVE_AUDIT_ROWS` keeps one row per ledger move. `docs/battle-spec.md`
+      §3.3 names the conditional fail. `npm test` 4443 passed / 69 skipped,
+      `npm run build` green, `npm run docs:coverage` reproduces the committed pair.
 - [x] **A level-up that crossed no move raises no panel.**
       `[Task-164]`, the second of Batch 75: `playLevelUp` no longer raises the
       transient "X grew to Lv N!" notice for every beat — the loop and the

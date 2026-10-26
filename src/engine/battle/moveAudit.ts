@@ -15,10 +15,11 @@ import {
   type BattleState,
   type FieldConditionId,
   type SideConditionId,
+  type SideId,
   type TerrainId,
   type WeatherId,
 } from './state';
-import { useMove, takeTurn } from './turn';
+import { useMove, takeTurn, type SlotCommands } from './turn';
 
 /**
  * The headless instrument the move ledger is judged by: one move against a clean
@@ -48,6 +49,13 @@ export interface MoveAuditSetup {
   heldItem?: string;
   /** The enemy's held item. Default: nothing held. */
   enemyHeldItem?: string;
+  /** The moves the enemy's board holds. Default `['splash']`. */
+  enemyMoves?: readonly string[];
+  /**
+   * The slot whose command the enemy issues this turn, which is what a
+   * conditional-fail move reads (`Task-167`). Default `0`.
+   */
+  enemyMoveIndex?: number;
   /** The battle starts under it with 5 turns left. Default `null`. */
   weather?: WeatherId | null;
   /** The battle starts under it with 5 turns left. Default `null`. */
@@ -87,6 +95,8 @@ export interface MoveProbe {
   enemyPp: readonly number[];
   /** `state.log`'s non-`text` kinds, in order. */
   events: readonly BattleEvent['kind'][];
+  /** The `key` of every `text` event in `state.log`, in order. */
+  texts: readonly string[];
   /** The `amount` of every `damage` event in `state.log`, in order. */
   damageAmounts: readonly number[];
 }
@@ -100,6 +110,13 @@ export interface MoveAuditRow {
    * residual there, so a row that only writes a volatile can no longer pass as `port`.
    */
   residual?: Partial<MoveProbe>;
+  /**
+   * A second board the same row is judged on (`Task-167`): its own `setup` overrides
+   * the row's, so a move whose success is pinned above also has to answer for the
+   * case that makes it fail. `upperhand` carries the foe on a plain move here, which
+   * must log the fail and deal nothing.
+   */
+  scenario?: Readonly<{ setup?: Partial<MoveAuditSetup>; expected: Partial<MoveProbe> }>;
   setup?: Partial<MoveAuditSetup>;
   /** The engine does not satisfy this row today. */
   knownGap?: true;
@@ -170,7 +187,7 @@ function probeBoard(setup: Partial<MoveAuditSetup>, playerMoves: readonly string
     speciesId: setup.enemySpecies ?? DEFAULT_SPECIES,
     level,
     ...(setup.enemyHeldItem ? { heldItem: setup.enemyHeldItem } : {}),
-    moves: ['splash'],
+    moves: [...(setup.enemyMoves ?? ['splash'])],
   });
 
   if (setup.playerHp !== undefined) player.hp = clampHp(setup.playerHp, player.maxHp);
@@ -219,7 +236,16 @@ function snapshotState(state: BattleState): MoveProbe {
     playerPp: playerAfter.moves.map((slot) => slot.pp),
     enemyPp: enemyAfter.moves.map((slot) => slot.pp),
     events: state.log.filter((event) => event.kind !== 'text').map((event) => event.kind),
+    texts: state.log.flatMap((event) => (event.kind === 'text' ? [event.key] : [])),
     damageAmounts: state.log.flatMap((event) => (event.kind === 'damage' ? [event.amount] : [])),
+  };
+}
+
+/** The commands both sides issue on the probe's turn: slot 0, one move each. */
+function probeCommands(setup: Partial<MoveAuditSetup>): Readonly<Record<SideId, SlotCommands>> {
+  return {
+    player: { 0: { type: 'fight', moveIndex: 0 } },
+    enemy: { 0: { type: 'fight', moveIndex: setup.enemyMoveIndex ?? 0 } },
   };
 }
 
@@ -230,7 +256,7 @@ function snapshotState(state: BattleState): MoveProbe {
  */
 export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): MoveProbe {
   const state = probeBoard(setup, [moveId]);
-  useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+  useMove(state, 'player', { type: 'fight', moveIndex: 0 }, probeCommands(setup));
   return snapshotState(state);
 }
 
@@ -241,7 +267,7 @@ export function probeMove(moveId: string, setup: Partial<MoveAuditSetup> = {}): 
  */
 export function probeResidual(moveId: string, setup: Partial<MoveAuditSetup> = {}): MoveProbe {
   const state = probeBoard(setup, [moveId, 'splash']);
-  useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+  useMove(state, 'player', { type: 'fight', moveIndex: 0 }, probeCommands(setup));
   takeTurn(state, { type: 'fight', moveIndex: 1 }, { type: 'fight', moveIndex: 0 });
   return snapshotState(state);
 }
@@ -1210,9 +1236,20 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'twister', expected: { events: ['move', 'damage'] } },
   {
     moveId: 'upperhand',
+    setup: { enemyMoves: ['quickattack', 'tackle'] },
     expected: {
       events: ['move', 'damage'],
       enemyVolatiles: ['flinched', 'lastDamageTaken', 'physicalDamageTaken'],
+    },
+    scenario: {
+      setup: { enemyMoveIndex: 1 },
+      expected: {
+        events: ['move'],
+        damageAmounts: [],
+        enemyVolatiles: [],
+        playerPp: [14],
+        texts: ['battle.log.used', 'battle.log.fail'],
+      },
     },
   },
   { moveId: 'uturn', expected: { events: ['move', 'damage'] } },

@@ -174,6 +174,12 @@ function probeRow(row: MoveAuditRow): MoveProbe {
       expect(residual[key], `${row.moveId}.residual.${key}`).toEqual(row.residual[key]);
     }
   }
+  if (row.scenario) {
+    const scenario = probeMove(row.moveId, { ...row.setup, ...row.scenario.setup });
+    for (const key of Object.keys(row.scenario.expected) as (keyof MoveProbe)[]) {
+      expect(scenario[key], `${row.moveId}.scenario.${key}`).toEqual(row.scenario.expected[key]);
+    }
+  }
   return probe;
 }
 
@@ -229,6 +235,33 @@ describe('one expectation per row', () => {
     if (row.knownGap) it.fails(`${row.moveId} — known gap`, probe);
     else it(row.moveId, probe);
   }
+});
+
+/**
+ * A row that only ever pins its success can pass a move that always lands, which is
+ * exactly what Upper Hand used to be. The second scenario is the fail half: the foe
+ * spends the turn on a plain move, so the punch must not land, the PP is gone and
+ * the log says why.
+ */
+describe('the conditional fail', () => {
+  it('judges Upper Hand twice: a foe winding up, then a foe on a plain move', () => {
+    const row = MOVE_AUDIT_ROWS.find((entry) => entry.moveId === 'upperhand');
+    expect(row).toBeDefined();
+    if (!row) return;
+    const setup = row.setup ?? {};
+
+    const lands = probeMove('upperhand', setup);
+    expect(lands.events).toEqual(['move', 'damage']);
+    expect(lands.enemyVolatiles).toContain('flinched');
+    expect(lands.playerPp).toEqual([14]);
+
+    const fails = probeMove('upperhand', { ...setup, ...row.scenario?.setup });
+    expect(fails.events).toEqual(['move']);
+    expect(fails.texts).toEqual(['battle.log.used', 'battle.log.fail']);
+    expect(fails.damageAmounts).toEqual([]);
+    expect(fails.enemyVolatiles).toEqual([]);
+    expect(fails.playerPp).toEqual([14]);
+  });
 });
 
 describe('the plain-damage verse', () => {

@@ -7891,7 +7891,7 @@ run-integrity defects first, the presentation and economy last.
       (the foe's move printed or floated on a back press) the fix moves to the message/log seam, so QA
       runs the repro before the dev starts and the batch does not depend on the answer. *(Batch 75)*
 
-- [ ] **[Task-167] Upper Hand fails unless the target is using a priority move.** «palma rauda debe
+- [x] **[Task-167] Upper Hand fails unless the target is using a priority move.** «palma rauda debe
       fallar si no usa move prioridad». The move is **`upperhand`** (*Palma Rauda*,
       `src/data/i18n/es/moves.json` 3952-3956; dex name *Upper Hand*), and it ships as a data-only
       move: its ledger row is `port` on `data: secondaries` (`src/data/moveCoverage.json` 4751-4755)

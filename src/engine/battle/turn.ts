@@ -40,6 +40,7 @@ import { multiHitPower, rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import {
   CHARGE_SELF_BOOSTS,
+  CONDITIONAL_FAILS,
   FIELD_CONDITION_MOVES,
   SIDE_CONDITION_MOVES,
   isProtectMove,
@@ -855,14 +856,27 @@ function maybeSelfSwitch(state: BattleState, side: SideId, attacker: BattleFight
   battleSide.awaitingReplacement = true;
 }
 
-export function useMove(state: BattleState, side: SideId, command: FightCommand): void {
+export function useMove(
+  state: BattleState,
+  side: SideId,
+  command: FightCommand,
+  commands?: Readonly<Record<SideId, SlotCommands>>,
+): void {
   const attacker = activeFighter(state, side, command.slot ?? 0);
   const selected = chosenMove(attacker, command, barredMovesFor(state, side));
   if (!selected) return;
   const { move, slot } = selected;
   state.abilityPierce = piercesTargetAbility(state, side, attacker, move) ? attacker : null;
   try {
-    resolveMove(state, side, attacker, move, slot, commandedTarget(state, side, command));
+    resolveMove(
+      state,
+      side,
+      attacker,
+      move,
+      slot,
+      commandedTarget(state, side, command),
+      commands,
+    );
   } finally {
     state.abilityPierce = null;
   }
@@ -956,6 +970,7 @@ function resolveMove(
   move: Move,
   moveSlot: MoveSlot | null,
   target?: BattleFighter,
+  commands?: Readonly<Record<SideId, SlotCommands>>,
 ): void {
   // Truant alternates: after a turn in which it acts, the next one is lost.
   if (hasAbility(attacker, 'Truant')) {
@@ -1061,7 +1076,7 @@ function resolveMove(
     const called = getMove(calledId);
     if (called && called.id !== move.id) {
       pushText(state, 'battle.log.used', { name: attacker.name, move: called.id });
-      resolveMove(state, side, attacker, called, null, target);
+      resolveMove(state, side, attacker, called, null, target, commands);
     } else {
       pushText(state, 'battle.log.fail');
     }
@@ -1071,6 +1086,22 @@ function resolveMove(
   if (move.id === 'spitup' && attacker.volatiles.stockpile === 0) {
     pushText(state, 'battle.log.fail');
     return;
+  }
+
+  // A conditional fail reads the turn's commands, never a roll, and takes the same
+  // branch Spit Up does: the PP is already spent above, and nothing is aimed.
+  const conditionalFail = CONDITIONAL_FAILS[move.id];
+  if (conditionalFail) {
+    const failContext = makeContext(state, side, {
+      source: attacker,
+      target: target ?? opponent(state, side),
+      move,
+      ...(commands ? { commands } : {}),
+    });
+    if (conditionalFail(failContext)) {
+      pushText(state, 'battle.log.fail');
+      return;
+    }
   }
 
   const aims = moveAims(state, side, attacker, move, target ?? opponent(state, side));
@@ -1103,7 +1134,12 @@ function resolveMove(
     // rewrites (a berry's Natural Gift) apply before any immunity check, so the
     // move is treated as its new type throughout. Electrify overrides them for one
     // move and is spent by it.
-    const moveContext = makeContext(state, side, { source: attacker, target: defender, move });
+    const moveContext = makeContext(state, side, {
+      source: attacker,
+      target: defender,
+      move,
+      ...(commands ? { commands } : {}),
+    });
     const modified = runModifyMove(moveContext, move);
     const electrified = attacker.volatiles.electrify;
     if (electrified) attacker.volatiles.electrify = false;
@@ -1114,6 +1150,7 @@ function resolveMove(
       source: attacker,
       target: defender,
       move: activeMove,
+      ...(commands ? { commands } : {}),
     });
     if (!runTryHit(hitContext, activeMove)) continue;
 
@@ -1928,7 +1965,7 @@ export function takeDoubleTurn(
     if (!command || command.type !== 'fight') continue;
     const aimed = aimedCommand(state, entry.side, command);
     if (!aimed) continue;
-    useMove(state, entry.side, aimed);
+    useMove(state, entry.side, aimed, commands);
     if (!state.movedSides.includes(entry.side)) state.movedSides.push(entry.side);
   }
 
