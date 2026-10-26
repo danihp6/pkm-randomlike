@@ -6,6 +6,7 @@ import {
   barredMovesFor,
   findMoveIndex,
   legalMoveIndices,
+  replacementOwed,
   selectedMove,
   useBagItem,
   validateCommand,
@@ -13,6 +14,7 @@ import {
 } from './commands';
 import { createFighter, type FighterInput } from './fighter';
 import { activeFighter, createBattle, type BattleState } from './state';
+import { performSwitch, takeDoubleTurn } from './turn';
 
 const make = (input: FighterInput) => createFighter(input);
 
@@ -91,6 +93,53 @@ describe('validateCommand', () => {
     expect(validateCommand(state, 'player', { type: 'bag', itemId: 'leftovers' })).toBe(
       'Held items can only be used while held.',
     );
+  });
+});
+
+describe('replacementOwed', () => {
+  const withReserve = (): BattleState =>
+    createBattle({
+      player: [
+        make({ id: 'player', speciesId: 'charmander', level: 20, moves: ['tackle'] }),
+        make({ id: 'reserve', speciesId: 'squirtle', level: 20, moves: ['tackle'] }),
+      ],
+      enemy: [
+        make({ id: 'enemy', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }),
+        make({ id: 'foe2', speciesId: 'geodude', level: 20, moves: ['tackle'] }),
+      ],
+      rng: new Rng(1),
+      isWild: true,
+    });
+
+  it('tracks the player side from a fresh board through the replacement', () => {
+    const state = withReserve();
+    expect(replacementOwed(state)).toBe(false);
+
+    state.sides.player.party[0].hp = 0;
+    takeDoubleTurn(state, {}, {});
+    expect(state.sides.player.awaitingReplacement).toBe(true);
+    expect(replacementOwed(state)).toBe(true);
+
+    performSwitch(state, 'player', 1);
+    expect(state.sides.player.awaitingReplacement).toBe(false);
+    expect(replacementOwed(state)).toBe(false);
+  });
+
+  it('stays false with no reserve left, where the run ends instead', () => {
+    const state = build(['tackle'], ['tackle']);
+    state.sides.player.party[0].hp = 0;
+    takeDoubleTurn(state, {}, {});
+    expect(state.winner).toBe('enemy');
+    expect(state.sides.player.awaitingReplacement).toBe(false);
+    expect(replacementOwed(state)).toBe(false);
+  });
+
+  it('answers for the player only, never an enemy that owes one', () => {
+    const state = withReserve();
+    state.sides.enemy.party[0].hp = 0;
+    takeDoubleTurn(state, {}, {});
+    expect(state.sides.enemy.awaitingReplacement).toBe(true);
+    expect(replacementOwed(state)).toBe(false);
   });
 });
 

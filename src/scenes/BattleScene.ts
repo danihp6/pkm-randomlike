@@ -16,6 +16,7 @@ import { TRAINER_SPRITE_TEXTURE_KEY, trainerSpriteFrame } from '../data/trainerS
 import {
   barredMovesFor,
   legalMoveIndices,
+  replacementOwed,
   switchablePartyIndices,
   withLeadSlot,
   type Command,
@@ -1659,7 +1660,7 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
     if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
-      this.openMenu();
+      this.onGridBack();
     }
   }
 
@@ -2414,7 +2415,33 @@ export class BattleScene extends Phaser.Scene {
 
   // --- menus --------------------------------------------------------------
 
+  /**
+   * The mode a back press opens from the scene's grids, without performing it: the
+   * switch grid while the player owes a replacement, the command grid otherwise.
+   */
+  backPressMode(): Mode {
+    if (this.mode !== 'moves' && this.mode !== 'bag' && this.mode !== 'party') return this.mode;
+    return replacementOwed(this.state) ? 'party' : 'menu';
+  }
+
+  /** The one path both back controls take out of a grid (Esc and ◀). */
+  private onGridBack(): void {
+    if (this.backPressMode() === 'party') {
+      this.forcedSwitch = true;
+      this.openParty();
+      return;
+    }
+    this.openMenu();
+  }
+
   private openMenu(): void {
+    // A replacement is owed: the switch grid is the only menu a back press can
+    // reach, so no command grid is built before the send-out.
+    if (replacementOwed(this.state)) {
+      this.forcedSwitch = true;
+      this.openParty();
+      return;
+    }
     this.commandSlot = 0;
     // A double battle commands slot 1 first: the partner's command waits in
     // `partnerCommand` while slot 0 picks, and a fainted or absent slot is skipped.
@@ -5047,7 +5074,7 @@ export class BattleScene extends Phaser.Scene {
 
   /** The ◀ control: leaves a submenu the same way cancel does. */
   private onBack(): void {
-    if (this.mode === 'moves' || this.mode === 'party' || this.mode === 'bag') this.openMenu();
+    if (this.mode === 'moves' || this.mode === 'party' || this.mode === 'bag') this.onGridBack();
   }
 
   override update(_time: number, delta: number): void {
@@ -5093,6 +5120,16 @@ export function battleBagDrawnObjectCount(scene: BattleScene): number {
 /** The display objects the switch grid draws right now: 0 under `?hud=dom`. */
 export function battleSwitchDrawnObjectCount(scene: BattleScene): number {
   return scene.switchDrawnObjectCount();
+}
+
+/**
+ * The mode a back press opens from the scene's current mode, without performing
+ * it: `'party'` while the player owes a replacement, `'menu'` otherwise. The live
+ * flag contract reads it with
+ * `(await import('/src/scenes/BattleScene.ts')).battleBackPressMode(...)`.
+ */
+export function battleBackPressMode(scene: BattleScene): string {
+  return scene.backPressMode();
 }
 
 /**
