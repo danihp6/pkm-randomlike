@@ -256,6 +256,15 @@ export function openDetail(memberId: string, tab: DetailTab = 'stats'): DetailSt
   return { memberId, tab, grab: null };
 }
 
+/**
+ * The tab a newly opened member keeps: the panel's own tab while a member is shown,
+ * STATS when the panel is closed. The tab belongs to the panel, so picking another
+ * member never throws the reader back to STATS.
+ */
+export function carriedDetailTab(state: DetailState): DetailTab {
+  return state.memberId === null ? 'stats' : state.tab;
+}
+
 export function closeDetail(state: DetailState): DetailState {
   return state.memberId === null ? state : CLOSED_DETAIL;
 }

@@ -44,6 +44,7 @@ import {
   CLOSED_DETAIL,
   NATURE_DOWN_TINT,
   NATURE_UP_TINT,
+  carriedDetailTab,
   closeDetail,
   dropMove,
   grabMove,
@@ -1099,8 +1100,9 @@ export function typeInDetailSearch(host: RoutePanelHost, event: KeyboardEvent): 
 }
 
 /**
- * Opens the detail panel on `memberId` (STATS tab) and draws it. Opening a member
- * always shows the window, even if it was left collapsed.
+ * Opens the detail panel on `memberId`, keeping the tab the panel already stands on
+ * (STATS when it was closed), and draws it. Opening a member always shows the
+ * window, even if it was left collapsed.
  */
 export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
   const panel = panelById(host, 'detail');
@@ -1108,7 +1110,7 @@ export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
     panel.expanded = true;
     hudDetail?.setVisible(true);
   }
-  hudDetailState = openDetail(memberId);
+  hudDetailState = openDetail(memberId, carriedDetailTab(hudDetailState));
   resetDetailInfo();
   hudLearnScrollTop = 0;
   hudLearnQuery = '';
