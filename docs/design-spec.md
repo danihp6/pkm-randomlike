@@ -78,9 +78,10 @@ carries over.
   sprite and the level it evolves at. Besides the species rows the graph lists one
   **information row** per battle-only forme of every species of the family that has
   one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
-  the forme's sprite and name and the stone it needs
-  (`Mega Charizard X · Mega Evolves with Charizardite X`) — and a Gigantamax
-  (`Gigantamax Charizard · Charizardite G`), both
+  the forme's sprite and readable name in the row's left column
+  (`Mega Charizard X`), and the stone it needs right-aligned in the column where a
+  species row prints the level it evolves at (`Charizardite X`) — and a Gigantamax
+  (`Gigantamax Charizard`, `Charizardite G`), both
   **always shown**, whether or not the stone is held (`D34`, `D44`).
   A forme a deleted form-change ability used to reach (`D41`) arrives the same way
   every other one does: as an ordinary **branch** of the graph — a clickable

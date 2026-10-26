@@ -333,6 +333,7 @@ describe('detailPanelView', () => {
       {
         id: 'a',
         name: 'A',
+        note: null,
         depth: 0,
         row: 0,
         level: null,
@@ -344,6 +345,7 @@ describe('detailPanelView', () => {
       {
         id: 'b',
         name: 'B',
+        note: null,
         depth: 1,
         row: 1,
         level: 16,

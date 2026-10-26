@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { FamilyNode } from '../../../evolutionGraph';
+import { evolutionGraph, type FamilyNode } from '../../../evolutionGraph';
 import {
   EVO_INDENT,
   EVO_MAX_ROWS,
@@ -12,6 +12,7 @@ import {
 function node(overrides: Partial<FamilyNode> & Readonly<{ id: string }>): FamilyNode {
   return {
     name: overrides.id.toUpperCase(),
+    note: null,
     depth: 0,
     row: 0,
     level: null,
@@ -65,18 +66,66 @@ describe('evolutionView', () => {
   it('keeps a Mega and a Gmax branch on the same elbow arithmetic', () => {
     const family = [
       ...FAMILY.slice(0, 3).map((entry) => ({ ...entry })),
-      node({ id: 'charizardmegax', depth: 3, row: 3, parent: 2, kind: 'mega' }),
-      node({ id: 'charizardmegay', depth: 3, row: 4, parent: 2, kind: 'mega' }),
-      node({ id: 'charizardgmax', depth: 3, row: 5, parent: 2, kind: 'gmax' }),
+      node({
+        id: 'charizardmegax',
+        name: 'Mega Charizard X',
+        note: 'Charizardite X',
+        depth: 3,
+        row: 3,
+        parent: 2,
+        kind: 'mega',
+      }),
+      node({
+        id: 'charizardmegay',
+        name: 'Mega Charizard Y',
+        note: 'Charizardite Y',
+        depth: 3,
+        row: 4,
+        parent: 2,
+        kind: 'mega',
+      }),
+      node({
+        id: 'charizardgmax',
+        name: 'Gigantamax Charizard',
+        note: 'Charizardite G',
+        depth: 3,
+        row: 5,
+        parent: 2,
+        kind: 'gmax',
+      }),
     ];
     const view = evolutionView(family, 420);
     expect(view.rows).toHaveLength(6);
     expect(view.rows.slice(3).map((row) => row.x)).toEqual([110, 110, 110]);
-    expect(view.rows.slice(3).map((row) => row.level)).toEqual([null, null, null]);
+    expect(view.rows.slice(3).map((row) => row.level)).toEqual([
+      'Charizardite X',
+      'Charizardite Y',
+      'Charizardite G',
+    ]);
     expect(view.edges.slice(2)).toEqual([
       { fromRow: 2, toRow: 3, d: 'M 102 70 H 93 V 98 H 110' },
       { fromRow: 2, toRow: 4, d: 'M 102 70 H 93 V 126 H 110' },
       { fromRow: 2, toRow: 5, d: 'M 102 70 H 93 V 154 H 110' },
+    ]);
+  });
+
+  it('puts the stone in the right column of a real Charizard family', () => {
+    const view = evolutionView(evolutionGraph('charizard', 36), 420);
+    expect(view.rows.map((row) => row.name)).toEqual([
+      'Charmander',
+      'Charmeleon',
+      'Charizard',
+      'Mega Charizard X',
+      'Mega Charizard Y',
+      'Gigantamax Charizard',
+    ]);
+    expect(view.rows.map((row) => row.level)).toEqual([
+      null,
+      'Lv 16',
+      'Lv 36',
+      'Charizardite X',
+      'Charizardite Y',
+      'Charizardite G',
     ]);
   });
 

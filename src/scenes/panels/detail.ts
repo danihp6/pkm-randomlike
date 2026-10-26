@@ -11,7 +11,7 @@ import { NICKNAME_MAX_LENGTH, normalizeNickname, renameMember } from '../../engi
 import { t } from '../../i18n';
 import { moveName, moveShortDescription } from '../../i18n/content';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../../ui/abilityInfo';
-import { type FamilyNode } from '../../ui/evolutionGraph';
+import { evolutionRowNote, type FamilyNode } from '../../ui/evolutionGraph';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -604,7 +604,7 @@ function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: M
     cell.portrait.setVisible(visible && portrait !== null);
     if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
     cell.name.setPosition(nodeX + 30, y + 6).setText(node.name);
-    cell.level.setText(node.level === null ? '' : t('detail.evoLevel', { level: node.level }));
+    cell.level.setText(evolutionRowNote(node));
 
     if (node.ready) {
       cell.bg.setVisible(true).setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha);

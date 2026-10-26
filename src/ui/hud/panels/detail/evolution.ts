@@ -1,5 +1,4 @@
-import type { FamilyNode } from '../../../evolutionGraph';
-import { t } from '../../../../i18n';
+import { evolutionRowNote, type FamilyNode } from '../../../evolutionGraph';
 import type { DetailEvolutionRowView } from './view';
 
 /**
@@ -48,7 +47,7 @@ export function evolutionView(
     row: index,
     depth: node.depth,
     parent: node.parent,
-    level: node.level === null ? null : t('detail.evoLevel', { level: node.level }),
+    level: evolutionRowNote(node) || null,
     current: node.current,
     ready: node.ready,
     kind: node.kind,
