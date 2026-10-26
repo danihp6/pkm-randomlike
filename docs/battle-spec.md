@@ -145,6 +145,12 @@ The resolved powers (`'power'`):
 | Present | the dex power when the turn loop has rolled one, else 40 |
 | Spit Up | `100 × stockpile charges` |
 
+**Triple Kick and Triple Axel ramp per hit.** Both keep their dex `basePower` and the
+hit loop multiplies it by `hit + 1` on the 0-based hit index, so Triple Kick pays
+10/20/30 and Triple Axel 20/40/60. The multiply lives in the loop rather than in
+`resolveBasePower` because it depends on which hit of the sequence is being paid, so
+the ledger keeps both moves' note at `data: multihit`.
+
 A weight comes from `getSpecies(id).weightkg` and a missing species weighs 0.
 
 ### 3.2 Beat Up, Spit Up and Pain Split
@@ -188,6 +194,20 @@ after the accuracy roll; and the four **OHKO** moves roll their success inside
 nothing, and `estimateDamage`/`movePreview` draw nothing because they pass
 `rng: null`; the AI and the FIGHT menu therefore show the same number the battle
 will multiply.
+
+**Population Bomb, Triple Kick and Triple Axel roll accuracy on every hit.** The
+aim-level roll covers the first hit, so the hit loop rolls `rollHitWith` again before
+every hit **after** it and ends the move on the first miss with exactly one
+`battle.log.missed` line: Population Bomb's ten hits are ten 90 % rolls and Triple
+Kick's three are three, not one. Each of those rolls is one `Rng.next()`, and only
+while the chance is below 1 — No Guard and the `sure` flag (Lock-On, Mind Reader,
+Telekinesis) guarantee every hit of the sequence and draw nothing. A target that
+faints or loses its Substitute stops the sequence without a further roll, and Skill
+Link forces the **count** only, never the rolls. The reference's clause that
+`multiaccuracy` ignores the accuracy/evasion stages is **not** modelled: the per-hit
+roll is the same `rollHitWith` the first hit makes. The probe sees both halves
+through `MoveProbe.damageAmounts`, so a flat sequence from a ramped move and a
+single-hit sequence from a ten-hit move both fail a row.
 
 `npm run docs:coverage` records these moves as `damage: damage.ts` — the engine's
 own table is the evidence, since no dex field holds the amount. Three relatives

@@ -87,6 +87,8 @@ export interface MoveProbe {
   enemyPp: readonly number[];
   /** `state.log`'s non-`text` kinds, in order. */
   events: readonly BattleEvent['kind'][];
+  /** The `amount` of every `damage` event in `state.log`, in order. */
+  damageAmounts: readonly number[];
 }
 
 /** One reference expectation. `expected` is a partial snapshot, never `{}`. */
@@ -217,6 +219,7 @@ function snapshotState(state: BattleState): MoveProbe {
     playerPp: playerAfter.moves.map((slot) => slot.pp),
     enemyPp: enemyAfter.moves.map((slot) => slot.pp),
     events: state.log.filter((event) => event.kind !== 'text').map((event) => event.kind),
+    damageAmounts: state.log.flatMap((event) => (event.kind === 'damage' ? [event.amount] : [])),
   };
 }
 
@@ -850,20 +853,8 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   {
     moveId: 'populationbomb',
     expected: {
-      events: [
-        'move',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'damage',
-        'faint',
-      ],
+      events: ['move', 'damage', 'damage', 'damage', 'damage', 'damage', 'damage', 'damage', 'damage'],
+      damageAmounts: [13, 12, 12, 13, 12, 13, 19, 15],
     },
   },
   {
@@ -1195,9 +1186,21 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   { moveId: 'trickortreat', expected: { enemyTypes: ['Normal', 'Ghost'], events: ['move'] } },
   { moveId: 'trickroom', expected: { fieldConditions: [5, 0, 0, 0, 0, 0, 0], events: ['move'] } },
   { moveId: 'triplearrows', expected: { events: ['move', 'damage'] } },
-  { moveId: 'tripleaxel', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
+  {
+    moveId: 'tripleaxel',
+    expected: {
+      events: ['move', 'damage', 'damage', 'damage'],
+      damageAmounts: [9, 16, 24],
+    },
+  },
   { moveId: 'tripledive', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
-  { moveId: 'triplekick', expected: { events: ['move', 'damage', 'damage', 'damage'] } },
+  {
+    moveId: 'triplekick',
+    expected: {
+      events: ['move', 'damage', 'damage', 'damage'],
+      damageAmounts: [10, 16, 26],
+    },
+  },
   {
     moveId: 'tropkick',
     expected: { events: ['move', 'damage', 'boost'], enemyBoosts: [-1, 0, 0, 0, 0, 0, 0] },

@@ -36,7 +36,7 @@ import {
   runModifyMove,
   runModifyMoveType,
 } from './effects/registry';
-import { rollHitWith } from './modifiers';
+import { multiHitPower, rollHitWith } from './modifiers';
 import { applyBoostEffect, applyStatusEffect } from './effects/apply';
 import {
   CHARGE_SELF_BOOSTS,
@@ -1170,20 +1170,35 @@ function resolveMove(
       for (let hit = 0; hit < hits; hit++) {
         const hitTarget = defender;
         if (hitTarget.hp <= 0) break;
+        // A multiaccuracy move rolls again before every hit after the first; the
+        // first hit already rolled at the aim level, so it is never rolled twice.
+        if (
+          hit > 0 &&
+          hitMove.multiaccuracy === true &&
+          !sure &&
+          !rollHitWith(state, side, hitMove, attacker, hitTarget)
+        ) {
+          pushText(state, 'battle.log.missed', { name: attacker.name });
+          break;
+        }
+        // Triple Kick and Triple Axel ramp their power per hit; a move whose power
+        // does not move reuses the object it already has.
+        const power = multiHitPower(hitMove, hit);
+        const perHitMove = power === hitMove.basePower ? hitMove : { ...hitMove, basePower: power };
         const defenderTypes = state.roomField.overrideType
           ? [state.roomField.overrideType]
           : hitTarget.types;
         const critRatio =
-          hitMove.critRatio +
+          perHitMove.critRatio +
           (attacker.volatiles.focusEnergy ? 2 : 0) +
           (attacker.volatiles.dragonCheer ? 1 : 0) +
           state.roomField.critStage;
         // A fixed amount takes no roll: the crit is skipped entirely, not rolled dry.
-        const crit = isFixedDamageMove(hitMove)
+        const crit = isFixedDamageMove(perHitMove)
           ? false
           : runModifyCrit(
-              makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
-              hitMove,
+              makeContext(state, side, { source: attacker, target: hitTarget, move: perHitMove }),
+              perHitMove,
               attacker.volatiles.laserFocus ||
                 rollCrit(
                   state.rng,
@@ -1191,14 +1206,14 @@ function resolveMove(
                     makeContext(state, side, {
                       source: attacker,
                       target: hitTarget,
-                      move: hitMove,
+                      move: perHitMove,
                     }),
-                    hitMove,
+                    perHitMove,
                     critRatio,
                   ),
                 ),
             );
-        const result = computeDamage(attacker, hitTarget, hitMove, state.rng, {
+        const result = computeDamage(attacker, hitTarget, perHitMove, state.rng, {
           weather: effectiveWeather(state),
           terrain: state.terrain,
           critical: crit,
@@ -1216,9 +1231,9 @@ function resolveMove(
           ...(side === 'player' ? { teamTypes: state.teamTypes } : {}),
           ...statContext,
           effectiveness: runModifyEffectiveness(
-            makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
-            hitMove,
-            effectiveness(hitMove.type, defenderTypes),
+            makeContext(state, side, { source: attacker, target: hitTarget, move: perHitMove }),
+            perHitMove,
+            effectiveness(perHitMove.type, defenderTypes),
           ),
         });
         if (result.effectiveness === 0) {
@@ -1230,8 +1245,8 @@ function resolveMove(
           break;
         }
         let damage = runModifyDamage(
-          makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
-          hitMove,
+          makeContext(state, side, { source: attacker, target: hitTarget, move: perHitMove }),
+          perHitMove,
           result.damage,
           result.effectiveness,
           result.crit,
@@ -1247,8 +1262,8 @@ function resolveMove(
           pushText(state, 'battle.log.enduredHit', { name: hitTarget.name });
         }
         const bypassSubstitute = runTrySubstitute(
-          makeContext(state, side, { source: attacker, target: hitTarget, move: hitMove }),
-          hitMove,
+          makeContext(state, side, { source: attacker, target: hitTarget, move: perHitMove }),
+          perHitMove,
         );
         if (!bypassSubstitute && hasSubstitute(hitTarget)) {
           absorbWithSubstitute(hitTarget, damage);
@@ -1261,8 +1276,8 @@ function resolveMove(
         const dealt = applyDamage(hitTarget, damage);
         hitTarget.volatiles.lastDamageTaken = dealt;
         totalDamage += dealt;
-        if (hitMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
-        else if (hitMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
+        if (perHitMove.category === 'Physical') hitTarget.volatiles.physicalDamageTaken += dealt;
+        else if (perHitMove.category === 'Special') hitTarget.volatiles.specialDamageTaken += dealt;
         pushEvent(state, {
           kind: 'damage',
           side: aim.side,
@@ -1272,7 +1287,7 @@ function resolveMove(
           effectiveness: result.effectiveness,
           crit: result.crit,
         });
-        const line = damageMessage(hitMove, result, hitTarget);
+        const line = damageMessage(perHitMove, result, hitTarget);
         pushText(state, line.key, line.params);
         if (hitTarget.hp <= 0) {
           const bonded = hitTarget.volatiles.destinyBond;
@@ -1285,7 +1300,7 @@ function resolveMove(
           }
           if (grudged && moveSlot) {
             moveSlot.pp = 0;
-            pushText(state, 'battle.log.grudgePp', { name: attacker.name, move: hitMove.id });
+            pushText(state, 'battle.log.grudgePp', { name: attacker.name, move: perHitMove.id });
           }
           break;
         }

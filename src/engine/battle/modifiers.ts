@@ -31,6 +31,16 @@ export function hitChance(
   return Math.min(1, runModifyAccuracy(ctx, base));
 }
 
+/**
+ * The power a multiaccuracy move's `hit`-th (0-based) blow multiplies: Triple Kick
+ * and Triple Axel ramp `basePower × (hit + 1)` (10/20/30 and 20/40/60), every other
+ * move keeps its dex power on every hit.
+ */
+export function multiHitPower(move: Move, hit: number): number {
+  if (move.id !== 'triplekick' && move.id !== 'tripleaxel') return move.basePower;
+  return move.basePower * (hit + 1);
+}
+
 export function rollHitWith(
   state: BattleState,
   side: SideId,

@@ -38,6 +38,8 @@ export type Move = Readonly<{
   recoil?: readonly number[];
   struggleRecoil?: boolean;
   multihit?: number | readonly number[];
+  /** Set by the dex on the moves that roll accuracy on every hit (`multiaccuracy`). */
+  multiaccuracy?: boolean;
   secondaries?: readonly MoveEffect[];
   self?: MoveEffect;
   boosts?: MoveBoosts;
