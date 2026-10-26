@@ -8217,7 +8217,7 @@ run-integrity defects first, the presentation and economy last.
       *Dependencies:* none. *Decision:* resolved — the report says "el campo", the field is the only
       battle-long spare, and Sturdy already reads as its own ability line. *(Batch 78)*
 
-- [ ] **[Task-169] The battle Bag's keys reach the pocket row, and a click picks a stack.** «en menu
+- [x] **[Task-169] The battle Bag's keys reach the pocket row, and a click picks a stack.** «en menu
       combate items con las teclas deberias poder subir a las categorias para moverte y seleccionar
       item con click ahora solo va con enter». Two seams: `navigateMenu`'s bag branch only steps the
       stack grid (`BattleScene` 2904-2910 → `stepBagGrid`, `src/ui/bag.ts` 188-208), so **no key

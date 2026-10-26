@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle Bag's arrows reach the pockets, and one click spends a stack.** `[Task-169]`, the
+      second of Batch 78: `ArrowUp` from the grid's top row moves the focus to the pocket row,
+      `←`/`→` there cycle the pockets on offer with wrap and `↓` returns to the grid's first stack,
+      through two new pure steppers (`stepBagFocus`, `stepBagTab`, `src/ui/bag.ts`); a canvas click
+      now **selects and uses** the stack it lands on, so `cellPressIntent` moved to the panel's
+      `view.ts` and answers `use` for any stack and `select` only for an empty cell.
+      `docs/design-spec.md` §10.3's bag row states the rule. `npm test` 4526 passed / 69 skipped,
+      `npm run build` green; measured live over CDP on the battle-bag card's `data-hud-bag-*`
+      attributes: opening BAG on `consumable`, `ArrowUp` moved `bagFocus` to `tabs`, `ArrowRight`
+      made `[data-hud-bag-tab][data-active="true"]` read `ball` with its Poke Ball stacks, and
+      `ArrowDown` returned to the grid with cell 0 selected — and one CDP mouse click on a Potion
+      cell closed the card and spent the stack.
+
 - [x] **The room's Endure spares one hit, and only at full HP.** `[Task-174]`, the first of
       Batch 78: the battlefield's `endure` clamp now requires the target to have entered the hit at
       **full HP** and spends the spare through a new `volatiles.roomEndureUsed`, so a second lethal

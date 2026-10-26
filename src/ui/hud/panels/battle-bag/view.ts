@@ -3,6 +3,7 @@ import { t } from '../../../../i18n';
 import { BAG_GRID_COLS, BAG_GRID_GAP, bagGridLayout, type BagCategory } from '../../../bag';
 import { FRLG_WINDOW_PADDING } from '../../../frlg';
 import { battleMovesBox } from '../battle-moves';
+import type { BattleBagIntent } from './mount';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type Viewport = Readonly<{ width: number; height: number }>;
@@ -78,6 +79,13 @@ export type BattleBagView = Readonly<{
 function clampIndex(value: number, count: number): number {
   if (count <= 0 || !Number.isFinite(value)) return 0;
   return Math.min(count - 1, Math.max(0, Math.trunc(value)));
+}
+
+/** The press a cell answers with: a stack spends its stack, an empty cell picks itself. */
+export function cellPressIntent(cell: BattleBagCell): BattleBagIntent {
+  return cell.itemId !== ''
+    ? { type: 'use', itemId: cell.itemId }
+    : { type: 'select', index: cell.index };
 }
 
 /** The item card's wrapped line count: 44 characters a line, per paragraph. */

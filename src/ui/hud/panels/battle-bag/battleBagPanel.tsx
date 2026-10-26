@@ -3,8 +3,10 @@ import itemAtlas from '../../../../data/anil/item-icons.json';
 import { ITEM_ICON_ATLAS_URL } from '../../../../data/itemIcons';
 import { joinClasses } from '../../kit';
 import type { BattleBagIntent } from './mount';
-import type { BattleBagCell, BattleBagView, Rect } from './view';
+import { cellPressIntent, type BattleBagCell, type BattleBagView, type Rect } from './view';
 import './battleBag.css';
+
+export { cellPressIntent };
 
 export type BattleBagProps = Readonly<{
   view: BattleBagView;
@@ -42,13 +44,6 @@ function iconStyle(frame: number): CSSProperties {
 
 function flag(value: boolean): string {
   return value ? 'true' : 'false';
-}
-
-/** The press a cell answers with: the picked one spends the stack, any other picks it. */
-export function cellPressIntent(cell: BattleBagCell): BattleBagIntent {
-  return cell.selected && cell.itemId !== ''
-    ? { type: 'use', itemId: cell.itemId }
-    : { type: 'select', index: cell.index };
 }
 
 /** One grid box: a stack's button, or the dim outline past the pocket's last stack. */
@@ -94,9 +89,8 @@ function bagCell(cell: BattleBagCell, band: Rect, onPress: () => void): JSX.Elem
  * menu box the scene already laid out, so the pocket chips, the filter field, the
  * 5×2 stack grid, the selected line, the floating item card and the ◀ control land
  * on the canvas's own rectangles. Each control answers with a `BattleBagIntent`; the
- * scene maps it onto the call the canvas already made. A press picks a stack and a
- * second press on the picked one spends it — the arm/use split is the `selected`
- * the scene keeps, never the panel's own.
+ * scene maps it onto the call the canvas already made. One press on a stack spends it,
+ * exactly as the canvas's own click does; an empty cell only picks itself.
  */
 export function BattleBagPanel(props: BattleBagProps): JSX.Element {
   const { view } = props;

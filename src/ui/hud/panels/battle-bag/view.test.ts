@@ -6,6 +6,7 @@ import { battleMovesBox } from '../battle-moves';
 import {
   battleBagBox,
   battleBagView,
+  cellPressIntent,
   infoLineCount,
   type BattleBagInput,
   type Rect,
@@ -223,6 +224,27 @@ describe('the floating item card', () => {
     expect(one.info!.box.h).toBe(48 + 13);
     const four = battleBagView(inputOf({ info: { text: `${'x'.repeat(45)}\n${'y'.repeat(45)}` } }));
     expect(four.info!.box.h).toBe(48 + 13 * 4);
+  });
+});
+
+describe('cellPressIntent', () => {
+  it('spends its stack on one press, whether the cell is selected or not', () => {
+    const deselected = battleBagView(inputOf({ selected: 3 })).cells[0]!;
+    expect(deselected.selected).toBe(false);
+    expect(cellPressIntent(deselected)).toStrictEqual({ type: 'use', itemId: 'potion' });
+    const selected = battleBagView(inputOf({ selected: 0 })).cells[0]!;
+    expect(selected.selected).toBe(true);
+    expect(cellPressIntent(selected)).toStrictEqual({ type: 'use', itemId: 'potion' });
+  });
+
+  it('only picks the cell itself when the cell is empty', () => {
+    const view = battleBagView(inputOf());
+    expect(view.cells[9]!.itemId).toBe('');
+    expect(cellPressIntent(view.cells[9]!)).toStrictEqual({ type: 'select', index: 9 });
+    const empty = battleBagView(inputOf({ rows: [] }));
+    for (const cell of empty.cells) {
+      expect(cellPressIntent(cell)).toStrictEqual({ type: 'select', index: cell.index });
+    }
   });
 });
 
