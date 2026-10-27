@@ -7,6 +7,7 @@ import {
   type MoveGridRect,
   type MoveGridSlot,
 } from '../../../moveGrid';
+import { battleHpBox } from '../battle-hp/view';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type Viewport = Readonly<{ width: number; height: number }>;
@@ -27,6 +28,27 @@ const INFO_LINE_H = 13;
 const INFO_WRAP = 44;
 /** The ◀ control's height. */
 const BACK_H = 36;
+/** The wide card's side margin inside the battle square, its bottom offset and its height. */
+const CARD_MARGIN = 36;
+const CARD_FROM_BOTTOM = 218;
+const CARD_H = 192;
+/** The clearance the wide card keeps from the HP column's right edge, and its narrowest width. */
+const CARD_CLEARANCE = 8;
+const CARD_MIN_W = 240;
+
+/** The gap the category column keeps from the ⓘ square: 36 px of ⓘ offset + this = the 44 px CSS `right`. */
+export const MOVE_CATEGORY_GAP = 8;
+/** `Physical`, `Special` and `Status` are the three labels; the widest prints eight glyphs. */
+const CATEGORY_GLYPHS = 8;
+/** The HUD's body advance of one glyph: Silkscreen at 10 px draws 5.87–5.95 px a character. */
+const CATEGORY_CHAR_W = 6;
+const CATEGORY_W = CATEGORY_GLYPHS * CATEGORY_CHAR_W;
+/** The cell's own padding, from `.battle-moves__slot`: 8 px down, 14 px in on each side. */
+const CELL_PAD_X = 14;
+const CELL_PAD_Y = 8;
+/** One body line (`--hud-type-body-line`) and the three lines a filled cell stacks. */
+const BODY_LINE_H = 13;
+const CELL_LINES = 3;
 
 /** Below this square side the stacked, full-width phone card is used. */
 export const BATTLE_COMPACT = 700;
@@ -45,7 +67,10 @@ export const MOVE_INFO_SIZE = INFO_SIZE;
 /**
  * The page-space card the scene's own `menu` rect becomes: the battle square's
  * menu box moved by the camera viewport's origin, exactly the arithmetic
- * `refreshHud` lays the canvas out with.
+ * `refreshHud` lays the canvas out with. On the wide layout its left edge starts
+ * where the HP column ends — the foe's column right edge plus a gutter — so the
+ * card never covers an HP box; the phone card already sits below both of them and
+ * keeps its shipped rect.
  */
 export function battleMovesBox(viewport: Viewport): Rect {
   const wide = viewport.width > viewport.height;
@@ -54,10 +79,19 @@ export function battleMovesBox(viewport: Viewport): Rect {
   const offX = Math.round((viewport.width - stageW) / 2);
   const offY = Math.round((viewport.height - stageH) / 2);
   const compact = stageW < BATTLE_COMPACT;
-  const menu = compact
-    ? { x: 16, y: stageH - 236 - 16, w: stageW - 32, h: 236 }
-    : { x: 36, y: stageH - 218, w: stageW - 72, h: 192 };
-  return { x: offX + menu.x, y: offY + menu.y, w: menu.w, h: menu.h };
+  if (compact) {
+    const menu = { x: 16, y: stageH - 236 - 16, w: stageW - 32, h: 236 };
+    return { x: offX + menu.x, y: offY + menu.y, w: menu.w, h: menu.h };
+  }
+  const enemy = battleHpBox(viewport, 'enemy', 0);
+  const left = Math.max(offX + CARD_MARGIN, enemy.x + enemy.w + CARD_CLEARANCE);
+  const right = offX + stageW - CARD_MARGIN;
+  return {
+    x: left,
+    y: offY + stageH - CARD_FROM_BOTTOM,
+    w: Math.max(CARD_MIN_W, right - left),
+    h: CARD_H,
+  };
 }
 
 /** Everything the panel needs, in plain data; the scene builds it (no engine import here). */
@@ -93,6 +127,8 @@ export type BattleMoveSlotView = Readonly<{
   enabled: boolean;
   selected: boolean;
   box: Rect;
+  /** The category column: it ends left of the ⓘ by at least its gap. */
+  categoryBox: Rect;
   /** The ⓘ button: `{ x: box.x + box.w - 36, y: box.y + 8, w: 22, h: 22 }`, empty slots none. */
   info: Rect | null;
 }>;
@@ -141,6 +177,22 @@ function powerLabel(cell: MoveGridCell): string {
   return cell.basePower > 0 ? t('move.pwr', { value: cell.power }) : t('move.pwrNone');
 }
 
+/** The first text row's top inside a cell: three body lines centred in the cell's padding box. */
+function categoryBandTop(box: Rect): number {
+  const content = Math.max(0, box.h - CELL_PAD_Y * 2);
+  return box.y + CELL_PAD_Y + Math.max(0, (content - CELL_LINES * BODY_LINE_H) / 2);
+}
+
+/**
+ * The category column: the widest label's own width, right-aligned against the ⓘ's
+ * gap, never reaching past the cell's own padding, on the cell's first text row.
+ */
+function categoryBoxOf(box: Rect, info: Rect): Rect {
+  const right = info.x - MOVE_CATEGORY_GAP;
+  const left = Math.max(box.x + CELL_PAD_X, right - CATEGORY_W);
+  return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
+}
+
 /** The empty container: no name, no stats, no ⓘ — the grid's own rule. */
 function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotView {
   return {
@@ -157,6 +209,8 @@ function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotV
     enabled: false,
     selected,
     box,
+    // Nothing is printed in an empty cell, so its column is a zero-width mark at the right pad.
+    categoryBox: { x: box.x + box.w - CELL_PAD_X, y: categoryBandTop(box), w: 0, h: BODY_LINE_H },
     info: null,
   };
 }
@@ -169,6 +223,12 @@ function slotView(
 ): BattleMoveSlotView {
   const box: Rect = { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
   if (isEmptySlot(cell)) return emptySlot(index, box, index === selected);
+  const info: Rect = {
+    x: box.x + box.w - INFO_OFFSET,
+    y: box.y + INFO_TOP,
+    w: INFO_SIZE,
+    h: INFO_SIZE,
+  };
   return {
     index,
     empty: false,
@@ -183,12 +243,8 @@ function slotView(
     enabled: cell.enabled,
     selected: index === selected,
     box,
-    info: {
-      x: box.x + box.w - INFO_OFFSET,
-      y: box.y + INFO_TOP,
-      w: INFO_SIZE,
-      h: INFO_SIZE,
-    },
+    categoryBox: categoryBoxOf(box, info),
+    info,
   };
 }
 

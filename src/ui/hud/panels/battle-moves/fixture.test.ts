@@ -17,8 +17,15 @@ describe('design/fixtures/05-battle-hud.json', () => {
     });
   });
 
-  it('is the desktop card at 1280×800, as battleMovesBox derives it', () => {
-    expect(fixture.moves.card).toStrictEqual(battleMovesBox({ width: 1280, height: 800 }));
+  it('pins the frame s card: the same right edge and height as battleMovesBox', () => {
+    const derived = battleMovesBox({ width: 1280, height: 800 });
+    // The frame predates the HP column s clearance: the menu keeps its right edge and
+    // its height, and the shipped card only starts further right, clear of the boxes.
+    expect(fixture.moves.card.y).toBe(derived.y);
+    expect(fixture.moves.card.h).toBe(derived.h);
+    expect(fixture.moves.card.x + fixture.moves.card.w).toBe(derived.x + derived.w);
+    expect(derived.x).toBeGreaterThanOrEqual(fixture.moves.card.x);
+    expect(derived.w).toBeLessThanOrEqual(fixture.moves.card.w);
   });
 
   it('paints the frame s four cells in order', () => {

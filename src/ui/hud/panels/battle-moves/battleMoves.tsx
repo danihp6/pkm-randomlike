@@ -15,6 +15,16 @@ export function slotPressIntent(slot: BattleMoveSlotView): BattleMovesIntent {
   return { type: 'move', moveIndex: slot.index };
 }
 
+/** The pointer entering a slot's ⓘ asks for that slot's description, as the press does. */
+export function infoEnterIntent(slot: BattleMoveSlotView): BattleMovesIntent {
+  return { type: 'info', moveIndex: slot.index };
+}
+
+/** The pointer leaving the ⓘ drops the description. */
+export function infoLeaveIntent(): BattleMovesIntent {
+  return { type: 'info', moveIndex: null };
+}
+
 /** The card in viewport coordinates: the layer is `fixed`, so the model's page rects are its own. */
 function cardStyle(rect: Rect): CSSProperties {
   return {
@@ -33,6 +43,14 @@ function insetStyle(rect: Rect, card: Rect): CSSProperties {
     width: `${rect.w}px`,
     height: `${rect.h}px`,
   };
+}
+
+/**
+ * The category column's style: the span sits inside the slot, which is itself the
+ * nearest positioned ancestor, so its model rect is measured against the cell.
+ */
+function categoryStyle(slot: BattleMoveSlotView): CSSProperties {
+  return insetStyle(slot.categoryBox, slot.box);
 }
 
 function flag(value: boolean): string {
@@ -69,7 +87,9 @@ export function MoveSlot(props: MoveSlotProps): JSX.Element {
         <>
           <TypeBadge type={slot.type} />
           <span class="battle-moves__name">{slot.name}</span>
-          <span class="battle-moves__category">{slot.category}</span>
+          <span class="battle-moves__category" style={categoryStyle(slot)}>
+            {slot.category}
+          </span>
           <span class="battle-moves__pp">{slot.pp}</span>
           <span class={joinClasses('battle-moves__pwr', `battle-moves__stat--${slot.powerTone}`)}>
             {slot.power}
@@ -127,6 +147,8 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
             data-hud-move-info={String(slot.index)}
             style={insetStyle(slot.info, card)}
             onClick={() => pressInfo(slot.index)}
+            onPointerEnter={() => emit(infoEnterIntent(slot))}
+            onPointerLeave={() => emit(infoLeaveIntent())}
           >
             i
           </button>
