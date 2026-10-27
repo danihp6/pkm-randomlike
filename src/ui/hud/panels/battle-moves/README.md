@@ -30,6 +30,9 @@ scene's own `menu` rect — painted with `05 Battle HUD`'s cell skin.
 - `fixture.test.ts` — `design/fixtures/05-battle-hud.json` is the frame's own copy: its
   four moves, their printed lines, the selected first cell and the MEGA column; its card is
   the frame's measurement, pinned against the shipped card's right edge and height.
+- `index.ts` — the barrel the scene imports: the card and its mount, `battleMovesBox` and
+  `battleMovesView`, and the view's input and slot types.
+- `README.md` — this map.
 
 ## Rules
 
