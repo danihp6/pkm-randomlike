@@ -8424,10 +8424,163 @@ run-integrity defects first, the presentation and economy last.
       from the decoder being field-by-field: both keys are optional today (`save.test.ts` 545-549), so
       an old save keeps decoding and a new one simply omits them. *(Batch 80)*
 
+**A label correction this phase owes its own record.** `[Task-175]` and `[Task-176]` were cut
+against `docs/routes-spec.md` **§2**, and the bullets both had to rewrite live in **§3, Wild
+encounters** (`## 3`, line 304): Task-175's three hunks landed at 317/333/365 and §2 was never
+touched. The two tasks shipped anyway because their devs followed the content rather than the
+label, but the plan's own prose (Batch 75's fill record and Batch 77's entry) still says §2 —
+read those lines as **§3** from here on, and a future Architect must not hand §2 as an exclusive
+claim to a task that edits the encounter table. No code, test or data moves with this note.
 
+---
 
+## Phase 17 - The issue sweep
 
+The **open GitHub issues of `2026-10-27`**, triaged against `main` @ `01833cd`. Every entry here
+is a gap the shipped code still carries, measured in this repository rather than taken on trust;
+the issues that only needed a human's eye stay open on GitHub and are **not** tasks. Nothing in
+this phase adds a dependency edge except the one named on `[Task-183]`, and only
+`[Task-181]` takes a `SAVE_VERSION` step (**25 → 26**), so the chain reads
+14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → **26**.
 
+### Batches 81 and 82 - the run's own history, and the art a clone does not have
+
+- **Batch 81 — four tasks, four dev slots.** `[Task-181]` holds `src/scenes/RouteScene.ts`,
+  `src/scenes/RunOverScene.ts`, `src/engine/run/{state,history}.ts`, `src/engine/save.ts` and
+  the two docs; `[Task-184]` holds `src/scenes/BattleScene.ts` and `src/assets/README.md`;
+  `[Task-185]` holds `src/scenes/panels/detail.ts` and `src/ui/hud/panels/detail/evolution.ts`;
+  `[Task-186]` holds `docs/maps-spec.md` **§7** alone. Four disjoint path sets, no `package.json`,
+  `src/main.ts`, `vite.config.ts` or `src/data/dex/**` claimed.
+- **Batch 82 — three tasks.** `[Task-182]` holds `src/engine/run/party.ts` + test,
+  `src/scenes/RouteScene.ts` (free once Batch 81's Task-181 merged) and `docs/battle-spec.md`
+  **§13**; `[Task-183]` holds `src/ui/hud/panels/run-over/**`, the **i18n pair** and
+  `src/ui/runSummary.ts`; `[Task-187]` holds `scripts/assets/build-placeholders.mjs` and
+  `src/assets/placeholders/**`. `[Task-183]` is the phase's only edge: it reads the counters
+  Task-181 writes, so it cannot ride beside it.
+- The route-scene queue therefore extends **80 → 81 → 82**, and `[Task-181]` is the phase's one
+  `SAVE_VERSION` holder (25 → 26). No task here repaints a batch that already shipped.
+
+- [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
+      `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
+      and **nothing calls it**: a grep of `src` finds the two names in the module and its tests
+      alone, so `save.history` is `[]` for every player and the STATS board opens on
+      "NO FINISHED RUNS YET." for a run that just ended. The record's other half is missing too:
+      `RunState` (`src/engine/run/state.ts` 51-140) carries no clock, so `playtimeMs` has no
+      source, and `RunPokemon` carries no KO or damage tally, so `record.species` is always `[]`
+      (`history.ts` 48-55 says so out loud). **Fix shape:** `RunState.startedAt: string` (an ISO
+      instant passed **into** `createRun` — the engine reads no clock, D11) and
+      `RunStats.faints: number` beside `catches`/`casualties`; `SAVE_VERSION` **25 → 26** with a
+      migration that seeds `startedAt: ''` and `faints: 0`, both optional-safe in the decoder. One
+      `endRun(won)` helper in `RouteScene` owns the single seam — the two `scene.start('RunOver',
+      …)` calls at 3784 and 3791 — computes the tallies from the **pre-battle snapshot the fold
+      already takes** (`before`, 3799) against the result's HP, calls
+      `pushHistory(save.history, makeHistoryRecord(run, ending))` and stores the document exactly
+      once per run, then opens the scene. No battle-engine path is claimed: the damage dealt and
+      taken are HP deltas, and a KO is a member that left the battle at 0 HP. **Docs:**
+      `docs/design-spec.md` §2 (the run ends once and its record is kept) and
+      `docs/tech-decisions.md` **D54** (the store gains its writer and its clock; the engine stays
+      pure). **Tests:** `[unit]` the `25 → 26` migration round-trips an old document and seeds the
+      two fields; `[unit]` a fixed-seed battle books the KO and the HP dealt/taken on the member
+      that caused them; `[unit]` `endRun` appends once — a second call with the same run leaves
+      the history length unchanged; `[live]` finish a run, return to the main menu and open STATS:
+      the run is listed, with its playtime and its Pokémon table filled. Claims
+      `src/engine/run/{state,history,state.test,history.test}.ts`, `src/engine/save.ts` + test,
+      `src/scenes/RouteScene.ts`, `src/scenes/RunOverScene.ts`, `docs/design-spec.md` and
+      `docs/tech-decisions.md`. *Dependencies:* none. *(Batch 81)*
+
+- [ ] **[Task-182] The launch fills the team-type bonuses.** Issue #59, follow-up 1.
+      `[Task-150]` shipped the four rules — two living members of a type give that type's moves
+      **+10 %** damage and **+20 %** status chance — and `BattleSetup.teamTypes`
+      (`src/engine/battle/state.ts` 209/243, copied at 331) is still never filled: the only
+      matches for `teamTypes` in `src` are the engine, its tests and the wiring inside `damage.ts`
+      and `turn.ts`, so no battle has ever seen the bonus. **Fix shape:** one pure helper
+      `livingTeamTypes(run)` in `src/engine/run/party.ts` — the **living** party's `memberTypes`
+      (the function the file already exports), deduped in party order — and the launch site that
+      builds `BattleLaunch` (`src/scenes/RouteScene.ts` 3529) passes it as `teamTypes`. The
+      double battle reads the same list, and a dead member contributes nothing. **Docs:**
+      `docs/battle-spec.md` §13 (the bonus is drawn from the living party, not the roster).
+      **Tests:** `[unit]` `livingTeamTypes` on a party of two Fire, one Water and one **fainted**
+      Fire reads `['Fire','Water']`; `[unit]` the launch carries the list (the dev-read pattern
+      the scene already uses); `[live]` a party with two Fire members takes **less** damage from a
+      Water move's target test and burns more often than the same party with one. Claims
+      `src/engine/run/party.ts` + test, `src/scenes/RouteScene.ts` and `docs/battle-spec.md` §13.
+      *Dependencies:* none — `memberTypes` and the two engine halves ship. *(Batch 82)*
+
+- [ ] **[Task-183] Run over prints the counters the run now records.** Issues #52 and #61, the
+      screen half. The board's `TOTALS` view prints an em dash where `ENEMIES FAINTED` belongs
+      (`src/ui/hud/panels/run-over/view.ts` 195, `RUN_OVER_EM_DASH`) and the `POKEMON` view prints
+      one in every KOs / DMG DEALT / DMG TANKED cell, because the run recorded none of them —
+      `Task-181` is what gives the run those numbers. **Fix shape:** read them off the finished
+      run (`RunStats.faints` and each member's tallies) instead of the dash, with the layout the
+      frames already fix (`design/fixtures/07*.json`); the Phaser fallback line
+      (`src/ui/runSummary.ts`) gains the same figure. **Docs:** `docs/design-spec.md` §2 (the
+      board's figures are the run's own). **Tests:** `[unit]` the view prints the tallies and
+      falls back to the dash only for a run that recorded none; `[unit]` the same values land in
+      `runSummaryLines`; `[live]` a finished run's board shows a number in every column. Claims
+      `src/ui/hud/panels/run-over/**`, `src/ui/runSummary.ts` + test and `src/i18n/{en,es}.ts`.
+      *Dependencies:* `[Task-181]`. *(Batch 82)*
+
+- [ ] **[Task-184] A battle plays on a tree without the packed art.** Issue #50, residue 3.
+      On a clean clone (`src/assets/placeholders/` only) a wild battle freezes at the entry beat:
+      `BattleScene.showMon` (`2294`) calls `sprite.play(anim)` with an animation built from the
+      **manifest's** frame count (`buildMonAnimations`, 2227-2238, `sheet.frames`) while the
+      placeholder PNG holds the frames the pack measured, so Phaser throws inside
+      `Animation.getFirstTick` and the beat's timer chain dies (`entryTimer === null`, and `E`,
+      `Esc` and a click do nothing). **Fix shape:** clamp each animation's frame list to the
+      loaded texture's own `frameTotal`, and guard the play — `if (!this.anims.exists(anim))
+      return` after the texture is set, so a missing animation draws a still sprite instead of
+      aborting the scene. The placeholder **must keep** the real file's pixel size (the packer's
+      contract in `scripts/assets/build-placeholders.mjs` 11-18); only the animation adapts.
+      **Docs:** `src/assets/README.md` (the placeholder contract, and that a battle must play on
+      one). **Tests:** `[unit]` the clamp on a one-frame texture against a six-frame manifest row;
+      `[live]` on a pack-less tree a wild battle reaches FIGHT / BAG / SWITCH / RUN and `E`
+      skipped the entry. Claims `src/scenes/BattleScene.ts` and `src/assets/README.md`.
+      *Dependencies:* none. *(Batch 81)*
+
+- [ ] **[Task-185] The evolution band draws every row the model returns.** Issue #21, the one
+      known limit it recorded. An Eevee's graph is ten rows — eight evolutions, the current node
+      and its G-Max row — and the band's pool stops at nine (`HUD_DETAIL_EVO_MAX = 9`,
+      `src/scenes/panels/detail.ts` 158; `EVO_MAX_ROWS = 9`, `src/ui/hud/panels/detail/evolution.ts`
+      15, kept in step by a comment), so its **G-Max row is never drawn** while the model holds
+      it. **Fix shape:** the pool grows to cover the model's longest graph (`11`, which leaves the
+      headroom a future forme needs) and the band accommodates the extra rows the way the learnset
+      band already scrolls — a clipped tenth row is the defect, not a smaller font. Both constants
+      move together and stay pinned by one test. **Docs:** `docs/design-spec.md` §3 (the STATS
+      band's row pool). **Tests:** `[unit]` an Eevee member's band returns and draws all ten rows,
+      G-Max last; `[unit]` the two constants agree; `[live]` the STATS tab on an Eevee shows the
+      G-Max row and the band still fits its window. Claims `src/scenes/panels/detail.ts`,
+      `src/ui/hud/panels/detail/evolution.ts` + tests and `docs/design-spec.md` §3.
+      *Dependencies:* none. *(Batch 81)*
+
+- [ ] **[Task-186] The eleven no-op berries reach a run from two seams, and the spec says one.**
+      Issue #69. `docs/maps-spec.md` §7 (862-868) says the eleven berry-class no-ops "reach a run
+      from the `mid` **ground-loot** pool alone", and **Leppa Berry** is also a berry-tree row:
+      `BERRY_IDS` (`src/data/npcs.ts`) lists `leppaberry` and the berry-tree NPC hands it out
+      through `npcBerryHarvest` → `addItem` (`src/scenes/RouteScene.ts`). **Fix shape:** the
+      sentence names **both** seams — the mid ground-loot pool and the berry-tree NPC — and the
+      operative claim it protects stays exactly as written: none of the eleven is in
+      `SHOP_ROTATION` (`src/data/shop.ts`), so this is a repricing and not a restock. **Docs:**
+      that one bullet, `docs/maps-spec.md` §7. **Tests:** none — the price rule and the shop
+      rotation are already pinned by `src/data/items.test.ts`; the criterion is that no sentence
+      in the bullet contradicts the berry tree. Claims `docs/maps-spec.md` §7.
+      *Dependencies:* none. *(Batch 81)*
+
+- [ ] **[Task-187] Every pack-less placeholder carries its own accent.** Issue #68. On a tree
+      without the art pack, `scripts/assets/build-placeholders.mjs` paints **every** atlas with
+      the same two colours (`#7888A0` / `#3A4252`), so a whole-screen "no 24×24 square of the
+      placeholder's paint" criterion cannot hold anywhere — a tileset placeholder at the wall band
+      matched it four runs out of ten, 90 px from the object under test. **Fix shape:** each
+      placeholder takes a **stable accent derived from its own path** (a hash into a small palette,
+      so the file is deterministic and the same atlas keeps the same colour across runs), the
+      committed `src/assets/placeholders/**` is regenerated, and the rule is written down where
+      the contract lives, so a future criterion can be measured screen-wide. The **sign** keeps
+      its transparent silhouette and its own accent (Task-165's fix is not undone), and the
+      placeholder's pixel size still matches the real file's. **Docs:** `src/assets/README.md`
+      (one accent per placeholder, and why). **Tests:** `[unit]` two different atlas paths paint
+      two different accents, and the same path paints the same one twice; `[live]` on a pack-less
+      tree the screen-wide scan is 0 while the sign's own window stays non-matching. Claims
+      `scripts/assets/build-placeholders.mjs`, `src/assets/placeholders/**` and
+      `src/assets/README.md`. *Dependencies:* none. *(Batch 82)*
 
 ---
 
