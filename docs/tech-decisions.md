@@ -836,7 +836,18 @@ language (`English` / `Español`) so the picker reads from either side.
 **The boundary.** The dex's own names stay English in every locale: Pokémon, move,
 ability and item names, the biome names and the trainer classes come from `@pkmn/dex` and
 `src/data/**`, which ship English only — they are *content*, not chrome, and localising
-them is a separate and much larger job. The **engine's battle log is keyed too**
+them is a separate and much larger job.
+
+**Items join moves and abilities** (`Task-209`). An **item description** is
+content-localised: `itemText` (`src/i18n/content.ts`) reads
+`src/data/i18n/es/items.json`, a **hand-authored** table of item id → Spanish body, and
+falls back to the catalogue's English `shortDesc` when it has no row (`''` for an id the
+catalogue does not know). Item **names** stay English, as the boundary above says. Every
+`ball`, `heal` and `status` row of `src/data/items.ts` must carry one — those are the
+stacks a run hands the player — while the held-item and valuable prose stays English until
+a generated table exists.
+
+The **engine's battle log is keyed too**
 (`Task-114`): a text event carries a `battle.log.*` key and the params it interpolates,
 never a sentence, and `src/ui/feed.ts` resolves it through `t()` at the moment it builds
 the frame the battle scene prints. The engine therefore stays headless and

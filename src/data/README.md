@@ -9,11 +9,16 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   accessors live beside it (`species.ts`, `megas.ts`, `gmaxes.ts`, `moves.ts`,
   `abilities.ts`, `items.ts`, `learnsets.ts`, `types.ts`, `natures.ts`,
   `evolutions.ts`).
-- `i18n/es/` — **generated**, committed: the official Spanish move and ability
-  names and descriptions (`moves.json`, `abilities.json`, `meta.json`), produced
-  by `node scripts/build-i18n-content.mjs --source <PokeAPI csv dir>` from
-  PokeAPI's `es` names and flavour text and read by `src/i18n/content.ts`. The
-  English strings stay in the dex (`D43` amended for these two kinds).
+- `i18n/es/` — `moves.json`, `abilities.json` and `meta.json` are **generated**,
+  committed: the official Spanish move and ability names and descriptions,
+  produced by `node scripts/build-i18n-content.mjs --source <PokeAPI csv dir>`
+  from PokeAPI's `es` names and flavour text and read by `src/i18n/content.ts`.
+  Beside them `items.json` is **hand-authored** (the generator has no item pass):
+  item id → the Spanish body the bag's description card prints through
+  `itemText`, with the catalogue's English `shortDesc` as the fallback and a row
+  for every `ball`/`heal`/`status` stack a run hands the player. Item **names**
+  stay English in every locale; the English strings stay in the dex (`D43`
+  amended for these kinds).
 - `tilesets/` — one file per biome tileset — the forest's row in `frlg.ts`, wired
   by the `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`,
   the procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame

@@ -1,4 +1,5 @@
 import { t, type TranslationKey } from '../../../../i18n';
+import { itemText } from '../../../../i18n/content';
 import type { HudState } from '../../state';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
@@ -179,13 +180,14 @@ export function bagPanelView(
   };
 
   const selected = stacks.length === 0 ? undefined : tiles[cursor];
-  const height = infoHeight('');
+  const text = selected === undefined || selected.itemId === null ? '' : itemText(selected.itemId);
+  const height = infoHeight(text);
   const info =
     selected === undefined
       ? null
       : {
           title: selected.name,
-          text: '',
+          text,
           box: {
             x: Math.max(8, box.x - BAG_INFO_W - BAG_INFO_GAP),
             y:

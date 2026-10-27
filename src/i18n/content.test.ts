@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { allAbilities } from '../data/dex/abilities';
 import { allMoves } from '../data/dex/moves';
+import { ITEMS, getItem } from '../data/items';
 import abilitiesEs from '../data/i18n/es/abilities.json';
+import itemsEs from '../data/i18n/es/items.json';
 import meta from '../data/i18n/es/meta.json';
 import movesEs from '../data/i18n/es/moves.json';
+import font from '../data/ui/font.json';
 import {
   MISSING_ES,
   abilityDescription,
   abilityName,
   abilityNameFromEnglish,
+  itemText,
   moveDescription,
   moveName,
   moveShortDescription,
@@ -20,6 +24,8 @@ type DexRow = Readonly<{ id: string; desc: string; shortDesc: string }>;
 
 const MOVES_ES = movesEs as unknown as Readonly<Record<string, ContentRow>>;
 const ABILITIES_ES = abilitiesEs as unknown as Readonly<Record<string, ContentRow>>;
+const ITEMS_ES = itemsEs as Readonly<Record<string, string>>;
+const GLYPH_CODES = new Set(font.glyphs.map((glyph) => glyph.code));
 
 const AUTHORED_MOVES: readonly string[] = [
   'alluringvoice',
@@ -194,5 +200,83 @@ describe('the Spanish content table', () => {
     expect(moveDescription('tackle')).toBe('No additional effect.');
     expect(abilityName('blaze')).toBe('Blaze');
     expect(abilityDescription('blaze')).toContain('1/3');
+  });
+});
+
+/** The catalogue's stacks a run hands the player, kind by kind (`Task-209`). */
+const CONSUMABLE_KINDS: ReadonlySet<string> = new Set(['ball', 'heal', 'status']);
+
+const CONSUMABLE_IDS: readonly string[] = [
+  'pokeball',
+  'premierball',
+  'greatball',
+  'ultraball',
+  'masterball',
+  'potion',
+  'superpotion',
+  'hyperpotion',
+  'fullrestore',
+  'candyred',
+  'candyblue',
+  'candygreen',
+  'candyyellow',
+  'candypink',
+  'exorcistbottle',
+  'weatherbottle',
+  'medicbottle',
+  'antidote',
+  'paralyzeheal',
+  'awakening',
+  'burnheal',
+  'iceheal',
+  'fullheal',
+];
+
+describe('the Spanish item table', () => {
+  it('gives every catalogue row an English line', () => {
+    const blank = ITEMS.filter((row) => row.shortDesc.trim().length === 0).map((row) => row.id);
+    expect(blank).toEqual([]);
+    expect(ITEMS.length).toBeGreaterThan(0);
+  });
+
+  it('covers every ball, heal and status stack in Spanish', () => {
+    const consumables = ITEMS.filter((row) => CONSUMABLE_KINDS.has(row.kind)).map((row) => row.id);
+    expect(CONSUMABLE_IDS).toHaveLength(23);
+    expect(new Set(consumables)).toEqual(new Set(CONSUMABLE_IDS));
+    for (const id of consumables) {
+      expect(ITEMS_ES[id]?.trim().length, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('resolves an item body through the current locale', () => {
+    setLocale('es');
+    expect(itemText('potion')).toBe('Restaura 20 PS.');
+    expect(itemText('pokeball')).toBe('Dispositivo para capturar Pokémon salvajes.');
+    expect(itemText('leftovers')).toBe(getItem('leftovers')!.shortDesc);
+    expect(itemText('nonsense')).toBe('');
+
+    setLocale('en');
+    expect(itemText('potion')).toBe(getItem('potion')!.shortDesc);
+    expect(itemText('pokeball')).toBe('A device for catching wild Pokémon.');
+    expect(itemText('leftovers')).toBe(getItem('leftovers')!.shortDesc);
+    expect(itemText('nonsense')).toBe('');
+  });
+
+  it('draws every Spanish item line in the FRLG font, in bounds', () => {
+    for (const [id, text] of Object.entries(ITEMS_ES)) {
+      expect(getItem(id), id).toBeDefined();
+      expect(text.trim().length, id).toBeGreaterThan(0);
+      expect(text.length, id).toBeLessThanOrEqual(132);
+      expect(text, id).not.toContain('\u2014');
+      for (const char of text) {
+        const code = char.codePointAt(0)!;
+        expect(GLYPH_CODES.has(code), `${id}: U+${code.toString(16)}`).toBe(true);
+      }
+    }
+  });
+
+  it('pins the two rows the QA pass reads verbatim', () => {
+    expect(ITEMS_ES.pokeball).toBe('Dispositivo para capturar Pokémon salvajes.');
+    expect(ITEMS_ES.potion).toBe('Restaura 20 PS.');
   });
 });

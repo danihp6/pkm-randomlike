@@ -115,6 +115,7 @@ cycle with the cue table.
 | `src/data/frlg/status-icons.json` | generated frame map for the Añil status badge atlas | 7 |
 | `src/data/abilityText.ts` | the ability-text override table: the ids whose dex blurb is competitive-play boilerplate while the engine ports the ability (`docs/balance/effect-coverage.md`), read by `abilityDescription` | 6 |
 | `src/data/passives.ts` | the map-passive table (`MAP_PASSIVES`): the **out-of-battle** abilities a route rewards, each row's trigger (`'room'` on entry, `'win'` on a won battle), its chance and the catalogue ids it pays, read by `src/engine/run/passives.ts` (`docs/routes-spec.md` §2) | 10 |
+| `src/data/i18n/es/items.json` | **hand-authored**, not generated (the i18n generator fetches PokeAPI's move and ability CSVs and has no item pass): the Spanish item **body** table, `id → description`, read by `itemText` (`src/i18n/content.ts`). Item **names** stay English (`D43`, amended), and an id the table does not carry falls back to the catalogue's English `shortDesc`. Its coverage floor is every `ball`, `heal` and `status` row of `src/data/items.ts` — the stacks a run hands the player (the starting bag's Poké Balls, the Mart's potions and status cures, the coloured candies, the three route bottles) — while the held-item and valuable prose stays English until a generated table exists; `content.test.ts` asserts that floor as a set | 11 |
 
 - A **coloured candy**'s rule is per **run**, not per catalogue row: the colour →
   stat/sign mapping is drawn on `Rng(hashSeed('<seed>:candy:<colour>'))`, so red
