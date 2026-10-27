@@ -421,10 +421,10 @@
     left: 16px;
   }
 
-  .main-menu__value {
-    top: 17px;
-    right: 8px;
-  }
+  /*
+   * The phone frames' CONTINUE row carries the portraits alone: `forLayout` drops
+   * its map/biome value, so no compact rule may size a value node there.
+   */
 
   /* The phone frames draw neither the bar nor the cursor. */
   .main-menu__bar,

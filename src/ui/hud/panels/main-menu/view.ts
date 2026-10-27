@@ -57,6 +57,24 @@ export type MainMenuView = Readonly<{
   selected: MainMenuRowId | null;
 }>;
 
+/** The board's two layouts: the desk frame (`01`) and the phone frame (`m01`). */
+export type MainMenuLayout = 'wide' | 'compact';
+
+/**
+ * The view as one layout draws it. `'compact'` drops the CONTINUE row's secondary
+ * datum — the map/biome label — because the row's 326 px at 390×844 hold the
+ * portraits and nothing else; every other field, every other row and the portrait
+ * list itself are returned **unchanged**. `'wide'` returns the very same object.
+ */
+export function forLayout(view: MainMenuView, layout: MainMenuLayout): MainMenuView {
+  if (layout !== 'compact') return view;
+  const at = view.rows.findIndex((row) => row.id === 'continue');
+  if (at < 0) return view;
+  if (view.rows[at]!.value === '') return view;
+  const rows = view.rows.map((row, index) => (index === at ? { ...row, value: '' } : row));
+  return { ...view, rows };
+}
+
 /** The board's desktop rects (`01`, `01b`), page coordinates at 1280×800. */
 export const MAIN_MENU_BOARD: Readonly<{
   title: { x: number; y: number; w: number; h: number };

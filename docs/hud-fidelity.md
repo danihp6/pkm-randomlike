@@ -197,3 +197,14 @@ share the first row and MONTHLY MAX STRIKE sits under them, one block 172 × 48 
 196, the second row 8 px below the first. The rects are data — `MAIN_MENU_FOOTER_NARROW` in
 `src/ui/hud/panels/main-menu/view.ts` — and the stylesheet's compact block draws exactly those
 numbers, so no label can run into the block beside it. The desk footer is unchanged.
+
+The main menu's narrow CONTINUE row carries **one** secondary datum: the party's portraits.
+At 390×844 the row is 326 × 48 at (32, 402) and the four 22 px cells (pitch 25) fill
+x 258..355, everything to the right of the CONTINUE label, so the map/biome value is
+**absent** there — not elided to fewer letters and not moved into a tooltip.
+`forLayout(view, 'compact')` in `src/ui/hud/panels/main-menu/view.ts` is the seam: it drops
+that one row's `value` (`runPositionLabel`, which the STATS and route HUDs still read) and
+returns every other field, row and the portrait list unchanged, and the panel applies it from
+`MAIN_MENU_NARROW_QUERY`, so a resize flips the row without the scene re-mounting it. The
+empty-value rule paints no node at all, which is what keeps the label off the screen. The desk
+frame keeps both fields: `forLayout(view, 'wide')` returns the very same object.
