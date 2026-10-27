@@ -8641,11 +8641,16 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       **Fix shape:** the moves window and the HP box take one shared geometry rule so the menu's
       left edge starts where the HP panel ends (the canvas HUD's shipped layout already does this —
       its foe panel sits at the right of the field), and each move cell reserves the 22-px ⓘ in
-      its category column the way the name column already reserves the stone column. **Docs:**
+      its category column the way the name column already reserves the stone column. **The same
+      panel owes the ⓘ its hover half:** in the DOM HUD the button is `onClick` only
+      (`battleMoves.tsx` 124-132 binds no pointer-enter), so hovering a move's ⓘ floats nothing
+      while the canvas HUD does — measured twice on 2026-10-27 with the pointer on the first cell's
+      square. **Docs:**
       `docs/hud-fidelity.md` (the battle's zones, and an information button's reserve). **Tests:**
       `[unit]` the layout model returns rects where `battle-moves` and the HP box do not intersect
       and `category.right <= info.left`; `[live]` a wild battle at 1280×800 with FIGHT open shows
-      the foe's HP value in full, and at 390×844 neither defect returns. Claims
+      the foe's HP value in full, and at 390×844 neither defect returns; `[live]` hovering a move's
+      ⓘ without clicking floats its description and moving off drops it. Claims
       `src/ui/hud/panels/battle-hp/**`, `src/ui/hud/panels/battle-moves/**` + tests and
       `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 83)*
 
