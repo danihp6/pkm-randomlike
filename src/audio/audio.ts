@@ -1,7 +1,15 @@
 import Phaser from 'phaser';
 import { cryCueFor, moveSoundCueFor } from '../data/audio';
 import { applyVolume, loadSettings } from '../settings';
-import { AUDIO_CUES, HIT_CUE_ID, audioCue, audioCueUrl, type AudioCue, type AudioCueId } from './cues';
+import {
+  AUDIO_CUES,
+  HIT_CUE_ID,
+  audioCue,
+  audioCueUrl,
+  hasAudioCue,
+  type AudioCue,
+  type AudioCueId,
+} from './cues';
 
 /**
  * The Phaser half of the cue table (D22 addendum): it preloads every cue, plays
@@ -36,6 +44,7 @@ export function preloadAudio(scene: Phaser.Scene): void {
 
 /** Plays a one-shot cue. A music cue is ignored — `playMusic` owns those. */
 export function playCue(scene: Phaser.Scene, cueId: AudioCueId): void {
+  if (!hasAudioCue(cueId)) return;
   const cue = audioCue(cueId);
   if (cue.kind === 'music') return;
   startSound(scene, cue);
@@ -49,7 +58,8 @@ export function playCue(scene: Phaser.Scene, cueId: AudioCueId): void {
  */
 export function playCry(scene: Phaser.Scene, speciesId: string): boolean {
   const cueId = cryCueFor(speciesId);
-  return cueId !== null && startSound(scene, audioCue(cueId)) !== null;
+  if (cueId === null || !hasAudioCue(cueId)) return false;
+  return startSound(scene, audioCue(cueId)) !== null;
 }
 
 /**
@@ -58,6 +68,7 @@ export function playCry(scene: Phaser.Scene, speciesId: string): boolean {
  */
 export function playMoveSound(scene: Phaser.Scene, moveId: string): boolean {
   const cueId = moveSoundCueFor(moveId) ?? HIT_CUE_ID;
+  if (!hasAudioCue(cueId)) return false;
   return startSound(scene, audioCue(cueId)) !== null;
 }
 
