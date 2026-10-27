@@ -58,6 +58,7 @@ import {
   MAX_MOVES,
   POKEVIAL_MAX_CHARGES,
   addItem,
+  addFaints,
   addPokemon,
   adoptAtLevel,
   advanceMap,
@@ -75,6 +76,7 @@ import {
   isTrainerDefeated,
   markBossDefeated,
   markItemPicked,
+  memberById,
   resolveBattle,
   routeIndexForRoom,
   runBand,
@@ -84,12 +86,14 @@ import {
   unequipHeldItem,
   updatePokemon,
   useCapture,
+  withMemberTally,
   xpForLevel,
   type BagCounts,
   type BattleLaunch,
   type BattleReturn,
   type BattleReward,
   type BattleTrigger,
+  type MemberTally,
   type RunPokemon,
   type RunState,
 } from '../engine/run';
@@ -132,7 +136,8 @@ import {
   type TileMap,
 } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
-import { clearRun, storeRun, type Settings } from '../engine/save';
+import { clearRun, loadSave, storeHistory, storeRun, type Settings } from '../engine/save';
+import { emptyEndLog, endRun, type RunEndLog } from '../engine/run/history';
 import {
   DEFAULT_SHAPE,
   DEFAULT_TRAINER_SIGHT,
@@ -563,6 +568,8 @@ export class RouteScene extends Phaser.Scene {
   private battleCounter = 0;
   private debugMonCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
+  /** The run-history log the end seam writes through; built from the loaded save. */
+  private endLog: RunEndLog | null = null;
   /** The movement keys behind the current bindings (arrows plus WASD), watched every frame. */
   private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key[]>;
   /** The run key; held while walking, it speeds the step and the walk cycle. */
@@ -1141,9 +1148,17 @@ export class RouteScene extends Phaser.Scene {
 
   create(): void {
     if (!this.run) {
-      this.run = createRun({ seed: DEV_SEED, starter: createRunPokemon(DEMO_STARTER), bag: DEMO_BAG });
+      this.run = createRun({
+        seed: DEV_SEED,
+        starter: createRunPokemon(DEMO_STARTER),
+        bag: DEMO_BAG,
+        startedAt: new Date().toISOString(),
+      });
       this.run = addPokemon(this.run, createRunPokemon(DEMO_RESERVE));
     }
+    // The end seam writes over the stored history, so it opens from the slot the
+    // run was resumed from, never from a list the scene invents (`Task-181`).
+    this.endLog = emptyEndLog(loadSave(browserStorage()).history);
     this.persistRun();
     // A restart in place (`scene.start('Route', …)`) runs `create` again over the
     // previous room's arrays, whose objects Phaser already destroyed with the
@@ -1321,6 +1336,14 @@ export class RouteScene extends Phaser.Scene {
     showAreaPanel(this.panelHost);
     refreshDetail(this.panelHost);
     playMusic(this, 'route-music');
+    // Dev only: the browser pass reaches the run's end seam through the scene
+    // itself, the way `__pkmBattle` exposes a battle (`Task-181`).
+    if (IS_DEVELOP) {
+      (globalThis as Record<string, unknown>).__pkmRoute = this;
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        delete (globalThis as Record<string, unknown>).__pkmRoute;
+      });
+    }
   }
 
   /**
@@ -3711,6 +3734,10 @@ export class RouteScene extends Phaser.Scene {
     this.pendingBattle = null;
     if (!pending) return;
 
+    // The battle's own figures land before the fold, so a member that faints in
+    // this same battle still carries what it did, and the run's faint counter
+    // grows by the KOs it reported (`Task-181`).
+    this.run = this.bookTallies(result.tallies);
     const reward = this.rewardFor(pending.trigger);
     const before = this.run.party;
     // What the battle took out of the party is the floor mission's progress; read
@@ -3783,14 +3810,14 @@ export class RouteScene extends Phaser.Scene {
     this.gameOver = over;
     const finish = (): void => {
       if (over) {
-        this.scene.start('RunOver', { run: this.run, won: false });
+        this.endRun(false);
         return;
       }
       if (wonBoss) {
         // The final boss ends a finite run; every other map opens its portal, so
         // rebuild the room with the new door and let the player walk through.
         if (isFinalMap(this.run.mode, this.run.mapIndex)) {
-          this.scene.start('RunOver', { run: this.run, won: true });
+          this.endRun(true);
           return;
         }
         this.transitionTo(this.run, { keepPosition: true });
@@ -3813,6 +3840,58 @@ export class RouteScene extends Phaser.Scene {
       if (capture?.toPc) this.showNotice(catchToPcNotice(this.memberName(capture.member)));
       finish();
     });
+  }
+
+  /**
+   * Books the battle's per-member tallies onto the run: each entry's `kos`,
+   * `damage` and `damageTaken` go onto the party or box member that carries its
+   * `memberId`, and `stats.faints` grows by the sum of the KOs. An absent list is
+   * an old caller and books nothing (`Task-181`).
+   */
+  private bookTallies(tallies: readonly MemberTally[] | undefined): RunState {
+    if (!tallies || tallies.length === 0) return this.run;
+    let run = this.run;
+    let kos = 0;
+    for (const tally of tallies) {
+      if (tally.kos > 0) kos += tally.kos;
+      const member = memberById(run, tally.memberId);
+      if (member) run = updatePokemon(run, withMemberTally(member, tally));
+    }
+    return addFaints(run, kos);
+  }
+
+  /**
+   * Ends the run once: writes its record, then opens the board. The instant is the
+   * scene's (the engine reads no clock, `D11`): a run with no `startedAt` — one
+   * resumed from a v25 save — reports a playtime of 0 rather than a guess, and a
+   * log that already ended writes nothing, so a second arrival appends no second
+   * record (`Task-181`).
+   */
+  private endRun(won: boolean): void {
+    if (!this.run) return;
+    const startedAt = this.run.startedAt;
+    const started = startedAt === '' ? Number.NaN : Date.parse(startedAt);
+    const playtimeMs = Number.isNaN(started) ? 0 : Math.max(0, Date.now() - started);
+    const log = this.endLog ?? emptyEndLog(loadSave(browserStorage()).history);
+    const next = endRun(log, this.run, {
+      endedAt: new Date().toISOString(),
+      playtimeMs,
+      won,
+    });
+    this.endLog = next;
+    if (next.history !== log.history) storeHistory(browserStorage(), next.history);
+    this.scene.start('RunOver', { run: this.run, won });
+  }
+
+  /**
+   * Dev only: ends the run through the real seam, so the browser pass can measure
+   * it. False with no run, a finished run, or a log that already ended.
+   */
+  debugEndRun(won: boolean): boolean {
+    if (!IS_DEVELOP || !this.run || this.gameOver || this.endLog?.ended === true) return false;
+    this.gameOver = true;
+    this.endRun(won);
+    return true;
   }
 
   /** Tears down the reward card and runs its callback (the level-up beat). */

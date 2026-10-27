@@ -10,6 +10,7 @@ import { missionForMap, recordHpLost } from './missions';
 import {
   MAX_PARTY_SIZE,
   addCaughtPokemon,
+  addFaints,
   addItem,
   addMoney,
   addPokemon,
@@ -21,6 +22,7 @@ import {
   dedupeMemberIds,
   depositToBox,
   discoverCandy,
+  emptyRunStats,
   equipHeldItem,
   evolveMember,
   gainExperience,
@@ -39,6 +41,7 @@ import {
   pcFullyEditable,
   pcMemberEditable,
   recordCatch,
+  runFaints,
   setParty,
   spendMoney,
   swapPartyBox,
@@ -62,7 +65,7 @@ function member(id: string, speciesId = 'sentret', level = 3): ReturnType<typeof
 }
 
 function withCatches(catches: number): ReturnType<typeof createRun> {
-  return { ...createRun({ seed: 'run-a', starter }), stats: { catches, casualties: 0 } };
+  return { ...createRun({ seed: 'run-a', starter }), stats: { catches, casualties: 0, faints: 0 } };
 }
 
 describe('createRun', () => {
@@ -82,12 +85,50 @@ describe('createRun', () => {
     expect(run.capturedRooms).toEqual([]);
     expect(run.money).toBe(0);
     expect(run.mode).toBe('finite');
-    expect(run.stats).toEqual({ catches: 0, casualties: 0 });
+    expect(run.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
   });
 
   it('honours a starting money amount, floored at zero', () => {
     expect(createRun({ seed: 'run-a', starter, money: 500 }).money).toBe(500);
     expect(createRun({ seed: 'run-a', starter, money: -20 }).money).toBe(0);
+  });
+
+  it('reads the instant its caller passed in, or blank when it passed none', () => {
+    const instant = '2026-10-27T09:30:00.000Z';
+    expect(createRun({ seed: 'run-a', starter, startedAt: instant }).startedAt).toBe(instant);
+    expect(createRun({ seed: 'run-a', starter, startedAt: '' }).startedAt).toBe('');
+    expect(createRun({ seed: 'run-a', starter }).startedAt).toBe('');
+  });
+
+  it('starts with no faint on the run’s own counter', () => {
+    expect(emptyRunStats()).toEqual({ catches: 0, casualties: 0, faints: 0 });
+    expect(createRun({ seed: 'run-a', starter }).stats.faints).toBe(0);
+    expect(runFaints(createRun({ seed: 'run-a', starter }).stats)).toBe(0);
+  });
+});
+
+describe('the run’s faint counter', () => {
+  it('adds the battle’s KOs onto the run', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const once = addFaints(run, 3);
+    expect(once.stats).toEqual({ catches: 0, casualties: 0, faints: 3 });
+    expect(addFaints(once, 2).stats.faints).toBe(5);
+    expect(run.stats.faints).toBe(0);
+  });
+
+  it('never counts a negative or an unreadable gain', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    expect(addFaints(run, 0)).toBe(run);
+    expect(addFaints(run, -4)).toBe(run);
+    expect(addFaints(run, Number.NaN)).toBe(run);
+    expect(addFaints(run, 2.7).stats.faints).toBe(2);
+  });
+
+  it('reads an absent counter as none, so an older run counts from zero', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const legacy: RunState = { ...run, stats: { catches: 1, casualties: 0 } };
+    expect(runFaints(legacy.stats)).toBe(0);
+    expect(addFaints(legacy, 1).stats.faints).toBe(1);
   });
 });
 
@@ -537,7 +578,7 @@ describe('dedupeMemberIds', () => {
     const rekeyed = next.party[1];
     expect(rekeyed.fighter.id).toBe('catch-1');
     expect({ ...rekeyed, fighter: { ...rekeyed.fighter, id: 'wild' } }).toEqual(original);
-    expect(next.stats).toEqual({ catches: 2, casualties: 0 });
+    expect(next.stats).toEqual({ catches: 2, casualties: 0, faints: 0 });
   });
 
   it('returns a run whose ids are already unique as the same object', () => {
@@ -573,7 +614,7 @@ describe('capture and trainers', () => {
 
   it('counts a catch for the run summary', () => {
     const run = createRun({ seed: 'run-a', starter });
-    expect(recordCatch(run, 'sentret').stats).toEqual({ catches: 1, casualties: 0 });
+    expect(recordCatch(run, 'sentret').stats).toEqual({ catches: 1, casualties: 0, faints: 0 });
   });
 });
 

@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   MAX_HISTORY,
+  emptyEndLog,
   emptyHistory,
+  endRun,
   makeHistoryRecord,
   pushHistory,
   type RunHistory,
@@ -106,11 +109,71 @@ describe('makeHistoryRecord', () => {
     const run: RunHistory = {
       ...history(),
       party: [tallying(lead, 3, 120), tallying(lead, 1, 30)],
-      box: [tallying(boxed, 0, 45), tallying(createRunPokemon({ id: 'p2', speciesId: 'pidgey', level: 3 }), 0, 0)],
+      box: [
+        tallying(boxed, 0, 45),
+        tallying(createRunPokemon({ id: 'p2', speciesId: 'pidgey', level: 3 }), 0, 0),
+      ],
     };
     expect(makeHistoryRecord(run, ENDING).species).toEqual([
       { speciesId: 'charmander', kos: 4, damage: 150 },
       { speciesId: 'sentret', kos: 0, damage: 45 },
     ]);
+  });
+});
+
+describe('emptyEndLog', () => {
+  it('opens on the stored history with nothing ended', () => {
+    const stored = [record(1), record(2)];
+    const log = emptyEndLog(stored);
+    expect(log.ended).toBe(false);
+    expect(log.history).toBe(stored);
+    expect(emptyEndLog([]).history).toEqual([]);
+  });
+});
+
+describe('endRun', () => {
+  it('appends exactly one record, the one its own arguments build', () => {
+    const log = endRun(emptyEndLog([]), history(), ENDING);
+    expect(log.ended).toBe(true);
+    expect(log.history).toHaveLength(1);
+    expect(log.history[0]).toEqual(makeHistoryRecord(history(), ENDING));
+  });
+
+  it('a second call with the same run appends nothing and answers the same log', () => {
+    const first = endRun(emptyEndLog([record(1)]), history(), ENDING);
+    const second = endRun(first, history(), ENDING);
+    expect(second).toBe(first);
+    expect(second.history).toHaveLength(first.history.length);
+    expect(second.history.length).toBe(2);
+    expect(second.ended).toBe(true);
+  });
+
+  it('prepends, so the newest run is first and the older ones keep their order', () => {
+    const stored = [record(3), record(1), record(2)];
+    const log = endRun(emptyEndLog(stored), history(), ENDING);
+    expect(log.history[0].seed).toBe('seed-a');
+    expect(log.history.slice(1)).toEqual(stored);
+    expect(stored).toEqual([record(3), record(1), record(2)]);
+  });
+
+  it('carries the caller’s ending verbatim and reads no clock', () => {
+    vi.spyOn(Date, 'now').mockImplementation(() => {
+      throw new Error('endRun read the clock');
+    });
+    const log = endRun(emptyEndLog([]), history(), { ...ENDING, playtimeMs: 0, won: true });
+    expect(log.history[0].playtimeMs).toBe(0);
+    expect(log.history[0].won).toBe(true);
+    expect(log.history[0].endedAt).toBe(ENDING.endedAt);
+  });
+});
+
+describe('the end seam stays off the clock', () => {
+  const SOURCES = ['./state.ts', './progression.ts', './battleLink.ts', './history.ts'];
+
+  it('reads no clock and no RNG in the four engine files the seam lives in', () => {
+    for (const path of SOURCES) {
+      const source = readFileSync(new URL(path, import.meta.url), 'utf8');
+      expect(source, path).not.toMatch(/Date\.now|new Date\(|Math\.random/);
+    }
   });
 });

@@ -30,10 +30,33 @@ export const FIRST_MAP = 1;
 export type RunStats = Readonly<{
   catches: number;
   casualties: number;
+  /**
+   * Enemies this run has fainted, the run's own counter (`Task-181`). Optional so
+   * every save written before `SAVE_VERSION` 26 and every run built by an older
+   * caller stays legal: absent reads as 0 (`runFaints`).
+   */
+  faints?: number;
 }>;
 
 export function emptyRunStats(): RunStats {
-  return { catches: 0, casualties: 0 };
+  return { catches: 0, casualties: 0, faints: 0 };
+}
+
+/** The run's faint counter as a whole number of at least zero; absent counts as none. */
+export function runFaints(stats: RunStats): number {
+  const faints = stats.faints;
+  return typeof faints === 'number' && Number.isFinite(faints) && faints > 0 ? Math.floor(faints) : 0;
+}
+
+/**
+ * Adds `faints` to the run's faint counter, clamped at 0. A non-positive gain
+ * returns the run **as the same object**, so a caller cannot dirty a save for
+ * nothing (`Task-181`).
+ */
+export function addFaints(run: RunState, faints: number): RunState {
+  const gain = Math.max(0, Math.floor(Number.isFinite(faints) ? faints : 0));
+  if (gain === 0) return run;
+  return { ...run, stats: { ...run.stats, faints: runFaints(run.stats) + gain } };
 }
 
 /**
@@ -136,6 +159,12 @@ export type RunState = Readonly<{
    */
   modifiers: RunModifiers;
   stats: RunStats;
+  /**
+   * The ISO-8601 instant the run was created, passed **in** by its caller: the
+   * engine reads no clock (`D11`). `''` means the run came from a save written
+   * before `SAVE_VERSION` 26 and its playtime is unknown (reported as 0).
+   */
+  startedAt: string;
 }>;
 
 export type RunInit = Readonly<{
@@ -147,6 +176,8 @@ export type RunInit = Readonly<{
   money?: number;
   /** The squad's starting XP; defaults to the starter's own level curve. */
   xp?: number;
+  /** The ISO instant the run begins; absent or `''` means unknown. */
+  startedAt?: string;
 }>;
 
 export function createRun(init: RunInit): RunState {
@@ -180,6 +211,7 @@ export function createRun(init: RunInit): RunState {
     floorCasualties: 0,
     modifiers: emptyModifiers(),
     stats: emptyRunStats(),
+    startedAt: init.startedAt ?? '',
   };
 }
 

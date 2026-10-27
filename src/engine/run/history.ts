@@ -46,11 +46,9 @@ export type RunHistory = Readonly<{
 }>;
 
 /**
- * The per-member KO and damage counters, read only when the run state already
- * carries them: `RunState` has no tally yet, so today every member reads zero and
- * a record's `species` comes out empty. The counters are read structurally, so the
- * day `RunPokemon` grows them this record starts filling without a signature
- * change.
+ * The per-member KO and damage counters the record sums per species. `RunPokemon`
+ * carries them as optional fields (`Task-181`), so an older save and a member that
+ * never landed a hit both read as zero and their row is skipped.
  */
 type MemberTally = Readonly<{ kos?: number; damage?: number }>;
 
@@ -65,6 +63,31 @@ export function pushHistory(
 ): readonly RunHistoryRecord[] {
   const next = [record, ...history];
   return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
+}
+
+/** A run's history as the end seam holds it: the list and whether it already ended. */
+export type RunEndLog = Readonly<{
+  history: readonly RunHistoryRecord[];
+  ended: boolean;
+}>;
+
+/** The log a scene opens with: the stored history, nothing ended yet. */
+export function emptyEndLog(history: readonly RunHistoryRecord[]): RunEndLog {
+  return { history, ended: false };
+}
+
+/**
+ * The log after a run ends: appends one record and flips `ended`; a log already
+ * ended is returned **unchanged**, so calling it twice appends once. The record
+ * is `makeHistoryRecord`'s, so the list and the figures always agree (`Task-181`).
+ */
+export function endRun(
+  log: RunEndLog,
+  run: RunHistory,
+  ending: Readonly<{ endedAt: string; playtimeMs: number; won: boolean }>,
+): RunEndLog {
+  if (log.ended) return log;
+  return { history: pushHistory(log.history, makeHistoryRecord(run, ending)), ended: true };
 }
 
 /** Builds a record from the run's own counters; the caller supplies the clock. */

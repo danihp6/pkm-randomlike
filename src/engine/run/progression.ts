@@ -47,7 +47,42 @@ export type RunPokemon = Readonly<{
   battlesUsed?: number;
   /** A dark Pokémon (`Task-154`): always born `Dark Matter`, its rolled ability second. Absent means not dark. */
   dark?: boolean;
+  /** Enemies this member fainted this run; absent means 0 (an older save). */
+  kos?: number;
+  /** Damage this member dealt this run; absent means 0. */
+  damage?: number;
+  /** Damage this member took this run; absent means 0. */
+  damageTaken?: number;
 }>;
+
+/** A battle's contribution to one run member, as `battleTallies` reports it. */
+export type MemberTallyCounts = Readonly<{
+  kos?: number;
+  damage?: number;
+  damageTaken?: number;
+}>;
+
+/**
+ * `member` with `tally` added onto its three counters; absent counts as zero.
+ * Total and pure (`Task-181`): a negative or unreadable figure adds nothing, so a
+ * counter never goes below zero, and a tally of three zeros returns the member
+ * **as the same object** so a caller can skip a write.
+ */
+export function withMemberTally(member: RunPokemon, tally: MemberTallyCounts): RunPokemon {
+  const kos = member.kos ?? 0;
+  const damage = member.damage ?? 0;
+  const damageTaken = member.damageTaken ?? 0;
+  const nextKos = kos + countOf(tally.kos);
+  const nextDamage = damage + countOf(tally.damage);
+  const nextTaken = damageTaken + countOf(tally.damageTaken);
+  if (nextKos === kos && nextDamage === damage && nextTaken === damageTaken) return member;
+  return { ...member, kos: nextKos, damage: nextDamage, damageTaken: nextTaken };
+}
+
+/** A counter as a whole number of at least zero; anything unreadable counts as none. */
+function countOf(value: number | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
 
 /**
  * Every ability a run member carries, primary first, deduplicated. A second
@@ -175,9 +210,7 @@ export function adoptAtLevel(pokemon: RunPokemon, level: number, learnsetSeed?: 
   // `evolvePokemon` does, since `FighterSnapshot` carries no maximum of its own.
   const rebuilt = snapshotFighter(fighter);
   const source = getSpecies(f.speciesId);
-  const oldMaxHp = source
-    ? statAtLevel(source, f.level, f.nature, f.ivs, f.evs, f.statTreats).hp
-    : f.hp;
+  const oldMaxHp = source ? statAtLevel(source, f.level, f.nature, f.ivs, f.evs, f.statTreats).hp : f.hp;
   const share = oldMaxHp > 0 ? Math.max(0, Math.min(1, f.hp / oldMaxHp)) : 1;
   const hp = Math.max(1, Math.min(rebuilt.hp, Math.round(share * rebuilt.hp)));
   return { ...pokemon, fighter: { ...rebuilt, hp } };
@@ -281,11 +314,16 @@ export function evolvePokemon(pokemon: RunPokemon, into: string, abilitySeed?: s
   if (!ready) return pokemon;
   const source = getSpecies(fighter.speciesId);
   const oldMaxHp = source
-    ? statAtLevel(source, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats)
-        .hp
+    ? statAtLevel(source, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats).hp
     : fighter.hp;
-  const maxHp = statAtLevel(target, fighter.level, fighter.nature, fighter.ivs, fighter.evs, fighter.statTreats)
-    .hp;
+  const maxHp = statAtLevel(
+    target,
+    fighter.level,
+    fighter.nature,
+    fighter.ivs,
+    fighter.evs,
+    fighter.statTreats,
+  ).hp;
   const missing = Math.max(0, oldMaxHp - fighter.hp);
   const abilities = Object.values(target.abilities);
   const kept = abilities.includes(fighter.ability) ? fighter.ability : (abilities[0] ?? fighter.ability);

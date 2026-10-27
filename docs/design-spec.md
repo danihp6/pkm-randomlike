@@ -63,7 +63,11 @@ carries over.
   route 1.
 - Beating a map's boss opens its **portal** and steps the run into the next map,
   with a healing stop in between (heals HP and PP, never resurrects).
-- Losing every Pokémon in the party ends the run.
+- Losing every Pokémon in the party ends the run: the run writes **one** record to
+  the history — its seed, the floor reached, the catches, the casualties, the
+  playtime counted from the instant it began, and the per-species KOs and damage its
+  battles produced — so STATS lists it from then on. A run that reaches the end seam
+  twice records nothing more.
 
 ## 3. The party
 

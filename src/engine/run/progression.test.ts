@@ -15,6 +15,7 @@ import {
   levelForXp,
   levelUpPokemon,
   memberAbilities,
+  withMemberTally,
   xpForLevel,
   type RunPokemon,
 } from './progression';
@@ -596,5 +597,34 @@ describe('the permanent treats survive every re-derivation (Task-103)', () => {
       treats,
     );
     expect(edited.fighter.hp).toBe(expected.hp);
+  });
+});
+
+describe('withMemberTally', () => {
+  const member = (): RunPokemon => createRunPokemon({ id: 'lead', speciesId: 'charmander', level: 7 });
+
+  it('adds onto the counters a member does not carry yet', () => {
+    const tallied = withMemberTally(member(), { kos: 2, damage: 31, damageTaken: 12 });
+    expect(tallied.kos).toBe(2);
+    expect(tallied.damage).toBe(31);
+    expect(tallied.damageTaken).toBe(12);
+    expect(tallied.fighter).toEqual(member().fighter);
+  });
+
+  it('adds onto the counters it already carries', () => {
+    const first = withMemberTally(member(), { kos: 1, damage: 20, damageTaken: 5 });
+    const second = withMemberTally(first, { kos: 3, damage: 9, damageTaken: 0 });
+    expect(second.kos).toBe(4);
+    expect(second.damage).toBe(29);
+    expect(second.damageTaken).toBe(5);
+  });
+
+  it('never goes negative and never writes a partial tally over a whole one', () => {
+    const once = withMemberTally(member(), { kos: 2, damage: 40, damageTaken: 8 });
+    const bad = withMemberTally(once, { kos: -5, damage: -1, damageTaken: Number.NaN });
+    expect(bad.kos).toBe(2);
+    expect(bad.damage).toBe(40);
+    expect(bad.damageTaken).toBe(8);
+    expect(withMemberTally(once, {})).toBe(once);
   });
 });

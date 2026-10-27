@@ -55,6 +55,7 @@ import { battlefieldSeeds } from '../engine/routes/battlefield';
 import {
   MAX_MOVES,
   MAX_PARTY_SIZE,
+  battleTallies,
   launchTeamTypes,
   type BattleLaunch,
   type BattleOutcome,
@@ -2453,6 +2454,7 @@ export class BattleScene extends Phaser.Scene {
       bag: this.state.bag.map((slot) => ({ itemId: slot.item.id, count: slot.count })),
       captured,
       used: [...this.state.usedFighterIds],
+      tallies: battleTallies(this.state.log, this.state.sides.player.party),
     };
     const route = this.scene.get('Route') as RouteScene;
     this.scene.setVisible(true, 'Route');

@@ -15,7 +15,13 @@ import {
 } from './maps/plan';
 import { floorForRoute } from './run/floors';
 import type { AiLevel } from './battle/ai';
-import { normalizeAbilityId, type FighterSnapshot, type Gender, type MoveSlot, type StatusId } from './battle/fighter';
+import {
+  normalizeAbilityId,
+  type FighterSnapshot,
+  type Gender,
+  type MoveSlot,
+  type StatusId,
+} from './battle/fighter';
 import type { BagCounts } from './run/battleLink';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import type { RunHistoryRecord, RunSpeciesRecord } from './run/history';
@@ -74,7 +80,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -180,7 +186,11 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * recorded the runs that already ended, so its history starts **empty**; `24` moves
  * a v24 run onto the v25 schema, which added the **dark Pokémon** (`Task-154`) —
  * every member an old run stored starts not-dark, and the decoder drops the `false`
- * on the next write.
+ * on the next write; `25` moves a v25 run onto the v26 schema, which added the
+ * **run clock and the faint counters** (`Task-181`) — a run written before it has
+ * no start instant (`startedAt: ''`, playtime unknown) and no faint count, and its
+ * members' optional `kos`/`damage`/`damageTaken` need no write because the decoder
+ * leaves an absent one out (the `14` nickname precedent).
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -340,7 +350,24 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 25,
     run: isRecord(document.run) ? withDarkFlag(document.run) : document.run,
   }),
+  // The run clock and the faint counters (`Task-181`): a v25 run was created before
+  // the scene passed an instant in, so its playtime is unknown (`''` reads as 0) and
+  // it starts having fainted nothing. Its members' optional tallies need no write,
+  // because the decoder leaves an absent one out (the `14` nickname precedent).
+  25: (document) => ({
+    ...document,
+    version: 26,
+    run: isRecord(document.run)
+      ? { ...document.run, startedAt: '', stats: withFaintCount(document.run.stats) }
+      : document.run,
+  }),
 };
+
+/** A v25 run's counters plus a zero faint count; a malformed record reads as empty. */
+function withFaintCount(stats: unknown): Record<string, unknown> {
+  if (!isRecord(stats)) return { catches: 0, casualties: 0, faints: 0 };
+  return { ...stats, faints: 0 };
+}
 
 /**
  * The `language` field added beside `alwaysRun` (`D43`) opens no step: it is read
@@ -556,6 +583,16 @@ export function clearRun(storage: StorageLike | null): SaveDocument {
   return document;
 }
 
+/** Writes `history` over the stored document, keeping its settings and its run. */
+export function storeHistory(
+  storage: StorageLike | null,
+  history: readonly RunHistoryRecord[],
+): SaveDocument {
+  const document: SaveDocument = { ...loadSave(storage), history: [...history] };
+  storeSave(storage, document);
+  return document;
+}
+
 /** Replaces the settings, keeping the run in progress. */
 export function storeSettings(storage: StorageLike | null, settings: Settings): SaveDocument {
   const document: SaveDocument = { ...loadSave(storage), settings };
@@ -765,19 +802,30 @@ function parsePokemon(value: unknown): RunPokemon | null {
     isString(value.secondAbility) && value.secondAbility !== '' ? value.secondAbility : null;
   // The usage counter is written only when it carries something, so a save round trip
   // stays byte-stable and a v21 document decodes to none.
-  const battlesUsed =
-    isInteger(value.battlesUsed) && value.battlesUsed > 0 ? value.battlesUsed : null;
+  const battlesUsed = isInteger(value.battlesUsed) && value.battlesUsed > 0 ? value.battlesUsed : null;
   // Each optional word is written only when it carries something, so a v21 round trip
   // stays byte-stable and a v20 document decodes to none. The dark mark (`Task-154`)
-  // is only ever written when true, the `shiny` precedent.
+  // is only ever written when true, the `shiny` precedent. The three battle tallies
+  // (`Task-181`) follow the `battlesUsed` precedent: a v25 member carries none.
+  const kos = counterOf(value.kos);
+  const damage = counterOf(value.damage);
+  const damageTaken = counterOf(value.damageTaken);
   return {
     fighter,
     ...(caughtAt ? { caughtAt } : {}),
     ...(taughtMoves.length > 0 ? { taughtMoves } : {}),
     ...(secondAbility !== null ? { secondAbility } : {}),
     ...(battlesUsed !== null ? { battlesUsed } : {}),
+    ...(kos !== null ? { kos } : {}),
+    ...(damage !== null ? { damage } : {}),
+    ...(damageTaken !== null ? { damageTaken } : {}),
     ...(value.dark === true ? { dark: true } : {}),
   };
+}
+
+/** A non-negative integer counter, or null when the field carries nothing to keep. */
+function counterOf(value: unknown): number | null {
+  return isInteger(value) && value > 0 ? value : null;
 }
 
 /**
@@ -853,7 +901,8 @@ function parseRunStats(value: unknown): RunStats {
   if (!isRecord(value)) return emptyRunStats();
   const catches = isInteger(value.catches) && value.catches >= 0 ? value.catches : 0;
   const casualties = isInteger(value.casualties) && value.casualties >= 0 ? value.casualties : 0;
-  return { catches, casualties };
+  const faints = isInteger(value.faints) && value.faints >= 0 ? value.faints : 0;
+  return { catches, casualties, faints };
 }
 
 /** Keeps the non-negative integer room ids, deduped, and always includes the current room. */
@@ -1002,7 +1051,17 @@ function parseRun(value: unknown): RunState | null {
     floorCasualties,
     modifiers: parseModifiers(value.modifiers),
     stats,
+    startedAt: parseStartedAt(value.startedAt),
   });
+}
+
+/**
+ * Reads the instant a run began (`Task-181`): an ISO-8601 string, or `''` when the
+ * document predates the field or carries something that is not a date. An unknown
+ * instant reads as `''`, which the end seam reports as a playtime of 0.
+ */
+function parseStartedAt(value: unknown): string {
+  return isString(value) && !Number.isNaN(Date.parse(value)) ? value : '';
 }
 
 /**
