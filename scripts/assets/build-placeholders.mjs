@@ -11,20 +11,26 @@
 // one resolves it through `import.meta.glob` and falls back to
 // `src/assets/placeholders/<same path>` when the real file is absent, so the
 // placeholder must carry the real file's pixel size: Phaser slices it into the
-// same frame grid the manifests describe.
+// same frame grid the manifests describe. The size comes from the real file when
+// the pack is present, and from the committed blank it is replacing otherwise, so
+// the script runs and is idempotent on any clone.
 //
-// Run this with the real art in place (it measures the files); its output is
+// Each blank keeps one accent of its own, derived from its path by
+// `placeholderAccent.mjs`, so no two atlases paint the same colour. Its output is
 // committed and never regenerated in CI.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { decodePng, encodePng } from '../legacy-art/png-codec.mjs'
+import { accentFor } from './placeholderAccent.mjs'
 
 const ASSETS = fileURLToPath(new URL('../../src/assets/', import.meta.url))
 const OUT = fileURLToPath(new URL('../../src/assets/placeholders/', import.meta.url))
+const SIGN = 'frlg/sign.png'
+const SIGN_SIZE = 16
 
 /** Every ripped atlas a module imports or a scene loads by URL. */
-const ATLASES = [
+export const ATLASES = [
   'frlg/outdoor.png',
   'frlg/forest.png',
   'frlg/cave.png',
@@ -47,59 +53,82 @@ const ATLASES = [
   'beach-cave.png',
 ]
 
-/** Solid surface + one lighter border, so a placeholder reads as one at a glance. */
-const FILL = [58, 66, 82]
-const BORDER = [120, 136, 160]
-
-const only = process.argv.slice(2)
-for (const path of only) {
-  if (!ATLASES.includes(path)) {
-    console.error(`build-placeholders: unknown atlas "${path}"`)
-    process.exit(1)
+function sourceSize(path) {
+  if (existsSync(ASSETS + path)) {
+    const { width, height } = decodePng(readFileSync(ASSETS + path))
+    return { width, height, from: `src/assets/${path}` }
   }
+  if (existsSync(OUT + path)) {
+    const { width, height } = decodePng(readFileSync(OUT + path))
+    return { width, height, from: `the committed blank src/assets/placeholders/${path}` }
+  }
+  throw new Error(
+    `build-placeholders: no pixel size for "${path}" (neither the packed atlas nor a committed blank exists)`,
+  )
 }
-const TARGETS = only.length > 0 ? ATLASES.filter((path) => only.includes(path)) : ATLASES
 
-for (const path of TARGETS) {
-  // The sign is art, not a swatch: its fallback is a transparent board-and-post
-  // silhouette, so a clone without the pack draws a signpost rather than a block.
-  if (path === 'frlg/sign.png') {
-    const size = 16
-    const rgba = Buffer.alloc(size * size * 4)
-    const put = (x, y, [r, g, b]) => {
-      const i = (y * size + x) * 4
-      rgba[i] = r
-      rgba[i + 1] = g
-      rgba[i + 2] = b
-      rgba[i + 3] = 255
-    }
-    for (let y = 3; y <= 8; y++) for (let x = 2; x <= 13; x++) put(x, y, BORDER)
-    for (let y = 9; y <= 13; y++) for (let x = 7; x <= 8; x++) put(x, y, FILL)
-    const target = OUT + path
-    mkdirSync(dirname(target), { recursive: true })
-    const png = encodePng(size, size, rgba)
-    writeFileSync(target, png)
-    console.log(`wrote src/assets/placeholders/${path} ${size}x${size} (${png.length} bytes)`)
-    continue
-  }
-
-  const source = decodePng(readFileSync(ASSETS + path))
-  const { width, height } = source
+function blankPng(path, width, height) {
+  const { fill, border } = accentFor(path)
   const rgba = Buffer.alloc(width * height * 4)
+  const put = (x, y, [r, g, b]) => {
+    const i = (y * width + x) * 4
+    rgba[i] = r
+    rgba[i + 1] = g
+    rgba[i + 2] = b
+    rgba[i + 3] = 255
+  }
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1
-      const [r, g, b] = edge ? BORDER : FILL
-      const i = (y * width + x) * 4
-      rgba[i] = r
-      rgba[i + 1] = g
-      rgba[i + 2] = b
-      rgba[i + 3] = 255
+      put(x, y, edge ? border : fill)
     }
   }
-  const target = OUT + path
-  mkdirSync(dirname(target), { recursive: true })
-  const png = encodePng(width, height, rgba)
-  writeFileSync(target, png)
-  console.log(`wrote src/assets/placeholders/${path} ${width}x${height} (${png.length} bytes)`)
+  return encodePng(width, height, rgba)
 }
+
+// The sign is art, not a swatch: its fallback is a transparent board-and-post
+// silhouette, so a clone without the pack draws a signpost rather than a block.
+function signPng(path) {
+  const { fill, border } = accentFor(path)
+  const rgba = Buffer.alloc(SIGN_SIZE * SIGN_SIZE * 4)
+  const put = (x, y, [r, g, b]) => {
+    const i = (y * SIGN_SIZE + x) * 4
+    rgba[i] = r
+    rgba[i + 1] = g
+    rgba[i + 2] = b
+    rgba[i + 3] = 255
+  }
+  for (let y = 3; y <= 8; y += 1) for (let x = 2; x <= 13; x += 1) put(x, y, border)
+  for (let y = 9; y <= 13; y += 1) for (let x = 7; x <= 8; x += 1) put(x, y, fill)
+  return encodePng(SIGN_SIZE, SIGN_SIZE, rgba)
+}
+
+function write(target, path, png, label) {
+  mkdirSync(dirname(target), { recursive: true })
+  writeFileSync(target, png)
+  console.log(`wrote src/assets/placeholders/${path} ${label} (${png.length} bytes)`)
+}
+
+function main() {
+  const only = process.argv.slice(2)
+  for (const path of only) {
+    if (!ATLASES.includes(path)) {
+      console.error(`build-placeholders: unknown atlas "${path}"`)
+      process.exit(1)
+    }
+  }
+  const targets = only.length > 0 ? ATLASES.filter((path) => only.includes(path)) : ATLASES
+
+  for (const path of targets) {
+    const target = OUT + path
+    if (path === SIGN) {
+      write(target, path, signPng(path), `${SIGN_SIZE}x${SIGN_SIZE}, sign silhouette`)
+      continue
+    }
+    const { width, height, from } = sourceSize(path)
+    write(target, path, blankPng(path, width, height), `${width}x${height}, size from ${from}`)
+  }
+}
+
+const entry = process.argv[1]
+if (entry !== undefined && pathToFileURL(resolve(entry)).href === import.meta.url) main()

@@ -12,7 +12,7 @@ blanks; the ripped atlases never enter the repository or its history.
 | --- | --- | --- |
 | `tileset.png` | procedural placeholder biome sheet, 4x13 of 24px cells (96x312) | generated, safe |
 | `common.png` | shared 5x1 sheet: exit, trap, chest, item, carpet | generated, safe |
-| `placeholders/<same path>` | one blank of the real pixel size per ripped atlas, written by `scripts/assets/build-placeholders.mjs` (`npm run assets:placeholders`); `packedAtlasUrl` falls back to it when the real file is absent | generated, safe |
+| `placeholders/<same path>` | one blank of the real pixel size per ripped atlas, written by `scripts/assets/build-placeholders.mjs` (`npm run assets:placeholders`) and painted with the accent its path derives (`scripts/assets/placeholderAccent.mjs`); `packedAtlasUrl` falls back to it when the real file is absent | generated, safe |
 | `placeholders/audio/silence.wav` | the committed 0.05 s of silence every audio cue falls back to when the rip is absent (`PLACEHOLDER_AUDIO_URL`), so a clone without the store still boots | generated, safe |
 | `optional.ts` | `packedAtlasUrl`: resolves an atlas from its `import.meta.glob` map, or returns the placeholder | source |
 | `art.ts` | `hasArt`: whether a ripped atlas is present in this checkout, for the tests that measure art | source |
@@ -93,3 +93,11 @@ table above, plus the generated manifests, which are committed.
    animation is absent. A placeholder that does exist (the `placeholders/` row)
    still carries the real file's pixel size — the animation adapts to the frames
    that loaded, never the other way round.
+6. **One accent per placeholder.** `scripts/assets/placeholderAccent.mjs` derives
+   the two colours of a blank from its atlas path alone, stable across runs and
+   machines, so no two atlases paint the same fill and a screen-wide criterion can
+   be measured. The sign keeps its transparent board-and-post silhouette in its
+   own accent, and a blank still carries the real file's pixel size: the generator
+   reads it from the packed atlas when the file is there and from the blank it is
+   replacing when it is not, so `npm run assets:placeholders` runs — and is
+   idempotent — on a clone with no pack.
