@@ -13,5 +13,15 @@ export {
   MOVE_MEGA_COL,
   battleMovesBox,
   battleMovesView,
+  cellTextBoxes,
+  compactCard,
+  fitsInside,
 } from './view';
-export type { BattleMoveSlotView, BattleMovesInput, BattleMovesView, Rect, Viewport } from './view';
+export type {
+  BattleCellTextBoxes,
+  BattleMoveSlotView,
+  BattleMovesInput,
+  BattleMovesView,
+  Rect,
+  Viewport,
+} from './view';
