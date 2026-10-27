@@ -13,6 +13,7 @@ import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
   MAIN_MENU_FOOTER_NARROW,
+  MAIN_MENU_SLUG,
   forLayout,
   liveMainMenuView,
   type MainMenuLayout,
@@ -141,6 +142,23 @@ describe('liveMainMenuView', () => {
 
     expect(first).toEqual(second);
     expect(JSON.parse(JSON.stringify(first))).toEqual(first);
+  });
+});
+
+describe('the preview seed', () => {
+  it('carries the seed the scene drew, in both layouts', () => {
+    const run = savedRun();
+    const view = liveMainMenuView(run, 0, 'boot-seed');
+
+    expect(view.previewSeed).toBe('boot-seed');
+    expect(forLayout(view, 'wide').previewSeed).toBe('boot-seed');
+    expect(forLayout(view, 'compact').previewSeed).toBe('boot-seed');
+  });
+
+  it('falls back to the frame’s slug when no seed is given', () => {
+    expect(liveMainMenuView(savedRun(), 0).previewSeed).toBe(MAIN_MENU_SLUG);
+    expect(liveMainMenuView(null, 0).previewSeed).toBe(MAIN_MENU_SLUG);
+    expect(liveMainMenuView(savedRun(), 0, '').previewSeed).toBe('');
   });
 });
 

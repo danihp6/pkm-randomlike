@@ -8928,7 +8928,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/hud-fidelity.md` and `docs/hud-dom-proposal.md` §11.
       *Dependencies:* none. *(Batch 85)*
 
-- [ ] **[Task-198] The main menu's route window shows a live route with Pokémon wandering in it.**
+- [x] **[Task-198] The main menu's route window shows a live route with Pokémon wandering in it.**
       Decided by the human on `2026-10-27` after seeing the real screen beside the board's `01`: the
       window is a **frame with nothing behind it**. `src/ui/hud/panels/main-menu/view.ts` gives it its
       rect (`window: { x: 96, y: 150, w: 560, h: 380 }`, compact `{ x: 16, y: 126, w: 358, h: 240 }`),

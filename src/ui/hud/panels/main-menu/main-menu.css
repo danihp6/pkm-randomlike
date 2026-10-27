@@ -85,6 +85,27 @@
   border: 1px solid var(--hud-panel-border);
   border-radius: var(--hud-panel-radius);
   background: var(--main-menu-window);
+  overflow: hidden;
+}
+
+/* 01 · the window's live route: one 24 px span per cell, object over ground */
+.main-menu__tiles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.main-menu__tile,
+.main-menu__walker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.main-menu__walker {
+  background-color: rgb(255 255 255 / 4%);
 }
 
 /* 01 · title */

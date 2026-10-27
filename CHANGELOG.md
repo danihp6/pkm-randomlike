@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu's route window shows a live route with Pokémon wandering in it.**
+      `[Task-198]`, the second of Batch 86, answers the human's decision of `2026-10-27`: the
+      menu's window was a frame with nothing behind it. It now draws map 1's biome as 24 px tiles
+      inside the window's own rect, with two or three Pokémon walking it, from one pure seam —
+      `previewRoute(seed, window)`, `previewWalkers(route)` and `stepPreviewWalkers` in
+      `src/engine/routes/preview.ts` — that the canvas path and the fixture frame both read, so
+      the two renderings cannot drift. The seed is drawn **once per boot** with `randomSeed()`
+      and never read from the run: `D55` records the decorative preview as a decision, and the
+      preview writes no save, starts no encounter and takes no input. The walkers step on a
+      600 ms timer; the first Task QA pass was **red** because a walker could step straight back
+      where it came from, so a 1.5 s sample could catch a period-2 metronome with nothing moved —
+      the fix forbids an immediate reversal while another candidate exists (and prefers start
+      tiles with two exits; a dead end may still reverse), on the same
+      `${seed}:preview:walker:<id>:<step>` stream, so `D11` still holds. Gates: `npm test` 4786
+      passed / 69 skipped, `npm run build` green. Measured live over CDP: the desk window is
+      exactly `{96,150,560,380}` with 345 tile spans and the phone one exactly
+      `{16,126,358,240}` with 140; after the fix **10/10** phone boots and 3/3 desk samples moved
+      at least two walkers, every walker stayed inside the window, the seed survived Options →
+      BACK and changed on reload.
+
 - [x] **The double battle's target step says which foe is marked.** `[Task-196]`, the first of
       Batch 86. The step existed and was invisible: `needsTargetStep` was a private predicate in
       `BattleScene.ts`, no `battle.target*` key existed and nothing printed the question the

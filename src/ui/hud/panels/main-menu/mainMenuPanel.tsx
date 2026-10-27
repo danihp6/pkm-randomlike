@@ -1,8 +1,25 @@
 import type { CSSProperties, JSX } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { getBiome } from '../../../../data/biomes';
+import { COMMON_ATLAS_URL, TILESETS } from '../../../../data/tilesets';
+import {
+  previewWalkers,
+  stepPreviewWalkers,
+  type PreviewRoom,
+  type PreviewWalker,
+} from '../../../../engine/routes/preview';
 import { Panel, Row } from '../../kit';
-import { portraitBackground, type PortraitCrop } from '../../portrait';
+import { portraitBackground, portraitCrop, type PortraitCrop } from '../../portrait';
 import type { MainMenuIntent } from './mount';
+import {
+  ROUTE_PREVIEW_STEP_MS,
+  previewRoomFor,
+  previewTileBox,
+  previewWalkerBox,
+  tileBackground,
+  type PreviewTileset,
+  type TileBackground,
+} from './routeWindow';
 import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
@@ -59,11 +76,105 @@ function portraitStyle(portrait: PortraitCrop | null, box: number): CSSPropertie
   return { ...background };
 }
 
+const TILESET_CACHE = new Map<string, PreviewTileset>();
+
+/** The biome's tileset, built once per biome: a repaint never remakes it. */
+function previewTilesetFor(biomeId: string): PreviewTileset {
+  const biome = getBiome(biomeId);
+  const cached = TILESET_CACHE.get(biome.id);
+  if (cached !== undefined) return cached;
+  const tileset = TILESETS[biome.tilesetId];
+  const built: PreviewTileset = {
+    config: tileset.config,
+    atlasUrl: tileset.atlasUrl,
+    commonUrl: COMMON_ATLAS_URL,
+  };
+  TILESET_CACHE.set(biome.id, built);
+  return built;
+}
+
+function backgroundPaint(background: TileBackground): CSSProperties {
+  return {
+    backgroundImage: background.images.map((url) => `url("${url}")`).join(', '),
+    backgroundPosition: background.positions.join(', '),
+    backgroundSize: background.images.map(() => background.size).join(', '),
+  };
+}
+
+function boxPaint(box: Readonly<{ x: number; y: number; w: number; h: number }>): CSSProperties {
+  return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` };
+}
+
+function tileStyle(
+  window: Readonly<{ x: number; y: number; w: number; h: number }>,
+  room: PreviewRoom,
+  tileset: PreviewTileset,
+  x: number,
+  y: number,
+): CSSProperties {
+  return {
+    ...boxPaint(previewTileBox(window, room, { x, y })),
+    ...backgroundPaint(tileBackground(room, { x, y }, tileset)),
+  };
+}
+
+function walkerStyle(
+  window: Readonly<{ x: number; y: number; w: number; h: number }>,
+  room: PreviewRoom,
+  walker: PreviewWalker,
+): CSSProperties {
+  const box = previewWalkerBox(window, room, walker);
+  const crop = portraitCrop(walker.speciesId);
+  return {
+    ...boxPaint(box),
+    ...(crop === null ? {} : portraitBackground(crop, box.w)),
+  };
+}
+
+/** The window's floor: one span per cell of the room, painted from the tileset's frames. */
+function routeTiles(
+  window: Readonly<{ x: number; y: number; w: number; h: number }>,
+  room: PreviewRoom,
+  tileset: PreviewTileset,
+): JSX.Element[] {
+  const cells: JSX.Element[] = [];
+  for (let y = 0; y < room.rows; y++) {
+    for (let x = 0; x < room.cols; x++) {
+      cells.push(
+        <span
+          key={`${x},${y}`}
+          class="main-menu__tile"
+          data-hud-main-menu-tile
+          style={tileStyle(window, room, tileset, x, y)}
+        />,
+      );
+    }
+  }
+  return cells;
+}
+
 export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
   const handler = props.onIntent;
   const compact = useCompactViewport();
   const view = forLayout(props.view, compact ? 'compact' : 'wide');
   const portraitBox = compact ? MAIN_MENU_BOARD_NARROW.portrait.size : MAIN_MENU_BOARD.portrait.size;
+
+  const routeWindow = compact ? MAIN_MENU_BOARD_NARROW.window : MAIN_MENU_BOARD.window;
+  const room = previewRoomFor(view.previewSeed, routeWindow);
+  const tileset = previewTilesetFor(room.biomeId);
+  const tiles = useMemo(() => routeTiles(routeWindow, room, tileset), [routeWindow, room, tileset]);
+  const [walkers, setWalkers] = useState<readonly PreviewWalker[]>(() => previewWalkers(room));
+  const step = useRef(0);
+
+  useEffect(() => {
+    step.current = 0;
+    setWalkers(previewWalkers(room));
+    const timer = setInterval(() => {
+      step.current += 1;
+      setWalkers((current) => stepPreviewWalkers(room, current, step.current));
+    }, ROUTE_PREVIEW_STEP_MS);
+    return () => clearInterval(timer);
+  }, [room]);
 
   const press = (id: MainMenuRowId): void => {
     if (handler === undefined) return;
@@ -86,7 +197,23 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
     <div class="main-menu" data-hud-panel="main-menu">
       <div class="main-menu__stage">
         <div class="main-menu__glow" />
-        <div class="main-menu__window" data-hud-main-menu-window />
+        <div
+          class="main-menu__window"
+          data-hud-main-menu-window
+          data-hud-main-menu-preview={view.previewSeed}
+        >
+          <div class="main-menu__tiles" data-hud-main-menu-tiles>
+            {tiles}
+          </div>
+          {walkers.map((walker) => (
+            <span
+              key={walker.id}
+              class="main-menu__walker"
+              data-hud-main-menu-walker={String(walker.id)}
+              style={walkerStyle(routeWindow, room, walker)}
+            />
+          ))}
+        </div>
         <h1 class="main-menu__title" data-hud-main-menu-title>
           {view.title}
         </h1>
