@@ -165,3 +165,25 @@ both viewports.
 anti-aliased edge. Figma and the browser are different rasterisers; a per-pixel text comparison would
 measure the renderer, not the layout, and would turn every screen into a tuning treadmill. That is why
 `D49` splits the gate: **geometry pixel by pixel, text by box and colour**.
+
+## 9. Portraits in the DOM HUD
+
+A portrait in the DOM HUD is **one cell of `public/anil/portraits.png`** (64 × 64, 32 columns,
+dex order) drawn by CSS background arithmetic, never a Phaser texture read and never a `fetch`.
+`src/ui/hud/portrait.ts` is the one seam: `portraitCrop` turns a species id into the atlas URL
+plus that cell's `col`/`row`, and `portraitBackground(crop, box)` returns the inline style that
+scales the whole sheet to the box — `background-size: <cols × box>px auto` and
+`background-position: -<col × box>px -<row × box>px` — so a 26 px desk cell and a 22 px phone
+cell are the same arithmetic at two sizes. The sheet is gitignored local art, so the panel stays
+synchronous and measurable headlessly: the model carries the cell, the browser rasterises it.
+
+The empty 4 % box with its 1 px hairline is **only the fallback**, for a species the atlas does
+not name (an id outside the manifest, a Mega with no cell of its own and no base, or a party row
+with no species id). A panel that has a crop never paints the empty box.
+
+The main menu's compact footer is **two rows** on the phone. At ≤ 600 px the three record blocks
+leave the desk's single row (`01`'s columns 96 / 240 / 724) and wrap: WINS and MAX ELITE STRIKE
+share the first row and MONTHLY MAX STRIKE sits under them, one block 172 × 48 at x = 16 and
+196, the second row 8 px below the first. The rects are data — `MAIN_MENU_FOOTER_NARROW` in
+`src/ui/hud/panels/main-menu/view.ts` — and the stylesheet's compact block draws exactly those
+numbers, so no label can run into the block beside it. The desk footer is unchanged.

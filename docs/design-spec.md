@@ -15,14 +15,17 @@ carries over.
 
 - The game opens on a **main menu**: **New run**, **Continue** (only when the save
   holds a run with a living party, and it shows the map it stands on, that map's
-  biome and a portrait per party member, in party order), **Options** (the
-  settings screen) and **STATS** (the stats and ranking screen). Starting a new run
-  only replaces the saved one once its starter is picked, so cancelling at the
-  starter pick returns to the menu with the run in progress intact. **STATS** opens
-  over the menu on the history of every finished run — the totals across every run,
-  the run list, the Pokémon table and the local monthly record, each with its own
-  empty state — and **BACK** returns to the menu; the DOM HUD draws the row, the
-  canvas fallback keeps its three.
+  biome and the party's own portraits — the CONTINUE row paints one portrait cell per
+  member, in party order, and only an unnamed species falls back to an empty box),
+  **Options** (the settings screen) and **STATS** (the stats and ranking screen).
+  Starting a new run only replaces the saved one once its starter is picked, so
+  cancelling at the starter pick returns to the menu with the run in progress intact.
+  **STATS** opens over the menu on the history of every finished run — the totals
+  across every run, the run list, the Pokémon table and the local monthly record, each
+  with its own empty state — and **BACK** returns to the menu; the DOM HUD draws the
+  row, the canvas fallback keeps its three. On a phone the records footer under the
+  menu wraps its figures into two rows, so the three blocks never collide on the
+  narrow column.
 - **Options** (the settings screen) lists a **step row** per preference — text
   speed, a **volume slider** (click or drag the bar), always-run and Transparent
   HUD — over one **keybind row** per action. A keybind row is hidden on a touch
