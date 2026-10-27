@@ -25,7 +25,13 @@
   animation is only registered for a texture that is really loaded and never
   longer than that texture's own `frameTotal`, and `sprite.play` is guarded, so
   the beat's timer chain and the command menu survive. `src/assets/README.md`
-  states the contract the fix implements.
+  states the contract the fix implements. **Round 2 (QA corrective):** the same
+  clean checkout also throws `unknown audio cue: cry-pidgey` when the battle
+  announces the wild, because the cue table is built from the packed
+  `src/assets/audio/*.wav` (gitignored) while `src/data/audio/cries.json` still
+  names the cue, so `playCry` → `audioCue` throws and the game loop freezes. A cue
+  the checkout never packed is **silence**, not an error: the audio players guard
+  the lookup and the battle reaches its menu with no audio pack either.
 - **Environment:** worktree `../wt-pkm-184`, branch `task-184`.
 - **Dependencies:** none. Nothing in this task reads a file another task of
   Batch 81 produces.
@@ -36,6 +42,8 @@
 - `src/scenes/BattleScene.test.ts` (**new**, co-located test — see Coordination)
 - `src/scenes/README.md` (one role line for the new test file — the folder's map)
 - `src/assets/README.md`
+- `src/audio/cues.ts`, `src/audio/cues.test.ts`, `src/audio/audio.ts`,
+  `src/audio/README.md` (round 2: the missing-cue guard)
 
 **Nothing outside this list.** Do not touch `src/scenes/RouteScene.ts`,
 `src/scenes/panels/detail.ts` or `src/ui/hud/panels/detail/evolution.ts` (`[Task-185]`),
@@ -218,12 +226,47 @@ Everything else in the file stays byte-identical: `preload`, `releaseMonSprites`
 `MON_ANIM_FPS` value. This task changes **no** timing, **no** layout and **no**
 battle rule.
 
-### 4. Determinism
+### 4. The cue table's missing rows (round 2)
+
+`src/audio/cues.ts` builds `AUDIO_CUES` from the packed `src/assets/audio/*.wav`
+(Vite's `import.meta.glob`) plus the six hand rows, so a checkout without the rip has
+no `cry-*` or `move-*` row at all — while `src/data/audio/cries.json` and
+`moveSounds.json` still name the cue. `audioCue(id)` throws on a missing row and
+`playCry` / `playMoveSound` / `playCue` call it unguarded, so `BattleScene`'s
+announcement throws inside the scene's own update and freezes the loop (QA measured
+`Uncaught Error: unknown audio cue: cry-pidgey`, `game.loop.frame` stuck, `mode`
+never leaving `'entry'`).
+
+Add one exported predicate in `src/audio/cues.ts`, beside `audioCue`, and guard the
+three players:
+
+```ts
+/** True when this checkout packed a row (or a hand row) for `id`. */
+export function hasAudioCue(id: AudioCueId): boolean {
+  return CUE_BY_ID.has(id);
+}
+```
+
+- `src/audio/cues.ts`: `hasAudioCue` exactly as above. `audioCue` keeps throwing —
+  its own test pins that, and a typo is still a caller bug, not a missing file.
+- `src/audio/audio.ts`: `playCue` returns before `audioCue` when
+  `!hasAudioCue(cueId)`; `playCry` returns `false` when the resolved id is null **or**
+  `!hasAudioCue(cueId)`; `playMoveSound` computes
+  `const cueId = moveSoundCueFor(moveId) ?? HIT_CUE_ID;` and returns `false` when
+  `!hasAudioCue(cueId)`. Nothing else moves: no new global, no new event, no change
+  to `startSound`, to the autoplay gate, to `preloadAudio` or to any id.
+- `src/audio/README.md`: one sentence in the paragraph that documents `audioCue(id)`
+  throwing (around line 27): a cue this checkout never packed is **silence** —
+  `hasAudioCue` gates the three players — while an id with no row still throws for a
+  caller.
+- Determinism: no RNG, no clock, no DOM; a pure map lookup.
+
+### 5. Determinism
 
 Reads no `Rng` stream and touches no seed. A fixed-seed battle's event log, damage
 rolls and order are untouched by this task.
 
-### 5. Data
+### 6. Data
 
 No key, no table, no default value is introduced, changed or frozen.
 
@@ -264,10 +307,13 @@ paragraph stay as they are.
   - `npx vitest run src/scenes/BattleScene.test.ts` — the clamp's own file.
   - `git diff --name-only main...task-184` audited against the exclusive paths.
   - The `[live]` pass needs a dev server and Chromium over CDP. **A QA worktree is
-    pack-less by construction** (a worktree is a fresh checkout; `public/anil/` is
-    gitignored and `npm ci` never creates it), so nothing is renamed, hidden or
-    stashed: verify with `test ! -e public/anil` (prints nothing) and
-    `git check-ignore -q public/anil` (exit 0). Do not commit any asset change.
+    pack-less by construction** (a worktree is a fresh checkout; `public/anil/` and
+    `src/assets/audio/` are both gitignored and `npm ci` never creates them), so
+    nothing is renamed, hidden or stashed: verify with `test ! -e public/anil`
+    (prints nothing), `git check-ignore -q public/anil/` (exit 0) and
+    `test ! -e src/assets/audio || [ -z "$(ls -A src/assets/audio)" ]`. Do **not**
+    copy the rip or the pack in from `$ASSETS_ROOT` for this pass: the criterion is
+    the tree that has neither.
 
 ### The test file the dev writes (`src/scenes/BattleScene.test.ts`)
 
@@ -327,13 +373,24 @@ a case. Report anything you had to mock in your task summary.
 - [ ] `[unit]` `npx vitest run src/scenes/BattleScene.test.ts` passes all five
       cases above, and the full `npm test` is green with the new file included
       (`monIdleFrames(6, 1)` reads `[0]`, `monIdleFrames(6, 0)` reads `[]`).
-- [ ] `[unit]` `git diff --name-only main...task-184` lists exactly
-      `src/assets/README.md`, `src/scenes/BattleScene.test.ts`,
-      `src/scenes/BattleScene.ts` and `src/scenes/README.md` — nothing else, and
+- [ ] `[unit]` `git diff --name-only main...task-184` lists exactly the four paths
+      above **plus** `.agent_specs/task-184.md` (the spec travels in the branch by
+      protocol and is dropped at merge) — nothing else, and
       `git diff main...task-184 -- src/scenes/BattleScene.ts` shows no change outside
       `monIdleFrames`, `buildMonAnimations` and the two additions in `showMon`. The
       `src/scenes/README.md` diff is exactly the one added `## Layout` line above
       (2 added lines counting the wrap, 0 removed).
+- [ ] `[unit]` **The missing cue table is silence, not a throw (round 2).** In
+      `src/audio/cues.test.ts`, `hasAudioCue('faint')` is `true`, and
+      `hasAudioCue('cry-not-a-cry' as AudioCueId)` is `false` while
+      `audioCue('cry-not-a-cry' as AudioCueId)` still throws. Also assert that every
+      id `cries.json` names and this checkout did not pack answers `false` (read
+      `src/data/audio/cries.json` through its own accessor and compare with the
+      table's ids). `npm test` stays green.
+- [ ] `[unit]` **The three players guard.** `git diff main...task-184 -- src/audio/`
+      shows `hasAudioCue` in `cues.ts`, and a `!hasAudioCue(...)` guard in
+      `playCue`, `playCry` and `playMoveSound` in `audio.ts`; no other line of
+      `audio.ts` changes.
 - [ ] `[live]` **The command menu is reached on a pack-less tree.** On the QA
       worktree with no `public/anil/`, start `npm run dev -- --port <free>
       --strictPort`, open `/` over CDP, and launch a wild battle directly (this is
@@ -359,7 +416,12 @@ a case. Report anything you had to mock in your task summary.
       every 100 ms for at most 3 s after `game.scene.isActive('Battle')` is true;
       it must read `mode === 'menu'`, `items` exactly
       `['FIGHT','BAG','SWITCH','RUN']` and `enabled === true`. (Before the fix
-      `mode` stays `'entry'` for ever and `menuItems` stays `[]`.)
+      `mode` stays `'entry'` for ever and `menuItems` stays `[]`.) **Also:** attach
+      a CDP `Runtime.consoleAPICalled` / `Runtime.exceptionThrown` listener (or read
+      `window.onerror`) before launching, and fail if any line contains
+      `unknown audio cue` during the whole 3 s — on this tree the rip is absent and
+      the cry must be silence; and `game.loop.frame` must advance between two polls
+      100 ms apart (the loop is not frozen).
 - [ ] `[live]` **The entry beat's timer chain is alive and `E` cuts it short.** In
       the same tab, relaunch with the recipe above and, at the first 25 ms poll
       where `__pkmBattle.mode === 'entry'`, record
