@@ -33,6 +33,8 @@ Nothing outside this list. No other task in Batch 87 claims any of these.
 - `src/scenes/panels/bag.ts` — **`bagInfoFor` only** (the drawn card's body, shared by the
   canvas and the DOM path; widened after Task QA round 1)
 - `src/scenes/panels/bag.test.ts` *(new if absent — the scene-side test that reads the drawn body)*
+- `src/scenes/panels/README.md` — one role line for the new `bag.test.ts` (AGENTS.md's
+  folder-map rule; widened after Task QA round 2)
 - `src/ui/hud/panels/bag/view.ts`
 - `src/ui/hud/panels/bag/view.test.ts`
 - `src/ui/hud/panels/bag/README.md`
@@ -293,6 +295,15 @@ the DOM card's height is the model's 56 **plus** the frozen `.bag-info` chrome (
 one-line row) — the live criteria now assert width 280, height ≥ 56, containment and
 `scrollHeight`, and keep the 56 on the view model's `[unit]` pin. This is corrective round
 **1 of 2**.
+
+### Round-2 correction (after Task QA's re-run, 2026-10-27)
+
+The re-run went green but caught one AGENTS.md rule the fix broke: a folder that gains a
+file updates its `README.md` in the same task, and `src/scenes/panels/bag.test.ts` is new
+while `src/scenes/panels/README.md` does not list it. The path list is widened by that one
+file, and the dev adds the single role line for `bag.test.ts` (no other line moves). This is
+corrective round **2 of 2**; no further round is allowed, so the line and the marker must
+land together.
 - **For a later batch (not cut here):** two other surfaces print `ItemDef.shortDesc` and
   should read `itemText` when they are migrated — the reward card
   (`src/ui/rewards.ts` line 157, `description: item?.shortDesc`) and anything the battle bag
