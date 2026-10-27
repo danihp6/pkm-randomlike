@@ -12,7 +12,12 @@ import { t } from '../../i18n';
 import { moveName, moveShortDescription } from '../../i18n/content';
 import { AbilityInfoButton, abilityInfoContent, abilityInfoSpot } from '../../ui/abilityInfo';
 import { evolutionRowNote, type FamilyNode } from '../../ui/evolutionGraph';
-import { levelColumnWidth } from '../../ui/hud/panels/detail/evolution';
+import {
+  EVO_MAX_ROWS,
+  EVO_ROW_H,
+  EVO_WINDOW_ROWS,
+  levelColumnWidth,
+} from '../../ui/hud/panels/detail/evolution';
 import {
   FRLG_ACCENT,
   FRLG_BADGE_INK,
@@ -150,13 +155,13 @@ const HUD_DETAIL_TYPE_W = 74;
 /**
  * The STATS tab's evolution band: a title over the family **graph** — one row
  * per species, indented by stage, joined by elbow edges with each branch's level
- * on the right. Nine rows cover the widest family (Eevee's eight plus itself);
- * a ready branch is green and clickable, the current species gold.
+ * on the right. The band draws `EVO_WINDOW_ROWS` (10) of the `EVO_MAX_ROWS` (11)
+ * rows the model can return — ten is what the 460 × 560 card holds — and a longer
+ * family scrolls a row at a time through the `<` / `>` pair on its title row. A
+ * ready branch is green and clickable, the current species gold.
  */
 const HUD_DETAIL_EVO_TITLE_TOP = 250;
 const HUD_DETAIL_EVO_TOP = HUD_DETAIL_EVO_TITLE_TOP + 22;
-const HUD_DETAIL_EVO_MAX = 9;
-const HUD_DETAIL_EVO_ROW_H = 28;
 const HUD_DETAIL_EVO_INDENT = 34;
 const HUD_DETAIL_EVO_PORTRAIT_SCALE = 0.4;
 const HUD_DETAIL_EVO_LINE = FRLG_MUTED;
@@ -200,13 +205,19 @@ let hudDetailStats!: {
   caught: Phaser.GameObjects.BitmapText;
 };
 /**
- * The STATS tab's evolution band: an "EVOLUTIONS" title, an empty hint and a
- * fixed grid of branch cells repainted by `refreshDetail` from
- * `MemberDetail.evolutions`. The ready cells are green and clickable.
+ * The STATS tab's evolution band: an "EVOLUTIONS" title, an empty hint, the
+ * `<` / `>` pair that scrolls its window, and a fixed grid of branch cells
+ * repainted by `refreshDetail` from `MemberDetail.evolutions`. The ready cells
+ * are green and clickable.
  */
 let hudDetailEvoTitle!: Phaser.GameObjects.BitmapText;
 let hudDetailEvoHint!: Phaser.GameObjects.BitmapText;
 let hudDetailEvoEmpty!: Phaser.GameObjects.BitmapText;
+/** The first family row the band's window shows; view state, never saved. */
+let hudEvoScrollTop = 0;
+/** The two scroll arrows the band draws on its title row, built in `buildDetailPanel`. */
+let hudEvoPrev!: Phaser.GameObjects.BitmapText;
+let hudEvoNext!: Phaser.GameObjects.BitmapText;
 let hudDetailEvoGraphics!: Phaser.GameObjects.Graphics;
 let hudDetailEvoCells: {
   node: FamilyNode | null;
@@ -560,17 +571,33 @@ function clampDrawnName(text: Phaser.GameObjects.BitmapText, value: string, limi
   text.setText(end > 0 ? `${value.slice(0, end)}…` : '');
 }
 
+/** The last row the band's window may start at, or 0 when the whole family fits. */
+function maxEvoScrollTop(host: RoutePanelHost): number {
+  const member = detailMember(host);
+  if (!member) return 0;
+  const family = memberDetail(host.run(), member.fighter.id)?.evolutions ?? [];
+  return maxScrollTop(Math.min(family.length, EVO_MAX_ROWS), 1, EVO_WINDOW_ROWS);
+}
+
 /**
  * Paints the STATS tab's evolution graph from the member's family: the base
  * form down to every branch, indented by stage, with each edge's level. The
  * current species reads gold and a ready branch green and clickable; a branch
  * whose level is unmet stays grey until it is.
+ *
+ * Only the window is drawn: the family is capped to `EVO_MAX_ROWS`, then the
+ * `EVO_WINDOW_ROWS` rows from `hudEvoScrollTop` are laid out at the window's own
+ * indices, and an elbow is drawn only when both of its ends are inside it.
  */
 function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: MemberDetail): void {
   const graphics = hudDetailEvoGraphics;
   hudDetailEvoTitle.setVisible(stats);
   graphics.clear();
-  const nodes = stats ? detail.evolutions.slice(0, HUD_DETAIL_EVO_MAX) : [];
+  const family = stats ? detail.evolutions.slice(0, EVO_MAX_ROWS) : [];
+  const maxTop = maxScrollTop(family.length, 1, EVO_WINDOW_ROWS);
+  hudEvoScrollTop = clampScrollTop(hudEvoScrollTop, maxTop);
+  const { start, end } = visibleRange(hudEvoScrollTop, 1, EVO_WINDOW_ROWS, family.length);
+  const nodes = family.slice(start, end);
   const show = stats && nodes.length > 0;
   hudDetailEvoEmpty.setVisible(stats && nodes.length === 0);
   hudDetailEvoHint.setVisible(stats && nodes.some((node) => node.ready));
@@ -579,18 +606,32 @@ function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: M
   const left = hudDetailX + host.hud().detailPadX;
   const right = hudDetailX + host.hud().detailW - host.hud().detailPadX;
   const top = hudDetailY + HUD_DETAIL_EVO_TOP;
-  const rowY = (row: number): number => top + row * HUD_DETAIL_EVO_ROW_H;
+  const rowY = (row: number): number => top + row * EVO_ROW_H;
+
+  // The band's scroll affordance: the pair is drawn only when the family is
+  // longer than the window, and the hint steps left of it so the two never touch.
+  const showNav = stats && maxTop > 0;
+  hudEvoPrev
+    .setPosition(right - 26, hudDetailY + HUD_DETAIL_EVO_TITLE_TOP)
+    .setAlpha(hudEvoScrollTop > 0 ? 1 : 0.35)
+    .setVisible(showNav);
+  hudEvoNext
+    .setPosition(right, hudDetailY + HUD_DETAIL_EVO_TITLE_TOP)
+    .setAlpha(hudEvoScrollTop < maxTop ? 1 : 0.35)
+    .setVisible(showNav);
+  hudDetailEvoHint.setX(showNav ? right - 34 : right);
 
   // Edges first, so the nodes' backgrounds paint over the seams.
   if (show) {
     graphics.lineStyle(2, HUD_DETAIL_EVO_LINE, 1);
-    nodes.forEach((node) => {
+    nodes.forEach((node, i) => {
       if (node.parent === null) return;
-      const parent = nodes[node.parent];
+      if (node.parent < start || node.parent >= end) return;
+      const parent = nodes[node.parent - start];
       if (!parent) return;
       const spineX = left + parent.depth * HUD_DETAIL_EVO_INDENT + 13;
-      const parentY = rowY(parent.row) + HUD_DETAIL_EVO_ROW_H / 2;
-      const childY = rowY(node.row) + HUD_DETAIL_EVO_ROW_H / 2;
+      const parentY = rowY(node.parent - start) + EVO_ROW_H / 2;
+      const childY = rowY(i) + EVO_ROW_H / 2;
       const childX = left + node.depth * HUD_DETAIL_EVO_INDENT - 2;
       graphics.lineBetween(spineX, parentY, spineX, childY);
       graphics.lineBetween(spineX, childY, childX, childY);
@@ -610,11 +651,11 @@ function refreshDetailEvolutions(host: RoutePanelHost, stats: boolean, detail: M
     cell.portrait.setVisible(visible);
     if (!node) return;
     const nodeX = left + node.depth * HUD_DETAIL_EVO_INDENT;
-    const y = rowY(node.row);
+    const y = rowY(i);
     const width = right - nodeX;
-    cell.rect = { x: nodeX, y, w: width, h: HUD_DETAIL_EVO_ROW_H - 2 };
+    cell.rect = { x: nodeX, y, w: width, h: EVO_ROW_H - 2 };
     cell.bg.setPosition(nodeX, y).setSize(width, cell.rect.h);
-    cell.portrait.setPosition(nodeX + 13, y + HUD_DETAIL_EVO_ROW_H / 2);
+    cell.portrait.setPosition(nodeX + 13, y + EVO_ROW_H / 2);
     const portrait = portraitFor(node.id);
     cell.portrait.setVisible(visible && portrait !== null);
     if (portrait) cell.portrait.setTexture(portrait.key, portrait.frame);
@@ -981,6 +1022,23 @@ function dropLearnInfo(): void {
   hudDetailInfoPinned = false;
 }
 
+/** The band's scroll arrow under a panel-local point, or null. */
+function evoNavAt(point: { x: number; y: number }): 'prev' | 'next' | null {
+  const hit = (text: Phaser.GameObjects.BitmapText): boolean =>
+    text.visible && Math.abs(point.x - text.x) <= 16 && Math.abs(point.y - (text.y + 8)) <= 16;
+  if (hit(hudEvoPrev)) return 'prev';
+  if (hit(hudEvoNext)) return 'next';
+  return null;
+}
+
+/** Moves the band's window `deltaRows` rows (clamped) and redraws when it moved. */
+function scrollEvolutions(host: RoutePanelHost, deltaRows: number): void {
+  const next = scrollByRows(hudEvoScrollTop, deltaRows, maxEvoScrollTop(host));
+  if (next === hudEvoScrollTop) return;
+  hudEvoScrollTop = next;
+  refreshDetail(host);
+}
+
 /** The pool scroll arrow under a panel-local point, or null. */
 function learnNavAt(point: { x: number; y: number }): 'prev' | 'next' | null {
   const hit = (text: Phaser.GameObjects.BitmapText): boolean =>
@@ -1113,6 +1171,7 @@ export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
   hudDetailState = openDetail(memberId, carriedDetailTab(hudDetailState));
   resetDetailInfo();
   hudLearnScrollTop = 0;
+  hudEvoScrollTop = 0;
   hudLearnQuery = '';
   hudSearchFocus = false;
   hudDetailCursor = -1;
@@ -1170,6 +1229,13 @@ function handleDetailPointerDown(host: RoutePanelHost, pointer: Phaser.Input.Poi
     return true;
   }
   if (hudDetailState.tab === 'stats') {
+    // The band's `<` / `>` pair rides its title row, so it is tested first: a press
+    // on it scrolls the family and never starts the rename field or evolves.
+    const nav = evoNavAt(point);
+    if (nav !== null) {
+      scrollEvolutions(host, nav === 'prev' ? -1 : 1);
+      return true;
+    }
     // The ability ⓘ comes first: a press on it never starts the rename field and
     // never evolves the member.
     if (abilityInfoAt(host, pointer)) {
@@ -1546,18 +1612,30 @@ function buildDetailPanel(host: RoutePanelHost): Phaser.GameObjects.Container {
     t('detail.noEvolution'),
     { size: 16, tint: FRLG_MUTED, origin: [0.5, 0] },
   );
-  children.push(hudDetailEvoTitle, hudDetailEvoHint, hudDetailEvoEmpty);
+  // The band's scroll arrows ride its title row, right-aligned, so the graph keeps
+  // the whole width; `refreshDetailEvolutions` shows them only when it overflows.
+  hudEvoPrev = addFrlgText(scene, right - 26, y + HUD_DETAIL_EVO_TITLE_TOP, '<', {
+    size: 16,
+    tint: FRLG_INK,
+    origin: [1, 0],
+  }).setVisible(false);
+  hudEvoNext = addFrlgText(scene, right, y + HUD_DETAIL_EVO_TITLE_TOP, '>', {
+    size: 16,
+    tint: FRLG_INK,
+    origin: [1, 0],
+  }).setVisible(false);
+  children.push(hudDetailEvoTitle, hudDetailEvoHint, hudDetailEvoEmpty, hudEvoPrev, hudEvoNext);
   hudDetailEvoGraphics = scene.add.graphics();
   children.push(hudDetailEvoGraphics);
   hudDetailEvoCells = [];
-  for (let i = 0; i < HUD_DETAIL_EVO_MAX; i++) {
-    const rowY = y + HUD_DETAIL_EVO_TOP + i * HUD_DETAIL_EVO_ROW_H;
+  for (let i = 0; i < EVO_WINDOW_ROWS; i++) {
+    const rowY = y + HUD_DETAIL_EVO_TOP + i * EVO_ROW_H;
     const bg = scene.add
-      .rectangle(left, rowY, innerW, HUD_DETAIL_EVO_ROW_H - 2, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
+      .rectangle(left, rowY, innerW, EVO_ROW_H - 2, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
       .setOrigin(0, 0)
       .setVisible(false);
     const portrait = scene.add
-      .image(left + 13, rowY + HUD_DETAIL_EVO_ROW_H / 2, PORTRAIT_TEXTURE_KEY, 0)
+      .image(left + 13, rowY + EVO_ROW_H / 2, PORTRAIT_TEXTURE_KEY, 0)
       .setScale(HUD_DETAIL_EVO_PORTRAIT_SCALE)
       .setVisible(false);
     const name = addFrlgText(scene, left + 30, rowY + 6, '', { size: 16, tint: FRLG_INK })
@@ -1570,7 +1648,7 @@ function buildDetailPanel(host: RoutePanelHost): Phaser.GameObjects.Container {
     }).setVisible(false);
     hudDetailEvoCells.push({
       node: null,
-      rect: { x: left, y: rowY, w: innerW, h: HUD_DETAIL_EVO_ROW_H - 2 },
+      rect: { x: left, y: rowY, w: innerW, h: EVO_ROW_H - 2 },
       bg,
       portrait,
       name,
@@ -2061,6 +2139,7 @@ function closeDom(): void {
   hudNicknameEdit = null;
   hudLearnScrollDrag = null;
   hudLearnDrag = null;
+  hudEvoScrollTop = 0;
   hudLearnWindow = [];
   hudLearnRect = { x: 0, y: 0, w: 0, h: 0 };
   hudSearchRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -2078,6 +2157,7 @@ export const descriptor: RoutePanelDescriptor = {
   build(host: RoutePanelHost): void {
     hudDetailState = CLOSED_DETAIL;
     hudLearnScrollTop = 0;
+    hudEvoScrollTop = 0;
     hudLearnQuery = '';
     hudSearchFocus = false;
     hudLearnScrollDrag = null;

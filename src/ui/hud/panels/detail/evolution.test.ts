@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { playableSpecies } from '../../../../data/dex/species';
 import { evolutionGraph, type FamilyNode } from '../../../evolutionGraph';
+import { maxScrollTop, visibleRange } from '../../../scroll';
 import {
   EVO_INDENT,
   EVO_LEVEL_CHAR_W,
@@ -8,6 +11,7 @@ import {
   EVO_PAD_X,
   EVO_PORTRAIT,
   EVO_ROW_H,
+  EVO_WINDOW_ROWS,
   evolutionView,
   levelColumnWidth,
 } from './evolution';
@@ -27,6 +31,19 @@ function node(overrides: Partial<FamilyNode> & Readonly<{ id: string }>): Family
   };
 }
 
+/** A straight chain of `count` nodes, one row each, rooted at `n0`. */
+function chain(count: number): readonly FamilyNode[] {
+  return Array.from({ length: count }, (_, index) =>
+    node({
+      id: `n${index}`,
+      depth: index,
+      row: index,
+      parent: index === 0 ? null : index - 1,
+      level: index === 0 ? null : 10,
+    }),
+  );
+}
+
 /** Charmander -> Charmeleon -> Charizard, the family the `03m` frame draws. */
 const FAMILY: readonly FamilyNode[] = [
   node({ id: 'charmander', depth: 0, row: 0, current: false }),
@@ -38,9 +55,14 @@ describe('the mirrored constants', () => {
   it('equal the Phaser values they copy', () => {
     expect(EVO_ROW_H).toBe(28);
     expect(EVO_INDENT).toBe(34);
-    expect(EVO_MAX_ROWS).toBe(9);
+    expect(EVO_MAX_ROWS).toBe(11);
+    expect(EVO_WINDOW_ROWS).toBe(10);
     expect(EVO_PORTRAIT).toBe(26);
     expect(EVO_PAD_X).toBe(8);
+  });
+
+  it('keeps the pool a real pool, one row over the window', () => {
+    expect(EVO_MAX_ROWS).toBeGreaterThan(EVO_WINDOW_ROWS);
   });
 });
 
@@ -132,21 +154,12 @@ describe('evolutionView', () => {
     ]);
   });
 
-  it('truncates at EVO_MAX_ROWS and shortens the SVG to the rows it draws', () => {
-    const wide = Array.from({ length: 12 }, (_, index) =>
-      node({
-        id: `n${index}`,
-        depth: index,
-        row: index,
-        parent: index === 0 ? null : index - 1,
-        level: index === 0 ? null : 10,
-      }),
-    );
-    const view = evolutionView(wide, 420);
-    expect(view.rows).toHaveLength(EVO_MAX_ROWS);
-    expect(view.height).toBe(EVO_MAX_ROWS * EVO_ROW_H);
-    expect(view.edges).toHaveLength(EVO_MAX_ROWS - 1);
-    expect(view.rows[EVO_MAX_ROWS - 1].y).toBe((EVO_MAX_ROWS - 1) * EVO_ROW_H);
+  it('draws only the window and shortens the SVG to the rows it draws', () => {
+    const view = evolutionView(chain(12), 420);
+    expect(view.rows).toHaveLength(EVO_WINDOW_ROWS);
+    expect(view.height).toBe(EVO_WINDOW_ROWS * EVO_ROW_H);
+    expect(view.edges).toHaveLength(EVO_WINDOW_ROWS - 1);
+    expect(view.rows[EVO_WINDOW_ROWS - 1].y).toBe((EVO_WINDOW_ROWS - 1) * EVO_ROW_H);
   });
 
   it('draws no edge for a root and keeps the flags off a plain node', () => {
@@ -162,6 +175,115 @@ describe('evolutionView', () => {
     const view = evolutionView(family, 420);
     expect(family).toHaveLength(3);
     expect(view.rows).toHaveLength(3);
+  });
+
+  it('scrolls the window a row at a time and clamps any offset into range', () => {
+    const nodes = chain(11);
+    const first = evolutionView(nodes, 420);
+    expect(first.rows).toHaveLength(EVO_WINDOW_ROWS);
+    expect(first.rows[0].id).toBe('n0');
+    expect(first.rows[9].id).toBe('n9');
+    expect(first.rows[9].y).toBe(252);
+
+    const scrolled = evolutionView(nodes, 420, 1);
+    expect(scrolled.rows).toHaveLength(EVO_WINDOW_ROWS);
+    expect(scrolled.rows[0].id).toBe('n1');
+    expect(scrolled.rows[0].y).toBe(0);
+    expect(scrolled.rows.at(-1)!.id).toBe('n10');
+    expect(scrolled.height).toBe(EVO_WINDOW_ROWS * EVO_ROW_H);
+    // n1's parent n0 has left the window, so its elbow is gone — while n10's own
+    // appears, so a full window still draws `EVO_WINDOW_ROWS - 1` of them.
+    expect(scrolled.edges).toHaveLength(EVO_WINDOW_ROWS - 1);
+    expect(scrolled.edges[0]).toEqual({ fromRow: 0, toRow: 1, d: 'M 68 14 H 59 V 42 H 76' });
+
+    expect(evolutionView(nodes, 420, 5)).toEqual(scrolled);
+    expect(evolutionView(nodes, 420, -3)).toEqual(first);
+    expect(maxScrollTop(11, 1, EVO_WINDOW_ROWS)).toBe(1);
+    expect(visibleRange(1, 1, 10, 11)).toEqual({ start: 1, end: 11 });
+  });
+
+  it('caps the pool before it windows, so a thirteen-row chain still ends at n10', () => {
+    const nodes = chain(13);
+    expect(evolutionView(nodes, 420, 1).rows.at(-1)!.id).toBe('n10');
+    expect(evolutionView(nodes, 420).rows).toHaveLength(EVO_WINDOW_ROWS);
+    expect(maxScrollTop(Math.min(13, EVO_MAX_ROWS), 1, EVO_WINDOW_ROWS)).toBe(1);
+  });
+});
+
+describe('the Eevee family', () => {
+  it('fills the window exactly, with the G-Max information row last', () => {
+    const family = evolutionGraph('eevee', 20);
+    expect(family).toHaveLength(EVO_WINDOW_ROWS);
+
+    const view = evolutionView(family, 420);
+    expect(view.rows).toHaveLength(10);
+    expect(view.height).toBe(280);
+    expect(view.edges).toHaveLength(9);
+    expect(view.rows[9]).toEqual({
+      id: 'eeveegmax',
+      name: 'Gigantamax Eevee',
+      level: 'Eeveite G',
+      kind: 'gmax',
+      depth: 1,
+      parent: 0,
+      row: 9,
+      y: 252,
+      x: EVO_PAD_X + EVO_INDENT,
+      current: false,
+      ready: false,
+    });
+    expect(view.rows.filter((row) => row.ready)).toHaveLength(8);
+  });
+
+  it('is the longest graph the dex can produce, and the pool covers it', () => {
+    let longest = 0;
+    let longestId = '';
+    for (const species of playableSpecies()) {
+      const rows = evolutionGraph(species.id, 100).length;
+      if (rows <= longest) continue;
+      longest = rows;
+      longestId = species.id;
+    }
+    expect(longest, `longest family: ${longestId}`).toBe(10);
+    expect(EVO_MAX_ROWS).toBeGreaterThanOrEqual(longest);
+  });
+});
+
+describe('the band against the card', () => {
+  it('ends its window on the card inner bottom edge, and eleven would not fit', () => {
+    // The card is 460 × 560 and `chrome.json` bakes an 8 px bottom border into the
+    // window, so its inner bottom edge is 552; the band's own top is 272 (title 250 + 22).
+    const CARD_H = 560;
+    const INNER_BOTTOM = CARD_H - 8;
+    const BAND_TOP = 272;
+    expect(272 + EVO_WINDOW_ROWS * EVO_ROW_H).toBe(552);
+    expect(552).toBe(INNER_BOTTOM);
+    expect(552 <= CARD_H - 8).toBe(true);
+    expect(272 + 11 * EVO_ROW_H).toBeGreaterThan(552);
+    expect(BAND_TOP + EVO_WINDOW_ROWS * EVO_ROW_H).toBe(INNER_BOTTOM);
+  });
+});
+
+describe('the band is pure', () => {
+  it('reads no random source and imports only the graph, the scroll arithmetic and its view type', () => {
+    const source = readFileSync(new URL('./evolution.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/Rng|rng/);
+    expect(source).not.toMatch(/Math\.random|\bDate\.\b|window\.|document\./);
+    const imports = [...source.matchAll(/from '([^']+)'/g)].map((match) => match[1]);
+    expect(imports).toEqual(['../../../evolutionGraph', '../../../scroll', './view']);
+  });
+
+  it('shares its pool and window with the scene instead of a second copy', () => {
+    const source = readFileSync(new URL('../../../../scenes/panels/detail.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/HUD_DETAIL_EVO_MAX/);
+    expect(source).not.toMatch(/HUD_DETAIL_EVO_ROW_H/);
+    const imported = source.match(
+      /import\s*\{([^}]*)\}\s*from '\.\.\/\.\.\/ui\/hud\/panels\/detail\/evolution'/,
+    );
+    expect(imported).not.toBeNull();
+    for (const name of ['EVO_MAX_ROWS', 'EVO_WINDOW_ROWS', 'EVO_ROW_H', 'levelColumnWidth']) {
+      expect(imported![1], name).toContain(name);
+    }
   });
 });
 

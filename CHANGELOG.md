@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The evolution band draws every row the model returns.** `[Task-185]`, the second of
+      Batch 81: the STATS band's row pool grows to `EVO_MAX_ROWS = 11` (one row above the
+      longest family the dex can produce, measured at **10** over all 1281 playable
+      species) and its window becomes `EVO_WINDOW_ROWS = 10`, the ten rows the 460 × 560
+      card holds (`272 + 10 × 28 = 552 = 560 − 8`), scrolled a row at a time through a
+      `<` / `>` pair on the band's title row with the learnset band's own `scroll.ts`
+      arithmetic; the mirrored `HUD_DETAIL_EVO_MAX` leaves the scene, which imports the
+      one constant, so the two can never drift again. An Eevee's tenth row — its
+      Gigantamax row — is drawn, last, instead of being clipped. `docs/design-spec.md` §3
+      owns the rule, and `src/ui/hud/panels/detail/README.md` maps the module's new state.
+      `npm test` 4568 passed / 69 skipped, `npm run build` green; measured live over CDP
+      at 1280 × 800 DPR 1 with `renderer.snapshotArea` + `getImageData`: row 9's rect
+      (150, 596, 398, 24) counts **333** light pixels with the Eevee (Gigantamax Eevee,
+      Eeveite G) against none of the band's own content on the starter control, and the
+      card's bottom strip (108, 624, 460, 8) counts **0**.
+
 - [x] **A battle plays on a tree without the packed art.** `[Task-184]`, the first of
       Batch 81: the battle's mon idle animation is registered only for a sheet whose
       texture really loaded and never longer than that texture's own `frameTotal`

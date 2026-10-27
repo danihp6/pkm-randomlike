@@ -8557,7 +8557,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       skipped the entry. Claims `src/scenes/BattleScene.ts` and `src/assets/README.md`.
       *Dependencies:* none. *(Batch 81)*
 
-- [ ] **[Task-185] The evolution band draws every row the model returns.** Issue #21, the one
+- [x] **[Task-185] The evolution band draws every row the model returns.** Issue #21, the one
       known limit it recorded. An Eevee's graph is ten rows — eight evolutions, the current node
       and its G-Max row — and the band's pool stops at nine (`HUD_DETAIL_EVO_MAX = 9`,
       `src/scenes/panels/detail.ts` 158; `EVO_MAX_ROWS = 9`, `src/ui/hud/panels/detail/evolution.ts`
