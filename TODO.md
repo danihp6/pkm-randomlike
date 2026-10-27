@@ -8460,7 +8460,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
 - The route-scene queue therefore extends **80 → 81 → 82**, and `[Task-181]` is the phase's one
   `SAVE_VERSION` holder (25 → 26). No task here repaints a batch that already shipped.
 
-- [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
+- [!] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
       and **nothing calls it**: a grep of `src` finds the two names in the module and its tests
       alone, so `save.history` is `[]` for every player and the STATS board opens on
@@ -8487,6 +8487,10 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/engine/run/{state,history,state.test,history.test}.ts`, `src/engine/save.ts` + test,
       `src/scenes/RouteScene.ts`, `src/scenes/RunOverScene.ts`, `docs/design-spec.md` and
       `docs/tech-decisions.md`. *Dependencies:* none. *(Batch 81)*
+      **BLOCKED:** the per-member `kos`/`damage` counters the record prints are not in
+      `BattleReturn` (only the player's snapshots; `battleLink.ts:92-104`) and need the
+      battle log behind `src/scenes/BattleScene.ts`, which `[Task-184]` holds in this
+      batch — issue #74 carries the three readings and the decision needed.
 
 - [ ] **[Task-182] The launch fills the team-type bonuses.** Issue #59, follow-up 1.
       `[Task-150]` shipped the four rules — two living members of a type give that type's moves
