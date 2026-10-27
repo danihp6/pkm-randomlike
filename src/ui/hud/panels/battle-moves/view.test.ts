@@ -119,6 +119,7 @@ describe('battleMovesBox', () => {
   it('starts at or right of the HP column at every wide viewport it sweeps', () => {
     for (const viewport of [
       { width: 700, height: 700 },
+      { width: 800, height: 800 },
       { width: 1024, height: 768 },
       { width: 1280, height: 800 },
       { width: 1600, height: 900 },
@@ -133,8 +134,8 @@ describe('battleMovesBox', () => {
   it('sits below the player HP box at every phone viewport it sweeps', () => {
     for (const viewport of [
       { width: 390, height: 844 },
+      { width: 320, height: 568 },
       { width: 480, height: 800 },
-      { width: 599, height: 900 },
     ]) {
       expect(battleMovesBox(viewport).y).toBeGreaterThanOrEqual(
         battleHpBox(viewport, 'player', 0).y + battleHpBox(viewport, 'player', 0).h,
@@ -149,7 +150,8 @@ describe('battleMovesBox', () => {
   it('keeps the shipped phone card in a wide viewport with a short stage', () => {
     // 800×600 centres a 600 px battle square the HP column runs past, and the compact
     // card is anchored to that square: it keeps its shipped rect rather than chasing
-    // the viewport-wide boxes, so only a phone-shaped viewport clears both of them.
+    // the viewport-wide boxes, so only a phone-shaped viewport clears both of them
+    // (the 600–699 px residue, rule 6 of this folder's README).
     expect(battleMovesBox({ width: 800, height: 600 })).toStrictEqual({
       x: 116,
       y: 348,
