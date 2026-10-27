@@ -29,6 +29,8 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
 - `routes/` — the route generator and its validation: `routes/sketch.ts`, the shapes and access
   edges in `routes/layout.ts`, `routes/routeMap.ts`, `routes/validate.ts`, `routes/encounters.ts`,
   `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts`,
+  `routes/preview.ts` (the main menu window's decorative route: its window-sized quiet room and
+  the walkers that wander it, drawn from a seed of their own),
   `routes/battlefield.ts` (the weather, terrain or field condition a room's battles begin under),
   `routes/gate.ts` (the gated reward room's vault carve and its two per-floor ids),
   `routes/staticSpecies.ts` (the static-species room's content: its housing records, its two

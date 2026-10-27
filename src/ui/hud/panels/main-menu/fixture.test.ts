@@ -11,6 +11,7 @@ import { portraitCrop } from '../../portrait';
 import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
+  MAIN_MENU_SLUG,
   fixtureMainMenuView,
   type MainMenuRowId,
   type MainMenuView,
@@ -323,6 +324,24 @@ describe('the phone frames', () => {
 });
 
 describe('fixtureMainMenuView guards', () => {
+  it('falls back to the frame’s slug for a payload that carries no preview seed', () => {
+    expect(fixtureMainMenuView(fixture)!.previewSeed).toBe(MAIN_MENU_SLUG);
+    expect(fixtureMainMenuView(noSaveFixture)!.previewSeed).toBe(MAIN_MENU_SLUG);
+    expect(JSON.stringify(fixture)).not.toContain('previewSeed');
+  });
+
+  it('reads a preview seed the payload does carry, and ignores an empty one', () => {
+    const seeded = payloadWith((menu) => {
+      menu.previewSeed = 'frame-seed';
+    });
+    const empty = payloadWith((menu) => {
+      menu.previewSeed = '';
+    });
+
+    expect(fixtureMainMenuView(seeded)!.previewSeed).toBe('frame-seed');
+    expect(fixtureMainMenuView(empty)!.previewSeed).toBe(MAIN_MENU_SLUG);
+  });
+
   it('rejects a payload without a menu block', () => {
     expect(fixtureMainMenuView(null)).toBeNull();
     expect(fixtureMainMenuView('01-main-menu')).toBeNull();

@@ -55,6 +55,8 @@ export type MainMenuView = Readonly<{
   stats: readonly MainMenuStatView[];
   /** The id drawn selected (accent bar, `>`, accent fill + border), or null. */
   selected: MainMenuRowId | null;
+  /** The decorative route preview’s seed: `randomSeed()` once per boot, or the slug’s own. */
+  previewSeed: string;
 }>;
 
 /** The board's two layouts: the desk frame (`01`) and the phone frame (`m01`). */
@@ -151,7 +153,11 @@ export const MAIN_MENU_SLUGS = [MAIN_MENU_SLUG, MAIN_MENU_SLUG_NO_SAVE] as const
 export type MainMenuSlug = (typeof MAIN_MENU_SLUGS)[number];
 
 /** The live menu, from the save's run and the scene's cursor. */
-export function liveMainMenuView(run: RunState | null, index: number): MainMenuView {
+export function liveMainMenuView(
+  run: RunState | null,
+  index: number,
+  previewSeed: string = MAIN_MENU_SLUG,
+): MainMenuView {
   const rows: MainMenuRowView[] = [];
   if (run !== null) {
     rows.push({
@@ -183,6 +189,7 @@ export function liveMainMenuView(run: RunState | null, index: number): MainMenuV
           })),
     stats: [],
     selected,
+    previewSeed,
   };
 }
 
@@ -274,7 +281,7 @@ export function fixtureMainMenuView(payload: unknown): MainMenuView | null {
   const menu = payload.menu;
   if (!isPlainObject(menu)) return null;
 
-  const { title, version, selected, rows: rawRows, stats: rawStats } = menu;
+  const { title, version, selected, rows: rawRows, stats: rawStats, previewSeed } = menu;
   if (!isNonEmpty(title)) return null;
   if (version !== null && typeof version !== 'string') return null;
 
@@ -297,5 +304,6 @@ export function fixtureMainMenuView(payload: unknown): MainMenuView | null {
     portraits: fixturePortraits(payload.state),
     stats,
     selected: selection,
+    previewSeed: isNonEmpty(previewSeed) ? previewSeed : MAIN_MENU_SLUG,
   };
 }

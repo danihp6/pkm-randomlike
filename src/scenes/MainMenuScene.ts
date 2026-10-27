@@ -111,6 +111,8 @@ export class MainMenuScene extends Phaser.Scene {
   private controls!: Phaser.GameObjects.BitmapText;
   /** True on the DOM path, so `render` paints the panel instead of the rows. */
   private dom = false;
+  /** The decorative route window's seed: drawn once per boot, never saved. */
+  private previewSeed = '';
   /** The mounted DOM menu (`?hud=dom`): the one emit point of the drawn menu. */
   private controller: MainMenuHandle | null = null;
   /** The finished runs the stats panel draws, read from the save on `create`. */
@@ -127,6 +129,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   create(): void {
     this.settings = loadSettings();
+    this.previewSeed = randomSeed();
     const save = loadSave(browserStorage());
     this.run = save.run && hasLivingParty(save.run) ? save.run : null;
     this.history = save.history;
@@ -156,9 +159,14 @@ export class MainMenuScene extends Phaser.Scene {
     this.render();
   }
 
+  /** The live view both the mount and every repaint read, so the panel cannot drift. */
+  private menuView(): MainMenuView {
+    return liveMainMenuView(this.run, this.index, this.previewSeed);
+  }
+
   /** The flag-on build: the same rows, no Phaser object, one panel in `#hud`. */
   private createDom(): void {
-    const view = liveMainMenuView(this.run, 0);
+    const view = this.menuView();
     this.items = MAIN_MENU_ACTIONS.filter((id) => view.rows.some((row) => row.id === id));
     this.index = 0;
     // Either fixture preview paints its own frame and owns the layer; the scene then
@@ -290,7 +298,7 @@ export class MainMenuScene extends Phaser.Scene {
     if (!this.statsOpen) return;
     this.disposeStats();
     this.statsOpen = false;
-    this.mountPanel(liveMainMenuView(this.run, this.index));
+    this.mountPanel(this.menuView());
   }
 
   /** The live panel's view for the mode and month this scene holds. */
@@ -424,7 +432,7 @@ export class MainMenuScene extends Phaser.Scene {
     // The stats panel owns the layer while it is open; the menu behind it is gone.
     if (this.statsOpen) return;
     if (this.dom) {
-      this.controller?.update(liveMainMenuView(this.run, this.index));
+      this.controller?.update(this.menuView());
       return;
     }
     this.rows.forEach((row, i) => row.highlight.setVisible(i === this.index));

@@ -1268,6 +1268,29 @@ test files outside this change's paths construct `RunStats` literals by hand
 may not edit paths it does not own. `runFaints`/`addFaints` keep the arithmetic total, and
 `emptyRunStats()` writes the field, so every run this build creates carries a number.
 
+## D55 — The main menu's preview route is decorative, and its seed is random on purpose *(decided)*
+
+The main menu's 560×380 window (358×240 on a phone) was an empty frame: the menu drew a
+route window's chrome and nothing inside it, so the landing screen read as a placeholder.
+The screen has no run of its own — with no save there is no seed to draw a route from — and
+borrowing the saved run's seed would make the menu show a room the player is not standing in.
+
+**Decided (`2026-10-27`): the window draws a route that is decoration, from a seed of its own.**
+`src/engine/routes/preview.ts` is the only seam — `previewRoute(seed, window)` (the window
+sized room, the first map's biome, a quiet `corridor` off `` `${seed}:preview` ``),
+`previewWalkers(route)` (two or three distinct species on its walkable floor) and
+`stepPreviewWalkers(route, walkers, step)` (one tick of their wander, each on its own
+`walker:<id>:<step>` stream). It reads no run state and no save, and it never touches
+`RunState.seed`; `previewRoomFor`, `previewTileBox`, `previewWalkerBox` and `tileBackground`
+in `src/ui/hud/panels/main-menu/routeWindow.ts` are the renderer's geometry over that model.
+
+`D11` makes the **run** reproducible; this screen is the one place allowed to differ per
+visit, so the seed is `randomSeed()` once per boot and is never persisted, never enters
+`save.run` and never reaches an encounter, an input or a write. The consequence: a fixture
+frame and the live panel render the same model (the view carries `previewSeed`, the panel
+paints `previewRoomFor`), so the two renderings cannot drift — and **no other screen may
+adopt a random seed by citing this decision**.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld
