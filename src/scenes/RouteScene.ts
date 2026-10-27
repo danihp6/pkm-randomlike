@@ -431,8 +431,8 @@ type TrainerSpriteEntry = {
   spriteKey: string | null;
 };
 
-/** The room's special NPC (`docs/maps-spec.md` §7): the row it rolled and its tile. */
-type RoomNpc = Readonly<{ row: NpcRow; tile: Tile }>;
+/** The room's special NPC (`docs/maps-spec.md` §7): the row it rolled, its tile and the way it looks. */
+type RoomNpc = Readonly<{ row: NpcRow; tile: Tile; facing: Facing }>;
 
 /** What one battle launch adds beyond the trigger: the guardian's boosts and its no-flee rule. */
 type BattleExtras = Readonly<{
@@ -775,10 +775,10 @@ export class RouteScene extends Phaser.Scene {
       ? { row: guaranteed, roomIndex: room.roomId }
       : roomNpc(this.run.seed, room.roomId, room.mapIndex, eligible);
     if (!placement) return;
-    const tile = npcSpot(this.route, room.roomId, this.run.seed, placement.row.id);
-    if (!tile) return;
+    const spot = npcSpot(this.route, room.roomId, this.run.seed, placement.row.id);
+    if (!spot) return;
     if (overworldSpriteFrame(placement.row.spriteKey) === null) return;
-    this.npc = { row: placement.row, tile };
+    this.npc = { row: placement.row, tile: spot.tile, facing: spot.facing };
   }
 
   /** The descriptor for the room on screen, or null when it has none (`D47`). */
@@ -2245,19 +2245,22 @@ export class RouteScene extends Phaser.Scene {
 
   /**
    * Draws the room's special NPC on its own free tile, off the packed overworld
-   * atlas exactly as a trainer sprite is drawn. It never joins `trainerSprites`: it
-   * has no sight, no spin, no chase and no roster.
+   * atlas exactly as a trainer sprite is drawn, posed by its facing so its back is
+   * to the wall. It never joins `trainerSprites`: it has no sight, no spin, no chase
+   * and no roster.
    */
   private drawRoomNpc(created: Phaser.GameObjects.GameObject[]): void {
     const npc = this.npc;
     if (!npc) return;
-    const frame = overworldSpriteFrame(npc.row.spriteKey);
+    const pose = trainerFacingPose(npc.facing);
+    const frame = overworldSpriteFrame(npc.row.spriteKey, pose.facing);
     if (frame === null) return;
     const footY = this.centerY(npc.tile.y) + TILE_SIZE / 2;
     const sprite = this.add
       .sprite(this.centerX(npc.tile.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
       .setOrigin(0.5, 1)
       .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
+      .setFlipX(pose.flipX)
       .setDepth(actorDepth(footY));
     this.entitySprites.push(sprite);
     created.push(sprite);

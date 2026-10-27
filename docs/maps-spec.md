@@ -540,8 +540,11 @@ every special leaf are `wild` and never carry one.
   the roll.
 - **The spot** is one free tile on its own stream
   (`${seed}:npc:<roomId>:<npcId>:spot`): never the entry or its four neighbours,
-  never an exit, a wall, a trainer or a visible ground item. A live NPC **blocks its
-  tile** like a trainer or a visible item; it has no line of sight and never spins.
+  never an exit, a wall, a trainer or a visible ground item. It prefers a tile that
+  touches an unwalkable one and stands **facing the room**, the facing derived from
+  the first wall in the N, E, S, W order and never drawn, so a room with no such tile
+  keeps any free tile facing `'S'`. A live NPC **blocks its tile** like a trainer or a
+  visible item; it has no line of sight and never spins.
   A row whose sprite key the packed overworld atlas lacks is dropped whole — no art,
   no block and no interact.
 - **The card** the interact key opens is **one modal shell** (`src/ui/npcPanel.ts`)

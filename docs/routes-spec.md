@@ -266,9 +266,15 @@ hold one special NPC (`docs/maps-spec.md` §7). It is placed **when the room is
 built**: the presence and row roll on the room's own `${seed}:npc:<roomId>` stream
 and the standing tile on `${seed}:npc:<roomId>:<npcId>:spot`, so no layout, terrain,
 population, validation or encounter stream moves and a fixed seed keeps every route
-it already generated. The scene rolls it once per room build (never in `update`),
-draws it as an ordinary overworld actor and blocks its tile; the interact key opens
-the one NPC card. `NPC_ROWS` ships sixteen rows (`src/data/npcs.ts`): the merchant,
+it already generated. The spot prefers a free tile with at least one cardinally
+**unwalkable** neighbour and faces the NPC **away** from that wall — a wall on the
+north turns it `'S'`, its back to the wall and its front to the room, and the first
+wall in the N, E, S, W order wins on a corner — so the facing is **derived** from
+the chosen tile and never drawn: the stream keeps its single draw. A room whose free
+tiles are all open keeps today's pick, facing `'S'`. The scene rolls it once per room
+build (never in `update`), draws it through a resting trainer's pose
+(`trainerFacingPose`) and blocks its tile; the interact key opens the one NPC card.
+`NPC_ROWS` ships sixteen rows (`src/data/npcs.ts`): the merchant,
 the **Team Rocket** grunt that opens the slot machine's panel, the five edit rows and
 the sacrifice, the four run-modifier rows and the four item-and-battle rows (the
 medic, the chef, the berry tree and the Mega Stone keeper).

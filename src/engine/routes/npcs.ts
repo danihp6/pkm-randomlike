@@ -11,7 +11,7 @@ import {
   type NpcRow,
 } from '../../data/npcs';
 import type { Tile } from '../grid';
-import { isWalkable } from '../map';
+import { isWalkable, type TileMap } from '../map';
 import { firstTrainerRoom, type MapPlan } from '../maps/plan';
 import { Rng, hashSeed } from '../rng';
 import { healParty } from '../run/heal';
@@ -32,7 +32,7 @@ import {
   type EncounterLevelRoll,
   type EncounterTable,
 } from './encounters';
-import { tileKey, type RouteMap } from './routeMap';
+import { FACINGS, FACING_VECTORS, tileKey, type Facing, type RouteMap } from './routeMap';
 
 /**
  * The special-NPC framework (`docs/maps-spec.md` §7, `docs/routes-spec.md` §2): one
@@ -54,6 +54,40 @@ const ENTRY_NEIGHBOURS: readonly Tile[] = [
   { x: 0, y: 1 },
   { x: -1, y: 0 },
 ];
+
+/** The way each facing reads from the tile in front of it. */
+const OPPOSITE: Readonly<Record<Facing, Facing>> = { N: 'S', E: 'W', S: 'N', W: 'E' };
+
+/** True when `tile` has at least one cardinally unwalkable neighbour, so an NPC can put its back to it. */
+function touchesWall(tiles: TileMap, tile: Tile): boolean {
+  for (const facing of FACINGS) {
+    const step = FACING_VECTORS[facing];
+    if (!isWalkable(tiles, { x: tile.x + step.x, y: tile.y + step.y })) return true;
+  }
+  return false;
+}
+
+/**
+ * The way an NPC on `tile` looks: back to the wall, front to the room. The wall is
+ * the first one in the N, E, S, W order whose opposite side is walkable, so a corner
+ * turns the NPC toward the room and not into the second wall. A tile walled on
+ * opposite sides (a one-wide corridor) has no such wall at all, so the first open
+ * cardinal in the same order wins and the facing still points at a walkable neighbour.
+ */
+function awayFromWall(tiles: TileMap, tile: Tile): Facing {
+  for (const wall of FACINGS) {
+    const step = FACING_VECTORS[wall];
+    if (isWalkable(tiles, { x: tile.x + step.x, y: tile.y + step.y })) continue;
+    const facing = OPPOSITE[wall];
+    const front = FACING_VECTORS[facing];
+    if (isWalkable(tiles, { x: tile.x + front.x, y: tile.y + front.y })) return facing;
+  }
+  for (const facing of FACINGS) {
+    const step = FACING_VECTORS[facing];
+    if (isWalkable(tiles, { x: tile.x + step.x, y: tile.y + step.y })) return facing;
+  }
+  return 'S';
+}
 
 function clamp01(value: number): number {
   return value < 0 ? 0 : value > 1 ? 1 : value;
@@ -158,12 +192,23 @@ export function npcWildType(seed: string, roomIndex: number, npcId: string): str
   return MAGICIAN_TYPES[rng.int(0, MAGICIAN_TYPES.length - 1)];
 }
 
+/** The tile the NPC stands on and the way it looks: back to the wall, front to the room. */
+export type NpcSpot = Readonly<{ tile: Tile; facing: Facing }>;
+
 /**
- * The free tile the NPC stands on, or null. Excludes the entry and its four
- * neighbours, every exit, walls, trainers and visible items; one `Rng.int` on
- * `Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:spot`))`.
+ * The free tile the NPC stands on and its facing, or null. Excludes the entry and
+ * its four neighbours, every exit, walls, trainers and visible items; one `Rng.int`
+ * on `Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:spot`))`. The candidates are the
+ * free tiles that touch a wall, so the NPC's back can be to it; a room with none keeps
+ * every free tile and faces `'S'`. The facing is derived from the chosen tile's walls,
+ * never drawn, so the stream keeps its single draw (`D11`).
  */
-export function npcSpot(route: RouteMap, roomIndex: number, seed: string, npcId: string): Tile | null {
+export function npcSpot(
+  route: RouteMap,
+  roomIndex: number,
+  seed: string,
+  npcId: string,
+): NpcSpot | null {
   const taken = new Set<string>([tileKey(route.entry)]);
   for (const step of ENTRY_NEIGHBOURS) {
     taken.add(tileKey({ x: route.entry.x + step.x, y: route.entry.y + step.y }));
@@ -185,8 +230,11 @@ export function npcSpot(route: RouteMap, roomIndex: number, seed: string, npcId:
   }
   if (free.length === 0) return null;
 
+  const walled = free.filter((tile) => touchesWall(route.tiles, tile));
+  const candidates = walled.length > 0 ? walled : free;
   const rng = new Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:spot`));
-  return free[rng.int(0, free.length - 1)];
+  const tile = candidates[rng.int(0, candidates.length - 1)];
+  return { tile, facing: walled.length > 0 ? awayFromWall(route.tiles, tile) : 'S' };
 }
 
 /**
