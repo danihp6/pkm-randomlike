@@ -8599,7 +8599,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       in the bullet contradicts the berry tree. Claims `docs/maps-spec.md` §7.
       *Dependencies:* none. *(Batch 81)*
 
-- [ ] **[Task-187] Every pack-less placeholder carries its own accent.** Issue #68. On a tree
+- [x] **[Task-187] Every pack-less placeholder carries its own accent.** Issue #68. On a tree
       without the art pack, `scripts/assets/build-placeholders.mjs` paints **every** atlas with
       the same two colours (`#7888A0` / `#3A4252`), so a whole-screen "no 24×24 square of the
       placeholder's paint" criterion cannot hold anywhere — a tileset placeholder at the wall band

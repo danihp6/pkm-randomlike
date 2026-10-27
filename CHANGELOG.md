@@ -8,6 +8,30 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every pack-less placeholder carries its own accent.** `[Task-187]`, the second of
+      Batch 82: the twenty fallback atlases under `src/assets/placeholders/` stop sharing
+      one swatch pair, which is what made a screen-wide criterion impossible — the old
+      `#3A4252` fill matched a tileset placeholder four runs out of ten, 90 px from the
+      object under test (issue #68). The rule is now one pure function,
+      `accentFor(path)` in the new `scripts/assets/placeholderAccent.mjs`: a hash of the
+      atlas path into a deterministic fill/border pair, **twenty pairwise-distinct fills**
+      whose nearest approach to the two legacy colours is **45.4** RGB (the bar was 16) and
+      whose fill luminance tops out at **0.41**, so the blanks stay blanks and a future
+      criterion can measure them screen-wide. The generator keeps its argv interface and
+      gains the fallback the worktree needed: the blank's pixel size comes from the real
+      atlas when the store is present and from **the committed blank itself** when it is
+      not, so it runs on any clone, is idempotent (two passes leave `git status` empty) and
+      changes **0** PNG dimensions. The sign keeps Task-165's silhouette byte for byte —
+      its alpha mask is identical to `main`'s 82 opaque pixels, only the two colours moved.
+      `src/assets/README.md` writes the rule down. `npm test` 4584 passed / 69 skipped,
+      `npm run build` green; measured live over CDP on a genuinely pack-less worktree
+      (`renderer.snapshotArea` 1024×681 + `getImageData`, `getImageData` never a
+      screenshot): the old fill counts **0 px**, `frlg/forest.png`'s accent **555 166 px**
+      and `frlg/overworld.png`'s **4 968 px** on the same route, with the player's own
+      accent moving 24 px when a key is pressed. Known debt this task could not reach, its
+      paths not covering it: `docs/tileset-spec.md` (81-84) still names the retired
+      `#7888A0`/`#3A4252` pair for the sign and owes a two-line correction.
+
 - [x] **The launch fills the team-type bonuses.** `[Task-182]`, the first of Batch 82:
       the shipped `+10 %` / `+20` team-type rule finally reaches a real battle.
       `livingTeamTypes(run)` (`src/engine/run/party.ts`) reads the party only, keeps a
