@@ -8513,6 +8513,10 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   pair**, which `[Task-190]` holds in 85, and `battle-moves/**`, which `[Task-193]` holds in the same
   batch, so no free slot of 85 can carry it: it opens the next batch, and Batch 86 is one task wide
   for the two hot paths it claims.
+- **Batch 87 is `[Task-197]` alone (2026-10-27).** The panel gate is the harness, not a panel: it claims
+  `scripts/hud/diff.mjs`, `design/fixtures/**`, `src/ui/hud/fixtures/**` and the two design docs, none of
+  which 86 touches. It cannot ride 86 because a correct gate is what decides whether 86's own prompt row
+  is measured at 390 at all; its numbers, in turn, cut the panel tasks that follow it.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8858,6 +8862,47 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       targeting module beside it), `src/ui/hud/panels/battle-moves/**` + tests, `src/i18n/{en,es}.ts`,
       `docs/battle-spec.md` §12 and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 86)*
+
+- [ ] **[Task-197] The panel gate measures the panels at both viewports.** Measured on `2026-10-27` on
+      the tree that merged `[Task-183]` (`main` @ `49aeb7b`, `npm run build` fresh) with the repository's
+      own harness, `node scripts/hud/diff.mjs` (`scripts/hud/diff.mjs`: `design/screens/<slug>.png` at
+      2560×1600 as the scale-2 reference, `<m><slug>.png` at 780×1688 for the phone, geometry max ≤ 2 px
+      and colour flat ΔE ≤ 2, artifacts under the gitignored `design/diff/<slug>/`). **The desktop pass is
+      faithful and the mobile pass measures another screen.** `02-options` at 1280×800: 0.08 % of pixels
+      differ, flat ΔE 0.17, one edge of 80 off by 36 px — the screenshot is the two-column SETTINGS page
+      with its KEYBINDS column, so the desktop panel *is* the board's. The same slug at 390×844 compares
+      the board's SETTINGS card against **the main menu** (`POKERANDOMLIKE`, NUEVA PARTIDA / AJUSTES /
+      ESTADÍSTICAS), which is why it reports 5.54 % pixels and ΔE 5.59: the fixture is a `HudState` —
+      `party`, `bag`, `money`, `route`, `battle`, `notice` (`src/ui/hud/fixtures/index.ts` 13) — and carries
+      no screen, so nothing raises a panel the scene owns at that width. **Half the board cannot be
+      measured either:** `03b`, `03c`, `03e`, `03h` and `03p` have no `design/fixtures/*.json` at all, so
+      the harness diffs the board against a default screen (`03c-panels-compress`: 92.15 % pixels, ΔE 70.39,
+      "no edges found"), and `03-route-hud` and `03m-panels-pokemon-moves` come back with 0 edges on one
+      viewport each, which is the harness failing to frame them rather than a panel deviation. The mobile
+      frame `m02-options.png` is also a **different design** from its desktop twin — one card with VOLUME,
+      TEXT SPEED, ALWAYS RUN, MENU OPACITY, LANGUAGE and BACK — so one of the pair is stale. Last, the
+      harness's own `--dev` boot is broken: `Page.loadEventFired never arrived` after 30 s, so the gate only
+      runs against an already-built `dist` (`--url`).
+      **Fix shape:** the gate may judge a panel before anyone claims a panel is off. (1) `--dev` boots:
+      wait for the page's own readiness signal instead of the load event, so a run never needs a build.
+      (2) Every board frame that has a panel gets a fixture in `design/fixtures/`, and the missing five are
+      named with the screen they need. (3) The phone pass renders the panel it compares: the fixture (or
+      the harness) names the screen, so `02-options` at 390 shows SETTINGS and not the menu. (4) The board
+      frames whose phone twin disagrees with their desktop one are re-exported, or `docs/hud-fidelity.md`
+      records the decision — the board wins, but it has to be one board. (5) The measured table lands in
+      `docs/hud-fidelity.md`: one row per slug with both viewports' pixels, geometry and ΔE, and every
+      failing row cut into its own task rather than fixed here.
+      **Docs:** `docs/hud-fidelity.md` (the new table and the mobile frames' decision) and
+      `docs/hud-dom-proposal.md` §11 (the export recipe the fixtures follow).
+      **Tests:** `[unit]` every `design/screens/<slug>.png` has a `design/fixtures/<slug>.json` or is named
+      in an explicit allow-list with its reason (a Node test that enumerates both folders, so a new board
+      frame can never arrive unmeasured); `[unit]` `fixtureFor` still rejects a file whose `slug` or `state`
+      disagrees with its name; `[live]` `node scripts/hud/diff.mjs --slug 02-options --dev` reports both
+      viewports against the SETTINGS screen, the 390 capture is the panel and not the menu, and the table in
+      `docs/hud-fidelity.md` matches the run.
+      Claims `scripts/hud/diff.mjs` + its test, `design/fixtures/**`, `src/ui/hud/fixtures/**` + tests,
+      `docs/hud-fidelity.md` and `docs/hud-dom-proposal.md` §11.
+      *Dependencies:* none. *(Batch 87)*
 
 ---
 
