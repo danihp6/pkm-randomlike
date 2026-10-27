@@ -30,6 +30,14 @@ describe('defaults', () => {
     expect(MOVE_ACTIONS).toEqual(['up', 'down', 'left', 'right']);
   });
 
+  it('gives R to the reroll and Backspace to the reset, listed reroll first', () => {
+    expect(DEFAULT_KEYBINDS.reroll).toBe('R');
+    expect(DEFAULT_KEYBINDS.reset).toBe('BACKSPACE');
+    expect(KEYBIND_LABELS.reroll).toBe('Reroll starter');
+    expect(KEYBIND_ACTIONS).toContain('reroll');
+    expect(KEYBIND_ACTIONS.indexOf('reroll')).toBe(KEYBIND_ACTIONS.indexOf('reset') - 1);
+  });
+
   it('gives each direction WASD beside its arrow, and no other action an alias', () => {
     expect(MOVE_ALIASES.up).toEqual(['W']);
     expect(MOVE_ALIASES.down).toEqual(['S']);
@@ -70,6 +78,11 @@ describe('actionForKey', () => {
     expect(actionForKey(DEFAULT_KEYBINDS, 'M')).toBe('map');
     expect(actionForKey(DEFAULT_KEYBINDS, 'TAB')).toBe('settings');
     expect(actionForKey(DEFAULT_KEYBINDS, 'Z')).toBeNull();
+  });
+
+  it('routes R to the reroll and Backspace to the reset', () => {
+    expect(actionForKey(DEFAULT_KEYBINDS, 'R')).toBe('reroll');
+    expect(actionForKey(DEFAULT_KEYBINDS, 'BACKSPACE')).toBe('reset');
   });
 
   it('answers the always-on confirm/cancel aliases', () => {
@@ -128,6 +141,42 @@ describe('sanitizeKeybinds', () => {
   it('casts a stale binding style to the current single-key map', () => {
     const parsed = sanitizeKeybinds({ confirm: ['Z', 'SPACE'] } as unknown);
     expect(parsed).toEqual(DEFAULT_KEYBINDS);
+  });
+
+  it('gives every action a distinct key, bar the deliberate confirm/interact E', () => {
+    const parsed = sanitizeKeybinds(undefined);
+    expect(parsed).toEqual(DEFAULT_KEYBINDS);
+    // `confirm` and `interact` share `E` on purpose (`DEFAULT_KEYBINDS`), so the
+    // map holds exactly one fewer distinct key than it has actions.
+    expect(parsed.confirm).toBe(parsed.interact);
+    const keys = KEYBIND_ACTIONS.filter((action) => action !== 'interact').map(
+      (action) => parsed[action],
+    );
+    expect(new Set(keys).size).toBe(KEYBIND_ACTIONS.length - 1);
+  });
+
+  it('hands a save written before the split its R to reroll and Backspace to reset', () => {
+    const beforeReroll = {
+      confirm: 'E',
+      cancel: 'Q',
+      up: 'UP',
+      down: 'DOWN',
+      left: 'LEFT',
+      right: 'RIGHT',
+      run: 'SHIFT',
+      interact: 'E',
+      reset: 'R',
+      party: 'P',
+      bag: 'I',
+      map: 'M',
+      box: 'O',
+      settings: 'TAB',
+    };
+    const parsed = sanitizeKeybinds(beforeReroll);
+    expect(parsed).not.toHaveProperty('reset', 'R');
+    expect(parsed.reroll).toBe('R');
+    expect(parsed.reset).toBe('BACKSPACE');
+    expect(actionForKey(parsed, 'R')).toBe('reroll');
   });
 });
 

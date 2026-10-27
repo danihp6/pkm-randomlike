@@ -8749,7 +8749,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/battle-moves/**` + tests and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 84)*
 
-- [ ] **[Task-190] R rerolls the starter offer, which the frame already promises.** Issue #52,
+- [x] **[Task-190] R rerolls the starter offer, which the frame already promises.** Issue #52,
       residue 2, **decided on `2026-10-27`**: implement the key, never drop the frame's hint. The
       live footer (`StarterScene.ts` 216-222) reads `← → elegir · E confirmar · S semilla · Tab
       ajustes · Q atrás` and no R exists anywhere in the scene; `S` opens the typed-seed prompt

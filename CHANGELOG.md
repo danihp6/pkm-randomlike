@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **R rerolls the starter offer, and the offer is a pure function of the seed.** `[Task-190]`,
+      the first of Batch 85, closes issue #52's second residue: the pick's frame `04` advertises
+      **HOLD R FOR NEW SEED** and the scene read no R at all. `R` is now its own keybind action —
+      `reroll`, listed before `reset`, so `actionForKey` stays one key to one action and the
+      options screen and the footer both name it — and pressing it draws the next offer from a
+      fresh `randomSeed()` through the new `starterOffer(seed)` in `src/engine/run/starters.ts`,
+      the same path a new run takes. The offer stays a pure function of the seed — the cards, the
+      share line and the cursor (`index` back to 0) all follow it, the mode is untouched and no
+      save is written until `E` confirms — while `S` keeps its typed-seed prompt. Because `R`
+      already belonged to the route's hold-to-restart ring, `reset` moved to `BACKSPACE` so the
+      map keeps its one-key-per-action rule; `RouteScene` polls the action and needed no edit.
+      `docs/design-spec.md` §2 and §10.3 record the key. Gates: `npm test` 4708 passed / 69
+      skipped, `npm run build` green. Measured live over CDP on the DOM starter panel at
+      1280×800: the share line went `PKRL-1-f-13zsh61` → `PKRL-1-f-17tt64m` → `PKRL-1-f-rdcz4q`
+      on two R presses, each new seed's three cards equalled `starterOffer(<new seed>)`, typing
+      `17tt64m` back through `S` restored `lillipup / totodile / squirtle` exactly, and `E`
+      opened the run on the selected card; at 390×844 the compact footer names the R key and the
+      reroll moves the share line the same way.
+
 - [x] **The run-over board prints the counters the run records, and the phone defeat card keeps its tabs.** `[Task-183]`, the one task of Batch 84 and the screen half of `[Task-181]`'s numbers. The board printed an em dash where `ENEMIES FAINTED` belongs and in every KOs / DMG DEALT / DMG TANKED cell, because the run recorded none: after `[Task-181]` it records them (`RunStats.faints`, each `RunPokemon`'s `kos` / `damage` / `damageTaken`), so the board now reads them. One shared rule owns the mark: `recordedCount` + `RUN_SUMMARY_EM_DASH` in `src/ui/runSummary.ts` — a finite number is a recorded figure (`0` prints `00`), and only an absent or unreadable one prints the dash. The Phaser canvas fallback carries the same fact on its **lost** line (`runOver.lostFainted`, en `Pokémon lost: {lost} · Enemies fainted: {fainted}`, es `Pokémon perdidos: {lost} · Enemigos debilitados: {fainted}`) rather than an eighth line, because the scene's 356 px window holds exactly five stat lines on its 44 px pitch and `RunOverScene.ts` was not this task's path. The narrow stylesheet stopped hiding `.run-over__tabs` and `.run-over__portraits` on `[data-won='false']` and stopped shortening the defeated card, so a lost phone run can open its Pokémon table: both cards now use the `m07` geometry, and the `m06` frame stays the frozen design source the live screen deliberately diverges from. Gates: `npm test` 4693 passed / 69 skipped, `npm run build` green. Measured live over CDP at 390×844 (`?hud=dom`, a real run ended through `__pkmRoute.debugEndRun(false)` with injected tallies): the lost card reports `data-won="false"` with two tabs 90×28 and 100×28, totals `00 / 03 / 00 / 07`, the POKEMON tab opens on one row reading `01 / 120 / 30`, and every measured node — panel `8/96/374/604`, tabs `dx 24 dy 140`, portraits `dy 92`, stats `dy 184`, share `dx 24 dy 434 w 326`, actions `dy 504` — equals the victory card's field by field; the win fixture still prints `08 / 17 / 04 / 37` with four portraits.
 
 - [x] **A move's name and category fit inside their cell, and the ⓘ stays clear.** `[Task-192]`,

@@ -60,7 +60,11 @@ carries over.
   string and `S` opens a prompt to type a seed or paste a friend's share string,
   so the same seed always plays the same run (`D11`, `D21`). The share string
   carries the seed and the mode, not the progress, so a shared run starts on
-  route 1.
+  route 1. `R` (`reroll`) throws the offer away and draws the next one from a
+  **fresh random seed**, the path a brand-new run takes: a reroll is a new seed
+  and nothing else, the mode is kept, and the share line follows the seed it just
+  drew. `reset` keeps its name and moves to `Backspace`, so `R` answers `reroll`
+  alone.
 - Beating a map's boss opens its **portal** and steps the run into the next map,
   with a healing stop in between (heals HP and PP, never resurrects).
 - Losing every Pokémon in the party ends the run: the run writes **one** record to
@@ -620,7 +624,7 @@ the route HUD changed.
 | Detail move slots / ⓘ | `RouteScene.detailInfoAt` | pointer: drag a slot onto another to reorder, click the ⓘ | pointer |
 | Learnset pool + scroll | `RouteScene.scrollLearnset` | pointer: the wheel, the `<` / `>` arrows or a drag on the band; drop a pool move on a slot | pointer |
 | Panel drag | `RouteScene.startPanelDrag` | none: a layout affordance, persisted in `HudLayout` | pointer-only by intent |
-| Reset hold ring | `RouteScene.updateReset` | `reset` held | keyboard |
+| Reset hold ring | `RouteScene.updateReset` | `reset` held (Backspace by default) | keyboard |
 | Mart panel | `RouteScene.beginRowDrag` | pointer: drag a BUY row onto the bag or a member; a SELL row is a click; move the card by its header, close it from its ✕ | pointer |
 | Mini-boss reward | `RouteScene.takeMiniBossReward` | pointer: drag an item row onto the bag or a member and a Pokémon row onto the party; close the card from its ✕ | pointer |
 | Pause menu | `RouteScene.handlePauseMenuAction` | `cancel`, arrows, `confirm` | keyboard |
@@ -633,7 +637,7 @@ the route HUD changed.
 | Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ; the cursor **visits** a dimmed row (a fainted member, or one already on the field) instead of hopping over it, and `confirm` declines it | keyboard (new) |
 | Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
 | Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` (with the STATS overlay open, only `cancel`, and it closes the overlay) | keyboard |
-| Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt | keyboard |
+| Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt, `R` rerolls the offer from a fresh seed | keyboard |
 | Settings rows and volume | `SettingsScene` | arrows, `confirm`, `cancel`; volume steps with `left`/`right` | keyboard |
 | Run-over screen | `RunOverScene` | `confirm` | keyboard |
 | Boot | `BootScene` | no input | keyboard |

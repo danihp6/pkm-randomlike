@@ -13,6 +13,8 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `MainMenuScene.ts` — new run / continue, the run's seed and mode, and (on the DOM HUD) the
   STATS overlay over the run history.
 - `StarterScene.ts` — picks the starter pool and opens the seed prompt.
+- `StarterScene.test.ts` — the starter pick's headless test: a reroll draws its offer
+  through the seed helper and resets the cursor.
 - `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the room
   panel slot, the pointer dispatch, the run's battles and the touch controls. Its
   overlay chrome (HUD panels, notices, pause menu) is built by the panel layer below.

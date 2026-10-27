@@ -20,8 +20,9 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'starter.blurb': 'Tu primer Pokémon. Si lo pierdes, se va para siempre.',
   'starter.blurbCompact': 'Si lo pierdes, se va para siempre.',
   'starter.controls':
-    '{left}  {right}  elegir      {confirm}  confirmar      S  semilla      {settings}  ajustes      {cancel}  atrás',
-  'starter.controlsCompact': '{left} {right} / toca  elegir   {confirm}  confirmar   {cancel}  atrás',
+    '{left}  {right}  elegir      {confirm}  confirmar      {reroll}  nueva semilla      S  semilla      {settings}  ajustes      {cancel}  atrás',
+  'starter.controlsCompact':
+    '{left} {right} / toca  elegir   {confirm}  confirmar   {reroll}  nueva semilla   {cancel}  atrás',
   'starter.share': 'Partida: {share}',
 
   // runOver — RunOverScene and runSummary.ts
@@ -152,6 +153,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'keybind.right': 'Derecha',
   'keybind.run': 'Correr',
   'keybind.interact': 'Interactuar',
+  'keybind.reroll': 'Nueva semilla',
   'keybind.reset': 'Reiniciar partida',
   'keybind.party': 'Panel de equipo',
   'keybind.bag': 'Panel de mochila',

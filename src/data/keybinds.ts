@@ -11,6 +11,12 @@
  * are listed **before** `settings` on purpose, so a save that predates them hands
  * its old `O` (the former settings key) to `box` and falls back to the new
  * `Tab` for settings (`sanitizeKeybinds` keeps the first taker of a key).
+ *
+ * `reroll` sits immediately **before** `reset`: `R` was the reset key, the
+ * starter pick now owns it, and the first taker of a key wins a sanitise, so a
+ * save written before the split hands its `R` to `reroll` and `reset` falls back
+ * to `Backspace`. `RouteScene` polls the `reset` action, so it picks the move up
+ * without an edit.
  */
 export const KEYBIND_ACTIONS = [
   'confirm',
@@ -21,6 +27,7 @@ export const KEYBIND_ACTIONS = [
   'right',
   'run',
   'interact',
+  'reroll',
   'reset',
   'party',
   'bag',
@@ -56,7 +63,8 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   right: 'RIGHT',
   run: 'SHIFT',
   interact: 'E',
-  reset: 'R',
+  reroll: 'R',
+  reset: 'BACKSPACE',
   party: 'P',
   bag: 'I',
   map: 'M',
@@ -84,6 +92,7 @@ export const KEYBIND_LABELS: Readonly<Record<KeybindAction, string>> = {
   right: 'Right',
   run: 'Run',
   interact: 'Interact',
+  reroll: 'Reroll starter',
   reset: 'Reset run',
   party: 'Party panel',
   bag: 'Bag panel',

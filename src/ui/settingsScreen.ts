@@ -78,6 +78,7 @@ export const KEYBIND_LABEL_KEYS: Readonly<Record<KeybindAction, TranslationKey>>
   right: 'keybind.right',
   run: 'keybind.run',
   interact: 'keybind.interact',
+  reroll: 'keybind.reroll',
   reset: 'keybind.reset',
   party: 'keybind.party',
   bag: 'keybind.bag',

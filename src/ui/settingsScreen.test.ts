@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS, KEYBIND_ACTIONS, KEYBIND_LABELS } from '../data/keybinds';
 import { defaultSettings } from '../engine/save';
-import { en } from '../i18n';
+import { en, es } from '../i18n';
 import {
   AI_LEVELS,
   changeSetting,
@@ -38,6 +38,7 @@ describe('rows', () => {
       'right',
       'run',
       'interact',
+      'reroll',
       'reset',
       'party',
       'bag',
@@ -63,6 +64,12 @@ describe('rows', () => {
     for (const action of KEYBIND_ACTIONS) {
       expect(en[KEYBIND_LABEL_KEYS[action]]).toBe(KEYBIND_LABELS[action]);
     }
+  });
+
+  it('names the reroll row in both locales, from the shipped English label', () => {
+    expect(KEYBIND_LABEL_KEYS.reroll).toBe('keybind.reroll');
+    expect(en['keybind.reroll']).toBe(KEYBIND_LABELS.reroll);
+    expect(es[KEYBIND_LABEL_KEYS.reroll]).toBeTruthy();
   });
 
   it('hides the keybind rows on a touch screen', () => {
