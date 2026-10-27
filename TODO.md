@@ -8494,6 +8494,12 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   `startedAt` clock is passed there. Two tasks cannot share that path, and `[Task-183]` is
   still behind `[Task-181]`. Batch 84 is therefore `[Task-183]` alone and Batch 85 stays
   `[Task-190]`.
+- **Batch 85 gains `[Task-193]` (2026-10-27, browser sweep).** With `[Task-181]` merged the
+  starter scene is free, and the compact battle cell is broken on its own: a battle taken to
+  390×844 keeps the menu over the foe's panel and drops every move's name, leaving the columns
+  overlapping. `[Task-193]` claims `src/ui/hud/panels/battle-moves/**` and `battle-hp`'s part of
+  `docs/hud-fidelity.md` **§5**, shares no path with `[Task-190]`, and both are dependency-free,
+  so Batch 85 runs **two** tasks wide.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8735,6 +8741,23 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       from the second seed directly; `[live]` holding R changes the three species and the share
       line, and `E` still confirms the one on screen. Claims `src/scenes/StarterScene.ts` + test,
       `src/data/keybinds.ts` + test, `src/i18n/{en,es}.ts` and `docs/design-spec.md` §2.
+      *Dependencies:* none. *(Batch 85)*
+
+- [ ] **[Task-193] A move cell keeps its name and its numbers at 390.** Follow-up of `[Task-192]`,
+      measured on the merged tree (`main` @ `49aeb7b`) at 390×844 with a wild battle and FIGHT
+      open: the four cells lose their **names** entirely and show only fragments of the other rows
+      (`PHYSICAL` sitting on top of `20/20`, `POT`/`PRE` jammed together, the type badge over the
+      stats), and the bottom-left HP panel is once again **behind** the menu — the same two
+      symptoms Task-189 fixed at 1280 are back in the compact layout. **Fix shape:** the compact
+      battle gets its own cell geometry — a name row across the cell's top and a two-column stat
+      row under it, or the menu becomes a single column of four rows — so that at 390 every label
+      of every cell is painted **inside its own box** and the foe's HP panel stays clear; the wide
+      layout `[Task-192]` shipped is not touched. **Docs:** `docs/hud-fidelity.md` §5 (the compact
+      battle's zones). **Tests:** `[unit]` the compact layout model returns four cells whose
+      labels each fit their box and whose rectangles do not intersect the HP box; `[live]` a wild
+      battle at 390×844 with FIGHT open shows every move's name, its category and its PP/POT/PRE
+      inside the cell, and the foe's HP value in full. Claims `src/ui/hud/panels/battle-moves/**`,
+      `src/ui/hud/panels/battle-hp/**` + tests and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 85)*
 
 ---
