@@ -35,6 +35,7 @@ import {
   encodeSave,
   loadSave,
   migrateDocument,
+  storeHistory,
   storeRun,
   storeSave,
   storeSettings,
@@ -85,7 +86,7 @@ function sampleRun(): RunState {
   run = addMoney(run, 1500);
   run = useCapture(run);
   run = markTrainerDefeated(run, 'trainer-1-0');
-  return { ...run, stats: { catches: 2, casualties: 1 } };
+  return { ...run, stats: { catches: 2, casualties: 1, faints: 0 } };
 }
 
 function document(raw: string): ReturnType<typeof decodeSave> {
@@ -212,7 +213,7 @@ describe('decodeSave', () => {
       language: DEFAULT_LANGUAGE,
     });
     expect(decoded.run?.party).toHaveLength(6);
-    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
+    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
   });
 
   it('migrates a v2 settings onto the current schema', () => {
@@ -339,7 +340,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -361,7 +362,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
   });
 
   it('starts on the source table', () => {
@@ -378,7 +379,9 @@ describe('settings validation', () => {
 
   it('keeps the Spanish language through a round trip with the run', () => {
     const settings: Settings = { ...defaultSettings(), language: 'es' };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings, run: sampleRun(), history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings, run: sampleRun(), history: [] }),
+    );
     expect(decoded.settings.language).toBe('es');
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -393,7 +396,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -419,6 +422,7 @@ describe('settings validation', () => {
       '22',
       '23',
       '24',
+      '25',
     ]);
   });
 
@@ -511,7 +515,7 @@ describe('run validation', () => {
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.box).toHaveLength(1);
     expect(decoded.run?.bag).toEqual(run.bag);
-    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 1 });
+    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 1, faints: 0 });
   });
 
   it('defaults counters that do not parse', () => {
@@ -522,7 +526,7 @@ describe('run validation', () => {
         run: { ...run, stats: { catches: -2, casualties: 'x' } },
       }),
     );
-    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
+    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
   });
 
   it('defaults a missing Pokevial count and clamps a junk one', () => {
@@ -596,16 +600,20 @@ describe('run validation', () => {
     const run: RunState = {
       ...sampleRun(),
       party,
-      stats: { catches: 2, casualties: 0 },
+      stats: { catches: 2, casualties: 0, faints: 0 },
     };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(['wild', 'catch-1']);
-    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 0 });
+    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 0, faints: 0 });
   });
 
   it('round-trips a run whose ids are already unique', () => {
     const run = sampleRun();
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.party.map((member) => member.fighter.id)).toEqual(
       run.party.map((member) => member.fighter.id),
     );
@@ -689,7 +697,8 @@ describe('migrateDocument', () => {
       21: (doc) => ({ ...doc, version: 22 }),
       22: (doc) => ({ ...doc, version: 23 }),
       23: (doc) => ({ ...doc, version: 24 }),
-      24: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      24: (doc) => ({ ...doc, version: 25 }),
+      25: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -775,7 +784,7 @@ describe('map-position migration', () => {
     const run: Record<string, unknown> = { ...sampleRun(), pcUnlocked: ['catch-1'] };
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(25);
+    expect(emptySave().version).toBe(26);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
     expect(decoded.run?.party).toHaveLength(6);
@@ -799,7 +808,7 @@ describe('the RIP list', () => {
     const withFallen: RunState = {
       ...sampleRun(),
       rip: [dead],
-      stats: { catches: 2, casualties: 1 },
+      stats: { catches: 2, casualties: 1, faints: 0 },
     };
     const decoded = document(
       encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: withFallen, history: [] }),
@@ -823,7 +832,9 @@ describe('the caught-species record', () => {
 
   it('round-trips the record unchanged on the current schema', () => {
     const run: RunState = { ...sampleRun(), caughtSpecies: ['sentret', 'raichualola'] };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.caughtSpecies).toEqual(['sentret', 'raichualola']);
     expect(decoded.run?.party).toHaveLength(6);
   });
@@ -844,7 +855,9 @@ describe('the floor mission', () => {
       hpLost: 4,
       floorCasualties: 1,
     };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.mission).toEqual({ id: 'flawless', progress: 2, completed: true });
     expect(decoded.run?.missionsCompleted).toBe(3);
     expect(decoded.run?.hpLost).toBe(4);
@@ -902,7 +915,7 @@ describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
@@ -1188,15 +1201,17 @@ describe('the run modifiers', () => {
     return JSON.stringify({ version: SAVE_VERSION, run });
   }
 
-  it('stamps version 25', () => {
-    expect(SAVE_VERSION).toBe(25);
-    expect(emptySave().version).toBe(25);
+  it('stamps the current version', () => {
+    expect(SAVE_VERSION).toBe(26);
+    expect(emptySave().version).toBe(26);
     expect(SAVE_MIGRATIONS[20]).toBeDefined();
   });
 
   it('round-trips a run carrying all three facts', () => {
     const run: RunState = { ...sampleRun(), modifiers: MODIFIERS };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.modifiers).toEqual(MODIFIERS);
     // Byte-stable: the record the decoder reads re-encodes to the same document.
     const canonical = encodeSave({
@@ -1280,8 +1295,8 @@ describe('the run modifiers', () => {
 });
 
 describe('the per-member usage counter', () => {
-  it('stamps version 25 and carries the 21 step', () => {
-    expect(SAVE_VERSION).toBe(25);
+  it('stamps the current version and carries the 21 step', () => {
+    expect(SAVE_VERSION).toBe(26);
     expect(SAVE_MIGRATIONS[21]).toBeDefined();
   });
 
@@ -1350,8 +1365,8 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     return { ...run, party: [{ ...first, fighter }, ...rest] };
   }
 
-  it('stamps version 25 and carries the 22 step', () => {
-    expect(SAVE_VERSION).toBe(25);
+  it('stamps the current version and carries the 22 step', () => {
+    expect(SAVE_VERSION).toBe(26);
     expect(SAVE_MIGRATIONS[22]).toBeDefined();
   });
 
@@ -1372,7 +1387,12 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
       history: [],
     });
     expect(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run!, history: [] }),
+      encodeSave({
+        version: SAVE_VERSION,
+        settings: defaultSettings(),
+        run: document(canonical).run!,
+        history: [],
+      }),
     ).toBe(canonical);
     expect(canonical).toContain('"statTreats":{"atk":1,"spe":-1}');
   });
@@ -1393,7 +1413,11 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
   it('drops a zero, a non-integer and an unknown stat from the treats', () => {
     const treatsOf = (statTreats: unknown) =>
       document(
-        JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run: runWithTreats(statTreats) }),
+        JSON.stringify({
+          version: SAVE_VERSION,
+          settings: defaultSettings(),
+          run: runWithTreats(statTreats),
+        }),
       ).run?.party[0].fighter.statTreats;
     expect(treatsOf({ atk: 2, def: 0 })).toEqual({ atk: 2 });
     expect(treatsOf({ atk: 1.5, def: 2 })).toEqual({ def: 2 });
@@ -1405,7 +1429,9 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
 
   it('round-trips the discovered candy set in order', () => {
     const run: RunState = { ...sampleRun(), discoveredCandy: ['red', 'blue'] };
-    const decoded = document(encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }));
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
     expect(decoded.run?.discoveredCandy).toEqual(['red', 'blue']);
     const canonical = encodeSave({
       version: SAVE_VERSION,
@@ -1414,7 +1440,12 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
       history: [],
     });
     expect(
-      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run: document(canonical).run!, history: [] }),
+      encodeSave({
+        version: SAVE_VERSION,
+        settings: defaultSettings(),
+        run: document(canonical).run!,
+        history: [],
+      }),
     ).toBe(canonical);
   });
 
@@ -1426,9 +1457,9 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     expect(coloursOf(['red', 'red', '', 7, 'blue'])).toEqual(['red', 'blue']);
     expect(coloursOf('red')).toEqual([]);
     expect(coloursOf(undefined)).toEqual([]);
-    expect(document(JSON.stringify({ version: SAVE_VERSION, run: sampleRun() })).run?.discoveredCandy).toEqual(
-      [],
-    );
+    expect(
+      document(JSON.stringify({ version: SAVE_VERSION, run: sampleRun() })).run?.discoveredCandy,
+    ).toEqual([]);
   });
 
   it('migrates a v22 run to the current version with no treats and an empty discovered set', () => {
@@ -1519,9 +1550,9 @@ describe('the run history (Task-152)', () => {
     });
   }
 
-  it('stamps version 25 and carries the 23 step', () => {
-    expect(SAVE_VERSION).toBe(25);
-    expect(emptySave().version).toBe(25);
+  it('stamps the current version and carries the 23 step', () => {
+    expect(SAVE_VERSION).toBe(26);
+    expect(emptySave().version).toBe(26);
     expect(SAVE_MIGRATIONS[23]).toBeDefined();
   });
 
@@ -1533,7 +1564,7 @@ describe('the run history (Task-152)', () => {
     expect(decoded.run?.routeIndex).toBe(1);
     expect(decoded.run?.party).toHaveLength(1);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
-    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0 });
+    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
   });
 
   it('adds the empty history in the 23 step itself', () => {
@@ -1580,9 +1611,7 @@ describe('the run history (Task-152)', () => {
     expect(mixed.history).toEqual([FINISHED]);
     expect(mixed.run).toEqual(run);
 
-    const absent = document(
-      JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run }),
-    );
+    const absent = document(JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run }));
     expect(absent.history).toEqual([]);
     expect(absent.run).toEqual(run);
   });
@@ -1611,8 +1640,8 @@ describe('the dark Pokémon (Task-154)', () => {
     return { ...run, rip: fallen };
   }
 
-  it('stamps version 25 and carries the 24 step', () => {
-    expect(SAVE_VERSION).toBe(25);
+  it('stamps the current version and carries the 24 step', () => {
+    expect(SAVE_VERSION).toBe(26);
     expect(SAVE_MIGRATIONS[24]).toBeDefined();
   });
 
@@ -1702,3 +1731,135 @@ describe('the dark Pokémon (Task-154)', () => {
   });
 });
 
+describe('the run clock and the faint counters (Task-181)', () => {
+  const INSTANT = '2026-10-27T09:30:00.000Z';
+
+  it('stamps the current version and carries the 25 step', () => {
+    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_MIGRATIONS[25]).toBeDefined();
+  });
+
+  it('decodes a v25 run with no startedAt and no faints to the safe defaults', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), stats: { catches: 2, casualties: 1 } };
+    delete run.startedAt;
+    const decoded = document(JSON.stringify({ version: 25, run }));
+    expect(decoded.version).toBe(SAVE_VERSION);
+    expect(decoded.run?.startedAt).toBe('');
+    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 1, faints: 0 });
+    expect(JSON.parse(encodeSave(decoded)).version).toBe(26);
+  });
+
+  it('decodes a current document that simply omits both, with the same defaults', () => {
+    const run: Record<string, unknown> = { ...sampleRun(), stats: { catches: 2, casualties: 1 } };
+    delete run.startedAt;
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run?.startedAt).toBe('');
+    expect(decoded.run?.stats.faints).toBe(0);
+  });
+
+  it('round-trips a document carrying both unchanged', () => {
+    const run: RunState = {
+      ...sampleRun(),
+      startedAt: INSTANT,
+      stats: { catches: 2, casualties: 1, faints: 7 },
+    };
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
+    expect(decoded.run).toEqual(run);
+    expect(decoded.run?.startedAt).toBe(INSTANT);
+    expect(decoded.run?.stats.faints).toBe(7);
+  });
+
+  it('reads an unreadable instant as unknown rather than guessing at a playtime', () => {
+    const decoded = document(
+      JSON.stringify({ version: SAVE_VERSION, run: { ...sampleRun(), startedAt: 'yesterday' } }),
+    );
+    expect(decoded.run?.startedAt).toBe('');
+    expect(
+      document(JSON.stringify({ version: SAVE_VERSION, run: { ...sampleRun(), startedAt: 42 } })).run
+        ?.startedAt,
+    ).toBe('');
+  });
+
+  it('ignores a faint counter that does not parse, and floors one that is negative', () => {
+    const negative = document(
+      JSON.stringify({
+        version: SAVE_VERSION,
+        run: { ...sampleRun(), stats: { catches: 1, casualties: 0, faints: -3 } },
+      }),
+    );
+    expect(negative.run?.stats.faints).toBe(0);
+    const junk = document(
+      JSON.stringify({
+        version: SAVE_VERSION,
+        run: { ...sampleRun(), stats: { catches: 1, casualties: 0, faints: 'many' } },
+      }),
+    );
+    expect(junk.run?.stats.faints).toBe(0);
+  });
+
+  it('round-trips the members’ tallies, writing only the ones that carry something', () => {
+    const base = sampleRun();
+    const [lead, ...rest] = base.party;
+    const run: RunState = {
+      ...base,
+      party: [{ ...lead, kos: 3, damage: 120, damageTaken: 44 }, ...rest],
+    };
+    const encoded = encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] });
+    const decoded = document(encoded);
+    expect(decoded.run?.party[0].kos).toBe(3);
+    expect(decoded.run?.party[0].damage).toBe(120);
+    expect(decoded.run?.party[0].damageTaken).toBe(44);
+    expect(decoded.run?.party).toEqual(run.party);
+    // A member with nothing to report carries none of the three keys at all.
+    const plain = JSON.parse(encoded).run.party[1];
+    expect(Object.keys(plain)).toEqual(['fighter']);
+    // A v25 member has none, and the decoder leaves the absent fields out.
+    const legacy = document(JSON.stringify({ version: 25, run: { ...run, party: [lead, ...rest] } }));
+    expect(legacy.run?.party[0].kos).toBeUndefined();
+  });
+});
+
+describe('storeHistory', () => {
+  const record = (seed: string): RunHistoryRecord => ({
+    seed,
+    mode: 'finite',
+    mapReached: 2,
+    catches: 1,
+    casualties: 1,
+    playtimeMs: 61_000,
+    won: false,
+    endedAt: '2026-10-27T09:31:00.000Z',
+    species: [{ speciesId: 'charmander', kos: 2, damage: 40 }],
+  });
+
+  it('writes the history over the document, keeping its settings and its run', () => {
+    const storage = new MemoryStorage();
+    const run = sampleRun();
+    storeRun(storage, run);
+    const document = storeHistory(storage, [record('seed-a')]);
+    expect(document.history).toEqual([record('seed-a')]);
+    expect(document.run).toEqual(run);
+    expect(document.settings).toEqual(defaultSettings());
+
+    const reloaded = loadSave(storage);
+    expect(reloaded.history).toEqual([record('seed-a')]);
+    expect(reloaded.run).toEqual(run);
+  });
+
+  it('replaces the list it finds rather than appending to it', () => {
+    const storage = new MemoryStorage();
+    storeHistory(storage, [record('seed-a'), record('seed-b')]);
+    expect(loadSave(storage).history).toHaveLength(2);
+    storeHistory(storage, [record('seed-c')]);
+    expect(loadSave(storage).history).toEqual([record('seed-c')]);
+  });
+
+  it('answers the document it wrote, even without a storage slot', () => {
+    const written = storeHistory(null, [record('seed-a')]);
+    expect(written.history).toEqual([record('seed-a')]);
+    expect(written.run).toBeNull();
+    expect(written.version).toBe(SAVE_VERSION);
+  });
+});

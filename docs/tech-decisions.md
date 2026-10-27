@@ -1236,6 +1236,38 @@ human provisions the box; the repository makes no provider-specific call. `ci.ym
 VM-script step, `.github/workflows/README.md` and `docs/agent-ci.md` lose their rows, and the
 `OCI_*` repository variables are left for a human to delete since only secrets can rot.
 
+## D54 - The run's clock enters as an argument, and its end seam records once *(decided)*
+
+`src/engine/run/history.ts` could build a `RunHistoryRecord` from the day it shipped, and
+nothing called it: `save.history` stayed empty, so a player who had just finished a run
+opened STATS and read "NO FINISHED RUNS YET". The chain also carried no start instant and
+no battle tallies, so a record would have reported a playtime of zero and an empty species
+table.
+
+**Decided (`2026-10-27`): the scene owns the clock and the engine owns the arithmetic.**
+`createRun` takes `startedAt` as a `RunInit` field and stores it on `RunState.startedAt`
+(`''` = unknown, reported as a playtime of 0); the end seam (`endRun` over a `RunEndLog`)
+is **pure and idempotent** — it appends one `makeHistoryRecord` row and flips `ended`, so a
+second arrival writes nothing — and the scene is the only place that reads `Date.now()` /
+`new Date()` (`D11`, the `dailySeed` precedent of a clock passed in). The battle reports
+what it did on `BattleReturn.tallies`, read off its own log by `battleTallies`, which
+credits an enemy `damage`/`faint` to the player fighter that was on the field and a
+player-side `damage` to that fighter's `damageTaken`.
+
+**`SAVE_VERSION` 25 → 26** adds the run's `startedAt` and `RunStats.faints`, plus the
+optional per-member `kos`/`damage`/`damageTaken` that `withMemberTally` books. A v25 run
+migrates to `startedAt: ''` and `faints: 0`, and its members carry no counter — the
+decoder leaves an absent optional field out (the `14` nickname precedent) and the readers
+treat an absent counter as 0.
+
+**`RunStats.faints` is optional, where the twelve counters before it were required.** Six
+test files outside this change's paths construct `RunStats` literals by hand
+(`src/ui/runSummary.test.ts`, `src/ui/hud/state.test.ts`, `src/ui/hud/panels/party/view.test.ts`,
+`src/ui/hud/panels/run-over/view.test.ts`, `src/engine/routes/staticSpecies.test.ts`,
+`src/engine/run/items.test.ts`); a required field breaks `tsc` on all of them, and a task
+may not edit paths it does not own. `runFaints`/`addFaints` keep the arithmetic total, and
+`emptyRunStats()` writes the field, so every run this build creates carries a number.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

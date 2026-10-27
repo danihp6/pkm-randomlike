@@ -8484,8 +8484,18 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   three disjoint path sets, and `docs/hud-fidelity.md` claimed by section (191 §9, 192 §5).
   **Batch 85 is `[Task-190]` alone** (the starter's R key) because it takes the **i18n pair** that
   `[Task-183]` holds in 84: one scene, one keybind action and one spec line.
+- **What Batch 83 actually ran, and why one slot stayed empty (2026-10-27).** Batch 83 was cut
+  as `[Task-181]` alone, with `[Task-183]` behind it. The cycle filled it from Batch 84's two
+  dependency-free members — `[Task-191]` (`main-menu/**` and `docs/hud-fidelity.md` **§9**) and
+  `[Task-192]` (`battle-moves/**` and **§5**) — so the batch ran **three** tasks wide: `181`,
+  `191`, `192`, in ID order, one dev wave and one QA wave. The fourth slot stayed empty because
+  the only remaining candidate, `[Task-190]`, claims `src/scenes/StarterScene.ts`, which
+  `[Task-181]` must touch: it is the single `createRun` call site (535) and the run's new
+  `startedAt` clock is passed there. Two tasks cannot share that path, and `[Task-183]` is
+  still behind `[Task-181]`. Batch 84 is therefore `[Task-183]` alone and Batch 85 stays
+  `[Task-190]`.
 
-- [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
+- [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
       and **nothing calls it**: a grep of `src` finds the two names in the module and its tests
       alone, so `save.history` is `[]` for every player and the STATS board opens on

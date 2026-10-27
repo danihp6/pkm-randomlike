@@ -8,6 +8,32 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The run history is written, and the run counts what it prints.** `[Task-181]`, the first
+      of Batch 83: `src/engine/run/history.ts` could build a `RunHistoryRecord` and nothing
+      called it, so `save.history` was `[]` for every player and STATS opened on "NO FINISHED
+      RUNS YET" for a run that had just ended. The run now carries the facts a record needs —
+      `RunState.startedAt` (an ISO instant passed **into** `createRun`, so the engine still
+      reads no clock, `D11`), `RunStats.faints`, and each member's `kos` / `damage` /
+      `damageTaken` — and the battle hands them back on `BattleReturn.tallies`, built by
+      `BattleScene.returnToRoute` through `battleTallies(state.log, party)`: an enemy `damage`
+      event and an enemy `faint` are credited to the player fighter on the field, a player-side
+      `damage` to the one that took it. `RouteScene.applyBattleResult` books the tallies onto
+      the party **before** the fold, and one `endRun(won)` seam replaces both
+      `scene.start('RunOver', …)` calls: it reads `startedAt`, appends through the pure,
+      idempotent `endRun(log, run, ending)` and writes `storeHistory`. `SAVE_VERSION` **25 →
+      26** seeds `startedAt: ''` and `faints: 0` in its migration, both optional-safe in the
+      decoder. `D54` records the writer, the clock and the seam; `design-spec` §2's closing
+      bullet says the run ends once and its record is kept. Gates: `npm test` 4713 passed /
+      69 skipped, `npm run build` green. Measured live over CDP on the integration tree — a
+      real wild battle booked `faints 1 / kos 1 / damage 13` onto the run, one
+      `debugEndRun(true)` wrote `history.length 1` with `playtimeMs 13437` and
+      `species [{slakoth, kos 1, damage 13}]`, a second call in the same evaluation returned
+      `[true, false]`, and STATS listed the run. Two residues recorded: `RunStats.faints` ships
+      **optional** (`faints?: number`) with `runFaints()` / `addFaints()` helpers, because a
+      required field breaks six fixtures outside the task's paths — the board task reads it
+      through the helper; and `makeHistoryRecord` reads the party and the box, so a member that
+      fainted (moved to `rip`) contributes no species row.
+
 - [x] **The battle's FIGHT window stops covering the HP panel, and a category stops running
       under its ⓘ.** `[Task-189]`, the fourth and last of Batch 82: on the DOM HUD the
       moves card sat at **x 276** and the player's HP box at **x 64, 368 wide**, so the menu

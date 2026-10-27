@@ -532,7 +532,13 @@ export class StarterScene extends Phaser.Scene {
       level: START_LEVEL,
       learnsetSeed: this.seed,
     });
-    const run = createRun({ seed: this.seed, mode: this.mode, starter, bag: STARTING_BAG });
+    const run = createRun({
+      seed: this.seed,
+      mode: this.mode,
+      starter,
+      bag: STARTING_BAG,
+      startedAt: new Date().toISOString(),
+    });
     this.scene.start('Route', { run });
   }
 }
