@@ -22,6 +22,7 @@ a headless test, and never imports the scene.
 - `party.ts` — the party window and its six rows.
 - `bag.ts` — the bag window: pocket tabs, filter field, item grid, money row and its
   description card.
+- `bag.test.ts` — the drawn card's body: the English name over the localised text, headless.
 - `pc.ts` — the PC BOX window: page tabs, avatar grid and the RIP tab.
 - `detail.ts` — the member detail window: STATS, MOVES, evolutions, nickname,
   learnset pool and the level-up/evolution popup.
