@@ -150,11 +150,14 @@ shipped constants (`DESKTOP_X/W`, `MOVE_GRID_INSET`, `INFO_OFFSET`, `INFO_SIZE`)
         `x === 440` and `y === 582`, and `x + w === 1004`; the card and
         `battleHpBox(viewport, 'enemy', 0)` do not intersect
         (`Rect` intersection computed in the test, empty).
-  - [ ] `[unit]` the invariant holds for every width from 700 to 1600 px tall/wide
-        pairs the test sweeps (e.g. 700×700, 800×600, 1024×768, 1280×800, 1600×900):
-        `card.x >= enemyBox.x + enemyBox.w + 8` and `card.w >= 240` in each
-        non-compact case, and `card.y >= playerBox.y + playerBox.h` in each compact
-        one.
+  - [ ] `[unit]` the invariant holds across the **wide** branch (stage side ≥ 700 px:
+        700×700, 800×800, 1024×768, 1280×800, 1600×900) — `card.x >= enemyBox.x +
+        enemyBox.w + 8` and `card.w >= 240` in each — and across the **phone** branch
+        (viewport width < 600: 390×844, 320×568, 480×800) — `card.y >= playerBox.y +
+        playerBox.h` in each. *(Revision 2: the first cut swept every width, which
+        crossed the pre-existing 600-699 px seam between `BATTLE_HP_BREAKPOINT` (600)
+        and `BATTLE_COMPACT` (700); that band is out of this task's scope and its
+        status must be evidenced, not fixed — see Coordination.)*
   - [ ] `[unit]` `battleHpLayout(viewport, { enemy: true, player: true })` puts the
         two `enemy` boxes at the same `x` with slot 1 directly below slot 0
         (`y = slot0.y + h + 8`), so `max(enemy.right) === 432`; the player's two boxes
@@ -203,6 +206,15 @@ shipped constants (`DESKTOP_X/W`, `MOVE_GRID_INSET`, `INFO_OFFSET`, `INFO_SIZE`)
   Batch 13 of the old plan) and `[Task-60]` (the battle info window) build on them.
 - **Path note:** `docs/hud-fidelity.md` §5 belongs to this task; a sibling task in the
   same batch appends §9 and touches no earlier section.
+- **Revision 2 — the 600-699 px seam (recorded, not fixed).** Task QA's first pass
+  found that a viewport whose width is 600-699 while its stage is under
+  `BATTLE_COMPACT` (700) gets the desktop HP column and the compact menu at once, so
+  the card can overlap the player box. That band is a **pre-existing** split between
+  two different breakpoints, not something this task introduced; the entry asks for
+  1280×800 and 390×844, both of which are green. The author must **evidence** it
+  (measure `main` @ `0d6deaa` and this branch at 640×480 and 800×600: same rects, same
+  overlap) and record it as a known residue in `battle-moves/README.md`; making the
+  two breakpoints agree is a separate task, not this one.
 
 ## ⛔ Out of scope
 
