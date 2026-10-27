@@ -8443,24 +8443,29 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
 `[Task-181]` takes a `SAVE_VERSION` step (**25 → 26**), so the chain reads
 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → **26**.
 
-### Batches 81 and 82 - the run's own history, and the art a clone does not have
+### Batches 81, 82 and 83 - the run's own history, and the art a clone does not have
 
-- **Batch 81 — four tasks, four dev slots.** `[Task-181]` holds `src/scenes/RouteScene.ts`,
-  `src/scenes/RunOverScene.ts`, `src/engine/run/{state,history}.ts`, `src/engine/save.ts` and
-  the two docs; `[Task-184]` holds `src/scenes/BattleScene.ts` and `src/assets/README.md`;
-  `[Task-185]` holds `src/scenes/panels/detail.ts` and `src/ui/hud/panels/detail/evolution.ts`;
-  `[Task-186]` holds `docs/maps-spec.md` **§7** alone. Four disjoint path sets, no `package.json`,
-  `src/main.ts`, `vite.config.ts` or `src/data/dex/**` claimed.
+- **Batch 81 — three tasks.** `[Task-184]` holds `src/scenes/BattleScene.ts` and
+  `src/assets/README.md`; `[Task-185]` holds `src/scenes/panels/detail.ts` and
+  `src/ui/hud/panels/detail/evolution.ts`; `[Task-186]` holds `docs/maps-spec.md` **§7** alone.
+  `[Task-181]` was cut here and **moved to Batch 83** when its first spec proved it needs
+  `BattleScene.ts` (issue #74), which Task-184 holds.
 - **Batch 82 — three tasks.** `[Task-182]` holds `src/engine/run/party.ts` + test,
-  `src/scenes/RouteScene.ts` (free once Batch 81's Task-181 merged) and `docs/battle-spec.md`
-  **§13**; `[Task-183]` holds `src/ui/hud/panels/run-over/**`, the **i18n pair** and
-  `src/ui/runSummary.ts`; `[Task-187]` holds `scripts/assets/build-placeholders.mjs` and
-  `src/assets/placeholders/**`. `[Task-183]` is the phase's only edge: it reads the counters
-  Task-181 writes, so it cannot ride beside it.
-- The route-scene queue therefore extends **80 → 81 → 82**, and `[Task-181]` is the phase's one
-  `SAVE_VERSION` holder (25 → 26). No task here repaints a batch that already shipped.
+  `src/scenes/RouteScene.ts` and `docs/battle-spec.md` **§13**; `[Task-183]` holds
+  `src/ui/hud/panels/run-over/**`, the **i18n pair** and `src/ui/runSummary.ts`; `[Task-187]`
+  holds `scripts/assets/build-placeholders.mjs` and `src/assets/placeholders/**`.
+  `[Task-183]` is the phase's first edge: it reads the counters Task-181 writes.
+- **Batch 83 — three tasks.** `[Task-181]` returns with its corrected seam (`battleLink.ts`,
+  `BattleScene.ts`, `RouteScene.ts`, the run engine and the save); `[Task-188]` holds the
+  **DOM HUD's portrait seam** (`src/ui/hud/panels/main-menu/**`,
+  `src/ui/hud/panels/starter/**` and one new shared module under `src/ui/hud/`);
+  `[Task-189]` holds `src/ui/hud/panels/battle-hp/**` and `src/ui/hud/panels/battle-moves/**`.
+  Three disjoint path sets, and `[Task-181]` is still the phase's one `SAVE_VERSION` holder
+  (25 → 26).
+- The route-scene queue therefore extends **80 → 81 → 82 → 83**, and no task here repaints a
+  batch that already shipped.
 
-- [!] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
+- [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
       and **nothing calls it**: a grep of `src` finds the two names in the module and its tests
       alone, so `save.history` is `[]` for every player and the STATS board opens on
@@ -8470,27 +8475,32 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       (`history.ts` 48-55 says so out loud). **Fix shape:** `RunState.startedAt: string` (an ISO
       instant passed **into** `createRun` — the engine reads no clock, D11) and
       `RunStats.faints: number` beside `catches`/`casualties`; `SAVE_VERSION` **25 → 26** with a
-      migration that seeds `startedAt: ''` and `faints: 0`, both optional-safe in the decoder. One
-      `endRun(won)` helper in `RouteScene` owns the single seam — the two `scene.start('RunOver',
-      …)` calls at 3784 and 3791 — computes the tallies from the **pre-battle snapshot the fold
-      already takes** (`before`, 3799) against the result's HP, calls
+      migration that seeds `startedAt: ''` and `faints: 0`, both optional-safe in the decoder. The
+      tallies travel **with the battle**: `BattleReturn` (`src/engine/run/battleLink.ts` 92-104)
+      grows `tallies: readonly MemberTally[]` — the same `{ kos?, damage? }` shape `history.ts`
+      already reads — built in `BattleScene.returnToRoute` (2412-2434) from the state the scene
+      holds: a KO is a fighter that ended at 0 HP, the damage dealt and taken are the HP deltas of
+      each side's `party` (the scene keeps both, the log it discards included), and
+      `applyBattleResult` in `RouteScene` books them onto the run's members before the fold
+      continues. One `endRun(won)` helper then owns the single seam — the two
+      `scene.start('RunOver', …)` calls at 3784 and 3791 — reads `startedAt`, calls
       `pushHistory(save.history, makeHistoryRecord(run, ending))` and stores the document exactly
-      once per run, then opens the scene. No battle-engine path is claimed: the damage dealt and
-      taken are HP deltas, and a KO is a member that left the battle at 0 HP. **Docs:**
-      `docs/design-spec.md` §2 (the run ends once and its record is kept) and
-      `docs/tech-decisions.md` **D54** (the store gains its writer and its clock; the engine stays
-      pure). **Tests:** `[unit]` the `25 → 26` migration round-trips an old document and seeds the
-      two fields; `[unit]` a fixed-seed battle books the KO and the HP dealt/taken on the member
-      that caused them; `[unit]` `endRun` appends once — a second call with the same run leaves
-      the history length unchanged; `[live]` finish a run, return to the main menu and open STATS:
-      the run is listed, with its playtime and its Pokémon table filled. Claims
-      `src/engine/run/{state,history,state.test,history.test}.ts`, `src/engine/save.ts` + test,
-      `src/scenes/RouteScene.ts`, `src/scenes/RunOverScene.ts`, `docs/design-spec.md` and
-      `docs/tech-decisions.md`. *Dependencies:* none. *(Batch 81)*
-      **BLOCKED:** the per-member `kos`/`damage` counters the record prints are not in
-      `BattleReturn` (only the player's snapshots; `battleLink.ts:92-104`) and need the
-      battle log behind `src/scenes/BattleScene.ts`, which `[Task-184]` holds in this
-      batch — issue #74 carries the three readings and the decision needed.
+      once per run. **Docs:** `docs/design-spec.md` §2 (the run ends once and its record is kept)
+      and `docs/tech-decisions.md` **D54** (the store gains its writer and its clock; the engine
+      stays pure). **Tests:** `[unit]` the `25 → 26` migration round-trips an old document and
+      seeds the two fields; `[unit]` a fixed-seed battle returns tallies on both sides — the
+      member that fainted the foe carries the KO and the damage dealt, the member that took the
+      hit carries the damage taken; `[unit]` `endRun` appends once — a second call with the same
+      run leaves the history length unchanged; `[live]` finish a run, return to the main menu and
+      open STATS: the run is listed, with its playtime and its Pokémon table filled. Claims
+      `src/engine/run/{state,history,battleLink}.ts` + tests, `src/engine/save.ts` + test,
+      `src/scenes/{RouteScene,BattleScene,RunOverScene}.ts`, `docs/design-spec.md` and
+      `docs/tech-decisions.md`. *Dependencies:* none. *(Batch 83)*
+      **Corrected after the 2026-10-27 block (issue #74).** The first cut assumed the tallies could
+      be read off the pre-battle snapshot and called no battle path; `BattleReturn` returns only
+      the player's snapshots and no log, so that was wrong. The `tallies` field above is the source
+      it was missing, and it costs `BattleScene.ts` — which `[Task-184]` holds in Batch 81, hence
+      this task's move to Batch 83.
 
 - [ ] **[Task-182] The launch fills the team-type bonuses.** Issue #59, follow-up 1.
       `[Task-150]` shipped the four rules — two living members of a type give that type's moves
@@ -8517,7 +8527,10 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `Task-181` is what gives the run those numbers. **Fix shape:** read them off the finished
       run (`RunStats.faints` and each member's tallies) instead of the dash, with the layout the
       frames already fix (`design/fixtures/07*.json`); the Phaser fallback line
-      (`src/ui/runSummary.ts`) gains the same figure. **Docs:** `docs/design-spec.md` §2 (the
+      (`src/ui/runSummary.ts`) gains the same figure. **And the phone defeat card gains the strip
+      the victory card already has:** measured at 390×844 on 2026-10-27, `06` draws no
+      `TOTALS`/`POKEMON` tabs while `07` does, so a **lost** run cannot open its Pokémon table
+      (issue #52, residue 4) — both cards take the same tab model. **Docs:** `docs/design-spec.md` §2 (the
       board's figures are the run's own). **Tests:** `[unit]` the view prints the tallies and
       falls back to the dash only for a run that recorded none; `[unit]` the same values land in
       `runSummaryLines`; `[live]` a finished run's board shows a number in every column. Claims
@@ -8525,6 +8538,9 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       *Dependencies:* `[Task-181]`. *(Batch 82)*
 
 - [ ] **[Task-184] A battle plays on a tree without the packed art.** Issue #50, residue 3.
+      **Reproduced again on 2026-10-27** in a browser at `?hud=dom`: a wild battle launched from
+      the dev menu raised `Cannot read properties of undefined (reading 'duration')` **twice in
+      one session**, from `Animation.getFirstTick` — the symptom the issue recorded.
       On a clean clone (`src/assets/placeholders/` only) a wild battle freezes at the entry beat:
       `BattleScene.showMon` (`2294`) calls `sprite.play(anim)` with an animation built from the
       **manifest's** frame count (`buildMonAnimations`, 2227-2238, `sheet.frames`) while the
@@ -8585,6 +8601,53 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       tree the screen-wide scan is 0 while the sign's own window stays non-matching. Claims
       `scripts/assets/build-placeholders.mjs`, `src/assets/placeholders/**` and
       `src/assets/README.md`. *Dependencies:* none. *(Batch 82)*
+
+- [ ] **[Task-188] The DOM HUD draws the party's portraits, and the narrow main menu stops colliding.**
+      Issues #50 (residue 1) and #52 (residue 3), measured in a browser on `main` @ `5aaacd6` with
+      `?hud=dom` at 1280×800 and 390×844. Three defects, one seam. **(a)** The CONTINUE row paints
+      **four empty outlined 26×26 cells** where frame `01` paints the party's own sprites — the
+      panel's placeholder rule (`main-menu.css` `.main-menu__portrait`, a white-4 % fill and a
+      1-px hairline) is what ships, so the row reads as four empty inventory slots, not as "who is
+      in the party". **(b)** The same empty square is what a starter card draws where the offered
+      species' portrait belongs (frames `03`/`04` paint the sprite). **(c)** At 390×844 the
+      footer's two right stat blocks **collide**: `MAX ELITE STRIKE` runs into `MONTHLY MAX
+      STRIKE` ("MAX ELITE STRIKEMONTHLY MAX") and the value `7` sits on top of `NOVA`, because the
+      three blocks are laid out in one fixed row that does not wrap. **Fix shape:** one shared
+      module under `src/ui/hud/` that resolves a species id to a **data URI** for the DOM HUD —
+      the panel cannot read a Phaser texture, and the atlas is already imported by
+      `src/data/pokemonSprites.ts` — with the placeholder box as the fallback for a species the
+      sheet does not name; the main menu and the starter panel both draw through it; and the
+      compact footer becomes a wrapping row (or two rows) whose blocks never intersect. The
+      version node's `display: none` at 390 is **accepted as it stands** (rect 0×0, nothing
+      painted, `scrollWidth === 390`), and the spec line that calls it absent is amended rather
+      than the panel. **Docs:** `docs/design-spec.md` §2 (the CONTINUE row shows the party) and
+      `docs/hud-fidelity.md` (a portrait is a data URI, not a texture read). **Tests:** `[unit]`
+      the portrait view model returns a data URI per member and `null` for a species with no
+      sheet; `[unit]` the compact footer's three blocks do not intersect at 390 (rect arithmetic
+      on the view model); `[live]` at 390×844 the labels do not overlap and the CONTINUE row shows
+      four portraits. Claims `src/ui/hud/panels/main-menu/**`,
+      `src/ui/hud/panels/starter/**`, the shared module and their tests, and the two docs.
+      *Dependencies:* none. *(Batch 83)*
+
+- [ ] **[Task-189] The battle's FIGHT window stops covering the HP panel, and a category stops
+      running under its ⓘ.** Measured in a browser on `main` @ `5aaacd6`, `?hud=dom`, 1280×800,
+      FIGHT open on a wild battle: `battle-moves` sits at **x 276, y 582, 728×192** and the
+      bottom-left HP box (`battle-hp__box--player`, the **foe's** panel) at **x 64, y 660,
+      368×100**, so the menu covers it from x 276 to 432 and the foe's HP value
+      (`battle-hp__value`, x 316..365) is drawn **behind** the window and clipped — the HP you are
+      about to attack is the one you cannot read. The same run shows the second defect in every
+      cell: `battle-moves__category` ends at **x 961** and `battle-moves__info` starts at
+      **x 940**, a 21-px overlap, so `SPECIAL`/`PHYSICAL`/`STATUS` runs under the ⓘ square.
+      **Fix shape:** the moves window and the HP box take one shared geometry rule so the menu's
+      left edge starts where the HP panel ends (the canvas HUD's shipped layout already does this —
+      its foe panel sits at the right of the field), and each move cell reserves the 22-px ⓘ in
+      its category column the way the name column already reserves the stone column. **Docs:**
+      `docs/hud-fidelity.md` (the battle's zones, and an information button's reserve). **Tests:**
+      `[unit]` the layout model returns rects where `battle-moves` and the HP box do not intersect
+      and `category.right <= info.left`; `[live]` a wild battle at 1280×800 with FIGHT open shows
+      the foe's HP value in full, and at 390×844 neither defect returns. Claims
+      `src/ui/hud/panels/battle-hp/**`, `src/ui/hud/panels/battle-moves/**` + tests and
+      `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 83)*
 
 ---
 
