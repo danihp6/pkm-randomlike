@@ -8500,6 +8500,15 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   overlapping. `[Task-193]` claims `src/ui/hud/panels/battle-moves/**` and `battle-hp`'s part of
   `docs/hud-fidelity.md` **§5**, shares no path with `[Task-190]`, and both are dependency-free,
   so Batch 85 runs **two** tasks wide.
+- **Batch 85 gains `[Task-195]` (2026-10-27).** The special NPC's spot is a pure rule
+  (`src/engine/routes/npcs.ts`) plus the one draw site in `RouteScene.ts`, which no other member of
+  the batch claims, so Batch 85 runs **three** tasks wide: `190` (starter scene, `keybinds.ts`, the
+  i18n pair and `design-spec.md` §2), `193` (`battle-moves`/`battle-hp` and `hud-fidelity.md` §5) and
+  `195` (the NPC spot, `RouteScene.ts`, `routes-spec.md` §2 and `maps-spec.md` §7).
+- **`[Task-194]` is registered parked (2026-10-27).** The mission panel the human asked for — a chip
+  that collapses, a body that drags, and the run's list — carries `[!]`, so the driver never picks it
+  up, and no batch contains it: it claims the **i18n pair** (`[Task-190]`'s) and a `SAVE_VERSION` step
+  (`26 → 27`), so it opens its own batch the day the human frees it.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8758,6 +8767,63 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       battle at 390×844 with FIGHT open shows every move's name, its category and its PP/POT/PRE
       inside the cell, and the foe's HP value in full. Claims `src/ui/hud/panels/battle-moves/**`,
       `src/ui/hud/panels/battle-hp/**` + tests and `docs/hud-fidelity.md` §5.
+      *Dependencies:* none. *(Batch 85)*
+
+- [!] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
+      **Parked by the human (`2026-10-27`): registered, not to be run yet.** Decided in conversation
+      rather than by a report: the mission is the one HUD readout that is **not** a panel. It is a single
+      passive line — `missionBox` (`src/ui/hud/panels/notices/view.ts`, 360×32, `MISSION_W`/`MISSION_H`)
+      painted by `noticesPanel.tsx` as `data-hud-mission` with `pointer-events: none` and no handler —
+      while PARTY, BAG, BOX and the detail popup are panes with a collapse chip at the top-left, a drag
+      with clamp and a saved slot (`HUD_PANEL_IDS` in `src/data/hudLayout.ts`; the chrome in
+      `src/scenes/panels/hud.ts`). The second half is the **list**: the run keeps the floor's row plus a
+      counter and nothing else — `missionsCompleted` is a number, and `MISSION_TABLE`
+      (`src/data/missions.ts`) ships one row today. **Fix shape (the human's two answers, frozen).**
+      (a) *What the list is:* the floor's mission with its progress, and under it the run's completed
+      missions. (b) *Where it lives:* a **canvas pane**, so it inherits the chip, the drag and the clamp
+      the other panes already have, with the DOM twin drawing the same list. `RunState.completedMissions:
+      readonly { id: string; mapIndex: number }[]` is appended in `advanceMap` (`src/engine/run/state.ts`
+      255-280) where `missionsCompleted` steps; `SAVE_VERSION` **26 → 27** with a migration that seeds
+      `[]`; `missions` joins `HudPanelId` and `RoutePanelId` (default collapsed — `parseHudLayout`
+      already defaults a panel the document omits, so settings need no migration);
+      `src/scenes/panels/missions.ts` is the pane, `src/ui/hud/panels/missions/**` its DOM twin, and the
+      mission line leaves `notices` with its box. **Docs:** `docs/design-spec.md` §2,
+      `docs/hud-fidelity.md` (the chip's geometry), `docs/routes-spec.md` §2 (the run keeps the missions
+      it met) and `docs/tech-decisions.md` (the history record, and why the counter stays).
+      **Tests:** `[unit]` `advanceMap` appends one record per met floor and none on a missed one, and the
+      `26 → 27` migration seeds `[]`; `[unit]` the list shows the floor's row first and the completed ones
+      newest first, with an empty state when there are none; `[unit]` `parseHudLayout` defaults the new
+      slot collapsed on a document that predates it; `[live]` meet a floor's mission and open the panel:
+      the row and its map are listed, the chip collapses it to its icon, the header drags with PARTY's
+      clamp and the slot survives a reload. Claims `src/engine/run/{state,missions}.ts` + tests,
+      `src/engine/save.ts` + test, `src/data/hudLayout.ts` + test, `src/scenes/panels/{missions,types,
+      registry}.ts` + tests, `src/ui/hud/panels/{missions,notices}/**`, `src/scenes/RouteScene.ts`,
+      `src/i18n/{en,es}.ts` and the four docs.
+      *Dependencies:* none technical. Unscheduled: it takes the **i18n pair** and `SAVE_VERSION`, so it
+      opens a batch of its own when the human frees it.
+
+- [ ] **[Task-195] A special NPC stands against a wall, with its back to it.** Asked by the human on
+      `2026-10-27`. `npcSpot` (`src/engine/routes/npcs.ts` 166-190) picks **any** free walkable tile: it
+      excludes the entry and its four cardinal neighbours, the exits, the trainers and the visible items,
+      then draws one `Rng.int` over what is left, so an NPC can stand in the middle of an open field — and
+      the placement carries no facing at all (`RoomNpc = { row, tile }`, `RouteScene.ts` 435;
+      `drawRoomNpc`, 2251-2264, paints the default down frame). **Fix shape:** the candidate list narrows
+      to tiles with at least one **cardinally unwalkable** neighbour, and the placement gains the facing
+      *away* from that wall (a wall to the north turns the NPC `'S'`), so the sprite shows its back to the
+      wall and its front to the open tile; a tile that touches two walls has its facing drawn on the same
+      `${seed}:npc:<roomId>:<npcId>:spot` stream, after the tile pick, so one seed still gives one tile
+      and one facing and no other stream moves (`D11`); a room whose free tiles are all open keeps
+      today's pick with `'S'` rather than dropping the NPC. `npcSpot` returns `{ tile, facing }`,
+      `RoomNpc` carries the facing, and `drawRoomNpc` passes it through `trainerFacingPose`
+      (`src/render/trainerAnim.ts` 23) and `overworldSpriteFrame(key, facing)`
+      (`src/data/overworldSprites.ts` 83), the pair the trainers already use. **Docs:**
+      `docs/routes-spec.md` §2 (the special NPC's spot) and `docs/maps-spec.md` §7.
+      **Tests:** `[unit]` every spot `npcSpot` returns has an unwalkable cardinal neighbour and its facing
+      points at a walkable tile, so the wall is always behind it; `[unit]` a hand-built room whose free
+      tiles are all open still returns a tile (the fallback) and never `null`; `[unit]` one seed returns
+      the same tile and facing (regression); `[live]` walk into an NPC room: the NPC stands against a
+      wall with its back to it. Claims `src/engine/routes/npcs.ts` + test, `src/scenes/RouteScene.ts`,
+      `docs/routes-spec.md` §2 and `docs/maps-spec.md` §7.
       *Dependencies:* none. *(Batch 85)*
 
 ---
