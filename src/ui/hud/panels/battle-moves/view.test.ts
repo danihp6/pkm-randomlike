@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { t } from '../../../../i18n';
 import {
@@ -18,7 +20,10 @@ import {
   MOVE_MEGA_COL,
   battleMovesBox,
   battleMovesView,
+  drawnTextWidth,
+  elideToWidth,
   infoLineCount,
+  type BattleMoveSlotView,
   type BattleMovesInput,
   type Rect,
   type Viewport,
@@ -92,6 +97,95 @@ describe('the mirrored constants', () => {
     expect(MOVE_CATEGORY_GAP).toBe(8);
     expect(BATTLE_STAGE_MAX).toBe(900);
     expect(BATTLE_COMPACT).toBe(700);
+  });
+});
+
+/** One `--hud-*` size the stylesheet declares, in px. */
+function cssSize(css: string, name: string): number {
+  const match = new RegExp(`${name}\\s*:\\s*(-?[\\d.]+)px`).exec(css);
+  expect(match, name).not.toBeNull();
+  return Number(match![1]);
+}
+
+const ROOT_CSS = readFileSync(fileURLToPath(new URL('../../styles/root.css', import.meta.url)), 'utf8');
+/** The cell's own side padding, from `.battle-moves__slot`'s `padding: 8px 14px`. */
+const CELL_PAD_X = 14;
+
+describe('drawnTextWidth', () => {
+  it('measures the panel s own font, past the retired per-glyph constant', () => {
+    expect(drawnTextWidth('')).toBe(0);
+    expect(drawnTextWidth('PHYSICAL')).toBeGreaterThan(8 * 6);
+    expect(drawnTextWidth('PHYSICAL')).toBe(60);
+    expect(drawnTextWidth('STATUS')).toBeLessThan(drawnTextWidth('PHYSICAL'));
+  });
+
+  it('scales with the size it is asked for', () => {
+    expect(drawnTextWidth('PHYSICAL', 20)).toBeCloseTo(drawnTextWidth('PHYSICAL', 10) * 2, 10);
+    expect(drawnTextWidth('PHYSICAL', 10)).toBe(drawnTextWidth('PHYSICAL'));
+  });
+
+  it('draws at the body size the stylesheet declares', () => {
+    const body = cssSize(ROOT_CSS, '--hud-type-body-size');
+    expect(body).toBe(10);
+    expect(drawnTextWidth('PHYSICAL')).toBe(drawnTextWidth('PHYSICAL', body));
+  });
+
+  it('charges the name for nothing but its own line', () => {
+    const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
+    expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
+    expect(slot.nameBox.y).toBe(slot.categoryBox.y);
+    expect(slot.nameBox.w).toBe(96);
+    // The type's own label (36–60 px, one per type) never enters the name's column.
+    const shortType = battleMovesView(
+      inputOf({
+        card: battleMovesBox(DESKTOP),
+        cells: padMoveGridCells([moveCell('X', { type: 'ice' })], 4),
+      }),
+    ).slots[0]!;
+    const longType = battleMovesView(
+      inputOf({
+        card: battleMovesBox(DESKTOP),
+        cells: padMoveGridCells([moveCell('X', { type: 'electric' })], 4),
+      }),
+    ).slots[0]!;
+    expect(longType.nameBox.w).toBe(shortType.nameBox.w);
+  });
+});
+
+describe('elideToWidth', () => {
+  const LONG = 'MOFLETE ESTÁTICO';
+
+  it('leaves a string that already fits untouched', () => {
+    expect(elideToWidth('TACKLE', 100)).toBe('TACKLE');
+    expect(elideToWidth('TACKLE', drawnTextWidth('TACKLE'))).toBe('TACKLE');
+    expect(elideToWidth('', 10)).toBe('');
+  });
+
+  it('cuts to the widest prefix that still fits with its own ellipsis', () => {
+    expect(drawnTextWidth(LONG)).toBeGreaterThan(68);
+    const cut = elideToWidth(LONG, 68);
+    expect(cut).toBe('MOFLETE \u2026');
+    expect(LONG.startsWith(cut.slice(0, -1))).toBe(true);
+    expect(drawnTextWidth(cut)).toBeLessThanOrEqual(68 + 0.01);
+    expect(drawnTextWidth('MOFLETE E\u2026')).toBeGreaterThan(68);
+  });
+
+  it('never returns a string wider than its box, and never leaves room for one more glyph', () => {
+    for (const width of [20, 30, 45, 52, 60, 68, 90, 117]) {
+      const cut = elideToWidth(LONG, width);
+      expect(cut.length).toBeGreaterThan(0);
+      expect(cut.endsWith('\u2026')).toBe(true);
+      expect(drawnTextWidth(cut)).toBeLessThanOrEqual(width + 0.01);
+      const head = cut.slice(0, -1);
+      const next = LONG[head.length] ?? '';
+      if (next !== '') expect(drawnTextWidth(`${head}${next}\u2026`)).toBeGreaterThan(width);
+    }
+  });
+
+  it('is total: nothing fits a zero, a negative or a hairline box', () => {
+    expect(elideToWidth('X', 0)).toBe('');
+    expect(elideToWidth('X', -20)).toBe('');
+    expect(elideToWidth('AB', 8)).toBe('');
   });
 });
 
@@ -292,6 +386,7 @@ describe('battleMovesView slots', () => {
       enabled: false,
       selected: false,
       box: view.slots[1]!.box,
+      nameBox: view.slots[1]!.nameBox,
       categoryBox: view.slots[1]!.categoryBox,
       info: null,
     });
@@ -358,7 +453,7 @@ describe('the category column', () => {
 
   it('is the widest label s own width, right-aligned against the gap', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
-    expect(slot.categoryBox.w).toBe(48);
+    expect(slot.categoryBox.w).toBe(60);
     expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
     expect(slot.categoryBox.h).toBe(13);
   });
@@ -369,6 +464,110 @@ describe('the category column', () => {
     expect(empty.info).toBeNull();
     expect(empty.categoryBox.w).toBe(0);
     expect(empty.categoryBox.x).toBe(empty.box.x + empty.box.w - 14);
+  });
+});
+
+/** The four invariants of a filled cell, measured on the strings the model paints. */
+function expectCellFits(slot: BattleMoveSlotView): void {
+  expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(slot.nameBox.w + 0.01);
+  expect(drawnTextWidth(slot.category)).toBeLessThanOrEqual(slot.categoryBox.w + 0.01);
+  // The slot paints the category uppercased, so the column must hold that string too.
+  expect(drawnTextWidth(slot.category.toUpperCase())).toBeLessThanOrEqual(slot.categoryBox.w + 0.01);
+  expect(slot.nameBox.x).toBeGreaterThanOrEqual(slot.box.x + CELL_PAD_X);
+  expect(slot.categoryBox.x + slot.categoryBox.w).toBeLessThanOrEqual(slot.info!.x);
+}
+
+const LONG_GRID: readonly MoveGridSlot[] = padMoveGridCells(
+  [
+    moveCell('MOFLETE ESTÁTICO', { category: 'Physical' }),
+    moveCell('LANZALLAMAS', { type: 'flying' }),
+    moveCell('TERREMOTO', { type: 'ground', category: 'Status' }),
+    moveCell('PSÍQUICO'),
+  ],
+  4,
+);
+
+describe('a move cell s own text', () => {
+  it('takes the cell s remaining width, and keeps all but the long name whole at 1280×800', () => {
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
+    expect(view.slots).toHaveLength(4);
+    // 222 px cell: 2×14 padding, the 60 px category column, its two 8 px gaps and the 22 px ⓘ.
+    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 60 - 16 - 22);
+    for (const slot of view.slots) {
+      expect(slot.empty).toBe(false);
+      expect(slot.nameBox.w).toBeGreaterThanOrEqual(54);
+      expectCellFits(slot);
+    }
+    expect(view.slots.map((slot) => slot.name)).toStrictEqual([
+      'MOFLETE ESTÁ\u2026',
+      'LANZALLAMAS',
+      'TERREMOTO',
+      'PSÍQUICO',
+    ]);
+    // The one cut name loses only its last two glyphs to the ellipsis.
+    const head = view.slots[0]!.name.slice(0, -1);
+    expect(head.length).toBeGreaterThanOrEqual(9);
+    expect('MOFLETE ESTÁTICO'.startsWith(head)).toBe(true);
+    const pinned = battleMovesView(
+      inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID, info: 0 }),
+    );
+    expect(pinned.info!.title).toBe('MOFLETE ESTÁTICO');
+  });
+
+  it('holds on the compact card and on the phone card', () => {
+    for (const viewport of [{ width: 600, height: 600 }, PHONE]) {
+      const card = battleMovesBox(viewport);
+      expect(card.w).toBeLessThan(BATTLE_COMPACT);
+      const view = battleMovesView(inputOf({ card, cells: LONG_GRID }));
+      for (const slot of view.slots) expectCellFits(slot);
+    }
+  });
+
+  it('reports the phone card s own budget: the category and the ⓘ take its whole content box', () => {
+    const view = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID }));
+    for (const slot of view.slots) {
+      const info = slot.info!;
+      // 119 px cell: 2×14 padding leaves 91, and the 60 px category column, its 8 px
+      // gap and the 22 px ⓘ take 90 of them — one pixel, so the name paints nothing
+      // and the ⓘ card is where its whole text stays readable.
+      expect(info.x + info.w).toBe(slot.box.x + slot.box.w - 14);
+      expect(slot.categoryBox.w).toBe(60);
+      expect(slot.categoryBox.x + slot.categoryBox.w).toBe(info.x - MOVE_CATEGORY_GAP);
+      expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
+      expect(slot.nameBox.w).toBeLessThanOrEqual(1);
+      expect(slot.name).toBe('');
+      expectCellFits(slot);
+    }
+  });
+
+  it('holds on a one-move party, whose three empty slots print nothing', () => {
+    const cells = padMoveGridCells([moveCell('MOFLETE ESTÁTICO', { category: 'Physical' })], 4);
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells }));
+    expectCellFits(view.slots[0]!);
+    for (const slot of view.slots.slice(1)) {
+      expect(slot.empty).toBe(true);
+      expect(slot.name).toBe('');
+      expect(slot.nameBox.w).toBe(0);
+      expect(slot.nameBox.x).toBe(slot.box.x + slot.box.w - CELL_PAD_X);
+      expect(slot.info).toBeNull();
+    }
+  });
+
+  it('takes the name column from the cell it is in, and the category from its widest label', () => {
+    const wide = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
+    const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID }));
+    expect(wide.slots[0]!.nameBox.w).toBeGreaterThan(phone.slots[0]!.nameBox.w);
+    expect(wide.slots[0]!.nameBox.y).toBe(wide.slots[0]!.categoryBox.y);
+    for (const label of ['PHYSICAL', 'SPECIAL', 'STATUS']) {
+      expect(wide.slots[0]!.categoryBox.w).toBeGreaterThanOrEqual(Math.ceil(drawnTextWidth(label)));
+    }
+  });
+
+  it('paints the name in the case the slot paints it, and keeps the full one for the ⓘ', () => {
+    const cells = padMoveGridCells([moveCell('Moflete Estático', { category: 'Physical' })], 4);
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells, info: 0 }));
+    expect(view.slots[0]!.name).toBe('MOFLETE ESTÁ\u2026');
+    expect(view.info!.title).toBe('Moflete Estático');
   });
 });
 

@@ -8700,7 +8700,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/main-menu/**` + tests and `docs/hud-fidelity.md` §9.
       *Dependencies:* none. *(Batch 84)*
 
-- [ ] **[Task-192] A move's name and category fit inside their cell, and the ⓘ stays clear.**
+- [x] **[Task-192] A move's name and category fit inside their cell, and the ⓘ stays clear.**
       Follow-up of `[Task-189]`, measured on the merged tree (`main` @ `5b4629d`), `?hud=dom` at
       1280×800: the moves window moved right and the HP panel is clear (that half is fixed), but
       the **text still overflows its box**. In a 222×72 `battle-moves__slot`, the name box is

@@ -1,3 +1,4 @@
+import fontManifest from '../../../../data/ui/font.json';
 import { t } from '../../../../i18n';
 import { FRLG_WINDOW_PADDING } from '../../../frlg';
 import {
@@ -38,17 +39,60 @@ const CARD_MIN_W = 240;
 
 /** The gap the category column keeps from the ⓘ square: 36 px of ⓘ offset + this = the 44 px CSS `right`. */
 export const MOVE_CATEGORY_GAP = 8;
-/** `Physical`, `Special` and `Status` are the three labels; the widest prints eight glyphs. */
-const CATEGORY_GLYPHS = 8;
-/** The HUD's body advance of one glyph: Silkscreen at 10 px draws 5.87–5.95 px a character. */
-const CATEGORY_CHAR_W = 6;
-const CATEGORY_W = CATEGORY_GLYPHS * CATEGORY_CHAR_W;
+/** The glyph advances `src/data/ui/font.json` carries, keyed by code point. */
+const ADVANCES = new Map<number, number>(
+  fontManifest.glyphs.map((glyph) => [glyph.code, glyph.xAdvance] as const),
+);
+/**
+ * The px one manifest advance unit is drawn at. The manifest's metrics are laid out
+ * at `scale` times the size they were drawn for (the atlas is 2x), so a glyph asked
+ * for at `size` px scales by `size / FONT_UNIT` — 16 today.
+ */
+const FONT_UNIT = fontManifest.size / fontManifest.scale;
+/** The HUD body size this panel draws with: `--hud-type-body-size` in `styles/root.css`. */
+const BODY_SIZE = 10;
+/** The glyph an elided string ends in, so a cut name always reads as cut. */
+const ELLIPSIS = '\u2026';
+/** The three category labels the grid prints, in the case the slot paints them. */
+const CATEGORY_LABELS: readonly string[] = ['PHYSICAL', 'SPECIAL', 'STATUS'];
+/** The category column: the widest label's own drawn px, so none of the three can spill. */
+const CATEGORY_W = Math.max(...CATEGORY_LABELS.map((label) => Math.ceil(drawnTextWidth(label))));
+/** The slot's own column gap, from `.battle-moves__slot`'s `gap: 0 8px`. */
+const CELL_GAP = 8;
 /** The cell's own padding, from `.battle-moves__slot`: 8 px down, 14 px in on each side. */
 const CELL_PAD_X = 14;
 const CELL_PAD_Y = 8;
 /** One body line (`--hud-type-body-line`) and the three lines a filled cell stacks. */
 const BODY_LINE_H = 13;
 const CELL_LINES = 3;
+
+/** The drawn px of `text` at `size` (default: `--hud-type-body-size`, 10 px), from `font.json`. */
+export function drawnTextWidth(text: string, size: number = BODY_SIZE): number {
+  let units = 0;
+  for (const char of text) units += ADVANCES.get(char.codePointAt(0) ?? 0) ?? 0;
+  return (units * size) / FONT_UNIT;
+}
+
+/**
+ * `text` reduced to the widest prefix that fits `width`, ending in `'\u2026'` when a
+ * glyph had to go; `text` itself when it already fits, `''` when nothing fits. Total:
+ * a negative or zero width returns `''`.
+ */
+export function elideToWidth(text: string, width: number): string {
+  if (!(width > 0)) return '';
+  if (drawnTextWidth(text) <= width) return text;
+  const budget = width - drawnTextWidth(ELLIPSIS);
+  if (budget < 0) return '';
+  let used = 0;
+  let head = '';
+  for (const char of text) {
+    const advance = drawnTextWidth(char);
+    if (used + advance > budget) break;
+    used += advance;
+    head += char;
+  }
+  return head.length === 0 ? '' : `${head}${ELLIPSIS}`;
+}
 
 /** Below this square side the stacked, full-width phone card is used. */
 export const BATTLE_COMPACT = 700;
@@ -115,6 +159,10 @@ export type BattleMovesInput = Readonly<{
 export type BattleMoveSlotView = Readonly<{
   index: number;
   empty: boolean;
+  /**
+   * The name as painted: the cell's name uppercased (the slot's `text-transform`)
+   * and cut to `nameBox.w`, so it is never wider than its own box.
+   */
   name: string;
   type: string;
   category: string;
@@ -127,6 +175,8 @@ export type BattleMoveSlotView = Readonly<{
   enabled: boolean;
   selected: boolean;
   box: Rect;
+  /** The cell's first line: from its side padding to a gap left of the category column. */
+  nameBox: Rect;
   /** The category column: it ends left of the ⓘ by at least its gap. */
   categoryBox: Rect;
   /** The ⓘ button: `{ x: box.x + box.w - 36, y: box.y + 8, w: 22, h: 22 }`, empty slots none. */
@@ -193,8 +243,22 @@ function categoryBoxOf(box: Rect, info: Rect): Rect {
   return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
 }
 
+/**
+ * The name column: the cell's own first line, from its side padding to a gap left
+ * of the category column — one count of each, so the ⓘ and the category take only
+ * the width they are drawn in. The type chip sits beside the stat block on the
+ * lines below (`battleMoves.css`), never on this one, so a long type name cannot
+ * charge the move's name for its own label.
+ */
+function nameBoxOf(box: Rect, category: Rect): Rect {
+  const left = box.x + CELL_PAD_X;
+  const right = category.x - CELL_GAP;
+  return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
+}
+
 /** The empty container: no name, no stats, no ⓘ — the grid's own rule. */
 function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotView {
+  const rowY = categoryBandTop(box);
   return {
     index,
     empty: true,
@@ -209,8 +273,9 @@ function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotV
     enabled: false,
     selected,
     box,
-    // Nothing is printed in an empty cell, so its column is a zero-width mark at the right pad.
-    categoryBox: { x: box.x + box.w - CELL_PAD_X, y: categoryBandTop(box), w: 0, h: BODY_LINE_H },
+    // Nothing is printed in an empty cell, so its columns are zero-width marks at the right pad.
+    nameBox: { x: box.x + box.w - CELL_PAD_X, y: rowY, w: 0, h: BODY_LINE_H },
+    categoryBox: { x: box.x + box.w - CELL_PAD_X, y: rowY, w: 0, h: BODY_LINE_H },
     info: null,
   };
 }
@@ -229,10 +294,12 @@ function slotView(
     w: INFO_SIZE,
     h: INFO_SIZE,
   };
+  const categoryBox = categoryBoxOf(box, info);
+  const nameBox = nameBoxOf(box, categoryBox);
   return {
     index,
     empty: false,
-    name: cell.name,
+    name: elideToWidth(cell.name.toUpperCase(), nameBox.w),
     type: cell.type,
     category: cell.category,
     pp: ppLabel(cell),
@@ -243,7 +310,8 @@ function slotView(
     enabled: cell.enabled,
     selected: index === selected,
     box,
-    categoryBox: categoryBoxOf(box, info),
+    nameBox,
+    categoryBox,
     info,
   };
 }

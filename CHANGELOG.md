@@ -8,6 +8,30 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A move's name and category fit inside their cell, and the ⓘ stays clear.** `[Task-192]`,
+      the third of Batch 83: `[Task-189]` moved the moves window off the HP panel, but the text
+      inside a cell still overflowed — in a 222×72 cell the name column was 68 px for
+      `MOFLETE ESTÁTICO` and the category 48 px for `PHYSICAL`, so the paint crossed both boxes
+      and ran under the ⓘ. The panel now **measures before it paints**:
+      `drawnTextWidth(text, size)` sums `src/data/ui/font.json`'s advances (the arithmetic
+      `evolutionGraph`'s test already used) instead of the retired `CATEGORY_CHAR_W = 6`
+      approximation — `PHYSICAL` is **60 px**, not 48 — `elideToWidth(text, width)` cuts to the
+      widest prefix that fits, and each slot carries the `nameBox` it is entitled to. The name
+      no longer pays for the type chip: the chip moves to the stat block
+      (`grid-area: 2 / 1 / 4 / 2`) and the name owns the cell's whole first line, **96 px** in
+      the 222 px cell (content less the measured category column, its two 8-px gaps and the
+      22-px ⓘ, one count of each), so `MOFLETE ESTÁ…` keeps twelve glyphs, `LANZALLAMAS`,
+      `TERREMOTO` and `ONDA TRUENO` print whole, the category keeps its 60 px and
+      `category.right <= info.left` still holds. `docs/hud-fidelity.md` **§5** gains the rule.
+      Gates: `npm test` 4692 passed / 69 skipped, `npm run build` green. Measured live over CDP
+      at 1280×800 — four slots, name `scrollWidth === clientWidth === 96`, category 60/60,
+      `category.right` 703/933 against `info.left` 710/940, every ⓘ 22×22 and the pinned card
+      printing the full `Moflete Estático`; at 390×844 the same read with no overflow. One
+      residue recorded, not fixed: on a **phone** the 119×94 cell cannot hold the category, the
+      gaps and the ⓘ beside a name, so the name column collapses to 0 and no move name is
+      painted at all — the same on `main`, where CSS clipped it to a glyph; tracked as issue
+      #76 because it needs a shape decision for the phone grid.
+
 - [x] **The narrow CONTINUE row stops painting its portraits over the map label.** `[Task-191]`,
       the second of Batch 83: at 390×844 the row is 326×48 at (32, 402) and the four 22-px
       portraits occupy x 258..355, while `MAP 3 · FOREST` was painted **under** them and read as

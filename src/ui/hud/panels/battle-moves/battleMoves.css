@@ -78,13 +78,20 @@
 }
 
 .battle-moves__slot .kit-type {
-  grid-area: 1 / 1;
+  /* The type badge rides with the stat block, not with the name: on the name's own
+     line its label (36–60 px, one per type) would take the width the move's name
+     needs. It spans both stat lines so it reads as their left gutter. */
+  grid-area: 2 / 1 / 4 / 2;
   align-self: center;
   justify-self: start;
 }
 
 .battle-moves__name {
-  grid-area: 1 / 2;
+  /* The cell's whole first line: the model's `nameBox` is that line minus the
+     category column, its two 8 px gaps and the 22 px ⓘ, and the width it measures
+     comes in inline. The hidden overflow and the ellipsis are the guard only — the
+     string is already cut to it. */
+  grid-area: 1 / 1 / 2 / 4;
   overflow: hidden;
   color: var(--hud-text-ink);
   text-transform: uppercase;
@@ -94,8 +101,9 @@
 
 .battle-moves__category {
   /* The model's own column (`.battle-moves__category`'s rect): absolute, so the
-     44 px right edge is the ⓘ's 36 px offset plus the 8 px gap, and right-aligned,
-     so a label wider than its column overflows away from the ⓘ, never under it. */
+     44 px right edge is the ⓘ's 36 px offset (`view.ts`'s `INFO_OFFSET`) plus its
+     8 px `MOVE_CATEGORY_GAP`, and right-aligned, so the widest label's own column
+     holds it clear of the ⓘ square. */
   position: absolute;
   right: 44px;
   color: var(--hud-text-muted);

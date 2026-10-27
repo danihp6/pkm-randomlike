@@ -53,6 +53,14 @@ function categoryStyle(slot: BattleMoveSlotView): CSSProperties {
   return insetStyle(slot.categoryBox, slot.box);
 }
 
+/**
+ * The name's own column: the slot's grid already puts it past the type chip, so only
+ * the width the model measured comes from here — the string is cut to it already.
+ */
+function nameStyle(slot: BattleMoveSlotView): CSSProperties {
+  return { width: `${slot.nameBox.w}px` };
+}
+
 function flag(value: boolean): string {
   return value ? 'true' : 'false';
 }
@@ -86,7 +94,9 @@ export function MoveSlot(props: MoveSlotProps): JSX.Element {
       {slot.empty ? null : (
         <>
           <TypeBadge type={slot.type} />
-          <span class="battle-moves__name">{slot.name}</span>
+          <span class="battle-moves__name" style={nameStyle(slot)}>
+            {slot.name}
+          </span>
           <span class="battle-moves__category" style={categoryStyle(slot)}>
             {slot.category}
           </span>

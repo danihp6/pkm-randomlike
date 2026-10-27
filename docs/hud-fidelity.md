@@ -110,6 +110,18 @@ offset plus the gap, the same 44 px the stylesheet spells — and prints right-a
 `PHYSICAL` / `STATUS` cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
 description, and the click still pins it.
 
+**A cell's text is bounded by its own box.** Every label in a battle move cell is measured against the font
+the panel actually draws with — `font.json`'s advances at `--hud-type-body-size` — never a per-glyph
+constant: **the name takes the cell's own remaining width** — its content box less the measured category
+column, the two 8 px gaps and the 22 px ⓘ, one count of each (96 px in the 222 px cell at 1280×800) — and is
+cut to that width with an ellipsis (the ⓘ card keeps the whole name), while the type chip rides with the stat
+block so its own label never eats that line; the category column is **its widest label's measured width** —
+`PHYSICAL`, 60 px — and the 22 px ⓘ stays clear of it. A box that merely avoids its neighbour is not enough:
+`PHYSICAL` paints 56 px in the 48 px column `[Task-189]` shipped, so the string ran under the ⓘ beside boxes
+that did not intersect. A cell narrower than the 90 px the category column and the ⓘ need — the phone card's
+119 px cell leaves 91 — gives the name what is left of it, and the ⓘ card is where its whole text stays
+readable.
+
 ## 6. Frame → node map
 
 Every Phase 12 task takes its frames from here; the desktop id is the first column, the mobile one the

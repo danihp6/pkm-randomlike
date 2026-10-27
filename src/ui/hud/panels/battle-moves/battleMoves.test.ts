@@ -29,6 +29,7 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
     enabled: true,
     selected: false,
     box,
+    nameBox: { x: box.x + 14, y: rowY + 16.5, w: 96, h: 13 },
     categoryBox: { x: info.x - 8 - 48, y: rowY + 16.5, w: 48, h: 13 },
     info,
     ...overrides,
