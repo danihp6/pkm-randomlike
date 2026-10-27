@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GATES } from '../../data/gates';
 import { getSpecies } from '../../data/dex/species';
-import { memberTypes, partyHasAbility, partyHasMove, partyHasType } from './party';
+import { livingTeamTypes, memberTypes, partyHasAbility, partyHasMove, partyHasType } from './party';
 import { createRunPokemon, type RunPokemon } from './progression';
 import { createRun, type RunState } from './state';
 
@@ -197,5 +197,62 @@ describe('partyHasAbility', () => {
     // A duplicate of the primary never satisfies a gate the primary misses.
     const duplicate = { ...able('caterpie', 'shield-dust'), secondAbility: 'Shield Dust' };
     expect(partyHasAbility(runWith([duplicate]), ['pickup'])).toBe(false);
+  });
+});
+
+describe('livingTeamTypes', () => {
+  const FIRE = member('charmander');
+  const FIRE_TOO = member('cyndaquil');
+  const WATER_TOO = member('totodile');
+
+  it('lists a type two living members share, and only that one', () => {
+    expect(livingTeamTypes(runWith([FIRE, WATER, FIRE_TOO, fainted(FIRE)]))).toEqual(['Fire']);
+  });
+
+  it('lists every repeated type in the party order of its first holder', () => {
+    expect(livingTeamTypes(runWith([FIRE, WATER, FIRE_TOO, WATER_TOO]))).toEqual(['Fire', 'Water']);
+  });
+
+  it('lists nothing when every type has a single living holder', () => {
+    expect(livingTeamTypes(runWith([FIRE, WATER]))).toEqual([]);
+  });
+
+  it('never counts a fainted member', () => {
+    expect(livingTeamTypes(runWith([FIRE, fainted(FIRE_TOO)]))).toEqual([]);
+    expect(livingTeamTypes(runWith([fainted(FIRE), fainted(FIRE_TOO)]))).toEqual([]);
+  });
+
+  it('never reads the box', () => {
+    expect(livingTeamTypes(runWith([FIRE], [FIRE_TOO]))).toEqual([]);
+    expect(livingTeamTypes(runWith([FIRE], [FIRE_TOO, WATER, WATER_TOO]))).toEqual([]);
+  });
+
+  it('counts one member once, even when it carries two types', () => {
+    expect(livingTeamTypes(runWith([member('bulbasaur')]))).toEqual([]);
+    expect(livingTeamTypes(runWith([member('bulbasaur'), member('ivysaur')]))).toEqual([
+      'Grass',
+      'Poison',
+    ]);
+  });
+
+  it('contributes no type for an unknown species id, and does not throw', () => {
+    const unknown: RunPokemon = {
+      ...FIRE,
+      fighter: { ...FIRE.fighter, speciesId: 'not-a-species' },
+    };
+    expect(livingTeamTypes(runWith([unknown]))).toEqual([]);
+    expect(livingTeamTypes(runWith([unknown, FIRE]))).toEqual([]);
+    expect(livingTeamTypes(runWith([unknown, FIRE, FIRE_TOO]))).toEqual(['Fire']);
+  });
+
+  it('answers empty for an empty party', () => {
+    expect(livingTeamTypes({ ...runWith([FIRE, FIRE_TOO]), party: [] })).toEqual([]);
+  });
+
+  it('does not mutate the run it reads', () => {
+    const run = runWith([FIRE, WATER, FIRE_TOO]);
+    const party = run.party;
+    livingTeamTypes(run);
+    expect(run.party).toBe(party);
   });
 });

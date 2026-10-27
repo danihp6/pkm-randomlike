@@ -8,6 +8,27 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The launch fills the team-type bonuses.** `[Task-182]`, the first of Batch 82:
+      the shipped `+10 %` / `+20` team-type rule finally reaches a real battle.
+      `livingTeamTypes(run)` (`src/engine/run/party.ts`) reads the party only, keeps a
+      type when **two living** members (`fighter.hp > 0`) share it, dedupes in party order
+      and never looks at the box or the RIP list; `BattleLaunch.teamTypes` carries it and
+      `launchTeamTypes(launch)` reads an absent list as none, so no call site can invent
+      one. Two wiring lines and nothing else: `RouteScene.startBattle`'s launch literal —
+      the only `BattleLaunch` literal for a real battle, so wilds, trainers, the boss, the
+      mini-boss, doubles and dev fights all inherit it — and `BattleScene.create` handing
+      it to `createBattle`, which the enemy side never receives.
+      `docs/battle-spec.md` §13 no longer calls the launch "a follow-up": it states the
+      living-party rule, the two-holder threshold and that the box is not read. **The
+      entry's own example was wrong and is corrected here**: two living Fire + one living
+      Water + a fainted Fire reads `['Fire']`, not `['Fire','Water']`, because §13 and
+      `BattleState.teamTypes`' own comment both call it the *repeated* party types — a
+      single Water member would hand a six-member party six bonuses. All-`[unit]` task, no
+      browser pass owed: the engine halves were already pinned in `damage.test.ts` and
+      `turn.test.ts` and this task only supplies their missing source. `npm test` 4588
+      passed / 69 skipped, `npm run build` green, `src/engine/` still Phaser-free and
+      clock-free.
+
 - [x] **The eleven no-op berries reach a run from three seams, and the spec says so.**
       `[Task-186]`, the third of Batch 81 and a docs-only task: `docs/maps-spec.md` §7's
       held-tier bullet no longer claims the berry-class no-ops reach a run from the `mid`

@@ -8464,6 +8464,20 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   (25 → 26).
 - The route-scene queue therefore extends **80 → 81 → 82 → 83**, and no task here repaints a
   batch that already shipped.
+- **What Batch 82 actually ran, and why (2026-10-27).** Batch 81 shipped whole. Batch 82 was
+  cut as `[Task-182]`, `[Task-183]` and `[Task-187]`, but `[Task-183]` reads the counters
+  `[Task-181]` writes and `[Task-181]` sits in **Batch 83**, so `[Task-183]` could not run
+  this cycle: it is **deferred, not blocked** — its box stays `[ ]` and the cycle that merges
+  `[Task-181]` takes it. `[Task-181]` itself could not fill a free slot either: it claims
+  `src/scenes/RouteScene.ts` **and** `src/scenes/BattleScene.ts`, both of which `[Task-182]`
+  holds as this batch's one hot-file owner. The two free slots were therefore filled from
+  Batch 83 with its two dependency-free members, `[Task-188]` and `[Task-189]`, whose paths
+  (`main-menu/**` + `starter/**` + one new `src/ui/hud/` module; `battle-hp/**` +
+  `battle-moves/**`) share nothing with `[Task-182]` or `[Task-187]` — the only path two of
+  them share is `docs/hud-fidelity.md`, claimed by section (`[Task-189]` §5, `[Task-188]`
+  §9). So Batch 82 shipped **four** tasks wide: `[Task-182]`, `[Task-187]`, `[Task-188]`,
+  `[Task-189]`, in ID order. Batch 83 now holds `[Task-181]` alone, with `[Task-183]` behind
+  it.
 
 - [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8502,7 +8516,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       it was missing, and it costs `BattleScene.ts` — which `[Task-184]` holds in Batch 81, hence
       this task's move to Batch 83.
 
-- [ ] **[Task-182] The launch fills the team-type bonuses.** Issue #59, follow-up 1.
+- [x] **[Task-182] The launch fills the team-type bonuses.** Issue #59, follow-up 1.
       `[Task-150]` shipped the four rules — two living members of a type give that type's moves
       **+10 %** damage and **+20 %** status chance — and `BattleSetup.teamTypes`
       (`src/engine/battle/state.ts` 209/243, copied at 331) is still never filled: the only

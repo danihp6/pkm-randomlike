@@ -116,7 +116,7 @@ import {
   withoutNextWildType,
   type RunModifiers,
 } from '../engine/run/modifiers';
-import { partyHasType } from '../engine/run/party';
+import { livingTeamTypes, partyHasType } from '../engine/run/party';
 import { wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
 import { COMMON_TEXTURE_KEY, TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
@@ -3504,6 +3504,8 @@ export class RouteScene extends Phaser.Scene {
       // The banned-species leaf's rule rides the launch the same way: every battle
       // the room opens bars the party's most-used species from being sent out.
       bannedSpecies: this.room?.special === 'banned' ? bannedSpeciesOf(this.run) : null,
+      // The living party's repeated types (§13): a type needs two living holders.
+      teamTypes: livingTeamTypes(this.run),
       // The berry tree's guardian forbids the flight (`runAway.ts`), unless an
       // escape effect (Run Away, the Smoke Ball) grants it.
       ...(extras.noFlee ? { noFlee: true } : {}),

@@ -22,6 +22,24 @@ export function memberTypes(member: RunPokemon): readonly string[] {
 }
 
 /**
+ * The types the player's **living** party repeats: a type is listed when at least
+ * two members whose `fighter.hp > 0` share it, in party order, deduped. A fainted
+ * member contributes nothing; the box is never read. `[]` for an empty party.
+ */
+export function livingTeamTypes(run: RunState): readonly string[] {
+  const holders = new Map<string, number>();
+  for (const member of run.party) {
+    if (member.fighter.hp <= 0) continue;
+    for (const type of new Set(memberTypes(member))) {
+      holders.set(type, (holders.get(type) ?? 0) + 1);
+    }
+  }
+  const repeated: string[] = [];
+  for (const [type, count] of holders) if (count >= 2) repeated.push(type);
+  return repeated;
+}
+
+/**
  * True when at least one **party** member has any of `types`. The box is not asked
  * (`docs/maps-spec.md` §7: "some Pokémon of the party"). The comparison is
  * case-insensitive on both sides, so `'grass'` and `'Grass'` are the same type. An
