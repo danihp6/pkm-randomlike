@@ -5,6 +5,9 @@ import {
   STATS_EM_DASH,
   STATS_FIGURE_IDS,
   STATS_MODES,
+  STATS_NARROW_QUERY,
+  figureRuleBox,
+  figureRuleLocal,
   liveStatsView,
   statsBoard,
   statsDate,
@@ -412,5 +415,110 @@ describe('statsBoard', () => {
     expect(board.panel).toEqual({ x: 8, y: 47, w: 374, h: 750, radius: 12 });
     expect(board.title).toEqual({ x: 153, y: 80, w: 83, h: 26 });
     expect(board.button).toEqual({ x: 95, y: 744, w: 200, h: 40 });
+  });
+});
+
+describe('the figures’ rule', () => {
+  it('carries the measured rule of frame 08 on the desk and m08 on the phone', () => {
+    expect(statsBoard('desktop').figureRule).toEqual({
+      x: 120,
+      y: 274,
+      w: 320,
+      h: 1,
+      colPitch: 360,
+      rowPitch: 88,
+      columns: 3,
+    });
+    expect(statsBoard('narrow').figureRule).toEqual({
+      x: 32,
+      y: 228,
+      w: 165,
+      h: 1,
+      colPitch: 169,
+      rowPitch: 62,
+      columns: 2,
+    });
+  });
+
+  it('steps the twelve boxes three per row on the desk', () => {
+    const board = statsBoard('desktop');
+
+    expect(Array.from({ length: 12 }, (_, index) => figureRuleBox(board, index))).toEqual([
+      { x: 120, y: 274, w: 320, h: 1 },
+      { x: 480, y: 274, w: 320, h: 1 },
+      { x: 840, y: 274, w: 320, h: 1 },
+      { x: 120, y: 362, w: 320, h: 1 },
+      { x: 480, y: 362, w: 320, h: 1 },
+      { x: 840, y: 362, w: 320, h: 1 },
+      { x: 120, y: 450, w: 320, h: 1 },
+      { x: 480, y: 450, w: 320, h: 1 },
+      { x: 840, y: 450, w: 320, h: 1 },
+      { x: 120, y: 538, w: 320, h: 1 },
+      { x: 480, y: 538, w: 320, h: 1 },
+      { x: 840, y: 538, w: 320, h: 1 },
+    ]);
+  });
+
+  it('steps the twelve boxes two per row on the phone', () => {
+    const board = statsBoard('narrow');
+
+    expect(Array.from({ length: 12 }, (_, index) => figureRuleBox(board, index))).toEqual([
+      { x: 32, y: 228, w: 165, h: 1 },
+      { x: 201, y: 228, w: 165, h: 1 },
+      { x: 32, y: 290, w: 165, h: 1 },
+      { x: 201, y: 290, w: 165, h: 1 },
+      { x: 32, y: 352, w: 165, h: 1 },
+      { x: 201, y: 352, w: 165, h: 1 },
+      { x: 32, y: 414, w: 165, h: 1 },
+      { x: 201, y: 414, w: 165, h: 1 },
+      { x: 32, y: 476, w: 165, h: 1 },
+      { x: 201, y: 476, w: 165, h: 1 },
+      { x: 32, y: 538, w: 165, h: 1 },
+      { x: 201, y: 538, w: 165, h: 1 },
+    ]);
+  });
+
+  it('clamps an index outside the twelve figures to the first box', () => {
+    const board = statsBoard('desktop');
+    const first = figureRuleBox(board, 0);
+
+    expect(figureRuleBox(board, -1)).toEqual(first);
+    expect(figureRuleBox(board, 12)).toEqual(first);
+    expect(figureRuleBox(board, 2.5)).toEqual(first);
+    expect(figureRuleBox(board, Number.NaN)).toEqual(first);
+  });
+
+  it('draws one rule per figure, under its value and never meeting the next row', () => {
+    for (const viewport of ['desktop', 'narrow'] as const) {
+      const board = statsBoard(viewport);
+      const columns = board.figureRule.columns;
+      const rows = STATS_FIGURE_IDS.length / columns;
+
+      for (let index = 0; index < STATS_FIGURE_IDS.length; index += 1) {
+        const row = Math.floor(index / columns);
+        const box = figureRuleBox(board, index);
+        const label = `${viewport} figure ${index}`;
+
+        expect(box.w, label).toBe(board.figureRule.w);
+        expect(box.h, label).toBe(1);
+        expect(box.y, label).toBeGreaterThanOrEqual(
+          board.figureValue.y + row * board.figureValue.pitch + board.figureValue.h,
+        );
+        if (row < rows - 1) {
+          expect(box.y + box.h, label).toBeLessThanOrEqual(
+            board.figureLabel.y + (row + 1) * board.figureLabel.pitch,
+          );
+        }
+      }
+    }
+  });
+
+  it('carries the rule in the figure block’s own coordinates, one box for every figure', () => {
+    expect(figureRuleLocal(statsBoard('desktop'))).toEqual({ x: 0, y: 44, w: 320, h: 1 });
+    expect(figureRuleLocal(statsBoard('narrow'))).toEqual({ x: 0, y: 50, w: 165, h: 1 });
+  });
+
+  it('reads the breakpoint the stylesheet switches its phone column at', () => {
+    expect(STATS_NARROW_QUERY).toBe('(max-width: 600px)');
   });
 });

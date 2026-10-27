@@ -12,24 +12,32 @@ handed.
 - `view.ts` — the panel's value model: `liveStatsView` (the totals, the run rows, the
   species aggregation and the monthly record, from the run-history store),
   `fixtureStatsView` (the frame's own copy and its structural guards), `statsMonths`,
-  both boards' rects, the slugs, the modes and the three formats (`statsDuration`,
+  both boards' rects and their `figureRule`, `figureRuleBox` / `figureRuleLocal`, the
+  narrow breakpoint, the slugs, the modes and the three formats (`statsDuration`,
   `statsDate`, `statsMonthLabel`, `statsDay`).
 - `view.test.ts` — the twelve totals figures and their em dashes, the run rows and their
   re-sort, the species aggregation and both sort orders, the month list, the selector's
-  clamp and fallback, the empty states, both boards and the purity checks, headless.
+  clamp and fallback, the empty states, both boards, the twelve rule boxes and the purity
+  checks, headless.
 - `statsPanel.tsx` — the panel itself: the card with its highlight and accent, the title
-  and blurb, the tab strip, the month chip, the figures grid, the table, the empty line
-  and the actions.
+  and blurb, the tab strip, the month chip, the figures grid with a rule node per figure,
+  the table with a rule node per row, the empty line and the actions; `statsPanelTree` is
+  the hook-free tree the panel paints, so the rules are read headless.
+- `statsPanel.test.ts` — the tree's rule nodes: one per figure with the board's own local
+  box at both widths, one as the last child of every row of every table mode, headless.
 - `stats.css` — the frames' measured geometry and paint, one scoped custom property per
-  board value, then the phone column under the 600 px breakpoint.
+  board value, the two rule nodes on `--stats-rule`, then the phone column under the
+  600 px breakpoint.
+- `stats.css.test.ts` — the stylesheet's half of the rule: the token's single declaration,
+  the two rule blocks, the relative figure block and the breakpoint, headless.
 - `mount.tsx` — `mountStats`: renders the panel into a host element, repaints it on
   `update`, and returns the handle the scene disposes.
 - `preview.ts` — `statsPreviewRequested` and `installStatsPreview`: the frame's panel
   behind `?hud=dom&hudFixture=<slug>`, one payload per slug.
 - `preview.test.ts` — `statsPreviewRequested`'s truth table, headless.
 - `fixture.test.ts` — the five fixtures against `design/frames/08`, `08b`, `08c`, `09`,
-  `09b` and the `m…` twins: the copy, the figures, the rows, the boards and the payload
-  guards.
+  `09b` and the `m…` twins: the copy, the figures, the rows, the boards, the figure rule
+  and the payload guards.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 
@@ -68,3 +76,9 @@ handed.
    not painted; its fixture keeps `empty: null`. The fixture's twelve figures carry the
    model's ids in the model's order and `08`'s own labels and values, which is what lets
    the frame be replayed while the ids stay the contract the live panel keys on.
+10. **The figure's rule is measured data.** `StatsBoard.figureRule` is the frames' own
+    `stat N rule` / `m rule …` rectangle, and `figureRuleBox` / `figureRuleLocal` are the
+    only arithmetic over it; the panel positions it inside `.stats__figure` for the board
+    the 600 px query picks and the stylesheet paints it from `--stats-rule`. The row rule
+    has no frame node (08b / 08c draw row cards): it is the same token flush with each
+    card's bottom edge. A new figure inherits the rule by being a figure.
