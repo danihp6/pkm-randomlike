@@ -4,6 +4,7 @@ import phoneFrame from '../../../../../design/frames/m04-starter-pick.json';
 import fixture from '../../../../../design/fixtures/04-starter-pick.json';
 import { getSpecies } from '../../../../data/dex';
 import { isHudState } from '../../fixtures';
+import { portraitCrop } from '../../portrait';
 import { fixtureStarterView, starterBoard } from './index';
 
 type Node = Readonly<{
@@ -105,6 +106,13 @@ describe('design/fixtures/04-starter-pick.json', () => {
       expect(card.types).toEqual(species!.types.map((type) => type.toLowerCase()));
     }
     expect(view!.cards[0]!.types).toEqual(['grass', 'poison']);
+  });
+
+  it('reads each card’s portrait cell from its own species', () => {
+    expect(view!.cards.map((card) => card.portrait)).toEqual(
+      view!.cards.map((card) => portraitCrop(card.speciesId)),
+    );
+    for (const card of view!.cards) expect(card.portrait).not.toBeNull();
   });
 
   it('pins the desktop board to the frame’s own rects', () => {

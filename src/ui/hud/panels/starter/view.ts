@@ -1,6 +1,7 @@
 import { getSpecies } from '../../../../data/dex';
 import { encodeRunShare, type RunMode } from '../../../../engine/run';
 import { t } from '../../../../i18n';
+import { portraitCrop, type PortraitCrop } from '../../portrait';
 
 /** The desk frame (`04`) and the phone one (`m04`); both draw this panel. */
 export const STARTER_SLUG = '04-starter-pick' as const;
@@ -16,6 +17,8 @@ export type StarterCardView = Readonly<{
   num: number;
   name: string;
   types: readonly string[];
+  /** The species' portrait cell, or null when the atlas names none (the box stays a box). */
+  portrait: PortraitCrop | null;
 }>;
 
 export type StarterView = Readonly<{
@@ -94,6 +97,7 @@ function cardView(speciesId: string): StarterCardView {
     num: species?.num ?? 0,
     name: species?.name ?? speciesId,
     types: species?.types ?? [],
+    portrait: portraitCrop(speciesId),
   };
 }
 
@@ -137,7 +141,7 @@ function fixtureCard(value: unknown): StarterCardView | null {
   if (!isNonEmpty(speciesId) || !isNonEmpty(name)) return null;
   if (typeof num !== 'number' || !Number.isInteger(num) || num < 0) return null;
   if (!isTypeList(types)) return null;
-  return { speciesId, num, name, types: [...types] };
+  return { speciesId, num, name, types: [...types], portrait: portraitCrop(speciesId) };
 }
 
 /** One card per entry, at least one; anything else is null. */

@@ -1,7 +1,15 @@
-import type { JSX } from 'preact';
+import type { CSSProperties, JSX } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { Panel, Row } from '../../kit';
+import { portraitBackground, type PortraitCrop } from '../../portrait';
 import type { MainMenuIntent } from './mount';
-import type { MainMenuRowId, MainMenuView } from './view';
+import {
+  MAIN_MENU_BOARD,
+  MAIN_MENU_BOARD_NARROW,
+  MAIN_MENU_NARROW_QUERY,
+  type MainMenuRowId,
+  type MainMenuView,
+} from './view';
 import './main-menu.css';
 
 export type MainMenuPanelProps = Readonly<{
@@ -21,9 +29,40 @@ function rowClass(selected: boolean): string {
   return selected ? 'main-menu__row-button main-menu__row-button--selected' : 'main-menu__row-button';
 }
 
+/** The board's phone column draws the same rows on the 390 × 844 frame. */
+function compactViewport(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(MAIN_MENU_NARROW_QUERY).matches;
+}
+
+/** Repaints when the panel crosses the breakpoint, so the inline portrait scale follows the box. */
+function useCompactViewport(): boolean {
+  const [compact, setCompact] = useState(compactViewport);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(MAIN_MENU_NARROW_QUERY);
+    const sync = (): void => setCompact(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  return compact;
+}
+
+/** The portrait cell's inline scale, or no background at all when the atlas names no cell. */
+function portraitStyle(portrait: PortraitCrop | null, box: number): CSSProperties | undefined {
+  if (portrait === null) return undefined;
+  const background = portraitBackground(portrait, box);
+  return { ...background };
+}
+
 export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
   const { view } = props;
   const handler = props.onIntent;
+  const compact = useCompactViewport();
+  const portraitBox = compact ? MAIN_MENU_BOARD_NARROW.portrait.size : MAIN_MENU_BOARD.portrait.size;
 
   const press = (id: MainMenuRowId): void => {
     if (handler === undefined) return;
@@ -38,6 +77,7 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
         data-hud-main-menu-portrait
         role="img"
         aria-label={portrait.name}
+        style={portraitStyle(portrait.portrait, portraitBox)}
       />
     ));
 

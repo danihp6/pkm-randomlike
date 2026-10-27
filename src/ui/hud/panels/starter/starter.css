@@ -17,7 +17,7 @@
   --starter-card-fill: rgb(16 22 31 / 72%);
   /* 04 · card highlight */
   --starter-highlight: rgb(255 255 255 / 14%);
-  /* 04 · portrait cell (a placeholder: the sprite pixels stay the canvas's) */
+  /* 04 · portrait cell fallback (the species' own atlas cell is drawn inline) */
   --starter-portrait-border: rgb(255 255 255 / 14%);
   --starter-portrait-fill: rgb(255 255 255 / 4%);
   /* 04 · starter title */
@@ -159,7 +159,7 @@
   box-shadow: 0 0 0 2px var(--hud-accent);
 }
 
-/* 04 · portrait *: the card's placeholder cell, at (66,46) from the card */
+/* 04 · portrait *: the species' own atlas cell, at (66,46) from the card */
 .starter__portrait {
   position: absolute;
   top: 46px;

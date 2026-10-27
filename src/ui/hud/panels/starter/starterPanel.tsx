@@ -1,23 +1,59 @@
-import type { JSX } from 'preact';
+import type { CSSProperties, JSX } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { Panel, TypeBadge } from '../../kit';
+import { portraitBackground, type PortraitCrop } from '../../portrait';
 import type { StarterIntent } from './mount';
-import type { StarterView } from './view';
+import { STARTER_NARROW_QUERY, type StarterView } from './view';
 import './starter.css';
+
+/** The portrait box the two boards draw: 128 px on the desk, 80 px on the phone (`starter.css`). */
+const PORTRAIT_BOX = 128;
+const PORTRAIT_BOX_NARROW = 80;
 
 export type StarterPanelProps = Readonly<{
   view: StarterView;
   onIntent?: ((intent: StarterIntent) => void) | undefined;
 }>;
 
+function compactViewport(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(STARTER_NARROW_QUERY).matches;
+}
+
+/** Repaints when the panel crosses the breakpoint, so the inline portrait scale follows the box. */
+function useCompactViewport(): boolean {
+  const [compact, setCompact] = useState(compactViewport);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(STARTER_NARROW_QUERY);
+    const sync = (): void => setCompact(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  return compact;
+}
+
+/** The portrait cell's inline scale, or no background at all when the atlas names no cell. */
+function portraitStyle(portrait: PortraitCrop | null, box: number): CSSProperties | undefined {
+  if (portrait === null) return undefined;
+  const background = portraitBackground(portrait, box);
+  return { ...background };
+}
+
 /**
- * The starter pick (`04` / `m04`): the title, the cards with their portrait
- * placeholders, names and type badges, the share line and the controls hint.
+ * The starter pick (`04` / `m04`): the title, the cards with their portraits,
+ * names and type badges, the share line and the controls hint.
  * A card is a real button, so Enter and Space are the browser's own click and
  * the scene's keybinds stay the only keyboard listener.
  */
 export function StarterPanel(props: StarterPanelProps): JSX.Element {
   const { view } = props;
   const send = props.onIntent;
+  const compact = useCompactViewport();
+  const portraitBox = compact ? PORTRAIT_BOX_NARROW : PORTRAIT_BOX;
 
   const intent = (next: StarterIntent): void => {
     if (send !== undefined) send(next);
@@ -45,7 +81,11 @@ export function StarterPanel(props: StarterPanelProps): JSX.Element {
                 onClick={() => intent({ type: 'choose', index })}
               >
                 <Panel class="starter__skin" />
-                <span class="starter__portrait" data-hud-starter-portrait />
+                <span
+                  class="starter__portrait"
+                  data-hud-starter-portrait
+                  style={portraitStyle(card.portrait, portraitBox)}
+                />
                 <span class="starter__name">{card.name}</span>
                 <span class="starter__badges">
                   {card.types.map((type) => (

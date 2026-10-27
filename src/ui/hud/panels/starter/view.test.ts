@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getSpecies } from '../../../../data/dex';
 import { encodeRunShare } from '../../../../engine/run';
 import { t } from '../../../../i18n';
+import { portraitCrop } from '../../portrait';
 import { liveStarterView } from './view';
 
 const SEED = 'pkm-147';
@@ -31,14 +32,26 @@ describe('liveStarterView', () => {
       num: 7,
       name: 'Squirtle',
       types: ['Water'],
+      portrait: portraitCrop('squirtle'),
     });
     expect(view.cards[1]!.types).toEqual(['Grass', 'Poison']);
+  });
+
+  it('points every card at its own atlas cell', () => {
+    const view = liveStarterView(POOL, 0, SEED, 'finite', HINT);
+
+    for (const card of view.cards) {
+      expect(card.portrait).toEqual(portraitCrop(card.speciesId));
+      expect(card.portrait).not.toBeNull();
+    }
   });
 
   it('keeps a species the dex does not know under its own id', () => {
     const view = liveStarterView(['missingno'], 0, SEED, 'finite', HINT);
 
-    expect(view.cards).toEqual([{ speciesId: 'missingno', num: 0, name: 'missingno', types: [] }]);
+    expect(view.cards).toEqual([
+      { speciesId: 'missingno', num: 0, name: 'missingno', types: [], portrait: null },
+    ]);
   });
 
   it('follows the cursor and clamps it into the cards', () => {
