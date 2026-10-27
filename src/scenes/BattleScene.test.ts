@@ -61,3 +61,23 @@ describe('returnToRoute', () => {
     expect(SOURCE).toContain('used: [...this.state.usedFighterIds],');
   });
 });
+
+/**
+ * The target step is scene wiring over an engine rule, so the seam is read from the
+ * source: `targetStepFor`'s four cases are covered by `src/engine/battle/commands.test.ts`,
+ * and the card's prompt row by the `battle-moves` panel's own tests.
+ */
+describe('the target step', () => {
+  it('asks the engine s own predicate once and keeps no copy of it', () => {
+    expect(SOURCE.match(/targetStepFor\(/g)).toHaveLength(1);
+    expect(SOURCE).toContain('  targetStepFor,\n');
+    expect(SOURCE).not.toContain('needsTargetStep');
+    expect(SOURCE).not.toContain('const SPREAD_TARGETS');
+  });
+
+  it('keeps the card open through the step and names the marked foe', () => {
+    expect(SOURCE).toContain("open: this.mode === 'moves' || this.mode === 'target',");
+    expect(SOURCE).toContain("this.mode === 'target' && this.targetSlot !== null");
+    expect(SOURCE).toContain("this.slotFighter('enemy', this.targetSlot)?.name ?? null");
+  });
+});

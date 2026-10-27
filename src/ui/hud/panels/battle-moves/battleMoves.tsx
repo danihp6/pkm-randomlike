@@ -154,6 +154,15 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
       hidden={!view.open}
       style={cardStyle(card)}
     >
+      {view.target === null ? null : (
+        <span
+          class="battle-moves__target"
+          data-hud-move-target
+          style={insetStyle(view.target.box, card)}
+        >
+          {view.target.label}
+        </span>
+      )}
       {view.slots.map((slot) => (
         <MoveSlot key={slot.index} slot={slot} card={card} onPress={() => emit(slotPressIntent(slot))} />
       ))}

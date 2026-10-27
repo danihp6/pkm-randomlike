@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  BattleMoves,
   MoveSlot,
   cardClass,
   infoEnterIntent,
@@ -8,7 +9,13 @@ import {
   type MoveSlotProps,
 } from './battleMoves';
 import type { BattleMovesIntent } from './mount';
-import type { BattleMoveSlotView, Rect } from './view';
+import { battleMovesView, type BattleMoveSlotView, type BattleMovesView, type Rect } from './view';
+
+// The card keeps one piece of state (the pinned ⓘ), so the panel is read as the
+// vnode tree it builds: the hook answers its initial value and never re-renders.
+vi.mock('preact/hooks', () => ({
+  useState: <T>(initial: T): [T, (next: T) => void] => [initial, () => {}],
+}));
 
 const CARD: Rect = { x: 276, y: 582, w: 728, h: 192 };
 
@@ -182,5 +189,65 @@ describe('the ⓘ hover', () => {
   it('asks for its own slot on enter and drops it on leave', () => {
     expect(infoEnterIntent(slot(2))).toStrictEqual({ type: 'info', moveIndex: 2 });
     expect(infoLeaveIntent()).toStrictEqual({ type: 'info', moveIndex: null });
+  });
+});
+
+/** The card's own vnode, as the props Preact will mount it with. */
+function cardProps(view: BattleMovesView): Record<string, unknown> {
+  return (BattleMoves({ view }) as unknown as Readonly<{ props: Record<string, unknown> }>).props;
+}
+
+/** Every node of a vnode tree carrying `data-hud-move-target`, at any depth. */
+function targetNodes(props: Record<string, unknown>): Record<string, unknown>[] {
+  const found: Record<string, unknown>[] = [];
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const entry of value) walk(entry);
+      return;
+    }
+    if (typeof value !== 'object' || value === null) return;
+    const node = value as Readonly<{ props?: Record<string, unknown> }>;
+    if (node.props === undefined) return;
+    if ('data-hud-move-target' in node.props) found.push(node.props);
+    walk(node.props.children);
+  };
+  walk(props.children);
+  return found;
+}
+
+/** The card's view at one target step state, from the model itself. */
+function cardView(target: string | null): BattleMovesView {
+  return battleMovesView({
+    open: true,
+    card: CARD,
+    cells: [],
+    selected: 0,
+    info: null,
+    mega: false,
+    gmax: false,
+    megaArmed: false,
+    gmaxArmed: false,
+    target,
+  });
+}
+
+describe('the target step s prompt row', () => {
+  it('paints exactly one node, carrying the model s label', () => {
+    const view = cardView('Pidgey');
+    const nodes = targetNodes(cardProps(view));
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]!.class).toBe('battle-moves__target');
+    expect(nodes[0]!['data-hud-move-target']).toBe(true);
+    expect(nodes[0]!.children).toBe(view.target!.label);
+    expect(nodes[0]!.style).toStrictEqual({
+      left: '20px',
+      top: '1px',
+      width: '688px',
+      height: '22px',
+    });
+  });
+
+  it('paints none while the step is closed', () => {
+    expect(targetNodes(cardProps(cardView(null)))).toHaveLength(0);
   });
 });

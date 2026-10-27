@@ -366,6 +366,7 @@ export const en = {
   'battle.command.switch': 'SWITCH',
   'battle.command.run': 'RUN',
   'battle.promptAction': 'What will {name} do?',
+  'battle.targetPrompt': 'Which foe? {name}',
   'battle.noItems': 'No items',
   'battle.mega': 'MEGA',
   'battle.megaIntent': 'MEGA +',

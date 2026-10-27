@@ -19,6 +19,7 @@ import {
   legalMoveIndices,
   replacementOwed,
   switchablePartyIndices,
+  targetStepFor,
   withLeadSlot,
   type Command,
 } from '../engine/battle/commands';
@@ -228,11 +229,6 @@ const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
 const SLOT_PANEL_GAP = 12;
 const FOE_PLATFORM_SPREAD = 96;
 const SLOT_PANEL_EDGE = 8;
-/**
- * The dex targets that skip the target step: they already hit every adjacent slot,
- * so asking which one would be a lie.
- */
-const SPREAD_TARGETS: ReadonlySet<string> = new Set(['allAdjacentFoes', 'allAdjacent', 'all']);
 /** The name row's height inside an HP panel, above the types band. */
 const PANEL_NAME_H = 32;
 /** How much bigger than the atlas frame a panel's type badge draws. */
@@ -2660,7 +2656,9 @@ export class BattleScene extends Phaser.Scene {
    * battle opens the target step, and every other move submits as it always has.
    */
   private chooseMove(slot: Slot, moveIndex: number): void {
-    if (this.needsTargetStep(slot, moveIndex)) {
+    const fighter = activeFighter(this.state, 'player', slot);
+    const move = getMove(fighter.moves[moveIndex]?.moveId ?? '') ?? null;
+    if (targetStepFor(this.state, 'player', move)) {
       this.openTargetStep(slot, moveIndex);
       return;
     }
@@ -2671,19 +2669,6 @@ export class BattleScene extends Phaser.Scene {
       ...(this.megaIntent ? { mega: true } : {}),
       ...(this.gmaxIntent ? { gmax: true } : {}),
     });
-  }
-
-  /**
-   * True when the picked move must ask which live foe it hits: a double battle
-   * with two standing foes, and a damaging move whose dex target is one slot.
-   */
-  private needsTargetStep(slot: Slot, moveIndex: number): boolean {
-    if (!this.double || this.liveFoeSlots().length < 2) return false;
-    const fighter = activeFighter(this.state, 'player', slot);
-    const move = getMove(fighter.moves[moveIndex]?.moveId ?? '');
-    if (!move || move.category === 'Status') return false;
-    if (move.target === 'self' || move.target === 'ally') return false;
-    return !SPREAD_TARGETS.has(move.target);
   }
 
   /** Opens the target step: the cursor marks the first live foe, ready to move. */
@@ -4292,7 +4277,11 @@ export class BattleScene extends Phaser.Scene {
     // the only card there is, and an open menu must still land somewhere.
     const card = derived.w > 0 && derived.h > 0 ? derived : menu;
     return {
-      open: this.mode === 'moves',
+      open: this.mode === 'moves' || this.mode === 'target',
+      target:
+        this.mode === 'target' && this.targetSlot !== null
+          ? (this.slotFighter('enemy', this.targetSlot)?.name ?? null)
+          : null,
       card,
       cells: padMoveGridCells(this.moveCells(), MAX_MOVES),
       selected: this.megaSelected || this.gmaxSelected ? -1 : this.menuIndex,

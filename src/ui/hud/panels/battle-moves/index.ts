@@ -11,6 +11,8 @@ export {
   MOVE_GRID_INSET,
   MOVE_INFO_SIZE,
   MOVE_MEGA_COL,
+  MOVE_TARGET_H,
+  MOVE_TARGET_TOP,
   battleMovesBox,
   battleMovesView,
   cellTextBoxes,

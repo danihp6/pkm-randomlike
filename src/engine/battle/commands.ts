@@ -9,6 +9,7 @@ import {
   activeFighter,
   finishBattle,
   isTrapped,
+  liveSlots,
   opponent,
   opponentOf,
   pushEvent,
@@ -313,6 +314,21 @@ export function validateCommand(state: BattleState, side: SideId, command: Comma
       if (!canRun(state, side)) return 'There is no running from a trainer battle.';
       return null;
   }
+}
+
+/**
+ * True when picking `move` on `side` owes the target step: a double battle whose
+ * opposing side still fields **two** standing slots, and a damaging move whose dex
+ * target is one slot (not a spread row, not `self`, not `ally`, not `Status`).
+ */
+export function targetStepFor(state: BattleState, side: SideId, move: Move | null): boolean {
+  if (!state.double) return false;
+  const foe = opponentOf(side);
+  const standing = liveSlots(state, foe).filter((slot) => activeFighter(state, foe, slot).hp > 0);
+  if (standing.length < 2) return false;
+  if (move === null || move.category === 'Status') return false;
+  if (SELF_TARGETS.has(move.target) || move.target === 'ally') return false;
+  return !SPREAD_TARGETS.has(move.target);
 }
 
 export function useBagItem(state: BattleState, side: SideId, itemId: string): boolean {
