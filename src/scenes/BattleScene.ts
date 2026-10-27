@@ -333,6 +333,20 @@ function moveIndexIn(value: number, count: number): number | null {
 /** Frames per second for the idle loop; Anil animates at roughly 30ms a frame. */
 const MON_ANIM_FPS = 30;
 /**
+ * The frame indices one sheet's idle loop draws: the manifest row's frames,
+ * clamped to the frames the loaded texture actually has. `0` available frames is
+ * a texture that never loaded (a tree without the pack), and answers an empty
+ * list so no animation is registered for it — a frame-less Phaser animation
+ * throws when it is played (`Animation.getFirstTick`).
+ */
+export function monIdleFrames(manifestFrames: number, textureFrameTotal: number): readonly number[] {
+  const wanted = Math.trunc(manifestFrames);
+  const available = Math.trunc(textureFrameTotal);
+  if (!Number.isFinite(wanted) || !Number.isFinite(available)) return [];
+  if (wanted < 1 || available < 1) return [];
+  return Array.from({ length: Math.min(wanted, available) }, (_, frame) => frame);
+}
+/**
  * The party (switch) detail popup: a wide window above the avatar grid for the
  * member under the cursor. No tabs: the five battle stats, nature, ability and
  * held item stack in a left column while the four moves sit in a 2x2 grid on the
@@ -2223,14 +2237,24 @@ export class BattleScene extends Phaser.Scene {
     return [...sheets.values()];
   }
 
-  /** One looping idle animation per loaded sheet, off the strip's own frame count. */
+  /**
+   * One looping idle animation per loaded sheet, off the strip's own frame count.
+   * The frames are clamped to the texture's real `frameTotal`: a sheet whose URL
+   * 404s (a tree without the pack) is absent from the texture cache and gets no
+   * animation at all, because a frame-less Phaser animation throws when played.
+   */
   private buildMonAnimations(): void {
     for (const sheet of this.battleSheets()) {
       const key = pokemonIdleAnimKey(sheet);
       if (this.anims.exists(key)) continue;
+      const available = this.textures.exists(sheet.textureKey)
+        ? this.textures.get(sheet.textureKey).frameTotal
+        : 0;
+      const frames = monIdleFrames(sheet.frames, available);
+      if (frames.length === 0) continue;
       this.anims.create({
         key,
-        frames: Array.from({ length: sheet.frames }, (_, frame) => ({ key: sheet.textureKey, frame })),
+        frames: frames.map((frame) => ({ key: sheet.textureKey, frame })),
         frameRate: MON_ANIM_FPS,
         repeat: -1,
       });
@@ -2268,6 +2292,7 @@ export class BattleScene extends Phaser.Scene {
       female: fighter.gender === 'female',
     });
     if (!sheet) return;
+    if (!this.textures.exists(sheet.textureKey)) return;
     const sprite = this.monSprite(side, slot);
     const anim = pokemonIdleAnimKey(sheet);
     const content = this.sheetContent(sheet);
@@ -2291,6 +2316,7 @@ export class BattleScene extends Phaser.Scene {
     if (content) sprite.setOrigin(content.anchorX / sheet.size, content.anchorY / sheet.size);
     else sprite.setOrigin(0.5, 0.5);
     sprite.setTexture(sheet.textureKey, 0).setScale(scale);
+    if (!this.anims.exists(anim)) return;
     sprite.play(anim);
   }
 
