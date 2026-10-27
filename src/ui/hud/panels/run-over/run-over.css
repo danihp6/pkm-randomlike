@@ -535,30 +535,6 @@
     left: 163px;
   }
 
-  /* m06 · the phone defeat frame has no tab strip and no party strip, so the card
-     is 44 px shorter and every row below the title moves up with it. */
-  .run-over[data-won='false'] .run-over__panel {
-    top: 140px;
-    height: 560px;
-  }
-
-  .run-over[data-won='false'] .run-over__tabs,
-  .run-over[data-won='false'] .run-over__portraits {
-    display: none;
-  }
-
-  .run-over[data-won='false'] .run-over__stats {
-    top: 110px;
-  }
-
-  .run-over[data-won='false'] .run-over__share {
-    top: 360px;
-  }
-
-  .run-over[data-won='false'] .run-over__actions {
-    top: 460px;
-  }
-
   /* m06 / m07 · board title and subtitle, centred in the card */
   .run-over__title {
     top: 34px;

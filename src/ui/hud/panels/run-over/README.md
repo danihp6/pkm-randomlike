@@ -8,12 +8,13 @@ this panel paints the view it is handed.
 
 ## Layout
 
-- `view.ts` — the panel's value model: `liveRunOverView` (the run summary's figures, the two tab
-  labels, the party strip and the party/box/rip rows), `fixtureRunOverView` (the frame's own copy
-  and its structural guards), both boards' rects, the slugs and the board's own chrome copy.
-- `view.test.ts` — the live title/blurb, the four figures, the em dash, the tab labels, the
-  party strip, the row order and every null column, both boards' rects and the purity check,
-  headless.
+- `view.ts` — the panel's value model: `liveRunOverView` (the run summary's four figures, the
+  member tallies of every party/box/rip row, the two tab labels and the party strip),
+  `fixtureRunOverView` (the frame's own copy and its structural guards), both boards' rects, the
+  slugs and the board's own chrome copy.
+- `view.test.ts` — the live title/blurb, the four tallied figures, the dash rule, the tab labels,
+  the party strip, the row order, the per-member columns, the defeat-free stylesheet, both boards'
+  rects and the purity check, headless.
 - `runOverPanel.tsx` — the panel itself: the card, its highlight and accent, the title and blurb,
   the party cells, the tabs, the stat rows with their rules, the share line, the POKéMON table and
   the one action (plus the frame's second, inert action).
@@ -31,12 +32,13 @@ this panel paints the view it is handed.
 
 ## Rules
 
-1. **Data honesty.** The run records no enemies-fainted counter and no per-member KOs, damage dealt
-   or damage taken, so `liveRunOverView` prints the em dash (`—`, U+2014) for enemies fainted and
-   `null` for all three row columns; the panel draws the em dash for a `null` cell. The frames'
-   numbers (`37`, `4,120`, `2,140`) exist only in `design/fixtures/` so the layout can be diffed —
-   no code derives, seeds or invents them. A later engine task must add the counters before a live
-   numeric column is possible; until then a live figure in that table is a bug.
+1. **Data honesty.** The board prints the run's own figures: `RunStats.faints` for the TOTALS
+   `fainted` row and each member's `kos` / `damage` / `damageTaken` for the POKéMON table, all
+   through the shared rule `recordedCount` + `figure()` in `src/ui/runSummary.ts` and
+   `view.ts`. The em dash (`—`, U+2014) marks a counter the run never recorded — an older save,
+   an absent or unreadable field — and never a recorded `0`, which prints `00`. The frames'
+   numbers (`37`, `4,120`, `2,140`) exist only in `design/fixtures/` so the layout can be diffed;
+   no code derives, seeds or invents them.
 2. The panel is data: no run, no scene, no RNG, no clock and no Phaser. It makes no i18n call, so
    every label it paints travels in the view — the tab strip, the four table headers, the member
    states (`runOver.col*`, `runOver.state*`) and the fainted row (`runOver.enemiesFainted`) come
@@ -47,8 +49,9 @@ this panel paints the view it is handed.
 4. `portraits` is read from the fixture's `payload.state.party` (and from `run.party` live), never
    from `rows`: the frame, not the payload, decides whether a strip is drawn — and a lost run has
    no party left, so `06` and `m06` draw none.
-5. The phone defeat frame (`m06`) carries no tab strip, so the narrow card hides it (and is 44 px
-   shorter) on a lost run; `07` / `07b` keep both tabs at every width. `won` is the only signal in
-   the view that separates the two phone boards.
+5. Both phone boards use the `m07` geometry: a lost card keeps the TOTALS / POKéMON tab strip and
+   the same height as a won one. `design/frames/m06-*` still draws a 560 px, tab-less defeat card
+   and stays the frozen design source the live screen now deliberately diverges from; `won` still
+   separates the two boards' copy and accent only.
 6. `07b`'s filter row (MOST KOs / MOST DAMAGE / MOST TANKED) is not drawn: the live screen has no
    sortable columns because it has no figures, and sorting is out of scope.
