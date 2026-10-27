@@ -284,8 +284,10 @@ export function typeInBagSearch(host: RoutePanelHost, event: KeyboardEvent): boo
   return true;
 }
 
-/** The card's line for a bag item: the catalogue's, or the run's own candy treat. */
-/** The drawn card's two lines: the item's English name (`D43`), then its localised body. */
+/**
+ * The drawn card's two lines: the item's English name (`D43`), then its body through
+ * `itemText`, or the run's own candy treat once its colour has been discovered.
+ */
 export function bagInfoFor(host: RoutePanelHost, itemId: string): string {
   const run = host.run();
   const item = getItem(itemId);
