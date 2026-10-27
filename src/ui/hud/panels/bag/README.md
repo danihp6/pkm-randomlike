@@ -18,7 +18,7 @@ one, mirrored from `src/scenes/panels/bag.ts`; the paint is the board's bag grou
 
 ## Rules
 
-1. The view is data: no scene, no run, no engine, no RNG, no save and no `src/data/**`. The prose arrives through `itemText` (`src/i18n/content.ts`), the same seam `t` is; the route scene module finalises the drawn card's body from the run (`bagInfoFor`, which prints a discovered candy's treat), so that override is what the screen shows. The atlas URL and the sprite offsets arrive through `BagTileView.icon`, so a test passes a stub.
+1. The view is data: no scene, no run, no engine, no RNG, no save and no `src/data/**`. The prose arrives through `itemText` (`src/i18n/content.ts`), the same seam `t` is; the route scene module finalises the drawn card's body from the run (`bagInfoFor`, whose body is `itemText`'s and whose discovered-candy branch prints the run's treat instead), so that override is what the screen shows. The atlas URL and the sprite offsets arrive through `BagTileView.icon`, so a test passes a stub.
 2. Every rect comes from the view, never from the stylesheet: `bag.css` paints and positions nothing the model already measured.
 3. The card's border is a real 1 px edge (the fidelity gate reads it), so the content layer sits at `inset: -1px` and the model's panel-relative rects land on the card's outer box.
 4. The description card is `position: fixed` and floats outside the card, exactly where the Phaser `InfoPopup` rides the HUD root; its height is its wrapped text with the model's box as the floor.

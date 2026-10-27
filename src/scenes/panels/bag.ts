@@ -12,6 +12,7 @@ import { keyLabel } from '../../data/keybinds';
 import type { BagCounts } from '../../engine/run';
 import { candyTreat } from '../../engine/run/items';
 import { t } from '../../i18n';
+import { itemText } from '../../i18n/content';
 import type { HudCommand } from '../../ui/hud/commands';
 import { parseHudFlags } from '../../ui/hud/fixtures';
 import {
@@ -284,12 +285,14 @@ export function typeInBagSearch(host: RoutePanelHost, event: KeyboardEvent): boo
 }
 
 /** The card's line for a bag item: the catalogue's, or the run's own candy treat. */
-function bagInfoFor(host: RoutePanelHost, itemId: string): string {
+/** The drawn card's two lines: the item's English name (`D43`), then its localised body. */
+export function bagInfoFor(host: RoutePanelHost, itemId: string): string {
   const run = host.run();
   const item = getItem(itemId);
   const name = item?.name ?? itemId;
+  const body = itemText(itemId) || item?.shortDesc || '';
   const colour = bagDiscoveredCandy(itemId, run.discoveredCandy);
-  if (colour === null) return `${name}\n${item?.shortDesc ?? ''}`;
+  if (colour === null) return `${name}\n${body}`;
   const treat = candyTreat(run.seed, colour);
   const delta = treat.delta > 0 ? '+1' : '-1';
   return `${name}\n${t('hud.candyKnown', { stat: statLabel(treat.stat), delta })}`;
