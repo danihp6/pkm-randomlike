@@ -133,6 +133,11 @@ export function audioCue(id: AudioCueId): AudioCue {
   return cue;
 }
 
+/** True when this checkout packed a row (or a hand row) for `id`. */
+export function hasAudioCue(id: AudioCueId): boolean {
+  return CUE_BY_ID.has(id);
+}
+
 /** True for the three music beds, false for the one-shot cues. */
 export function isMusic(id: AudioCueId): boolean {
   return audioCue(id).kind === 'music';

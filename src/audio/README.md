@@ -24,9 +24,11 @@ swapping the whole set for CC0 audio never touches a call site.
 The table's **order is the shipped order**: the six hand rows, then `hit`, then
 the move cues and the cry cues in id order. The rows come from the packed asset
 folder in one `import.meta.glob`: a cue whose file was never packed cannot be
-played, and `audioCue(id)` throws `unknown audio cue: <id>` for a typo. The
-folder is gitignored (`npm run assets:pack`), so a clone without the private
-store resolves every cue to the committed
+played, and `audioCue(id)` throws `unknown audio cue: <id>` for a typo. A cue this
+checkout never packed is **silence**, not an error — `hasAudioCue(id)` gates the
+three players `playCue`, `playCry` and `playMoveSound` — while an id with no row
+still throws for a caller. The folder is gitignored (`npm run assets:pack`), so a
+clone without the private store resolves every cue to the committed
 `src/assets/placeholders/audio/silence.wav` instead (`PLACEHOLDER_AUDIO_URL`):
 the game boots and plays nothing rather than failing its whole preload.
 

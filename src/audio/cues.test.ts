@@ -3,6 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { hasArt } from '../assets/art';
+import { cryCueFor } from '../data/audio';
+import criesData from '../data/audio/cries.json';
 import {
   AUDIO_CUES,
   AUDIO_CUE_IDS,
@@ -10,6 +12,7 @@ import {
   HIT_CUE_ID,
   audioCue,
   audioCueUrl,
+  hasAudioCue,
   isMusic,
   PLACEHOLDER_AUDIO_URL,
   type AudioCueId,
@@ -275,5 +278,45 @@ describe.skipIf(!hasArt('audio'))('audio cue assets', () => {
       const digest = createHash('sha256').update(readFileSync(path)).digest('hex');
       expect(digest, id).toBe(SHIPPED_CUE_SHA256[id]);
     }
+  });
+});
+
+// The cry table names a cue per species while a row exists only for a file this
+// checkout packed, so a clone without the rip names a cue the table cannot play:
+// that is silence, never a throw (Task-184, the pack-less battle).
+const NAMED_CRY_IDS: ReadonlySet<AudioCueId> = new Set(
+  Object.values(criesData as Readonly<Record<string, AudioCueId>>),
+);
+
+/** Whether the table carries a row for `id`, read without the predicate. */
+function packedCue(id: AudioCueId): boolean {
+  return AUDIO_CUE_IDS.includes(id);
+}
+
+describe('the cue table on a checkout without the pack', () => {
+  it('marks a hand row present, an unknown id absent and every packed row present', () => {
+    expect(hasAudioCue('faint')).toBe(true);
+    expect(hasAudioCue('cry-not-a-cry' as AudioCueId)).toBe(false);
+    expect(AUDIO_CUE_IDS.every((id) => hasAudioCue(id))).toBe(true);
+  });
+
+  it('still throws from audioCue for an id with no row', () => {
+    expect(() => audioCue('cry-not-a-cry' as AudioCueId)).toThrow('unknown audio cue: cry-not-a-cry');
+  });
+
+  it('answers false for every cry this checkout never packed, and throws for its row', () => {
+    expect(NAMED_CRY_IDS.size).toBeGreaterThan(0);
+    const packed = new Set<AudioCueId>(AUDIO_CUE_IDS);
+    const unpacked = [...NAMED_CRY_IDS].filter((id) => !packed.has(id));
+    for (const id of unpacked) {
+      expect(hasAudioCue(id), id).toBe(false);
+      expect(() => audioCue(id), id).toThrow(`unknown audio cue: ${id}`);
+    }
+  });
+
+  it('agrees with the table for the cry the battle announces', () => {
+    const cue: AudioCueId = cryCueFor('pidgey') ?? 'faint';
+    expect(cue).toBe('cry-pidgey');
+    expect(hasAudioCue(cue)).toBe(packedCue(cue));
   });
 });

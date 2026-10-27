@@ -8537,7 +8537,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/run-over/**`, `src/ui/runSummary.ts` + test and `src/i18n/{en,es}.ts`.
       *Dependencies:* `[Task-181]`. *(Batch 82)*
 
-- [ ] **[Task-184] A battle plays on a tree without the packed art.** Issue #50, residue 3.
+- [x] **[Task-184] A battle plays on a tree without the packed art.** Issue #50, residue 3.
       **Reproduced again on 2026-10-27** in a browser at `?hud=dom`: a wild battle launched from
       the dev menu raised `Cannot read properties of undefined (reading 'duration')` **twice in
       one session**, from `Animation.getFirstTick` — the symptom the issue recorded.

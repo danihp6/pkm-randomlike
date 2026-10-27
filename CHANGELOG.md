@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A battle plays on a tree without the packed art.** `[Task-184]`, the first of
+      Batch 81: the battle's mon idle animation is registered only for a sheet whose
+      texture really loaded and never longer than that texture's own `frameTotal`
+      (`monIdleFrames`), `showMon` skips a sheet that never loaded and guards the `play`,
+      and a cue this checkout never packed is silence — `hasAudioCue` gates `playCue`,
+      `playCry` and `playMoveSound` — so a clean clone with neither `public/anil/` nor
+      `src/assets/audio/` reaches the battle's four-command menu instead of throwing in
+      `Animation.getFirstTick` or `unknown audio cue: cry-pidgey`. `src/assets/README.md`
+      and `src/audio/README.md` state the two contracts, and `src/scenes/README.md` maps
+      the new `src/scenes/BattleScene.test.ts`. `npm test` 4569 passed / 69 skipped,
+      `npm run build` green; measured live over CDP on a genuinely pack-less worktree:
+      `mode` `'entry'` → `'menu'` at 1177 ms with `['FIGHT','BAG','SWITCH','RUN']`,
+      `game.loop.frame` advancing across every poll, zero `unknown audio cue` lines, and
+      both sprites drawing the procedural `battle:mon`.
+
 - [x] **The PC swaps only in the floor's entry room, and never as part of a catch.**
       `[Task-179]`, Batch 80 and the last task of the round: the party↔PC trade loses its
       second window and its conditional first one. `pcFullyEditable(run)` is now
