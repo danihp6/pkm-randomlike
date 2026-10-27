@@ -8517,6 +8517,14 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   `scripts/hud/diff.mjs`, `design/fixtures/**`, `src/ui/hud/fixtures/**` and the two design docs, none of
   which 86 touches. It cannot ride 86 because a correct gate is what decides whether 86's own prompt row
   is measured at 390 at all; its numbers, in turn, cut the panel tasks that follow it.
+- **Batches 88, 89 and 90 are the main menu and the HUD's own default (2026-10-27).** Seen in the browser
+  beside `design/screens/01-main-menu.png`: the menu's route window is a frame with nothing behind it, and
+  its three records and version line are hard-coded empty (`liveMainMenuView`). `[Task-198]` (the live
+  route with walkers) and `[Task-199]` (the records and the version) both rewrite
+  `src/ui/hud/panels/main-menu/**` and `src/scenes/MainMenuScene.ts`, so they run **serially** — 88 then
+  89. `[Task-200]` retires the canvas panel layer and mounts the DOM HUD unconditionally; it claims every
+  scene, so it opens its own batch behind them (90) and its own entry lists what only the canvas layer
+  carried. The three were cut from the same measurement, so 87's gate is what closes them.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8808,7 +8816,9 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       registry}.ts` + tests, `src/ui/hud/panels/{missions,notices}/**`, `src/scenes/RouteScene.ts`,
       `src/i18n/{en,es}.ts` and the four docs.
       *Dependencies:* none technical. Unscheduled: it takes the **i18n pair** and `SAVE_VERSION`, so it
-      opens a batch of its own when the human frees it.
+      opens a batch of its own when the human frees it. Its answer (b) — a canvas pane — is superseded by
+      `[Task-200]`: once the canvas panel layer retires, the mission is a DOM panel and its chip comes from
+      the inventory 200 closes with.
 
 - [ ] **[Task-195] A special NPC stands against a wall, with its back to it.** Asked by the human on
       `2026-10-27`. `npcSpot` (`src/engine/routes/npcs.ts` 166-190) picks **any** free walkable tile: it
@@ -8903,6 +8913,95 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `scripts/hud/diff.mjs` + its test, `design/fixtures/**`, `src/ui/hud/fixtures/**` + tests,
       `docs/hud-fidelity.md` and `docs/hud-dom-proposal.md` §11.
       *Dependencies:* none. *(Batch 87)*
+
+- [ ] **[Task-198] The main menu's route window shows a live route with Pokémon wandering in it.**
+      Decided by the human on `2026-10-27` after seeing the real screen beside the board's `01`: the
+      window is a **frame with nothing behind it**. `src/ui/hud/panels/main-menu/view.ts` gives it its
+      rect (`window: { x: 96, y: 150, w: 560, h: 380 }`, compact `{ x: 16, y: 126, w: 358, h: 240 }`),
+      the panel paints the frame, and no `routePreview` exists anywhere in `src` — `MainMenuScene` draws
+      no route — so the one screen the board fills with grass, trees and flowers is black in the game.
+      **Fix shape (the human's answer, frozen):** a route built from a **random seed on each boot**
+      (`randomSeed()`), drawn with the first map's biome tileset inside the window's rect, with **two or
+      three Pokémon wandering it at random**. It is decoration and nothing else: no encounters, no player,
+      no input, no save write, and it never reads the run's seed — `D11` makes the *run* reproducible,
+      and this preview is the one screen allowed to differ per visit, which `docs/tech-decisions.md`
+      records as a decision rather than an omission. The preview is a pure model: `previewRoute(seed)`
+      returns the room its window shows (a generated `RouteMap` narrowed to the window's size) and
+      `previewWalkers(seed)` the walkers with their starting tiles, both in one module the canvas path and
+      the fixture frame read, so the two renderings cannot drift; a walker's step is a timer picking one
+      walkable cardinal neighbour inside the room, and nothing allocates per frame.
+      **Docs:** `docs/design-spec.md` §2 (the menu's route window) and `docs/tech-decisions.md` (the
+      preview's seed is decorative and random on purpose, never the run's).
+      **Tests:** `[unit]` `previewRoute(seed)` is deterministic for one seed, returns only walkable tiles
+      and its rect equals the view's window at both widths; `[unit]` `previewWalkers(seed)` returns two or
+      three walkers whose every step stays walkable and inside the room, and the same seed replays the
+      same walk; `[live]` the main menu shows a route with at least two Pokémon moving, opening the menu
+      twice in one session draws the same preview, a reload draws another, and at 390×844 the walkers
+      never leave the window.
+      Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test,
+      `src/engine/routes/**` (the preview's generator seam) + test, `docs/design-spec.md` §2 and
+      `docs/tech-decisions.md`.
+      *Dependencies:* none. *(Batch 88)*
+
+- [ ] **[Task-199] The main menu prints its three records and its version.** The board's `01-main-menu`
+      carries `WINS 23`, `MAX ELITE STRIKE 2` and `MONTHLY MAX STRIKE 7 · NOVA`, plus the
+      `V0.7.0 · PHASE 7` line at (1065, 750); the live screen draws **none** of them, because
+      `liveMainMenuView` (`src/ui/hud/panels/main-menu/view.ts`) returns `version: null` and `stats: []`
+      written by hand — the data is not missing, the view never looks for it. The panel already has the
+      geometry (`MAIN_MENU_FOOTER`'s three blocks, the version box) and the fixture proves the design; the
+      data exists since `[Task-181]`: `SaveDocument.history` holds one `RunHistoryRecord` per finished run
+      (`seed`, `mapReached`, `won`, `endedAt`, `playtimeMs`), and `src/ui/hud/panels/stats/view.ts` (436)
+      already computes wins and the best floor from the same list. **Fix shape:** one pure helper, shared
+      with the stats panel, returns the three values — `wins` = records with `won`, `elite` = the deepest
+      `mapReached` of a finite run, `monthly` = the deepest of the current month with the record's own
+      label beside it — and `liveMainMenuView` takes that plus the build's version (`v<package version> ·
+      PHASE <n>`) instead of the two literals. The board's numbers are **accepted fiction**
+      (`figma-handoff`'s "Datos de relleno"); what the task fixes is the block, never the 23. **Docs:**
+      `docs/design-spec.md` §2 (what the menu's footer counts) and `docs/hud-fidelity.md` §9 (the footer's
+      blocks and their wraps).
+      **Tests:** `[unit]` the helper on a hand-built history returns the three values, ignores an
+      infinite-mode run for `elite` and a run outside the month for `monthly`; `[unit]` `liveMainMenuView`
+      with a history prints the three rows and the version, and with an empty one prints `0` and the
+      labels, never a blank; `[live]` finish a run and come back: WINS moves by one, `elite` follows the
+      floor reached and the version line reads.
+      Claims `src/ui/hud/panels/main-menu/**` + tests, `src/ui/hud/panels/stats/view.ts` (the shared
+      helper), `src/scenes/MainMenuScene.ts` + test, `docs/design-spec.md` §2 and `docs/hud-fidelity.md` §9.
+      *Dependencies:* none. *(Batch 89)*
+
+- [ ] **[Task-200] The DOM HUD is the HUD, and the canvas panel layer retires.** Decided by the human on
+      `2026-10-27` after seeing the same build twice at 1280×800, in the browser: **without a flag the game
+      draws the Phaser HUD** — the FRLG bitmap font, its own SETTINGS screen, its own route panels, no
+      records in the menu — while **`?hud=dom`** draws the board's (`02-options` measures 0.08 % of pixels
+      and flat ΔE 0.17 against `design/screens/02-options.png`, and its settings screen is the two-column
+      page with the KEYBINDS column). Every screen migrated in Phase 12 still keeps its canvas path alive
+      behind `DOM_HUD` / `parseHudFlags(search).dom` (`src/ui/hud/mount.ts`,
+      `src/ui/hud/fixtures/flags.ts`, and each scene's `if (DOM_HUD) … else this.draw()`), so the HUD the
+      phase shipped is only reachable by typing `?hud=dom`, and no player ever sees it.
+      **Fix shape:** the DOM layer mounts unconditionally, and each scene's canvas chrome path is **deleted**
+      rather than left behind a branch: `MainMenuScene`, `StarterScene`, `RouteScene`, `BattleScene`,
+      `RunOverScene`, `SettingsScene` and the stats screen, with `src/scenes/panels/**` and the HUD frame
+      machinery out of the render path. `?hud=dom` and `?hudFixture=<slug>` keep working as the debug
+      aliases they become, so the fixture gate of `[Task-197]` is not broken. **The consequence is
+      inventoried, never hidden:** the canvas layer is the only carrier of the collapse chip, the drag
+      with clamp and the saved slot (`src/data/hudLayout.ts`, `src/scenes/panels/hud.ts`), and the board's
+      `03c Panels — compress` says the compressed state exists — so the task closes with the list of what
+      goes away and the decision that replaces it, and the DOM parity of that behaviour is cut as its own
+      task from that list rather than assumed.
+      **Docs:** `docs/tech-decisions.md` (`D49` amended: the flag retires, the DOM is the HUD),
+      `docs/hud-dom-proposal.md` §13 (what the migration leaves behind), `src/scenes/README.md` and
+      `src/ui/README.md`.
+      **Tests:** `[unit]` `parseHudFlags('')` reads `dom: true` and `?hudFixture=02-options` still resolves
+      its slug; `[unit]` each scene's `create` with no query string mounts its DOM panel and draws no
+      chrome text object (the dev-read pattern the scenes already use, flipped from "0 under `?hud=dom`");
+      `[live]` a clean boot at 1280×800 and at 390×844: the menu, the settings screen and a route each show
+      the board's panels in Silkscreen, PARTY opens on the route, and the same URLs with `?hud=dom` still
+      render.
+      Claims `src/main.ts`, `src/ui/hud/{mount.ts,shell.tsx}` + tests, `src/ui/hud/fixtures/**` + tests,
+      `src/scenes/*.ts` (every scene whose canvas path goes), `src/scenes/panels/**`,
+      `src/data/hudLayout.ts` + test, `docs/tech-decisions.md`, `docs/hud-dom-proposal.md` §13 and the two
+      folder READMEs.
+      *Dependencies:* `[Task-198]` and `[Task-199]` — they rewrite the same menu scene's DOM path, so they
+      ship first and this task deletes the canvas path they left alone. *(Batch 90)*
 
 ---
 
