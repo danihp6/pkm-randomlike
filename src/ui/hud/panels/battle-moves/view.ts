@@ -57,10 +57,6 @@ const ELLIPSIS = '\u2026';
 const CATEGORY_LABELS: readonly string[] = ['PHYSICAL', 'SPECIAL', 'STATUS'];
 /** The category column: the widest label's own drawn px, so none of the three can spill. */
 const CATEGORY_W = Math.max(...CATEGORY_LABELS.map((label) => Math.ceil(drawnTextWidth(label))));
-/** The type chip's own padding, from `.kit-type`'s `padding: 0 6px`. */
-const TYPE_CHIP_PAD = 6;
-/** The type chip's text size, `--hud-type-tag-size` in `styles/root.css`. */
-const TAG_SIZE = 8;
 /** The slot's own column gap, from `.battle-moves__slot`'s `gap: 0 8px`. */
 const CELL_GAP = 8;
 /** The cell's own padding, from `.battle-moves__slot`: 8 px down, 14 px in on each side. */
@@ -179,7 +175,7 @@ export type BattleMoveSlotView = Readonly<{
   enabled: boolean;
   selected: boolean;
   box: Rect;
-  /** The name column: past the type chip, a gap left of the category column. */
+  /** The cell's first line: from its side padding to a gap left of the category column. */
   nameBox: Rect;
   /** The category column: it ends left of the ⓘ by at least its gap. */
   categoryBox: Rect;
@@ -247,18 +243,15 @@ function categoryBoxOf(box: Rect, info: Rect): Rect {
   return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
 }
 
-/** The type chip's box: its uppercased label at the tag size plus its own padding. */
-function typeChipWidth(type: string): number {
-  return Math.ceil(drawnTextWidth(type.toUpperCase(), TAG_SIZE)) + TYPE_CHIP_PAD * 2;
-}
-
 /**
- * The name column: it starts past the type chip and ends a gap left of the category
- * column. A cell too narrow to hold both collapses it to zero rather than letting the
- * name paint over the category or under the ⓘ; the ⓘ card carries the full name.
+ * The name column: the cell's own first line, from its side padding to a gap left
+ * of the category column — one count of each, so the ⓘ and the category take only
+ * the width they are drawn in. The type chip sits beside the stat block on the
+ * lines below (`battleMoves.css`), never on this one, so a long type name cannot
+ * charge the move's name for its own label.
  */
-function nameBoxOf(box: Rect, category: Rect, chip: number): Rect {
-  const left = box.x + CELL_PAD_X + chip + CELL_GAP;
+function nameBoxOf(box: Rect, category: Rect): Rect {
+  const left = box.x + CELL_PAD_X;
   const right = category.x - CELL_GAP;
   return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
 }
@@ -302,7 +295,7 @@ function slotView(
     h: INFO_SIZE,
   };
   const categoryBox = categoryBoxOf(box, info);
-  const nameBox = nameBoxOf(box, categoryBox, typeChipWidth(cell.type));
+  const nameBox = nameBoxOf(box, categoryBox);
   return {
     index,
     empty: false,

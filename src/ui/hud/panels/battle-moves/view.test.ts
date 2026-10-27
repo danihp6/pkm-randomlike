@@ -130,15 +130,25 @@ describe('drawnTextWidth', () => {
     expect(drawnTextWidth('PHYSICAL')).toBe(drawnTextWidth('PHYSICAL', body));
   });
 
-  it('measures the type chip at the tag size the stylesheet declares', () => {
-    const tag = cssSize(ROOT_CSS, '--hud-type-tag-size');
-    expect(tag).toBe(8);
+  it('charges the name for nothing but its own line', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
-    expect(slot.type).toBe('fire');
-    // 14 px of padding, the chip's own label at the tag size plus its 6 px sides, the 8 px gap.
-    expect(slot.nameBox.x - slot.box.x).toBe(
-      CELL_PAD_X + Math.ceil(drawnTextWidth('FIRE', tag)) + 12 + 8,
-    );
+    expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
+    expect(slot.nameBox.y).toBe(slot.categoryBox.y);
+    expect(slot.nameBox.w).toBe(96);
+    // The type's own label (36–60 px, one per type) never enters the name's column.
+    const shortType = battleMovesView(
+      inputOf({
+        card: battleMovesBox(DESKTOP),
+        cells: padMoveGridCells([moveCell('X', { type: 'ice' })], 4),
+      }),
+    ).slots[0]!;
+    const longType = battleMovesView(
+      inputOf({
+        card: battleMovesBox(DESKTOP),
+        cells: padMoveGridCells([moveCell('X', { type: 'electric' })], 4),
+      }),
+    ).slots[0]!;
+    expect(longType.nameBox.w).toBe(shortType.nameBox.w);
   });
 });
 
@@ -478,15 +488,26 @@ const LONG_GRID: readonly MoveGridSlot[] = padMoveGridCells(
 );
 
 describe('a move cell s own text', () => {
-  it('fits its name, its category and the ⓘ s clearance in the 1280×800 cell', () => {
+  it('takes the cell s remaining width, and keeps all but the long name whole at 1280×800', () => {
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
     expect(view.slots).toHaveLength(4);
+    // 222 px cell: 2×14 padding, the 60 px category column, its two 8 px gaps and the 22 px ⓘ.
+    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 60 - 16 - 22);
     for (const slot of view.slots) {
       expect(slot.empty).toBe(false);
+      expect(slot.nameBox.w).toBeGreaterThanOrEqual(54);
       expectCellFits(slot);
     }
-    expect(view.slots[0]!.name).toBe('MOFLE\u2026');
-    expect(view.slots[0]!.name.endsWith('\u2026')).toBe(true);
+    expect(view.slots.map((slot) => slot.name)).toStrictEqual([
+      'MOFLETE ESTÁ\u2026',
+      'LANZALLAMAS',
+      'TERREMOTO',
+      'PSÍQUICO',
+    ]);
+    // The one cut name loses only its last two glyphs to the ellipsis.
+    const head = view.slots[0]!.name.slice(0, -1);
+    expect(head.length).toBeGreaterThanOrEqual(9);
+    expect('MOFLETE ESTÁTICO'.startsWith(head)).toBe(true);
     const pinned = battleMovesView(
       inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID, info: 0 }),
     );
@@ -499,6 +520,23 @@ describe('a move cell s own text', () => {
       expect(card.w).toBeLessThan(BATTLE_COMPACT);
       const view = battleMovesView(inputOf({ card, cells: LONG_GRID }));
       for (const slot of view.slots) expectCellFits(slot);
+    }
+  });
+
+  it('reports the phone card s own budget: the category and the ⓘ take its whole content box', () => {
+    const view = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID }));
+    for (const slot of view.slots) {
+      const info = slot.info!;
+      // 119 px cell: 2×14 padding leaves 91, and the 60 px category column, its 8 px
+      // gap and the 22 px ⓘ take 90 of them — one pixel, so the name paints nothing
+      // and the ⓘ card is where its whole text stays readable.
+      expect(info.x + info.w).toBe(slot.box.x + slot.box.w - 14);
+      expect(slot.categoryBox.w).toBe(60);
+      expect(slot.categoryBox.x + slot.categoryBox.w).toBe(info.x - MOVE_CATEGORY_GAP);
+      expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
+      expect(slot.nameBox.w).toBeLessThanOrEqual(1);
+      expect(slot.name).toBe('');
+      expectCellFits(slot);
     }
   });
 
@@ -528,7 +566,7 @@ describe('a move cell s own text', () => {
   it('paints the name in the case the slot paints it, and keeps the full one for the ⓘ', () => {
     const cells = padMoveGridCells([moveCell('Moflete Estático', { category: 'Physical' })], 4);
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells, info: 0 }));
-    expect(view.slots[0]!.name).toBe('MOFLE\u2026');
+    expect(view.slots[0]!.name).toBe('MOFLETE ESTÁ\u2026');
     expect(view.info!.title).toBe('Moflete Estático');
   });
 });
