@@ -37,6 +37,9 @@ export type StatsAction = Readonly<{ id: StatsActionId; label: string }>;
 export type StatsMonth = Readonly<{ key: string; label: string }>;
 export type StatsRect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
+/** The breakpoint `stats.css` switches its phone column at; the panel reads it. */
+export const STATS_NARROW_QUERY = '(max-width: 600px)';
+
 export type StatsBoard = Readonly<{
   panel: Readonly<{ x: number; y: number; w: number; h: number; radius: number }>;
   title: StatsRect;
@@ -44,6 +47,20 @@ export type StatsBoard = Readonly<{
   tabs: readonly Readonly<{ id: StatsMode; x: number; y: number; w: number; h: number }>[];
   figureLabel: Readonly<{ x: number; y: number; w: number; h: number; pitch: number }>;
   figureValue: Readonly<{ x: number; y: number; w: number; h: number; pitch: number }>;
+  /**
+   * Where each figure's rule sits: one on every figure of the TOTALS grid, in page
+   * coordinates at the board's own width. `columns` is the grid's column count,
+   * `colPitch` / `rowPitch` the pitch between two figures.
+   */
+  figureRule: Readonly<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    colPitch: number;
+    rowPitch: number;
+    columns: number;
+  }>;
   row: Readonly<{ x: number; y: number; w: number; h: number; pitch: number }>;
   button: StatsRect;
 }>;
@@ -93,6 +110,7 @@ const DESKTOP_BOARD: StatsBoard = {
   ],
   figureLabel: { x: 120, y: 230, w: 320, h: 16, pitch: 88 },
   figureValue: { x: 260, y: 228, w: 180, h: 31, pitch: 88 },
+  figureRule: { x: 120, y: 274, w: 320, h: 1, colPitch: 360, rowPitch: 88, columns: 3 },
   row: { x: 120, y: 230, w: 1040, h: 54, pitch: 62 },
   button: { x: 540, y: 650, w: 200, h: 40 },
 };
@@ -109,6 +127,7 @@ const NARROW_BOARD: StatsBoard = {
   ],
   figureLabel: { x: 32, y: 178, w: 82, h: 12, pitch: 62 },
   figureValue: { x: 32, y: 196, w: 40, h: 20, pitch: 62 },
+  figureRule: { x: 32, y: 228, w: 165, h: 1, colPitch: 169, rowPitch: 62, columns: 2 },
   row: { x: 32, y: 267, w: 334, h: 56, pitch: 62 },
   button: { x: 95, y: 744, w: 200, h: 40 },
 };
@@ -116,6 +135,31 @@ const NARROW_BOARD: StatsBoard = {
 /** Both boards' measured rects, for the fixture test and the diff. */
 export function statsBoard(viewport: 'desktop' | 'narrow'): StatsBoard {
   return viewport === 'narrow' ? NARROW_BOARD : DESKTOP_BOARD;
+}
+
+/** The rule box of the figure at `index` (0 … 11), in page coordinates. */
+export function figureRuleBox(board: StatsBoard, index: number): StatsRect {
+  const rule = board.figureRule;
+  const at = Number.isInteger(index) && index >= 0 && index < STATS_FIGURE_IDS.length ? index : 0;
+  return {
+    x: rule.x + (at % rule.columns) * rule.colPitch,
+    y: rule.y + Math.floor(at / rule.columns) * rule.rowPitch,
+    w: rule.w,
+    h: rule.h,
+  };
+}
+
+/**
+ * The same box in the figure block's own coordinates (what the panel positions
+ * inside `.stats__figure`): the rule is identical for every figure of a board.
+ */
+export function figureRuleLocal(board: StatsBoard): StatsRect {
+  return {
+    x: 0,
+    y: board.figureRule.y - board.figureLabel.y,
+    w: board.figureRule.w,
+    h: board.figureRule.h,
+  };
 }
 
 const MONTH_KEYS: readonly TranslationKey[] = [

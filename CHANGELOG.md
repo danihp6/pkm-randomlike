@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every stat prints the rule the board draws under it.** `[Task-204]`, the fourth of
+      Batch 86: the stats screens printed their figures with no line under them while the board
+      draws one per figure and `stats.css` already carried the `--stats-rule` token (1 px, white
+      at 8 %). `StatsBoard.figureRule` and its `figureRuleBox` / `figureRuleLocal` helpers now
+      place the rule under every figure from the frames' own measured nodes — 320 px wide at x
+      120 / 480 / 840 with an 88 px row pitch on the desk, 165 px at x 32 / 201 with a 62 px
+      pitch on the phone — and every row of the run list and the Pokémon table carries its own
+      flush `stats__row-rule`, so a new figure inherits the rule by being a figure and the alpha
+      is the token's, not a per-panel invention. `docs/hud-fidelity.md` §6 records the numbers.
+      Gates: `npm test` 4764 passed / 69 skipped at task QA, `npm run build` green. Measured live
+      over CDP at both widths: 12 figures carry 12 rules of `height 1px` and
+      `rgba(255,255,255,0.08)`, each rule's top at or below its value's bottom and above the next
+      row, and 6/6 table rows carry a rule whose left and bottom equal the row's own.
+
 - [x] **The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
       `[Task-202]`, the third of Batch 86, fixes three defects of one panel seen with `?hud=dom`:
       every row painted an empty portrait cell, a row was only a click, and the HP fill started

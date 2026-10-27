@@ -284,6 +284,20 @@
   white-space: nowrap;
 }
 
+/* 08 · the rule under every figure's value, and under every row card's numbers */
+.stats__figure-rule,
+.stats__row-rule {
+  position: absolute;
+  height: 1px;
+  background: var(--stats-rule);
+}
+
+.stats__row-rule {
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
 /* 08b / 08c / 09 · the table: headers, then one card per row */
 .stats__table {
   position: absolute;

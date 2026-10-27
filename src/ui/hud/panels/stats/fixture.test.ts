@@ -91,6 +91,18 @@ function groupCount(frame: Frame, prefix: string): number {
   return nodesOf(frame.text).filter((node) => (node.name ?? '').startsWith(prefix)).length;
 }
 
+/** How many geometry nodes named like `match` sit on the row at `y`: the grid's column count. */
+function rulesOnRow(frame: Frame, match: RegExp, y: number): number {
+  return nodesOf(frame.geometry).filter(
+    (node) => match.test(node.name ?? '') && node.properties?.y === y,
+  ).length;
+}
+
+/** How many geometry nodes the frame draws with a name like `match`: one per figure. */
+function ruleCount(frame: Frame, match: RegExp): number {
+  return nodesOf(frame.geometry).filter((node) => match.test(node.name ?? '')).length;
+}
+
 /** The month chip's label without its arrows and double spaces: `‹  OCT 2026  ›` -> `OCT 2026`. */
 function monthLabelOf(frame: Frame): string {
   return textOf(frame, 'month label')
@@ -225,6 +237,49 @@ describe('design/fixtures/08-stats-totals.json', () => {
       h: first.h,
       pitch: second.y - first.y,
     });
+  });
+
+  it('pins the desk’s figure rule to the frame’s own stat N rule rectangles', () => {
+    const rule = statsBoard('desktop').figureRule;
+    const first = rectOf(frame, 'stat 0 rule');
+    const second = rectOf(frame, 'stat 1 rule');
+    const nextRow = rectOf(frame, 'stat 3 rule');
+
+    expect(ruleCount(frame, /^stat \d+ rule$/)).toBe(12);
+    expect(rule).toEqual({
+      x: first.x,
+      y: first.y,
+      w: first.w,
+      h: first.h,
+      colPitch: second.x - first.x,
+      rowPitch: nextRow.y - first.y,
+      columns: rulesOnRow(frame, /^stat \d+ rule$/, first.y),
+    });
+    expect(rule.columns).toBe(3);
+    expect(rule.colPitch).toBe(360);
+    expect(rule.rowPitch).toBe(88);
+  });
+
+  it('pins the phone’s figure rule to the frame’s own m rule rectangles', () => {
+    const phone = phoneTotalsFrame as Frame;
+    const rule = statsBoard('narrow').figureRule;
+    const first = rectOf(phone, 'm rule RUNS PLAYED');
+    const second = rectOf(phone, 'm rule WINS');
+    const nextRow = rectOf(phone, 'm rule ROUTES CLEARED');
+
+    expect(ruleCount(phone, /^m rule /)).toBe(12);
+    expect(rule).toEqual({
+      x: first.x,
+      y: first.y,
+      w: first.w,
+      h: first.h,
+      colPitch: second.x - first.x,
+      rowPitch: nextRow.y - first.y,
+      columns: rulesOnRow(phone, /^m rule /, first.y),
+    });
+    expect(rule.columns).toBe(2);
+    expect(rule.colPitch).toBe(169);
+    expect(rule.rowPitch).toBe(62);
   });
 });
 

@@ -1,13 +1,55 @@
-import type { JSX } from 'preact';
+import type { CSSProperties, JSX } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { Panel } from '../../kit';
 import type { StatsIntent } from './mount';
-import type { StatsActionId, StatsMode, StatsRow, StatsView } from './view';
+import {
+  STATS_NARROW_QUERY,
+  figureRuleLocal,
+  statsBoard,
+  type StatsActionId,
+  type StatsBoard,
+  type StatsMode,
+  type StatsRow,
+  type StatsView,
+} from './view';
 import './stats.css';
 
 export type StatsPanelProps = Readonly<{
   view: StatsView;
   onIntent?: ((intent: StatsIntent) => void) | undefined;
 }>;
+
+function compactViewport(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(STATS_NARROW_QUERY).matches;
+}
+
+/** Repaints when the panel crosses the breakpoint, so the rule follows the board it lays out. */
+function useCompactViewport(): boolean {
+  const [compact, setCompact] = useState(compactViewport);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    const query = window.matchMedia(STATS_NARROW_QUERY);
+    const sync = (): void => setCompact(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
+  return compact;
+}
+
+/** The figure block's own rule box, as the inline style the panel positions it with. */
+function ruleStyleOf(board: StatsBoard): CSSProperties {
+  const rule = figureRuleLocal(board);
+  return {
+    left: `${rule.x}px`,
+    top: `${rule.y}px`,
+    width: `${rule.w}px`,
+    height: `${rule.h}px`,
+  };
+}
 
 function tableRows(rows: readonly StatsRow[]): JSX.Element[] {
   return rows.map((row) => (
@@ -17,14 +59,18 @@ function tableRows(rows: readonly StatsRow[]): JSX.Element[] {
           {cell}
         </span>
       ))}
+      <span class="stats__row-rule" data-hud-stats-rule aria-hidden="true" />
     </div>
   ));
 }
 
-export function StatsPanel(props: StatsPanelProps): JSX.Element {
+/** The board as the panel paints it: the hook above picks which measured column it lays out. */
+export function statsPanelTree(props: StatsPanelProps, compact: boolean): JSX.Element {
   const { view } = props;
   const handler = props.onIntent;
   const month = view.month;
+  const board = statsBoard(compact ? 'narrow' : 'desktop');
+  const ruleStyle = ruleStyleOf(board);
 
   const openTab = (mode: StatsMode): void => {
     if (handler === undefined) return;
@@ -107,6 +153,12 @@ export function StatsPanel(props: StatsPanelProps): JSX.Element {
                   <span class="stats__figure-value" data-hud-stats-value>
                     {figure.value}
                   </span>
+                  <span
+                    class="stats__figure-rule"
+                    data-hud-stats-rule
+                    aria-hidden="true"
+                    style={ruleStyle}
+                  />
                 </div>
               ))}
             </div>
@@ -151,4 +203,9 @@ export function StatsPanel(props: StatsPanelProps): JSX.Element {
       </div>
     </div>
   );
+}
+
+export function StatsPanel(props: StatsPanelProps): JSX.Element {
+  const compact = useCompactViewport();
+  return statsPanelTree(props, compact);
 }

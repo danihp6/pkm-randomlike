@@ -181,6 +181,13 @@ second.
 | 09 Ranking                       | `7:2985` | `8:3261`  |
 | 09b Ranking · pokemon            | `7:3095` | `11:5286` |
 
+**The figure's rule.** Every figure of `08` / `m08` draws the `stat N rule` rectangle — **1 px**, white
+at **8 %** (`--stats-rule`, never a new alpha), **320 px** at x `120` / `480` / `840` on the desk and
+**165 px** at x `32` / `201` on the phone, with an **88 px** row pitch (desk) and **62 px** (phone). The
+run list and the Pokémon table carry the same 1 px rule flush with the bottom of each row card (no frame
+node — the row cards are the frame's own node there), and a new figure inherits the rule by being a
+figure.
+
 ## 7. What this analysis changes in the plan
 
 1. **`tokens.json` is generated from the measurement above**, not from the proposal's block: the type

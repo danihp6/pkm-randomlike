@@ -9072,7 +9072,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/kit/**` + tests, `src/data/typeIcons.ts` (read-only) and `docs/hud-fidelity.md` §5/§6.
       *Dependencies:* `[Task-193]` and `[Task-196]` (both rewrite `battle-moves/**`). *(Batch 87)*
 
-- [ ] **[Task-204] Every stat prints the rule the board draws under it.** Seen with `?hud=dom` on
+- [x] **[Task-204] Every stat prints the rule the board draws under it.** Seen with `?hud=dom` on
       `2026-10-27`: the stats screens print their figures with **no line under them**, while
       `stats.css` already carries the token `--stats-rule` ("the rule under a figure", 8 % white) and the
       board draws one rule per figure. **Fix shape:** the figure block draws the rule from the token
