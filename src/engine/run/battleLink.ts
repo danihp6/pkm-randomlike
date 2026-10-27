@@ -84,6 +84,11 @@ export type BattleLaunch = Readonly<{
    * the shipped layout and the shipped command flow. Default `false`.
    */
   double?: boolean;
+  /**
+   * The player's living party's repeated types (at least two living members each),
+   * computed by the route through `livingTeamTypes`. Absent means none.
+   */
+  teamTypes?: readonly string[];
 }>;
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';
@@ -106,4 +111,9 @@ export type BattleReturn = Readonly<{
 /** One battle's Rng seed, derived from the run seed, route and entity key. */
 export function battleSeed(runSeed: string, routeIndex: number, key: string): number {
   return hashSeed(`${runSeed}:battle:${routeIndex}:${key}`);
+}
+
+/** The team-type list a launch carries into the battle: absent means none. */
+export function launchTeamTypes(launch: Pick<BattleLaunch, 'teamTypes'>): readonly string[] {
+  return launch.teamTypes ?? [];
 }

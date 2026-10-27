@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { battleSeed, type BattleLaunch } from './battleLink';
+import { battleSeed, launchTeamTypes, type BattleLaunch } from './battleLink';
 
 /** A launch as the route builds it, so the optional field can be read back. */
 function launch(extra: Partial<BattleLaunch> = {}): BattleLaunch {
@@ -44,5 +44,19 @@ describe('BattleLaunch.double', () => {
     expect(doubles.double).toBe(true);
     expect(doubles.seed).toBe(plain.seed);
     expect(battleSeed('run-a', 3, 'grass:4,7:0')).toBe(plain.seed);
+  });
+});
+
+describe('launchTeamTypes', () => {
+  it('answers none for a launch that carries no list', () => {
+    expect(launchTeamTypes({})).toEqual([]);
+    expect(launchTeamTypes(launch())).toEqual([]);
+  });
+
+  it('hands back the list the route set, untouched', () => {
+    expect(launchTeamTypes({ teamTypes: ['Fire'] })).toEqual(['Fire']);
+    expect(launchTeamTypes({ teamTypes: ['Fire', 'Water'] })).toEqual(['Fire', 'Water']);
+    const teamTypes = ['Fire'] as const;
+    expect(launchTeamTypes({ teamTypes })).toBe(teamTypes);
   });
 });

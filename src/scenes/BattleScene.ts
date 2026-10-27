@@ -55,6 +55,7 @@ import { battlefieldSeeds } from '../engine/routes/battlefield';
 import {
   MAX_MOVES,
   MAX_PARTY_SIZE,
+  launchTeamTypes,
   type BattleLaunch,
   type BattleOutcome,
   type BattleReturn,
@@ -825,6 +826,7 @@ export class BattleScene extends Phaser.Scene {
       bannedSpecies: launch.bannedSpecies ?? null,
       ...(launch.enemyBoosts ? { enemyBoosts: launch.enemyBoosts } : {}),
       double: this.double,
+      teamTypes: launchTeamTypes(launch),
     });
 
     this.displayActive = {
