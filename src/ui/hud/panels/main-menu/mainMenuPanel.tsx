@@ -7,6 +7,7 @@ import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
   MAIN_MENU_NARROW_QUERY,
+  forLayout,
   type MainMenuRowId,
   type MainMenuView,
 } from './view';
@@ -59,9 +60,9 @@ function portraitStyle(portrait: PortraitCrop | null, box: number): CSSPropertie
 }
 
 export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
-  const { view } = props;
   const handler = props.onIntent;
   const compact = useCompactViewport();
+  const view = forLayout(props.view, compact ? 'compact' : 'wide');
   const portraitBox = compact ? MAIN_MENU_BOARD_NARROW.portrait.size : MAIN_MENU_BOARD.portrait.size;
 
   const press = (id: MainMenuRowId): void => {

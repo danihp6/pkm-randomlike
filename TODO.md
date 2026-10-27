@@ -8684,7 +8684,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/battle-hp/**`, `src/ui/hud/panels/battle-moves/**` + tests and
       `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 83)*
 
-- [ ] **[Task-191] The narrow CONTINUE row stops painting its portraits over the map label.**
+- [x] **[Task-191] The narrow CONTINUE row stops painting its portraits over the map label.**
       Follow-up of `[Task-188]`, measured on the merged tree (`main` @ `5b4629d`) at 390×844: the
       row is 326×48 at (32, 402) and the portraits occupy **x 258..355** (four 22-px boxes), while
       the map label is painted **under them** — `MAP 3 · FOREST` shows through the sprites and the

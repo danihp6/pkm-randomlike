@@ -13,7 +13,9 @@ import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
   MAIN_MENU_FOOTER_NARROW,
+  forLayout,
   liveMainMenuView,
+  type MainMenuLayout,
   type Rect,
 } from './view';
 
@@ -139,6 +141,100 @@ describe('liveMainMenuView', () => {
 
     expect(first).toEqual(second);
     expect(JSON.parse(JSON.stringify(first))).toEqual(first);
+  });
+});
+
+/** The cursor's row, in board order. */
+function rowAt(view: ReturnType<typeof liveMainMenuView>, id: string) {
+  const row = view.rows.find((entry) => entry.id === id);
+  expect(row, `no ${id} row`).toBeDefined();
+  return row!;
+}
+
+describe('forLayout', () => {
+  it('hands the desk layout the very same view, label and all', () => {
+    const run = savedRun();
+    const view = liveMainMenuView(run, 0);
+    const wide = forLayout(view, 'wide');
+
+    expect(wide).toBe(view);
+    expect(wide.rows[0]!.value).toBe(runPositionLabel(run));
+    expect(wide.rows[0]!.value.toUpperCase()).toMatch(/^MAP 3 · /);
+  });
+
+  it('drops only the CONTINUE row’s label on the phone and keeps its four portraits', () => {
+    const run = savedRun();
+    const view = liveMainMenuView(run, 0);
+    const compact = forLayout(view, 'compact');
+    const row = rowAt(compact, 'continue');
+
+    expect(row.value).toBe('');
+    expect(row.label).toBe(view.rows[0]!.label);
+    expect(row.enabled).toBe(true);
+    expect(compact.rows.map((entry) => entry.id)).toEqual(view.rows.map((entry) => entry.id));
+    expect(compact.rows.slice(1)).toEqual(view.rows.slice(1));
+    expect(rowAt(view, 'continue').value).toBe(runPositionLabel(run));
+  });
+
+  it('keeps the portrait list, the title, the stats and the cursor identical', () => {
+    const run = savedRun();
+    const view = liveMainMenuView(run, 2);
+    const compact = forLayout(view, 'compact');
+
+    expect(compact.portraits).toBe(view.portraits);
+    expect(compact.portraits.length).toBe(4);
+    expect(compact.portraits.map((portrait) => portrait.memberId)).toEqual(
+      view.portraits.map((portrait) => portrait.memberId),
+    );
+    expect(compact.title).toBe(view.title);
+    expect(compact.stats).toEqual(view.stats);
+    expect(compact.version).toBe(view.version);
+    expect(compact.selected).toBe(view.selected);
+    expect(compact.selected).toBe('options');
+  });
+
+  it('passes a view with no run through both layouts unchanged', () => {
+    const view = liveMainMenuView(null, 0);
+
+    expect(view.portraits).toEqual([]);
+    expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
+    expect(view.rows.map((row) => row.value)).toEqual(['', '', '']);
+    expect(forLayout(view, 'wide')).toBe(view);
+    expect(forLayout(view, 'compact')).toBe(view);
+  });
+
+  it('falls back to the desk layout for anything that is not the phone’s', () => {
+    const view = liveMainMenuView(savedRun(), 0);
+
+    expect(forLayout(view, 'narrow' as MainMenuLayout)).toBe(view);
+  });
+
+  it('is pure: the same pair is deep-equal and the input is untouched', () => {
+    const view = liveMainMenuView(savedRun(), 1);
+    const before = JSON.parse(JSON.stringify(view)) as unknown;
+
+    expect(forLayout(view, 'compact')).toEqual(forLayout(view, 'compact'));
+    expect(JSON.parse(JSON.stringify(view))).toEqual(before);
+  });
+});
+
+describe('the compact CONTINUE row', () => {
+  it('lays out for the portraits alone, sizing no value node', () => {
+    expect([...declarations(COMPACT_CSS, '.main-menu__value').keys()]).toEqual([]);
+  });
+
+  it('keeps the phone portraits on the frame’s 22 px cell and 25 px pitch', () => {
+    const cell = declarations(COMPACT_CSS, '.main-menu__portrait');
+    const strip = declarations(COMPACT_CSS, '.main-menu__portraits');
+
+    expect(sharp(cell.get('width'))).toBe(MAIN_MENU_BOARD_NARROW.portrait.size);
+    expect(sharp(cell.get('height'))).toBe(MAIN_MENU_BOARD_NARROW.portrait.size);
+    expect(sharp(cell.get('width')) + sharp(strip.get('gap'))).toBe(
+      MAIN_MENU_BOARD_NARROW.portrait.pitch,
+    );
+    expect(sharp(strip.get('left')) + 4 * MAIN_MENU_BOARD_NARROW.portrait.pitch).toBeLessThanOrEqual(
+      MAIN_MENU_BOARD_NARROW.row.w,
+    );
   });
 });
 

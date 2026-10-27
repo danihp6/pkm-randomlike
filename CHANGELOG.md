@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The narrow CONTINUE row stops painting its portraits over the map label.** `[Task-191]`,
+      the second of Batch 83: at 390×844 the row is 326×48 at (32, 402) and the four 22-px
+      portraits occupy x 258..355, while `MAP 3 · FOREST` was painted **under** them and read as
+      a smear. The compact row now carries **one** secondary datum — the portraits, which are
+      the row's point — and the label is simply absent there; the desk keeps both. The seam is
+      `forLayout(view, 'wide' | 'compact')` in the panel's `view.ts`: `'wide'` returns the very
+      same object, `'compact'` returns the view with the CONTINUE row's `value` set to `''` and
+      everything else identical, and the panel — which already owns the breakpoint through
+      `useCompactViewport()` — applies it, so a resize flips the row without a re-mount. The
+      compact `.main-menu__value` rule leaves the stylesheet. `docs/hud-fidelity.md` **§9** gains
+      the paragraph. Gates: `npm test` 4686 passed / 69 skipped, `npm run build` green. Measured
+      live over CDP — at 390×844 the CONTINUE row paints **4** portraits of 22 px at x 258/283/
+      308/333, all inside 32..358, and no `.main-menu__value` node exists; at 1280×800 the
+      frame's `MAP 3 · FOREST` sits at 1048.48..1158 with the last portrait ending at 1038
+      (**10.48 px** clear), and the row (326×48 / 420×54) and the three compact footer blocks
+      hold their rects exactly. One residue recorded, not fixed: on the **desk** a long real
+      label (`Map 1 · Deep Forest`, 147 px) still runs 26×15 px under the fourth portrait —
+      reproduced on unmodified `main`, frozen by this task's scope, and tracked as issue #75.
+
 - [x] **The run history is written, and the run counts what it prints.** `[Task-181]`, the first
       of Batch 83: `src/engine/run/history.ts` could build a `RunHistoryRecord` and nothing
       called it, so `save.history` was `[]` for every player and STATS opened on "NO FINISHED
