@@ -94,7 +94,7 @@ describe('the mirrored constants', () => {
 describe('battleSwitchBox', () => {
   it('is the shipped battle menu box, not a copy of its arithmetic', () => {
     expect(battleSwitchBox).toBe(battleMovesBox);
-    expect(battleSwitchBox(DESKTOP)).toStrictEqual({ x: 276, y: 582, w: 728, h: 192 });
+    expect(battleSwitchBox(DESKTOP)).toStrictEqual({ x: 440, y: 582, w: 564, h: 192 });
     expect(battleSwitchBox(PHONE)).toStrictEqual({ x: 16, y: 592, w: 358, h: 236 });
   });
 });

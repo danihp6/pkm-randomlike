@@ -8643,7 +8643,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/starter/**`, the shared module and their tests, and the two docs.
       *Dependencies:* none. *(Batch 83)*
 
-- [ ] **[Task-189] The battle's FIGHT window stops covering the HP panel, and a category stops
+- [x] **[Task-189] The battle's FIGHT window stops covering the HP panel, and a category stops
       running under its ⓘ.** Measured in a browser on `main` @ `5aaacd6`, `?hud=dom`, 1280×800,
       FIGHT open on a wild battle: `battle-moves` sits at **x 276, y 582, 728×192** and the
       bottom-left HP box (`battle-hp__box--player`, the **foe's** panel) at **x 64, y 660,

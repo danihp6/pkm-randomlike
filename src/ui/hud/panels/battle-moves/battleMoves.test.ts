@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { MoveSlot, slotPressIntent, type MoveSlotProps } from './battleMoves';
+import {
+  MoveSlot,
+  infoEnterIntent,
+  infoLeaveIntent,
+  slotPressIntent,
+  type MoveSlotProps,
+} from './battleMoves';
 import type { BattleMovesIntent } from './mount';
 import type { BattleMoveSlotView, Rect } from './view';
 
 const CARD: Rect = { x: 276, y: 582, w: 728, h: 192 };
 
 function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): BattleMoveSlotView {
+  const rowY = 606 + Math.floor(index / 2) * 80;
+  const box: Rect = { x: 360, y: rowY, w: 273, h: 72 };
+  const info: Rect = { x: box.x + box.w - 36, y: rowY + 8, w: 22, h: 22 };
   return {
     index,
     empty: false,
@@ -19,8 +28,9 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
     accuracyTone: 'level',
     enabled: true,
     selected: false,
-    box: { x: 360, y: 606 + Math.floor(index / 2) * 80, w: 273, h: 72 },
-    info: { x: 597, y: 614 + Math.floor(index / 2) * 80, w: 22, h: 22 },
+    box,
+    categoryBox: { x: info.x - 8 - 48, y: rowY + 16.5, w: 48, h: 13 },
+    info,
     ...overrides,
   };
 }
@@ -29,6 +39,25 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
 function buttonProps(props: MoveSlotProps): Record<string, unknown> {
   const node = MoveSlot(props) as unknown as Readonly<{ props: Record<string, unknown> }>;
   return node.props;
+}
+
+/** The inline style of the slot's one child carrying `className`, at any depth. */
+function insideStyle(props: Record<string, unknown>, className: string): unknown {
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        const found = walk(entry);
+        if (found !== undefined) return found;
+      }
+      return undefined;
+    }
+    if (typeof value !== 'object' || value === null) return undefined;
+    const node = value as Readonly<{ props?: Record<string, unknown> }>;
+    if (node.props === undefined) return undefined;
+    if (node.props.class === className) return node.props.style;
+    return walk(node.props.children);
+  };
+  return walk(props.children);
 }
 
 describe('the move slot button', () => {
@@ -82,5 +111,22 @@ describe('the move slot button', () => {
   it('places the button at the slot s own page rect', () => {
     const props = buttonProps({ slot: slot(2), card: CARD, onPress: () => {} });
     expect(props.style).toStrictEqual({ left: '84px', top: '104px', width: '273px', height: '72px' });
+  });
+
+  it('paints the category column at the model s own rect, in the slot s space', () => {
+    const props = buttonProps({ slot: slot(0), card: CARD, onPress: () => {} });
+    expect(insideStyle(props, 'battle-moves__category')).toStrictEqual({
+      left: '181px',
+      top: '16.5px',
+      width: '48px',
+      height: '13px',
+    });
+  });
+});
+
+describe('the ⓘ hover', () => {
+  it('asks for its own slot on enter and drops it on leave', () => {
+    expect(infoEnterIntent(slot(2))).toStrictEqual({ type: 'info', moveIndex: 2 });
+    expect(infoLeaveIntent()).toStrictEqual({ type: 'info', moveIndex: null });
   });
 });

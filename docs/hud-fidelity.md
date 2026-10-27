@@ -100,6 +100,16 @@ route window in `M 01b` is 358×240 at x=16, and the battle panels keep the desk
 **The pad** (unchanged, for `[Task-139]`): 156×156 at (103,741), A at (334,767) r35, B at (235,788)
 r35, 3 px white at 50 %, letters at 32 px white 60.
 
+**Battle zones.** At 1280×800 the HP column is one 368 px card at x = 64 — a right edge of **432** — and a
+partner never leaves its side's column: the foe's stacks 8 px under its lead and the player's 8 px above its
+own, so a double keeps the single's right edge. The battle menu card therefore starts at **440** (the column's
+right edge plus the 8 px gutter) and keeps the shipped right edge, 1004: 564 wide, and no `[data-hud-hp]` box
+can be drawn behind it. On a phone the card keeps its shipped full-width rect under both boxes (390×844 →
+x 16, 358×236 at y 592). Inside a cell the category column ends **8 px** left of the ⓘ — its 36 px right
+offset plus the gap, the same 44 px the stylesheet spells — and prints right-aligned, so `SPECIAL` /
+`PHYSICAL` / `STATUS` cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
+description, and the click still pins it.
+
 ## 6. Frame → node map
 
 Every Phase 12 task takes its frames from here; the desktop id is the first column, the mobile one the

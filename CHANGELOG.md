@@ -8,6 +8,33 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's FIGHT window stops covering the HP panel, and a category stops running
+      under its ⓘ.** `[Task-189]`, the fourth and last of Batch 82: on the DOM HUD the
+      moves card sat at **x 276** and the player's HP box at **x 64, 368 wide**, so the menu
+      covered 156×100 px of it — the HP you are about to attack was the one you could not
+      read. `battleMovesBox` now starts at the foe column's right edge plus a gutter
+      (**x 440, 564×192** at 1280×800, right edge 1004 unmoved) and `battleHpBox`'s partner
+      stacks **below** its lead on the foe side the way the player's already stacks above
+      its own, so the column has one right edge (432) in a single and a double alike and a
+      single rule holds for both. Each move cell reserves the ⓘ in its category column:
+      `BattleMoveSlotView.categoryBox` ends `MOVE_CATEGORY_GAP` (8 px) left of the button,
+      the model and the stylesheet's `right: 44px` are the same rule, and the DOM ⓘ gained
+      the hover the canvas already had — `onPointerEnter`/`onPointerLeave` emit the `info`
+      intent the click already emitted. `docs/hud-fidelity.md` **§5** gains the battle-zone
+      paragraph. `npm test` 4587 passed / 69 skipped, `npm run build` green; measured live
+      over CDP at 1280×800 with FIGHT open on a wild battle: menu `440..1004` against the HP
+      column's 8-px-earlier `432`, overlap **0** (the player box's was 156×100 on `main`),
+      the four category/ⓘ pairs `703|710`, `933|940`, `703|710`, `933|940`; at 390×844 the
+      compact card is unchanged (`16,592,358,236`, above the player box's 584) and its
+      pairs are `176|183`, `303|310`; one `mouseMoved` on the first ⓘ floats Accelerock's
+      own "Usually goes first." and moving off drops it. One residue recorded rather than
+      fixed: a **600-699 px wide** viewport takes the desktop HP column and the compact card
+      at once (the seam between `BATTLE_HP_BREAKPOINT` 600 and `BATTLE_COMPACT` 700) and can
+      still overlap the player box — measured **identical on `main` @ `0d6deaa`** (640×480:
+      card `96,228,448,236` against player `64,340,368,100`; 800×600: `116,348,568,236`
+      against `64,460,368,100`), so this task neither caused nor widened it;
+      `battle-moves/README.md` rule 6 carries the numbers and the two breakpoints.
+
 - [x] **The DOM HUD draws the party's portraits, and the narrow main menu stops colliding.**
       `[Task-188]`, the third of Batch 82: the CONTINUE row's four empty outlined cells and
       the starter cards' empty squares become the species' own atlas cells, and the phone
