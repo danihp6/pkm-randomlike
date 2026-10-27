@@ -244,6 +244,28 @@ at 390×844 and 1280×800 with `deviceScaleFactor: 2` and runs `pixelmatch` agai
 radii and chips; mean ΔE ≤ 2 on flat fills; text measured on its box and colour. The Phaser screenshot
 comparison is no longer the bar — it cannot be, since the panel no longer lives in Phaser.
 
+**The fixture recipe.** One `design/fixtures/<slug>.json` per exported frame, and the file carries the
+frame's own copy, not a paraphrase:
+
+```json
+{ "slug": "<frame>", "screen": "<panel id>", "state": { "party": [], "bag": [], "money": 0, "route": null, "battle": null, "notice": null }, "<panel block>": {} }
+```
+
+- `state` is the snapshot the panels read and keeps `isHudState`'s **exact six keys**; every frame-specific
+  block (`panel`, `buy`/`sell`, `item`/`pokemon`, `notice`/`mission`/`area`, `switch`, `ui`, …) sits beside
+  it, where the panel's own view reads it.
+- `screen` sits beside `slug` and `state`, never inside `state`: it is the `data-hud-panel` value the frame
+  draws (`options`, `main-menu`, `shop`, `battle-moves`, …) or the marker id of the panels whose root is a
+  bare attribute (`starter`, `hud`, `battle-hp`, `battle-log`, `run-over`). The gate reads it to name what it
+  measured, so a frame it cannot frame reports `unavailable` with the screen it needs instead of failing.
+- **The mobile twin is the same screen's phone layout, not a stale frame.** `m<slug>.png` is the same
+  screen at 390×844, so the file carries both shapes — the desk block and the narrow one (`02-options`'s
+  `mobile`, read by `fixtureOptionsView(payload, true)`) — and one file feeds both viewports. The board wins
+  and both twins stay: no frame is dropped because its phone layout is drawn from the desk block.
+- A frame whose state a `HudState` genuinely cannot express names its reason in one line in
+  `scripts/hud/diff.mjs`'s `FIXTURE_ALLOWLIST`; `scripts/hud/diff.test.mjs` enumerates `design/screens/`
+  against `design/fixtures/` and refuses a frame that has neither.
+
 ## 12. References
 
 - `docs/tech-decisions.md` `D49` — the decision this proposal became.

@@ -220,3 +220,110 @@ returns every other field, row and the portrait list unchanged, and the panel ap
 `MAIN_MENU_NARROW_QUERY`, so a resize flips the row without the scene re-mounting it. The
 empty-value rule paints no node at all, which is what keeps the label off the screen. The desk
 frame keeps both fields: `forLayout(view, 'wide')` returns the very same object.
+
+## The gate's measured table
+
+Status: **the gate's own evidence** (2026-10-27, branch `task-197`). One row per frame per viewport,
+produced by `node scripts/hud/diff.mjs --slug <slug> --dev` on every desk frame of §6; the harness
+serves the source, so no `dist` build is involved. `design/diff/<slug>/report.json` is each run's
+artifact and is gitignored, so this table is the record and its numbers are copied from those reports
+verbatim.
+
+**How the gate reads a frame.** It boots the app, then waits for the page's own readiness —
+`document.readyState === 'complete'`, the `#hud` layer present and `document.fonts.status === 'loaded'`,
+polled every 100 ms against a 30 s budget — and settles for 1.2 s. Chromium is found at `CHROME_PATH`
+when set, else `/usr/bin/google-chrome`, `-stable`, `/usr/bin/chromium`, `chromium-browser`, then the
+Windows Chrome and Edge paths. Each measurement reads the mounted roots (`[data-hud-panel]` plus the
+five marker roots `[data-hud-starter]`, `[data-hud-strip]`, `[data-hud-battle-hp]`,
+`[data-hud-battle-log]`, `[data-hud-run-over]`), names the screen the frame's fixture declares, and
+**hides every other root before the capture**: the page mounts its live scene behind a fixture, so
+without that one rule a frame's shot would be the main menu painted over the panel under test. A frame
+that names a screen the page cannot carry is `unavailable` with the screen it needs — never a pixel
+FAIL, because a screen nobody has built yet is a backlog row, not a regression. `measured` is the root
+the page actually carried, and the exit code stays non-zero only when a compared row fails.
+
+**What a red row can mean.** The board's rasters carry the game's own screen inside them (the board
+draws each panel over the route it belongs to, `design/README.md`), so a frame whose window holds a
+painted scene can never be matched by a DOM-only shot: that row measures the panel *and* the board's
+scene, and its colour and geometry are dominated by the art the DOM does not draw (`01`, `01b`, `03n`,
+`05b`, `05d`, `06`, `07`, `07b`). `01`/`01b` add the CONTINUE row's party portraits, which come from
+the gitignored `public/anil/portraits.png` and are the documented empty 4 % box in a clean checkout. A
+red row on a flat-backed frame is the panel itself, and that is the row to cut: `08`'s 155 px max is the
+board's per-row rules and column separators plus the `SINCE … · ALL RUNS INCLUDED` meta line, none of
+which the shipped panel draws; `04`'s 126 px max is one of its 80 matched edges landing 126 px away on
+a 1 px-median card.
+
+| frame | viewport | screen | measured | pixels differing | geometry median / max (px) | colour flat ΔE | verdict |
+| ----- | -------- | ------ | -------- | ---------------- | -------------------------- | -------------- | ------- |
+| `01-main-menu` | 1280x800 | `main-menu` | `main-menu` | 813,794 (19.87 %) | 8 / 470 | 13.41 | FAIL |
+| `01-main-menu` | 390x844 | `main-menu` | `main-menu` | 334,622 (25.41 %) | 1 / 222 | 19.22 | FAIL |
+| `01b-main-menu-no-save` | 1280x800 | `main-menu` | `main-menu` | 811,420 (19.81 %) | 6 / 470 | 13.35 | FAIL |
+| `01b-main-menu-no-save` | 390x844 | `main-menu` | `main-menu` | 333,881 (25.36 %) | 10 / 238 | 19.49 | FAIL |
+| `02-options` | 1280x800 | `options` | `options` | 4,061 (0.10 %) | 0 / 1 | 0.12 | PASS |
+| `02-options` | 390x844 | `options` | `options` | 1,914 (0.15 %) | 0 / 2 | 0.12 | PASS |
+| `03-route-hud` | 1280x800 | `hud` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "hud" |
+| `03-route-hud` | 390x844 | `hud` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "hud" |
+| `03b-panels-row-view` | 1280x800 | `bag` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "bag" |
+| `03b-panels-row-view` | 390x844 | `bag` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "bag" |
+| `03c-panels-compress` | 1280x800 | — | `none` | — | — | — | `not framed`: the compressed state lives in the saved layout, not in a HudState |
+| `03c-panels-compress` | 390x844 | — | `none` | — | — | — | `not framed`: the compressed state lives in the saved layout, not in a HudState |
+| `03d-route-shop-buy` | 1280x800 | `shop` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "shop" |
+| `03d-route-shop-buy` | 390x844 | `shop` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "shop" |
+| `03e-route-shop-sell` | 1280x800 | `shop` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "shop" |
+| `03e-route-shop-sell` | 390x844 | `shop` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "shop" |
+| `03f-panels-reward-item` | 1280x800 | `rewards` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rewards" |
+| `03f-panels-reward-item` | 390x844 | `rewards` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rewards" |
+| `03g-panels-reward-pokemon` | 1280x800 | `rewards` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rewards" |
+| `03g-panels-reward-pokemon` | 390x844 | `rewards` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rewards" |
+| `03h-panels-rocket-slots` | 1280x800 | `rocket` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rocket" |
+| `03h-panels-rocket-slots` | 390x844 | `rocket` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "rocket" |
+| `03i-panels-trade-pick` | 1280x800 | `trade` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "trade" |
+| `03i-panels-trade-pick` | 390x844 | `trade` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "trade" |
+| `03j-panels-trade-result` | 1280x800 | `trade` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "trade" |
+| `03j-panels-trade-result` | 390x844 | `trade` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "trade" |
+| `03k-panels-notice-item` | 1280x800 | `notices` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "notices" |
+| `03k-panels-notice-item` | 390x844 | `notices` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "notices" |
+| `03l-panels-notice-level-up` | 1280x800 | `notices` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "notices" |
+| `03l-panels-notice-level-up` | 390x844 | `notices` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "notices" |
+| `03m-panels-pokemon-moves` | 1280x800 | `detail` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "detail" |
+| `03m-panels-pokemon-moves` | 390x844 | `detail` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "detail" |
+| `03n-panels-pause-menu` | 1280x800 | `pause` | `pause` | 3,116,621 (76.09 %) | 456 / 888 | 31.64 | FAIL |
+| `03n-panels-pause-menu` | 390x844 | `pause` | `pause` | 295,219 (22.42 %) | 6 / 184 | 14.11 | FAIL |
+| `03o-panels-map-routes` | 1280x800 | `header` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "header" |
+| `03o-panels-map-routes` | 390x844 | `header` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "header" |
+| `03p-panels-pc-rip` | 1280x800 | `pc` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "pc" |
+| `03p-panels-pc-rip` | 390x844 | `pc` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "pc" |
+| `04-starter-pick` | 1280x800 | `starter` | `starter` | 50,089 (1.22 %) | 1 / 126 | 0.82 | FAIL |
+| `04-starter-pick` | 390x844 | `starter` | `starter` | 31,594 (2.40 %) | 2 / 78 | 1.45 | FAIL |
+| `05-battle-hud` | 1280x800 | `battle-hp` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-hp" |
+| `05-battle-hud` | 390x844 | `battle-hp` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-hp" |
+| `05b-battle-message` | 1280x800 | `battle-log` | `battle-log` | 309,703 (7.56 %) | 98 / 1200 | 13.22 | FAIL |
+| `05b-battle-message` | 390x844 | `battle-log` | `battle-log` | 119,994 (9.11 %) | 107 / 1152 | 11.26 | FAIL |
+| `05c-battle-bag` | 1280x800 | `battle-bag` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-bag" |
+| `05c-battle-bag` | 390x844 | `battle-bag` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-bag" |
+| `05d-battle-pokemon` | 1280x800 | `battle-switch` | `battle-switch` | 459,134 (11.21 %) | 74 / 1068 | 14.13 | FAIL |
+| `05d-battle-pokemon` | 390x844 | `battle-switch` | `battle-switch` | 197,857 (15.03 %) | 25 / 1152 | 13.71 | FAIL |
+| `05e-battle-stats` | 1280x800 | `battle-switch` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-switch" |
+| `05e-battle-stats` | 390x844 | `battle-switch` | `main-menu` | — | — | — | `unavailable`: the frame needs screen "battle-switch" |
+| `06-run-over-defeat` | 1280x800 | `run-over` | `run-over` | 545,884 (13.33 %) | 0 / 496 | 11.24 | FAIL |
+| `06-run-over-defeat` | 390x844 | `run-over` | `run-over` | 105,702 (8.03 %) | 5 / 74 | 7.68 | FAIL |
+| `07-run-over-victory` | 1280x800 | `run-over` | `run-over` | 551,283 (13.46 %) | 0 / 38 | 11.30 | FAIL |
+| `07-run-over-victory` | 390x844 | `run-over` | `run-over` | 99,810 (7.58 %) | 0 / 92 | 6.57 | FAIL |
+| `07b-run-over-victory-pokemon` | 1280x800 | `run-over` | `run-over` | 594,173 (14.51 %) | 0 / 91 | 11.77 | FAIL |
+| `07b-run-over-victory-pokemon` | 390x844 | `run-over` | `run-over` | 105,559 (8.02 %) | 1 / 53 | 6.94 | FAIL |
+| `08-stats-totals` | 1280x800 | `stats` | `stats` | 68,115 (1.66 %) | 2 / 155 | 1.45 | FAIL |
+| `08-stats-totals` | 390x844 | `stats` | `stats` | 26,641 (2.02 %) | 1 / 152 | 2.29 | FAIL |
+| `08b-stats-runs` | 1280x800 | `stats` | `stats` | 61,993 (1.51 %) | 38 / 217 | 1.10 | FAIL |
+| `08b-stats-runs` | 390x844 | `stats` | `stats` | 64,868 (4.93 %) | 16 / 118 | 4.70 | FAIL |
+| `08c-stats-pokemon` | 1280x800 | `stats` | `stats` | 53,348 (1.30 %) | 2 / 120 | 1.09 | FAIL |
+| `08c-stats-pokemon` | 390x844 | `stats` | `stats` | 61,226 (4.65 %) | 4 / 72 | 4.75 | FAIL |
+| `09-ranking` | 1280x800 | `stats` | `stats` | 45,819 (1.12 %) | 28 / 147 | 0.93 | FAIL |
+| `09-ranking` | 390x844 | `stats` | `stats` | 34,746 (2.64 %) | 4 / 72 | 3.15 | FAIL |
+| `09b-ranking-pokemon` | 1280x800 | `stats` | `stats` | 42,393 (1.03 %) | 8 / 174 | 0.95 | FAIL |
+| `09b-ranking-pokemon` | 390x844 | `stats` | `stats` | 46,801 (3.55 %) | 10 / 86 | 4.88 | FAIL |
+
+**The mobile twins.** Both are kept and both are compared. `m<slug>.png` is the same screen's phone
+layout, not a stale frame, so one fixture file carries both shapes — the desk block and the narrow one,
+read by the panel at its own breakpoint (`02-options`'s `mobile`, through
+`fixtureOptionsView(payload, true)`). The board wins: a phone row that disagrees with `m<slug>.png` is a
+panel to fix, never a twin to drop.

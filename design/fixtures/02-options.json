@@ -1,5 +1,6 @@
 {
   "slug": "02-options",
+  "screen": "options",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "panel": {
     "title": "SETTINGS",

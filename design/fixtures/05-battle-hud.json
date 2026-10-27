@@ -1,5 +1,6 @@
 {
   "slug": "05-battle-hud",
+  "screen": "battle-hp",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "moves": {
     "open": true,

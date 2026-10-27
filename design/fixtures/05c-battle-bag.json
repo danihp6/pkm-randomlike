@@ -1,5 +1,6 @@
 {
   "slug": "05c-battle-bag",
+  "screen": "battle-bag",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "bag": {
     "open": true,

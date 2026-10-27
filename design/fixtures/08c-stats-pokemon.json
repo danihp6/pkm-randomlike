@@ -1,5 +1,6 @@
 {
   "slug": "08c-stats-pokemon",
+  "screen": "stats",
   "state": {
     "party": [],
     "bag": [

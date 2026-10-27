@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { HudSink, HudState } from '../state';
 import {
   fixtureFor,
+  fixtureScreen,
   fixtureSlugs,
   holdForFixture,
   installFixture,
@@ -14,7 +15,7 @@ const MINIMAL: HudState = { party: [], bag: [], money: 0, route: null, battle: n
 
 const LIVE: HudState = { ...MINIMAL, money: 42 };
 
-const FIXTURE: HudFixture = { slug: '02-options', state: MINIMAL };
+const FIXTURE: HudFixture = { slug: '02-options', screen: 'options', state: MINIMAL };
 
 function modules(entries: Readonly<Record<string, unknown>>): FixtureModules {
   return entries;
@@ -147,6 +148,89 @@ describe('fixtureFor', () => {
   it('ignores a key whose basename is not the slug JSON', () => {
     const map = modules({ '../../../design/fixtures/02-options.txt': FIXTURE });
     expect(fixtureFor(map, '02-options')).toBeNull();
+  });
+});
+
+describe('fixtureFor and the frame’s screen', () => {
+  it('reads the screen beside the state, never inside it', () => {
+    const framed = fixtureFor(
+      modules({
+        '../../../design/fixtures/03d-route-shop-buy.json': {
+          slug: '03d-route-shop-buy',
+          screen: 'shop',
+          state: MINIMAL,
+        },
+      }),
+      '03d-route-shop-buy',
+    );
+    expect(framed).toEqual({ slug: '03d-route-shop-buy', screen: 'shop', state: MINIMAL });
+    expect(Object.keys(framed?.state ?? {})).toEqual([
+      'party',
+      'bag',
+      'money',
+      'route',
+      'battle',
+      'notice',
+    ]);
+  });
+
+  it('is null for a frame that names no screen', () => {
+    const framed = fixtureFor(
+      modules({ '../../../design/fixtures/02-options.json': { slug: '02-options', state: MINIMAL } }),
+      '02-options',
+    );
+    expect(framed?.screen).toBeNull();
+  });
+
+  it('yields a null screen for a malformed one instead of rejecting the frame', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(fixtureScreen('options')).toBe('options');
+      expect(fixtureScreen('battle-switch')).toBe('battle-switch');
+      for (const screen of [
+        '',
+        'Options',
+        'o p',
+        'a'.repeat(65),
+        7,
+        null,
+        ['options'],
+        { id: 'options' },
+      ]) {
+        expect(fixtureScreen(screen), String(screen)).toBeNull();
+        const framed = fixtureFor(
+          modules({
+            '../../../design/fixtures/02-options.json': { slug: '02-options', screen, state: MINIMAL },
+          }),
+          '02-options',
+        );
+        expect(framed, String(screen)).toEqual({ slug: '02-options', screen: null, state: MINIMAL });
+      }
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('keeps rejecting a state that carries a seventh key', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(
+        fixtureFor(
+          modules({
+            '../../../design/fixtures/02-options.json': {
+              slug: '02-options',
+              screen: 'options',
+              state: { ...MINIMAL, screen: 'options' },
+            },
+          }),
+          '02-options',
+        ),
+      ).toBeNull();
+      expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

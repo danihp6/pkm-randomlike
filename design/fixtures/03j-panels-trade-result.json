@@ -1,5 +1,6 @@
 {
   "slug": "03j-panels-trade-result",
+  "screen": "trade",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "pick": {
     "kind": "pick",

@@ -7,10 +7,17 @@ export { normaliseSlug, parseHudFlags } from './flags';
 export type { FixtureModules } from './registry';
 export { FIXTURE_MODULES } from './registry';
 
-/** One frame of the board, as the HUD renders it: the file's slug and the snapshot it holds. */
-export type HudFixture = Readonly<{ slug: string; state: HudState }>;
+/**
+ * One frame of the board, as the HUD renders it: the file's slug, the screen it draws and the
+ * snapshot it holds. `screen` is the `data-hud-panel` value the frame carries — a marker id for the
+ * panels whose root is a bare attribute — and null when the file names none.
+ */
+export type HudFixture = Readonly<{ slug: string; screen: string | null; state: HudState }>;
 
 const HUD_STATE_KEYS = ['party', 'bag', 'money', 'route', 'battle', 'notice'] as const;
+
+/** The lower-kebab a `screen` value shares with a fixture slug. */
+const SCREEN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /** Paths already complained about, so a rejected file warns once per page load. */
 const REJECTED = new Set<string>();
@@ -74,10 +81,16 @@ export function fixtureSlugs(modules: FixtureModules): readonly string[] {
   return [...slugs].sort();
 }
 
+/** The `screen` a fixture file names: a lower-kebab string, or null when absent or malformed. */
+export function fixtureScreen(value: unknown): string | null {
+  return typeof value === 'string' && SCREEN.test(value) ? value : null;
+}
+
 /**
  * The fixture for `slug`, or null. The entry's basename must equal `<slug>.json`,
  * the value must be a plain object with a string `slug` equal to the filename's
- * slug and a `state` that passes `isHudState`; anything else is null.
+ * slug and a `state` that passes `isHudState`; anything else is null. A missing or
+ * malformed `screen` is null and never rejects the frame.
  */
 export function fixtureFor(modules: FixtureModules, slug: string): HudFixture | null {
   const file = `${slug}.json`;
@@ -90,7 +103,7 @@ export function fixtureFor(modules: FixtureModules, slug: string): HudFixture | 
     if (claimed !== slug) return reject(path, `slug "${claimed}" does not match "${file}"`);
     const state = value.state;
     if (!isHudState(state)) return reject(path, 'state is not a HudState');
-    return { slug, state };
+    return { slug, screen: fixtureScreen(value.screen), state };
   }
   return null;
 }

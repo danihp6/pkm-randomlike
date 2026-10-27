@@ -1,5 +1,6 @@
 {
   "slug": "03d-route-shop-buy",
+  "screen": "shop",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "buy": {
     "title": "MART",

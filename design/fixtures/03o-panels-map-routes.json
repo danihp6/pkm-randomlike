@@ -1,5 +1,6 @@
 {
   "slug": "03o-panels-map-routes",
+  "screen": "header",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "map": {
     "title": "Map 1 · Viridian Forest",

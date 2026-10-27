@@ -1,5 +1,6 @@
 {
   "slug": "03k-panels-notice-item",
+  "screen": "notices",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "notice": { "text": "Obtained Potion!" },
   "mission": null,

@@ -5,50 +5,138 @@
 // yet: its boxes live in `design/frames/<slug>.json` and the check lands with the first DOM panel
 // (`[Task-127]`), never as a per-pixel comparison.
 //
+// A frame names the screen it draws (`design/fixtures/<slug>.json`'s `screen`), so the gate says what
+// it measured instead of assuming it: the page's mounted roots are read after the settle, a frame whose
+// screen is not on the page is `unavailable` with the screen it needs, and every other root is hidden
+// before the capture so the shot holds the frame's one screen and not the live scene painted on top.
+//
 // Usage:
 //   node scripts/hud/diff.mjs --slug 02-options [--url http://127.0.0.1:4173] [--settle 1200]
 //   node scripts/hud/diff.mjs --slug 02-options --dev            # boots `vite dev` instead of the preview
 //
-// Artifacts: design/diff/<slug>/<viewport>.diff.png (pixelmatch) and .report.json.
+// Artifacts: design/diff/<slug>/<viewport>.shot.png (the capture), .diff.png (pixelmatch, when the row
+// is compared) and report.json.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
 import pixelmatch from 'pixelmatch';
 import pngjs from 'pngjs';
 
 const { PNG } = pngjs;
 
-const args = process.argv.slice(2);
-const value = (name, fallback) => {
-  const i = args.indexOf(`--${name}`);
-  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
-};
-const flag = (name) => args.includes(`--${name}`);
-
-const slug = value('slug');
-if (!slug) {
-  console.error('usage: node scripts/hud/diff.mjs --slug <slug> [--url <url>] [--preview] [--settle ms] [--keep-open]');
-  process.exit(2);
-}
-
-const settle = Number(value('settle', '1200'));
-const viewports = [
-  { name: '1280x800', width: 1280, height: 800, reference: `${slug}.png` },
-  { name: '390x844', width: 390, height: 844, reference: `m${slug}.png` },
-];
 const GEOMETRY_TOLERANCE = 2;
 const COLOUR_TOLERANCE = 2;
-const outDir = join('design', 'diff', slug);
+const READY_POLL_MS = 100;
+const READY_BUDGET_MS = 30000;
 
-const CHROME = [
-  process.env.CHROME_PATH,
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  `${process.env.LOCALAPPDATA}/Google/Chrome/Application/chrome.exe`,
-  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-].filter(Boolean).find((candidate) => existsSync(candidate));
+const USAGE =
+  'usage: node scripts/hud/diff.mjs --slug <slug> [--url <url>] [--dev] [--settle ms]';
+
+/**
+ * The panels whose root is a bare marker instead of a `data-hud-panel` value: the board's frame names
+ * one of these and the page has to carry it for the row to be comparable.
+ */
+export const SCREEN_MARKERS = Object.freeze({
+  starter: '[data-hud-starter]',
+  hud: '[data-hud-strip]',
+  'battle-hp': '[data-hud-battle-hp]',
+  'battle-log': '[data-hud-battle-log]',
+  'run-over': '[data-hud-run-over]',
+});
+
+/**
+ * Frames the gate cannot frame yet, each with the reason in one line. A frame may only skip a fixture
+ * here, and only when its state is not a `HudState` at all.
+ */
+export const FIXTURE_ALLOWLIST = Object.freeze({
+  '03c-panels-compress': 'the compressed state lives in the saved layout, not in a HudState',
+});
+
+/** The lower-kebab the `screen` field and a fixture slug share. */
+const SCREEN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/**
+ * Where this machine's Chrome may be, in order: the override first, then Linux, then Windows, so a
+ * checkout on any host finds one without `CHROME_PATH`.
+ */
+export function chromeCandidates(env = process.env) {
+  return [
+    env.CHROME_PATH,
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    `${env.LOCALAPPDATA}/Google/Chrome/Application/chrome.exe`,
+    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  ].filter(Boolean);
+}
+
+/** The first candidate that exists on this machine, or null. */
+export function findChrome(env = process.env) {
+  return chromeCandidates(env).find((candidate) => existsSync(candidate)) ?? null;
+}
+
+/** The screen a fixture file names: its `screen`, or null when absent or not lower-kebab. */
+export function screenOf(fixture) {
+  if (typeof fixture !== 'object' || fixture === null || Array.isArray(fixture)) return null;
+  const value = fixture.screen;
+  return typeof value === 'string' && SCREEN.test(value) ? value : null;
+}
+
+/** The screen slugs the board's desktop frames carry, ascending. */
+export function desktopSlugs(entries) {
+  const slugs = new Set();
+  for (const entry of entries) {
+    const name = String(entry);
+    if (!name.toLowerCase().endsWith('.png')) continue;
+    const slug = name.slice(0, -'.png'.length);
+    if (slug.startsWith('m')) continue;
+    slugs.add(slug);
+  }
+  return [...slugs].sort();
+}
+
+/** The screens that have no fixture, ignoring the frames whose allow-list entry names a reason. */
+export function framesWithoutFixtures(screenSlugs, fixtureSlugs, allowlist = FIXTURE_ALLOWLIST) {
+  const framed = new Set(fixtureSlugs);
+  const allowed = new Set(Object.keys(allowlist));
+  return [...new Set(screenSlugs)]
+    .filter((slug) => !framed.has(slug) && !allowed.has(slug))
+    .sort();
+}
+
+/**
+ * What a page's mounted roots say about a fixture's screen. `comparable` is false only when the frame
+ * names a screen the page does not carry — the row is then `unavailable`, never a pixel FAIL.
+ */
+export function classifyScreen(screen, mounted) {
+  const list = (Array.isArray(mounted) ? mounted : []).filter(
+    (id) => typeof id === 'string' && id.length > 0,
+  );
+  if (screen === null) return { comparable: true, measured: list[0] ?? 'none', reason: null };
+  if (list.includes(screen)) return { comparable: true, measured: screen, reason: null };
+  return {
+    comparable: false,
+    measured: list[0] ?? 'none',
+    reason: `the frame needs screen "${screen}"`,
+  };
+}
+
+/** The fixture a slug's frame carries, parsed, or null when there is no file for it. */
+export function readFixture(slug, dir = join('design', 'fixtures')) {
+  const file = join(dir, `${slug}.json`);
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
 
 async function freePort() {
   return new Promise((resolve) => {
@@ -65,35 +153,13 @@ class Cdp {
     this.socket = socket;
     this.nextId = 1;
     this.pending = new Map();
-    this.listeners = new Map();
     socket.addEventListener('message', (event) => {
       const message = JSON.parse(typeof event.data === 'string' ? event.data : event.data.toString());
       if (message.id && this.pending.has(message.id)) {
         const { resolve, reject } = this.pending.get(message.id);
         this.pending.delete(message.id);
         message.error ? reject(new Error(message.error.message)) : resolve(message.result);
-      } else if (message.method) {
-        for (const listener of this.listeners.get(message.method) ?? []) listener(message.params);
       }
-    });
-  }
-
-  on(method, listener) {
-    const list = this.listeners.get(method) ?? [];
-    list.push(listener);
-    this.listeners.set(method, list);
-  }
-
-  once(method, timeoutMs = 30000) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`${method} never arrived`)), timeoutMs);
-      const listener = (params) => {
-        clearTimeout(timer);
-        const list = this.listeners.get(method) ?? [];
-        this.listeners.set(method, list.filter((entry) => entry !== listener));
-        resolve(params);
-      };
-      this.on(method, listener);
     });
   }
 
@@ -129,9 +195,9 @@ function killTree(pid) {
   }
 }
 
-async function launchChrome(port) {
+async function launchChrome(port, chrome) {
   const profile = join(process.env.TEMP ?? '/tmp', `pkm-hud-diff-${Date.now()}`);
-  const child = spawn(CHROME, [
+  const child = spawn(chrome, [
     '--headless=new',
     '--hide-scrollbars',
     '--mute-audio',
@@ -145,8 +211,16 @@ async function launchChrome(port) {
     `--user-data-dir=${profile}`,
     `--remote-debugging-port=${port}`,
     'about:blank',
-  ], { stdio: 'ignore' });
-  child.on('exit', () => rmSync(profile, { recursive: true, force: true }));
+    // Its own process group, so `killTree` takes the renderers with the browser; without it a
+    // measurement leaves a headless Chrome behind and the next run starves.
+  ], { stdio: 'ignore', detached: process.platform !== 'win32' });
+  child.on('exit', () => {
+    // The renderers may still hold the profile for a beat after the SIGKILL: the removal is a
+    // courtesy, never a reason to fail a measurement.
+    try {
+      rmSync(profile, { recursive: true, force: true });
+    } catch {}
+  });
 
   for (let attempt = 0; attempt < 100; attempt += 1) {
     try {
@@ -157,20 +231,100 @@ async function launchChrome(port) {
     await delay(100);
   }
   killTree(child.pid);
-  throw new Error(`chrome never opened its debugging port (${CHROME ?? 'not found'})`);
+  throw new Error(`chrome never opened its debugging port (${chrome})`);
 }
 
-async function startServer() {
-  const url = value('url');
+async function startServer(dev, url) {
   if (url) return { url, stop: async () => {} };
-  const { createServer, preview } = await import('vite');
+  const { createServer: viteServer, preview } = await import('vite');
   const port = await freePort();
   const options = { logLevel: 'error', server: { port, strictPort: true, host: '127.0.0.1' } };
-  const server = flag('dev') ? await createServer(options) : await preview({ ...options, preview: options.server });
-  if (flag('dev')) await server.listen();
+  const server = dev
+    ? await viteServer(options)
+    : await preview({ ...options, preview: options.server });
+  if (dev) await server.listen();
   const address = server.httpServer?.address();
   const bound = typeof address === 'object' && address ? address.port : port;
   return { url: `http://127.0.0.1:${bound}`, stop: () => server.close() };
+}
+
+/** Reads one value out of the page; a context torn down by a navigation is not ready either. */
+async function evaluate(cdp, expression, awaitPromise = false) {
+  const result = await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise });
+  return result.result?.value;
+}
+
+/** The page's own answer to "may I be measured": complete, the HUD layer is up, the webfonts are in. */
+async function readiness(cdp) {
+  const reading = await evaluate(
+    cdp,
+    `({ readyState: document.readyState, hud: document.querySelector('#hud') !== null, fonts: document.fonts.status })`,
+  );
+  const ready =
+    reading !== null &&
+    typeof reading === 'object' &&
+    reading.readyState === 'complete' &&
+    reading.hud === true &&
+    reading.fonts === 'loaded';
+  return { ready, reading };
+}
+
+function describeReading(reading) {
+  if (reading === null || typeof reading !== 'object') return 'the page answered no reading';
+  const readState = typeof reading.readyState === 'string' ? reading.readyState : 'unknown';
+  const hud = reading.hud === true ? 'up' : 'missing';
+  const fonts = typeof reading.fonts === 'string' ? reading.fonts : 'unknown';
+  return `readyState=${readState}, #hud=${hud}, fonts=${fonts}`;
+}
+
+/** Polls the readiness rule instead of waiting for an event both boot paths can miss. */
+async function waitForReady(cdp) {
+  const deadline = Date.now() + READY_BUDGET_MS;
+  let last = null;
+  while (Date.now() < deadline) {
+    try {
+      const { ready, reading } = await readiness(cdp);
+      last = reading;
+      if (ready) return last;
+    } catch {}
+    await delay(READY_POLL_MS);
+  }
+  throw new Error(`page never became ready (${describeReading(last)})`);
+}
+
+const MOUNTED_EXPRESSION = `(() => {
+  const panels = [];
+  for (const element of document.querySelectorAll('[data-hud-panel]')) {
+    const id = element.getAttribute('data-hud-panel');
+    if (id) panels.push(id);
+  }
+  const markers = [];
+  for (const [id, selector] of ${JSON.stringify(Object.entries(SCREEN_MARKERS))}) {
+    if (document.querySelector(selector) !== null) markers.push(id);
+  }
+  return [...panels, ...markers];
+})()`;
+
+/** Hides every mounted screen but the frame's own, so the shot is the board's one screen. */
+function isolateExpression(screen) {
+  return `(() => {
+    const keep = ${JSON.stringify(screen)};
+    const markers = ${JSON.stringify(Object.entries(SCREEN_MARKERS))};
+    let hidden = 0;
+    for (const element of document.querySelectorAll('[data-hud-panel]')) {
+      if (element.getAttribute('data-hud-panel') === keep) continue;
+      element.style.display = 'none';
+      hidden += 1;
+    }
+    for (const [id, selector] of markers) {
+      if (id === keep) continue;
+      for (const element of document.querySelectorAll(selector)) {
+        element.style.display = 'none';
+        hidden += 1;
+      }
+    }
+    return hidden;
+  })()`;
 }
 
 function readPng(file) {
@@ -308,17 +462,63 @@ function compare(reference, actual) {
   return { differing, ratio: differing / (reference.width * reference.height), geometry, colour, pass, diff };
 }
 
-async function main() {
-  const referenceDir = join('design', 'screens');
-  for (const viewport of viewports) {
-    const file = join(referenceDir, viewport.reference);
-    if (!existsSync(file)) throw new Error(`no reference for ${viewport.name}: ${file}`);
-  }
-  if (!CHROME) throw new Error('no Chrome or Edge found; set CHROME_PATH');
+function viewportsFor(slug) {
+  return [
+    { name: '1280x800', width: 1280, height: 800, reference: `${slug}.png` },
+    { name: '390x844', width: 390, height: 844, reference: `m${slug}.png` },
+  ];
+}
 
-  const server = await startServer();
+function readArgs(argv) {
+  const value = (name, fallback) => {
+    const i = argv.indexOf(`--${name}`);
+    return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
+  };
+  return {
+    slug: value('slug'),
+    url: value('url'),
+    settle: Number(value('settle', '1200')),
+    dev: argv.includes('--dev'),
+  };
+}
+
+function reportLine(report) {
+  if (report.error) return `${report.viewport}: ${report.error}`;
+  if (report.verdict === 'unavailable') {
+    return `${report.viewport}: measured ${report.measured} — unavailable, ${report.reason}`;
+  }
+  return (
+    `${report.viewport}: measured ${report.measured} — ${(report.ratio * 100).toFixed(2)}% pixels differ, ` +
+    `geometry median ${report.geometry.median} / max ${report.geometry.max} px (${report.geometry.peaks} edges), ` +
+    `colour flat ΔE ${report.colour.flat} / all ${report.colour.all} / p99 ${report.colour.p99} — ` +
+    `${report.verdict.toUpperCase()}`
+  );
+}
+
+async function main(argv = process.argv.slice(2)) {
+  const { slug, url, settle, dev } = readArgs(argv);
+  if (!slug) {
+    console.error(USAGE);
+    process.exit(2);
+  }
+
+  const fixture = readFixture(slug);
+  const screen = screenOf(fixture);
+  const viewports = viewportsFor(slug);
+  const outDir = join('design', 'diff', slug);
+  const referenceDir = join('design', 'screens');
+
+  if (fixture === null && !Object.prototype.hasOwnProperty.call(FIXTURE_ALLOWLIST, slug)) {
+    console.error(`hud:diff ${slug}: no fixture in design/fixtures and no allow-list entry`);
+    process.exit(2);
+  }
+
+  const chrome = findChrome();
+  if (chrome === null) throw new Error('no Chrome or Edge found; set CHROME_PATH');
+
+  const server = await startServer(dev, url);
   const port = await freePort();
-  const { child, wsUrl } = await launchChrome(port);
+  const { child, wsUrl } = await launchChrome(port, chrome);
   const socket = new WebSocket(wsUrl);
   await new Promise((resolve, reject) => {
     socket.addEventListener('open', resolve, { once: true });
@@ -326,11 +526,11 @@ async function main() {
   });
   const cdp = new Cdp(socket);
   await cdp.send('Page.enable');
+  await cdp.send('Runtime.enable');
   await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   mkdirSync(outDir, { recursive: true });
 
   const reports = [];
-  let failed = false;
   try {
     for (const viewport of viewports) {
       await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -339,25 +539,72 @@ async function main() {
         deviceScaleFactor: 2,
         mobile: viewport.width < 600,
       });
-      const loaded = cdp.once('Page.loadEventFired');
       await cdp.send('Page.navigate', { url: `${server.url}/?hud=dom&hudFixture=${slug}` });
-      await loaded;
+      await waitForReady(cdp);
       await delay(settle);
-      const shot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
-      const actual = PNG.sync.read(Buffer.from(shot.data, 'base64'));
-      const reference = readPng(join(referenceDir, viewport.reference));
-      const result = compare(reference, actual);
 
-      if (result.error) {
-        reports.push({ viewport: viewport.name, error: result.error });
-        failed = true;
+      if (fixture === null) {
+        const reason =
+          FIXTURE_ALLOWLIST[slug] ?? 'no fixture for this frame';
+        const shot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
+        writeFileSync(join(outDir, `${viewport.name}.shot.png`), Buffer.from(shot.data, 'base64'));
+        reports.push({
+          viewport: viewport.name,
+          screen: null,
+          measured: 'none',
+          verdict: 'unavailable',
+          reason,
+        });
         continue;
       }
 
+      const mounted = await evaluate(cdp, MOUNTED_EXPRESSION);
+      const { comparable, measured, reason } = classifyScreen(screen, mounted);
+
+      if (comparable) {
+        const hidden = screen === null ? 0 : await evaluate(cdp, isolateExpression(screen));
+        if (hidden > 0) {
+          await evaluate(
+            cdp,
+            'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))',
+            true,
+          );
+        }
+      }
+
+      const shot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
+      const actual = PNG.sync.read(Buffer.from(shot.data, 'base64'));
       writeFileSync(join(outDir, `${viewport.name}.shot.png`), PNG.sync.write(actual));
+
+      if (!comparable) {
+        reports.push({
+          viewport: viewport.name,
+          screen,
+          measured,
+          verdict: 'unavailable',
+          reason,
+        });
+        continue;
+      }
+
+      const referenceFile = join(referenceDir, viewport.reference);
+      if (!existsSync(referenceFile)) {
+        reports.push({ viewport: viewport.name, screen, measured, verdict: 'fail', error: `no reference: ${referenceFile}` });
+        continue;
+      }
+      const reference = readPng(referenceFile);
+      const result = compare(reference, actual);
+      if (result.error) {
+        reports.push({ viewport: viewport.name, screen, measured, verdict: 'fail', error: result.error });
+        continue;
+      }
+
       writeFileSync(join(outDir, `${viewport.name}.diff.png`), PNG.sync.write(result.diff));
-      const report = {
+      reports.push({
         viewport: viewport.name,
+        screen,
+        measured,
+        verdict: result.pass ? 'pass' : 'fail',
         differing: result.differing,
         ratio: Number(result.ratio.toFixed(4)),
         geometry: {
@@ -372,9 +619,7 @@ async function main() {
           p99: Number(result.colour.p99.toFixed(2)),
         },
         pass: result.pass,
-      };
-      reports.push(report);
-      failed ||= !result.pass;
+      });
     }
   } finally {
     socket.close();
@@ -382,23 +627,16 @@ async function main() {
     await server.stop();
   }
 
-  writeFileSync(join(outDir, 'report.json'), `${JSON.stringify({ slug, reports }, null, 2)}\n`);
-  for (const report of reports) {
-    if (report.error) {
-      console.log(`${slug} ${report.viewport}: ${report.error}`);
-      continue;
-    }
-    console.log(
-      `${slug} ${report.viewport}: ${(report.ratio * 100).toFixed(2)}% pixels differ, ` +
-        `geometry median ${report.geometry.median} / max ${report.geometry.max} px (${report.geometry.peaks} edges), ` +
-        `colour flat ΔE ${report.colour.flat} / all ${report.colour.all} / p99 ${report.colour.p99} — ${report.pass ? 'PASS' : 'FAIL'}`,
-    );
-  }
+  writeFileSync(join(outDir, 'report.json'), `${JSON.stringify({ slug, screen, reports }, null, 2)}\n`);
+  for (const report of reports) console.log(`${slug} ${reportLine(report)}`);
   console.log(`artifacts: ${outDir}`);
+  const failed = reports.some((report) => report.verdict === 'fail');
   process.exit(failed ? 1 : 0);
 }
 
-main().catch((error) => {
-  console.error(`hud:diff failed: ${error.message}`);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((error) => {
+    console.error(`hud:diff failed: ${error.message}`);
+    process.exit(1);
+  });
+}

@@ -1,5 +1,6 @@
 {
   "slug": "03i-panels-trade-pick",
+  "screen": "trade",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "pick": {
     "kind": "pick",

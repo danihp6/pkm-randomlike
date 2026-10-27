@@ -1,5 +1,6 @@
 {
   "slug": "03g-panels-reward-pokemon",
+  "screen": "rewards",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "pokemon": {
     "title": "MINI-BOSS REWARD",

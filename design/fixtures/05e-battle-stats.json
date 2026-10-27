@@ -1,0 +1,48 @@
+{
+  "slug": "05e-battle-stats",
+  "screen": "battle-switch",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "switch": {
+    "open": true,
+    "card": { "x": 276, "y": 582, "w": 728, "h": 192 },
+    "selected": 0,
+    "rows": [
+      {
+        "name": "CHARIZARD",
+        "level": 36,
+        "hp": 98,
+        "maxHp": 112,
+        "statusLabel": null,
+        "enabled": false,
+        "field": true
+      },
+      {
+        "name": "PIKACHU",
+        "level": 32,
+        "hp": 84,
+        "maxHp": 112,
+        "statusLabel": null,
+        "enabled": true,
+        "field": false
+      },
+      {
+        "name": "BULBASAUR",
+        "level": 30,
+        "hp": 51,
+        "maxHp": 102,
+        "statusLabel": "PAR",
+        "enabled": true,
+        "field": false
+      },
+      {
+        "name": "GASTLY",
+        "level": 28,
+        "hp": 21,
+        "maxHp": 84,
+        "statusLabel": "PSN",
+        "enabled": true,
+        "field": false
+      }
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 {
   "slug": "05d-battle-pokemon",
+  "screen": "battle-switch",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "switch": {
     "open": true,

@@ -1,5 +1,6 @@
 {
   "slug": "05b-battle-message",
+  "screen": "battle-log",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": {}, "notice": null },
   "battleLog": {
     "visible": true,

@@ -1,0 +1,65 @@
+{
+  "slug": "03p-panels-pc-rip",
+  "screen": "pc",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "ui": { "pane": "rip", "page": 0, "cursor": 0 },
+  "pc": {
+    "pageCount": 1,
+    "rows": [
+      {
+        "memberId": "r-psyduck",
+        "name": "PSYDUCK",
+        "level": 30,
+        "hp": 0,
+        "maxHp": 92,
+        "statusLabel": null,
+        "locked": false
+      },
+      {
+        "memberId": "r-machop",
+        "name": "MACHOP",
+        "level": 27,
+        "hp": 0,
+        "maxHp": 84,
+        "statusLabel": null,
+        "locked": false
+      },
+      {
+        "memberId": "r-raticate",
+        "name": "RATICATE",
+        "level": 22,
+        "hp": 0,
+        "maxHp": 71,
+        "statusLabel": null,
+        "locked": false
+      },
+      {
+        "memberId": "r-gloom",
+        "name": "GLOOM",
+        "level": 19,
+        "hp": 0,
+        "maxHp": 66,
+        "statusLabel": null,
+        "locked": false
+      },
+      {
+        "memberId": "r-zubat",
+        "name": "ZUBAT",
+        "level": 16,
+        "hp": 0,
+        "maxHp": 51,
+        "statusLabel": null,
+        "locked": false
+      },
+      {
+        "memberId": "r-doduo",
+        "name": "DODUO",
+        "level": 21,
+        "hp": 0,
+        "maxHp": 62,
+        "statusLabel": null,
+        "locked": false
+      }
+    ]
+  }
+}

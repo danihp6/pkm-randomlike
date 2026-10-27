@@ -1,5 +1,6 @@
 {
   "slug": "03-route-hud",
+  "screen": "hud",
   "state": {
     "party": [
       {

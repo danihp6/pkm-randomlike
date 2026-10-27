@@ -1,0 +1,15 @@
+{
+  "slug": "03h-panels-rocket-slots",
+  "screen": "rocket",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "rocket": {
+    "title": "SLOT MACHINE",
+    "money": 2480,
+    "message": "One spin, three reels.",
+    "rows": [
+      { "index": 0, "kind": "spin", "label": "SPIN", "price": 300, "enabled": true },
+      { "index": 1, "kind": "leave", "label": "LEAVE", "price": null, "enabled": true }
+    ],
+    "selected": 0
+  }
+}
