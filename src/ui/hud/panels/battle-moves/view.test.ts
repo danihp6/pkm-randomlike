@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { t } from '../../../../i18n';
+import { en, es, t, translationParams } from '../../../../i18n';
 import {
   moveGridCellRects,
   padMoveGridCells,
   type MoveGridCell,
   type MoveGridSlot,
 } from '../../../moveGrid';
+import { FRLG_WINDOW_PADDING } from '../../../frlg';
 import { battleHpBox } from '../battle-hp/view';
 import {
   BATTLE_COMPACT,
@@ -18,6 +19,8 @@ import {
   MOVE_GRID_INSET,
   MOVE_INFO_SIZE,
   MOVE_MEGA_COL,
+  MOVE_TARGET_H,
+  MOVE_TARGET_TOP,
   battleMovesBox,
   battleMovesView,
   cellTextBoxes,
@@ -74,6 +77,7 @@ type Overrides = Readonly<{
   gmax?: boolean;
   megaArmed?: boolean;
   gmaxArmed?: boolean;
+  target?: string | null;
 }>;
 
 function inputOf(overrides: Overrides = {}): BattleMovesInput {
@@ -87,6 +91,7 @@ function inputOf(overrides: Overrides = {}): BattleMovesInput {
     gmax: overrides.gmax ?? false,
     megaArmed: overrides.megaArmed ?? false,
     gmaxArmed: overrides.gmaxArmed ?? false,
+    target: overrides.target === undefined ? null : overrides.target,
   };
 }
 
@@ -598,9 +603,7 @@ function overlapArea(a: Rect, b: Rect): number {
 }
 
 /** The five labels of a cell, each with the string it paints. */
-function labelsOf(
-  slot: BattleMoveSlotView,
-): readonly Readonly<{ box: Rect; text: string }>[] {
+function labelsOf(slot: BattleMoveSlotView): readonly Readonly<{ box: Rect; text: string }>[] {
   return [
     { box: slot.boxes.name, text: slot.name },
     { box: slot.boxes.category, text: slot.category.toUpperCase() },
@@ -640,9 +643,7 @@ describe('the compact cell', () => {
     expect(view.slots[2]!.power).toBe(t('move.pwrNone'));
     expect(view.slots[2]!.accuracy).toBe(t('move.accNone'));
     expect(view.slots[3]!.accuracy).toBe(t('move.acc', { value: '300 \u2191' }));
-    expect(drawnTextWidth(view.slots[3]!.accuracy)).toBeLessThanOrEqual(
-      view.slots[3]!.boxes.accuracy.w,
-    );
+    expect(drawnTextWidth(view.slots[3]!.accuracy)).toBeLessThanOrEqual(view.slots[3]!.boxes.accuracy.w);
     // The whole 91 px content box is the name's own: the longest shipped name keeps its head.
     expect(view.slots[0]!.name).toBe('MOFLETE EST\u2026');
     expect(view.slots[0]!.name.length).toBeGreaterThan(6);
@@ -831,5 +832,70 @@ describe('the description card', () => {
 
   it('is null when nothing is pinned', () => {
     expect(battleMovesView(inputOf()).info).toBeNull();
+  });
+});
+
+describe('the target step s prompt row', () => {
+  it('names the marked foe with the shipped question', () => {
+    const view = battleMovesView(inputOf({ target: 'Pidgey' }));
+    expect(view.target).not.toBeNull();
+    expect(view.target!.label).toBe(t('battle.targetPrompt', { name: 'Pidgey' }));
+    expect(view.target!.label).toBe('Which foe? Pidgey');
+  });
+
+  it('is null while the step is closed, and for a name that is not one', () => {
+    expect(battleMovesView(inputOf({ target: null })).target).toBeNull();
+    expect(battleMovesView(inputOf({ target: '' })).target).toBeNull();
+    expect(battleMovesView(inputOf()).target).toBeNull();
+  });
+
+  it('pins the two numbers it is drawn at', () => {
+    expect(MOVE_TARGET_TOP).toBe(1);
+    expect(MOVE_TARGET_H).toBe(MOVE_INFO_SIZE);
+    expect(MOVE_TARGET_H).toBe(22);
+  });
+
+  it('sits in the card s top band, one line above the first cell at both viewports', () => {
+    for (const viewport of [DESKTOP, PHONE]) {
+      const card = battleMovesBox(viewport);
+      const view = battleMovesView(inputOf({ card, target: 'Pidgey' }));
+      const box = view.target!.box;
+      expect(box).toStrictEqual({
+        x: card.x + FRLG_WINDOW_PADDING.x,
+        y: card.y + MOVE_TARGET_TOP,
+        w: card.w - FRLG_WINDOW_PADDING.x * 2,
+        h: 22,
+      });
+      expect(view.slots).toHaveLength(4);
+      for (const slot of view.slots) {
+        expect(box.y + box.h).toBeLessThanOrEqual(slot.box.y);
+        expect(box.x).toBeLessThanOrEqual(slot.box.x);
+        expect(box.x + box.w).toBeGreaterThanOrEqual(slot.box.x + slot.box.w);
+      }
+    }
+  });
+
+  it('ends exactly one px above the first cell, on the card s own arithmetic', () => {
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), target: 'Pidgey' }));
+    expect(view.target!.box).toStrictEqual({ x: 460, y: 583, w: 524, h: 22 });
+    expect(view.slots[0]!.box.y - (view.target!.box.y + view.target!.box.h)).toBe(1);
+    const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), target: 'Pidgey' }));
+    expect(phone.target!.box).toStrictEqual({ x: 36, y: 593, w: 318, h: 22 });
+    expect(phone.slots[0]!.box.y - (phone.target!.box.y + phone.target!.box.h)).toBe(1);
+  });
+
+  it('leaves the four cells exactly as they were', () => {
+    const closed = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) }));
+    const open = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), target: 'Pidgey' }));
+    expect(open.slots).toStrictEqual(closed.slots);
+    expect({ ...open, target: null }).toStrictEqual(closed);
+  });
+
+  it('pins the wording of both tables, each with the one token the call site passes', () => {
+    expect(en['battle.targetPrompt']).toBe('Which foe? {name}');
+    expect(es['battle.targetPrompt']).toBe('¿A cuál? {name}');
+    expect(translationParams(en['battle.targetPrompt'])).toStrictEqual(['name']);
+    expect(translationParams(es['battle.targetPrompt'])).toStrictEqual(['name']);
+    expect(es['battle.targetPrompt']).not.toContain('\u2014');
   });
 });

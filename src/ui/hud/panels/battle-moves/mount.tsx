@@ -27,6 +27,7 @@ const CLOSED: BattleMovesInput = {
   gmax: false,
   megaArmed: false,
   gmaxArmed: false,
+  target: null,
 };
 
 /**

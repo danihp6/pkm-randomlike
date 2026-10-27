@@ -134,6 +134,22 @@
   color: var(--hud-text-secondary);
 }
 
+/* The target step's prompt: the card's top band, one ⓘ tall (22 px), one line that
+   names the marked foe. Its top padding is the half of the band the 13 px body line
+   leaves over, so the line sits centred in the box `battleMovesView` measures. */
+.battle-moves__target {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-top: calc((22px - var(--hud-type-body-line)) / 2);
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  pointer-events: none;
+}
+
 /* the ⓘ inside each filled cell, and the ◀ and the two forme columns */
 .battle-moves__info,
 .battle-moves__back,

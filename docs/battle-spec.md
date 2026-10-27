@@ -870,7 +870,10 @@ slot with the shipped cursor before `confirm` submits
 target, as it always has. `takeDoubleTurn` resolves the two player commands and one
 `chooseAiCommand(…, { slot })` per standing enemy slot in a double battle, and
 `takeTurn` stays the single battle's own call, so no seed, stream or key moves and a
-single battle's screen, log and return are unchanged.
+single battle's screen, log and return are unchanged. The target step is **visible**: a
+single-target damaging move in a double battle with two live foes opens it, a prompt
+names the marked foe (`battle.targetPrompt`), the arrows move the mark and the prompt
+with it, and a press on a foe marks it or confirms the mark.
 
 
 ## 13. The four team-type bonuses

@@ -8858,7 +8858,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/routes-spec.md` §2 and `docs/maps-spec.md` §7.
       *Dependencies:* none. *(Batch 85)*
 
-- [ ] **[Task-196] The double battle's target step says which foe is marked.** Reported in the doubles
+- [x] **[Task-196] The double battle's target step says which foe is marked.** Reported in the doubles
       round of `2026-10-25` (`TODO.md`'s Bug section) and triaged on `2026-10-27`. The step **exists**:
       `needsTargetStep` (`src/scenes/BattleScene.ts` 2610-2620) opens it for a double battle with two live
       foes and a damaging move whose dex target is one slot (not a `SPREAD_TARGETS` row, not `self`/`ally`,

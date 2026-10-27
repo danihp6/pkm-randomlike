@@ -29,7 +29,7 @@ describe('design/fixtures/05-battle-hud.json', () => {
   });
 
   it('paints the frame s four cells in order', () => {
-    const view = battleMovesView(fixture.moves);
+    const view = battleMovesView({ ...fixture.moves, target: null });
     expect(view.slots).toHaveLength(4);
     expect(view.slots.map((slot) => slot.name)).toStrictEqual([
       'FLAMETHROWER',
@@ -42,7 +42,7 @@ describe('design/fixtures/05-battle-hud.json', () => {
   });
 
   it('reads the first cell s PP, power and accuracy as the frame prints them', () => {
-    const first = battleMovesView(fixture.moves).slots[0]!;
+    const first = battleMovesView({ ...fixture.moves, target: null }).slots[0]!;
     expect(first.pp).toBe(t('move.pp', { pp: 12, max: 15 }));
     expect(first.power).toBe(t('move.pwr', { value: 90 }));
     expect(first.accuracy).toBe(t('move.acc', { value: 100 }));
@@ -52,7 +52,7 @@ describe('design/fixtures/05-battle-hud.json', () => {
   });
 
   it('marks the first cell selected and floats its description', () => {
-    const view = battleMovesView(fixture.moves);
+    const view = battleMovesView({ ...fixture.moves, target: null });
     expect(view.slots.filter((slot) => slot.selected)).toHaveLength(1);
     expect(view.slots[0]!.selected).toBe(true);
     expect(view.info).not.toBeNull();
@@ -64,7 +64,7 @@ describe('design/fixtures/05-battle-hud.json', () => {
   });
 
   it('draws the MEGA column and no G-MAX one', () => {
-    const view = battleMovesView(fixture.moves);
+    const view = battleMovesView({ ...fixture.moves, target: null });
     expect(view.mega).not.toBeNull();
     expect(view.mega!.armed).toBe(false);
     expect(view.mega!.label).toBe(t('battle.mega'));

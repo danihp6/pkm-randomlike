@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BARRED_HEALING_MOVES } from '../../data/noHeal';
 import { getItem } from '../../data/items';
+import { getMove } from '../../data/dex';
 import { Rng } from '../rng';
 import {
   barredMovesFor,
@@ -9,6 +10,7 @@ import {
   legalMoveIndices,
   replacementOwed,
   selectedMove,
+  targetStepFor,
   useBagItem,
   validateCommand,
   type Command,
@@ -403,17 +405,17 @@ describe('the double-battle slots', () => {
     const state = buildDouble(false);
     const command: Command = { type: 'fight', moveIndex: 0, slot: 1 };
     expect(validateCommand(state, 'player', command)).toBe('There is no second active Pokémon.');
-    expect(
-      validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 1 }),
-    ).toBe('There is no second active Pokémon.');
+    expect(validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 1 })).toBe(
+      'There is no second active Pokémon.',
+    );
   });
 
   it('accepts both slots in a double battle and refuses an already active switch', () => {
     const state = buildDouble(true);
     expect(validateCommand(state, 'player', { type: 'fight', moveIndex: 0, slot: 1 })).toBeNull();
-    expect(
-      validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 0 }),
-    ).toBe('That Pokémon is already out.');
+    expect(validateCommand(state, 'player', { type: 'switch', partyIndex: 1, slot: 0 })).toBe(
+      'That Pokémon is already out.',
+    );
   });
 
   it('accepts only a live opposing slot as a single-target target', () => {
@@ -438,5 +440,60 @@ describe('the double-battle slots', () => {
       target: { side: 'enemy', slot: 1 },
     };
     expect(validateCommand(state, 'player', command)).toBeNull();
+  });
+});
+
+describe('the target step', () => {
+  const buildDouble = (double: boolean, secondFoe = true): BattleState =>
+    createBattle({
+      player: [
+        make({ id: 'player', speciesId: 'charmander', level: 20, moves: ['ember', 'tackle'] }),
+        make({ id: 'partner', speciesId: 'squirtle', level: 20, moves: ['tackle'] }),
+      ],
+      enemy: [
+        make({ id: 'enemy', speciesId: 'bulbasaur', level: 20, moves: ['tackle'] }),
+        ...(secondFoe ? [make({ id: 'foe2', speciesId: 'geodude', level: 20, moves: ['tackle'] })] : []),
+      ],
+      rng: new Rng(1),
+      isWild: false,
+      double,
+    });
+
+  const move = (id: string) => getMove(id)!;
+
+  it('owes the step for a single-target damaging move over two standing foes', () => {
+    expect(targetStepFor(buildDouble(true), 'player', move('ember'))).toBe(true);
+    expect(targetStepFor(buildDouble(true), 'player', move('tackle'))).toBe(true);
+  });
+
+  it('skips it with one standing foe, a single battle, or no move at all', () => {
+    const oneFoe = buildDouble(true, false);
+    expect(targetStepFor(oneFoe, 'player', move('ember'))).toBe(false);
+    const fainted = buildDouble(true);
+    fainted.sides.enemy.party[1].hp = 0;
+    expect(targetStepFor(fainted, 'player', move('ember'))).toBe(false);
+    expect(targetStepFor(buildDouble(false), 'player', move('ember'))).toBe(false);
+    expect(targetStepFor(buildDouble(true), 'player', null)).toBe(false);
+  });
+
+  it('skips it for every spread target the dex declares', () => {
+    const state = buildDouble(true);
+    expect(targetStepFor(state, 'player', move('dazzlinggleam'))).toBe(false);
+    expect(targetStepFor(state, 'player', move('earthquake'))).toBe(false);
+  });
+
+  it('skips it for a status move, and for a self or ally one', () => {
+    const state = buildDouble(true);
+    expect(targetStepFor(state, 'player', move('toxic'))).toBe(false);
+    expect(targetStepFor(state, 'player', move('growl'))).toBe(false);
+    expect(targetStepFor(state, 'player', { ...move('tackle'), target: 'self' })).toBe(false);
+    expect(targetStepFor(state, 'player', { ...move('tackle'), target: 'ally' })).toBe(false);
+  });
+
+  it('reads the opposing side of the side it was asked about', () => {
+    const state = buildDouble(true);
+    expect(targetStepFor(state, 'enemy', move('ember'))).toBe(true);
+    state.sides.player.party[1].hp = 0;
+    expect(targetStepFor(state, 'enemy', move('ember'))).toBe(false);
   });
 });

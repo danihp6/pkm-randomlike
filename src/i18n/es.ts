@@ -369,6 +369,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'battle.command.switch': 'CAMBIAR',
   'battle.command.run': 'HUIR',
   'battle.promptAction': '¿Qué hará {name}?',
+  'battle.targetPrompt': '¿A cuál? {name}',
   'battle.noItems': 'Sin objetos',
   'battle.mega': 'MEGA',
   'battle.megaIntent': 'MEGA +',

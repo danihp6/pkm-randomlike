@@ -131,6 +131,9 @@ export const MOVE_GMAX_COL = 62;
 export const MOVE_GRID_INSET = 8;
 /** The ⓘ button's side, as the grid draws it. */
 export const MOVE_INFO_SIZE = INFO_SIZE;
+/** The target step's prompt row: one px under the card's top edge, one ⓘ tall. */
+export const MOVE_TARGET_TOP = 1;
+export const MOVE_TARGET_H = MOVE_INFO_SIZE;
 
 /**
  * The page-space card the scene's own `menu` rect becomes: the battle square's
@@ -178,6 +181,8 @@ export type BattleMovesInput = Readonly<{
   gmax: boolean;
   megaArmed: boolean;
   gmaxArmed: boolean;
+  /** The marked foe's name while the target step is open; null while it is closed. */
+  target: string | null;
 }>;
 
 export type BattleMoveSlotView = Readonly<{
@@ -220,6 +225,8 @@ export type BattleMovesView = Readonly<{
   back: Readonly<{ label: string; box: Rect }>;
   mega: Readonly<{ label: string; box: Rect; armed: boolean }> | null;
   gmax: Readonly<{ label: string; box: Rect; armed: boolean }> | null;
+  /** The step's prompt row: the question naming the marked foe, or null. */
+  target: Readonly<{ label: string; box: Rect }> | null;
   /** The floating description card: the move's, or null when nothing is pinned. */
   info: Readonly<{ title: string; type: string; category: string; text: string; box: Rect }> | null;
 }>;
@@ -513,6 +520,21 @@ export function compactCard(card: Rect): boolean {
   return card.h > CARD_H;
 }
 
+/** The step's prompt row, or null while nothing is marked: an empty name reads as closed. */
+function targetRowOf(input: BattleMovesInput): BattleMovesView['target'] {
+  const name = input.target;
+  if (name === null || name === '') return null;
+  return {
+    label: t('battle.targetPrompt', { name }),
+    box: {
+      x: input.card.x + FRLG_WINDOW_PADDING.x,
+      y: input.card.y + MOVE_TARGET_TOP,
+      w: input.card.w - FRLG_WINDOW_PADDING.x * 2,
+      h: MOVE_TARGET_H,
+    },
+  };
+}
+
 /**
  * The move menu as plain data: the four cells `moveGridCellRects` lays out inside
  * the scene's own card, the ◀ control, the two forme columns and the floating
@@ -574,6 +596,7 @@ export function battleMovesView(input: BattleMovesInput): BattleMovesView {
           armed: input.gmaxArmed,
         }
       : null,
+    target: targetRowOf(input),
     info: infoCardOf(input, slots, pinned),
   };
 }

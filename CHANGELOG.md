@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The double battle's target step says which foe is marked.** `[Task-196]`, the first of
+      Batch 86. The step existed and was invisible: `needsTargetStep` was a private predicate in
+      `BattleScene.ts`, no `battle.target*` key existed and nothing printed the question the
+      cursor was asking. It is now `targetStepFor(state, side, move)` in
+      `src/engine/battle/commands.ts` (pure, four unit-tested cases: two live foes asks, one does
+      not, a spread row does not, a status/self/ally move does not), the battle-moves view grew a
+      `target` row — the prompt naming the marked foe, `null` while the step is closed, a 22 px
+      band above the four cells that never meets them at either width — and the scene feeds the
+      marked slot's name into it, so the DOM HUD prints the question the canvas cursor asks.
+      `battle.targetPrompt` joins `src/i18n/{en,es}.ts`. `docs/battle-spec.md` §12 and
+      `docs/hud-fidelity.md` §5 record the rule. Gates: `npm test` 4762 passed / 69 skipped,
+      `npm run build` green. Measured live over CDP: at 1280×800 the prompt read
+      `Which foe? Jigglypuff`, ArrowRight moved it to `Kakuna` and `E` hit only Kakuna
+      (29/29 → 24/29) while Jigglypuff stayed 42/42; at 390×844 the prompt is one 318 px line
+      inside the card, 1 px above the first cell, with no overflow.
+
 - [x] **The panel gate measures the panels at both viewports, and says when it cannot.** `[Task-197]`,
       the fourth of Batch 85, fixes the instrument every later panel task is judged by.
       `scripts/hud/diff.mjs` no longer waits for `Page.loadEventFired` — the `--dev` path polls

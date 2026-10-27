@@ -135,6 +135,11 @@ text is bounded by its own model rect: the name is the one line that is ever cut
 of padding, the 60 px category, its 8 px gap and the 22 px ⓘ, twice), so a stage under 388 px is below what
 this panel is asked to draw.
 
+**The target step's prompt.** The row is **22 px** tall (the ⓘ's own size) and lives inside the card's top
+band — `x = card.x + 20`, `y = card.y + 1`, `w = card.w − 40`, `h = 22` on both widths — so it ends **1 px**
+above the first cell (the grid starts at the card's 16 px padding plus its 8 px inset) and is one line that
+never meets the four cells at 1280×800 or 390×844; it prints the marked foe's name and nothing else.
+
 ## 6. Frame → node map
 
 Every Phase 12 task takes its frames from here; the desktop id is the first column, the mobile one the
