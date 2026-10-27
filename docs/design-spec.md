@@ -78,7 +78,13 @@ carries over.
   stats (the one a nature raises painted green, the one it lowers red), nature,
   ability, held item and the member's **evolution graph**: its whole family from
   the base form on down, one row per species indented by stage, each showing its
-  sprite and the level it evolves at. Besides the species rows the graph lists one
+  sprite and the level it evolves at. The band draws **ten** rows at a time — the
+  tallest family is exactly ten, an Eevee's (its eight evolutions, the Eevee row
+  itself and its Gigantamax row) — and its window ends on the card's own inner
+  bottom edge; a family longer than that scrolls a row at a time through a `<` / `>`
+  pair on the band's title row, drawn only when there is more than the window holds,
+  and the band's pool keeps **eleven** rows so a future forme has a cell without
+  another layout pass. Besides the species rows the graph lists one
   **information row** per battle-only forme of every species of the family that has
   one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
   the forme's sprite and readable name in the row's left column
