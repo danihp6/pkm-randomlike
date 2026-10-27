@@ -863,9 +863,11 @@ the overlay's `tint` and `alpha`). The condition belongs to the **room**, so
   Lansat, Leppa, Maranga, Persim, Rowap, Starf and Tamato Berry) are the only rows
   that broke the rule — **no for-sale held item without `consumed: true` is priced
   under 1000** — and they move 200 → 1000. Every berry the battle **spends** keeps
-  its 100–200 (Oran, Sitrus, Lum and the cure, pinch and resist berries). Those
-  eleven reach a run from the `mid` **ground-loot** pool alone and no band's Mart
-  stocks one, so this is a repricing and not a restock.
+  its 100–200 (Oran, Sitrus, Lum and the cure, pinch and resist berries).
+  Those eleven reach a run from the `mid` **ground-loot** pool, the berry-tree NPC's
+  shake (Leppa Berry) and a Honey Gather party member's battle win (Leppa Berry,
+  Persim Berry), and no band's Mart stocks one, so this is a repricing and not a
+  restock.
 - **Valuables** are ordinary items added to the **ground-item loot pool**
   (`src/data/loot.ts`), so they turn up in a room's pockets and are carried to the
   shop.
