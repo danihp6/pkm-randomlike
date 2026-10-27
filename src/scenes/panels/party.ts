@@ -5,7 +5,7 @@ import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../../data/portraits';
 import { STATUS_ICON_TEXTURE_KEY, STATUS_ICON_W, statusIconFrame } from '../../data/statusIcons';
 import { getSpecies } from '../../data/dex';
 import { restoreFighter } from '../../engine/battle';
-import { MAX_PARTY_SIZE, moveInParty, type RunPokemon } from '../../engine/run';
+import { MAX_PARTY_SIZE, moveInParty, reorderParty, type RunPokemon } from '../../engine/run';
 import {
   FRLG_HPBAR,
   FRLG_HPBAR_KEY,
@@ -243,6 +243,19 @@ function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
   if (command.type === 'panel' && command.panel === 'party') toggleHudPanel(host, 'party');
 }
 
+/**
+ * A drop inside the DOM card: the row picked up and the row it was released on.
+ * The two members **swap** (`reorderParty`), so index 0 keeps meaning "the lead"
+ * and the drop decides who opens the next battle. A paused route takes no drop,
+ * for the same reason it takes no press.
+ */
+function runPanelReorder(host: RoutePanelHost, from: number, to: number): void {
+  if (routePaused) return;
+  const run = host.run();
+  const next = reorderParty(run, from, to);
+  if (next !== run) host.commitRun(next);
+}
+
 function disposeDomPanel(): void {
   if (domScene !== null) {
     domScene.events.off(SCENE_PAUSE, pauseDomPanel);
@@ -267,7 +280,12 @@ function mountDomPanel(host: RoutePanelHost): void {
   const view = signal(partyView(host));
   domView = view;
   domHost = host;
-  domDispose = mountPartyPanel(layer, view, (command) => runPanelCommand(host, command));
+  domDispose = mountPartyPanel(
+    layer,
+    view,
+    (command) => runPanelCommand(host, command),
+    (from, to) => runPanelReorder(host, from, to),
+  );
   domScene = host.scene;
   domScene.events.on(SCENE_PAUSE, pauseDomPanel);
   domScene.events.on(SCENE_RESUME, resumeDomPanel);

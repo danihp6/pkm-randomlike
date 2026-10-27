@@ -84,9 +84,15 @@ carries over.
   across the two panels to move it between them. Dropping a member **onto** a
   member of the other panel **swaps** the two, so a boxed Pokémon can replace a
   party member even when the party is full (the one it replaces takes the box
-  slot). Crossing between the two panels is allowed **only in the floor's entry
-  room**, on every visit (`docs/routes-spec.md` §6): everywhere else both
-  directions are refused and the boxed members read as locked. A plain **click**
+  slot). On the route's DOM party card every row paints that member's own
+  **portrait cell** — the empty box is only the fallback for a species the atlas
+  does not name — dragging one row **onto** another **swaps** the two, and since
+  index 0 opens the next battle the drop decides who leads; an HP bar's fill
+  starts at the track's **left edge**, so a full bar paints edge to edge and a
+  fractional one starts flush. Crossing between the two panels is allowed **only
+  in the floor's entry room**, on every visit (`docs/routes-spec.md` §6):
+  everywhere else both directions are refused and the boxed members read as
+  locked. A plain **click**
   on a member
   opens a **detail panel** (its own window) with **STATS** — HP, the five battle
   stats (the one a nature raises painted green, the one it lowers red), nature,

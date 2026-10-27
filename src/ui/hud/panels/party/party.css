@@ -40,10 +40,6 @@
   --party-column: 56px;
   --party-name-top: 6px;
   --party-status-top: 5px;
-  /* the baked FRLG HP track scaled to the 154 px bar: 60, 8, 192, 12 × 154/268 */
-  --party-hp-inset-x: 34.5px;
-  --party-hp-inset-y: 4.6px;
-  --party-hp-fill-height: 6.9px;
 
   position: absolute;
   box-sizing: border-box;
@@ -254,9 +250,11 @@
 
 .party__hp-fill {
   position: absolute;
-  top: var(--party-hp-inset-y);
-  left: var(--party-hp-inset-x);
-  height: var(--party-hp-fill-height);
+  /* The fill owns the whole track: a full bar paints edge to edge and a fractional
+     one starts flush, so no inset is left over from the baked FRLG track. */
+  top: 0;
+  left: 0;
+  height: 100%;
   border-radius: 2px;
   background: var(--party-hp-fill);
 }

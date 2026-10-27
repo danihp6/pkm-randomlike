@@ -9031,7 +9031,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-198]` and `[Task-199]` (same panel and scene).
       *(Batch 88)*
 
-- [ ] **[Task-202] The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
+- [x] **[Task-202] The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
       Three defects, one panel, all seen with `?hud=dom` on `2026-10-27`. (a) **No sprites:** every row
       renders its portrait cell (`party__portrait`, `data-hud-party-portrait`) with no image behind it,
       while the CONTINUE row already paints the same species from `portraitCrop`/`portraitBackground`

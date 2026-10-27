@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
+      `[Task-202]`, the third of Batch 86, fixes three defects of one panel seen with `?hud=dom`:
+      every row painted an empty portrait cell, a row was only a click, and the HP fill started
+      inset from its track. The row now asks the shared portrait source (`portraitCrop` /
+      `portraitBackground`, scaled to the 45 px cell, `null` and the empty box for a species the
+      atlas does not name), a pointer drag from one row onto another **swaps** them through
+      `reorderParty` — the new engine helper beside the shipped `moveInParty`, so the lead rule
+      is unchanged — and the fill starts at the track's left edge, which retires
+      `PARTY_HP_FILL_RATIO` and the three inset tokens. `src/scenes/panels/party.ts` is the
+      receiver that turns the drop into one run update. `docs/design-spec.md` §3 and
+      `docs/hud-fidelity.md` §9 record the row. Gates: `npm test` 4764 passed / 69 skipped at
+      task QA, `npm run build` green. Measured live over CDP: a party of three paints three
+      portraits, a real pointer drag of row 1 onto row 0 swaps them (index 0 leads the next
+      battle), and every full HP bar's fill box equals its 154 px track at 1280×800 and 390×844.
+
 - [x] **The main menu's route window shows a live route with Pokémon wandering in it.**
       `[Task-198]`, the second of Batch 86, answers the human's decision of `2026-10-27`: the
       menu's window was a frame with nothing behind it. It now draws map 1's biome as 24 px tiles
