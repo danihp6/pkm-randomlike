@@ -881,8 +881,19 @@ to `[]`. A type is listed when **two living members** of the player's party shar
 it, and while it stays listed it buys two things: a move of that type deals
 **+10 %** damage, and that type's status side-effect rolls **+20 percentage points**
 of chance. The **enemy side never gets either bonus** — the rule is the party's, not
-the field's. `state.teamTypes` is the battle's own copy, not the run's, and the
-launch that fills it from the party's living members is a follow-up.
+the field's. `state.teamTypes` is the battle's own copy, not the run's.
+
+**The launch fills the list** from the party's **living** members: the route calls
+`livingTeamTypes(run)` (`src/engine/run/party.ts`), which reads `run.party` only —
+the box is never read and `run.rip` never either — and lists a type when **at least
+two** members with `fighter.hp > 0` hold it, in the party order of its first holder,
+deduped. A **fainted member contributes nothing**, so a party whose second Fire is
+at 0 HP carries no `Fire` bonus at all; a single living Water member lists nothing.
+The list rides `BattleLaunch.teamTypes` and reaches `createBattle` through
+`launchTeamTypes(launch)` in `BattleScene.create`, beside `bannedSpecies`/`noHeal`.
+That one launch literal is every real fight's only construction site, so wilds,
+trainers, the boss, the mini-boss and the double battle all carry the same list, and
+no path gives it to the enemy side.
 
 **The damage half** multiplies inside `computeDamage`
 (`src/engine/battle/damage.ts`), immediately **after STAB** and before the type
