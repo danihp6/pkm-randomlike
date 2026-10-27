@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { getBiome } from '../data/biomes';
 import { biomeForMap } from '../engine/maps/plan';
 import { createRun, createRunPokemon, type RunState, type RunStats } from '../engine/run';
-import { runPositionLabel, runSummary, runSummaryLines } from './runSummary';
+import { en, es } from '../i18n';
+import {
+  RUN_SUMMARY_EM_DASH,
+  recordedCount,
+  runPositionLabel,
+  runSummary,
+  runSummaryLines,
+} from './runSummary';
 
 const starter = createRunPokemon({
   id: 'starter',
@@ -47,6 +54,37 @@ describe('runSummary', () => {
   it('also carries the share string that starts the run again', () => {
     expect(runSummary(run(1, { catches: 0, casualties: 0 }, 'abc'), false).share).toBe('PKRL-1-f-abc');
   });
+
+  it('carries the enemies the run fainted, and a recorded zero as zero', () => {
+    expect(runSummary(run(2, { catches: 1, casualties: 0, faints: 23 }), false).faints).toBe(23);
+    expect(runSummary(run(2, { catches: 1, casualties: 0, faints: 0 }), false).faints).toBe(0);
+  });
+
+  it('reports no faint figure for a run that never recorded one', () => {
+    expect(runSummary(run(2), false).faints).toBeNull();
+    expect(runSummary(run(2, { catches: 1, casualties: 0 }), false).faints).toBeNull();
+    expect(runSummary(run(2, { catches: 1, casualties: 0, faints: NaN }), false).faints).toBeNull();
+    expect(runSummary(run(2, { catches: 1, casualties: 0, faints: Infinity }), false).faints).toBeNull();
+  });
+});
+
+describe('recordedCount', () => {
+  it('reads a recorded zero as zero and never as unknown', () => {
+    expect(recordedCount(0)).toBe(0);
+  });
+
+  it('truncates toward zero and clamps at zero', () => {
+    expect(recordedCount(7.9)).toBe(7);
+    expect(recordedCount(-4)).toBe(0);
+    expect(recordedCount(-0.5)).toBe(0);
+  });
+
+  it('reads undefined, NaN and Infinity as unrecorded', () => {
+    expect(recordedCount(undefined)).toBeNull();
+    expect(recordedCount(NaN)).toBeNull();
+    expect(recordedCount(Infinity)).toBeNull();
+    expect(recordedCount(-Infinity)).toBeNull();
+  });
 });
 
 describe('runSummaryLines', () => {
@@ -55,7 +93,7 @@ describe('runSummaryLines', () => {
     expect(lines[0]).toBe('You have no more Pokémon!');
     expect(lines).toContain('Routes cleared: 1');
     expect(lines).toContain('Pokémon caught: 1');
-    expect(lines).toContain('Pokémon lost: 1');
+    expect(lines).toContain(`Pokémon lost: 1 · Enemies fainted: ${RUN_SUMMARY_EM_DASH}`);
     expect(lines).toContain('Seed: abc');
     expect(lines).toContain('Share: PKRL-1-f-abc');
   });
@@ -65,7 +103,42 @@ describe('runSummaryLines', () => {
     expect(lines[0]).toBe('The final route falls. You win!');
     expect(lines).toContain('Routes cleared: 8');
     expect(lines).toContain('Pokémon caught: 5');
-    expect(lines).toContain('Pokémon lost: 0');
+    expect(lines).toContain(`Pokémon lost: 0 · Enemies fainted: ${RUN_SUMMARY_EM_DASH}`);
+  });
+
+  it('prints the run’s own faint count on the lost line, seven lines in all', () => {
+    const lines = runSummaryLines(
+      runSummary(run(5, { catches: 9, casualties: 6, faints: 23 }, 'pkm-148'), false),
+    );
+
+    expect(lines).toHaveLength(7);
+    expect(lines[0]).toBe('You have no more Pokémon!');
+    expect(lines[1]).toBe('The run is over — nothing carries over.');
+    expect(lines[2]).toBe('Routes cleared: 4');
+    expect(lines[3]).toBe('Pokémon caught: 9');
+    expect(lines[4]).toBe('Pokémon lost: 6 · Enemies fainted: 23');
+    expect(lines[5]).toBe('Seed: pkm-148');
+    expect(lines[6]).toBe('Share: PKRL-1-f-pkm%2D148');
+  });
+
+  it('keeps the em dash for a run written before the faint counter existed', () => {
+    const lines = runSummaryLines(runSummary(run(5, { catches: 9, casualties: 6 }, 'pkm-148'), false));
+
+    expect(lines).toHaveLength(7);
+    expect(lines[4]).toBe(`Pokémon lost: 6 · Enemies fainted: ${RUN_SUMMARY_EM_DASH}`);
+    expect(lines[4]).toBe('Pokémon lost: 6 · Enemies fainted: \u2014');
+  });
+});
+
+describe('the run-over copy', () => {
+  it('pins the fainted line in both locales with its two tokens', () => {
+    expect(en['runOver.lostFainted']).toBe('Pokémon lost: {lost} · Enemies fainted: {fainted}');
+    expect(es['runOver.lostFainted']).toBe('Pokémon perdidos: {lost} · Enemigos debilitados: {fainted}');
+  });
+
+  it('leaves the TOTALS label where it was', () => {
+    expect(en['runOver.enemiesFainted']).toBe('ENEMIES FAINTED');
+    expect(es['runOver.enemiesFainted']).toBe('ENEMIGOS DEBILITADOS');
   });
 });
 

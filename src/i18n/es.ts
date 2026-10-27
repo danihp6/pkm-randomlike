@@ -32,6 +32,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'runOver.routes': 'Rutas superadas: {count}',
   'runOver.caught': 'Pokémon capturados: {count}',
   'runOver.lost': 'Pokémon perdidos: {count}',
+  'runOver.lostFainted': 'Pokémon perdidos: {lost} · Enemigos debilitados: {fainted}',
   'runOver.seed': 'Semilla: {seed}',
   'runOver.share': 'Partida: {share}',
   'runOver.return': '{key} · volver al menú principal',

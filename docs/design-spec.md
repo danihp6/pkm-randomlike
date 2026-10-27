@@ -407,11 +407,16 @@ wins it.
 
 Rewards between rooms are the run's only economy: catch, items, money and the PC
 box are where the player's power comes from. A run ends on a score screen, win or
-loss: routes cleared, Pokémon caught, Pokémon lost and the seed that reproduces
-the run, as the raw seed and as the share string someone else could play
-(`src/ui/runSummary.ts`, `D21`). Both a win and a loss end on the score screen,
-and its confirm returns to the main menu, where a new run is started. A win
-clears its route; a loss does not, and nothing carries over (D5).
+loss: routes cleared, Pokémon caught, Pokémon lost, the enemies the run fainted
+and, member by member, the KOs it scored and the damage it dealt and took, plus
+the seed that reproduces the run, as the raw seed and as the share string someone
+else could play (`src/ui/runSummary.ts`, `D21`). Both a win and a loss end on the
+score screen, and its confirm returns to the main menu, where a new run is
+started. A win clears its route; a loss does not, and nothing carries over (D5).
+Every figure on the board is the run's own; a counter the run never recorded (a
+save written before the counters existed) prints the em dash, never a zero. Both
+cards carry the TOTALS / POKEMON tabs and the same board geometry at every width
+— the phone defeat card is not a shorter, tab-less variant.
 
 ## 7. Special rooms & money
 

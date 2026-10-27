@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../../../../engine/run';
 import { t } from '../../../../i18n';
@@ -6,8 +8,15 @@ import { RUN_OVER_EM_DASH, liveRunOverView, runOverBoard } from './view';
 
 const SEED = 'pkm-148';
 
+const RUN_OVER_CSS = readFileSync(fileURLToPath(new URL('./run-over.css', import.meta.url)), 'utf8');
+
 function member(id: string, speciesId: string, level = 12): RunPokemon {
   return createRunPokemon({ id, speciesId, level, learnsetSeed: SEED });
+}
+
+/** The same member carrying the three counters a finished battle tallies. */
+function tallied(base: RunPokemon, kos: number, damage: number, damageTaken: number): RunPokemon {
+  return { ...base, kos, damage, damageTaken };
 }
 
 /** A run with a party, a box and a rip list, standing on route 5. */
@@ -28,6 +37,16 @@ function endedRun(): RunState {
 function lostRun(): RunState {
   const run = endedRun();
   return { ...run, party: [], box: [], rip: [...run.party, ...run.box, ...run.rip] };
+}
+
+/** The same run, with the counters a played-through run now records. */
+function talliedRun(): RunState {
+  const run = endedRun();
+  return {
+    ...run,
+    stats: { catches: 9, casualties: 6, faints: 23 },
+    party: [tallied(run.party[0]!, 8, 4120, 214), tallied(run.party[1]!, 0, 0, 0), run.party[2]!],
+  };
 }
 
 describe('liveRunOverView', () => {
@@ -138,7 +157,69 @@ describe('liveRunOverView', () => {
     expect(rows.map((row) => row.level)).toEqual([12, 12, 12, 12, 12, 12]);
   });
 
-  it('records no per-member figure: every live row column is null, never a number', () => {
+  it('prints the tallied totals: four two-character figures, the run’s own faint count', () => {
+    const view = liveRunOverView(talliedRun(), false, 'totals', 'E');
+
+    expect(view.stats.map((stat) => stat.id)).toEqual(['routes', 'catches', 'lost', 'fainted']);
+    expect(view.stats.map((stat) => stat.value)).toEqual(['04', '09', '06', '23']);
+  });
+
+  it('pads a small count and prints a four-character one whole', () => {
+    const fainted = (faints: number): string => {
+      const run = { ...endedRun(), stats: { catches: 9, casualties: 6, faints } };
+      return liveRunOverView(run, false, 'totals', 'E').stats[3]!.value;
+    };
+
+    expect(fainted(0)).toBe('00');
+    expect(fainted(7)).toBe('07');
+    expect(fainted(4120)).toBe('4120');
+  });
+
+  it('draws the em dash only for a counter the run never recorded', () => {
+    const fainted = (stats: RunState['stats'], won = false): string =>
+      liveRunOverView({ ...endedRun(), stats }, won, 'totals', 'E').stats[3]!.value;
+
+    for (const stats of [
+      { catches: 9, casualties: 6 },
+      { catches: 9, casualties: 6, faints: NaN },
+      { catches: 9, casualties: 6, faints: Infinity },
+    ]) {
+      const run = { ...endedRun(), stats };
+      expect(runSummary(run, false).faints).toBeNull();
+      expect(fainted(stats)).toBe(RUN_OVER_EM_DASH);
+    }
+    expect(RUN_OVER_EM_DASH).toBe('\u2014');
+    expect(
+      liveRunOverView(
+        { ...endedRun(), stats: { catches: 9, casualties: 6 } },
+        false,
+        'totals',
+        'E',
+      ).stats.map((stat) => stat.value),
+    ).toEqual(['04', '09', '06', '\u2014']);
+  });
+
+  it('reads every row’s three cells from that member’s own tallies', () => {
+    const [first, second, third] = liveRunOverView(talliedRun(), true, 'pokemon', 'E').rows;
+
+    expect([first!.kos, first!.dealt, first!.tanked]).toEqual(['08', '4120', '214']);
+    expect([second!.kos, second!.dealt, second!.tanked]).toEqual(['00', '00', '00']);
+    expect([third!.kos, third!.dealt, third!.tanked]).toEqual([null, null, null]);
+    expect([first!.memberId, first!.name, first!.level]).toEqual(['charmander-1', 'Charmander', 12]);
+    expect([second!.memberId, second!.name, second!.level]).toEqual(['pikachu-2', 'Pikachu', 12]);
+    expect([third!.memberId, third!.name, third!.level]).toEqual(['bulbasaur-3', 'Bulbasaur', 12]);
+    expect(liveRunOverView(talliedRun(), true, 'pokemon', 'E').rows.map((row) => row.memberId)).toEqual([
+      'charmander-1',
+      'pikachu-2',
+      'bulbasaur-3',
+      'abra-4',
+      'psyduck-5',
+      'gastly-6',
+    ]);
+    expect(liveRunOverView(talliedRun(), true, 'totals', 'E').rows).toEqual([]);
+  });
+
+  it('keeps a row column null for a member that never recorded it', () => {
     const rows = liveRunOverView(endedRun(), true, 'pokemon', 'E').rows;
 
     expect(rows.every((row) => row.kos === null)).toBe(true);
@@ -185,5 +266,12 @@ describe('runOverBoard', () => {
     expect(board.button).toEqual({ x: 35, y: 600, w: 320, h: 44 });
     expect(board.statLabel.pitch).toBe(46);
     expect(board.row.pitch).toBe(50);
+  });
+});
+
+describe('run-over.css', () => {
+  it('keeps no defeat-specific override: both boards share one geometry', () => {
+    expect(RUN_OVER_CSS.match(/\[data-won='(true|false)'\]/g)).toEqual(["[data-won='true']"]);
+    expect(/(\.run-over__tabs[^{}]*)\{[^}]*display:\s*none/.test(RUN_OVER_CSS)).toBe(false);
   });
 });

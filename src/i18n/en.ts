@@ -29,6 +29,7 @@ export const en = {
   'runOver.routes': 'Routes cleared: {count}',
   'runOver.caught': 'Pokémon caught: {count}',
   'runOver.lost': 'Pokémon lost: {count}',
+  'runOver.lostFainted': 'Pokémon lost: {lost} · Enemies fainted: {fainted}',
   'runOver.seed': 'Seed: {seed}',
   'runOver.share': 'Share: {share}',
   'runOver.return': '{key} — return to the main menu',

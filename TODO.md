@@ -8550,7 +8550,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/engine/run/party.ts` + test, `src/scenes/RouteScene.ts` and `docs/battle-spec.md` §13.
       *Dependencies:* none — `memberTypes` and the two engine halves ship. *(Batch 82)*
 
-- [ ] **[Task-183] Run over prints the counters the run now records.** Issues #52 and #61, the
+- [x] **[Task-183] Run over prints the counters the run now records.** Issues #52 and #61, the
       screen half. The board's `TOTALS` view prints an em dash where `ENEMIES FAINTED` belongs
       (`src/ui/hud/panels/run-over/view.ts` 195, `RUN_OVER_EM_DASH`) and the `POKEMON` view prints
       one in every KOs / DMG DEALT / DMG TANKED cell, because the run recorded none of them —

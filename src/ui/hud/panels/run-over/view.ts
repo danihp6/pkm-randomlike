@@ -1,17 +1,19 @@
-import type { RunState } from '../../../../engine/run';
+import type { RunPokemon, RunState } from '../../../../engine/run';
 import { t } from '../../../../i18n';
-import { boxRows, partyRows, ripRows, type PartyRow } from '../../../partyScreen';
-import { runSummary } from '../../../runSummary';
+import { partyRow, partyRows } from '../../../partyScreen';
+import { RUN_SUMMARY_EM_DASH, recordedCount, runSummary } from '../../../runSummary';
 
 /**
  * The run-over score screen's value model (`D49`, frames `06` / `07` / `07b` and
  * their `m…` twins): the panel, the win/loss title and blurb, the four stat rows,
  * the share line, the two tabs and the POKéMON table, as plain data.
  *
- * The run records no enemies-fainted counter and no per-member KOs, damage dealt
- * or damage taken, so the live view refuses to invent them: `fainted` is the em
- * dash and every live row's three columns are `null`. The frames' own numbers live
- * in `design/fixtures/` only, so the board's geometry can be reproduced exactly.
+ * Every figure is the run's own: enemies fainted read `RunStats.faints` and each
+ * row's three columns read that member's `kos` / `damage` / `damageTaken` through
+ * the shared `recordedCount` + `figure()` rule, so a recorded `0` prints `00`. Only
+ * a counter the run never recorded prints the em dash. The frames' own numbers
+ * live in `design/fixtures/` only, so the board's geometry can be reproduced
+ * exactly.
  */
 
 export const RUN_OVER_SLUGS = [
@@ -25,7 +27,7 @@ export type RunOverSlug = (typeof RUN_OVER_SLUGS)[number];
 export const RUN_OVER_NARROW_QUERY = '(max-width: 600px)';
 
 /** The em dash (U+2014) every unrecorded figure is drawn as, one cell, never a 0. */
-export const RUN_OVER_EM_DASH = '\u2014';
+export const RUN_OVER_EM_DASH = RUN_SUMMARY_EM_DASH;
 
 export const RUN_OVER_STAT_IDS = ['routes', 'catches', 'lost', 'fainted'] as const;
 export type RunOverStatId = (typeof RUN_OVER_STAT_IDS)[number];
@@ -43,7 +45,7 @@ export type RunOverRowView = Readonly<{
   name: string;
   state: RunOverRowState;
   level: number;
-  /** `null` means the run does not record it: the panel draws the em dash. */
+  /** `null` means the run never recorded it: the panel draws the em dash. */
   kos: string | null;
   dealt: string | null;
   tanked: string | null;
@@ -173,9 +175,15 @@ function figure(count: number): string {
   return String(Math.max(0, Math.trunc(count))).padStart(2, '0');
 }
 
+/** A member column: the recorded figure, or `null` so the panel draws the dash. */
+function cell(value: number | undefined): string | null {
+  const count = recordedCount(value);
+  return count === null ? null : figure(count);
+}
+
 /**
- * The live screen. The four figures are `runSummary`'s; enemies fainted is not
- * recorded anywhere, so it is the em dash and never a made-up number.
+ * The live screen. The four figures are `runSummary`'s, enemies fainted included;
+ * only a counter the run never recorded prints the em dash.
  */
 export function liveRunOverView(
   run: RunState,
@@ -184,6 +192,7 @@ export function liveRunOverView(
   confirmKey: string,
 ): RunOverView {
   const summary = runSummary(run, won);
+  const faints = summary.faints;
   return {
     won,
     title: won ? t('runOver.headlineWin') : t('runOver.headlineLoss'),
@@ -192,7 +201,11 @@ export function liveRunOverView(
       { id: 'routes', label: statLabel('runOver.routes'), value: figure(summary.routesCleared) },
       { id: 'catches', label: statLabel('runOver.caught'), value: figure(summary.catches) },
       { id: 'lost', label: statLabel('runOver.lost'), value: figure(summary.casualties) },
-      { id: 'fainted', label: t('runOver.enemiesFainted'), value: RUN_OVER_EM_DASH },
+      {
+        id: 'fainted',
+        label: t('runOver.enemiesFainted'),
+        value: faints === null ? RUN_OVER_EM_DASH : figure(faints),
+      },
     ],
     share: t('runOver.share', { share: summary.share }),
     tab,
@@ -209,21 +222,22 @@ export function liveRunOverView(
 /** The killed, the binned and the fallen: party, then box, then rip, as the board reads. */
 function liveRows(run: RunState): readonly RunOverRowView[] {
   const rows: RunOverRowView[] = [];
-  for (const row of partyRows(run)) rows.push(liveRow(row, 'party'));
-  for (const row of boxRows(run)) rows.push(liveRow(row, 'box'));
-  for (const row of ripRows(run)) rows.push(liveRow(row, 'rip'));
+  for (const member of run.party) rows.push(liveRow(member, 'party'));
+  for (const member of run.box) rows.push(liveRow(member, 'box'));
+  for (const member of run.rip) rows.push(liveRow(member, 'rip'));
   return rows;
 }
 
-function liveRow(row: PartyRow, state: RunOverRowState): RunOverRowView {
+function liveRow(member: RunPokemon, state: RunOverRowState): RunOverRowView {
+  const row = partyRow(member);
   return {
     memberId: row.id,
     name: row.name,
     state,
     level: row.level,
-    kos: null,
-    dealt: null,
-    tanked: null,
+    kos: cell(member.kos),
+    dealt: cell(member.damage),
+    tanked: cell(member.damageTaken),
   };
 }
 
