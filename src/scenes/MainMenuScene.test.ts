@@ -26,6 +26,7 @@ vi.mock('../engine/rng', async (importOriginal) => {
 vi.mock('../audio/audio', () => ({ playMusic: mocks.playMusic }));
 
 import type { MainMenuView } from '../ui/hud/panels/main-menu';
+import { menuVersionLabel } from '../ui/hud/panels/main-menu';
 import type { MainMenuScene } from './MainMenuScene';
 
 /** The DOM path the scene takes under `?hud=dom`, with the Phaser seams stubbed. */
@@ -102,6 +103,14 @@ describe('menuView', () => {
 
     expect(instance.menuView()).toEqual(instance.menuView());
   });
+
+  it('carries the build’s version line and the three footer figures', () => {
+    const view = scene().menuView();
+
+    expect(view.version).toBe(menuVersionLabel());
+    expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
+    expect(view.stats.map((stat) => stat.value)).toEqual(['0', '0', '0']);
+  });
 });
 
 /** The scene draws with Phaser, so its mount and repaint seams are read off the source. */
@@ -122,7 +131,9 @@ describe('the seed’s seams', () => {
   it('is the only live view the mount and the repaint read', () => {
     const calls = SOURCE.match(/liveMainMenuView\(/g) ?? [];
     expect(calls).toHaveLength(1);
-    expect(SOURCE).toContain('return liveMainMenuView(this.run, this.index, this.previewSeed);');
+    expect(SOURCE).toContain(
+      'return liveMainMenuView(this.run, this.index, this.previewSeed, this.records, this.versionLabel);',
+    );
     expect(SOURCE).toContain('const view = this.menuView();');
     expect(SOURCE).toContain('this.controller?.update(this.menuView());');
     expect(SOURCE).toContain('this.mountPanel(this.menuView());');
@@ -133,5 +144,11 @@ describe('the seed’s seams', () => {
     expect(SOURCE).not.toContain('previewRoute(');
     expect(SOURCE).not.toContain('Math.random');
     expect(SOURCE).not.toContain('Date.now');
+  });
+
+  it('reads the footer records once, from the history create already loaded', () => {
+    expect(SOURCE).toContain('this.records = mainMenuRecords(this.history, new Date());');
+    const reads = SOURCE.match(/mainMenuRecords\(/g) ?? [];
+    expect(reads).toHaveLength(1);
   });
 });

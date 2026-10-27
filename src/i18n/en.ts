@@ -47,6 +47,9 @@ export const en = {
 
   // stats — MainMenuScene and the stats panel
   'menu.stats': 'STATS',
+  'menu.stat.wins': 'WINS',
+  'menu.stat.elite': 'MAX ELITE STRIKE',
+  'menu.stat.monthly': 'MONTHLY MAX STRIKE',
   'stats.title': 'GLOBAL STATS',
   'stats.blurbTotals': 'TOTALS ACROSS EVERY RUN.',
   'stats.blurbRuns': 'EVERY RUN, NEWEST FIRST.',

@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu prints its three records and its version.** `[Task-199]`, the first of
+      Batch 87: the footer drew an empty list and no version line because `liveMainMenuView`
+      returned `version: null` / `stats: []` written by hand, while the data existed in
+      `SaveDocument.history` since `[Task-181]`. `src/ui/hud/panels/stats/records.ts` now holds the
+      arithmetic the stats screen and the menu share (`historyWins`, `historyBestFloor`,
+      `recordMonthKey`), `src/ui/hud/panels/main-menu/version.ts` reads the version from
+      `package.json` (`APP_VERSION`, `MENU_PHASE`, `menuVersionLabel`) instead of a literal, and
+      `liveMainMenuView` takes the three figures and the version, so the footer always paints
+      `WINS` / `MAX ELITE STRIKE` / `MONTHLY MAX STRIKE · <month>` — `0` and the labels on an empty
+      history, never a blank — plus `v0.0.0 · PHASE 17`. `MainMenuScene` builds both from the save
+      it already loads and the clock. `docs/design-spec.md` §2 and `docs/hud-fidelity.md` §9 record
+      the blocks. Gates: `npm test` 4870 passed at task QA, `npm run build` green. Measured live
+      over CDP at 1280×800 and 390×844: three stat rows present with the board's rects and the
+      version node reading `v0.0.0 · PHASE 17`.
+
 - [x] **Every stat prints the rule the board draws under it.** `[Task-204]`, the fourth of
       Batch 86: the stats screens printed their figures with no line under them while the board
       draws one per figure and `stats.css` already carried the `--stats-rule` token (1 px, white

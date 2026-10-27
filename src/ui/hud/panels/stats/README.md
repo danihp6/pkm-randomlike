@@ -19,6 +19,10 @@ handed.
   re-sort, the species aggregation and both sort orders, the month list, the selector's
   clamp and fallback, the empty states, both boards, the twelve rule boxes and the purity
   checks, headless.
+- `records.ts` — the run-history arithmetic the stats totals and the main-menu footer
+  share: the won runs, the deepest floor of a list and a UTC month key for an instant.
+- `records.test.ts` — the wins, the best floor over a hand-built store and a filtered
+  store, the unreadable floors and the UTC month keys, headless.
 - `statsPanel.tsx` — the panel itself: the card with its highlight and accent, the title
   and blurb, the tab strip, the month chip, the figures grid with a rule node per figure,
   the table with a rule node per row, the empty line and the actions; `statsPanelTree` is

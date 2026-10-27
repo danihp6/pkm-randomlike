@@ -235,6 +235,17 @@ share the first row and MONTHLY MAX STRIKE sits under them, one block 172 × 48 
 `src/ui/hud/panels/main-menu/view.ts` — and the stylesheet's compact block draws exactly those
 numbers, so no label can run into the block beside it. The desk footer is unchanged.
 
+The three figures are **live**, not the frame's copy: `mainMenuStats` in
+`src/ui/hud/panels/main-menu/view.ts` prints WINS (every finished run won), MAX ELITE
+STRIKE (the deepest floor a finite run reached) and MONTHLY MAX STRIKE (the deepest floor
+a finite run reached in the current UTC month) from the run-history store, and the month
+itself prints under the monthly figure where the board prints a record holder's name. On
+a fresh profile the labels and zeroes still draw, never a blank. The desk frame's
+bottom-right version line is build metadata: `menuVersionLabel` in
+`src/ui/hud/panels/main-menu/version.ts` assembles `v<package.json version> · PHASE
+<phase>`, identical in every locale, and the phone block hides the line because neither
+phone frame draws one.
+
 The main menu's narrow CONTINUE row carries **one** secondary datum: the party's portraits.
 At 390×844 the row is 326 × 48 at (32, 402) and the four 22 px cells (pitch 25) fill
 x 258..355, everything to the right of the CONTINUE label, so the map/biome value is

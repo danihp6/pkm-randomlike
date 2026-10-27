@@ -1,6 +1,7 @@
 import { getSpecies } from '../../../../data/dex/species';
 import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { t, type TranslationKey } from '../../../../i18n';
+import { historyBestFloor, historyWins, recordMonthKey } from './records';
 
 /**
  * The stats and ranking screen's value model (`D49`, frames `08` / `08b` / `08c` /
@@ -204,9 +205,7 @@ function monthName(month: number): string {
 
 /** `YYYY-MM` in UTC, or null for an instant the store cannot read. */
 function utcMonthKey(instant: string | Date): string | null {
-  const parts = utcParts(instant);
-  if (parts === null) return null;
-  return `${String(parts.year).padStart(4, '0')}-${pad2(parts.month)}`;
+  return recordMonthKey(instant instanceof Date ? instant : new Date(instant));
 }
 
 /** A duration as the board prints it: `41H 20M`, minutes zero-padded. */
@@ -324,11 +323,11 @@ function bySpeciesId(a: SpeciesTally, b: SpeciesTally): number {
 function totalsView(history: readonly RunHistoryRecord[]): StatsView {
   const runs = history.length;
   const empty = runs === 0;
-  const won = history.filter((record) => record.won).length;
+  const won = historyWins(history);
   const playtime = sum(history, (record) => record.playtimeMs);
   const longest = history.reduce((best, record) => Math.max(best, nonNegative(record.playtimeMs)), 0);
   const average = runs === 0 ? 0 : Math.round(playtime / runs);
-  const bestFloor = empty ? 0 : Math.max(...history.map((record) => nonNegative(record.mapReached)));
+  const bestFloor = historyBestFloor(history);
   const newest = history[0];
   const lastRun = newest === undefined ? '' : statsDay(newest.endedAt);
   const figures: readonly StatsFigure[] = [

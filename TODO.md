@@ -8957,7 +8957,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/tech-decisions.md`.
       *Dependencies:* none. *(Batch 86)*
 
-- [ ] **[Task-199] The main menu prints its three records and its version.** The board's `01-main-menu`
+- [x] **[Task-199] The main menu prints its three records and its version.** The board's `01-main-menu`
       carries `WINS 23`, `MAX ELITE STRIKE 2` and `MONTHLY MAX STRIKE 7 · NOVA`, plus the
       `V0.7.0 · PHASE 7` line at (1065, 750); the live screen draws **none** of them, because
       `liveMainMenuView` (`src/ui/hud/panels/main-menu/view.ts`) returns `version: null` and `stats: []`

@@ -1,14 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { getBiome } from '../../../../data/biomes';
 import { biomeForMap } from '../../../../engine/maps/plan';
 import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../../../../engine/run';
-import { t } from '../../../../i18n';
+import type { RunHistoryRecord } from '../../../../engine/run/history';
+import { DEFAULT_LOCALE, setLocale, t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
 import { portraitCrop } from '../../portrait';
 import {
+  EMPTY_MAIN_MENU_RECORDS,
   MAIN_MENU_ACTIONS,
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
@@ -16,13 +18,17 @@ import {
   MAIN_MENU_SLUG,
   forLayout,
   liveMainMenuView,
+  mainMenuRecords,
+  mainMenuStats,
   type MainMenuLayout,
+  type MainMenuRecords,
   type Rect,
 } from './view';
 
 const MAIN_MENU_CSS = readFileSync(fileURLToPath(new URL('./main-menu.css', import.meta.url)), 'utf8');
 
 const SEED = 'pkm-145';
+const NOW = new Date('2026-10-18T12:00:00.000Z');
 
 function member(id: string, speciesId: string, nickname?: string): RunPokemon {
   return createRunPokemon({
@@ -45,6 +51,40 @@ function savedRun(): RunState {
   return { ...createRun({ seed: SEED, starter: party[0]! }), mapIndex: 3, party };
 }
 
+function historyRecord(
+  edit: Partial<RunHistoryRecord> & Pick<RunHistoryRecord, 'seed'>,
+): RunHistoryRecord {
+  return {
+    mode: 'finite',
+    mapReached: 1,
+    catches: 0,
+    casualties: 0,
+    playtimeMs: 0,
+    won: false,
+    endedAt: '2026-10-18T09:30:00.000Z',
+    species: [],
+    ...edit,
+  };
+}
+
+/**
+ * Four finished runs: a won finite run at floor 5, a lost finite run at floor 2
+ * inside the month, a lost finite run at floor 7 from September, and an infinite
+ * run at floor 9 that must never raise a strike.
+ */
+function history(): readonly RunHistoryRecord[] {
+  return [
+    historyRecord({ seed: 'pkm-won', won: true, mapReached: 5 }),
+    historyRecord({ seed: 'pkm-lost', mapReached: 2, endedAt: '2026-10-02T00:05:00.000Z' }),
+    historyRecord({ seed: 'pkm-old', mapReached: 3, endedAt: '2026-09-30T23:59:59.000Z' }),
+    historyRecord({ seed: 'pkm-infinite', mode: 'infinite', mapReached: 9 }),
+  ];
+}
+
+afterEach(() => {
+  setLocale(DEFAULT_LOCALE);
+});
+
 describe('liveMainMenuView', () => {
   it('draws the four navigable rows, in board order, with the run’s position', () => {
     const run = savedRun();
@@ -63,7 +103,7 @@ describe('liveMainMenuView', () => {
     expect(view.rows[0]!.value).toContain(getBiome(biomeForMap(run.seed, run.mapIndex)).name);
     expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '', '']);
     expect(view.title).toBe(t('menu.title'));
-    expect(view.stats).toEqual([]);
+    expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
     expect(view.version).toBeNull();
   });
 
@@ -117,7 +157,7 @@ describe('liveMainMenuView', () => {
     expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
     expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
     expect(view.portraits).toEqual([]);
-    expect(view.stats).toEqual([]);
+    expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
     expect(view.selected).toBe('new');
   });
 
@@ -167,6 +207,156 @@ function rowAt(view: ReturnType<typeof liveMainMenuView>, id: string) {
   const row = view.rows.find((entry) => entry.id === id);
   expect(row, `no ${id} row`).toBeDefined();
   return row!;
+}
+
+describe('mainMenuRecords', () => {
+  it('counts every won run, finite and infinite alike', () => {
+    expect(mainMenuRecords(history(), NOW).wins).toBe(1);
+    expect(mainMenuRecords([], NOW).wins).toBe(0);
+  });
+
+  it('reads the elite strike from the finite runs only', () => {
+    expect(mainMenuRecords(history(), NOW).elite).toBe(5);
+  });
+
+  it('reads the monthly strike from the finite runs of this UTC month only', () => {
+    const records = mainMenuRecords(history(), NOW);
+
+    expect(records.monthly).toBe(5);
+    expect(records.monthlyLabel).toBe('OCT 2026');
+    expect(
+      mainMenuRecords([historyRecord({ seed: 'pkm-sep', mapReached: 7, endedAt: '2026-09-30T23:59:59.000Z' })], NOW),
+    ).toEqual({ wins: 0, elite: 7, monthly: 0, monthlyLabel: 'OCT 2026' });
+  });
+
+  it('skips a record whose ending instant is unreadable', () => {
+    const records = mainMenuRecords(
+      [historyRecord({ seed: 'pkm-nothing', mapReached: 6, endedAt: 'not a date' })],
+      NOW,
+    );
+
+    expect(records.monthly).toBe(0);
+    expect(records.elite).toBe(6);
+  });
+
+  it('prints the month of now even with an empty store', () => {
+    expect(mainMenuRecords([], NOW)).toEqual({
+      wins: 0,
+      elite: 0,
+      monthly: 0,
+      monthlyLabel: 'OCT 2026',
+    });
+  });
+
+  it('prints no month for an instant the store cannot read', () => {
+    expect(mainMenuRecords(history(), new Date('not-a-date'))).toEqual({
+      wins: 1,
+      elite: 5,
+      monthly: 0,
+      monthlyLabel: '',
+    });
+  });
+
+  it('is pure: the same pair is deep-equal', () => {
+    const store = history();
+
+    expect(mainMenuRecords(store, NOW)).toEqual(mainMenuRecords(store, NOW));
+    expect(store.map((entry) => entry.seed)).toEqual(history().map((entry) => entry.seed));
+  });
+});
+
+describe('mainMenuStats', () => {
+  it('always draws the three figures, in board order, with the month under the last', () => {
+    const stats = mainMenuStats(mainMenuRecords(history(), NOW));
+
+    expect(stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
+    expect(stats.map((stat) => stat.value)).toEqual(['1', '5', '5']);
+    expect(stats.map((stat) => stat.name)).toEqual([null, null, 'OCT 2026']);
+    expect(stats.map((stat) => stat.label)).toEqual([
+      t('menu.stat.wins'),
+      t('menu.stat.elite'),
+      t('menu.stat.monthly'),
+    ]);
+  });
+
+  it('prints the labels and zeroes on the empty record set, never a blank', () => {
+    const stats = mainMenuStats(EMPTY_MAIN_MENU_RECORDS);
+
+    expect(stats).toHaveLength(3);
+    expect(stats.map((stat) => stat.value)).toEqual(['0', '0', '0']);
+    expect(stats.every((stat) => stat.value !== '')).toBe(true);
+    expect(stats.every((stat) => stat.name === null)).toBe(true);
+  });
+
+  it('prints the Spanish labels, and no em dash, under the es locale', () => {
+    setLocale('es');
+
+    const labels = mainMenuStats(EMPTY_MAIN_MENU_RECORDS).map((stat) => stat.label);
+
+    expect(labels).toEqual(['VICTORIAS', 'MEJOR ASALTO ÉLITE', 'ASALTO MÁXIMO DEL MES']);
+    expect(labels.every((label) => !label.includes('\u2014'))).toBe(true);
+  });
+});
+
+describe('liveMainMenuView — the footer', () => {
+  it('hands the panel the records’ figures and the version line it is given', () => {
+    const records: MainMenuRecords = {
+      wins: 23,
+      elite: 2,
+      monthly: 7,
+      monthlyLabel: 'OCT 2026',
+    };
+
+    const view = liveMainMenuView(savedRun(), 0, 'boot-seed', records, 'v1 · PHASE 2');
+
+    expect(view.version).toBe('v1 · PHASE 2');
+    expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
+    expect(view.stats.map((stat) => stat.value)).toEqual(['23', '2', '7']);
+    expect(view.stats[2]!.name).toBe('OCT 2026');
+    expect(view.previewSeed).toBe('boot-seed');
+  });
+
+  it('still draws three figures and no version without a record set', () => {
+    const view = liveMainMenuView(savedRun(), 0);
+
+    expect(view.version).toBeNull();
+    expect(view.stats).toHaveLength(3);
+    expect(view.stats.map((stat) => stat.value)).toEqual(['0', '0', '0']);
+    expect(view.stats.every((stat) => stat.value !== '')).toBe(true);
+    expect(view.stats.every((stat) => stat.name === null)).toBe(true);
+  });
+
+  it('keeps the footer through both layouts, the phone hiding the version in CSS', () => {
+    const records: MainMenuRecords = {
+      wins: 3,
+      elite: 4,
+      monthly: 5,
+      monthlyLabel: 'OCT 2026',
+    };
+    const view = liveMainMenuView(savedRun(), 0, 'boot-seed', records, 'v1 · PHASE 2');
+
+    expect(forLayout(view, 'wide').stats).toBe(view.stats);
+    expect(forLayout(view, 'compact').stats).toBe(view.stats);
+    expect(forLayout(view, 'wide').version).toBe('v1 · PHASE 2');
+    expect(forLayout(view, 'compact').version).toBe('v1 · PHASE 2');
+    expect(compactCss()).toMatch(/\.main-menu__version\s*\{[^}]*display:\s*none/);
+  });
+
+  it('keeps the version stamp on the board’s own one-line box', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const version = declarations(desktopCss, '.main-menu__version');
+
+    expect(sharp(version.get('left'))).toBe(MAIN_MENU_BOARD.version.x);
+    expect(sharp(version.get('top'))).toBe(MAIN_MENU_BOARD.version.y);
+    expect(sharp(version.get('width'))).toBe(MAIN_MENU_BOARD.version.w);
+    expect(version.get('white-space')).toBe('nowrap');
+    expect(MAIN_MENU_BOARD.version.h).toBe(15);
+  });
+});
+
+/** The compact block of the stylesheet, where the phone hides the version line. */
+function compactCss(): string {
+  return MAIN_MENU_CSS.slice(MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
 }
 
 describe('forLayout', () => {
