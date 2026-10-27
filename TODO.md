@@ -8494,59 +8494,36 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   `startedAt` clock is passed there. Two tasks cannot share that path, and `[Task-183]` is
   still behind `[Task-181]`. Batch 84 is therefore `[Task-183]` alone and Batch 85 stays
   `[Task-190]`.
-- **Batch 85 gains `[Task-193]` (2026-10-27, browser sweep).** With `[Task-181]` merged the
-  starter scene is free, and the compact battle cell is broken on its own: a battle taken to
-  390×844 keeps the menu over the foe's panel and drops every move's name, leaving the columns
-  overlapping. `[Task-193]` claims `src/ui/hud/panels/battle-moves/**` and `battle-hp`'s part of
-  `docs/hud-fidelity.md` **§5**, shares no path with `[Task-190]`, and both are dependency-free,
-  so Batch 85 runs **two** tasks wide.
-- **Batch 85 gains `[Task-195]` (2026-10-27).** The special NPC's spot is a pure rule
-  (`src/engine/routes/npcs.ts`) plus the one draw site in `RouteScene.ts`, which no other member of
-  the batch claims, so Batch 85 runs **three** tasks wide: `190` (starter scene, `keybinds.ts`, the
-  i18n pair and `design-spec.md` §2), `193` (`battle-moves`/`battle-hp` and `hud-fidelity.md` §5) and
-  `195` (the NPC spot, `RouteScene.ts`, `routes-spec.md` §2 and `maps-spec.md` §7).
+- **The queue is re-cut to fill four dev slots per batch (2026-10-27).** Every open task was re-packed
+  so no batch wastes a slot where the paths allow it, and every slot left empty names the hot path that
+  blocked it:
+
+  | Batch | Members | What each one holds |
+  | --- | --- | --- |
+  | **85** | `190` · `193` · `195` · `197` | the starter scene + i18n pair · the compact battle cell · the NPC's spot · the panel gate. Four disjoint sets, and 197's instrument is what judges every later panel fix. |
+  | **86** | `196` · `198` · `202` · `204` | the target prompt · the menu's live route · the party panel · the stats' rule. 196 takes the i18n pair 190 released in 85. |
+  | **87** | `199` · `203` · `206` · `209` | the menu's records · a move's icons · the battle's command panel · the bag's description card. |
+  | **88** | `201` · `207` · `210` · `212` | the menu's oval · the strip's Pokevial · the global ranking · the foe's ball row. |
+  | **89** | `205` · `211` · `213` · `214` | the evolution tab · STATS and RANKING as two rows · the stage chips · the move card without its ⓘ. |
+  | **90** | `200` | the DOM HUD as the default. It claims **every scene**, so it follows every task that touches one and no filler can ride it. |
+  | **91** | `208` | the panels' chip, drag and saved slot, which build on 200's shell, 203's kit and 207's strip — the one task that can only come after all three. |
+
+  **The serial chains, named so a later cycle does not "fix" them.** `src/scenes/MainMenuScene.ts`:
+  `198 → 199 → 201 → 211`, with `200` after them. `src/scenes/BattleScene.ts`: `196 → 206`, then `200`.
+  `src/scenes/RouteScene.ts`: `195 → 200`. `src/scenes/StarterScene.ts`: `190 → 200`. The **i18n pair**:
+  `190 → 196 → 211`. `battle-moves/**`: `193 → 196 → 203 → 214`. `battle-hp/**`: `193 → 212 → 213`.
+  `detail/**`: `203 → 205`. `stats/**`: `204 → 199 → 210`. `src/ui/hud/panels/hud/**`: `207 → 208`.
+  `kit/**`: `203 → 208 → 214`. `docs/hud-fidelity.md` is claimed by **section** in every batch, never
+  whole: §5 by `193`/`196`/`203`/`206`/`212`/`213`/`214`, §6 by `203`, §9 by `199`/`211`.
 - **`[Task-194]` is registered parked (2026-10-27).** The mission panel the human asked for — a chip
   that collapses, a body that drags, and the run's list — carries `[!]`, so the driver never picks it
-  up, and no batch contains it: it claims the **i18n pair** (`[Task-190]`'s) and a `SAVE_VERSION` step
-  (`26 → 27`), so it opens its own batch the day the human frees it.
-- **Batch 86 is `[Task-196]` alone (2026-10-27).** The double battle's target prompt takes the **i18n
-  pair**, which `[Task-190]` holds in 85, and `battle-moves/**`, which `[Task-193]` holds in the same
-  batch, so no free slot of 85 can carry it: it opens the next batch, and Batch 86 is one task wide
-  for the two hot paths it claims.
-- **Batch 87 is `[Task-197]` alone (2026-10-27).** The panel gate is the harness, not a panel: it claims
-  `scripts/hud/diff.mjs`, `design/fixtures/**`, `src/ui/hud/fixtures/**` and the two design docs, none of
-  which 86 touches. It cannot ride 86 because a correct gate is what decides whether 86's own prompt row
-  is measured at 390 at all; its numbers, in turn, cut the panel tasks that follow it.
-- **Batches 88, 89 and 90 are the main menu and the HUD's own default (2026-10-27).** Seen in the browser
-  beside `design/screens/01-main-menu.png`: the menu's route window is a frame with nothing behind it, and
-  its three records and version line are hard-coded empty (`liveMainMenuView`). `[Task-198]` (the live
-  route with walkers) and `[Task-199]` (the records and the version) both rewrite
-  `src/ui/hud/panels/main-menu/**` and `src/scenes/MainMenuScene.ts`, so they run **serially** — 88 then
-  89. `[Task-200]` retires the canvas panel layer and mounts the DOM HUD unconditionally; it claims every
-  scene, so it opens its own batch behind them (90) and its own entry lists what only the canvas layer
-  carried. The three were cut from the same measurement, so 87's gate is what closes them.
-- **Batches 91-94 are the DOM panels' own debt (2026-10-27),** cut from one `?hud=dom` session at
-  1280×800 in the browser. **91** holds `[Task-201]` (the menu's oval gradient), `[Task-204]` (the stats'
-  rule under each figure), `[Task-206]` (the battle's command window, the last canvas panel) and
-  `[Task-207]` (the strip's Pokevial and its EXP string) — four disjoint path sets, with
-  `src/scenes/BattleScene.ts` held by 206 alone. **92** holds `[Task-202]` (the party panel: portraits,
-  drag-reorder, the HP bar's gap), `[Task-203]` (a move's type and category as icons, in the detail panel
-  and in the battle) and `[Task-209]` (the bag's description card, which prints no text at all today);
-  203 waits for 193 and 196, which rewrite `battle-moves/**`, and 209 for the i18n pair 190 and 196 hold.
-  **93** is `[Task-205]` (EVOLUTION as its own tab) alone, because it rewrites `detail/**` that 203
-  touches in 92. **94** is `[Task-208]` (the DOM panels' chip, drag and saved slot) alone: it needs
-  `[Task-200]`'s retirement, 203's kit and 207's strip before it claims `hud/**`.
-- **The stats are local by design, and the board's monthly record is not (2026-10-27).** No store exists:
-  `infra/` deploys the static site only (S3 bucket + CloudFront + the certificate through Cloudflare) and
-  every record lives in `window.localStorage` through `src/storage.ts`, which is why the panel's own blurb
-  reads "MONTHLY RECORD · THIS DEVICE" (`stats.blurbRanking`). A **global** monthly strike would need a
-  backend (a table plus one write endpoint, and the anti-cheat that comes with it) and has not been
-  decided; the board's `7 NOVA` is therefore drawn from the device until the human says otherwise.
-  **The human decided it on the same day:** `[Task-210]` builds that store (a DynamoDB table plus the one
-  endpoint that feeds it), and `[Task-211]` splits the menu's single STATS row into STATS and RANKING so
-  the global table is one press away. 211 takes the **i18n pair**, so it waits for 190 and 196 and opens
-  Batch 95 behind 208; 210 owns `infra/**` and the ranking modes of `stats/**`, which 204 touches in 91,
-  so it opens Batch 96 alone.
+  up, and no batch contains it: it takes the **i18n pair** and a `SAVE_VERSION` step (`26 → 27`), so it
+  opens its own batch the day the human frees it.
+- **The stats are local today and the human made them global (2026-10-27).** Nothing leaves the browser
+  yet: `infra/` deploys the static site only and every record lives in `window.localStorage` through
+  `src/storage.ts`, which is why the panel's blurb reads "MONTHLY RECORD · THIS DEVICE". `[Task-210]`
+  builds the store (a DynamoDB table plus the one endpoint that feeds it) and `[Task-211]` splits the
+  menu's single STATS row into STATS and RANKING so the global table is one press away.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8934,7 +8911,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/hud-fidelity.md` matches the run.
       Claims `scripts/hud/diff.mjs` + its test, `design/fixtures/**`, `src/ui/hud/fixtures/**` + tests,
       `docs/hud-fidelity.md` and `docs/hud-dom-proposal.md` §11.
-      *Dependencies:* none. *(Batch 87)*
+      *Dependencies:* none. *(Batch 85)*
 
 - [ ] **[Task-198] The main menu's route window shows a live route with Pokémon wandering in it.**
       Decided by the human on `2026-10-27` after seeing the real screen beside the board's `01`: the
@@ -8963,7 +8940,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test,
       `src/engine/routes/**` (the preview's generator seam) + test, `docs/design-spec.md` §2 and
       `docs/tech-decisions.md`.
-      *Dependencies:* none. *(Batch 88)*
+      *Dependencies:* none. *(Batch 86)*
 
 - [ ] **[Task-199] The main menu prints its three records and its version.** The board's `01-main-menu`
       carries `WINS 23`, `MAX ELITE STRIKE 2` and `MONTHLY MAX STRIKE 7 · NOVA`, plus the
@@ -8988,7 +8965,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       floor reached and the version line reads.
       Claims `src/ui/hud/panels/main-menu/**` + tests, `src/ui/hud/panels/stats/view.ts` (the shared
       helper), `src/scenes/MainMenuScene.ts` + test, `docs/design-spec.md` §2 and `docs/hud-fidelity.md` §9.
-      *Dependencies:* none. *(Batch 89)*
+      *Dependencies:* none. *(Batch 87)*
 
 - [ ] **[Task-200] The DOM HUD is the HUD, and the canvas panel layer retires.** Decided by the human on
       `2026-10-27` after seeing the same build twice at 1280×800, in the browser: **without a flag the game
@@ -9037,7 +9014,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       and the two gradient stops; `[live]` at 1280 and at 390 the backdrop fades with no visible edge.
       Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test and
       `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-198]` and `[Task-199]` (same panel and scene).
-      *(Batch 91)*
+      *(Batch 88)*
 
 - [ ] **[Task-202] The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
       Three defects, one panel, all seen with `?hud=dom` on `2026-10-27`. (a) **No sprites:** every row
@@ -9058,7 +9035,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       HP bars start flush at both widths.
       Claims `src/ui/hud/panels/party/**` + tests, `src/ui/hud/portrait.ts` + test and
       `src/engine/run/state.ts` (the reorder seam) + test, `docs/design-spec.md` §3 and
-      `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 92)*
+      `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 86)*
 
 - [ ] **[Task-203] A move prints its type and its category as icons, never as words.** Seen with
       `?hud=dom` on `2026-10-27`: in the detail panel's MOVES tab the type under a move's name is the
@@ -9078,7 +9055,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       both widths, in the battle and in the detail panel.
       Claims `src/ui/hud/panels/detail/**` + tests, `src/ui/hud/panels/battle-moves/**` + tests,
       `src/ui/hud/kit/**` + tests, `src/data/typeIcons.ts` (read-only) and `docs/hud-fidelity.md` §5/§6.
-      *Dependencies:* `[Task-193]` and `[Task-196]` (both rewrite `battle-moves/**`). *(Batch 92)*
+      *Dependencies:* `[Task-193]` and `[Task-196]` (both rewrite `battle-moves/**`). *(Batch 87)*
 
 - [ ] **[Task-204] Every stat prints the rule the board draws under it.** Seen with `?hud=dom` on
       `2026-10-27`: the stats screens print their figures with **no line under them**, while
@@ -9090,7 +9067,8 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       the boxes never intersect the next row; `[live]` the totals, the run list and the Pokémon table all
       show the rule at both widths.
       Claims `src/ui/hud/panels/stats/**` + tests and `docs/hud-fidelity.md`.
-      *Dependencies:* `[Task-199]` (it adds the shared helper in the same folder). *(Batch 91)*
+      *Dependencies:* none — `[Task-199]`'s shared helper lands in the same folder a batch later and
+      inherits the rule. *(Batch 86)*
 
 - [ ] **[Task-205] Evolution is its own tab, between STATS and MOVES.** Asked by the human on
       `2026-10-27`, looking at the detail panel with `?hud=dom`: the panel's tabs are
@@ -9104,7 +9082,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       graph only on the evolution tab; `[live]` a member with an evolution shows the graph after one
       right press from STATS and MOVES after the next, at both widths.
       Claims `src/ui/hud/panels/detail/**` + tests, `docs/design-spec.md` and `docs/hud-fidelity.md`.
-      *Dependencies:* `[Task-203]` (same folder). *(Batch 93)*
+      *Dependencies:* `[Task-203]` (same folder). *(Batch 89)*
 
 - [ ] **[Task-206] The battle's command menu is the HUD's.** Seen with `?hud=dom` on `2026-10-27`: every
       other battle panel is DOM, and the four-button command window (FIGHT / BAG / POKÉMON / RUN) is still
@@ -9120,7 +9098,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       either width; `[live]` a wild battle shows the DOM command window, clicking FIGHT opens the moves and
       RUN flees, at 1280 and at 390.
       Claims `src/ui/hud/panels/battle-command/**` (new) + tests, `src/scenes/BattleScene.ts` + test,
-      `docs/hud-fidelity.md` §5 and `docs/design-spec.md` §4. *Dependencies:* none. *(Batch 91)*
+      `docs/hud-fidelity.md` §5 and `docs/design-spec.md` §4. *Dependencies:* none. *(Batch 87)*
 
 - [ ] **[Task-207] The route strip draws the Pokevial, and the EXP stops being a string.** Seen with
       `?hud=dom` on `2026-10-27`: the strip carries the level and the XP but **no Pokevial** — a grep of
@@ -9135,7 +9113,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       from the run's charges; `[unit]` the EXP chip carries no text; `[live]` a run with two of three
       charges shows the vial filled twice, and the XP shows a bar and no number, at both widths.
       Claims `src/ui/hud/panels/hud/**` + tests and `docs/hud-fidelity.md`. *Dependencies:* none.
-      *(Batch 91)*
+      *(Batch 88)*
 
 - [ ] **[Task-208] The DOM panels collapse to their chip, drag and keep their slot.** Asked by the human
       on `2026-10-27` ("los paneles no se pueden mover en ruta") and owed by `[Task-200]`, which retires
@@ -9156,7 +9134,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/hud/**` + tests, `src/ui/hud/styles/**`, `src/data/hudLayout.ts` + test,
       `docs/hud-fidelity.md`, `docs/tech-decisions.md` and `docs/design-spec.md` §2.
       *Dependencies:* `[Task-200]` (the canvas layer it replaces), `[Task-203]` (the kit) and
-      `[Task-207]` (the strip). *(Batch 94)*
+      `[Task-207]` (the strip). *(Batch 91)*
 
 - [ ] **[Task-209] The bag's description card prints the item's text, in the player's language.** Seen
       with `?hud=dom` on `2026-10-27` ("faltan traducciones por ejemplo en descripción de items del panel
@@ -9177,7 +9155,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       a Potion in the bag shows its description in Spanish and in English with the locale switched.
       Claims `src/data/items.ts` + test, `src/i18n/content.ts` + its data files,
       `src/ui/hud/panels/bag/**` + tests, `docs/data-spec.md` and `docs/tech-decisions.md`.
-      *Dependencies:* `[Task-190]` and `[Task-196]` (the i18n pair). *(Batch 92)*
+      *Dependencies:* `[Task-190]` and `[Task-196]` (the i18n pair). *(Batch 87)*
 
 - [ ] **[Task-210] The ranking is global: a DynamoDB table and the one endpoint that feeds it.**
       Decided by the human on `2026-10-27` ("usar dynamo"). Today nothing leaves the browser: `infra/`
@@ -9204,7 +9182,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `infra/lib/site-stack.ts` + `infra/lambda/**` (the endpoint) + their tests, a new client
       module under `src/net/**` + test, `src/ui/hud/panels/stats/**` + tests, `docs/tech-decisions.md`,
       `docs/design-spec.md` and `infra/README.md`.
-      *Dependencies:* `[Task-181]` (merged) and `[Task-199]` (the records the ranking counts). *(Batch 96)*
+      *Dependencies:* `[Task-181]` (merged) and `[Task-199]` (the records the ranking counts). *(Batch 88)*
 
 - [ ] **[Task-211] STATS and RANKING are two rows of the main menu.** Decided by the human on
       `2026-10-27` ("dividir en dos botones del menú stats y ranking"). Today the menu has four rows —
@@ -9226,7 +9204,63 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test,
       `src/i18n/{en,es}.ts`, `design/fixtures/01-main-menu.json`, `docs/design-spec.md` §2 and
       `docs/hud-fidelity.md` §9. *Dependencies:* `[Task-198]`, `[Task-199]` and `[Task-201]` (same panel).
-      *(Batch 95)*
+      *(Batch 89)*
+
+- [ ] **[Task-212] The trainer's remaining Pokémon show as balls under its panel.** Seen in battle with
+      `?hud=dom` on `2026-10-27`: the board's `05` draws three pokéball icons under the foe's HP box (a
+      trainer with two left after the active), and the game draws **none** — a grep of
+      `src/ui/hud/panels/battle-hp/{view.ts,battleHp.tsx}` finds no `ball` and no remaining count at all.
+      **Fix shape:** the panel's foe side gains a ball row, one per member the foe's `party` fielded
+      (`BattleSide.party`, `src/engine/battle/state.ts` 98-104): **filled** for a member still standing,
+      **spent** for a fainted one, and **no row** in a wild battle (the party is the wild itself). The row
+      takes the board's size and gap, sits under the foe's box and never meets the player's panel or the
+      command window. **Docs:** `docs/hud-fidelity.md` §5 (the ball row) and `docs/battle-spec.md` (the
+      count is the foe's living party, not its roster).
+      **Tests:** `[unit]` the view returns three filled and none spent for a full party of three, two
+      filled and one spent after a faint, and no row for a wild battle; `[unit]` the row's box sits under
+      the foe's panel and intersects neither the player's panel nor the command window at 1280 and 390;
+      `[live]` a trainer battle shows the balls, and one dims when a member faints, at both widths.
+      Claims `src/ui/hud/panels/battle-hp/**` + tests, `docs/hud-fidelity.md` §5 and `docs/battle-spec.md`.
+      *Dependencies:* `[Task-193]` (same panel). *(Batch 88)*
+
+- [ ] **[Task-213] A stat change is a chip in a grid beside the HP panel.** Seen in battle with
+      `?hud=dom` on `2026-10-27`: the board's `05` prints the active's stages as a 3×2 grid to the right of
+      the player's HP box — `+2 ATK`, `+1 DEF`, `+3 SPA` in green over `-1 SPD`, `-2 SPE`, `-1 ACC` in red
+      — and the game prints **nothing**: `src/ui/hud/panels/battle-hp/**` has no boost or stage field (no
+      `boost`/`stage` match), while the scene keeps an `accuracyStage` (432) only for its own popup. So a
+      player never sees that their Attack is up or that their Speed fell. **Fix shape:** the battle-hp view
+      returns the active's stages as chips (the six stats plus accuracy and evasiveness, in the board's
+      order), drawn in a 3×2 grid at the board's offset beside the panel, green above zero and red below,
+      and **no grid at all** when every stage is zero; the HUD state carries the stages the engine already
+      keeps on the fighter, so the panel never reads the battle itself. **Docs:**
+      `docs/hud-fidelity.md` §5 (the stage grid) and `docs/battle-spec.md` (a stage is drawn while it is
+      not zero).
+      **Tests:** `[unit]` the view returns `+2 ATK`/`-1 SPD` chips for a fighter with those stages and an
+      empty grid at zero; `[unit]` the grid's box sits beside the player's panel and intersects neither it
+      nor the command window at 1280 and 390; `[live]` a Growl lowers the foe's Attack and the chip appears
+      beside its panel, and a switch clears it, at both widths.
+      Claims `src/ui/hud/panels/battle-hp/**` + tests, `src/ui/hud/state.ts` (the stages it carries) + test,
+      `docs/hud-fidelity.md` §5 and `docs/battle-spec.md`. *Dependencies:* `[Task-193]` (same panel).
+      *(Batch 89)*
+
+- [ ] **[Task-214] The move's info is the board's card, and the ⓘ leaves the cells.** Asked by the human
+      on `2026-10-27` ("quitar botón info por chips a la esquina derecha como en figma"), in battle. The
+      board has **no ⓘ**: the selected move's card sits at the top-right above the command window
+      (`FLAMETHROWER`, `PP 12/15`, `PWR 90 ACC 100`, its type and category icons and the description), and
+      the cells keep only the icons. The game draws a 22-px ⓘ square in every cell — reserved by
+      `[Task-192]`, hovered by `[Task-189]` — and floats the description from it
+      (`battleMoves.tsx` 19-25, 129-131). **Fix shape:** the ⓘ and its 22 px reserve leave the cells; the
+      card the board draws becomes the panel's own — filled from the cell the cursor is on, so hovering,
+      arrowing or pressing a cell all update it — and the freed column goes back to the name, which is what
+      the board's cell measures. The `info` intent collapses into "the cursor's move": no second popup, no
+      per-cell button. **Docs:** `docs/hud-fidelity.md` §5 (the move card and a cell without a button).
+      **Tests:** `[unit]` the view returns a card for the highlighted cell and `null` with none, and no
+      cell carries an info box; `[unit]` the name column's width is the board's without the 22 px; `[live]`
+      a wild battle at 1280 and at 390 shows no ⓘ, the card follows the cursor, and a press still chooses
+      the move.
+      Claims `src/ui/hud/panels/battle-moves/**` + tests, `src/ui/hud/kit/**` (the card's icons) and
+      `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-193]`, `[Task-196]` and `[Task-203]` (same view).
+      *(Batch 89)*
 
 ---
 
