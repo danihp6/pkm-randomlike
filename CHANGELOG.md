@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The panel gate measures the panels at both viewports, and says when it cannot.** `[Task-197]`,
+      the fourth of Batch 85, fixes the instrument every later panel task is judged by.
+      `scripts/hud/diff.mjs` no longer waits for `Page.loadEventFired` — the `--dev` path polls
+      the page's own readiness (`document.readyState`, `#hud`, `document.fonts`) so a run needs
+      no build — and it finds this machine's Chromium (`CHROME_PATH`, then
+      `/usr/bin/google-chrome`, `/usr/bin/chromium`, then the Windows paths) instead of dying on
+      `no Chrome or Edge found`. A fixture now declares the `screen` it draws
+      (`design/fixtures/<slug>.json`, outside `state`), the harness reads the mounted
+      `[data-hud-panel]` id and reports `screen` / `measured` per viewport: a frame whose screen
+      is not on the page is reported **`unavailable`** with the screen it needs instead of a
+      false FAIL, and a slug with no fixture reports its allow-list reason the same way. Seven
+      board frames gained a fixture (`03b`, `03e`, `03h`, `03l`, `03p`, `05e`, and `03c` is
+      allow-listed because its subject is the saved layout a `HudState` cannot carry), and a
+      Node test — `scripts/hud/diff.test.mjs`, discovered by Vitest — enumerates
+      `design/screens` against `design/fixtures` so a new frame can never arrive unmeasured.
+      `02-options` gained its `mobile` block, which is why the 390 pass now renders SETTINGS and
+      not the menu. The measured table lands at the end of `docs/hud-fidelity.md` (33 frames ×
+      two viewports, every number from a real run) and `docs/hud-dom-proposal.md` §11 records the
+      export recipe. Gates: `npm test` green (263 files), `npm run build` green. Measured live:
+      `--slug 02-options --dev` → 1280×800 0.10 % pixels / geometry max 1 px / flat ΔE 0.12 PASS
+      and 390×844 0.15 % / max 2 px / ΔE 0.12 PASS, both `measured: options`;
+      `--slug 03c-panels-compress --dev` → `unavailable` with its reason and no pixel verdict.
+
 - [x] **A special NPC stands against a wall, with its back to it.** `[Task-195]`, the third of
       Batch 85, answers the human's note of `2026-10-27`: `npcSpot` drew **any** free walkable
       tile and returned no facing, so a medic or a merchant could stand in the middle of an open

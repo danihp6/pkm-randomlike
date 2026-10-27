@@ -1,5 +1,6 @@
 {
   "slug": "09b-ranking-pokemon",
+  "screen": "stats",
   "state": {
     "party": [],
     "bag": [

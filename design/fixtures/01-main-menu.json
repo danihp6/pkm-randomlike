@@ -1,5 +1,6 @@
 {
   "slug": "01-main-menu",
+  "screen": "main-menu",
   "state": {
     "party": [
       {

@@ -1,0 +1,88 @@
+{
+  "slug": "03e-route-shop-sell",
+  "screen": "shop",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "sell": {
+    "title": "MART",
+    "money": 2480,
+    "message": "What would you like to sell?",
+    "hint": "Drag a row onto the bag or a Pokémon.",
+    "empty": "Nothing to sell.",
+    "rows": [
+      {
+        "index": 0,
+        "itemId": "potion",
+        "name": "Potion",
+        "price": 150,
+        "count": 3,
+        "owned": 3,
+        "affordable": true
+      },
+      {
+        "index": 1,
+        "itemId": "superpotion",
+        "name": "Super Potion",
+        "price": 350,
+        "count": 1,
+        "owned": 1,
+        "affordable": true
+      },
+      {
+        "index": 2,
+        "itemId": "nugget",
+        "name": "Nugget",
+        "price": 5000,
+        "count": 2,
+        "owned": 2,
+        "affordable": true
+      },
+      {
+        "index": 3,
+        "itemId": "antidote",
+        "name": "Antidote",
+        "price": 50,
+        "count": 1,
+        "owned": 1,
+        "affordable": true
+      },
+      {
+        "index": 4,
+        "itemId": "pokeball",
+        "name": "Poke Ball",
+        "price": 100,
+        "count": 5,
+        "owned": 5,
+        "affordable": true
+      },
+      {
+        "index": 5,
+        "itemId": "fullheal",
+        "name": "Full Heal",
+        "price": 300,
+        "count": 2,
+        "owned": 2,
+        "affordable": true
+      },
+      {
+        "index": 6,
+        "itemId": "greatball",
+        "name": "Great Ball",
+        "price": 300,
+        "count": 4,
+        "owned": 4,
+        "affordable": true
+      },
+      {
+        "index": 7,
+        "itemId": "ultraball",
+        "name": "Ultra Ball",
+        "price": 600,
+        "count": 1,
+        "owned": 1,
+        "affordable": true
+      }
+    ],
+    "selected": 0,
+    "scroll": 0
+  }
+}

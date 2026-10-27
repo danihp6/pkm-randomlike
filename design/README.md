@@ -10,6 +10,7 @@ decision; `docs/hud-dom-proposal.md` §11 is the recipe; `docs/hud-fidelity.md` 
 | path                 | what it is                                                    | who reads it                         |
 | -------------------- | ------------------------------------------------------------- | ------------------------------------ |
 | `frames/<slug>.json` | geometry (name, box, radius, fills, strokes) **and the text** | the fixture, `tokens.mjs`, the panel |
+| `fixtures/<slug>.json` | one frame's copy as the panel reads it: `slug`, `screen`, the six-key `state` and the panel's own block | `?hudFixture=<slug>` and `scripts/hud/diff.mjs` |
 | `screens/<slug>.svg` | 1:1 vector, diffable, **no `<text>`** (Figma outlines it)     | review, the escape-hatch assets      |
 | `screens/<slug>.png` | `@2x` rasterisation, the diff's reference, never edited       | `scripts/hud/diff.mjs`               |
 | `board.json`         | slug → node ids, frame name, task, panel, scene               | the exporter, the README below       |

@@ -8525,6 +8525,21 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   builds the store (a DynamoDB table plus the one endpoint that feeds it) and `[Task-211]` splits the
   menu's single STATS row into STATS and RANKING so the global table is one press away.
 
+- **The HUD gate is honest as of Batch 85, and its table is the backlog (2026-10-27).**
+  `[Task-197]` made `node scripts/hud/diff.mjs` boot from the dev server, find the machine's own
+  Chromium and say **which screen it measured**; the table now lives at the end of
+  `docs/hud-fidelity.md` (`## The gate's measured table`, 33 frames × 2 viewports, every number
+  from a real run). What it measured: **`02-options` passes both viewports** (1280: 0.10 % pixels,
+  geometry max 1 px, flat ΔE 0.12; 390: 0.15 %, max 2 px, ΔE 0.12 — the phone pass now renders
+  SETTINGS, not the menu); `03c-panels-compress` is `unavailable` with its reason (the compressed
+  state is a saved layout, not a `HudState`); the panel-level frames (`03b`, `03d`-`03o`, `05`,
+  `05c`, `05e`) report `unavailable: the frame needs screen "<id>"` because their scene is not
+  running at boot; and eleven frames are compared and red — `01-main-menu`, `01b`,
+  `03n-panels-pause-menu`, `04-starter-pick`, `05b-battle-message`, `05d-battle-pokemon`,
+  `06`/`07`/`07b` run-over, `08`/`08b`/`08c` stats, `09`/`09b` ranking. **The next cut takes
+  them from the table, one task per failing or unavailable row**, starting with the rows whose
+  screen is one boot away (a per-scene boot flag) before the panel-level ones.
+
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
       and **nothing calls it**: a grep of `src` finds the two names in the module and its tests
@@ -8872,7 +8887,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `docs/battle-spec.md` §12 and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 86)*
 
-- [ ] **[Task-197] The panel gate measures the panels at both viewports.** Measured on `2026-10-27` on
+- [x] **[Task-197] The panel gate measures the panels at both viewports.** Measured on `2026-10-27` on
       the tree that merged `[Task-183]` (`main` @ `49aeb7b`, `npm run build` fresh) with the repository's
       own harness, `node scripts/hud/diff.mjs` (`scripts/hud/diff.mjs`: `design/screens/<slug>.png` at
       2560×1600 as the scale-2 reference, `<m><slug>.png` at 780×1688 for the phone, geometry max ≤ 2 px

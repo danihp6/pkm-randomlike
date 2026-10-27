@@ -1,0 +1,8 @@
+{
+  "slug": "03l-panels-notice-level-up",
+  "screen": "notices",
+  "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
+  "notice": { "text": "BULBASAUR GREW TO LV 18!" },
+  "mission": null,
+  "area": null
+}

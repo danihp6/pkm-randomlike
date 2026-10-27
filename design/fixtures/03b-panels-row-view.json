@@ -1,0 +1,38 @@
+{
+  "slug": "03b-panels-row-view",
+  "screen": "bag",
+  "state": {
+    "party": [
+      {
+        "id": "f-charizard",
+        "speciesId": "charizard",
+        "name": "Charizard",
+        "level": 36,
+        "hp": 98,
+        "maxHp": 112,
+        "status": null,
+        "statusLabel": null,
+        "heldItem": "charcoal",
+        "heldItemName": "Charcoal",
+        "shiny": false,
+        "dark": false,
+        "hpFraction": 0.88
+      }
+    ],
+    "bag": [
+      { "itemId": "potion", "name": "Potion", "count": 3, "category": "consumable" },
+      { "itemId": "superpotion", "name": "Super Potion", "count": 1, "category": "consumable" },
+      { "itemId": "hyperpotion", "name": "Hyper Potion", "count": 2, "category": "consumable" },
+      { "itemId": "fullheal", "name": "Full Heal", "count": 1, "category": "consumable" },
+      { "itemId": "antidote", "name": "Antidote", "count": 5, "category": "consumable" },
+      { "itemId": "awakening", "name": "Awakening", "count": 2, "category": "consumable" },
+      { "itemId": "pokeball", "name": "Poke Ball", "count": 4, "category": "ball" },
+      { "itemId": "greatball", "name": "Great Ball", "count": 1, "category": "ball" }
+    ],
+    "money": 2480,
+    "route": null,
+    "battle": null,
+    "notice": null
+  },
+  "ui": { "pocket": "consumable", "cursor": 0, "query": "" }
+}

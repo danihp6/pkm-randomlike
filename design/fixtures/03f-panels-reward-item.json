@@ -1,5 +1,6 @@
 {
   "slug": "03f-panels-reward-item",
+  "screen": "rewards",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "item": {
     "title": "MINI-BOSS REWARD",

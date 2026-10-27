@@ -1,5 +1,6 @@
 {
   "slug": "03n-panels-pause-menu",
+  "screen": "pause",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "menu": {
     "title": "MENU",

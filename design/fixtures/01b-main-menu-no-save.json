@@ -1,5 +1,6 @@
 {
   "slug": "01b-main-menu-no-save",
+  "screen": "main-menu",
   "state": {
     "party": [],
     "bag": [],

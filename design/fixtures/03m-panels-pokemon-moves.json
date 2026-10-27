@@ -1,5 +1,6 @@
 {
   "slug": "03m-panels-pokemon-moves",
+  "screen": "detail",
   "state": { "party": [], "bag": [], "money": null, "route": null, "battle": null, "notice": null },
   "detail": {
     "id": "fixture-charizard",
