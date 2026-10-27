@@ -1,18 +1,24 @@
 import { evolutionRowNote, type FamilyNode } from '../../../evolutionGraph';
+import { clampScrollTop, maxScrollTop, visibleRange } from '../../../scroll';
 import type { DetailEvolutionRowView } from './view';
 
 /**
  * The STATS tab's evolution graph as SVG data (`D49`): one row per family node,
  * indented by stage, an elbow edge per non-root row, and each branch's level on the
- * right. Deterministic from `FamilyNode[]` and a width alone, so the DOM draws the
- * same graph the canvas draws and a fixed save paints the same picture twice.
+ * right. Deterministic from `FamilyNode[]`, a width and a row offset alone, so the
+ * DOM draws the same graph the canvas draws and a fixed save paints the same picture
+ * twice.
  */
 
 export type EvolutionEdge = Readonly<{ fromRow: number; toRow: number; d: string }>;
 
 export const EVO_ROW_H = 28; // HUD_DETAIL_EVO_ROW_H
 export const EVO_INDENT = 34; // HUD_DETAIL_EVO_INDENT
-export const EVO_MAX_ROWS = 9; // HUD_DETAIL_EVO_MAX
+/** The pool: the most rows the band will ever take from the model (the model's longest graph plus one row of headroom). */
+export const EVO_MAX_ROWS = 11;
+/** The window: the rows the 460 × 560 card can hold, drawn at once. */
+export const EVO_WINDOW_ROWS = 10;
+
 export const EVO_PORTRAIT = 26; // 64 × HUD_DETAIL_EVO_PORTRAIT_SCALE 0.4, rounded
 export const EVO_PAD_X = 8;
 
@@ -47,20 +53,26 @@ function edgePath(parentX: number, childX: number, parent: number, child: number
 }
 
 /**
- * The graph's rows and edges at `width`, truncated to `EVO_MAX_ROWS` (Eevee's eight
- * plus itself). `current` and `ready` are flags for the CSS to paint; they never move
- * a row and never change an edge.
+ * The graph's rows and edges at `width`, capped to `EVO_MAX_ROWS` (the pool) and then
+ * windowed to the `EVO_WINDOW_ROWS` rows starting at `top` (an offset in rows, clamped
+ * by this function). `row` and `y` are window-relative, so the first drawn row is
+ * always `{ row: 0, y: 0 }`; `parent` stays the family-absolute row of its edge's
+ * source. `current` and `ready` are flags for the CSS to paint; they never move a row
+ * and never change an edge.
  */
 export function evolutionView(
   nodes: readonly FamilyNode[],
   _width: number,
+  top = 0,
 ): Readonly<{
   height: number;
   rows: readonly DetailEvolutionRowView[];
   edges: readonly EvolutionEdge[];
 }> {
-  const kept = nodes.slice(0, EVO_MAX_ROWS);
-  const rows: DetailEvolutionRowView[] = kept.map((node, index) => ({
+  const capped = nodes.slice(0, EVO_MAX_ROWS);
+  const maxTop = maxScrollTop(capped.length, 1, EVO_WINDOW_ROWS);
+  const { start, end } = visibleRange(clampScrollTop(top, maxTop), 1, EVO_WINDOW_ROWS, capped.length);
+  const rows: DetailEvolutionRowView[] = capped.slice(start, end).map((node, index) => ({
     id: node.id,
     name: node.name,
     row: index,
@@ -76,7 +88,8 @@ export function evolutionView(
   const edges: EvolutionEdge[] = [];
   rows.forEach((row) => {
     if (row.parent === null) return;
-    const parent = rows[row.parent];
+    if (row.parent < start || row.parent >= end) return;
+    const parent = rows[row.parent - start];
     if (parent === undefined) return;
     edges.push({
       fromRow: parent.row,

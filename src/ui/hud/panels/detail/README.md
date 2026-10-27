@@ -11,8 +11,8 @@ run, and feeds this panel's view, so a turn of `?hud=dom` swaps the drawing and 
 
 - `view.ts` — the panel's value model: `detailPanelView` (a pure projection of the member, the learnset pool and the panel's cursor state), `detailPanelBox`, `initialDetailPanelUi` and the block of mirrored Phaser constants.
 - `view.test.ts` — the mirrored constants against their literals, both panel boxes, the tabs, the six stats and their value inset, the four move cells with their ⓘ boxes, the learnset window and its page clamp, the cursor clamps, purity and the empty view, headless.
-- `evolution.ts` — the evolution graph as SVG data: one row per family node at the shipped indent and pitch, one elbow path string per branch.
-- `evolution.test.ts` — the row origins, the truncation at nine rows, the exact `d` strings of the `03m` family and of its Mega / Gmax branches, headless.
+- `evolution.ts` — the evolution graph as SVG data: one row per family node at the shipped indent and pitch, one elbow path string per branch, and the pool / window the band reads and scrolls its family through.
+- `evolution.test.ts` — the row origins, the pool and its window, the one-row scroll with its clamp, the exact `d` strings of the `03m` family and of its Mega / Gmax branches, the Eevee family's ten rows, the card fit and the two constants the scene shares with this module, headless.
 - `detailPanel.tsx` — the card itself: the header, the chips, the rename field, the tab strip, the stats, the info band with its ability ⓘ, the SVG evolution graph, the move grid with its ⓘ buttons, the search field with its page arrows and the pool.
 - `detail.css` — the board's card and cell paint — radius 11, the 1 px highlight, the 26 px corner badge, the accent current/ready tones — over the `styles/root.css` tokens, plus the `#4ad15c` positive the token sheet does not carry.
 - `mount.tsx` — `mountDetailPanel`: renders the card into a host element against the scene's view signal and returns its disposer.
