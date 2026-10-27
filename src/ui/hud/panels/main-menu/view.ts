@@ -1,8 +1,11 @@
 import type { RunState } from '../../../../engine/run';
+import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
 import { portraitCrop, type PortraitCrop } from '../../portrait';
+import { historyBestFloor, historyWins, recordMonthKey } from '../stats/records';
+import { statsMonthLabel } from '../stats/view';
 
 /** Every row the board can draw, in board order. */
 export const MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats'] as const;
@@ -39,9 +42,30 @@ export type MainMenuStatView = Readonly<{
   label: string;
   /** '23' | '2' | '7' as the frame prints them. */
   value: string;
-  /** The record holder under the value (the frame's 'NOVA'), or null. */
+  /**
+   * The record's own label under the value: the board prints the record holder
+   * ('NOVA'), the live menu the month the monthly figure belongs to. Null draws none.
+   */
   name: string | null;
 }>;
+
+/** The footer's three live figures, read from the run-history store and the clock. */
+export type MainMenuRecords = Readonly<{
+  wins: number;
+  /** The deepest floor a **finite** run reached; 0 when none has. */
+  elite: number;
+  /** The deepest floor a finite run reached in the current UTC month; 0 when none has. */
+  monthly: number;
+  /** The month the monthly figure belongs to, as `statsMonthLabel` prints it (`OCT 2026`). */
+  monthlyLabel: string;
+}>;
+
+export const EMPTY_MAIN_MENU_RECORDS: MainMenuRecords = {
+  wins: 0,
+  elite: 0,
+  monthly: 0,
+  monthlyLabel: '',
+};
 
 export type MainMenuView = Readonly<{
   title: string;
@@ -152,11 +176,46 @@ export const MAIN_MENU_SLUG_NO_SAVE = '01b-main-menu-no-save';
 export const MAIN_MENU_SLUGS = [MAIN_MENU_SLUG, MAIN_MENU_SLUG_NO_SAVE] as const;
 export type MainMenuSlug = (typeof MAIN_MENU_SLUGS)[number];
 
+/** The footer's three figures, always three, in `['wins','elite','monthly']` order. */
+export function mainMenuStats(records: MainMenuRecords): readonly MainMenuStatView[] {
+  return [
+    { id: 'wins', label: t('menu.stat.wins'), value: String(records.wins), name: null },
+    { id: 'elite', label: t('menu.stat.elite'), value: String(records.elite), name: null },
+    {
+      id: 'monthly',
+      label: t('menu.stat.monthly'),
+      value: String(records.monthly),
+      name: records.monthlyLabel === '' ? null : records.monthlyLabel,
+    },
+  ];
+}
+
+/** The live records from the store and the clock the caller supplies. */
+export function mainMenuRecords(
+  history: readonly RunHistoryRecord[],
+  now: Date,
+): MainMenuRecords {
+  const monthKey = recordMonthKey(now);
+  const finite = history.filter((record) => record.mode === 'finite');
+  const inMonth =
+    monthKey === null
+      ? []
+      : finite.filter((record) => recordMonthKey(new Date(record.endedAt)) === monthKey);
+  return {
+    wins: historyWins(history),
+    elite: historyBestFloor(finite),
+    monthly: historyBestFloor(inMonth),
+    monthlyLabel: statsMonthLabel(monthKey ?? ''),
+  };
+}
+
 /** The live menu, from the save's run and the scene's cursor. */
 export function liveMainMenuView(
   run: RunState | null,
   index: number,
   previewSeed: string = MAIN_MENU_SLUG,
+  records: MainMenuRecords = EMPTY_MAIN_MENU_RECORDS,
+  version: string | null = null,
 ): MainMenuView {
   const rows: MainMenuRowView[] = [];
   if (run !== null) {
@@ -177,7 +236,7 @@ export function liveMainMenuView(
 
   return {
     title: t('menu.title'),
-    version: null,
+    version,
     rows,
     portraits:
       run === null
@@ -187,7 +246,7 @@ export function liveMainMenuView(
             name: row.name,
             portrait: portraitCrop(row.speciesId, row.shiny),
           })),
-    stats: [],
+    stats: mainMenuStats(records),
     selected,
     previewSeed,
   };

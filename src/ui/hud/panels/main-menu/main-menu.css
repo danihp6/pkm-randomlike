@@ -358,7 +358,8 @@
   white-space: nowrap;
 }
 
-/* 01 · version */
+/* The phase number makes the live stamp a glyph longer than the frame's copy, and the
+ * frame's 122 px box must stay one 15 px line. */
 .main-menu__version {
   position: absolute;
   top: 750px;
@@ -368,6 +369,7 @@
   color: var(--hud-text-faint);
   font-size: var(--main-menu-row-value-size);
   line-height: var(--main-menu-row-value-line);
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {

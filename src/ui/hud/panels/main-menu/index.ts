@@ -1,4 +1,5 @@
 export {
+  EMPTY_MAIN_MENU_RECORDS,
   MAIN_MENU_ACTIONS,
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
@@ -9,10 +10,13 @@ export {
   MAIN_MENU_SLUG_NO_SAVE,
   fixtureMainMenuView,
   liveMainMenuView,
+  mainMenuRecords,
+  mainMenuStats,
 } from './view';
 export type {
   MainMenuAction,
   MainMenuPortraitView,
+  MainMenuRecords,
   MainMenuRowId,
   MainMenuRowView,
   MainMenuSlug,
@@ -20,6 +24,7 @@ export type {
   MainMenuStatView,
   MainMenuView,
 } from './view';
+export { APP_VERSION, MENU_PHASE, menuVersionLabel } from './version';
 export { MainMenuPanel } from './mainMenuPanel';
 export type { MainMenuPanelProps } from './mainMenuPanel';
 export { mountMainMenu } from './mount';

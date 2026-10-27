@@ -20,14 +20,18 @@ import {
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
 import { parseHudFlags } from '../ui/hud/fixtures';
 import {
+  EMPTY_MAIN_MENU_RECORDS,
   MAIN_MENU_ACTIONS,
   installMainMenuPreview,
   liveMainMenuView,
   mainMenuPreviewRequested,
+  mainMenuRecords,
+  menuVersionLabel,
   mountMainMenu,
   type MainMenuAction,
   type MainMenuHandle,
   type MainMenuIntent,
+  type MainMenuRecords,
   type MainMenuView,
 } from '../ui/hud/panels/main-menu';
 import {
@@ -117,6 +121,10 @@ export class MainMenuScene extends Phaser.Scene {
   private controller: MainMenuHandle | null = null;
   /** The finished runs the stats panel draws, read from the save on `create`. */
   private history: readonly RunHistoryRecord[] = [];
+  /** The footer's live figures, read from the same history once on `create`. */
+  private records: MainMenuRecords = EMPTY_MAIN_MENU_RECORDS;
+  /** The build's version line, assembled once; a repaint never rebuilds it. */
+  private versionLabel: string = menuVersionLabel();
   /** The mounted stats panel and the mode and month it is drawn for. */
   private stats: StatsHandle | null = null;
   private statsOpen = false;
@@ -133,6 +141,7 @@ export class MainMenuScene extends Phaser.Scene {
     const save = loadSave(browserStorage());
     this.run = save.run && hasLivingParty(save.run) ? save.run : null;
     this.history = save.history;
+    this.records = mainMenuRecords(this.history, new Date());
     // Offer "continue" first when there is a run to resume, then "new run".
     this.items = this.run ? ['continue', 'new', 'options'] : ['new', 'options'];
     this.index = 0;
@@ -161,7 +170,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The live view both the mount and every repaint read, so the panel cannot drift. */
   private menuView(): MainMenuView {
-    return liveMainMenuView(this.run, this.index, this.previewSeed);
+    return liveMainMenuView(this.run, this.index, this.previewSeed, this.records, this.versionLabel);
   }
 
   /** The flag-on build: the same rows, no Phaser object, one panel in `#hud`. */

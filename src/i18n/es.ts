@@ -50,6 +50,9 @@ export const es: Readonly<Record<TranslationKey, string>> = {
 
   // stats — MainMenuScene and the stats panel
   'menu.stats': 'ESTADÍSTICAS',
+  'menu.stat.wins': 'VICTORIAS',
+  'menu.stat.elite': 'MEJOR ASALTO ÉLITE',
+  'menu.stat.monthly': 'ASALTO MÁXIMO DEL MES',
   'stats.title': 'ESTADÍSTICAS',
   'stats.blurbTotals': 'TOTALES DE TODAS LAS PARTIDAS.',
   'stats.blurbRuns': 'TODAS LAS PARTIDAS, LA MÁS NUEVA PRIMERO.',

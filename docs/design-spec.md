@@ -23,12 +23,19 @@ carries over.
   **STATS** opens over the menu on the history of every finished run — the totals
   across every run, the run list, the Pokémon table and the local monthly record, each
   with its own empty state — and **BACK** returns to the menu; the DOM HUD draws the
-  row, the canvas fallback keeps its three. The window behind the title is a **live
-  route** — a route generated from a fresh random seed on every boot (never the run's),
+  row, the canvas fallback keeps its three. The records footer under the menu prints
+  three **live** figures — **WINS** (every finished run won), **MAX ELITE STRIKE** (the
+  deepest floor a finite run reached) and **MONTHLY MAX STRIKE** (the deepest floor a
+  finite run reached in the current UTC month, that month printed under the figure) —
+  as `0` on a fresh profile, never blank; an infinite run raises neither strike. The
+  build stamps its own version line `v<version> · PHASE <phase>` bottom-right; it is
+  build metadata, so it is not translated while the three labels are keys. The window
+  behind the title is a **live route** — a route generated from a fresh random seed on
+  every boot (never the run's),
   drawn with the first map's biome tileset, with two or three Pokémon wandering it — and
   it is **decoration**: no encounters, no player, no input and no save write. On a phone
   the records footer under the menu wraps its figures into two rows, so the three blocks
-  never collide on the narrow column.
+  never collide on the narrow column, and the phone frames draw no version line.
 - **Options** (the settings screen) lists a **step row** per preference — text
   speed, a **volume slider** (click or drag the bar), always-run and Transparent
   HUD — over one **keybind row** per action. A keybind row is hidden on a touch
