@@ -8572,7 +8572,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/detail/evolution.ts` + tests and `docs/design-spec.md` §3.
       *Dependencies:* none. *(Batch 81)*
 
-- [ ] **[Task-186] The eleven no-op berries reach a run from two seams, and the spec says one.**
+- [x] **[Task-186] The eleven no-op berries reach a run from two seams, and the spec says one.**
       Issue #69. `docs/maps-spec.md` §7 (862-868) says the eleven berry-class no-ops "reach a run
       from the `mid` **ground-loot** pool alone", and **Leppa Berry** is also a berry-tree row:
       `BERRY_IDS` (`src/data/npcs.ts`) lists `leppaberry` and the berry-tree NPC hands it out

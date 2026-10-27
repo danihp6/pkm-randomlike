@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The eleven no-op berries reach a run from three seams, and the spec says so.**
+      `[Task-186]`, the third of Batch 81 and a docs-only task: `docs/maps-spec.md` §7's
+      held-tier bullet no longer claims the berry-class no-ops reach a run from the `mid`
+      ground-loot pool **alone** — the corrected sentence names all three seams (the `mid`
+      pool, the berry-tree NPC's shake for Leppa Berry, and a Honey Gather party member's
+      won battle for Leppa and Persim Berry) while the pricing rule and the operative claim
+      ("no band's Mart stocks one, so this is a repricing and not a restock") stay
+      byte-identical. The plan said two seams; the tree has three, measured: `BERRY_IDS`
+      carries `leppaberry`, `MAP_PASSIVES`' `honeygather` row hands out `leppaberry` and
+      `persimberry` on a win, and `SHOP_ROTATION`'s six bands still stock none of the
+      eleven. One `+5/−3` hunk, no code, no test, no `SAVE_VERSION` step; `npm test`
+      4577 passed / 69 skipped, `npm run build` green.
+
 - [x] **The evolution band draws every row the model returns.** `[Task-185]`, the second of
       Batch 81: the STATS band's row pool grows to `EVO_MAX_ROWS = 11` (one row above the
       longest family the dex can produce, measured at **10** over all 1281 playable
