@@ -85,6 +85,9 @@
 
 .battle-moves__name {
   grid-area: 1 / 2;
+  /* The column's width is the model's `nameBox` (inline): it starts past the type
+     chip and ends the slot's own 8 px `gap` before the category column. The hidden
+     overflow and the ellipsis are the guard only — the string is already cut to it. */
   overflow: hidden;
   color: var(--hud-text-ink);
   text-transform: uppercase;
@@ -94,8 +97,9 @@
 
 .battle-moves__category {
   /* The model's own column (`.battle-moves__category`'s rect): absolute, so the
-     44 px right edge is the ⓘ's 36 px offset plus the 8 px gap, and right-aligned,
-     so a label wider than its column overflows away from the ⓘ, never under it. */
+     44 px right edge is the ⓘ's 36 px offset (`view.ts`'s `INFO_OFFSET`) plus its
+     8 px `MOVE_CATEGORY_GAP`, and right-aligned, so the widest label's own column
+     holds it clear of the ⓘ square. */
   position: absolute;
   right: 44px;
   color: var(--hud-text-muted);
