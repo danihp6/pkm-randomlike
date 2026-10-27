@@ -20,6 +20,7 @@ its Phaser counterpart in the same task (`D49`).
 - `hud/` — the route strip: biome, level cap, money, the shared XP bar and the Pokevial meter.
 - `battle-hp/` — the battle HP boxes: the two plates, the bar and the status chip.
 - `battle-moves/` — the battle move menu: the four slots, PP and the description window.
+- `battle-command/` — the battle command window: FIGHT / BAG / SWITCH / RUN on the move card's cells plus the INFO control.
 - `battle-bag/` — the battle bag: the in-battle pocket and its use row.
 - `battle-switch/` — the battle SWITCH window: one row per party member.
 - `battle-log/` — the battle message box: the frame feed, the typewriter and the waiting beats.

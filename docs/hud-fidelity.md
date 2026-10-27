@@ -105,9 +105,12 @@ partner never leaves its side's column: the foe's stacks 8 px under its lead and
 own, so a double keeps the single's right edge. The battle menu card therefore starts at **440** (the column's
 right edge plus the 8 px gutter) and keeps the shipped right edge, 1004: 564 wide, and no `[data-hud-hp]` box
 can be drawn behind it. On a phone the card keeps its shipped full-width rect under both boxes (390×844 →
-x 16, 358×236 at y 592). Inside a cell the category column ends **8 px** left of the ⓘ — its 36 px right
-offset plus the gap, the same 44 px the stylesheet spells — and prints right-aligned, so `SPECIAL` /
-`PHYSICAL` / `STATUS` cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
+x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG / SWITCH / RUN is painted at
+`battleMovesBox`'s rect (440 → 1004 at 1280×800, the 358×236 phone card at 390×844), so its four cells occupy
+the boxes the four move cells occupy — 219×72 in the desk's 2×2, 116×94 on the phone — and its fifth **INFO**
+control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. The category is drawn as the
+atlas glyph in the box `[Task-203]`'s §5 blocks describe (`MOVE_ICON_BOX`), not as a right-aligned word, so a
+category cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
 description, and the click still pins it.
 
 **A cell's text is bounded by its own box.** Every label in a battle move cell is measured against the font
