@@ -36,6 +36,12 @@ export type PreviewWalker = Readonly<{
   /** The walker’s tile inside the room (`0 … cols-1`, `0 … rows-1`). */
   tile: Tile;
   facing: Facing;
+  /**
+   * The tile it stepped off last tick; absent at the start of a walk. A walker
+   * never walks straight back onto it while another walkable card is open, so the
+   * window’s walk cannot metronome between two tiles.
+   */
+  previous?: Tile;
 }>;
 
 function countFor(span: number): number {
@@ -141,6 +147,59 @@ function distinctSpecies(ids: readonly string[], taken: ReadonlySet<string>, ind
   return ids[index % ids.length];
 }
 
+type Step = Readonly<{ tile: Tile; facing: Facing }>;
+
+/** The walkable cardinal neighbours of `tile`, in `FACINGS` order. */
+function stepsFrom(route: PreviewRoom, tile: Tile): Step[] {
+  const steps: Step[] = [];
+  for (const facing of FACINGS) {
+    const vector = FACING_VECTORS[facing];
+    const next = { x: tile.x + vector.x, y: tile.y + vector.y };
+    if (next.x < 0 || next.x >= route.cols || next.y < 0 || next.y >= route.rows) continue;
+    if (!isWalkable(route.tiles, next)) continue;
+    steps.push({ tile: next, facing });
+  }
+  return steps;
+}
+
+function sameTile(a: Tile, b: Tile): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+/**
+ * Whether stepping from `from` onto `step`'s tile leaves the walker an exit other
+ * than the tile it came from: a step that cannot force the walk straight back.
+ */
+function keepsGoing(route: PreviewRoom, step: Step, from: Tile): boolean {
+  return stepsFrom(route, step.tile).some((next) => !sameTile(next.tile, from));
+}
+
+/** Whether `tile` itself offers such a step. */
+function hasForwardStep(route: PreviewRoom, tile: Tile): boolean {
+  return stepsFrom(route, tile).some((step) => keepsGoing(route, step, tile));
+}
+
+/**
+ * The tile a walker starts on: the first walkable one, from the drawn index
+ * onward, that opens two ways out and can keep walking, then one that at least
+ * opens two ways out, then one that can keep walking, then the drawn tile.
+ */
+function startTile(route: PreviewRoom, drawn: number): Tile {
+  const count = route.walkable.length;
+  const order: Tile[] = [];
+  for (let offset = 0; offset < count; offset++) order.push(route.walkable[(drawn + offset) % count]);
+  const ranked: readonly ((tile: Tile) => boolean)[] = [
+    (tile) => stepsFrom(route, tile).length >= 2 && hasForwardStep(route, tile),
+    (tile) => stepsFrom(route, tile).length >= 2,
+    (tile) => hasForwardStep(route, tile),
+  ];
+  for (const accepts of ranked) {
+    const found = order.find(accepts);
+    if (found !== undefined) return found;
+  }
+  return order[0];
+}
+
 /**
  * Two or three Pokémon on the room's walkable floor, from the room's own
  * `walkers` stream: distinct species, a starting tile and a facing each.
@@ -148,14 +207,13 @@ function distinctSpecies(ids: readonly string[], taken: ReadonlySet<string>, ind
 export function previewWalkers(route: PreviewRoom): readonly PreviewWalker[] {
   const rng = rngFromSeed(`${route.seed}:preview:walkers`);
   const ids = playableSpecies().map((species) => species.id);
-  const start = { x: route.walkable[0].x, y: route.walkable[0].y };
   const count = rng.int(2, 3);
   const taken = new Set<string>();
   const walkers: PreviewWalker[] = [];
   for (let id = 0; id < count; id++) {
     const speciesId = distinctSpecies(ids, taken, rng.int(0, ids.length - 1));
     taken.add(speciesId);
-    const tile = route.walkable[rng.int(0, route.walkable.length - 1)] ?? start;
+    const tile = startTile(route, rng.int(0, route.walkable.length - 1));
     walkers.push({
       id,
       speciesId,
@@ -168,9 +226,11 @@ export function previewWalkers(route: PreviewRoom): readonly PreviewWalker[] {
 
 /**
  * One timer tick of the walkers: each one takes a walkable cardinal neighbour of
- * its current tile (or stays put when it is boxed in) and faces that way. Every
- * walker reads its own `walker:<id>:<step>` stream, so a tick never depends on the
- * order the list is drawn in and a fold replays exactly.
+ * its current tile, never the tile it just came from while another way is open,
+ * and prefers a step that cannot force it back on the next tick. A walker boxed
+ * in on a single card reverses (or stays put with no card at all). Every walker
+ * reads its own `walker:<id>:<step>` stream, so a tick never depends on the order
+ * the list is drawn in and a fold replays exactly.
  */
 export function stepPreviewWalkers(
   route: PreviewRoom,
@@ -180,18 +240,23 @@ export function stepPreviewWalkers(
   const at = Number.isFinite(step) ? Math.max(0, Math.trunc(step)) : 0;
   return walkers.map((walker) => {
     const rng = rngFromSeed(`${route.seed}:preview:walker:${walker.id}:${at}`);
-    const candidates: Readonly<{ tile: Tile; facing: Facing }>[] = [];
-    for (const facing of FACINGS) {
-      const vector = FACING_VECTORS[facing];
-      const tile = { x: walker.tile.x + vector.x, y: walker.tile.y + vector.y };
-      if (tile.x < 0 || tile.x >= route.cols || tile.y < 0 || tile.y >= route.rows) continue;
-      if (!isWalkable(route.tiles, tile)) continue;
-      candidates.push({ tile, facing });
-    }
+    const leaving = { x: walker.tile.x, y: walker.tile.y };
+    const previous = walker.previous;
+    const all = stepsFrom(route, walker.tile);
+    const fresh =
+      previous === undefined ? all : all.filter((candidate) => !sameTile(candidate.tile, previous));
+    const forward = fresh.filter((candidate) => keepsGoing(route, candidate, walker.tile));
+    const candidates = forward.length > 0 ? forward : fresh.length > 0 ? fresh : all;
     if (candidates.length === 0) {
-      return { ...walker, tile: { x: walker.tile.x, y: walker.tile.y } };
+      return { ...walker, tile: { ...leaving }, previous: { ...leaving } };
     }
-    const chosen = candidates[rng.int(0, candidates.length - 1)]!;
-    return { id: walker.id, speciesId: walker.speciesId, tile: chosen.tile, facing: chosen.facing };
+    const chosen = candidates[rng.int(0, candidates.length - 1)];
+    return {
+      id: walker.id,
+      speciesId: walker.speciesId,
+      tile: chosen.tile,
+      facing: chosen.facing,
+      previous: leaving,
+    };
   });
 }

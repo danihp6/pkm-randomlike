@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { biomeForRoute } from '../../data/biomes';
 import type { Tile } from '../grid';
-import { isWalkable, type TileMap } from '../map';
-import { tileKey } from './routeMap';
+import { isWalkable, mapFromSketch, type TileMap } from '../map';
+import { FACINGS, FACING_VECTORS, tileKey } from './routeMap';
 import {
   PREVIEW_BIOME_ID,
   PREVIEW_TILE,
@@ -17,6 +17,31 @@ import {
 const DESK = { x: 96, y: 150, w: 560, h: 380 } as const;
 const PHONE = { x: 16, y: 126, w: 358, h: 240 } as const;
 
+/** The seeds the walk is measured on: the QA failures first, then a fixed cast. */
+const WALK_SEEDS = [
+  '107sfke',
+  'i67xd',
+  '12baz4z',
+  '1e034xj',
+  'suvjia',
+  '1l8gvox',
+  'pkm-198',
+  'seed-a',
+  'seed-b',
+  '0198',
+  'alpha',
+  'bravo',
+  'charlie',
+  'delta',
+  'echo',
+  'foxtrot',
+  'golf',
+  'hotel',
+  'india',
+  'juliet',
+] as const;
+const WALK_TICKS = 14;
+
 function walkableOf(tiles: TileMap): Tile[] {
   const out: Tile[] = [];
   for (let y = 0; y < tiles.length; y++) {
@@ -25,6 +50,42 @@ function walkableOf(tiles: TileMap): Tile[] {
     }
   }
   return out;
+}
+
+/** How many walkable cardinals a tile has inside the room. */
+function walkableDegree(room: PreviewRoom, tile: Tile): number {
+  let count = 0;
+  for (const facing of FACINGS) {
+    const vector = FACING_VECTORS[facing];
+    const next = { x: tile.x + vector.x, y: tile.y + vector.y };
+    if (next.x < 0 || next.x >= room.cols || next.y < 0 || next.y >= room.rows) continue;
+    if (isWalkable(room.tiles, next)) count += 1;
+  }
+  return count;
+}
+
+function roomFromSketch(rows: readonly string[], seed = 'synthetic'): PreviewRoom {
+  const tiles = mapFromSketch(rows);
+  return {
+    seed,
+    rect: { x: 0, y: 0, w: rows[0]!.length * PREVIEW_TILE, h: rows.length * PREVIEW_TILE },
+    cols: rows[0]!.length,
+    rows: rows.length,
+    tile: PREVIEW_TILE,
+    biomeId: PREVIEW_BIOME_ID,
+    tiles,
+    walkable: walkableOf(tiles),
+  };
+}
+
+function walkerAt(tile: Tile, previous?: Tile, id = 0): PreviewWalker {
+  return {
+    id,
+    speciesId: 'pikachu',
+    tile: { ...tile },
+    facing: 'N',
+    ...(previous === undefined ? {} : { previous: { ...previous } }),
+  };
 }
 
 function foldWalk(
@@ -176,8 +237,8 @@ describe('stepPreviewWalkers', () => {
     expect(foldWalk(room, previewWalkers(room), 3).map(describeFrame)).toEqual([
       'buneary@4,8:N | barraskewda@17,7:W',
       'buneary@3,8:W | barraskewda@18,7:E',
-      'buneary@3,7:N | barraskewda@19,7:E',
-      'buneary@3,6:N | barraskewda@18,7:W',
+      'buneary@3,7:N | barraskewda@18,6:N',
+      'buneary@3,6:N | barraskewda@17,6:W',
     ]);
   });
 
@@ -190,5 +251,93 @@ describe('stepPreviewWalkers', () => {
     expect(stepPreviewWalkers(room, walkers, Number.NaN)).toEqual(zero);
     expect(stepPreviewWalkers(room, walkers, Number.POSITIVE_INFINITY)).toEqual(zero);
     expect(stepPreviewWalkers(room, walkers, 1.9)).toEqual(stepPreviewWalkers(room, walkers, 1));
+  });
+});
+
+describe('the walk never metronomes', () => {
+  it('starts every walker where a second step exists', () => {
+    for (const seed of WALK_SEEDS) {
+      const room = previewRoute(seed, PHONE);
+      for (const walker of previewWalkers(room)) {
+        expect(walkableDegree(room, walker.tile), `${seed} w${walker.id}`).toBeGreaterThan(1);
+      }
+    }
+  });
+
+  it('never walks straight back into the tile it just left, over 20 seeds × 14 ticks', () => {
+    for (const seed of WALK_SEEDS) {
+      const room = previewRoute(seed, PHONE);
+      const frames = foldWalk(room, previewWalkers(room), WALK_TICKS);
+
+      for (let t = 0; t < WALK_TICKS; t++) {
+        for (const walker of frames[t]!) {
+          const next = frames[t + 1]!.find((entry) => entry.id === walker.id)!;
+          expect(isWalkable(room.tiles, next.tile), `${seed} w${walker.id} t${t}`).toBe(true);
+          expect(new Set(room.walkable.map(tileKey)).has(tileKey(next.tile))).toBe(true);
+          if (walkableDegree(room, walker.tile) > 1) {
+            expect(tileKey(next.tile), `${seed} w${walker.id} u-turn at t${t}`).not.toBe(
+              tileKey(walker.tile),
+            );
+          }
+        }
+      }
+      expect(foldWalk(room, previewWalkers(room), WALK_TICKS), seed).toEqual(frames);
+    }
+  });
+
+  it('never comes back to the same tile two ticks later, wherever a second way was open', () => {
+    for (const seed of WALK_SEEDS) {
+      const room = previewRoute(seed, PHONE);
+      const frames = foldWalk(room, previewWalkers(room), WALK_TICKS);
+      const startsFree = previewWalkers(room).every((walker) => walkableDegree(room, walker.tile) > 1);
+
+      for (let t = 0; t + 2 < frames.length; t++) {
+        for (const walker of frames[t]!) {
+          const next = frames[t + 1]!.find((entry) => entry.id === walker.id)!;
+          const later = frames[t + 2]!.find((entry) => entry.id === walker.id)!;
+          if (startsFree || walkableDegree(room, next.tile) > 1) {
+            expect(tileKey(later.tile), `${seed} w${walker.id} period-2 at t${t}`).not.toBe(
+              tileKey(walker.tile),
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it('turns away from its own previous tile in an open room, for 20 ticks', () => {
+    const room = roomFromSketch(['#####', '#...#', '#...#', '#...#', '#####']);
+    const frames = foldWalk(room, [walkerAt({ x: 2, y: 2 }, { x: 2, y: 1 })], 20);
+
+    for (let t = 0; t + 2 < frames.length; t++) {
+      const here = frames[t]![0]!;
+      const next = frames[t + 1]![0]!;
+      const later = frames[t + 2]![0]!;
+      expect(walkableDegree(room, next.tile)).toBeGreaterThan(1);
+      expect(tileKey(next.tile), `u-turn at t${t}`).not.toBe(tileKey(here.tile));
+      expect(tileKey(later.tile), `period-2 at t${t}`).not.toBe(tileKey(here.tile));
+      expect(next.previous).toEqual(here.tile);
+    }
+  });
+
+  it('may still reverse in a corridor that offers nothing else', () => {
+    const room = roomFromSketch(['####', '#..#', '####']);
+    const walkers = [walkerAt({ x: 1, y: 1 }, { x: 2, y: 1 })];
+
+    const next = stepPreviewWalkers(room, walkers, 0);
+
+    expect(next[0]!.tile).toEqual({ x: 2, y: 1 });
+    expect(next[0]!.facing).toBe('E');
+    expect(next[0]!.previous).toEqual({ x: 1, y: 1 });
+  });
+
+  it('stays put on a room with nowhere to go', () => {
+    const room = roomFromSketch(['###', '#.#', '###']);
+    const walkers = [walkerAt({ x: 1, y: 1 })];
+
+    const next = stepPreviewWalkers(room, walkers, 3);
+
+    expect(next[0]!.tile).toEqual({ x: 1, y: 1 });
+    expect(next[0]!.previous).toEqual({ x: 1, y: 1 });
   });
 });

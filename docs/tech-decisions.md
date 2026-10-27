@@ -1280,7 +1280,9 @@ borrowing the saved run's seed would make the menu show a room the player is not
 sized room, the first map's biome, a quiet `corridor` off `` `${seed}:preview` ``),
 `previewWalkers(route)` (two or three distinct species on its walkable floor) and
 `stepPreviewWalkers(route, walkers, step)` (one tick of their wander, each on its own
-`walker:<id>:<step>` stream). It reads no run state and no save, and it never touches
+`walker:<id>:<step>` stream, never straight back onto the tile it just left while another
+card is open, so the window cannot metronome between two tiles). It reads no run state and
+no save, and it never touches
 `RunState.seed`; `previewRoomFor`, `previewTileBox`, `previewWalkerBox` and `tileBackground`
 in `src/ui/hud/panels/main-menu/routeWindow.ts` are the renderer's geometry over that model.
 

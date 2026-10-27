@@ -35,6 +35,8 @@ every navigation, and this panel paints the view it is handed.
    (`MAIN_MENU_FOOTER_NARROW`), because the desk's single row collides at 390 px.
 6. The window's route is decoration (`D55`): the panel reads the model from `routeWindow.ts`,
    paints one span per cell at the layout's window and steps the walkers on a single
-   `ROUTE_PREVIEW_STEP_MS` timer that unmount clears. It starts no encounter, draws no player
-   and writes nothing; the seed rides in the view, so a fixture frame and the live panel draw
-   the same room.
+   `ROUTE_PREVIEW_STEP_MS` timer that unmount clears. A walker never steps straight back onto
+   the tile it just left while another card is open (the model carries `previous`), so two
+   samples always catch it somewhere new. It starts no encounter, draws no player and writes
+   nothing; the seed rides in the view, so a fixture frame and the live panel draw the same
+   room.
