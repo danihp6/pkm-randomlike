@@ -6,7 +6,7 @@ player, and `m 05 Battle HUD`'s 358×80 cards at (16,16)/(16,504) below a 600 px
 
 ## Layout
 
-- `view.ts` — the panel's value model: the two columns' rects, the partner rule a 2 vs 2 needs, the layout and the view built from a battle snapshot, plus the breakpoint and the fill duration.
+- `view.ts` — the panel's value model: the two columns' rects, the partner rule a 2 vs 2 needs (a partner stacks inside its own column, under the foe's lead and above the player's), the layout and the view built from a battle snapshot, plus the breakpoint and the fill duration.
 - `view.test.ts` — both columns' measured rects, the four-box draw order, the single battle's two boxes, the highlight, the snapshot fields and purity, headless.
 - `battleHp.tsx` — the layer and one card per active: the highlight, the name-and-level line, the HP track and fill, the readout and the status mark.
 - `battleHp.css` — the frames' measured geometry and paint, one scoped custom property per board value, the phone column, and the fill's transition (off under reduced motion).

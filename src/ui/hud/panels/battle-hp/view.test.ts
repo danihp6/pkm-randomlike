@@ -85,8 +85,8 @@ describe('battleHpBox', () => {
     expect(battleHpBox(PHONE, 'player', 1)).toStrictEqual({ x: 16, y: 416, w: 358, h: 80 });
   });
 
-  it('puts the foe partner beside the lead when the pair fits, below it otherwise', () => {
-    expect(battleHpBox(DESKTOP, 'enemy', 1)).toStrictEqual({ x: 440, y: 48, w: 368, h: 100 });
+  it('stacks the foe partner under its lead and the player partner above its own', () => {
+    expect(battleHpBox(DESKTOP, 'enemy', 1)).toStrictEqual({ x: 64, y: 156, w: 368, h: 100 });
     expect(battleHpBox(PHONE, 'enemy', 1)).toStrictEqual({ x: 16, y: 104, w: 358, h: 80 });
   });
 });
@@ -95,10 +95,23 @@ describe('battleHpLayout', () => {
   it('draws the four boxes in draw order on the desktop', () => {
     expect(layoutOf(DESKTOP, DOUBLE)).toStrictEqual([
       { side: 'enemy', slot: 0, box: { x: 64, y: 48, w: 368, h: 100 } },
-      { side: 'enemy', slot: 1, box: { x: 440, y: 48, w: 368, h: 100 } },
+      { side: 'enemy', slot: 1, box: { x: 64, y: 156, w: 368, h: 100 } },
       { side: 'player', slot: 0, box: { x: 64, y: 660, w: 368, h: 100 } },
       { side: 'player', slot: 1, box: { x: 64, y: 552, w: 368, h: 100 } },
     ]);
+  });
+
+  it('keeps one right edge per side, so the battle menu has one left edge to clear', () => {
+    const layout = battleHpLayout(DESKTOP, DOUBLE);
+    const enemy = layout.filter((entry) => entry.side === 'enemy');
+    expect(enemy.map((entry) => entry.box.x)).toStrictEqual([64, 64]);
+    expect(enemy[1]!.box.y).toBe(enemy[0]!.box.y + enemy[0]!.box.h + 8);
+    expect(Math.max(...enemy.map((entry) => entry.box.x + entry.box.w))).toBe(432);
+
+    const player = layout.filter((entry) => entry.side === 'player');
+    expect(player.map((entry) => entry.box.x)).toStrictEqual([64, 64]);
+    expect(player[1]!.box.y).toBe(player[0]!.box.y - player[0]!.box.h - 8);
+    expect(Math.max(...player.map((entry) => entry.box.x + entry.box.w))).toBe(432);
   });
 
   it('draws the four boxes in the phone column', () => {
@@ -134,7 +147,7 @@ describe('battleHpView', () => {
       'player-1',
     ]);
     expect(view.boxes.map((box) => box.slot)).toStrictEqual([0, 1, 0, 1]);
-    expect(view.boxes[1]!.box).toStrictEqual({ x: 440, y: 48, w: 368, h: 100 });
+    expect(view.boxes[1]!.box).toStrictEqual({ x: 64, y: 156, w: 368, h: 100 });
     expect(view.boxes[3]!.box).toStrictEqual({ x: 64, y: 552, w: 368, h: 100 });
   });
 

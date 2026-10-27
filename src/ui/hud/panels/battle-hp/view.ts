@@ -85,24 +85,24 @@ function leadBox(viewport: Viewport, side: HpSide): Rect {
 }
 
 /**
- * The partner box. The board draws one box per side, so a 2 vs 2 has no frame: the
- * foe's partner sits beside its lead whenever the pair plus the gutter fits the
- * viewport and below it otherwise, and the player's partner always stacks above
- * its lead — a second card under the player one would sit on the menu window.
+ * The partner box. A partner never sits to the right of its side's column: the foe's
+ * partner stacks under its lead the way the player's stacks above its own, so the
+ * battle menu has one left edge to clear in a double and in a single alike.
  */
-function partnerBox(viewport: Viewport, side: HpSide, lead: Rect): Rect {
-  if (side === 'player') {
-    return { x: lead.x, y: lead.y - lead.h - GUTTER, w: lead.w, h: lead.h };
-  }
-  const beside = lead.x + lead.w * 2 + GUTTER <= viewport.width;
-  const y = beside ? lead.y : lead.y + lead.h + GUTTER;
-  return { x: beside ? lead.x + lead.w + GUTTER : lead.x, y, w: lead.w, h: lead.h };
+function partnerBox(side: HpSide, lead: Rect): Rect {
+  const above = side === 'player';
+  return {
+    x: lead.x,
+    y: above ? lead.y - lead.h - GUTTER : lead.y + lead.h + GUTTER,
+    w: lead.w,
+    h: lead.h,
+  };
 }
 
 /** The rect of one box at this viewport and side, for `slot` 0 or 1. */
 export function battleHpBox(viewport: Viewport, side: HpSide, slot: 0 | 1): Rect {
   const lead = leadBox(viewport, side);
-  return slot === 0 ? lead : partnerBox(viewport, side, lead);
+  return slot === 0 ? lead : partnerBox(side, lead);
 }
 
 /** The highlight line the frame draws 12 px inside a box, panel-relative. */
