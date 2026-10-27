@@ -8616,7 +8616,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `scripts/assets/build-placeholders.mjs`, `src/assets/placeholders/**` and
       `src/assets/README.md`. *Dependencies:* none. *(Batch 82)*
 
-- [ ] **[Task-188] The DOM HUD draws the party's portraits, and the narrow main menu stops colliding.**
+- [x] **[Task-188] The DOM HUD draws the party's portraits, and the narrow main menu stops colliding.**
       Issues #50 (residue 1) and #52 (residue 3), measured in a browser on `main` @ `5aaacd6` with
       `?hud=dom` at 1280×800 and 390×844. Three defects, one seam. **(a)** The CONTINUE row paints
       **four empty outlined 26×26 cells** where frame `01` paints the party's own sprites — the

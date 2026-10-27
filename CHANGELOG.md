@@ -8,6 +8,34 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The DOM HUD draws the party's portraits, and the narrow main menu stops colliding.**
+      `[Task-188]`, the third of Batch 82: the CONTINUE row's four empty outlined cells and
+      the starter cards' empty squares become the species' own atlas cells, and the phone
+      footer stops printing `MAX ELITE STRIKEMONTHLY MAX`. One new pure module,
+      `src/ui/hud/portrait.ts`, owns the seam: `portraitCrop(speciesId, shiny)` reads the
+      own `portraitFor` frame and answers the cell's column and row, `portraitBackground`
+      scales that cell into a 26 px (desktop) or 22 px (phone) box as a CSS
+      `background-position`/`background-size` pair, `image-rendering: pixelated`, and a
+      species the atlas does not name keeps the shipped 4 % box as the documented fallback.
+      Both panels draw through it — `MainMenuPortraitView.portrait` and
+      `StarterCardView.portrait` — for the live view and the fixture view alike (the
+      fixture state's `party` rows carry their own `speciesId`). The compact footer is now
+      **two rows** pinned by `MAIN_MENU_FOOTER_NARROW`: wins and elite at
+      `(16,676,172,48)` / `(196,676,172,48)`, monthly at `(16,732,172,48)`, 8 px gutters,
+      nothing past `x 374`; the desktop footer is untouched at `[96, 240, 724]`.
+      `docs/design-spec.md` §2 and a new `docs/hud-fidelity.md` **§9** record the two rules.
+      `npm test` 4594 passed / 69 skipped, `npm run build` green; measured live over CDP at
+      **390×844** with a four-member run — four cells inside the CONTINUE row (258/283/308/333,415,22×22)
+      carrying `-66px 0`, `-594px 0`, `0 0`, `-44px -88px` at `704px auto`,
+      `scrollWidth === 390`, six footer rects disjoint and equal to the model within 1 px —
+      and at **1280×800** the four 26 px cells with the desktop columns unmoved. One
+      deliberate deviation, recorded rather than hidden: the plan said "data URI", but the
+      atlas is a single sheet served from the gitignored `public/anil/`, so a data URI
+      would need a fetch and a canvas round-trip per member and an async view model; the
+      shipped seam draws the same cell by CSS arithmetic and stays pure and headless. On a
+      pack-less tree the atlas 404s and the pixel-variance branch is unmeasured — the
+      computed-style branch is what the live pass pinned.
+
 - [x] **Every pack-less placeholder carries its own accent.** `[Task-187]`, the second of
       Batch 82: the twenty fallback atlases under `src/assets/placeholders/` stop sharing
       one swatch pair, which is what made a screen-wide criterion impossible — the old

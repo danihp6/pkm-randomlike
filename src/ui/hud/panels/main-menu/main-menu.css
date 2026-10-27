@@ -245,7 +245,7 @@
   color: var(--hud-accent);
 }
 
-/* 01 · slot 0…3: the portrait cells, placeholder boxes in party order */
+/* 01 · slot 0…3: the party's portrait cells, in party order; the cell's scale is inline (`portraitBackground`) */
 .main-menu__portraits {
   position: absolute;
   top: 14px;
@@ -359,6 +359,9 @@
     /* m01 · m row CONTINUE label */
     --main-menu-row-label-size: 10px;
     --main-menu-row-label-line: 13px;
+    /* m01 · m stat label */
+    --main-menu-stat-label-size: 9px;
+    --main-menu-stat-label-line: 12px;
     /* m01 · m stat value */
     --main-menu-stat-value-size: 16px;
     --main-menu-stat-value-line: 20px;
@@ -445,8 +448,15 @@
     display: none;
   }
 
+  /*
+   * m01 · m stat blocks: the three figures wrap into two rows at 390 — the desk's
+   * columns collide there — two on the first row and the monthly figure under
+   * them. `MAIN_MENU_FOOTER_NARROW` is the same three rects as data.
+   */
   .main-menu__stat {
     top: 676px;
+    width: 172px;
+    height: 48px;
   }
 
   .main-menu__stat[data-hud-main-menu-stat='wins'] {
@@ -454,11 +464,12 @@
   }
 
   .main-menu__stat[data-hud-main-menu-stat='elite'] {
-    left: 140px;
+    left: 196px;
   }
 
   .main-menu__stat[data-hud-main-menu-stat='monthly'] {
-    left: 264px;
+    top: 732px;
+    left: 16px;
   }
 
   .main-menu__stat-value {

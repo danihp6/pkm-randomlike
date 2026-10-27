@@ -2,6 +2,7 @@ import type { RunState } from '../../../../engine/run';
 import { t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
+import { portraitCrop, type PortraitCrop } from '../../portrait';
 
 /** Every row the board can draw, in board order. */
 export const MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats'] as const;
@@ -26,6 +27,8 @@ export type MainMenuPortraitView = Readonly<{
   memberId: string;
   /** The member's name, read out by a screen reader. */
   name: string;
+  /** The member's portrait cell, or null when the atlas names none (the box stays a box). */
+  portrait: PortraitCrop | null;
 }>;
 
 export type MainMenuStatId = 'wins' | 'elite' | 'monthly';
@@ -99,6 +102,30 @@ export const MAIN_MENU_BOARD_NARROW: Readonly<{
 /** The breakpoint the board's two frames switch at; the stylesheet uses the same 600px. */
 export const MAIN_MENU_NARROW_QUERY = '(max-width: 600px)';
 
+/** A page coordinate box, as the board's frames measure it. */
+export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+/** The compact blocks share one box; the kit's 8 px gutter separates both axes. */
+const COMPACT_BLOCK: Readonly<{ w: number; h: number }> = { w: 172, h: 48 };
+const COMPACT_GUTTER = 8;
+const COMPACT_X = 16;
+const COMPACT_TOP = MAIN_MENU_BOARD_NARROW.footer.labelY;
+
+/**
+ * The compact footer's blocks at 390×844, in page coordinates, one per stat id:
+ * two on the first row, the monthly figure on the second, so the labels stop
+ * running into each other on the phone. `main-menu.css` draws these numbers.
+ */
+export const MAIN_MENU_FOOTER_NARROW: Readonly<Record<MainMenuStatId, Rect>> = {
+  wins: { x: COMPACT_X, y: COMPACT_TOP, ...COMPACT_BLOCK },
+  elite: { x: COMPACT_X + COMPACT_BLOCK.w + COMPACT_GUTTER, y: COMPACT_TOP, ...COMPACT_BLOCK },
+  monthly: {
+    x: COMPACT_X,
+    y: COMPACT_TOP + COMPACT_BLOCK.h + COMPACT_GUTTER,
+    ...COMPACT_BLOCK,
+  },
+};
+
 /** The frame this panel answers to with a save, and the one without. */
 export const MAIN_MENU_SLUG = '01-main-menu';
 export const MAIN_MENU_SLUG_NO_SAVE = '01b-main-menu-no-save';
@@ -128,7 +155,14 @@ export function liveMainMenuView(run: RunState | null, index: number): MainMenuV
     title: t('menu.title'),
     version: null,
     rows,
-    portraits: run === null ? [] : partyRows(run).map((row) => ({ memberId: row.id, name: row.name })),
+    portraits:
+      run === null
+        ? []
+        : partyRows(run).map((row) => ({
+            memberId: row.id,
+            name: row.name,
+            portrait: portraitCrop(row.speciesId, row.shiny),
+          })),
     stats: [],
     selected,
   };
@@ -205,9 +239,13 @@ function fixturePortraits(state: unknown): readonly MainMenuPortraitView[] {
   const portraits: MainMenuPortraitView[] = [];
   for (const row of party) {
     if (!isPlainObject(row)) return [];
-    const { id, name } = row;
+    const { id, name, speciesId, shiny } = row;
     if (!isNonEmpty(id) || typeof name !== 'string') return [];
-    portraits.push({ memberId: id, name });
+    portraits.push({
+      memberId: id,
+      name,
+      portrait: isNonEmpty(speciesId) ? portraitCrop(speciesId, shiny === true) : null,
+    });
   }
   return portraits;
 }

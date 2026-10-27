@@ -6,6 +6,8 @@ import phoneNoSaveFrame from '../../../../../design/frames/m01b-main-menu-no-sav
 import noSaveFixture from '../../../../../design/fixtures/01b-main-menu-no-save.json';
 import fixture from '../../../../../design/fixtures/01-main-menu.json';
 import { isHudState } from '../../fixtures';
+import { PORTRAIT_SHINY_ATLAS_URL } from '../../../../data/portraits';
+import { portraitCrop } from '../../portrait';
 import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
@@ -148,6 +150,14 @@ describe('design/fixtures/01-main-menu.json', () => {
     // The mobile frame names one cell per member, four in all (`portrait CH` …).
     expect(named(phone, 'geometry', 'portrait CH').length).toBe(1);
     expect(named(phone, 'geometry', 'portrait GA').length).toBe(1);
+  });
+
+  it('reads each portrait cell from the state row’s own species', () => {
+    expect(view!.portraits.map((portrait) => portrait.portrait)).toEqual(
+      fixture.state.party.map((row) => portraitCrop(row.speciesId, row.shiny)),
+    );
+    for (const portrait of view!.portraits) expect(portrait.portrait).not.toBeNull();
+    expect(view!.portraits[3]!.portrait!.url).toBe(PORTRAIT_SHINY_ATLAS_URL);
   });
 
   it('prints the frame’s title, version and three figures', () => {

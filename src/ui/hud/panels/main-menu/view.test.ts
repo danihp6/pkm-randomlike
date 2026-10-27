@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { getBiome } from '../../../../data/biomes';
 import { biomeForMap } from '../../../../engine/maps/plan';
@@ -5,7 +7,17 @@ import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../
 import { t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
-import { MAIN_MENU_ACTIONS, liveMainMenuView } from './view';
+import { portraitCrop } from '../../portrait';
+import {
+  MAIN_MENU_ACTIONS,
+  MAIN_MENU_BOARD,
+  MAIN_MENU_BOARD_NARROW,
+  MAIN_MENU_FOOTER_NARROW,
+  liveMainMenuView,
+  type Rect,
+} from './view';
+
+const MAIN_MENU_CSS = readFileSync(fileURLToPath(new URL('./main-menu.css', import.meta.url)), 'utf8');
 
 const SEED = 'pkm-145';
 
@@ -79,6 +91,23 @@ describe('liveMainMenuView', () => {
     expect(view.portraits[0]!.name).toBe('Charmander');
   });
 
+  it('resolves each party member’s own atlas cell', () => {
+    const run = savedRun();
+    const rows = partyRows(run);
+    const portraits = liveMainMenuView(run, 0).portraits;
+
+    expect(portraits.map((portrait) => portrait.portrait)).toEqual(
+      rows.map((row) => portraitCrop(row.speciesId, row.shiny)),
+    );
+    for (const portrait of portraits) expect(portrait.portrait).not.toBeNull();
+    const cells = portraits.map((portrait) => {
+      const crop = portrait.portrait!;
+      return crop.row * crop.cols + crop.col;
+    });
+    expect(new Set(cells).size).toBe(4);
+    expect(portraits.some((portrait) => portrait.portrait!.row > 0)).toBe(true);
+  });
+
   it('drops the CONTINUE row and every portrait without a run', () => {
     const view = liveMainMenuView(null, 0);
 
@@ -112,3 +141,89 @@ describe('liveMainMenuView', () => {
     expect(JSON.parse(JSON.stringify(first))).toEqual(first);
   });
 });
+
+/** The gap between two rects: positive on the axis that separates them, negative when they overlap. */
+function gap(a: Rect, b: Rect): number {
+  const dx = Math.max(a.x - (b.x + b.w), b.x - (a.x + a.w));
+  const dy = Math.max(a.y - (b.y + b.h), b.y - (a.y + a.h));
+  return Math.max(dx, dy);
+}
+
+/** The declarations of a selector's rule, read out of the stylesheet's text. */
+function declarations(css: string, selector: string): Map<string, string> {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const found = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`).exec(css);
+  const out = new Map<string, string>();
+  if (found === null) return out;
+  for (const line of found[1]!.split(';')) {
+    const separator = line.indexOf(':');
+    if (separator < 0) continue;
+    out.set(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
+  }
+  return out;
+}
+
+const COMPACT_CSS = MAIN_MENU_CSS.slice(MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+
+describe('MAIN_MENU_FOOTER_NARROW', () => {
+  const ids = ['wins', 'elite', 'monthly'] as const;
+
+  it('puts two blocks on the first row and the monthly figure under them', () => {
+    expect(Object.keys(MAIN_MENU_FOOTER_NARROW)).toEqual([...ids]);
+    expect(MAIN_MENU_FOOTER_NARROW.wins.y).toBe(MAIN_MENU_BOARD_NARROW.footer.labelY);
+    expect(MAIN_MENU_FOOTER_NARROW.elite.y).toBe(MAIN_MENU_FOOTER_NARROW.wins.y);
+    expect(MAIN_MENU_FOOTER_NARROW.monthly.y).toBeGreaterThan(MAIN_MENU_FOOTER_NARROW.wins.y);
+    expect(MAIN_MENU_FOOTER_NARROW.monthly.y).toBeGreaterThanOrEqual(
+      MAIN_MENU_FOOTER_NARROW.wins.y + MAIN_MENU_FOOTER_NARROW.wins.h,
+    );
+  });
+
+  it('keeps every pair of blocks apart by at least the kit’s 8 px gutter', () => {
+    const pairs: [Rect, Rect][] = [];
+    for (let i = 0; i < ids.length; i += 1) {
+      for (let j = i + 1; j < ids.length; j += 1) {
+        pairs.push([MAIN_MENU_FOOTER_NARROW[ids[i]!], MAIN_MENU_FOOTER_NARROW[ids[j]!]]);
+      }
+    }
+
+    expect(pairs).toHaveLength(3);
+    for (const [first, second] of pairs) expect(gap(first, second)).toBeGreaterThanOrEqual(8);
+  });
+
+  it('fits the three blocks inside the 390 px column', () => {
+    expect(MAIN_MENU_FOOTER_NARROW.wins.x).toBe(16);
+    expect(MAIN_MENU_FOOTER_NARROW.monthly.x).toBe(16);
+    for (const id of ids) {
+      const rect = MAIN_MENU_FOOTER_NARROW[id];
+      expect(rect.w).toBeGreaterThanOrEqual(160);
+      expect(rect.x).toBeGreaterThanOrEqual(16);
+      expect(rect.x + rect.w).toBeLessThanOrEqual(390 - 16);
+      expect(rect.y + rect.h).toBeLessThan(844);
+    }
+  });
+
+  it('is what the compact block of the stylesheet draws', () => {
+    for (const id of ids) {
+      const rule = declarations(COMPACT_CSS, `.main-menu__stat[data-hud-main-menu-stat='${id}']`);
+      const shared = declarations(COMPACT_CSS, '.main-menu__stat');
+      const rect = MAIN_MENU_FOOTER_NARROW[id];
+
+      expect(rule.get('left') ?? shared.get('left')).toBe(`${rect.x}px`);
+      expect(rule.get('top') ?? shared.get('top')).toBe(`${rect.y}px`);
+      expect(sharp(rule.get('width') ?? shared.get('width'))).toBe(rect.w);
+      expect(sharp(rule.get('height') ?? shared.get('height'))).toBe(rect.h);
+    }
+  });
+
+  it('leaves the desktop footer on the frame’s own columns', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+
+    expect([...MAIN_MENU_BOARD.footer.columns]).toEqual([96, 240, 724]);
+    expect(MAIN_MENU_BOARD.footer.labelY).toBe(616);
+    expect(declarations(desktopCss, '.main-menu__stat').get('top')).toBe('616px');
+  });
+});
+
+function sharp(value: string | undefined): number {
+  return Number.parseFloat(value ?? '');
+}
