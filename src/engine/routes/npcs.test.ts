@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   BERRY_IDS,
@@ -16,6 +17,7 @@ import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch } from '../map';
 import { firstTrainerRoom, planMap } from '../maps';
 import type { RouteMap } from './routeMap';
+import { FACINGS, FACING_VECTORS, type Facing } from './routeMap';
 import { sketchRoute } from './sketch';
 import {
   chefTrade,
@@ -400,10 +402,101 @@ function key(tile: Tile): string {
   return `${tile.x},${tile.y}`;
 }
 
+/** A hand-built room straight off a sketch, with no items, trainers or signs of its own. */
+function littleRoom(sketch: readonly string[], entry: Tile, exits: readonly Tile[] = []): RouteMap {
+  const tiles = mapFromSketch(sketch);
+  return {
+    seed: 'little',
+    routeIndex: 1,
+    biomeId: 'forest',
+    shape: 'straight',
+    width: tiles[0].length,
+    height: tiles.length,
+    tiles,
+    entry,
+    exits,
+    spine: [],
+    branches: [],
+    pockets: [],
+    items: [],
+    trainers: [],
+  };
+}
+
 describe('npcSpot', () => {
-  it('is deterministic for a fixed seed', () => {
+  const SEEDS = ['pkm-91', 'spot-a', 'spot-b', 'spot-c', 'spot-d', 'spot-e', 'spot-f', 'spot-g'];
+
+  function step(tile: Tile, facing: Facing): Tile {
+    const vector = FACING_VECTORS[facing];
+    return { x: tile.x + vector.x, y: tile.y + vector.y };
+  }
+
+  function touchesWall(route: RouteMap, tile: Tile): boolean {
+    return FACINGS.some((facing) => !isWalkable(route.tiles, step(tile, facing)));
+  }
+
+  it('gives a generated room a tile against a wall, its front to a walkable neighbour', () => {
+    for (const seed of SEEDS) {
+      for (const routeIndex of [1, 4]) {
+        const route = routeFor(seed, routeIndex);
+        for (let roomIndex = 0; roomIndex < 6; roomIndex++) {
+          const where = `${seed}/${routeIndex}/${roomIndex}`;
+          const spot = npcSpot(route, roomIndex, seed, 'merchant');
+          expect(spot, where).not.toBeNull();
+          if (!spot) continue;
+          expect(touchesWall(route, spot.tile), `${where} wall`).toBe(true);
+          expect(isWalkable(route.tiles, step(spot.tile, spot.facing)), `${where} front`).toBe(true);
+        }
+      }
+    }
+  }, 60_000);
+
+  it('keeps an all-open room on today’s free list and faces it down', () => {
+    const exits: Tile[] = [];
+    for (let y = 1; y <= 5; y++) {
+      for (let x = 1; x <= 5; x++) {
+        if (x === 1 || x === 5 || y === 1 || y === 5) exits.push({ x, y });
+      }
+    }
+    const route = littleRoom(
+      ['#######', '#.....#', '#.....#', '#.....#', '#.....#', '#.....#', '#######'],
+      { x: 2, y: 1 },
+      exits,
+    );
+    const spot = npcSpot(route, 1, 'open', 'merchant');
+    expect(spot).not.toBeNull();
+    expect(spot?.facing).toBe('S');
+    if (!spot) return;
+    expect(touchesWall(route, spot.tile)).toBe(false);
+    expect(isWalkable(route.tiles, step(spot.tile, 'S'))).toBe(true);
+  });
+
+  it('turns away from the first wall and never into the second', () => {
+    const corner = littleRoom(['####', '#..#', '#..#', '####'], { x: 1, y: 1 });
+    expect(npcSpot(corner, 1, 'corner', 'merchant')).toEqual({
+      tile: { x: 2, y: 2 },
+      facing: 'W',
+    });
+
+    const corridor = littleRoom(
+      ['#...#', '##.##', '##.##'],
+      { x: 1, y: 0 },
+      [
+        { x: 3, y: 0 },
+        { x: 2, y: 2 },
+      ],
+    );
+    expect(npcSpot(corridor, 1, 'corridor', 'merchant')).toEqual({
+      tile: { x: 2, y: 1 },
+      facing: 'N',
+    });
+  });
+
+  it('is one draw on the shipped stream, pinned by a fixed seed', () => {
     const route = routeFor(SEED, 2);
-    expect(npcSpot(route, 2, SEED, 'merchant')).toEqual(npcSpot(route, 2, SEED, 'merchant'));
+    const spot = npcSpot(route, 2, SEED, 'merchant');
+    expect(npcSpot(route, 2, SEED, 'merchant')).toEqual(spot);
+    expect(spot).toEqual({ tile: { x: 29, y: 8 }, facing: 'S' });
   });
 
   it('never stands on the entry, its neighbours, an exit, a wall, a trainer or a visible item', () => {
@@ -423,12 +516,12 @@ describe('npcSpot', () => {
           ...route.trainers.map((trainer) => key(trainer.position)),
           ...route.items.filter((item) => !item.hidden).map((item) => key(item.position)),
         ]);
-        expect(blocked.has(key(spot)), `${seed}/${routeIndex} ${key(spot)}`).toBe(false);
-        expect(isWalkable(route.tiles, spot), `${seed}/${routeIndex} walkable`).toBe(true);
-        expect(spot.x).toBeGreaterThanOrEqual(0);
-        expect(spot.y).toBeGreaterThanOrEqual(0);
-        expect(spot.x).toBeLessThan(route.width);
-        expect(spot.y).toBeLessThan(route.height);
+        expect(blocked.has(key(spot.tile)), `${seed}/${routeIndex} ${key(spot.tile)}`).toBe(false);
+        expect(isWalkable(route.tiles, spot.tile), `${seed}/${routeIndex} walkable`).toBe(true);
+        expect(spot.tile.x).toBeGreaterThanOrEqual(0);
+        expect(spot.tile.y).toBeGreaterThanOrEqual(0);
+        expect(spot.tile.x).toBeLessThan(route.width);
+        expect(spot.tile.y).toBeLessThan(route.height);
       }
     }
   }, 30_000);
@@ -455,6 +548,11 @@ describe('npcSpot', () => {
       trainers: [],
     };
     expect(npcSpot(route, 1, 'tiny', 'merchant')).toBeNull();
+  });
+
+  it('imports no Phaser and no DOM, and reads no clock and no Math.random', () => {
+    const source = readFileSync(new URL('./npcs.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/phaser|document\.|window\.|localStorage|Date\.now|new Date\(|Math\.random/);
   });
 });
 

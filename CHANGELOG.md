@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A special NPC stands against a wall, with its back to it.** `[Task-195]`, the third of
+      Batch 85, answers the human's note of `2026-10-27`: `npcSpot` drew **any** free walkable
+      tile and returned no facing, so a medic or a merchant could stand in the middle of an open
+      field with its default down frame. It now narrows the candidate list to free tiles that
+      have at least one **cardinally unwalkable** neighbour and returns `{ tile, facing }`, the
+      facing pointing **away** from that wall (a wall to the north turns the NPC `'S'`, back to
+      the wall and front to the room), derived in the fixed N · E · S · W order with no second
+      draw — the tile still comes from one `Rng.int` on the shipped
+      `${seed}:npc:<room>:<npc>:spot` stream, so one seed gives one tile and one facing and no
+      other stream moves (`D11`). A room whose free tiles are all open keeps today's pick with
+      `'S'` instead of dropping the NPC, and a room with no free tile still answers `null`.
+      `RoomNpc` carries the facing and `drawRoomNpc` poses the sprite through
+      `trainerFacingPose` + `overworldSpriteFrame`, the pair the trainers already use.
+      `docs/routes-spec.md` §2 and `docs/maps-spec.md` §7 record the rule. Gates: `npm test` 4697
+      passed / 69 skipped, `npm run build` green. Measured live over CDP at 1280×800 by reading
+      the running `Route` scene: the drawn tile had an unwalkable cardinal neighbour, the
+      facing's own tile was walkable, and the sprite's frame and `flipX` equalled
+      `overworldSpriteFrame(row.spriteKey, trainerFacingPose(facing).facing)`.
+
 - [x] **A move cell keeps its name and its numbers at 390.** `[Task-193]`, the second of Batch 85,
       is the phone half of `[Task-192]`: at 390×844 the four cells were still laid out by the wide
       2×2 rule inside the 358×236 phone card, so the names vanished and fragments of the other

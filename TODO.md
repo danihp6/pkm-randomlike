@@ -8819,7 +8819,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `[Task-200]`: once the canvas panel layer retires, the mission is a DOM panel and its chip comes from
       the inventory 200 closes with.
 
-- [ ] **[Task-195] A special NPC stands against a wall, with its back to it.** Asked by the human on
+- [x] **[Task-195] A special NPC stands against a wall, with its back to it.** Asked by the human on
       `2026-10-27`. `npcSpot` (`src/engine/routes/npcs.ts` 166-190) picks **any** free walkable tile: it
       excludes the entry and its four cardinal neighbours, the exits, the trainers and the visible items,
       then draws one `Rng.int` over what is left, so an NPC can stand in the middle of an open field — and
