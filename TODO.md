@@ -8478,6 +8478,12 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   §9). So Batch 82 shipped **four** tasks wide: `[Task-182]`, `[Task-187]`, `[Task-188]`,
   `[Task-189]`, in ID order. Batch 83 now holds `[Task-181]` alone, with `[Task-183]` behind
   it.
+- **What Batches 84 and 85 hold (2026-10-27).** `[Task-183]` takes **Batch 84** as its first
+  member, with the two follow-ups the browser measured against the just-merged `[Task-188]` and
+  `[Task-189]`: `[Task-191]` (the narrow CONTINUE row) and `[Task-192]` (a move cell's text) —
+  three disjoint path sets, and `docs/hud-fidelity.md` claimed by section (191 §9, 192 §5).
+  **Batch 85 is `[Task-190]` alone** (the starter's R key) because it takes the **i18n pair** that
+  `[Task-183]` holds in 84: one scene, one keybind action and one spec line.
 
 - [ ] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8667,6 +8673,59 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       ⓘ without clicking floats its description and moving off drops it. Claims
       `src/ui/hud/panels/battle-hp/**`, `src/ui/hud/panels/battle-moves/**` + tests and
       `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 83)*
+
+- [ ] **[Task-191] The narrow CONTINUE row stops painting its portraits over the map label.**
+      Follow-up of `[Task-188]`, measured on the merged tree (`main` @ `5b4629d`) at 390×844: the
+      row is 326×48 at (32, 402) and the portraits occupy **x 258..355** (four 22-px boxes), while
+      the map label is painted **under them** — `MAP 3 · FOREST` shows through the sprites and the
+      word is unreadable. At 1280×800 the same row is 420 px wide and the portraits sit at
+      x 922..1038 with the label clear to their right, so this is the **compact layout** alone.
+      **Fix shape:** the row keeps **one** secondary datum at the compact width — the portraits
+      stay, because they are the row's point (decision of `2026-10-27`), and the label yields: it
+      is dropped there (the map and biome still read on the route HUD once the run opens) rather
+      than elided to three letters. The wide layout keeps both, exactly as it ships. **Docs:**
+      `docs/hud-fidelity.md` §9 (the narrow CONTINUE row's one datum). **Tests:** `[unit]` the
+      compact view model returns no label beside the portraits and the wide one returns both;
+      `[live]` at 390×844 no two rects of the row intersect and no glyph of the label is painted.
+      Claims `src/ui/hud/panels/main-menu/**` + tests and `docs/hud-fidelity.md` §9.
+      *Dependencies:* none. *(Batch 84)*
+
+- [ ] **[Task-192] A move's name and category fit inside their cell, and the ⓘ stays clear.**
+      Follow-up of `[Task-189]`, measured on the merged tree (`main` @ `5b4629d`), `?hud=dom` at
+      1280×800: the moves window moved right and the HP panel is clear (that half is fixed), but
+      the **text still overflows its box**. In a 222×72 `battle-moves__slot`, the name box is
+      **68 px** for `MOFLETE ESTÁTICO` and the category box **48 px** for `PHYSICAL`; the painted
+      glyphs are wider than both, so the name runs into the category and the category runs under
+      the 22-px ⓘ (`battle-moves__info` at x 710..732 beside a category box ending at 703). The
+      boxes themselves do not intersect — which is why the unit criterion passed — the **paint**
+      does. **Fix shape:** every label in the cell is measured against the cell's own font (the
+      `drawnWidth` helper `evolutionGraph` already carries) and either **elides** to fit or the
+      cell reserves the real width and gives up its empty padding; the invariant is that no
+      painted glyph leaves its own box and the ⓘ's 22 px stay clear, at 1280 and at 390.
+      **Docs:** `docs/hud-fidelity.md` §5 (a move cell's text is bounded by its box). **Tests:**
+      `[unit]` each label's box is at least its measured text width, and `category.right <=
+      info.left` on the measured values, not only on the model's rects; `[live]` every cell of a
+      four-move grid paints inside its box at both widths. Claims
+      `src/ui/hud/panels/battle-moves/**` + tests and `docs/hud-fidelity.md` §5.
+      *Dependencies:* none. *(Batch 84)*
+
+- [ ] **[Task-190] R rerolls the starter offer, which the frame already promises.** Issue #52,
+      residue 2, **decided on `2026-10-27`**: implement the key, never drop the frame's hint. The
+      live footer (`StarterScene.ts` 216-222) reads `← → elegir · E confirmar · S semilla · Tab
+      ajustes · Q atrás` and no R exists anywhere in the scene; `S` opens the typed-seed prompt
+      (`promptForSeed`, 494-507), which is a different thing from throwing the offer away. Frame
+      `04` sells `HOLD R FOR NEW SEED`, so the rule is the one the frame already advertises:
+      **holding R draws the next offer from a fresh `randomSeed()`**, exactly the path a new run
+      takes, while `S` keeps its typed-seed prompt. The key becomes its own action in
+      `src/data/keybinds.ts` (`reroll`) so the options screen and the footer both name it, and the
+      offer stays a **pure function of the seed** (`starterOffer`), so a reroll is a new seed and
+      no state: the share line follows the seed it drew. **Docs:** `docs/design-spec.md` §2 (the
+      starter pick's controls). **Tests:** `[unit]` `DEFAULT_KEYBINDS` carries `reroll` and the
+      sanitizer keeps it; `[unit]` an offer drawn from seed A and rerolled equals the offer drawn
+      from the second seed directly; `[live]` holding R changes the three species and the share
+      line, and `E` still confirms the one on screen. Claims `src/scenes/StarterScene.ts` + test,
+      `src/data/keybinds.ts` + test, `src/i18n/{en,es}.ts` and `docs/design-spec.md` §2.
+      *Dependencies:* none. *(Batch 85)*
 
 ---
 
