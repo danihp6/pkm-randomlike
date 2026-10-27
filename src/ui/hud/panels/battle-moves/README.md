@@ -48,3 +48,11 @@ scene's own `menu` rect — painted with `05 Battle HUD`'s cell skin.
 5. The card starts where the HP column ends (`battleHpBox`), so the FIGHT window never
    covers an HP box, and each slot's `categoryBox` ends `MOVE_CATEGORY_GAP` left of its ⓘ —
    the model and the stylesheet's 44 px `right` are the same rule.
+6. **Known residue: the 600–699 px band.** `battle-hp` leaves the phone column at
+   `BATTLE_HP_BREAKPOINT` (600: it keeps the phone column while `width < 600`) and this card
+   leaves its compact form at `BATTLE_COMPACT` (700: it keeps the compact card while
+   `stageW < 700`), so a viewport 600–699 px wide whose stage is under 700 takes the desktop
+   HP column and the compact card at once and the card can sit above the player box's bottom
+   (640×480: card y 228 against the player 340..440; 800×600: card y 348 against 460..560).
+   It predates this panel — `main` at `0d6deaa` measures the same two rect pairs, the same
+   overlaps — and making the two breakpoints agree belongs to a separate task.
