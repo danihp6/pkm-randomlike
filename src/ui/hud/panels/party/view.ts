@@ -1,4 +1,5 @@
 import { t } from '../../../../i18n';
+import { portraitCrop, type PortraitCrop } from '../../portrait';
 import type { HudState } from '../../state';
 
 /**
@@ -32,6 +33,8 @@ export type PartyRowView = Readonly<{
   row: Rect;
   portrait: Rect;
   hpBar: Rect;
+  /** The member's portrait cell, or null when the atlas names none. */
+  portraitImage: PortraitCrop | null;
 }>;
 
 export type PartyPanelView = Readonly<{
@@ -67,7 +70,6 @@ export const PARTY_VIAL_H = 20; // HUD_VIAL_H
 export const PARTY_VIAL_Y = 54; // HUD_VIAL_Y
 export const PARTY_HP_BAR = PARTY_PANEL_W - PARTY_PAD_X * 2 - PARTY_COLUMN; // 154
 export const PARTY_HP_BAR_H = 16; // FRLG_HPBAR.height 28 × 154/268, rounded
-export const PARTY_HP_FILL_RATIO = 110.3 / 154; // the baked track's share of the bar
 export const PARTY_PANEL_H = PARTY_HEADER_H + PARTY_ROWS * PARTY_ROW + PARTY_PAD_BOTTOM; // 406
 
 /** The right-hand column the shipped HUD docks at: `HUD_PANEL_W` minus `HUD_PANEL_MARGIN`. */
@@ -168,6 +170,7 @@ function rowView(member: HudState['party'][number], index: number, selected: boo
     row,
     portrait: portraitBox(row),
     hpBar: hpBarBox(row),
+    portraitImage: portraitCrop(member.speciesId, member.shiny),
   };
 }
 

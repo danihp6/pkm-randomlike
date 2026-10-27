@@ -456,6 +456,20 @@ export function moveInParty(run: RunState, from: number, to: number): RunState {
   return party === run.party ? run : { ...run, party };
 }
 
+/**
+ * Swaps two party slots. Index 0 is the lead (it opens the next battle), so a
+ * swap with 0 changes who leads. A same-index or out-of-range swap is a no-op and
+ * returns the run it was given.
+ */
+export function reorderParty(run: RunState, from: number, to: number): RunState {
+  const size = run.party.length;
+  if (from === to || from < 0 || from >= size || to < 0 || to >= size) return run;
+  const party = [...run.party];
+  party[from] = run.party[to]!;
+  party[to] = run.party[from]!;
+  return { ...run, party };
+}
+
 /** Reorders the box. */
 export function moveInBox(run: RunState, from: number, to: number): RunState {
   const box = moveWithin(run.box, from, to);

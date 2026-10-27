@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PORTRAIT_COLS, PORTRAIT_SIZE, portraitFor } from '../../../../data/portraits';
 import { t } from '../../../../i18n';
 import type { HudPartyRow, HudRoute, HudState } from '../../state';
 import {
@@ -6,7 +7,6 @@ import {
   PARTY_HEADER_H,
   PARTY_HP_BAR,
   PARTY_HP_BAR_H,
-  PARTY_HP_FILL_RATIO,
   PARTY_PAD_BOTTOM,
   PARTY_PAD_TOP,
   PARTY_PAD_X,
@@ -116,8 +116,47 @@ describe('partyPanelView', () => {
     expect(view.xp.fraction * 186).toBe(93);
     expect(view.vial.fill).toBeCloseTo(2 / 3, 6);
     expect(view.vial.fill * view.vial.box.w).toBeCloseTo(66.666, 2);
-    expect(row!.hpFraction * PARTY_HP_FILL_RATIO * 154).toBeCloseTo(55.15, 6);
-    expect(row!.hpFraction * PARTY_HP_FILL_RATIO * row!.hpBar.w).toBeCloseTo(55.15, 6);
+    expect(row!.hpFraction * row!.hpBar.w).toBeCloseTo(77, 6);
+  });
+
+  it('sizes the fill to the track, so a full bar is 154 px and a half one 77', () => {
+    const full = partyPanelView(
+      hudState([member('a', { hpFraction: 1, hp: 40, maxHp: 40 })]),
+      initialPartyPanelUi(),
+      DESKTOP,
+    );
+    expect(full.rows[0]!.hpFraction * full.rows[0]!.hpBar.w).toBe(PARTY_HP_BAR);
+    const half = partyPanelView(
+      hudState([member('a', { hpFraction: 0.5 })]),
+      initialPartyPanelUi(),
+      DESKTOP,
+    );
+    expect(half.rows[0]!.hpFraction * half.rows[0]!.hpBar.w).toBe(77);
+  });
+
+  it('carries every member’s portrait source, and no source without a sheet', () => {
+    const view = partyPanelView(
+      hudState([
+        member('a', { speciesId: 'pikachu' }),
+        member('b', { speciesId: '' }),
+        member('c', { speciesId: 'missingno' }),
+      ]),
+      initialPartyPanelUi(),
+      DESKTOP,
+    );
+    const [caught] = view.rows;
+    expect(caught!.portraitImage).not.toBeNull();
+    expect(caught!.portraitImage!.url).not.toBe('');
+    expect(caught!.portraitImage!.col).toBe(portraitFor('pikachu')!.frame % PORTRAIT_COLS);
+    expect(caught!.portraitImage!.row).toBe(Math.floor(portraitFor('pikachu')!.frame / PORTRAIT_COLS));
+    expect(caught!.portraitImage!.cols).toBe(PORTRAIT_COLS);
+    expect(caught!.portraitImage!.cell).toBe(PORTRAIT_SIZE);
+    for (const speciesId of ['', 'missingno']) {
+      const row = partyPanelView(hudState([member('a', { speciesId })]), initialPartyPanelUi(), DESKTOP)
+        .rows[0]!;
+      expect(row.portraitImage, speciesId).toBeNull();
+      expect(row.portrait, speciesId).toEqual({ x: 22, y: 86, w: 45, h: 45 });
+    }
   });
 
   it('carries the row data the card prints', () => {
@@ -224,7 +263,6 @@ describe('the mirrored Phaser constants', () => {
     expect(PARTY_PANEL_H).toBe(406);
     expect(PARTY_HP_BAR).toBe(154);
     expect(PARTY_HP_BAR_H).toBe(16);
-    expect(PARTY_HP_FILL_RATIO).toBeCloseTo(110.3 / 154, 12);
   });
 
   it('derive the panel height from the header, the rows and the pad', () => {

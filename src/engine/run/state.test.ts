@@ -41,6 +41,7 @@ import {
   pcFullyEditable,
   pcMemberEditable,
   recordCatch,
+  reorderParty,
   runFaints,
   setParty,
   spendMoney,
@@ -474,6 +475,51 @@ describe('party/PC moves', () => {
     expect(swapPartyBox(run, 0, 0)).toBe(run);
     expect(swapPartyBox(run, 9, 0)).toBe(run);
     expect(swapPartyBox(run, 0, 9)).toBe(run);
+  });
+});
+
+describe('reorderParty', () => {
+  function withParty(ids: readonly string[]): ReturnType<typeof createRun> {
+    const members = ids.map((id, index) =>
+      index === 0
+        ? { ...starter, fighter: { ...starter.fighter, id } }
+        : createRunPokemon({ id, speciesId: 'sentret', level: 3 }),
+    );
+    return { ...createRun({ seed: 'run-a', starter }), party: members };
+  }
+
+  const ids = (run: ReturnType<typeof createRun>): readonly string[] =>
+    run.party.map((m) => m.fighter.id);
+
+  it('makes the dropped-on swap and lets the lead follow it', () => {
+    const run = withParty(['a', 'b', 'c']);
+    expect(ids(reorderParty(run, 1, 0))).toEqual(['b', 'a', 'c']);
+    expect(reorderParty(run, 1, 0).party[0]!.fighter.id).toBe('b');
+  });
+
+  it('swaps rather than sliding, unlike moveInParty', () => {
+    const run = withParty(['a', 'b', 'c']);
+    expect(ids(reorderParty(run, 0, 2))).toEqual(['c', 'b', 'a']);
+    expect(ids(moveInParty(run, 0, 2))).toEqual(['b', 'c', 'a']);
+  });
+
+  it('returns the same run for a same-index or out-of-range swap', () => {
+    const run = withParty(['a', 'b', 'c']);
+    expect(reorderParty(run, 1, 1)).toBe(run);
+    expect(reorderParty(run, 0, 9)).toBe(run);
+    expect(reorderParty(run, -1, 0)).toBe(run);
+    expect(reorderParty(run, 9, 0)).toBe(run);
+    expect(reorderParty({ ...run, party: [] }, 0, 0)).toEqual({ ...run, party: [] });
+  });
+
+  it('never mutates the party it was given and leaves the box alone', () => {
+    const run = {
+      ...withParty(['a', 'b', 'c']),
+      box: [createRunPokemon({ id: 'boxed', speciesId: 'sentret', level: 3 })],
+    };
+    const next = reorderParty(run, 0, 2);
+    expect(ids(run)).toEqual(['a', 'b', 'c']);
+    expect(next.box).toBe(run.box);
   });
 });
 

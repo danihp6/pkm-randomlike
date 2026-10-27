@@ -234,6 +234,13 @@ returns every other field, row and the portrait list unchanged, and the panel ap
 empty-value rule paints no node at all, which is what keeps the label off the screen. The desk
 frame keeps both fields: `forLayout(view, 'wide')` returns the very same object.
 
+**The party card's rows.** The route card's `party__portrait` cell is **45 px** and uses the same
+`portraitCrop`/`portraitBackground` arithmetic as the 26 px desk and 22 px phone cells, so the sheet
+scales to `<32 × 45>px auto` — a `1440px auto` background-size and a `-col × 45px` position; only a
+species the atlas does not name (or a row with no id) keeps the empty 4 % box, and the dark mark
+keeps its violet hairline. The row's HP fill starts at the track's left edge — the baked FRLG
+track's 34.5 px inset retired — so a full bar paints edge to edge and a fractional one starts flush.
+
 ## The gate's measured table
 
 Status: **the gate's own evidence** (2026-10-27, branch `task-197`). One row per frame per viewport,

@@ -90,6 +90,18 @@ describe('portraitBackground', () => {
     expect(compact.backgroundImage).toBe(`url("${PORTRAIT_ATLAS_URL}")`);
   });
 
+  it('scales the same way into the 45 px party card cell', () => {
+    const [speciesId] = ROWED;
+    const crop = portraitCrop(speciesId)!;
+    const party = portraitBackground(crop, 45);
+
+    expect(party.backgroundSize).toBe(`${PORTRAIT_COLS * 45}px auto`);
+    expect(party.backgroundPosition).toBe(`${-crop.col * 45}px ${-crop.row * 45}px`);
+    expect(party.backgroundImage).toBe(`url("${PORTRAIT_ATLAS_URL}")`);
+    expect(party.backgroundRepeat).toBe('no-repeat');
+    expect(party.imageRendering).toBe('pixelated');
+  });
+
   it('keeps a broken box out of the style strings', () => {
     const crop = portraitCrop(PLAIN)!;
 
