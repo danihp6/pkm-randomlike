@@ -82,3 +82,14 @@ table above, plus the generated manifests, which are committed.
 3. `pokemon/index.json` is **generated**: regenerate it with
    `node scripts/legacy-art/build-pokemon-index.mjs` instead of editing it.
 4. Adding a sheet means adding a registry entry in `src/data/tilesets/index.ts`.
+5. A **battle must play on a tree without the pack**. The battle Pokémon sheets are
+   the exception to the row above: they are served straight out of the gitignored
+   `public/anil/` (see the paragraph under the table) and have **no** committed
+   blank of their own, so a checkout without the pack answers every sheet URL with
+   a 404 and the key never reaches the texture cache. `BattleScene` therefore
+   keeps the procedural `battle:mon` sprite `BootScene` generates, registers an
+   idle animation **only** for a texture that loaded and never longer than that
+   texture's own `frameTotal` (`monIdleFrames`), and skips the `play` when the
+   animation is absent. A placeholder that does exist (the `placeholders/` row)
+   still carries the real file's pixel size — the animation adapts to the frames
+   that loaded, never the other way round.
