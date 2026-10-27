@@ -8509,6 +8509,10 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   that collapses, a body that drags, and the run's list — carries `[!]`, so the driver never picks it
   up, and no batch contains it: it claims the **i18n pair** (`[Task-190]`'s) and a `SAVE_VERSION` step
   (`26 → 27`), so it opens its own batch the day the human frees it.
+- **Batch 86 is `[Task-196]` alone (2026-10-27).** The double battle's target prompt takes the **i18n
+  pair**, which `[Task-190]` holds in 85, and `battle-moves/**`, which `[Task-193]` holds in the same
+  batch, so no free slot of 85 can carry it: it opens the next batch, and Batch 86 is one task wide
+  for the two hot paths it claims.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -8825,6 +8829,35 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       wall with its back to it. Claims `src/engine/routes/npcs.ts` + test, `src/scenes/RouteScene.ts`,
       `docs/routes-spec.md` §2 and `docs/maps-spec.md` §7.
       *Dependencies:* none. *(Batch 85)*
+
+- [ ] **[Task-196] The double battle's target step says which foe is marked.** Reported in the doubles
+      round of `2026-10-25` (`TODO.md`'s Bug section) and triaged on `2026-10-27`. The step **exists**:
+      `needsTargetStep` (`src/scenes/BattleScene.ts` 2610-2620) opens it for a double battle with two live
+      foes and a damaging move whose dex target is one slot (not a `SPREAD_TARGETS` row, not `self`/`ally`,
+      not `Status`), `openTargetStep` (2660-2696) parks the FRLG cursor on the first live foe,
+      `moveTargetCursor` (2703) and `onFoeClick` move it, and `confirmTarget` (2710) submits
+      `{ type: 'fight', target: { side: 'enemy', slot } }` — which `src/engine/battle/commands.ts` 31-32
+      and `validateTarget` (137-150) already accept. What is missing is that **nothing says so**: no
+      `battle.target*` key exists in `src/i18n/{en,es}.ts`, so the mode is invisible, the four cases the
+      rule branches on have no test, and the cursor and its zones were never measured at 390×844.
+      **Fix shape:** the predicate becomes a pure helper (a new `targetStepFor(sides, move)` beside the
+      command rules, so the scene reads it and the four cases are unit-tested headless); the battle-moves
+      view grows a `target` row — the prompt naming the marked foe, `null` while the step is closed — and
+      the scene feeds the marked slot's name into it, so the DOM HUD prints the question the canvas cursor
+      is asking; the row keeps the 22 px the ⓘ reserves, and at 390 it is one line that does not meet the
+      four cells. **Docs:** `docs/battle-spec.md` §12 (the step asks, names and marks the foe) and
+      `docs/hud-fidelity.md` §5 (the menu's prompt row).
+      **Tests:** `[unit]` `targetStepFor` walks the four cases — two live foes asks, one live foe does
+      not, a spread row does not, a status/self/ally move does not; `[unit]` the battle-moves view returns
+      the prompt with the marked foe's name while the step is open and `null` when it is closed, and its
+      box does not intersect any of the four cells at 1280 and at 390; `[live]` a double battle with two
+      standing foes picks a damaging move: the prompt names the first foe, the arrows move the mark and
+      the prompt follows it, confirming hits the marked foe, and at 390×844 both the prompt and the mark
+      are legible.
+      Claims `src/scenes/BattleScene.ts` + test, `src/engine/battle/commands.ts` + test (or the new
+      targeting module beside it), `src/ui/hud/panels/battle-moves/**` + tests, `src/i18n/{en,es}.ts`,
+      `docs/battle-spec.md` §12 and `docs/hud-fidelity.md` §5.
+      *Dependencies:* none. *(Batch 86)*
 
 ---
 
