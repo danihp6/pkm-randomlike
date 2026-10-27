@@ -30,6 +30,9 @@ Nothing outside this list. No other task in Batch 87 claims any of these.
 - `src/i18n/content.ts`
 - `src/i18n/content.test.ts`
 - `src/data/i18n/es/items.json` *(new)*
+- `src/scenes/panels/bag.ts` — **`bagInfoFor` only** (the drawn card's body, shared by the
+  canvas and the DOM path; widened after Task QA round 1)
+- `src/scenes/panels/bag.test.ts` *(new if absent — the scene-side test that reads the drawn body)*
 - `src/ui/hud/panels/bag/view.ts`
 - `src/ui/hud/panels/bag/view.test.ts`
 - `src/ui/hud/panels/bag/README.md`
@@ -207,16 +210,26 @@ only). No `SAVE_VERSION` bump, no `src/data/items.ts` change.
   - [ ] `[unit]` the bag test's existing `expect(panel.info!.box).toEqual({ x: 640, y: 504,
         w: BAG_INFO_W, h: 56 })` still passes (Potion is one line) — if it does not, the
         height formula was changed and that is a spec violation.
+  - [ ] `[unit]` the route scene's `bagInfoFor` reads through `itemText`: under `es` its second
+        line for `pokeball` is `Dispositivo para capturar Pokémon salvajes.` and for `leftovers`
+        its English `shortDesc`; under `en` it is the catalogue's `shortDesc`; the candy branch
+        (`bagDiscoveredCandy`) still prints its own `t('hud.candyKnown', …)` line and the first
+        line is always the item's English name. A new `src/scenes/panels/bag.test.ts` builds the
+        smallest `RoutePanelHost` the function needs (or exports `bagInfoFor` for the test the
+        way the sibling scene modules already expose their pure helpers) — the fix must be
+        proven at the seam that actually paints the card, not only in the view model.
   - [ ] `[live]` **1280×800, English (`en`)**: press `I`; `[data-hud-bag-info]` exists; its
-        `.bag-info__title` `textContent` is `Poké Ball` (English, unchanged) and its
-        `.bag-info__text` `textContent` equals
-        `A device for catching wild Pokémon.`; the card's `getBoundingClientRect()` height
-        is ≥ 56 and equals the description's own box height from the view (56 ± 1 for this
-        one-line row); the `<p>`'s rect lies inside the card's.
+        `.bag-info__title` `textContent` is `Poke Ball` (the catalogue's name, unchanged) and
+        its `.bag-info__text` `textContent` equals
+        `A device for catching wild Pokémon.`; the card's `getBoundingClientRect()` has
+        `width === 280`, `height >= 56`, and its `<p>`'s rect lies inside the card's (the
+        frozen `.bag-info` CSS adds its own chrome, so the DOM height is 56 + chrome — the
+        model's 56 is pinned `[unit]`, never re-asserted on the element).
   - [ ] `[live]` **1280×800, Spanish (`--lang=es-ES` on a fresh profile)**: the same stack's
-        `.bag-info__title` is still `Poké Ball` and `.bag-info__text` equals
+        `.bag-info__title` is still `Poke Ball` and `.bag-info__text` equals
         `Dispositivo para capturar Pokémon salvajes.` — i.e. the body follows the locale and
-        the name does not (`D43`).
+        the name does not (`D43`). This is the criterion round 1 failed: the route scene's
+        `bagInfoFor` must read the localised text, not the catalogue's English `shortDesc`.
   - [ ] `[live]` **390×844** (either locale): the card sits at `x = 8`, `width = 280`,
         its text is the same string as at 1280, its height is ≥ 56 and its bottom edge is
         inside the 390×844 stage; the text is not clipped — measured as
@@ -264,6 +277,22 @@ only). No `SAVE_VERSION` bump, no `src/data/items.ts` change.
   fallback live). The Spanish table is a **subset by kind**, not all 500 rows — the rule and
   its one-line justification are in the Contract; a full table needs the generator extended
   to PokeAPI's item CSVs, which is a tooling task.
+
+### Round-1 correction (after Task QA, 2026-10-27)
+
+Task QA measured the card on the integration tree and found the Spanish body still English:
+the route scene's `bagInfoFor` (`src/scenes/panels/bag.ts`) builds the drawn card's line
+from `item?.shortDesc` and `domViewFor` copies its second line over the model's `text`, so
+the `itemText` body the view model computes never reaches the screen (the canvas card reads
+the same `bagInfoFor`). That path was **outside** the original exclusive list; it is widened
+above to `src/scenes/panels/bag.ts` (`bagInfoFor` only) plus a new
+`src/scenes/panels/bag.test.ts`. No batch-mate claims either path (199 holds
+`MainMenuScene.ts`, 206 `BattleScene.ts`, 203 no scene), so the batch stays an antichain.
+Two spec errata QA also measured: the catalogue name is `Poke Ball` without the accent, and
+the DOM card's height is the model's 56 **plus** the frozen `.bag-info` chrome (58 for a
+one-line row) — the live criteria now assert width 280, height ≥ 56, containment and
+`scrollHeight`, and keep the 56 on the view model's `[unit]` pin. This is corrective round
+**1 of 2**.
 - **For a later batch (not cut here):** two other surfaces print `ItemDef.shortDesc` and
   should read `itemText` when they are migrated — the reward card
   (`src/ui/rewards.ts` line 157, `description: item?.shortDesc`) and anything the battle bag
