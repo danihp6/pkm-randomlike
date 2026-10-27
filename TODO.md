@@ -8525,6 +8525,23 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   89. `[Task-200]` retires the canvas panel layer and mounts the DOM HUD unconditionally; it claims every
   scene, so it opens its own batch behind them (90) and its own entry lists what only the canvas layer
   carried. The three were cut from the same measurement, so 87's gate is what closes them.
+- **Batches 91-94 are the DOM panels' own debt (2026-10-27),** cut from one `?hud=dom` session at
+  1280×800 in the browser. **91** holds `[Task-201]` (the menu's oval gradient), `[Task-204]` (the stats'
+  rule under each figure), `[Task-206]` (the battle's command window, the last canvas panel) and
+  `[Task-207]` (the strip's Pokevial and its EXP string) — four disjoint path sets, with
+  `src/scenes/BattleScene.ts` held by 206 alone. **92** holds `[Task-202]` (the party panel: portraits,
+  drag-reorder, the HP bar's gap), `[Task-203]` (a move's type and category as icons, in the detail panel
+  and in the battle) and `[Task-209]` (the bag's description card, which prints no text at all today);
+  203 waits for 193 and 196, which rewrite `battle-moves/**`, and 209 for the i18n pair 190 and 196 hold.
+  **93** is `[Task-205]` (EVOLUTION as its own tab) alone, because it rewrites `detail/**` that 203
+  touches in 92. **94** is `[Task-208]` (the DOM panels' chip, drag and saved slot) alone: it needs
+  `[Task-200]`'s retirement, 203's kit and 207's strip before it claims `hud/**`.
+- **The stats are local by design, and the board's monthly record is not (2026-10-27).** No store exists:
+  `infra/` deploys the static site only (S3 bucket + CloudFront + the certificate through Cloudflare) and
+  every record lives in `window.localStorage` through `src/storage.ts`, which is why the panel's own blurb
+  reads "MONTHLY RECORD · THIS DEVICE" (`stats.blurbRanking`). A **global** monthly strike would need a
+  backend (a table plus one write endpoint, and the anti-cheat that comes with it) and has not been
+  decided; the board's `7 NOVA` is therefore drawn from the device until the human says otherwise.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -9002,6 +9019,160 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       folder READMEs.
       *Dependencies:* `[Task-198]` and `[Task-199]` — they rewrite the same menu scene's DOM path, so they
       ship first and this task deletes the canvas path they left alone. *(Batch 90)*
+
+- [ ] **[Task-201] The main menu's oval shows the board's gradient.** Seen with `?hud=dom` at 1280×800 on
+      `2026-10-27`: the backdrop behind the title is a **flat, hard-edged ellipse** where the board's `01`
+      has a soft radial glow. No `glow`/`oval`/`circle` exists in
+      `src/ui/hud/panels/main-menu/view.ts` — the ellipse is drawn by the canvas and the DOM layer paints
+      no gradient over or around it — and `main-menu.css` carries no `radial-gradient` at all.
+      **Fix shape:** the panel draws the board's oval as one CSS layer (a `radial-gradient` at the board's
+      centre and radii) so the DOM owns it, and the canvas stops drawing its flat ellipse under
+      `?hud=dom`; the geometry is read from the frame the way §5 reads every other panel. **Docs:**
+      `docs/hud-fidelity.md` §5 (the menu's backdrop). **Tests:** `[unit]` the view returns the oval's box
+      and the two gradient stops; `[live]` at 1280 and at 390 the backdrop fades with no visible edge.
+      Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test and
+      `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-198]` and `[Task-199]` (same panel and scene).
+      *(Batch 91)*
+
+- [ ] **[Task-202] The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
+      Three defects, one panel, all seen with `?hud=dom` on `2026-10-27`. (a) **No sprites:** every row
+      renders its portrait cell (`party__portrait`, `data-hud-party-portrait`) with no image behind it,
+      while the CONTINUE row already paints the same species from `portraitCrop`/`portraitBackground`
+      (`src/ui/hud/portrait.ts`) — the panel simply never asks for one. (b) **No reorder:** a member's row
+      is a click (`send({ type: 'member' })`) and nothing else, though the engine already reorders the
+      party in place (`src/engine/run/state.ts` 453). (c) **The HP bar keeps a gap on its left:** the fill
+      starts inset from the track's edge, so the bar reads as broken before any damage. **Fix shape:** the
+      row's portrait takes the shared portrait source (data URI, `null` for a species with no sheet);
+      dragging a row onto another **swaps** them through the engine's own reorder and keeps the lead rule
+      (index 0 opens the battle); the fill's inset is removed so a full bar paints edge to edge and a
+      fractional one starts at the track's left. **Docs:** `docs/design-spec.md` §3 (the party panel's
+      rows) and `docs/hud-fidelity.md` (the row's portrait cell and bar). **Tests:** `[unit]` the row view
+      returns a portrait URI per member and `null` without a sheet; `[unit]` the drop target maps to one
+      `reorderParty` and the lead follows; `[unit]` a full bar's fill box equals its track's at the left;
+      `[live]` a party of three shows three sprites, dragging the second onto the first swaps them and the
+      HP bars start flush at both widths.
+      Claims `src/ui/hud/panels/party/**` + tests, `src/ui/hud/portrait.ts` + test and
+      `src/engine/run/state.ts` (the reorder seam) + test, `docs/design-spec.md` §3 and
+      `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 92)*
+
+- [ ] **[Task-203] A move prints its type and its category as icons, never as words.** Seen with
+      `?hud=dom` on `2026-10-27`: in the detail panel's MOVES tab the type under a move's name is the
+      **word** (`dragon`, and the same for every row), and the battle's move cells print
+      `PHYSICAL`/`SPECIAL`/`STATUS` as text (`CATEGORY_LABELS` in
+      `src/ui/hud/panels/battle-moves/view.ts` 57), where the board draws the type badge and the category
+      glyph. The assets exist and are packed: the type icons (`src/data/typeIcons`) and the category
+      atlas (`move-categories.png`), and `src/ui/hud/kit/typeBadge.tsx` already draws the badge for the
+      detail header. **Fix shape:** one `MoveTypeBadge`/`MoveCategoryIcon` pair in the kit, used by both
+      grids: the detail's move rows and the pool, and the battle's four cells, with the name column
+      reserving the badge's width and the category column the glyph's, so text and icon cannot overlap
+      at 1280 or at 390; a species type with no icon falls back to the word rather than to a blank.
+      **Docs:** `docs/hud-fidelity.md` §5 (a move cell's badges) and §6 (the icon map).
+      **Tests:** `[unit]` a move row returns the type frame and the category frame for each of the 18
+      types and the 3 categories, and the word only when the atlas lacks the frame; `[unit]` the name
+      column's width accounts for the badge; `[live]` every move of a four-move grid shows both icons at
+      both widths, in the battle and in the detail panel.
+      Claims `src/ui/hud/panels/detail/**` + tests, `src/ui/hud/panels/battle-moves/**` + tests,
+      `src/ui/hud/kit/**` + tests, `src/data/typeIcons.ts` (read-only) and `docs/hud-fidelity.md` §5/§6.
+      *Dependencies:* `[Task-193]` and `[Task-196]` (both rewrite `battle-moves/**`). *(Batch 92)*
+
+- [ ] **[Task-204] Every stat prints the rule the board draws under it.** Seen with `?hud=dom` on
+      `2026-10-27`: the stats screens print their figures with **no line under them**, while
+      `stats.css` already carries the token `--stats-rule` ("the rule under a figure", 8 % white) and the
+      board draws one rule per figure. **Fix shape:** the figure block draws the rule from the token
+      under the number, on every stat row and every section grid, so a new figure inherits it; the
+      token's alpha is the board's and is not re-invented per panel. **Docs:** `docs/hud-fidelity.md`
+      (the figure's rule). **Tests:** `[unit]` each figure's view returns a rule box under its value and
+      the boxes never intersect the next row; `[live]` the totals, the run list and the Pokémon table all
+      show the rule at both widths.
+      Claims `src/ui/hud/panels/stats/**` + tests and `docs/hud-fidelity.md`.
+      *Dependencies:* `[Task-199]` (it adds the shared helper in the same folder). *(Batch 91)*
+
+- [ ] **[Task-205] Evolution is its own tab, between STATS and MOVES.** Asked by the human on
+      `2026-10-27`, looking at the detail panel with `?hud=dom`: the panel's tabs are
+      `'stats' | 'moves'` (`src/ui/hud/panels/detail/view.ts` 35) and the evolution graph is a **band
+      inside STATS** (`evolution: DetailEvolutionView | null` — "null off the STATS tab"), so the board's
+      third tab does not exist. **Fix shape:** `'evolution'` joins the tab union and draws the graph the
+      band draws today, in the order STATS · EVOLUTION · MOVES, with the tab row's geometry recomputed
+      for three boxes and the keyboard's left/right stepping through them; the band leaves STATS. **Docs:**
+      `docs/design-spec.md` (the detail panel's tabs) and `docs/hud-fidelity.md` (the tab row).
+      **Tests:** `[unit]` the view returns three tabs in that order with the active one flagged and the
+      graph only on the evolution tab; `[live]` a member with an evolution shows the graph after one
+      right press from STATS and MOVES after the next, at both widths.
+      Claims `src/ui/hud/panels/detail/**` + tests, `docs/design-spec.md` and `docs/hud-fidelity.md`.
+      *Dependencies:* `[Task-203]` (same folder). *(Batch 93)*
+
+- [ ] **[Task-206] The battle's command menu is the HUD's.** Seen with `?hud=dom` on `2026-10-27`: every
+      other battle panel is DOM, and the four-button command window (FIGHT / BAG / POKÉMON / RUN) is still
+      drawn by Phaser — no `battle-command` panel exists in `src/ui/hud/panels/`, while its siblings
+      (`battle-moves`, `battle-bag`, `battle-switch`, `battle-hp`, `battle-log`) all do. **Fix shape:** a
+      `src/ui/hud/panels/battle-command/**` panel with the board's `05` geometry, its four rows, the
+      disabled reasons and the keyboard/pointer mapping the scene already routes, and the scene stops
+      drawing the window and hands it the intent instead; the panel keeps its ⓘ/back behaviour and its
+      box never meets the HP panels. **Docs:** `docs/hud-fidelity.md` §5 (the battle's zones) and
+      `docs/design-spec.md` §4 (the command window).
+      **Tests:** `[unit]` the view returns four rows with their boxes and the disabled flags for a
+      single-Pokémon party and a full one; `[unit]` the four rows' rects do not intersect the HP panels at
+      either width; `[live]` a wild battle shows the DOM command window, clicking FIGHT opens the moves and
+      RUN flees, at 1280 and at 390.
+      Claims `src/ui/hud/panels/battle-command/**` (new) + tests, `src/scenes/BattleScene.ts` + test,
+      `docs/hud-fidelity.md` §5 and `docs/design-spec.md` §4. *Dependencies:* none. *(Batch 91)*
+
+- [ ] **[Task-207] The route strip draws the Pokevial, and the EXP stops being a string.** Seen with
+      `?hud=dom` on `2026-10-27`: the strip carries the level and the XP but **no Pokevial** — a grep of
+      `src/ui/hud/panels/hud/{view.ts,strip.tsx}` finds no `vial` and no `charge` at all, so the three
+      charges the board draws (§`03`) never render. The same panel prints the EXP as a **numeric string**
+      where the board draws the bar alone, which the human asked to drop ("string exp fuera").
+      **Fix shape:** the strip's view returns one chip per readout (level, XP bar, Pokevial with its
+      charges, filled and spent) with the board's geometry, and the EXP's string leaves the view while
+      the bar keeps its fraction; a run without the vial (`null`) draws no chip rather than an empty one.
+      **Docs:** `docs/hud-fidelity.md` (the strip's readouts) and `docs/design-spec.md` §2.
+      **Tests:** `[unit]` the view returns three chips in board order and the vial's filled/spent counts
+      from the run's charges; `[unit]` the EXP chip carries no text; `[live]` a run with two of three
+      charges shows the vial filled twice, and the XP shows a bar and no number, at both widths.
+      Claims `src/ui/hud/panels/hud/**` + tests and `docs/hud-fidelity.md`. *Dependencies:* none.
+      *(Batch 91)*
+
+- [ ] **[Task-208] The DOM panels collapse to their chip, drag and keep their slot.** Asked by the human
+      on `2026-10-27` ("los paneles no se pueden mover en ruta") and owed by `[Task-200]`, which retires
+      the canvas layer that is today the only carrier of the behaviour: a chip at the panel's top-left,
+      a drag with clamp and a slot saved in `hudLayout` (`HUD_PANEL_IDS`; `src/scenes/panels/hud.ts`).
+      The DOM panels draw their chrome and no handler. **Fix shape:** the DOM panel shell takes the three
+      rules from the canvas layer before it goes — a chip per panel with the board's icon, a header drag
+      that clamps to the viewport, and the slot written through `hudLayout` so a reload restores it — and
+      every panel mounts inside that shell instead of positioning itself; the compressed state draws the
+      edge chips the strip already draws, so a collapsed panel is the same object at both layers. The
+      behaviour is described once, in the shell, so a new panel inherits it.
+      **Docs:** `docs/hud-fidelity.md` (a panel's chip and its compressed state), `docs/tech-decisions.md`
+      (`D49` amended with the behaviour the DOM inherits) and `docs/design-spec.md` §2.
+      **Tests:** `[unit]` a drag maps to a clamped offset and to the layout's slot for that panel, and a
+      clamp keeps a panel inside a 390-wide viewport; `[unit]` a chip press flips `collapsed` in the saved
+      layout and the shell paints the edge chip in that state; `[live]` PARTY drags to another corner,
+      collapses to its chip, and the corner and the state survive a reload, at 1280 and at 390.
+      Claims `src/ui/hud/panels/hud/**` + tests, `src/ui/hud/styles/**`, `src/data/hudLayout.ts` + test,
+      `docs/hud-fidelity.md`, `docs/tech-decisions.md` and `docs/design-spec.md` §2.
+      *Dependencies:* `[Task-200]` (the canvas layer it replaces), `[Task-203]` (the kit) and
+      `[Task-207]` (the strip). *(Batch 94)*
+
+- [ ] **[Task-209] The bag's description card prints the item's text, in the player's language.** Seen
+      with `?hud=dom` on `2026-10-27` ("faltan traducciones por ejemplo en descripción de items del panel
+      bag"). There is nothing to translate yet: `src/ui/hud/panels/bag/view.ts` builds the floating card
+      with `text: ''` (182-195) — the title is the item's name and the body is **always empty**, which the
+      view's own test pins (`info.title` is asserted, the text is not). `src/i18n/content.ts` carries only
+      moves and abilities (`movesEs`, `abilitiesEs`), and `src/data/items.ts`'s `ItemDef` has no text
+      field at all, so item prose has no source and no locale. **Fix shape:** `ItemDef` gains its
+      description as an English source line in the catalogue (never a literal in a scene), the card reads
+      it through one `itemText(id)` that overlays `src/i18n/content.ts`'s new `items` section the way the
+      moves and abilities already do — **names stay English** (`D43`), the description does not — and a
+      stack with no text draws the card's title only, at the height the card already computes.
+      **Docs:** `docs/data-spec.md` (an item carries its description) and `docs/tech-decisions.md` (`D43`
+      amended: item descriptions join moves and abilities as content-localised, names stay English).
+      **Tests:** `[unit]` every `ItemDef` has a non-empty description and `itemText` returns the Spanish
+      line under `es` and the English one under `en`; `[unit]` the bag's card carries the description and
+      grows by the wrapped lines, and an item without one keeps the title-only height; `[live]` selecting
+      a Potion in the bag shows its description in Spanish and in English with the locale switched.
+      Claims `src/data/items.ts` + test, `src/i18n/content.ts` + its data files,
+      `src/ui/hud/panels/bag/**` + tests, `docs/data-spec.md` and `docs/tech-decisions.md`.
+      *Dependencies:* `[Task-190]` and `[Task-196]` (the i18n pair). *(Batch 92)*
 
 ---
 
