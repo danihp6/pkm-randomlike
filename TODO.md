@@ -8542,6 +8542,11 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   reads "MONTHLY RECORD · THIS DEVICE" (`stats.blurbRanking`). A **global** monthly strike would need a
   backend (a table plus one write endpoint, and the anti-cheat that comes with it) and has not been
   decided; the board's `7 NOVA` is therefore drawn from the device until the human says otherwise.
+  **The human decided it on the same day:** `[Task-210]` builds that store (a DynamoDB table plus the one
+  endpoint that feeds it), and `[Task-211]` splits the menu's single STATS row into STATS and RANKING so
+  the global table is one press away. 211 takes the **i18n pair**, so it waits for 190 and 196 and opens
+  Batch 95 behind 208; 210 owns `infra/**` and the ranking modes of `stats/**`, which 204 touches in 91,
+  so it opens Batch 96 alone.
 
 - [x] **[Task-181] The run history is written, and the run counts what it prints.** Issue #61.
       `src/engine/run/history.ts` ships `pushHistory`, `makeHistoryRecord` and the record shape,
@@ -9173,6 +9178,55 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/data/items.ts` + test, `src/i18n/content.ts` + its data files,
       `src/ui/hud/panels/bag/**` + tests, `docs/data-spec.md` and `docs/tech-decisions.md`.
       *Dependencies:* `[Task-190]` and `[Task-196]` (the i18n pair). *(Batch 92)*
+
+- [ ] **[Task-210] The ranking is global: a DynamoDB table and the one endpoint that feeds it.**
+      Decided by the human on `2026-10-27` ("usar dynamo"). Today nothing leaves the browser: `infra/`
+      deploys the static site only (an S3 bucket, a CloudFront distribution and the certificate through
+      Cloudflare) and every record lives in `window.localStorage` via `src/storage.ts`, which is why the
+      panel's blurb reads "MONTHLY RECORD · THIS DEVICE" (`stats.blurbRanking`) while the board's `09`
+      draws a monthly table. **Fix shape:** a DynamoDB table keyed by month and strike, written by one
+      small Lambda (a function URL or the gateway the stack prefers) with two operations — `POST` a
+      finished run's summary and `GET` the month's top N — added to `infra/lib/site-stack.ts` with its
+      least-privilege role and on-demand billing; the client submits **once per finished run** from the
+      `endRun` seam `[Task-181]` built (`seed`, mode, `mapReached`, `won`, playtime and the party's
+      species — never the save, never a device id beyond a rotating one), and the stats screen's ranking
+      modes read the global top with the device's own line still marked. **Honest limits, written down:**
+      the payload is client-authored, so the server clamps every number and rate-limits per source; a
+      failed call never blocks the game and the local record stays the fallback; a player with no network
+      sees the local table, labelled as such. **Docs:** `docs/tech-decisions.md` (a new decision: what a
+      finished run sends, why, and what the server may refuse), `docs/design-spec.md` (the ranking is
+      global, the totals stay local) and `infra/README.md`.
+      **Tests:** `[unit]` the payload builder emits exactly the seven fields and clamps a `mapReached`
+      and a playtime beyond the table's bounds; `[unit]` the client returns the local record on a network
+      error and never throws into the scene; `[live]` finish a run in one browser and read it in the
+      ranking from a second browser profile, and the same URL with the network blocked shows the local
+      table.
+      Claims `infra/lib/site-stack.ts` + `infra/lambda/**` (the endpoint) + their tests, a new client
+      module under `src/net/**` + test, `src/ui/hud/panels/stats/**` + tests, `docs/tech-decisions.md`,
+      `docs/design-spec.md` and `infra/README.md`.
+      *Dependencies:* `[Task-181]` (merged) and `[Task-199]` (the records the ranking counts). *(Batch 96)*
+
+- [ ] **[Task-211] STATS and RANKING are two rows of the main menu.** Decided by the human on
+      `2026-10-27` ("dividir en dos botones del menú stats y ranking"). Today the menu has four rows —
+      `MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats']`
+      (`src/ui/hud/panels/main-menu/view.ts` 8) — and the ranking is a **mode inside** the stats screen
+      (`STATS_MODES` carries `ranking`, `ranking-players`, `ranking-pokemon`, reached from the stats
+      panel's own action row), so the monthly table is two presses away and unadvertised. **Fix shape:**
+      `ranking` joins the row ids and the scene's actions, opening the stats panel on its ranking mode
+      (the panel already has the mode and its two sub-tabs, so no screen is duplicated); the card grows to
+      five rows, the compact layout's wrap is recomputed, and the arrow steps five. The board's `01` has
+      four rows and is **amended** by this decision rather than contradicted silently: the frame note and
+      `hud-fidelity.md` §9 record the fifth row and its geometry.
+      **Docs:** `docs/design-spec.md` §2 (the menu's rows), `docs/hud-fidelity.md` §9 (the five-row card)
+      and the `01-main-menu` fixture, which gains the row.
+      **Tests:** `[unit]` the view returns five rows with `stats` and `ranking` distinct, `ranking` opening
+      the stats screen's ranking mode and `stats` its totals; `[unit]` the compact footer and the card's
+      five rows do not intersect at 390; `[live]` at 1280 and at 390 the menu shows both rows and each
+      opens its own view, with the keyboard's down-up reaching the fifth.
+      Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test,
+      `src/i18n/{en,es}.ts`, `design/fixtures/01-main-menu.json`, `docs/design-spec.md` §2 and
+      `docs/hud-fidelity.md` §9. *Dependencies:* `[Task-198]`, `[Task-199]` and `[Task-201]` (same panel).
+      *(Batch 95)*
 
 ---
 
