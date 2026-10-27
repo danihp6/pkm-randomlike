@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MoveSlot,
+  cardClass,
   infoEnterIntent,
   infoLeaveIntent,
   slotPressIntent,
@@ -15,6 +16,8 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
   const rowY = 606 + Math.floor(index / 2) * 80;
   const box: Rect = { x: 360, y: rowY, w: 273, h: 72 };
   const info: Rect = { x: box.x + box.w - 36, y: rowY + 8, w: 22, h: 22 };
+  const nameBox: Rect = { x: box.x + 14, y: rowY + 16.5, w: 96, h: 13 };
+  const categoryBox: Rect = { x: info.x - 8 - 48, y: rowY + 16.5, w: 48, h: 13 };
   return {
     index,
     empty: false,
@@ -29,8 +32,16 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
     enabled: true,
     selected: false,
     box,
-    nameBox: { x: box.x + 14, y: rowY + 16.5, w: 96, h: 13 },
-    categoryBox: { x: info.x - 8 - 48, y: rowY + 16.5, w: 48, h: 13 },
+    nameBox,
+    categoryBox,
+    boxes: {
+      name: nameBox,
+      category: categoryBox,
+      pp: { x: box.x + 70, y: rowY + 29.5, w: 151, h: 13 },
+      power: { x: box.x + 70, y: rowY + 42.5, w: 95, h: 13 },
+      accuracy: { x: box.x + 205, y: rowY + 42.5, w: 68, h: 13 },
+    },
+    typeBox: { x: box.x + 14, y: rowY + 37.5, w: 42, h: 10 },
     info,
     ...overrides,
   };
@@ -55,7 +66,8 @@ function insideStyle(props: Record<string, unknown>, className: string): unknown
     if (typeof value !== 'object' || value === null) return undefined;
     const node = value as Readonly<{ props?: Record<string, unknown> }>;
     if (node.props === undefined) return undefined;
-    if (node.props.class === className) return node.props.style;
+    const classes = typeof node.props.class === 'string' ? node.props.class.split(' ') : [];
+    if (classes.includes(className)) return node.props.style;
     return walk(node.props.children);
   };
   return walk(props.children);
@@ -122,6 +134,47 @@ describe('the move slot button', () => {
       width: '48px',
       height: '13px',
     });
+  });
+
+  it('paints every label at its own model box, so the DOM cannot reflow them apart', () => {
+    const props = buttonProps({ slot: slot(0), card: CARD, onPress: () => {} });
+    expect(insideStyle(props, 'battle-moves__name')).toStrictEqual({
+      left: '14px',
+      top: '16.5px',
+      width: '96px',
+      height: '13px',
+    });
+    expect(insideStyle(props, 'battle-moves__pp')).toStrictEqual({
+      left: '70px',
+      top: '29.5px',
+      width: '151px',
+      height: '13px',
+    });
+    expect(insideStyle(props, 'battle-moves__pwr')).toStrictEqual({
+      left: '70px',
+      top: '42.5px',
+      width: '95px',
+      height: '13px',
+    });
+    expect(insideStyle(props, 'battle-moves__acc')).toStrictEqual({
+      left: '205px',
+      top: '42.5px',
+      width: '68px',
+      height: '13px',
+    });
+    expect(insideStyle(props, 'battle-moves__type')).toStrictEqual({
+      left: '14px',
+      top: '37.5px',
+      width: '42px',
+      height: '10px',
+    });
+  });
+});
+
+describe('the card', () => {
+  it('takes its width class from the model, and says which one it is in the DOM', () => {
+    expect(cardClass(false)).toBe('battle-moves');
+    expect(cardClass(true)).toBe('battle-moves battle-moves--compact');
   });
 });
 

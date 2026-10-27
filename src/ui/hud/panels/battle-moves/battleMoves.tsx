@@ -46,19 +46,11 @@ function insetStyle(rect: Rect, card: Rect): CSSProperties {
 }
 
 /**
- * The category column's style: the span sits inside the slot, which is itself the
- * nearest positioned ancestor, so its model rect is measured against the cell.
+ * A label's style: the span sits inside the slot, which is itself the nearest
+ * positioned ancestor, so its model rect is placed in the cell's own space.
  */
-function categoryStyle(slot: BattleMoveSlotView): CSSProperties {
-  return insetStyle(slot.categoryBox, slot.box);
-}
-
-/**
- * The name's own column: the slot's grid already puts it past the type chip, so only
- * the width the model measured comes from here — the string is cut to it already.
- */
-function nameStyle(slot: BattleMoveSlotView): CSSProperties {
-  return { width: `${slot.nameBox.w}px` };
+function labelStyle(slot: BattleMoveSlotView, rect: Rect): CSSProperties {
+  return insetStyle(rect, slot.box);
 }
 
 function flag(value: boolean): string {
@@ -72,7 +64,11 @@ export type MoveSlotProps = Readonly<{
   onPress: () => void;
 }>;
 
-/** One move card: the type chip, the name, the category and the three stat lines. */
+/**
+ * One move card: the type chip, the name, the category and the three stat lines,
+ * each painted at the box `cellTextBoxes` measured for it — never at a CSS grid
+ * area, so the model's own rects are what the browser draws.
+ */
 export function MoveSlot(props: MoveSlotProps): JSX.Element {
   const { slot, card } = props;
   return (
@@ -93,24 +89,39 @@ export function MoveSlot(props: MoveSlotProps): JSX.Element {
     >
       {slot.empty ? null : (
         <>
-          <TypeBadge type={slot.type} />
-          <span class="battle-moves__name" style={nameStyle(slot)}>
+          <span class="battle-moves__type" style={labelStyle(slot, slot.typeBox)}>
+            <TypeBadge type={slot.type} />
+          </span>
+          <span class="battle-moves__name" style={labelStyle(slot, slot.boxes.name)}>
             {slot.name}
           </span>
-          <span class="battle-moves__category" style={categoryStyle(slot)}>
+          <span class="battle-moves__category" style={labelStyle(slot, slot.boxes.category)}>
             {slot.category}
           </span>
-          <span class="battle-moves__pp">{slot.pp}</span>
-          <span class={joinClasses('battle-moves__pwr', `battle-moves__stat--${slot.powerTone}`)}>
+          <span class="battle-moves__pp" style={labelStyle(slot, slot.boxes.pp)}>
+            {slot.pp}
+          </span>
+          <span
+            class={joinClasses('battle-moves__pwr', `battle-moves__stat--${slot.powerTone}`)}
+            style={labelStyle(slot, slot.boxes.power)}
+          >
             {slot.power}
           </span>
-          <span class={joinClasses('battle-moves__acc', `battle-moves__stat--${slot.accuracyTone}`)}>
+          <span
+            class={joinClasses('battle-moves__acc', `battle-moves__stat--${slot.accuracyTone}`)}
+            style={labelStyle(slot, slot.boxes.accuracy)}
+          >
             {slot.accuracy}
           </span>
         </>
       )}
     </button>
   );
+}
+
+/** The card's class list: the layer, plus the compact modifier the stylesheet keys on. */
+export function cardClass(compact: boolean): string {
+  return joinClasses('battle-moves', compact && 'battle-moves--compact');
 }
 
 /**
@@ -136,9 +147,10 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
 
   return (
     <div
-      class="battle-moves"
+      class={cardClass(view.compact)}
       data-hud-panel="battle-moves"
       data-open={flag(view.open)}
+      data-compact={flag(view.compact)}
       hidden={!view.open}
       style={cardStyle(card)}
     >

@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A move cell keeps its name and its numbers at 390.** `[Task-193]`, the second of Batch 85,
+      is the phone half of `[Task-192]`: at 390×844 the four cells were still laid out by the wide
+      2×2 rule inside the 358×236 phone card, so the names vanished and fragments of the other
+      rows painted over each other (`PHYSICAL` on `20/20`, `POT`/`PRE` jammed, the type badge over
+      the stats), with the foe/player HP boxes behind the menu. The compact battle now has its own
+      cell geometry in `battle-moves/view.ts`: `cellTextBoxes(cell, compact)` returns the name,
+      category, PP, PWR and ACC rects laid out for the card's width class, `BattleMoveSlotView`
+      carries them so the JSX paints each label at the model's own rect, `fitsInside` states the
+      invariant, and every box is measured against `drawnTextWidth` of the string it holds — the
+      name takes the cell's top row and the stats the two-column row under it, while the 22-px ⓘ
+      keeps its reserve. The wide layout is untouched: the pinned 1280 boxes (slot `{524,606,222,72}`,
+      name 96 px, category 60 px ending 22 px clear of the ⓘ) are the same values. Gates: `npm test`
+      4706 passed / 69 skipped, `npm run build` green. Measured live over CDP on the DOM battle at
+      390×844: every text node's `Range` rect lies inside its own `[data-hud-move-slot]` and the
+      four names are the real move names, no `[data-hud-battle-hp]` box intersects
+      `[data-hud-panel="battle-moves"]`, and the same read at 1280×800 is the shipped 2×2 grid.
+
 - [x] **R rerolls the starter offer, and the offer is a pure function of the seed.** `[Task-190]`,
       the first of Batch 85, closes issue #52's second residue: the pick's frame `04` advertises
       **HOLD R FOR NEW SEED** and the scene read no R at all. `R` is now its own keybind action —

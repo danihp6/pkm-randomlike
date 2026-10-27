@@ -8767,7 +8767,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/data/keybinds.ts` + test, `src/i18n/{en,es}.ts` and `docs/design-spec.md` §2.
       *Dependencies:* none. *(Batch 85)*
 
-- [ ] **[Task-193] A move cell keeps its name and its numbers at 390.** Follow-up of `[Task-192]`,
+- [x] **[Task-193] A move cell keeps its name and its numbers at 390.** Follow-up of `[Task-192]`,
       measured on the merged tree (`main` @ `49aeb7b`) at 390×844 with a wild battle and FIGHT
       open: the four cells lose their **names** entirely and show only fragments of the other rows
       (`PHYSICAL` sitting on top of `20/20`, `POT`/`PRE` jammed together, the type badge over the

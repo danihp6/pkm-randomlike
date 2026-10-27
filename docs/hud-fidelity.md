@@ -118,9 +118,22 @@ cut to that width with an ellipsis (the ⓘ card keeps the whole name), while th
 block so its own label never eats that line; the category column is **its widest label's measured width** —
 `PHYSICAL`, 60 px — and the 22 px ⓘ stays clear of it. A box that merely avoids its neighbour is not enough:
 `PHYSICAL` paints 56 px in the 48 px column `[Task-189]` shipped, so the string ran under the ⓘ beside boxes
-that did not intersect. A cell narrower than the 90 px the category column and the ⓘ need — the phone card's
-119 px cell leaves 91 — gives the name what is left of it, and the ⓘ card is where its whole text stays
-readable.
+that did not intersect. A wide cell narrower than the 90 px the category column and the ⓘ need — the 222 px
+cell at 1280×800 is the narrowest one shipped — gives the name what is left of it, and the ⓘ card is where
+its whole text stays readable; the phone card's 119 px cell takes the compact geometry below instead.
+
+**The compact battle has its own cell.** At 390×844 the menu card keeps its shipped rect — 358×236 at
+(16,592), starting 8 px under the player's 358×80 card at y 504…584, so no HP box is drawn behind it — but
+its four cells are 119×94 and paint **six stacked lines** instead of the wide three: the type chip and the
+ⓘ share the first row, the category column (60 px, `PHYSICAL`) takes the second right-aligned 8 px left of
+the ⓘ and 30 px inside the cell's right padding edge, and the name, PP, power and accuracy each get a full
+91 px line of their own — one label a line, because `PP 15/15` (55 px) and `PWR 90` (50 px) side by side are
+105 px with their gap in a 91 px content box. In both width classes every label is now painted at the box
+`cellTextBoxes` measures for it (`BattleMoveSlotView.boxes`) instead of at a stylesheet grid, so a cell's
+text is bounded by its own model rect: the name is the one line that is ever cut — 91 px at 390 against the
+96 px the wide 222 px cell gives it — and nothing else needs eliding. The stack needs a 118 px cell (14 px
+of padding, the 60 px category, its 8 px gap and the 22 px ⓘ, twice), so a stage under 388 px is below what
+this panel is asked to draw.
 
 ## 6. Frame → node map
 

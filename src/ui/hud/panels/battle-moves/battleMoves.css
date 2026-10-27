@@ -40,15 +40,11 @@
   box-sizing: border-box;
 }
 
-/* move cell 0…3 */
+/* move cell 0…3. Every label inside it is placed at the box the model measured
+   (`cellTextBoxes`), so the cell keeps no grid and no padding of its own: its
+   `8px 14px` content inset is `CELL_PAD_*` in `view.ts`, taken off there. */
 .battle-moves__slot {
   position: absolute;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: repeat(3, auto);
-  align-content: center;
-  gap: 0 8px;
-  padding: 8px 14px;
   overflow: hidden;
   appearance: none;
   border: 1px solid var(--battle-moves-row-border);
@@ -77,52 +73,53 @@
   cursor: default;
 }
 
-.battle-moves__slot .kit-type {
-  /* The type badge rides with the stat block, not with the name: on the name's own
-     line its label (36–60 px, one per type) would take the width the move's name
-     needs. It spans both stat lines so it reads as their left gutter. */
-  grid-area: 2 / 1 / 4 / 2;
-  align-self: center;
-  justify-self: start;
+/* The type chip rides with the stat block, not with the name: on the name's own
+   line its label (30–60 px, one per type) would take the width the move's name
+   needs. The wide cell keeps it in the left gutter the stat lines start past; the
+   compact cell gives it a row of its own, beside the ⓘ. */
+.battle-moves__type {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* One label, one model rect: `left` / `top` / `width` / `height` come in inline. */
+.battle-moves__name,
+.battle-moves__category,
+.battle-moves__pp,
+.battle-moves__pwr,
+.battle-moves__acc {
+  position: absolute;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .battle-moves__name {
-  /* The cell's whole first line: the model's `nameBox` is that line minus the
-     category column, its two 8 px gaps and the 22 px ⓘ, and the width it measures
-     comes in inline. The hidden overflow and the ellipsis are the guard only — the
-     string is already cut to it. */
-  grid-area: 1 / 1 / 2 / 4;
-  overflow: hidden;
+  /* The width it measures comes in inline and the string is already cut to it;
+     the hidden overflow and the ellipsis are the guard only. */
   color: var(--hud-text-ink);
   text-transform: uppercase;
-  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .battle-moves__category {
-  /* The model's own column (`.battle-moves__category`'s rect): absolute, so the
-     44 px right edge is the ⓘ's 36 px offset (`view.ts`'s `INFO_OFFSET`) plus its
-     8 px `MOVE_CATEGORY_GAP`, and right-aligned, so the widest label's own column
-     holds it clear of the ⓘ square. */
-  position: absolute;
-  right: 44px;
   color: var(--hud-text-muted);
   text-align: right;
   text-transform: uppercase;
 }
 
 .battle-moves__pp {
-  grid-area: 2 / 2;
   color: var(--hud-text-muted);
 }
 
-.battle-moves__pwr {
-  grid-area: 3 / 2;
+.battle-moves__acc {
+  text-align: right;
 }
 
-.battle-moves__acc {
-  grid-area: 3 / 3;
-  justify-self: end;
+/* The compact cell stacks its labels, so the accuracy line starts at the cell's
+   own left edge instead of running to its right one. */
+.battle-moves--compact .battle-moves__acc {
+  text-align: left;
 }
 
 .battle-moves__stat--up {
