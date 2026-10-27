@@ -1,17 +1,17 @@
 import Phaser from 'phaser';
 import { getSpecies } from '../data/dex';
 import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
-import { STARTER_POOL_SIZE, STARTING_BAG } from '../data/run';
+import { STARTING_BAG } from '../data/run';
 import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
 import {
   createRun,
   createRunPokemon,
-  rollStarterPool,
+  starterOffer,
   encodeRunShare,
   type RunMode,
   type RunShare,
 } from '../engine/run';
-import { randomSeed, rngFromSeed } from '../engine/rng';
+import { randomSeed } from '../engine/rng';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { subscribeKeybinds } from '../input/input';
 import { addFrlgWindow, FRLG_ACCENT, FRLG_MUTED, FRLG_SURFACE } from '../ui/frlg';
@@ -95,7 +95,9 @@ type StarterLayout = Readonly<{
  *
  * The seed is on screen as the share string that reproduces the run (D21), and
  * `S` opens the seed prompt to type a seed or paste a friend's share string
- * (which also carries their mode), rerolling the cards from there.
+ * (which also carries their mode), rerolling the cards from there. `R` throws
+ * the offer away for the next one drawn from a fresh random seed, the same path
+ * a brand-new run takes.
  *
  * The scene keeps every rule under `?hud=dom` and loses only its drawing: the
  * pick panel in `src/ui/hud/panels/starter/` paints the same offer.
@@ -129,7 +131,7 @@ export class StarterScene extends Phaser.Scene {
 
   create(): void {
     this.index = 0;
-    this.pool = rollStarterPool(rngFromSeed(`${this.seed}:starters`), STARTER_POOL_SIZE);
+    this.pool = starterOffer(this.seed);
     const { width, height } = this.scale;
     this.layout = this.computeLayout(width, height);
     this.hint = this.controlsCopy();
@@ -217,12 +219,14 @@ export class StarterScene extends Phaser.Scene {
           left: keyLabel(keys.left),
           right: keyLabel(keys.right),
           confirm: keyLabel(keys.confirm),
+          reroll: keyLabel(keys.reroll),
           cancel: keyLabel(keys.cancel),
         })
       : t('starter.controls', {
           left: keyLabel(keys.left),
           right: keyLabel(keys.right),
           confirm: keyLabel(keys.confirm),
+          reroll: keyLabel(keys.reroll),
           settings: keyLabel(keys.settings),
           cancel: keyLabel(keys.cancel),
         });
@@ -283,7 +287,8 @@ export class StarterScene extends Phaser.Scene {
 
   /**
    * The player's intent behind one shared action, from a key. Left and right move
-   * the pick, A (confirm) takes it, and the settings key opens the options.
+   * the pick, A (confirm) takes it, R (reroll) draws a new seed's offer, and the
+   * settings key opens the options.
    */
   private handleAction(action: KeybindAction): void {
     switch (action) {
@@ -295,6 +300,9 @@ export class StarterScene extends Phaser.Scene {
         return;
       case 'confirm':
         this.confirm();
+        return;
+      case 'reroll':
+        this.rerollOffer();
         return;
       case 'cancel':
         // Back to the hub: the run in progress is untouched, so it can still be
@@ -509,7 +517,24 @@ export class StarterScene extends Phaser.Scene {
     this.seed = share.seed;
     this.mode = share.mode;
     this.index = 0;
-    this.pool = rollStarterPool(rngFromSeed(`${this.seed}:starters`), STARTER_POOL_SIZE);
+    this.pool = starterOffer(this.seed);
+    this.repaintOffer();
+  }
+
+  /**
+   * Throws the current offer away for the next one: a reroll is a fresh random
+   * seed and nothing else, the same path a brand-new run takes, so the mode and
+   * the unconfirmed run stay untouched. Only `confirm` writes a save.
+   */
+  private rerollOffer(): void {
+    this.seed = randomSeed();
+    this.index = 0;
+    this.pool = starterOffer(this.seed);
+    this.repaintOffer();
+  }
+
+  /** Redraws every carrier of the offer: the cards (or panel), the share line. */
+  private repaintOffer(): void {
     if (this.dom) {
       this.render();
       return;

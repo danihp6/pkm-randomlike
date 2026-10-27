@@ -1,5 +1,5 @@
 import { STARTER_POOL_SIZE, starterCandidates } from '../../data/run';
-import type { Rng } from '../rng';
+import { rngFromSeed, type Rng } from '../rng';
 
 /**
  * Draws `count` distinct starter candidates — the base forms of evolution lines
@@ -15,4 +15,13 @@ export function rollStarterPool(rng: Rng, count = STARTER_POOL_SIZE): readonly s
     picked.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
   }
   return picked;
+}
+
+/**
+ * The offer a seed shows: a pure function of the seed alone, drawn from its own
+ * `:starters` stream (`D11`). A reroll is a new seed and nothing else, so the
+ * picker never keeps roll state of its own.
+ */
+export function starterOffer(seed: string, count = STARTER_POOL_SIZE): readonly string[] {
+  return rollStarterPool(rngFromSeed(`${seed}:starters`), count);
 }

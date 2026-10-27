@@ -17,8 +17,9 @@ export const en = {
   'starter.blurb': 'Your first Pokémon. Lose it and it is gone for good.',
   'starter.blurbCompact': 'Lose it and it is gone for good.',
   'starter.controls':
-    '{left}  {right}  choose      {confirm}  confirm      S  seed      {settings}  settings      {cancel}  back',
-  'starter.controlsCompact': '{left} {right} / tap  choose   {confirm}  confirm   {cancel}  back',
+    '{left}  {right}  choose      {confirm}  confirm      {reroll}  reroll      S  seed      {settings}  settings      {cancel}  back',
+  'starter.controlsCompact':
+    '{left} {right} / tap  choose   {confirm}  confirm   {reroll}  reroll   {cancel}  back',
   'starter.share': 'Share: {share}',
 
   // runOver — RunOverScene and runSummary.ts
@@ -149,6 +150,7 @@ export const en = {
   'keybind.right': 'Right',
   'keybind.run': 'Run',
   'keybind.interact': 'Interact',
+  'keybind.reroll': 'Reroll starter',
   'keybind.reset': 'Reset run',
   'keybind.party': 'Party panel',
   'keybind.bag': 'Bag panel',
