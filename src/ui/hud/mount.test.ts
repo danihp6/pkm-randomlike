@@ -1,6 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+/** The view itself is covered by `npm run hud:diff`; the mount contract is what this file owns. */
+vi.mock('preact', () => ({
+  h: (type: unknown, props: unknown): unknown => ({ type, props }),
+  render: (): void => undefined,
+}));
+
 import { hudRequested, mountHud } from './mount';
 
 const ROOT_CSS = fileURLToPath(new URL('./styles/root.css', import.meta.url));
@@ -30,30 +37,83 @@ function rule(css: string, selector: string): string {
 }
 
 describe('hudRequested', () => {
-  it('enables the DOM HUD for ?hud=dom anywhere in the query string', () => {
-    for (const search of ['?hud=dom', '?a=1&hud=dom', 'HUD=DOM', '?hud=DOM&x=1', '?a=1&hud=dom&b=2']) {
+  it('is true for every query string: the DOM HUD is the HUD', () => {
+    for (const search of ['', '?', '?hud=dom', '?hud=phaser', '?a=1&hud=dom&b=2', '?x=1']) {
       expect(hudRequested(search), search).toBe(true);
     }
   });
+});
 
-  it('leaves every other search alone', () => {
-    for (const search of [
-      '',
-      '?',
-      '?hud',
-      '?hud=phaser',
-      '?hud=domx',
-      '?hudx=dom',
-      '?x=1',
-      '?ahud=dom',
-    ]) {
-      expect(hudRequested(search), search).toBe(false);
-    }
+/** The minimal element the mount touches: an id, children and a way out of the tree. */
+class FakeElement {
+  id = '';
+  readonly children: FakeElement[] = [];
+  parent: FakeElement | null = null;
+
+  appendChild(child: FakeElement): FakeElement {
+    child.parent = this;
+    this.children.push(child);
+    return child;
+  }
+
+  remove(): void {
+    if (this.parent === null) return;
+    const at = this.parent.children.indexOf(this);
+    if (at >= 0) this.parent.children.splice(at, 1);
+    this.parent = null;
+  }
+}
+
+function stubDocument(): FakeElement {
+  const body = new FakeElement();
+  vi.stubGlobal('document', {
+    body,
+    createElement: (): FakeElement => new FakeElement(),
+    fonts: { load: (): Promise<unknown[]> => Promise.resolve([]) },
+  });
+  return body;
+}
+
+function hudRoots(body: FakeElement): FakeElement[] {
+  return body.children.filter((child) => child.id === 'hud');
+}
+
+describe('mountHud', () => {
+  afterEach(() => {
+    mountHud('').dispose();
+    vi.unstubAllGlobals();
   });
 
-  it('mounts nothing when the flag is absent', () => {
-    expect(mountHud('')).toBeNull();
-    expect(mountHud('?hud=phaser')).toBeNull();
+  it('mounts the #hud root on a clean boot', () => {
+    const body = stubDocument();
+
+    const handle = mountHud('');
+
+    expect(handle).not.toBeNull();
+    expect(hudRoots(body)).toHaveLength(1);
+    expect(handle?.root.id).toBe('hud');
+  });
+
+  it('returns the same handle for ?hud=dom, which is now only an alias', () => {
+    stubDocument();
+
+    const handle = mountHud('');
+
+    expect(mountHud('?hud=dom')).toBe(handle);
+    expect(mountHud('?hudFixture=02-options')).toBe(handle);
+  });
+
+  it('removes the root again on dispose, and mounts a fresh one afterwards', () => {
+    const body = stubDocument();
+    const first = mountHud('');
+    expect(first).not.toBeNull();
+
+    first?.dispose();
+
+    expect(hudRoots(body)).toHaveLength(0);
+    const second = mountHud('');
+    expect(second).not.toBe(first);
+    expect(hudRoots(body)).toHaveLength(1);
   });
 });
 

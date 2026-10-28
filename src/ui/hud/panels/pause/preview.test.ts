@@ -10,6 +10,8 @@ describe('pausePreviewRequested', () => {
       'hud=dom&hudFixture=03n-panels-pause-menu',
       '?hud=dom&hudFixture=03n-panels-pause-menu&extra=1',
       '?extra=1&hud=DOM&hudFixture=03N-PANELS-PAUSE-MENU',
+      '?hud=game&hudFixture=03n-panels-pause-menu',
+      '?hudFixture=03n-panels-pause-menu',
     ]) {
       expect(pausePreviewRequested(search), search).toBe(true);
     }
@@ -20,11 +22,9 @@ describe('pausePreviewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=03n-panels-pause-menu',
       '?hud=dom&hudFixture=03k-panels-notice-item',
       '?hud=dom&hudFixture=m03n-panels-pause-menu',
       '?hud=dom&hudFixture=03n panels pause menu',
-      '?hud=game&hudFixture=03n-panels-pause-menu',
     ]) {
       expect(pausePreviewRequested(search), search).toBe(false);
     }

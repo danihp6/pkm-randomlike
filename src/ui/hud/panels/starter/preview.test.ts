@@ -10,6 +10,9 @@ describe('starterPreviewRequested', () => {
       '?hudFixture=m04-starter-pick&hud=dom',
       '?hud=dom&hudFixture=04-starter-pick&extra=1',
       '?extra=1&hud=DOM&hudFixture=04-STARTER-PICK',
+      '?hudFixture=04-starter-pick',
+      '?hud=game&hudFixture=04-starter-pick',
+      '?hudFixture=m04-starter-pick',
     ]) {
       expect(starterPreviewRequested(search), search).toBe(true);
     }
@@ -19,9 +22,6 @@ describe('starterPreviewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=04-starter-pick',
-      '?hudFixture=m04-starter-pick',
-      '?hud=game&hudFixture=04-starter-pick',
       '?hud=dom&hudFixture=01-main-menu',
       '?hud=dom&hudFixture=03-route-hud',
       '?hud=dom&hudFixture=04',

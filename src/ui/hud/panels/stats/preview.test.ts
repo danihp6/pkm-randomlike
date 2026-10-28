@@ -13,6 +13,9 @@ describe('statsPreviewRequested', () => {
       '?hudFixture=09b-ranking-pokemon&hud=dom',
       '?hud=dom&hudFixture=08c-stats-pokemon&extra=1',
       '?extra=1&hud=DOM&hudFixture=09-RANKING',
+      '?hudFixture=08-stats-totals',
+      '?hud=game&hudFixture=08-stats-totals',
+      '?hudFixture=09-ranking',
     ]) {
       expect(statsPreviewRequested(search), search).toBe(true);
     }
@@ -22,9 +25,6 @@ describe('statsPreviewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=08-stats-totals',
-      '?hudFixture=09-ranking',
-      '?hud=game&hudFixture=08-stats-totals',
       '?hud=dom&hudFixture=01-main-menu',
       '?hud=dom&hudFixture=07-run-over-victory',
       '?hud=dom&hudFixture=m08-stats-totals',

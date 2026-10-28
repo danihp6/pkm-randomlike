@@ -2,20 +2,12 @@ import { h, render } from 'preact';
 import { HudShell } from './shell';
 import './styles/root.css';
 
-function normalised(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-/** Whether the DOM HUD was asked for: `?hud=dom`, anywhere in the query string. */
-export function hudRequested(search: string): boolean {
-  const query = search.startsWith('?') ? search.slice(1) : search;
-  for (const pair of query.split('&')) {
-    const separator = pair.indexOf('=');
-    if (separator < 0) continue;
-    if (normalised(pair.slice(0, separator)) !== 'hud') continue;
-    if (normalised(pair.slice(separator + 1)) === 'dom') return true;
-  }
-  return false;
+/**
+ * The DOM HUD is the HUD (`D49`): every boot asks for it, and the old
+ * `?hud=dom` switch is a no-op alias kept so already-written links still boot.
+ */
+export function hudRequested(_search: string): boolean {
+  return true;
 }
 
 export type HudHandle = Readonly<{ root: HTMLElement; dispose: () => void }>;
@@ -28,9 +20,8 @@ function preloadFaces(): void {
   void document.fonts.load('700 12px Silkscreen').catch(() => undefined);
 }
 
-/** Mounts the shell into a new `#hud` root, or returns null when not requested. */
-export function mountHud(search: string): HudHandle | null {
-  if (!hudRequested(search)) return null;
+/** Mounts the shell into a new `#hud` root, once per page. */
+export function mountHud(_search: string): HudHandle | null {
   if (mounted !== null) return mounted;
 
   const root = document.createElement('div');

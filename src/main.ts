@@ -37,8 +37,8 @@ export const config: Phaser.Types.Core.GameConfig = {
 
 export const game = new Phaser.Game(config);
 
-// The DOM HUD (D49) mounts on its own, behind `?hud=dom`, and owns no Phaser object:
-// the flag is read once at boot and the handle is never touched again.
+// The DOM HUD (D49) is the HUD: it mounts on every boot and owns no Phaser object.
+// The scenes below mount their own panel into `#hud`; `?hud=dom` is only an alias.
 mountHud(window.location.search);
 
 // The debug menu is a dev-only DOM overlay; the dynamic import keeps its code
