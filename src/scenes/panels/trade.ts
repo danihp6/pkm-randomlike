@@ -170,8 +170,8 @@ function selectedMember(host: TradeCardHost): string | null {
 }
 
 /**
- * Opens the card for this room: the shipped window with the flag off, the `#hud`
- * mount with it on. A second press while a card is up is the card's, never a rebuild.
+ * Opens the card for this room: the `#hud` mount, always. A second press while a card
+ * is up is the card's, never a rebuild.
  */
 export function openTradeCard(host: TradeCardHost): void {
   if (host.panelOpen()) return;

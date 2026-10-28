@@ -392,17 +392,17 @@ export class BattleScene extends Phaser.Scene {
   /** The second slot's sprites: hidden in a single battle, drawn on the same field. */
   private playerSprite2!: Phaser.GameObjects.Sprite;
   private foeSprite2!: Phaser.GameObjects.Sprite;
-  /** The mounted DOM HP boxes (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM HP boxes and the controller `refreshHud` pushes to. */
   private hpController: BattleHpController | null = null;
-  /** The mounted DOM move menu (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM move menu and the controller `refreshHud` pushes to. */
   private movesController: BattleMovesController | null = null;
-  /** The mounted DOM command window (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM command window and the controller `refreshHud` pushes to. */
   private commandController: BattleCommandController | null = null;
-  /** The mounted DOM bag (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM bag and the controller `refreshHud` pushes to. */
   private bagController: BattleBagController | null = null;
-  /** The mounted DOM switch grid (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM switch grid and the controller `refreshHud` pushes to. */
   private switchController: BattleSwitchController | null = null;
-  /** The mounted DOM message box (`?hud=dom`) and the line `refreshHud` pushes to it. */
+  /** The mounted DOM message box and the line `refreshHud` pushes to it. */
   private logController: BattleLogHandle | null = null;
   private foeTrainer!: Phaser.GameObjects.Image;
   private moveFxSprite!: Phaser.GameObjects.Sprite;
@@ -608,7 +608,7 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
-  /** Mounts the DOM HP boxes into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM HP boxes into the HUD layer, once per battle. */
   private mountHpPanel(): void {
     if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
@@ -626,7 +626,7 @@ export class BattleScene extends Phaser.Scene {
     this.hpController = null;
   }
 
-  /** Mounts the DOM move menu into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM move menu into the HUD layer, once per battle. */
   private mountMovesPanel(): void {
     if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
@@ -641,7 +641,7 @@ export class BattleScene extends Phaser.Scene {
     this.movesController = null;
   }
 
-  /** Mounts the DOM command window into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM command window into the HUD layer, once per battle. */
   private mountBattleCommandPanel(): void {
     if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
@@ -656,7 +656,7 @@ export class BattleScene extends Phaser.Scene {
     this.commandController = null;
   }
 
-  /** Mounts the DOM bag into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM bag into the HUD layer, once per battle. */
   private mountBagPanel(): void {
     if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
@@ -671,7 +671,7 @@ export class BattleScene extends Phaser.Scene {
     this.bagController = null;
   }
 
-  /** Mounts the DOM switch grid into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM switch grid into the HUD layer, once per battle. */
   private mountSwitchPanel(): void {
     if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
@@ -686,7 +686,7 @@ export class BattleScene extends Phaser.Scene {
     this.switchController = null;
   }
 
-  /** Mounts the DOM message box into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM message box into the HUD layer, once per battle. */
   private mountBattleLogPanel(): void {
     if (typeof document === 'undefined') return;
     // The fixture preview paints its own frame and owns the layer; the scene steps aside.
@@ -705,8 +705,7 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * Pushes the line the typewriter is revealing to the DOM message box. The box is
-   * the canvas `messagePanel`'s visibility rule exactly: open while no menu owns it,
-   * and the closed box carries no line.
+   * open while no menu owns it, and the closed box carries no line.
    */
   private updateBattleLog(): void {
     const controller = this.logController;
@@ -2464,40 +2463,27 @@ export class BattleScene extends Phaser.Scene {
    * it (the shipped single layout, reached through the same code).
    */
 
-  /** Counts the visible objects of the four HP kits: the `?hud=dom` flag contract's probe. */
+  /** The HP boxes' own display objects in Phaser: none, they are the DOM card. */
   hpDrawnObjectCount(): number {
     return 0;
   }
 
-  /**
-   * Counts the visible objects the move menu owns: the window, the ◀, the two forme
-   * columns and the grid's laid-out cells. The `?hud=dom` flag contract's probe.
-   */
+  /** The move menu's own display objects in Phaser: none, it is the DOM card. */
   movesDrawnObjectCount(): number {
     return 0;
   }
 
-  /**
-   * Counts the visible objects the bag owns: the ◀, the filter field, the selected
-   * line and the pocket's tabs and cells. The `?hud=dom` flag contract's probe.
-   */
+  /** The bag's own display objects in Phaser: none, it is the DOM card. */
   bagDrawnObjectCount(): number {
     return 0;
   }
 
-  /**
-   * Counts the message box's visible objects: the glass window and its text. The
-   * `?hud=dom` flag contract's probe.
-   */
+  /** The message box's own display objects in Phaser: none, it is the DOM card. */
   logDrawnObjectCount(): number {
     return 0;
   }
 
-  /**
-   * Counts the visible objects the switch grid owns: the window, the ◀, the cells,
-   * avatars, labels, bars, fills and the detail window with its contents. The
-   * `?hud=dom` flag contract's probe.
-   */
+  /** The switch grid's own display objects in Phaser: none, it is the DOM card. */
   switchDrawnObjectCount(): number {
     return 0;
   }
@@ -2529,9 +2515,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM command window's only receiver: hover moves the cursor exactly as
-   * `onMenuHover` does, and a press lands on the `confirmMenu` the canvas row's
-   * click already takes — a dimmed row is accepted here and refused there.
+   * The DOM command window's only receiver: a hover moves the cursor, and a press
+   * lands on `confirmMenu`, the one path a key takes too — a dimmed row is accepted
+   * here and refused there.
    */
   private onBattleCommandIntent(intent: BattleCommandIntent): void {
     if (this.mode !== 'menu' && this.mode !== 'partner') return;
@@ -2566,8 +2552,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The moves menu's four slots as the canvas's own cells, built once so the DOM
-   * card and the grid can never read different data.
+   * The moves menu's four slots as cells, built once so the card and the engine can
+   * never read different data.
    */
   private moveCells(): readonly MoveGridCell[] {
     return this.menuItems.map((item) => ({
@@ -2613,8 +2599,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM card's only receiver: every intent lands on the call the canvas already
-   * made, so a press and a key reach the same engine command.
+   * The DOM card's only receiver: every intent lands on the call a key makes, so a
+   * press and a key reach the same engine command.
    */
   private onBattleMoveIntent(intent: BattleMovesIntent): void {
     switch (intent.type) {
@@ -2685,8 +2671,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM bag's only receiver: every intent lands on the call the canvas already
-   * made, so a press and a key reach the same engine command.
+   * The DOM bag's only receiver: every intent lands on the call a key makes, so a
+   * press and a key reach the same engine command.
    */
   private onBattleBagIntent(intent: BattleBagIntent): void {
     switch (intent.type) {
@@ -2763,9 +2749,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM switch grid's only receiver: every intent lands on the call the canvas
-   * already made, so a press and a key reach the same engine command — and the
-   * send-out beat stays the feed's (`playSwitch`), never the card's.
+   * The DOM switch grid's only receiver: every intent lands on the call a key makes,
+   * so a press and a key reach the same engine command — and the send-out beat stays
+   * the feed's (`playSwitch`), never the card's.
    */
   private onBattleSwitchIntent(intent: BattleSwitchIntent): void {
     switch (intent.type) {
@@ -2882,45 +2868,41 @@ export class BattleScene extends Phaser.Scene {
 }
 
 /**
- * The number of display objects the HP boxes draw right now: 0 under `?hud=dom`,
- * where the four kits are built but never shown. The live flag contract reads it
- * with `(await import('/src/scenes/BattleScene.ts')).battleHpDrawnObjectCount(...)`.
+ * The number of display objects the HP boxes draw in Phaser: none, they are the DOM
+ * card. The gate reads it with
+ * `(await import('/src/scenes/BattleScene.ts')).battleHpDrawnObjectCount(...)`.
  */
 export function battleHpDrawnObjectCount(scene: BattleScene): number {
   return scene.hpDrawnObjectCount();
 }
 
-/**
- * The number of display objects the move menu draws right now: 0 under `?hud=dom`,
- * where the card is the DOM one and the grid, the ◀ and the forme columns are dark.
- */
+/** The display objects the move menu draws in Phaser: none, it is the DOM card. */
 export function battleMovesDrawnObjectCount(scene: BattleScene): number {
   return scene.movesDrawnObjectCount();
 }
 
-/** The display objects the bag draws right now: 0 under `?hud=dom`. */
+/** The display objects the bag draws in Phaser: none, it is the DOM card. */
 export function battleBagDrawnObjectCount(scene: BattleScene): number {
   return scene.bagDrawnObjectCount();
 }
 
-/** The display objects the switch grid draws right now: 0 under `?hud=dom`. */
+/** The display objects the switch grid draws in Phaser: none, it is the DOM card. */
 export function battleSwitchDrawnObjectCount(scene: BattleScene): number {
   return scene.switchDrawnObjectCount();
 }
 
 /**
  * The mode a back press opens from the scene's current mode, without performing
- * it: `'party'` while the player owes a replacement, `'menu'` otherwise. The live
- * flag contract reads it with
- * `(await import('/src/scenes/BattleScene.ts')).battleBackPressMode(...)`.
+ * it: `'party'` while the player owes a replacement, `'menu'` otherwise. The gate
+ * reads it with `(await import('/src/scenes/BattleScene.ts')).battleBackPressMode(...)`.
  */
 export function battleBackPressMode(scene: BattleScene): string {
   return scene.backPressMode();
 }
 
 /**
- * The number of display objects the message box draws right now: 0 under `?hud=dom`,
- * where the box is the `battle-log` card. The live flag contract reads it with
+ * The number of display objects the message box draws in Phaser: none, it is the
+ * `battle-log` card. The gate reads it with
  * `(await import('/src/scenes/BattleScene.ts')).battleLogDrawnObjectCount(...)`.
  */
 export function battleLogDrawnObjectCount(scene: BattleScene): number {

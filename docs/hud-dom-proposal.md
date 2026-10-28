@@ -296,8 +296,8 @@ Three things, and they are the only disagreements between this document and the 
 ### 13.1 The canvas layer retired (`Task-200`)
 
 The DOM HUD is not a flag any more: `mountHud` runs on every boot, `?hud=dom` is a no-op alias and
-`parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a **render-free
-controller**: it mounts its card into `#hud`, feeds the view and forwards intents. The HUD's panels,
+`parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a
+**controller**: it mounts its card into `#hud`, feeds the view and forwards intents. The HUD's panels,
 strip, rows, windows and panel text are DOM-only; the level-up/evolution popup and the reset ring
 remain canvas and their DOM parity is a follow-up, not assumed here.
 

@@ -1171,8 +1171,7 @@ task; (5) the route HUD chips and the pad decision last.
 
 **The decision.** The DOM HUD is the HUD: `mountHud` mounts on a clean boot, `?hud=dom` is a no-op
 alias, and `parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a
-render-free controller that mounts its card into `#hud`; no scene and no panel branches on the flag
-any more. The HUD's panels, strip, rows, windows and panel text are DOM-only; the level-up/evolution
+controller that mounts its card into `#hud`; no scene and no panel branches on the flag any more. The HUD's panels, strip, rows, windows and panel text are DOM-only; the level-up/evolution
 popup and the reset ring remain canvas and their DOM parity is a follow-up, not assumed here.
 
 **What still draws, and why.** Two transient overlays have no card on the board, so this decision
