@@ -12,7 +12,7 @@ layout and the collapse still work) and draws no Phaser object at all while the 
 - `partyPanel.tsx` — the card itself: the highlight, the key chip, the level line, the XP bar and the Pokevial meter, then one pressable, draggable row per member; the drag cell lives in `PartyPanel` and the paint in `PartyCard`.
 - `partyPanel.test.ts` — the card walked as Preact props: the pointer drag's one `onReorder`, the click it swallows, the portrait style and the flush HP fill, plus the retired CSS inset tokens.
 - `party.css` — the board's party paint — radius 11, hairline, the 1 px highlight, the 26×26 chip, the accent selected row — over the `styles/root.css` tokens.
-- `mount.tsx` — `mountPartyPanel`: renders the card into a host element behind a view signal, beside the command and reorder callbacks, and returns its disposer.
+- `mount.tsx` — `mountPartyPanel`: renders the card into a host element behind a view signal, beside the command and reorder callbacks, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.
 

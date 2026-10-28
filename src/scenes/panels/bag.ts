@@ -20,7 +20,7 @@ import {
 import { projectHud } from '../../ui/hud/state';
 import { bagDiscoveredCandy } from '../../ui/bag';
 import { statLabel } from '../../ui/partyDetail';
-import { panelExpanded, toggleHudPanel } from './hud';
+import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -219,7 +219,12 @@ function mountDomBag(host: RoutePanelHost): void {
   const element = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (element === null) return;
   domHostElement = element;
-  domDispose = mountBagPanel(element, view, (command) => handleDomCommand(host, command));
+  domDispose = mountBagPanel(
+    element,
+    view,
+    (command) => handleDomCommand(host, command),
+    panelFrameMount(host, 'bag'),
+  );
   element.addEventListener('click', onDomClick);
   element.addEventListener('input', onDomInput);
   element.addEventListener('focusin', onDomFocus);

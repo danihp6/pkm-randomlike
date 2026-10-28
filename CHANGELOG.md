@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The DOM panels collapse to their chip, drag, and keep their slot.** `[Task-208]`, Batch 91's cut,
+      and the parity `D49`'s addendum owed: the chip, the drag with its clamp and the saved slot were
+      carried by the retired canvas layer alone, so a card opened and closed and never moved. One shell now
+      owns the behaviour for every route card — `src/ui/hud/panels/hud/panelFrame.tsx` with its pure
+      `panelFrameView.ts` — a 26 px chip at the card's top-left (the strip's own letter and label, so **no
+      new i18n key**), a pointer drag on that chip whose offset `clampPanelOffset` keeps inside the viewport,
+      and the committed offset written through `hudLayout`: `RoutePanelHost` gains `hudLayout`/`setHudLayout`,
+      `RouteScene.setHudCardOpen` persists the `collapsed` flag every collapse path funnels through, and
+      `draggedDock` puts the strip's chip on the dragged card's own corner. The five cards mount inside the
+      frame (the detail window gets the drag and no chip, because the board draws none), the card keeps its
+      own box and the frame moves it with one `translate`, and a mount with no frame host still renders
+      unwrapped. No new save field and no `SAVE_VERSION` step. `docs/hud-fidelity.md` §5, `D49`'s addendum
+      and `docs/design-spec.md` §3've HUD-panels paragraph — the plan said §2, which never carried the
+      promise — record it. Gates: `npm test` 5079 passed / 69 skipped and `npm run build` green at task QA,
+      5086 passed / 69 skipped on the batch's combined tree. Measured live over CDP at 1280×800 and
+      390×844: pressing the PARTY chip hides the card and draws `[data-hud-strip-chip="party"]` 0 px from
+      its last corner; a `(+120, +80)` drag clamps to `(+102, +80)` on the party card and moves the header
+      by the full delta; `hudLayout.party` reads `{dx 102, dy 80}` from `localStorage`; and a reload restores
+      that corner and the collapsed flag.
+
 - [x] **A fainted member's tallies reach the run's record.** `[Task-217]`, Batch 92's third filler in Batch 90:
       a run whose only Pokémon dies books the damage it took and then loses the member to `releaseFainted`,
       and `makeHistoryRecord` read `[...run.party, ...run.box]` only, so the record's `species` was `[]` — a

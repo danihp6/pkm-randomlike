@@ -15,7 +15,7 @@ run, and feeds this panel's view, so a turn of `?hud=dom` swaps the drawing and 
 - `evolution.test.ts` — the row origins, the pool and its window, the one-row scroll with its clamp, the exact `d` strings of the `03m` family and of its Mega / Gmax branches, the Eevee family's ten rows, the card fit and the two constants the scene shares with this module, headless.
 - `detailPanel.tsx` — the card itself: the header, the chips, the rename field, the tab strip, the stats, the info band with its ability ⓘ, the SVG evolution graph, the move grid with its two atlas squares per cell and its ⓘ buttons, the search field with its page arrows and the pool, whose rows carry the type badge instead of the type word.
 - `detail.css` — the board's card and cell paint — radius 11, the 1 px highlight, the 26 px corner badge, the accent current/ready tones — over the `styles/root.css` tokens, plus the `#4ad15c` positive the token sheet does not carry.
-- `mount.tsx` — `mountDetailPanel`: renders the card into a host element against the scene's view signal and returns its disposer.
+- `mount.tsx` — `mountDetailPanel`: renders the card into a host element against the scene's view signal, inside the panel frame that carries the saved offset (the board draws no chip for this window), and returns its disposer.
 - `fixture.test.ts` — the `design/fixtures/03m-panels-pokemon-moves.json` frame rebuilt headlessly: its `HudState` validates, the header and the four move cards, the learnset band and the pasted family graph.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.

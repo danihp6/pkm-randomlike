@@ -1,6 +1,7 @@
 import { h, render } from 'preact';
 import type { Signal } from '@preact/signals';
 import type { DetailTab } from '../../../partyDetail';
+import { PanelFrame, panelFrameProps, type PanelFrameMount } from '../hud';
 import { DetailPanel } from './detailPanel';
 import type { DetailPanelView } from './view';
 
@@ -32,19 +33,28 @@ export type DetailIntent =
 
 /**
  * Mounts the detail card into `host` and returns its disposer. The signal is the one
- * emit point: every `view.value = …` paints once, and nothing else re-renders.
+ * emit point: every `view.value = …` paints once, and nothing else re-renders. Its
+ * frame carries the saved offset only — the board draws no chip for this window, so
+ * the frame draws none either and the card's own chip stays the way back.
  */
 export function mountDetailPanel(
   host: Element,
   view: Signal<DetailPanelView>,
   onIntent?: ((intent: DetailIntent) => void) | undefined,
+  frame?: PanelFrameMount | undefined,
 ): () => void {
   const container = document.createElement('div');
   container.className = 'detail-mount';
   host.appendChild(container);
 
   const paint = (): void => {
-    render(h(DetailPanel, { view: view.value, onIntent }), container);
+    const card = h(DetailPanel, { view: view.value, onIntent });
+    render(
+      frame === undefined
+        ? card
+        : h(PanelFrame, { ...panelFrameProps(frame, view.value.open), children: card }),
+      container,
+    );
   };
   paint();
   const stop = view.subscribe(paint);

@@ -14,7 +14,7 @@ while the flag is on.
 - `fixture.test.ts` — `design/fixtures/03o-panels-map-routes.json` validates as a `HudState` and paints the frame: its title, its one room and one link, the current room, its one opening and its capture ball, headless.
 - `mapPanel.tsx` — the card itself: the highlight, the title line, the one SVG that holds the links, the room cells, the opening ticks and the markers, and the "no map" label.
 - `map.css` — the board's paint for the card (radius 11, hairline, the 1 px highlight) over the `styles/root.css` tokens; the room, link and marker colours come from `view.ts`, never retyped here.
-- `mount.tsx` — `mountMapPanel`: renders the card into a host element behind a view signal and returns its disposer.
+- `mount.tsx` — `mountMapPanel`: renders the card into a host element behind a view signal, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.
 

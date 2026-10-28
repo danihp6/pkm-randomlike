@@ -10,7 +10,7 @@ import {
   type PartyPanelView,
 } from '../../ui/hud/panels/party';
 import { projectHud } from '../../ui/hud/state';
-import { panelExpanded, toggleHudPanel } from './hud';
+import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -140,6 +140,7 @@ function mountDomPanel(host: RoutePanelHost): void {
     view,
     (command) => runPanelCommand(host, command),
     (from, to) => runPanelReorder(host, from, to),
+    panelFrameMount(host, 'party'),
   );
   domScene = host.scene;
   domScene.events.on(SCENE_PAUSE, pauseDomPanel);

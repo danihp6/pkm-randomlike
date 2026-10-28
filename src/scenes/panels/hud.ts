@@ -1,9 +1,16 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
-import type { HudPanelId } from '../../data/hudLayout';
+import type { HudPanelId, HudPanelLayout } from '../../data/hudLayout';
 import { FRLG_HPBAR, FRLG_WINDOW_PADDING } from '../../ui/frlg';
 import type { HudCommand } from '../../ui/hud/commands';
-import { mountHudStrip, stripView, type StripSlot, type StripView } from '../../ui/hud/panels/hud';
+import {
+  frameLabel,
+  mountHudStrip,
+  stripView,
+  type PanelFrameMount,
+  type StripSlot,
+  type StripView,
+} from '../../ui/hud/panels/hud';
 import type { HudMetrics, RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -12,8 +19,9 @@ import type { HudMetrics, RoutePanelDescriptor, RoutePanelHost } from './types';
  * `src/ui/hud/panels/`, so this module owns no drawing at all: it holds the metrics,
  * the strip's mount and the one predicate every card asks about its own open state.
  *
- * The drag, its clamp and the saved placement left with the canvas layer (`D49`
- * amended): a panel now opens and closes, and never moves.
+ * The drag, its clamp and the saved placement are the cards' own frame
+ * (`panels/hud/panelFrame`): this module only hands a card its record and receives
+ * the offset the frame clamped, which is persisted by the scene's settings.
  */
 
 /** The panel widths the metrics clamp: the fixed design sizes. */
@@ -102,6 +110,58 @@ export function defaultHudDock(host: RoutePanelHost, id: HudPanelId): { x: numbe
   return { x: column, y: HUD_TOP + row * HUD_CHIP_PITCH };
 }
 
+/**
+ * A card's frame as the DOM sees it: the live record of its id, the panel's quick key
+ * and the two callbacks. `open` and `layout` are getters on purpose — a paint and a
+ * drag commit read the record the scene holds *now*, never a snapshot taken at build,
+ * so a collapse the route persisted is never overwritten by a stale `collapsed` flag.
+ */
+export type PanelFrameHost = Readonly<{
+  id: HudPanelId;
+  open: boolean;
+  layout: HudPanelLayout;
+  /** The quick key's own toggle: `toggleHudPanel(host, id)`. */
+  onToggle(): void;
+  /** Clamped, persisted through the scene's settings, and the strip repaints. */
+  onLayout(next: HudPanelLayout): void;
+}>;
+
+/** One card's frame: its live record plus the chip's accessible name. */
+export function panelFrameHost(host: RoutePanelHost, id: HudPanelId): PanelFrameHost {
+  return {
+    id,
+    get open() {
+      return host.hudCardOpen(id);
+    },
+    get layout() {
+      return host.hudLayout()[id];
+    },
+    onToggle() {
+      toggleHudPanel(host, id);
+    },
+    onLayout(next) {
+      host.setHudLayout({ ...host.hudLayout(), [id]: next });
+    },
+  };
+}
+
+/** What a mount hands the frame: the host above and the strip's own label for it. */
+export function panelFrameMount(host: RoutePanelHost, id: HudPanelId): PanelFrameMount {
+  return {
+    host: panelFrameHost(host, id),
+    get label() {
+      return frameLabel(id, host.settings().keybinds);
+    },
+  };
+}
+
+/** The card's dock plus its saved drag offset: the strip's chip rides on it. */
+export function draggedDock(host: RoutePanelHost, id: HudPanelId): Readonly<{ x: number; y: number }> {
+  const dock = defaultHudDock(host, id);
+  const { dx, dy } = host.hudLayout()[id];
+  return { x: dock.x + dx, y: dock.y + dy };
+}
+
 /** The canvas strip's own display objects: none, the chips are the DOM panel's. */
 export function hudDrawnObjectCount(): number {
   return 0;
@@ -130,10 +190,10 @@ let stripScene: Phaser.Scene | null = null;
  */
 let routePaused = false;
 
-/** The chip slots: every HUD card that is currently collapsed, at its own dock. */
+/** The chip slots: every HUD card that is currently collapsed, at its dragged dock. */
 function panelsAsSlots(host: RoutePanelHost): readonly StripSlot[] {
   return (['header', 'party', 'bag', 'box', 'detail'] as const).map((id) => {
-    const dock = defaultHudDock(host, id);
+    const dock = draggedDock(host, id);
     return { id, x: dock.x, y: dock.y, collapsed: !host.hudCardOpen(id) };
   });
 }

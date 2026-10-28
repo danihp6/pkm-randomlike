@@ -12,7 +12,7 @@ one, mirrored from `src/scenes/panels/bag.ts`; the paint is the board's bag grou
 - `view.test.ts` — the shipped rects and internals at both QA viewports, the tile icons, the pocket and query filters, the 15-stack cap, the description card's body and its 13 px growth per wrapped line, and the mirrored constant block, headless.
 - `bagPanel.tsx` — the panel itself: the card, the highlight, the key chip, the tabs, the search input, the tiles with their icon and count, the footer and the description card.
 - `bag.css` — the board's bag paint (radius 11, the hairline, the 14 % highlight, the key chip, the search field, the 8/4 % tile and the 9 px count) scoped to `.bag`.
-- `mount.tsx` — `mountBagPanel`: renders the panel into a host element from a signals view and returns its disposer.
+- `mount.tsx` — `mountBagPanel`: renders the panel into a host element from a signals view, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.
 

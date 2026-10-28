@@ -9216,7 +9216,7 @@ without moving either batch.
       stale claim. *Dependencies:* none.
       *(Batch 88)*
 
-- [ ] **[Task-208] The DOM panels collapse to their chip, drag and keep their slot.** Asked by the human
+- [x] **[Task-208] The DOM panels collapse to their chip, drag and keep their slot.** Asked by the human
       on `2026-10-27` ("los paneles no se pueden mover en ruta") and owed by `[Task-200]`, which retires
       the canvas layer that is today the only carrier of the behaviour: a chip at the panel's top-left,
       a drag with clamp and a slot saved in `hudLayout` (`HUD_PANEL_IDS`; `src/scenes/panels/hud.ts`).

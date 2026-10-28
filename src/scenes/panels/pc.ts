@@ -17,7 +17,7 @@ import {
   type PcPanelView,
   type PcRow,
 } from '../../ui/hud/panels/pc';
-import { panelExpanded, toggleHudPanel } from './hud';
+import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -201,7 +201,12 @@ function buildDom(host: RoutePanelHost): void {
   pcView = view;
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (layer !== null)
-    pcDispose = mountPcPanel(layer, view, (command) => handleDomCommand(host, command));
+    pcDispose = mountPcPanel(
+      layer,
+      view,
+      (command) => handleDomCommand(host, command),
+      panelFrameMount(host, 'box'),
+    );
   subscribeScene(host);
   refreshDom(host);
 }
