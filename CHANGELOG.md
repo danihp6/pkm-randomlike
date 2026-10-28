@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The run-over README stops saying the board has no figures.** `[Task-218]`, Batch 92's fourth member,
+      filled into Batch 91 and a docs-only task: `src/ui/hud/panels/run-over/README.md`'s rule 6 still read
+      "the live screen has no sortable columns **because it has no figures**", and that second clause died
+      with `[Task-181]`/`[Task-183]` — rule 1 of the same file already names the `RunStats.faints` and each
+      member's `kos`/`damage`/`damageTaken` the board prints. The rule keeps the two true halves (the frame's
+      filter row is not drawn, sorting is out of scope) and loses the false reason; no code, no test, no
+      fixture, no i18n key. Gates: `npm test` 5068 passed / 69 skipped and `npm run build` green at task QA,
+      5086 passed / 69 skipped on the batch's combined tree. The first Task QA pass was **red** on one
+      pinned measurement — the edit wrapped the sentence, so `grep "sorting is out of scope"` printed
+      nothing — and the one-line fix broke the rule after `drawn;`, which is the shipped form.
+
 - [x] **The DOM panels collapse to their chip, drag, and keep their slot.** `[Task-208]`, Batch 91's cut,
       and the parity `D49`'s addendum owed: the chip, the drag with its clamp and the saved slot were
       carried by the retired canvas layer alone, so a card opened and closed and never moved. One shell now

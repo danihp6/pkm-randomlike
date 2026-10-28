@@ -53,5 +53,5 @@ this panel paints the view it is handed.
    the same height as a won one. `design/frames/m06-*` still draws a 560 px, tab-less defeat card
    and stays the frozen design source the live screen now deliberately diverges from; `won` still
    separates the two boards' copy and accent only.
-6. `07b`'s filter row (MOST KOs / MOST DAMAGE / MOST TANKED) is not drawn: the live screen has no
-   sortable columns because it has no figures, and sorting is out of scope.
+6. `07b`'s filter row (MOST KOs / MOST DAMAGE / MOST TANKED) is not drawn;
+   sorting is out of scope.

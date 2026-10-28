@@ -9415,7 +9415,7 @@ without moving either batch.
       Claims `src/engine/run/history.ts` + test and `docs/design-spec.md` §2. *Dependencies:* none.
       *(Batch 92)*
 
-- [ ] **[Task-218] The run-over README stops saying the board has no figures.** Issue #78.
+- [x] **[Task-218] The run-over README stops saying the board has no figures.** Issue #78.
       `src/ui/hud/panels/run-over/README.md` rule 6 still reads "the live screen has no sortable
       columns **because it has no figures**", and that second clause died with
       `[Task-183]`/`[Task-181]`: the board prints `RunStats.faints` and each member's
