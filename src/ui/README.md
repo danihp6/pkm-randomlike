@@ -71,7 +71,7 @@ testable logic belongs in the computing half.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.
 - `hud/state.ts` — the DOM HUD's one projection: the serialisable snapshot of the run and the battle (party, bag, money, route, battle, notice) and the single emit point a scene notifies.
 - `hud/commands.ts` — the HUD's command channel: the intents a panel can send and the reducer that maps them onto the action a key or pad press already produces.
-- `hud/mount.ts` — the `?hud=dom` flag parser and the one-shot mount of the full-viewport `#hud` root, with its idempotent `dispose`.
+- `hud/mount.ts` — the always-true `hudRequested` predicate (`?hud=dom` is only an alias) and the one-shot mount of the full-viewport `#hud` root, with its idempotent `dispose`.
 - `hud/mount.test.ts` — the flag's truth table, the vendored Silkscreen files and the layer contract `root.css` pins, headless.
 - `hud/shell.tsx` — the Preact shell: one `.hud` layer for the panel subtrees, with no state and no Phaser object.
 - `hud/styles/root.css` — the Silkscreen faces, the `design/tokens.json` custom properties, the ten board type sizes and the `#hud` / `.hud` layer contract.

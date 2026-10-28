@@ -10,6 +10,9 @@ describe('mainMenuPreviewRequested', () => {
       '?hudFixture=01b-main-menu-no-save&hud=dom',
       '?hud=dom&hudFixture=01-main-menu&extra=1',
       '?extra=1&hud=DOM&hudFixture=01-MAIN-MENU',
+      '?hudFixture=01-main-menu',
+      '?hud=game&hudFixture=01-main-menu',
+      '?hudFixture=01b-main-menu-no-save',
     ]) {
       expect(mainMenuPreviewRequested(search), search).toBe(true);
     }
@@ -19,9 +22,6 @@ describe('mainMenuPreviewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=01-main-menu',
-      '?hudFixture=01b-main-menu-no-save',
-      '?hud=game&hudFixture=01-main-menu',
       '?hud=dom&hudFixture=02-options',
       '?hud=dom&hudFixture=m01-main-menu',
       '?hud=dom&hudFixture=m01b-main-menu-no-save',

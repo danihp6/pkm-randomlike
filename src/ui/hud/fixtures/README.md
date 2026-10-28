@@ -3,11 +3,11 @@
 The `design/fixtures/<slug>.json` payloads `?hudFixture=<slug>` pins the DOM HUD to: the
 URL flags that ask for one, the build-time map of that folder, and the store that validates
 a file into the snapshot the panels render. A missing, unknown or malformed fixture is inert,
-so the HUD behaves exactly as `?hud=dom` alone.
+so the HUD behaves exactly like a plain boot.
 
 ## Layout
 
-- `flags.ts` — the URL flags read once: the `?hud=dom` half delegated to the mount parser and the `?hudFixture=<slug>` half normalised to a lower-kebab frame slug.
+- `flags.ts` — the URL flags read once: the always-true `dom` half delegated to the mount parser (`?hud=dom` is only an alias) and the `?hudFixture=<slug>` half normalised to a lower-kebab frame slug.
 - `flags.test.ts` — the flag truth table, its agreement with the mount parser, and the slug normalisation, headless.
 - `registry.ts` — the eager, build-time map of `design/fixtures/*.json` and the type of a module map; empty while the folder does not exist.
 - `registry.test.ts` — the map is a plain object keyed by fixture paths even with the folder absent, headless.

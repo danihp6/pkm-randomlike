@@ -9050,7 +9050,7 @@ without moving either batch.
       helper), `src/scenes/MainMenuScene.ts` + test, `docs/design-spec.md` §2 and `docs/hud-fidelity.md` §9.
       *Dependencies:* none. *(Batch 87)*
 
-- [ ] **[Task-200] The DOM HUD is the HUD, and the canvas panel layer retires.** Decided by the human on
+- [x] **[Task-200] The DOM HUD is the HUD, and the canvas panel layer retires.** Decided by the human on
       `2026-10-27` after seeing the same build twice at 1280×800, in the browser: **without a flag the game
       draws the Phaser HUD** — the FRLG bitmap font, its own SETTINGS screen, its own route panels, no
       records in the menu — while **`?hud=dom`** draws the board's (`02-options` measures 0.08 % of pixels

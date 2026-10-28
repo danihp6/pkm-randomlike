@@ -8,6 +8,8 @@ describe('previewRequested', () => {
       '?hudFixture=02-options&hud=dom',
       '?hud=dom&hudFixture=02-options&extra=1',
       '?extra=1&hud=DOM&hudFixture=02-OPTIONS',
+      '?hud=game&hudFixture=02-options',
+      '?hudFixture=02-options',
     ]) {
       expect(previewRequested(search), search).toBe(true);
     }
@@ -17,12 +19,10 @@ describe('previewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=02-options',
       '?hud=dom&hudFixture=03-route-hud',
       '?hud=dom&hudFixture=m02-options',
       '?hud=dom&hudFixture=02 options',
       '?hud=dom&hudFixture=02%20options',
-      '?hud=game&hudFixture=02-options',
     ]) {
       expect(previewRequested(search), search).toBe(false);
     }

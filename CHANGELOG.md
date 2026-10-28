@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The DOM HUD is the HUD, and the canvas panel layer retires.** `[Task-200]`, Batch 90's first task:
+      the board's HUD was only reachable by typing `?hud=dom`, and every scene drew a Phaser HUD of its own
+      otherwise. `hudRequested` is now always true — `?hud=dom` stays as an inert alias and
+      `?hudFixture=<slug>` still pins a frame — and each scene's canvas chrome path is **deleted** rather
+      than left behind a branch: the menu, the starter picker, the run-over screen, SETTINGS and the battle
+      mount their DOM card on a clean boot, the route's eleven panel modules became controllers that mount a
+      card and forward intents and draw nothing, and `grep -rn DOM_HUD src` is empty. The game's own drawing
+      (map, actors, fog, battle sprites, capture) is untouched. What the canvas keeps is inventoried in
+      `D49`'s addendum and `docs/hud-dom-proposal.md` §13.1: the level-up/evolution popup in full
+      (`detail.ts:351-382`, built unconditionally from `buildDom`) and the reset ring (`pause.ts:120/:125`),
+      whose DOM parity is `[Task-208]`'s, plus the chip, the drag with clamp and the saved slot the canvas
+      layer alone carried. Gates: `npm test` 5045 passed / 69 skipped and `npm run build` green on the final
+      integration tree. Measured live over CDP: `#hud` mounts on `/` with Silkscreen at 1280×800 and
+      390×844, `?hud=dom` yields the same node, OPTIONS is the DOM page with its KEYBINDS column, and `p`
+      opens the DOM party card on a route with one row per member; a `renderer.snapshotArea` read of the
+      region the retired SETTINGS page occupied carries no chrome text.
+
 - [x] **The move's info is the board's card, and the ⓘ leaves the cells.** `[Task-214]`, the fourth of
       Batch 89: every cell carried a 22 px ⓘ that hover-floated the description, where the board draws no
       button at all and instead puts the selected move's card above the command window. The ⓘ and its 22 px

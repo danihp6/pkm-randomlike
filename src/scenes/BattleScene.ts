@@ -62,7 +62,6 @@ import {
   type BattleOutcome,
   type BattleReturn,
 } from '../engine/run';
-import { PORTRAIT_SIZE, PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import { MOVE_FX_TEXTURE_KEY, moveFxAnimKey, moveFxFor, moveFxTrack } from '../render/moveFx';
 import { spriteContentBounds, type SpriteBounds } from '../render/spriteBounds';
 import { battleSpriteHeight, SPRITE_SIZE_MAX } from '../data/spriteSize';
@@ -87,29 +86,17 @@ import {
 } from '../ui/capture';
 import {
   BAG_GRID_COLS,
-  BAG_GRID_GAP,
   bagCategoryLabel,
   bagCategoryForKind,
-  bagGridLayout,
   filterBagStacks,
   stepBagCursor,
   stepBagFocus,
   stepBagTab,
   type BagCategory,
   type BagFocus,
-  type BagGridDebugState,
-  type BagGridMetrics,
-  type BagGridRect,
 } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
-import {
-  HP_CUE_GAP,
-  hpColorInt,
-  hpCueNotches,
-  hpFraction,
-  isLowHp,
-  statusAbbreviation,
-} from '../ui/metrics';
+import { statusAbbreviation } from '../ui/metrics';
 import {
   advanceTypewriter,
   beginTypewriter,
@@ -121,7 +108,6 @@ import {
 } from '../ui/typewriter';
 import { loadSettings } from '../settings';
 import { IS_DEVELOP } from '../dev/env';
-import { parseHudFlags } from '../ui/hud/fixtures';
 import {
   battleBagBox,
   mountBattleBag,
@@ -165,55 +151,9 @@ import {
 import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
-import {
-  addFrlgHpBar,
-  addFrlgWindow,
-  FRLG_CURSOR_KEY,
-  FRLG_HPBAR,
-  FRLG_HPBAR_KEY,
-  FRLG_TEXTBOX_PADDING,
-  FRLG_WINDOW_PADDING,
-} from '../ui/frlg';
-import {
-  FRLG_ACCENT,
-  FRLG_BADGE_INK,
-  FRLG_MUTED,
-  FRLG_ROW_FILL,
-  FRLG_ROW_STROKE,
-  FRLG_SELECTED_FILL,
-  FRLG_SELECTED_STROKE,
-  FRLG_SURFACE,
-  badgeInkFor,
-} from '../ui/frlg';
-import { FRLG_INK, FRLG_FONT_SIZE, FRLG_LINE_HEIGHT, addFrlgText } from '../ui/frlgFont';
-import { typeColor } from '../ui/typeColors';
-import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
-import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
-import {
-  DETAIL_STATS,
-  NATURE_DOWN_TINT,
-  NATURE_UP_TINT,
-  fighterDetail,
-  natureEffect,
-  statLabel,
-  type MemberDetail,
-} from '../ui/partyDetail';
-import {
-  MoveGrid,
-  moveInfoContent,
-  padMoveGridCells,
-  stepMoveGridCursor,
-  type MoveGridCell,
-} from '../ui/moveGrid';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
-import { fitPartyLabel, partyGridFieldRows, partyGridLayout, stepPartyCursor } from '../ui/partyGrid';
-import {
-  AbilityInfoButton,
-  ABILITY_INFO_SIZE,
-  abilityInfoContent,
-  abilityInfoSpot,
-} from '../ui/abilityInfo';
-import { InfoPopup } from '../ui/infoPopup';
+import { MoveGrid, padMoveGridCells, stepMoveGridCursor, type MoveGridCell } from '../ui/moveGrid';
+import { partyGridFieldRows, stepPartyCursor } from '../ui/partyGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import { t } from '../i18n';
 import { moveName, moveShortDescription } from '../i18n/content';
@@ -221,73 +161,21 @@ import type { RouteScene } from './RouteScene';
 
 /** How long the win / loss / catch line stays up before the battle closes itself. */
 const OUTCOME_HOLD_MS = 1300;
-const MENU_ROWS = 4;
-const MENU_W = 540;
-const MESSAGE_H = 124;
 const PANEL_W = 320;
 const PLAYER_PANEL_W = 320;
 /** Tall enough for the padded name row, the types band and the bar; the foe's height. */
 const PLAYER_PANEL_H = 150;
 const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
-/**
- * A double battle draws a second window per side: the gap between the pair, how
- * far each enemy sprite stands from the foe platform's centre, and the clearance
- * the stacked player window keeps from the battle square's edge.
- */
-const SLOT_PANEL_GAP = 12;
 const FOE_PLATFORM_SPREAD = 96;
-const SLOT_PANEL_EDGE = 8;
-/** The name row's height inside an HP panel, above the types band. */
-const PANEL_NAME_H = 32;
-/** How much bigger than the atlas frame a panel's type badge draws. */
-const PANEL_TYPE_SCALE = 2;
-/** The types band: the badge row between the name row and the HP-bar gap. */
-const PANEL_TYPES_H = 36;
-/** Gap between the name row and the HP bar inside an HP panel. */
-const PANEL_NAME_GAP = 26;
-/** The band's slots (a Pokémon has at most two types) and the gap after a badge. */
-const PANEL_TYPE_SLOTS = 2;
-const PANEL_TYPE_GAP = 4;
-/** The fallback chip's box in the band: one badge's footprint plus its own padding. */
-const PANEL_CHIP_W = TYPE_ICON_W * PANEL_TYPE_SCALE + 8;
-const PANEL_CHIP_H = PANEL_TYPES_H;
-/** The chip's label, one font step up from the panel text, clipped to the box. */
-const PANEL_TYPE_LABEL_SIZE = 24;
-/** The trainer's ball row: one Añil Poké Ball per roster member, under the foe panel. */
-const FOE_BALL_SCALE = 0.75;
-const FOE_BALL_PITCH = 22;
-const FOE_BALL_GAP = 4;
-const FOE_BALL_SPENT_TINT = 0x4b5563;
-const FOE_BALL_SPENT_ALPHA = 0.45;
-/** The engine's blank texture the badges start on, as `InfoPopup` does. */
-const BLANK_TEXTURE_KEY = '__DEFAULT';
-const ROW_H = 34;
-/**
- * The Mega Evolution glyph both forme controls draw: the shipped Hard Stone frame
- * every Mega Stone already borrows (`src/data/itemIcons.ts`), read through the
- * atlas' own frame map so no new art is packed.
- */
-const MEGA_CONTROL_FRAME = itemIconFrame('hardstone') ?? 0;
 /** The battle plays inside a centred square, at most this many pixels a side. */
 const MAX_BATTLE_SIZE = 900;
 /** Below this square side the stacked, full-width phone layout is used. */
 const COMPACT_SIZE = 700;
-/** The bag panel's pocket tabs, drawn inside the menu window, as in the route HUD. */
-const MENU_TAB_W = 120;
-const MENU_TAB_H = 26;
-const MENU_TAB_GAP = 4;
 /** The bag grid: five fixed columns over two rows of square icon cells. */
 const MENU_BAG_ROWS = 2;
-const MENU_BAG_CELL_MAX = 56;
-/** The selected stack's line under the grid, and the gap above it. */
-const MENU_BAG_DETAIL_H = 20;
-const MENU_BAG_DETAIL_GAP = 6;
-const BAG_INFO_W = 320;
-const BAG_INFO_GAP = 8;
 const MENU_BAG_CAP = MENU_BAG_ROWS * BAG_GRID_COLS;
 /** The FIGHT / BAG / SWITCH / RUN grid: 2 columns, one gap and one inset. */
 const MENU_GRID_COLS = 2;
-const MENU_GRID_GAP = 8;
 /**
  * The command each row of `menuItems` is, by the mode that built the list: the lead
  * offers four and the partner only FIGHT and SWITCH. Keyed by mode, never matched
@@ -297,21 +185,6 @@ const COMMAND_IDS: Readonly<Record<'menu' | 'partner', readonly BattleCommandRow
   menu: ['fight', 'bag', 'switch', 'run'],
   partner: ['fight', 'switch'],
 };
-/** Width reserved at the left of the command grid for the ◀ back control. */
-const MOVE_BACK_COL = 64;
-/** Width reserved at the right of the moves grid for the Mega control (D34). */
-const MOVE_MEGA_COL = 62;
-/** Width reserved at the right of the moves grid for the G-Max control (D44). */
-const MOVE_GMAX_COL = 62;
-const MOVE_GRID_INSET = 8;
-/** How far above the menu the party detail window (and the info popup) sits. */
-const MOVE_POPUP_GAP = 8;
-/** The party (switch) grid: one fixed-size row per member. */
-const PARTY_LABEL_SIZE = 16;
-/** The largest avatar scale a switch row may use; the row geometry caps it further. */
-const PARTY_AVATAR_SCALE = 0.9;
-/** The largest HP-bar scale a switch row may use; the row geometry caps it further. */
-const PARTY_CELL_HPBAR_SCALE = 0.4;
 /**
  * Fallback zoom for the placeholder mon and any sheet whose pixels cannot be
  * measured; a real sprite is sized from its species' canonical height instead
@@ -361,46 +234,6 @@ export function monIdleFrames(manifestFrames: number, textureFrameTotal: number)
   if (wanted < 1 || available < 1) return [];
   return Array.from({ length: Math.min(wanted, available) }, (_, frame) => frame);
 }
-/**
- * The party (switch) detail popup: a wide window above the avatar grid for the
- * member under the cursor. No tabs: the five battle stats, nature, ability and
- * held item stack in a left column while the four moves sit in a 2x2 grid on the
- * right. HP is a plain line, since the bar lives in the switch cells.
- */
-const PARTY_DETAIL_W = 600;
-const PARTY_DETAIL_COL_GAP = 16;
-const PARTY_DETAIL_CONTENT_TOP = 66;
-const PARTY_DETAIL_STAT_ROW = 24;
-const PARTY_DETAIL_INFO_ROW = 22;
-const PARTY_DETAIL_TYPE_W = 74;
-const PARTY_DETAIL_MOVE_COLS = 2;
-const PARTY_DETAIL_MOVE_ROWS = Math.ceil(MAX_MOVES / PARTY_DETAIL_MOVE_COLS);
-const PARTY_DETAIL_MOVE_ROW = 34;
-const PARTY_DETAIL_MOVE_GAP = 6;
-const PARTY_DETAIL_LEFT_H =
-  PARTY_DETAIL_CONTENT_TOP +
-  30 +
-  DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW +
-  6 +
-  3 * PARTY_DETAIL_INFO_ROW;
-const PARTY_DETAIL_MOVES_H =
-  PARTY_DETAIL_MOVE_ROWS * PARTY_DETAIL_MOVE_ROW + (PARTY_DETAIL_MOVE_ROWS - 1) * PARTY_DETAIL_MOVE_GAP;
-const PARTY_DETAIL_H =
-  Math.max(PARTY_DETAIL_LEFT_H, PARTY_DETAIL_CONTENT_TOP + PARTY_DETAIL_MOVES_H) +
-  FRLG_WINDOW_PADDING.bottom;
-
-/** "serious" -> "Serious", for the nature line. */
-function capitalize(text: string): string {
-  return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
-}
-
-/**
- * The DOM HUD flag (`D49`), read once at module load: with it on the battle's HP
- * boxes are Preact cards in `#hud` and the scene's four kits stay hidden, so the
- * arena, the sprites and the effects are the only things the canvas draws. Off, every
- * line below paints exactly what it painted before the panels existed.
- */
-const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 
 installBattleSwitchPreview(typeof window === 'undefined' ? '' : window.location.search);
 installBattleLogPreview(typeof window === 'undefined' ? '' : window.location.search);
@@ -415,18 +248,6 @@ type BeatKind = 'faint' | 'switch';
  * The objects one HP window draws into: a side's slot 0 uses the shipped set and
  * slot 1 its own, built the same way, so `drawPanel` paints both identically.
  */
-type PanelKit = Readonly<{
-  panel: Phaser.GameObjects.NineSlice;
-  nameText: Phaser.GameObjects.BitmapText;
-  statText: Phaser.GameObjects.BitmapText;
-  statusText: Phaser.GameObjects.BitmapText;
-  statusBadge: Phaser.GameObjects.Image;
-  typeBadges: readonly Phaser.GameObjects.Image[];
-  typeChipBgs: readonly Phaser.GameObjects.Rectangle[];
-  typeChips: readonly Phaser.GameObjects.BitmapText[];
-  hpBar: { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image };
-}>;
-
 /** Extra data a move grid cell draws: type, category, PP, power, accuracy, description. */
 type MenuMove = Readonly<{
   type: string;
@@ -558,150 +379,43 @@ export class BattleScene extends Phaser.Scene {
   /** The sheets this battle loaded, dropped on shutdown so the texture cache cannot grow forever. */
   private loadedSheets: PokemonSpriteSheet[] = [];
 
-  private hud!: Phaser.GameObjects.Graphics;
-  /**
-   * The non-hue marks that have to ride **over** an icon — a spent ball's slash and
-   * the active bag pocket's underline. `this.hud` is built before the ball row and
-   * the pocket tabs, so anything drawn there lands under them.
-   */
-  private marks!: Phaser.GameObjects.Graphics;
   private bgTop!: Phaser.GameObjects.Rectangle;
   private bgBottom!: Phaser.GameObjects.Rectangle;
-  private foePanel!: Phaser.GameObjects.NineSlice;
-  private playerPanel!: Phaser.GameObjects.NineSlice;
-  private messagePanel!: Phaser.GameObjects.NineSlice;
-  private menuPanel!: Phaser.GameObjects.NineSlice;
-  private menuCursor!: Phaser.GameObjects.Image;
-  /** The clickable ◀ that backs out of the moves / switch / bag submenus. */
-  private backArrow!: Phaser.GameObjects.Image;
-  private backZone!: Phaser.GameObjects.Zone;
-  /** The MEGA control shown at the right of the moves menu when a stone can be spent. */
-  private megaCell!: Phaser.GameObjects.Rectangle;
-  private megaGlyph!: Phaser.GameObjects.Image;
-  private megaZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the Mega control instead of a move. */
   private megaSelected = false;
-  /** The G-MAX control, in the slot immediately inside the Mega one (D44). */
-  private gmaxCell!: Phaser.GameObjects.Rectangle;
-  private gmaxGlyph!: Phaser.GameObjects.Image;
-  private gmaxZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the G-Max control instead of a move. */
   private gmaxSelected = false;
-  /** The INFO control at the right edge of the command window: its cell, label and hit zone. */
-  private infoCell!: Phaser.GameObjects.Rectangle;
-  private infoText!: Phaser.GameObjects.BitmapText;
-  private infoZone!: Phaser.GameObjects.Zone;
   /** True while the keyboard cursor sits on the INFO control instead of a command cell. */
   private infoSelected = false;
-  private hpBars!: Record<SideId, { fill: Phaser.GameObjects.Rectangle; bar: Phaser.GameObjects.Image }>;
-  private messageText!: Phaser.GameObjects.BitmapText;
-  private nameText!: Record<SideId, Phaser.GameObjects.BitmapText>;
-  private statText!: Record<SideId, Phaser.GameObjects.BitmapText>;
-  private statusText!: Record<SideId, Phaser.GameObjects.BitmapText>;
-  /** The FRLG status badge drawn in a panel instead of the text, when one exists. */
-  private statusBadges!: Record<SideId, Phaser.GameObjects.Image>;
-  /** One ball per enemy roster member; built once, positioned and dimmed per repaint. */
-  private foeBallRow: Phaser.GameObjects.Image[] = [];
-  /**
-   * The live types row under each panel's name: one Añil badge per type, plus a
-   * coloured chip (its box and label) standing in for a name the atlas lacks.
-   * All three are built once in `buildScene` and only repositioned per repaint.
-   */
-  private typeBadges!: Record<SideId, Phaser.GameObjects.Image[]>;
-  private typeChipBgs!: Record<SideId, Phaser.GameObjects.Rectangle[]>;
-  private typeChips!: Record<SideId, Phaser.GameObjects.BitmapText[]>;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
   /** The second slot's sprites: hidden in a single battle, drawn on the same field. */
   private playerSprite2!: Phaser.GameObjects.Sprite;
   private foeSprite2!: Phaser.GameObjects.Sprite;
-  /** The second foe window, beside the shipped one above the foe platform. */
-  private foePanel2!: Phaser.GameObjects.NineSlice;
-  /** The second player window, stacked with the shipped one. */
-  private playerPanel2!: Phaser.GameObjects.NineSlice;
-  /** The objects each HP window paints into: slot 0's shipped set and slot 1's own. */
-  private panelKits!: Record<SideId, readonly [PanelKit, PanelKit]>;
-  /** The mounted DOM HP boxes (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM HP boxes and the controller `refreshHud` pushes to. */
   private hpController: BattleHpController | null = null;
-  /** The mounted DOM move menu (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM move menu and the controller `refreshHud` pushes to. */
   private movesController: BattleMovesController | null = null;
-  /** The mounted DOM command window (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM command window and the controller `refreshHud` pushes to. */
   private commandController: BattleCommandController | null = null;
-  /** The mounted DOM bag (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM bag and the controller `refreshHud` pushes to. */
   private bagController: BattleBagController | null = null;
-  /** The mounted DOM switch grid (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  /** The mounted DOM switch grid and the controller `refreshHud` pushes to. */
   private switchController: BattleSwitchController | null = null;
-  /** The mounted DOM message box (`?hud=dom`) and the line `refreshHud` pushes to it. */
+  /** The mounted DOM message box and the line `refreshHud` pushes to it. */
   private logController: BattleLogHandle | null = null;
-  /** The cursor the target step marks a foe with, and the two foe hit zones. */
-  private targetCursor!: Phaser.GameObjects.Image;
-  private foeZones: Phaser.GameObjects.Zone[] = [];
   private foeTrainer!: Phaser.GameObjects.Image;
   private moveFxSprite!: Phaser.GameObjects.Sprite;
   private captureBall!: Phaser.GameObjects.Image;
   private playerPlatform!: Phaser.GameObjects.Image;
   private foePlatform!: Phaser.GameObjects.Image;
-  private menuRows: Phaser.GameObjects.BitmapText[] = [];
-  /** One pointer zone per menu row, so a click picks it like a cursor press. */
-  private menuZones: Phaser.GameObjects.Zone[] = [];
-  /** The cells of the FIGHT / BAG / SWITCH / RUN grid, drawn behind its names. */
-  private commandCells: Phaser.GameObjects.Rectangle[] = [];
   /** The shared moves grid and its floating info popup, drawn in the moves mode. */
   private moveGrid!: MoveGrid;
-  /** The party (switch) grid: a cell, avatar, label, HP bar and hit zone per member. */
-  private partyCells: Phaser.GameObjects.Rectangle[] = [];
-  private partyAvatars: Phaser.GameObjects.Image[] = [];
-  private partyLabels: Phaser.GameObjects.BitmapText[] = [];
-  private partyHpBars: Phaser.GameObjects.Image[] = [];
-  private partyHpFills: Phaser.GameObjects.Rectangle[] = [];
-  private partyZones: Phaser.GameObjects.Zone[] = [];
   /** The move whose info popup is up, or null; `infoPinned` keeps it up on click. */
   private infoMove: number | null = null;
   private infoPinned = false;
   /** A reusable world point for the live-pointer hit test (no per-frame allocation). */
   private readonly hitPoint = new Phaser.Math.Vector2();
-
-  /** The no-tab party detail popup shown above the party grid. */
-  private partyDetail!: Phaser.GameObjects.Container;
-  private partyDetailName!: Phaser.GameObjects.BitmapText;
-  private partyDetailLevel!: Phaser.GameObjects.BitmapText;
-  private partyDetailTypes: {
-    bg: Phaser.GameObjects.Rectangle;
-    label: Phaser.GameObjects.BitmapText;
-  }[] = [];
-  private partyDetailStats!: {
-    hpText: Phaser.GameObjects.BitmapText;
-    rows: { label: Phaser.GameObjects.BitmapText; value: Phaser.GameObjects.BitmapText }[];
-    nature: Phaser.GameObjects.BitmapText;
-    ability: Phaser.GameObjects.BitmapText;
-    held: Phaser.GameObjects.BitmapText;
-  };
-  private partyDetailMoves: {
-    cell: Phaser.GameObjects.Rectangle;
-    name: Phaser.GameObjects.BitmapText;
-    pp: Phaser.GameObjects.BitmapText;
-  }[] = [];
-  private partyDetailEmpty!: Phaser.GameObjects.BitmapText;
-  /** The ⓘ beside the detail window's ability row, its window and its hover zone. */
-  private partyAbilityPopup!: InfoPopup;
-  private partyAbilityButton!: AbilityInfoButton;
-  private partyAbilityZone!: Phaser.GameObjects.Zone;
-  private partyAbilityInfo = false;
-
-  /** One ⓘ per move row of the switch detail window: its button, its label and its own hit zone. */
-  private partyMoveInfoRows: {
-    button: Phaser.GameObjects.Rectangle;
-    label: Phaser.GameObjects.BitmapText;
-    zone: Phaser.GameObjects.Zone;
-  }[] = [];
-  /** The description window the four move rows share. */
-  private partyMoveInfoPopup!: InfoPopup;
-  /** The move row whose description is floated, or null. */
-  private partyMoveInfo: number | null = null;
-  /** True while a press pinned the description, so leaving the button keeps it up. */
-  private partyMoveInfoPinned = false;
-  /** The member the floated description belongs to; a repaint for anyone else drops it. */
-  private partyMoveInfoMember: string | null = null;
 
   private menuItems: readonly MenuItem[] = [];
   private menuIndex = 0;
@@ -711,32 +425,10 @@ export class BattleScene extends Phaser.Scene {
   private bagCategory: BagCategory = 'consumable';
   /** Where the bag's cursor sits: the pocket row or the stack grid. */
   private bagFocus: BagFocus = 'grid';
-  private bagTabs: { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.BitmapText }[] = [];
   /** The pocket's drawn stacks (filtered, capped), which `menuIndex` walks. */
   private bagStacks: readonly BagSlot[] = [];
   private bagQuery = '';
   private bagSearchFocused = false;
-  private bagSearchRect: BagGridRect = { x: 0, y: 0, w: 0, h: 0 };
-  private bagSearchBg!: Phaser.GameObjects.Rectangle;
-  private bagSearchText!: Phaser.GameObjects.BitmapText;
-  private bagEmptyText!: Phaser.GameObjects.BitmapText;
-  /** The selected stack's line in the band under the grid. */
-  private bagDetailText!: Phaser.GameObjects.BitmapText;
-  private bagCells: {
-    bg: Phaser.GameObjects.Rectangle;
-    icon: Phaser.GameObjects.Image;
-    badgeBg: Phaser.GameObjects.Rectangle;
-    badge: Phaser.GameObjects.BitmapText;
-  }[] = [];
-  private bagZones: Phaser.GameObjects.Zone[] = [];
-  /** The floating description card the selected cell shows, and its last text. */
-  private bagInfoLayer!: Phaser.GameObjects.Container;
-  private bagInfoPopup!: InfoPopup;
-  private bagInfoText = '';
-  /** The grid's geometry for the current menu rect, or null with no bag open. */
-  private bagGrid: BagGridMetrics | null = null;
-  /** The grid band handed to `bagGridLayout`, in the square's own coordinates. */
-  private bagGridBand: BagGridRect = { x: 0, y: 0, w: 0, h: 0 };
 
   /** The keys behind the confirm action, polled so holding one rushes the feed. */
   private confirmKeys: Phaser.Input.Keyboard.Key[] = [];
@@ -768,10 +460,6 @@ export class BattleScene extends Phaser.Scene {
     this.loadedSheets = [];
     this.megaIntent = false;
     this.gmaxIntent = false;
-    this.partyAbilityInfo = false;
-    this.partyMoveInfo = null;
-    this.partyMoveInfoPinned = false;
-    this.partyMoveInfoMember = null;
     this.double = data?.double === true;
     this.displayActive2 = { player: null, enemy: null };
     this.displayHp2 = { player: null, enemy: null };
@@ -785,8 +473,6 @@ export class BattleScene extends Phaser.Scene {
     this.bagStacks = [];
     this.bagQuery = '';
     this.bagSearchFocused = false;
-    this.bagInfoText = '';
-    this.bagGrid = null;
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
@@ -922,9 +608,9 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
-  /** Mounts the DOM HP boxes into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM HP boxes into the HUD layer, once per battle. */
   private mountHpPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeHpPanel();
@@ -940,9 +626,9 @@ export class BattleScene extends Phaser.Scene {
     this.hpController = null;
   }
 
-  /** Mounts the DOM move menu into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM move menu into the HUD layer, once per battle. */
   private mountMovesPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeMovesPanel();
@@ -955,9 +641,9 @@ export class BattleScene extends Phaser.Scene {
     this.movesController = null;
   }
 
-  /** Mounts the DOM command window into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM command window into the HUD layer, once per battle. */
   private mountBattleCommandPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeCommandPanel();
@@ -970,9 +656,9 @@ export class BattleScene extends Phaser.Scene {
     this.commandController = null;
   }
 
-  /** Mounts the DOM bag into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM bag into the HUD layer, once per battle. */
   private mountBagPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeBagPanel();
@@ -985,9 +671,9 @@ export class BattleScene extends Phaser.Scene {
     this.bagController = null;
   }
 
-  /** Mounts the DOM switch grid into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM switch grid into the HUD layer, once per battle. */
   private mountSwitchPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeSwitchPanel();
@@ -1000,9 +686,9 @@ export class BattleScene extends Phaser.Scene {
     this.switchController = null;
   }
 
-  /** Mounts the DOM message box into the HUD layer, once per battle (`?hud=dom`). */
+  /** Mounts the DOM message box into the HUD layer, once per battle. */
   private mountBattleLogPanel(): void {
-    if (!DOM_HUD || typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return;
     // The fixture preview paints its own frame and owns the layer; the scene steps aside.
     if (battleLogPreviewRequested(window.location.search)) return;
     const host = document.getElementById('hud');
@@ -1019,8 +705,7 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * Pushes the line the typewriter is revealing to the DOM message box. The box is
-   * the canvas `messagePanel`'s visibility rule exactly: open while no menu owns it,
-   * and the closed box carries no line.
+   * open while no menu owns it, and the closed box carries no line.
    */
   private updateBattleLog(): void {
     const controller = this.logController;
@@ -1062,523 +747,6 @@ export class BattleScene extends Phaser.Scene {
       .setScale(2)
       .setDepth(7)
       .setVisible(false);
-
-    // FRLG window chrome, behind the gauges and text the shared Graphics draws.
-    this.foePanel = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h);
-    this.playerPanel = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H);
-    // A double battle's second window per side. They are built here, before the
-    // shared Graphics, so their HUD marks land above the card exactly as slot 0's.
-    this.foePanel2 = addFrlgWindow(this, 0, 0, FOE_PANEL.w, FOE_PANEL.h).setVisible(false);
-    this.playerPanel2 = addFrlgWindow(this, 0, 0, PLAYER_PANEL_W, PLAYER_PANEL_H).setVisible(false);
-    this.messagePanel = addFrlgWindow(this, 0, 0, 100, 100, 'textbox');
-    this.menuPanel = addFrlgWindow(this, 0, 0, MENU_W, 100);
-    this.commandCells = Array.from({ length: MENU_ROWS }, () =>
-      this.add
-        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-        .setVisible(false),
-    );
-
-    this.hpBars = {
-      enemy: addFrlgHpBar(this, 0, 0),
-      player: addFrlgHpBar(this, 0, 0),
-    };
-
-    this.hud = this.add.graphics();
-    this.menuCursor = this.add.image(0, 0, FRLG_CURSOR_KEY).setOrigin(0, 0.5).setVisible(false);
-    this.backArrow = this.add
-      .image(0, 0, FRLG_CURSOR_KEY)
-      .setOrigin(0, 0.5)
-      .setFlipX(true)
-      .setScale(0.7)
-      .setVisible(false);
-    this.backZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    this.backZone.setData('back', true);
-    this.backZone.on('pointerdown', () => this.onBack());
-
-    // The target step's cursor and the two foe hit zones: the cursor is placed on
-    // whichever live slot the step points at, and a press on either foe picks it.
-    // Both stay invisible and inert outside the step, so a click on a foe during
-    // the feed still advances it.
-    this.targetCursor = this.add.image(0, 0, FRLG_CURSOR_KEY).setOrigin(0, 0.5).setVisible(false);
-    this.foeZones = [0, 1].map((slot) => {
-      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0.5);
-      zone.setData('slot', slot);
-      zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => this.onFoeClick(slot === 1 ? 1 : 0));
-      if (zone.input) zone.input.enabled = false;
-      return zone;
-    });
-
-    // The MEGA control in the moves menu: a cell, the Mega Evolution glyph and a
-    // hit zone. The glyph is the shipped Hard Stone frame — the icon every Mega
-    // Stone already borrows (`MEGA_STONE_FALLBACK`), read through the atlas map,
-    // so no new art is packed. It is only laid out and shown while the active
-    // Pokémon can Mega Evolve (D34).
-    this.megaCell = this.add
-      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-      .setVisible(false);
-    this.megaGlyph = this.add
-      .image(0, 0, ITEM_ICON_TEXTURE_KEY, MEGA_CONTROL_FRAME)
-      .setOrigin(0.5)
-      .setVisible(false);
-    this.megaZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    this.megaZone.on('pointerover', () => this.onMegaHover());
-    this.megaZone.on('pointerdown', () => this.onMegaClick());
-
-    // The G-MAX control, in the slot immediately inside the Mega one: the same
-    // cell, glyph and hit zone, shown while the active Pokémon's own species has
-    // a G-Max forme (D44). Both controls draw the same Mega glyph; a distinct
-    // G-Max one would be a different frame on this very line.
-    this.gmaxCell = this.add
-      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-      .setVisible(false);
-    this.gmaxGlyph = this.add
-      .image(0, 0, ITEM_ICON_TEXTURE_KEY, MEGA_CONTROL_FRAME)
-      .setOrigin(0.5)
-      .setVisible(false);
-    this.gmaxZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    this.gmaxZone.on('pointerover', () => this.onGmaxHover());
-    this.gmaxZone.on('pointerdown', () => this.onGmaxClick());
-
-    // The INFO control at the right edge of the command window, in the column the
-    // moves menu reserves for MEGA. It is drawn only by the command menu, and a
-    // press on it opens the battle's own state.
-    this.infoCell = this.add
-      .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-      .setVisible(false);
-    this.infoText = addFrlgText(this, 0, 0, t('battle.infoControl'), {
-      size: 16,
-      tint: FRLG_INK,
-      origin: 0.5,
-    }).setVisible(false);
-    this.infoZone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    this.infoZone.on('pointerdown', () => this.openInfo());
-
-    this.nameText = {
-      enemy: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
-      player: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
-    };
-    this.statText = {
-      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }),
-      player: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }),
-    };
-    this.statusText = {
-      enemy: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: 0.5 }),
-      player: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: 0.5 }),
-    };
-    // The FRLG condition badges; drawn at 1.5x to match the panel text size.
-    this.statusBadges = {
-      enemy: this.add
-        .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
-        .setOrigin(0, 0)
-        .setScale(1.5)
-        .setVisible(false),
-      player: this.add
-        .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
-        .setOrigin(0, 0)
-        .setScale(1.5)
-        .setVisible(false),
-    };
-    this.foeBallRow = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      this.add
-        .image(0, 0, ITEM_ICON_TEXTURE_KEY, itemIconFrame('pokeball') ?? 0)
-        .setOrigin(0, 0)
-        .setScale(FOE_BALL_SCALE)
-        .setVisible(false),
-    );
-    // The types row: one Añil badge per type, starting on the engine's blank
-    // texture until `drawSidePanel` picks the frame, with the chip beside it as
-    // the fallback for a name the atlas lacks.
-    const typeBadgeRow = (): Phaser.GameObjects.Image[] =>
-      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        this.add
-          .image(0, 0, BLANK_TEXTURE_KEY)
-          .setOrigin(0, 0)
-          .setScale(PANEL_TYPE_SCALE)
-          .setVisible(false),
-      );
-    const typeChipBoxRow = (): Phaser.GameObjects.Rectangle[] =>
-      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        this.add
-          .rectangle(0, 0, PANEL_CHIP_W, PANEL_CHIP_H, FRLG_MUTED)
-          .setOrigin(0, 0)
-          .setVisible(false),
-      );
-    const typeChipLabelRow = (): Phaser.GameObjects.BitmapText[] =>
-      Array.from({ length: PANEL_TYPE_SLOTS }, () =>
-        addFrlgText(this, 0, 0, '', {
-          size: PANEL_TYPE_LABEL_SIZE,
-          tint: FRLG_BADGE_INK,
-          origin: [0.5, 0],
-        })
-          .setMaxWidth(PANEL_CHIP_W - 8)
-          .setVisible(false),
-      );
-    this.typeBadges = { enemy: typeBadgeRow(), player: typeBadgeRow() };
-    this.typeChipBgs = { enemy: typeChipBoxRow(), player: typeChipBoxRow() };
-    this.typeChips = { enemy: typeChipLabelRow(), player: typeChipLabelRow() };
-
-    // Slot 1's window content, built exactly like slot 0's and hidden until a
-    // double battle draws it. `drawPanel` paints either kit, so the two windows
-    // can never drift apart.
-    const secondKit = (side: SideId): PanelKit => {
-      const hpBar = addFrlgHpBar(this, 0, 0);
-      hpBar.bar.setVisible(false);
-      hpBar.fill.setVisible(false);
-      return {
-        panel: side === 'enemy' ? this.foePanel2 : this.playerPanel2,
-        nameText: addFrlgText(this, 0, 0, '', { tint: FRLG_INK }).setVisible(false),
-        statText: addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK, origin: [1, 0] }).setVisible(
-          false,
-        ),
-        statusText: addFrlgText(this, 0, 0, '', {
-          size: 16,
-          tint: FRLG_INK,
-          origin: 0.5,
-        }).setVisible(false),
-        statusBadge: this.add
-          .image(0, 0, STATUS_ICON_TEXTURE_KEY, 0)
-          .setOrigin(0, 0)
-          .setScale(1.5)
-          .setVisible(false),
-        typeBadges: typeBadgeRow(),
-        typeChipBgs: typeChipBoxRow(),
-        typeChips: typeChipLabelRow(),
-        hpBar,
-      };
-    };
-    this.panelKits = {
-      enemy: [
-        {
-          panel: this.foePanel,
-          nameText: this.nameText.enemy,
-          statText: this.statText.enemy,
-          statusText: this.statusText.enemy,
-          statusBadge: this.statusBadges.enemy,
-          typeBadges: this.typeBadges.enemy,
-          typeChipBgs: this.typeChipBgs.enemy,
-          typeChips: this.typeChips.enemy,
-          hpBar: this.hpBars.enemy,
-        },
-        secondKit('enemy'),
-      ],
-      player: [
-        {
-          panel: this.playerPanel,
-          nameText: this.nameText.player,
-          statText: this.statText.player,
-          statusText: this.statusText.player,
-          statusBadge: this.statusBadges.player,
-          typeBadges: this.typeBadges.player,
-          typeChipBgs: this.typeChipBgs.player,
-          typeChips: this.typeChips.player,
-          hpBar: this.hpBars.player,
-        },
-        secondKit('player'),
-      ],
-    };
-    // The kits are built either way, so `panelKits` keeps its shape for every other
-    // consumer; under the flag nothing of them may reach the canvas.
-    if (DOM_HUD) {
-      for (const side of SIDE_IDS) {
-        for (const kit of this.panelKits[side]) this.hidePanelKit(kit);
-      }
-    }
-
-    this.messageText = addFrlgText(this, 0, 0, '', { tint: FRLG_INK, lineSpacing: 4 });
-
-    this.menuRows = Array.from({ length: MENU_ROWS }, () =>
-      addFrlgText(this, 0, 0, '', { tint: FRLG_INK }),
-    );
-    // The party (switch) grid, built once and hidden until the party is open.
-    this.partyCells = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      this.add
-        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-        .setVisible(false),
-    );
-    this.partyAvatars = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      this.add.image(0, 0, PORTRAIT_TEXTURE_KEY, 0).setScale(PARTY_AVATAR_SCALE).setVisible(false),
-    );
-    this.partyLabels = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      addFrlgText(this, 0, 0, '', { size: PARTY_LABEL_SIZE, tint: FRLG_INK }).setVisible(false),
-    );
-    // A small HP bar in every cell; the fill is drawn over the baked track.
-    this.partyHpBars = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      this.add
-        .image(0, 0, FRLG_HPBAR_KEY)
-        .setOrigin(0, 0)
-        .setScale(PARTY_CELL_HPBAR_SCALE)
-        .setVisible(false),
-    );
-    this.partyHpFills = Array.from({ length: MAX_PARTY_SIZE }, () =>
-      this.add
-        .rectangle(0, 0, 0, FRLG_HPBAR.fill.height * PARTY_CELL_HPBAR_SCALE, 0x58d080)
-        .setOrigin(0, 0)
-        .setVisible(false),
-    );
-    this.partyZones = Array.from({ length: MAX_PARTY_SIZE }, () => {
-      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
-      zone.setData('item', -1);
-      zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => this.onMenuHover(zone));
-      zone.on('pointerdown', () => this.onMenuClick(zone));
-      return zone;
-    });
-
-    // One invisible zone per row: hovering moves the cursor, clicking picks the
-    // row, so the menu answers the mouse exactly like the keyboard. The moves
-    // grid's own ⓘ button is classified from the live pointer, not from here.
-    this.menuZones = Array.from({ length: MENU_ROWS }, () => {
-      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
-      zone.setData('item', -1);
-      zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => this.onMenuHover(zone));
-      zone.on('pointerout', () => this.onMenuPointerOut(zone));
-      zone.on('pointerdown', (_pointer: Phaser.Input.Pointer, x: number, y: number) =>
-        this.onMenuClick(zone, x, y),
-      );
-      return zone;
-    });
-
-    // The bag's pocket tabs, drawn inside the menu window; at most two.
-    this.bagTabs = Array.from({ length: 2 }, (_, slot) => {
-      const bg = this.add
-        .rectangle(0, 0, 10, 10, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-        .setVisible(false);
-      const label = addFrlgText(this, 0, 0, '', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [0.5, 0],
-      }).setVisible(false);
-      bg.setInteractive({ useHandCursor: true });
-      bg.on('pointerdown', () => this.selectBagTab(slot));
-      return { bg, label };
-    });
-
-    // The overlay marks ride over the ball row and the pocket tabs built above.
-    this.marks = this.add.graphics();
-
-    // The bag's filter field, grid cells and selected line: built once, painted
-    // and repositioned on every redraw because the menu rect moves with the stage.
-    this.bagSearchBg = this.add
-      .rectangle(0, 0, 10, 24, FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-      .setVisible(false);
-    this.bagSearchText = addFrlgText(this, 0, 0, '', {
-      size: 16,
-      tint: FRLG_INK,
-    })
-      .setMaxWidth(1)
-      .setVisible(false);
-    this.bagEmptyText = addFrlgText(this, 0, 0, t('battle.noItems'), {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [0.5, 0],
-    }).setVisible(false);
-    this.bagDetailText = addFrlgText(this, 0, 0, '', { size: 16, tint: FRLG_INK }).setVisible(false);
-    this.bagCells = Array.from({ length: MENU_BAG_CAP }, () => {
-      const bg = this.add.rectangle(0, 0, 10, 10).setOrigin(0, 0).setVisible(false);
-      const icon = this.add.image(0, 0, ITEM_ICON_TEXTURE_KEY, 0).setOrigin(0.5).setVisible(false);
-      const badgeBg = this.add
-        .rectangle(0, 0, 10, 16, FRLG_SURFACE, 0.85)
-        .setOrigin(0, 0)
-        .setVisible(false);
-      const badge = addFrlgText(this, 0, 0, '', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [1, 0],
-      }).setVisible(false);
-      return { bg, icon, badgeBg, badge };
-    });
-    // A click on a cell selects the stack and uses it, the same one press `confirm` is.
-    this.bagZones = Array.from({ length: MENU_BAG_CAP }, (_, index) => {
-      const zone = this.add.zone(0, 0, 10, 10).setOrigin(0, 0);
-      zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => this.selectBagCell(index));
-      if (zone.input) zone.input.enabled = false;
-      return zone;
-    });
-
-    // The shared moves grid and its floating info popup, built last so the popup
-    // rides over the menu and the battle behind it. Hidden until fights open it.
-    this.moveGrid = new MoveGrid(this);
-
-    this.buildPartyDetail();
-
-    // The bag's own description card, above every window it floats over.
-    this.bagInfoLayer = this.add.container(0, 0);
-    this.bagInfoPopup = new InfoPopup(this, this.bagInfoLayer);
-  }
-
-  /**
-   * The party detail popup: the HUD's STATS / MOVES window, built once at a local
-   * origin and moved over the avatar grid when the party is open. `renderPartyDetail`
-   * fills it and `hidePartyGrid` hides it.
-   */
-  private buildPartyDetail(): void {
-    const padX = FRLG_WINDOW_PADDING.x;
-    const padTop = FRLG_WINDOW_PADDING.top;
-    const colW = (PARTY_DETAIL_W - padX * 2 - PARTY_DETAIL_COL_GAP) / 2;
-    const leftRight = padX + colW;
-    const movesX = padX + colW + PARTY_DETAIL_COL_GAP;
-    const children: Phaser.GameObjects.GameObject[] = [
-      addFrlgWindow(this, 0, 0, PARTY_DETAIL_W, PARTY_DETAIL_H),
-    ];
-
-    this.partyDetailName = addFrlgText(this, padX, padTop, '', { size: 16, tint: FRLG_INK });
-    this.partyDetailLevel = addFrlgText(this, PARTY_DETAIL_W - padX, padTop, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [1, 0],
-    });
-    children.push(this.partyDetailName, this.partyDetailLevel);
-
-    const chipY = padTop + 22;
-    this.partyDetailTypes = [];
-    for (let i = 0; i < 2; i++) {
-      const chipX = padX + i * (PARTY_DETAIL_TYPE_W + 6);
-      const bg = this.add
-        .rectangle(chipX, chipY, PARTY_DETAIL_TYPE_W, 20, FRLG_MUTED)
-        .setOrigin(0, 0)
-        .setVisible(false);
-      const label = addFrlgText(this, chipX + PARTY_DETAIL_TYPE_W / 2, chipY + 2, '', {
-        size: 16,
-        tint: FRLG_BADGE_INK,
-        origin: [0.5, 0],
-      }).setVisible(false);
-      this.partyDetailTypes.push({ bg, label });
-      children.push(bg, label);
-    }
-
-    const contentTop = PARTY_DETAIL_CONTENT_TOP;
-    const hpText = addFrlgText(this, padX, contentTop, '', { size: 16, tint: FRLG_INK });
-    children.push(hpText);
-
-    const statsTop = contentTop + 30;
-    const rows = DETAIL_STATS.map((stat, i) => {
-      const rowY = statsTop + i * PARTY_DETAIL_STAT_ROW;
-      const label = addFrlgText(this, padX, rowY, statLabel(stat), { size: 16, tint: FRLG_MUTED });
-      const value = addFrlgText(this, leftRight, rowY, '', { size: 16, tint: FRLG_INK, origin: [1, 0] });
-      children.push(label, value);
-      return { label, value };
-    });
-    const infoTop = statsTop + DETAIL_STATS.length * PARTY_DETAIL_STAT_ROW + 6;
-    const nature = addFrlgText(this, padX, infoTop, '', { size: 16, tint: FRLG_MUTED });
-    const ability = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-    });
-    const held = addFrlgText(this, padX, infoTop + PARTY_DETAIL_INFO_ROW * 2, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-    });
-    children.push(nature, ability, held);
-    this.partyDetailStats = { hpText, rows, nature, ability, held };
-
-    const cellW = (colW - PARTY_DETAIL_MOVE_GAP) / 2;
-    const moveCellX = (i: number): number =>
-      movesX + (i % PARTY_DETAIL_MOVE_COLS) * (cellW + PARTY_DETAIL_MOVE_GAP);
-    const moveCellY = (i: number): number =>
-      contentTop +
-      Math.floor(i / PARTY_DETAIL_MOVE_COLS) * (PARTY_DETAIL_MOVE_ROW + PARTY_DETAIL_MOVE_GAP);
-    this.partyDetailMoves = [];
-    for (let i = 0; i < MAX_MOVES; i++) {
-      const cell = this.add
-        .rectangle(
-          moveCellX(i),
-          moveCellY(i),
-          cellW,
-          PARTY_DETAIL_MOVE_ROW,
-          FRLG_ROW_FILL.colour,
-          FRLG_ROW_FILL.alpha,
-        )
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
-      const name = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 4, '', {
-        size: 16,
-        tint: FRLG_INK,
-      }).setMaxWidth(cellW - 8 - ABILITY_INFO_SIZE - 12);
-      const pp = addFrlgText(this, moveCellX(i) + 8, moveCellY(i) + 18, '', {
-        size: 16,
-        tint: FRLG_INK,
-      });
-      this.partyDetailMoves.push({ cell, name, pp });
-      children.push(cell, name, pp);
-    }
-    this.partyDetailEmpty = addFrlgText(this, movesX + colW / 2, contentTop + 20, t('detail.noMoves'), {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: [0.5, 0],
-    });
-    children.push(this.partyDetailEmpty);
-
-    this.partyDetail = this.add.container(0, 0, children).setVisible(false);
-    // The ability row's ⓘ and the window it floats, built once the container
-    // exists so both ride above the panel. The zone only watches hover: the party
-    // cells under the window own the presses, and a press must not change the
-    // member the window describes.
-    this.partyAbilityPopup = new InfoPopup(this, this.partyDetail);
-    this.partyAbilityButton = new AbilityInfoButton(this, this.partyAbilityPopup, this.partyDetail);
-    this.partyAbilityZone = this.add.zone(0, 0, ABILITY_INFO_SIZE, ABILITY_INFO_SIZE).setOrigin(0, 0);
-    this.partyAbilityZone.setInteractive({ useHandCursor: true });
-    this.partyAbilityZone.on('pointerover', () => this.setPartyAbilityInfo(true));
-    this.partyAbilityZone.on('pointerout', () => this.setPartyAbilityInfo(false));
-    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
-    this.partyDetail.add(this.partyAbilityZone);
-    // One ⓘ per move row, each on a hit zone of its own so a press is swallowed
-    // at the button and never reaches the switch row under the panel.
-    const moveInfoX = (i: number): number => moveCellX(i) + cellW - 8 - ABILITY_INFO_SIZE;
-    const moveInfoY = (i: number): number =>
-      moveCellY(i) + (PARTY_DETAIL_MOVE_ROW - ABILITY_INFO_SIZE) / 2;
-    const moveInfoButtons = Array.from({ length: MAX_MOVES }, (_, i) => {
-      const centerX = moveInfoX(i) + ABILITY_INFO_SIZE / 2;
-      const centerY = moveInfoY(i) + ABILITY_INFO_SIZE / 2;
-      const button = this.add
-        .rectangle(
-          centerX,
-          centerY,
-          ABILITY_INFO_SIZE,
-          ABILITY_INFO_SIZE,
-          FRLG_ROW_FILL.colour,
-          FRLG_ROW_FILL.alpha,
-        )
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha)
-        .setVisible(false);
-      const label = addFrlgText(this, centerX, centerY, 'i', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: 0.5,
-      }).setVisible(false);
-      this.partyDetail.add([button, label]);
-      return { button, label };
-    });
-    this.partyMoveInfoRows = moveInfoButtons.map(({ button, label }, i) => {
-      const zone = this.add
-        .zone(moveInfoX(i), moveInfoY(i), ABILITY_INFO_SIZE, ABILITY_INFO_SIZE)
-        .setOrigin(0, 0);
-      zone.setInteractive({ useHandCursor: true });
-      zone.setData('move', i);
-      zone.on('pointerover', () => this.setPartyMoveInfo(i));
-      zone.on('pointerout', () => this.clearPartyMoveInfo(i));
-      zone.on('pointerdown', () => this.togglePartyMoveInfo(i));
-      if (zone.input) zone.input.enabled = false;
-      this.partyDetail.add(zone);
-      return { button, label, zone };
-    });
-    this.partyMoveInfoPopup = new InfoPopup(this, this.partyDetail);
   }
 
   private bindInput(): void {
@@ -1593,8 +761,8 @@ export class BattleScene extends Phaser.Scene {
     // a pocket tab is left to it, so picking an option never also taps the feed.
     this.input.on(
       'pointerdown',
-      (pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
-        this.onPointerDown(objects, pointer),
+      (_pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[]) =>
+        this.onPointerDown(objects),
     );
     // The ⓘ hover is classified from the live pointer, so one scene-level listener
     // replaces the per-row zone's own move event; leaving the canvas drops an
@@ -1640,20 +808,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** A click on the scene: feed taps and the result screen answer it. */
-  private onPointerDown(
-    objects: readonly Phaser.GameObjects.GameObject[],
-    pointer: Phaser.Input.Pointer,
-  ): void {
-    // A press on the bag's filter field focuses it, as the route's field does.
-    if (this.mode === 'bag' && this.pointerOnBagSearch(pointer)) {
-      this.bagSearchFocused = true;
-      this.refreshHud();
-      return;
-    }
-    if (this.mode === 'entry') {
-      this.finishEntry();
-      return;
-    }
+  private onPointerDown(objects: readonly Phaser.GameObjects.GameObject[]): void {
     if (objects.length > 0) return;
     if (this.mode === 'target') {
       this.confirmTarget();
@@ -2745,18 +1900,6 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  /** A press on a foe in the target step: it moves the cursor, or confirms it again. */
-  private onFoeClick(slot: Slot): void {
-    if (this.mode !== 'target') return;
-    if (this.targetSlot === slot) {
-      this.confirmTarget();
-      return;
-    }
-    if (!this.liveFoeSlots().includes(slot)) return;
-    this.targetSlot = slot;
-    this.refreshHud();
-  }
-
   private openBag(): void {
     // The pockets on offer: consumables everywhere, balls only while a wild is
     // still catchable. A trainer battle is therefore a single-tab bag.
@@ -3141,7 +2284,6 @@ export class BattleScene extends Phaser.Scene {
   /** Shows a message whole: menus and prompts are not typed out. */
   private setMessage(text: string): void {
     this.typing = revealAll(beginTypewriter(text));
-    this.messageText.setText(text);
     this.updateBattleLog();
   }
 
@@ -3149,7 +2291,6 @@ export class BattleScene extends Phaser.Scene {
   private typeMessage(text: string): void {
     this.typing = beginTypewriter(text);
     this.typingRemainder = 0;
-    this.messageText.setText('');
     this.updateBattleLog();
   }
 
@@ -3164,7 +2305,6 @@ export class BattleScene extends Phaser.Scene {
     this.typingRemainder = elapsed;
     if (typewriter === this.typing) return;
     this.typing = typewriter;
-    this.messageText.setText(visibleText(typewriter));
     this.updateBattleLog();
   }
 
@@ -3172,7 +2312,6 @@ export class BattleScene extends Phaser.Scene {
   private completeTyping(): void {
     if (typewriterDone(this.typing)) return;
     this.typing = revealAll(this.typing);
-    this.messageText.setText(this.typing.text);
     this.updateBattleLog();
   }
 
@@ -3198,13 +2337,11 @@ export class BattleScene extends Phaser.Scene {
     const trainer = this.foeTrainer.visible;
     const compact = width < COMPACT_SIZE;
     this.monScaleFactor = compact ? COMPACT_MON_SCALE : 1;
-    const menuOpen = this.menuItems.length > 0;
 
     let box: Rect;
     let foeInfo: Rect;
     let playerInfo: Rect;
     let menu: Rect;
-    let message: Rect;
     let foeX: number;
     let foeY: number;
     let playerX: number;
@@ -3250,31 +2387,7 @@ export class BattleScene extends Phaser.Scene {
     // The move-detail popup floats over the field when the ⓘ button asks for
     // it, so it never moves the panels around it (see `MoveGrid`).
 
-    // Both boxes span the full bottom width and share it: the choice menu owns
-    // the whole box while it is open and the message window steps aside, so a
-    // list is never squeezed next to the text (the same shape on phone and
-    // desktop now).
     menu = { x: box.x, y: box.y, w: box.w, h: box.h };
-    message = { x: box.x, y: box.y + box.h - MESSAGE_H, w: box.w, h: MESSAGE_H };
-
-    // A double battle's second window per side: the foe's partner sits beside the
-    // shipped window (clamped on the right edge of the square) and the player's
-    // partner stacks with the shipped one — below it when the field above the menu
-    // box has room, above it when it does not, so the pair never overlaps.
-    const foeInfo2: Rect | null = this.displayActive2.enemy
-      ? {
-          x: Math.max(
-            box.x,
-            Math.min(foeInfo.x + foeInfo.w + SLOT_PANEL_GAP, width - box.x - FOE_PANEL.w),
-          ),
-          y: foeInfo.y,
-          w: FOE_PANEL.w,
-          h: FOE_PANEL.h,
-        }
-      : null;
-    const playerInfo2: Rect | null = this.displayActive2.player
-      ? this.secondPlayerPanel(playerInfo, box)
-      : null;
 
     const foePlatformY = foeY + FOE_PLATFORM_OFFSET;
     const playerPlatformY = playerY + PLAYER_PLATFORM_OFFSET;
@@ -3331,963 +2444,48 @@ export class BattleScene extends Phaser.Scene {
         (this.displayHp2.player > 0 || this.beat2.player === 'faint'),
     );
 
-    this.hud.clear();
-    this.marks.clear();
-    this.drawSidePanel(foeInfo, 'enemy');
-    this.drawSidePanel(playerInfo, 'player');
-    this.drawSecondPanel(foeInfo2, 'enemy');
-    this.drawSecondPanel(playerInfo2, 'player');
-    this.messagePanel.setSlices(message.w, message.h).setPosition(message.x, message.y);
-    this.menuPanel.setSlices(menu.w, menu.h).setPosition(menu.x, menu.y);
-    // Under the DOM HUD the message box is the `battle-log` card and this window never
-    // reaches the canvas; the flag contract's probe counts exactly these two objects.
-    this.messagePanel.setVisible(!menuOpen && !DOM_HUD);
-    this.messageText.setVisible(!menuOpen && !DOM_HUD);
-
-    this.messageText.setPosition(
-      message.x + FRLG_TEXTBOX_PADDING.x,
-      message.y + FRLG_TEXTBOX_PADDING.top,
-    );
-    this.messageText.setMaxWidth(message.w - FRLG_TEXTBOX_PADDING.x * 2);
-
-    if (menuOpen) {
-      if (this.mode === 'bag') this.renderBagMenu(menu);
-      else if (this.mode === 'moves') this.renderMoveMenu(menu);
-      else if (this.mode === 'menu' || this.mode === 'partner') this.renderCommandMenu(menu);
-      else if (this.mode === 'info') this.renderInfoWindow(menu);
-      else this.renderPartyGrid(menu);
-    } else {
-      this.hideMenu();
-    }
-    this.layoutTargetCursor();
-
     // The one emit point (`D49`): the DOM boxes paint the snapshot while the canvas
     // keeps the arena. It runs after the whole layout, because the combatants' caps
     // and positions above are read by the arena, not by the boxes.
-    if (DOM_HUD) {
-      syncHud(
-        { screen: 'battle', battle: this.state, canCapture: this.launch?.canCapture === true },
-        (next) => this.hpController?.update(next),
-      );
-      this.movesController?.update(this.battleMovesInput(menu));
-      this.commandController?.update(this.battleCommandInput(menu));
-      this.bagController?.update(this.battleBagInput(menu));
-      this.switchController?.update(this.battleSwitchInput(menu));
-      this.updateBattleLog();
-    }
-  }
-
-  /**
-   * The second player window: directly below the shipped one when both fit above
-   * the menu box, and above it when they do not. Either way the two never overlap
-   * and the pair stays inside the battle square.
-   */
-  private secondPlayerPanel(playerInfo: Rect, box: Rect): Rect {
-    const below = playerInfo.y + PLAYER_PANEL_H + SLOT_PANEL_GAP;
-    const y =
-      below + PLAYER_PANEL_H <= box.y - SLOT_PANEL_GAP
-        ? below
-        : Math.max(SLOT_PANEL_EDGE, playerInfo.y - PLAYER_PANEL_H - SLOT_PANEL_GAP);
-    return { x: playerInfo.x, y, w: PLAYER_PANEL_W, h: PLAYER_PANEL_H };
-  }
-
-  /**
-   * The target step's marker: the shipped cursor sits beside the marked foe, and
-   * the two foe hit zones are armed only while the step is open, so a click on a
-   * foe during the feed still advances the text.
-   */
-  private layoutTargetCursor(): void {
-    const open = this.mode === 'target' && this.displayHp2.enemy !== null;
-    this.foeZones.forEach((zone, slot) => {
-      if (zone.input) zone.input.enabled = open;
-      if (!open) return;
-      const pos = this.monPos('enemy', slot === 1 ? 1 : 0);
-      const height = slot === 1 ? this.monDrawHeight2.enemy : this.monDrawHeight.enemy;
-      zone
-        .setPosition(pos.x, pos.y - height / 2)
-        .setSize(FOE_PLATFORM_SPREAD * 1.4, Math.max(60, height));
-    });
-    const target = open ? this.targetSlot : null;
-    if (target === null) {
-      this.targetCursor.setVisible(false);
-      return;
-    }
-    const pos = this.monPos('enemy', target);
-    const height = target === 0 ? this.monDrawHeight.enemy : this.monDrawHeight2.enemy;
-    this.targetCursor
-      .setFlipX(false)
-      .setScale(1)
-      .setPosition(pos.x - 30, pos.y - height * 0.5)
-      .setVisible(true);
-  }
-
-  private drawSidePanel(rect: Rect, side: SideId): void {
-    // Under the DOM HUD the panel is a Preact card and the canvas only paints the
-    // arena, so neither the window nor the ball row may reach the screen.
-    if (DOM_HUD) {
-      this.hidePanelKit(this.panelKits[side][0]);
-      return;
-    }
-    this.drawPanel(
-      rect,
-      side,
-      this.panelKits[side][0],
-      this.displayActive[side],
-      this.displayHp[side],
-      this.displayStatus[side],
+    syncHud(
+      { screen: 'battle', battle: this.state, canCapture: this.launch?.canCapture === true },
+      (next) => this.hpController?.update(next),
     );
-
-    if (side === 'enemy') {
-      if (this.state.isWild) this.hideFoeBallRow();
-      else this.drawFoeBallRow(rect);
-    }
+    this.movesController?.update(this.battleMovesInput(menu));
+    this.commandController?.update(this.battleCommandInput(menu));
+    this.bagController?.update(this.battleBagInput(menu));
+    this.switchController?.update(this.battleSwitchInput(menu));
+    this.updateBattleLog();
   }
 
   /**
    * The second slot's window on a side, or nothing when the battle does not field
    * it (the shipped single layout, reached through the same code).
    */
-  private drawSecondPanel(rect: Rect | null, side: SideId): void {
-    if (DOM_HUD) {
-      this.hidePanelKit(this.panelKits[side][1]);
-      return;
-    }
-    const fighter = this.displayActive2[side];
-    const hp = this.displayHp2[side];
-    if (rect === null || !fighter || hp === null) {
-      this.hideSecondPanel(side);
-      return;
-    }
-    this.drawPanel(rect, side, this.panelKits[side][1], fighter, hp, this.displayStatus2[side]);
-  }
 
-  /** Hides slot 1's window and everything it paints. */
-  private hideSecondPanel(side: SideId): void {
-    this.hidePanelKit(this.panelKits[side][1]);
-  }
-
-  /** Hides one HP window and everything it paints. */
-  private hidePanelKit(kit: PanelKit): void {
-    kit.panel.setVisible(false);
-    kit.nameText.setVisible(false);
-    kit.statText.setVisible(false);
-    kit.statusText.setVisible(false);
-    kit.statusBadge.setVisible(false);
-    for (const badge of kit.typeBadges) badge.setVisible(false);
-    for (const chip of kit.typeChipBgs) chip.setVisible(false);
-    for (const chip of kit.typeChips) chip.setVisible(false);
-    kit.hpBar.bar.setVisible(false);
-    kit.hpBar.fill.setVisible(false);
-  }
-
-  /** Counts the visible objects of the four HP kits: the `?hud=dom` flag contract's probe. */
+  /** The HP boxes' own display objects in Phaser: none, they are the DOM card. */
   hpDrawnObjectCount(): number {
-    let count = 0;
-    for (const side of SIDE_IDS) {
-      for (const kit of this.panelKits[side]) {
-        const objects: readonly Readonly<{ visible: boolean }>[] = [
-          kit.panel,
-          kit.nameText,
-          kit.statText,
-          kit.statusText,
-          kit.statusBadge,
-          ...kit.typeBadges,
-          ...kit.typeChipBgs,
-          ...kit.typeChips,
-          kit.hpBar.bar,
-          kit.hpBar.fill,
-        ];
-        for (const object of objects) {
-          if (object.visible) count += 1;
-        }
-      }
-    }
-    return count;
+    return 0;
   }
 
-  /**
-   * Counts the visible objects the move menu owns: the window, the ◀, the two forme
-   * columns and the grid's laid-out cells. The `?hud=dom` flag contract's probe.
-   */
+  /** The move menu's own display objects in Phaser: none, it is the DOM card. */
   movesDrawnObjectCount(): number {
-    const objects: readonly Readonly<{ visible: boolean }>[] = [
-      this.menuPanel,
-      this.backArrow,
-      this.megaCell,
-      this.megaGlyph,
-      this.gmaxCell,
-      this.gmaxGlyph,
-    ];
-    let count = 0;
-    for (const object of objects) {
-      if (object.visible) count += 1;
-    }
-    for (let i = 0; i < MAX_MOVES; i++) {
-      if (this.moveGrid.cellRect(i) !== null) count += 1;
-    }
-    return count;
+    return 0;
   }
 
-  /**
-   * Counts the visible objects the bag owns: the ◀, the filter field, the selected
-   * line and the pocket's tabs and cells. The `?hud=dom` flag contract's probe.
-   */
+  /** The bag's own display objects in Phaser: none, it is the DOM card. */
   bagDrawnObjectCount(): number {
-    const objects: readonly Readonly<{ visible: boolean }>[] = [
-      this.backArrow,
-      this.bagSearchBg,
-      this.bagSearchText,
-      this.bagEmptyText,
-      this.bagDetailText,
-    ];
-    let count = 0;
-    for (const object of objects) {
-      if (object.visible) count += 1;
-    }
-    for (const tab of this.bagTabs) {
-      if (tab.bg.visible) count += 1;
-      if (tab.label.visible) count += 1;
-    }
-    for (const cell of this.bagCells) {
-      if (cell.bg.visible) count += 1;
-      if (cell.icon.visible) count += 1;
-      if (cell.badgeBg.visible) count += 1;
-      if (cell.badge.visible) count += 1;
-    }
-    return count;
+    return 0;
   }
 
-  /**
-   * Counts the message box's visible objects: the glass window and its text. The
-   * `?hud=dom` flag contract's probe.
-   */
+  /** The message box's own display objects in Phaser: none, it is the DOM card. */
   logDrawnObjectCount(): number {
-    let count = 0;
-    if (this.messagePanel.visible) count += 1;
-    if (this.messageText.visible) count += 1;
-    return count;
+    return 0;
   }
 
-  /**
-   * Counts the visible objects the switch grid owns: the window, the ◀, the cells,
-   * avatars, labels, bars, fills and the detail window with its contents. The
-   * `?hud=dom` flag contract's probe.
-   */
+  /** The switch grid's own display objects in Phaser: none, it is the DOM card. */
   switchDrawnObjectCount(): number {
-    const objects: readonly Readonly<{ visible: boolean }>[] = [
-      this.menuPanel,
-      this.backArrow,
-      this.menuCursor,
-    ];
-    let count = 0;
-    for (const object of objects) {
-      if (object.visible) count += 1;
-    }
-    for (let i = 0; i < MAX_PARTY_SIZE; i++) {
-      if (this.partyCells[i].visible) count += 1;
-      if (this.partyAvatars[i].visible) count += 1;
-      if (this.partyLabels[i].visible) count += 1;
-      if (this.partyHpBars[i].visible) count += 1;
-      if (this.partyHpFills[i].visible) count += 1;
-    }
-    // The detail window's own contents keep their flags when the container is
-    // hidden, so they only count while the window the canvas drew is up.
-    if (!this.partyDetail.visible) return count;
-    count += 1;
-    const contents: readonly Readonly<{ visible: boolean }>[] = [
-      this.partyDetailName,
-      this.partyDetailLevel,
-      this.partyDetailEmpty,
-    ];
-    for (const object of contents) {
-      if (object.visible) count += 1;
-    }
-    for (const chip of this.partyDetailTypes) {
-      if (chip.bg.visible) count += 1;
-      if (chip.label.visible) count += 1;
-    }
-    for (const row of this.partyDetailStats.rows) {
-      if (row.label.visible) count += 1;
-      if (row.value.visible) count += 1;
-    }
-    for (const row of this.partyDetailMoves) {
-      if (row.cell.visible) count += 1;
-      if (row.name.visible) count += 1;
-      if (row.pp.visible) count += 1;
-    }
-    return count;
-  }
-
-  /**
-   * One HP window: the card, the name row, the types band, the status mark and the
-   * bar. It paints a side's slot 0 and slot 1 alike, from the kit the caller hands
-   * it, so the two windows can never read differently.
-   */
-  private drawPanel(
-    rect: Rect,
-    side: SideId,
-    kit: PanelKit,
-    fighter: BattleFighter,
-    hp: number,
-    status: StatusId | null,
-  ): void {
-    kit.panel.setSlices(rect.w, rect.h).setPosition(rect.x, rect.y).setVisible(true);
-    const fraction = hpFraction(hp, fighter.maxHp);
-
-    // Content stays inside the FRLG window's baked border: the name drops below
-    // the top frame, then the types row and the HP bar keep their gaps, so
-    // nothing rides the bevel.
-    const pad = FRLG_WINDOW_PADDING;
-    const nameY = rect.y + pad.top;
-    const barX = rect.x + pad.x;
-    const typesY = nameY + PANEL_NAME_H;
-    const barY = typesY + PANEL_TYPES_H + PANEL_NAME_GAP;
-
-    kit.nameText
-      .setText(t('battle.panelName', { name: fighter.name, level: fighter.level }))
-      .setPosition(barX, nameY)
-      .setVisible(true);
-
-    // The row is the live fighter's own types, so a Mega Evolution or a form
-    // change shows the forme's (`displayActive` follows both).
-    const types = fighter.types;
-    let typeX = barX;
-    for (let i = 0; i < PANEL_TYPE_SLOTS; i++) {
-      const type = types[i];
-      const frame = type === undefined ? null : typeIconFrame(type);
-      const badge = kit.typeBadges[i];
-      const chipBg = kit.typeChipBgs[i];
-      const chip = kit.typeChips[i];
-      if (frame !== null && type !== undefined) {
-        badge
-          .setTexture(TYPE_ICON_TEXTURE_KEY, frame)
-          .setPosition(typeX, typesY + 3)
-          .setVisible(true);
-        chipBg.setVisible(false);
-        chip.setVisible(false);
-        typeX += TYPE_ICON_W * PANEL_TYPE_SCALE + PANEL_TYPE_GAP;
-      } else if (type !== undefined) {
-        badge.setVisible(false);
-        const colour = typeColor(type);
-        chipBg
-          .setPosition(typeX, typesY)
-          .setSize(PANEL_CHIP_W, PANEL_CHIP_H)
-          .setFillStyle(colour)
-          .setVisible(true);
-        chip
-          .setText(type.toUpperCase())
-          .setTint(badgeInkFor(colour))
-          .setPosition(typeX + PANEL_CHIP_W / 2, typesY + 2)
-          .setVisible(true);
-        typeX += PANEL_CHIP_W + PANEL_TYPE_GAP;
-      } else {
-        badge.setVisible(false);
-        chipBg.setVisible(false);
-        chip.setVisible(false);
-      }
-    }
-
-    kit.statText
-      .setText(side === 'player' ? `${hp}/${fighter.maxHp}` : '')
-      .setPosition(rect.x + rect.w - pad.x, barY - 23)
-      .setVisible(true);
-
-    // A badly poisoned Pokémon gets the `TOX` chip: the badge atlas maps `tox` and
-    // `psn` onto one frame, so the badge alone cannot tell the two apart (§10.1).
-    const statusFrame = status && status !== 'tox' ? statusIconFrame(status) : null;
-    if (statusFrame !== null) {
-      // The FRLG badge carries its own colours, so no chip is painted behind it.
-      kit.statusBadge
-        .setFrame(statusFrame)
-        .setPosition(barX, barY - 22)
-        .setVisible(true);
-      kit.statusText.setVisible(false);
-    } else {
-      kit.statusBadge.setVisible(false);
-      const abbreviation = statusAbbreviation(status);
-      kit.statusText
-        .setText(abbreviation ?? '')
-        .setPosition(barX + 27, barY - 23)
-        .setVisible(abbreviation !== null);
-      if (abbreviation) {
-        this.hud.fillStyle(0x8b5cf6, 1);
-        this.hud.fillRoundedRect(barX, barY - 24, 54, 20, 6);
-      }
-    }
-
-    const bar = kit.hpBar;
-    bar.fill
-      .setPosition(barX + FRLG_HPBAR.fill.x, barY + FRLG_HPBAR.fill.y)
-      .setSize(Math.max(0, FRLG_HPBAR.fill.width * fraction), FRLG_HPBAR.fill.height)
-      .setFillStyle(hpColorInt(fraction))
-      .setVisible(true);
-    bar.bar.setPosition(barX, barY).setVisible(true);
-
-    // The danger band carries a shape as well as its hue: the fill is cut into
-    // blocks by dark notches, so a low HP reads without colour (D45, §10.2).
-    if (isLowHp(fraction)) {
-      this.hud.fillStyle(FRLG_INK, 1);
-      for (const dx of hpCueNotches(FRLG_HPBAR.fill.width * fraction)) {
-        this.hud.fillRect(
-          barX + FRLG_HPBAR.fill.x + dx - HP_CUE_GAP / 2,
-          barY + FRLG_HPBAR.fill.y,
-          HP_CUE_GAP,
-          FRLG_HPBAR.fill.height,
-        );
-      }
-    }
-  }
-
-  /**
-   * The foe's remaining team as a fixed row of balls under its panel: one per
-   * member the trainer brought, in roster order, with the fainted ones emptied.
-   * The active member's ball follows the displayed HP, so it dims on the same
-   * repaint that empties the HP bar.
-   */
-  private drawFoeBallRow(rect: Rect): void {
-    if (DOM_HUD) return;
-    const party = this.state.sides.enemy.party;
-    const active = this.state.sides.enemy.activeIndex;
-    const x = rect.x + FRLG_WINDOW_PADDING.x;
-    const y = rect.y + rect.h + FOE_BALL_GAP;
-    this.foeBallRow.forEach((ball, i) => {
-      if (i >= party.length) {
-        ball.setVisible(false);
-        return;
-      }
-      const spent = i === active ? this.displayHp.enemy <= 0 : party[i].hp <= 0;
-      ball
-        .setPosition(x + i * FOE_BALL_PITCH, y)
-        .setAlpha(spent ? FOE_BALL_SPENT_ALPHA : 1)
-        .setVisible(true);
-      if (spent) {
-        ball.setTint(FOE_BALL_SPENT_TINT);
-        // A spent ball reads as "out" without its tint too: a dark slash across
-        // the icon's own box (§10.1). The dim tint stays as a second cue.
-        this.marks.lineStyle(2, FRLG_INK, 1);
-        this.marks.lineBetween(ball.x, ball.y, ball.x + ball.displayWidth, ball.y + ball.displayHeight);
-      } else {
-        ball.clearTint();
-      }
-    });
-  }
-
-  private hideFoeBallRow(): void {
-    this.foeBallRow.forEach((ball) => ball.setVisible(false));
-  }
-
-  /**
-   * The main battle commands (FIGHT / BAG / SWITCH / RUN) as a 2x2 grid, matching
-   * the moves grid: a neutral cell each, the name centred and the cursor at the
-   * selected cell's end.
-   */
-  private renderCommandMenu(menu: Rect): void {
-    if (DOM_HUD) {
-      // The DOM card draws the whole command window, so every canvas piece of it
-      // goes dark — the window, the four cells, their labels, the cursor and the
-      // INFO control. `hideMenu` is that one call.
-      this.hideMenu();
-      return;
-    }
-    this.menuPanel.setVisible(true);
-    this.hideBagChrome();
-    this.hideMoveChrome();
-    this.hidePartyGrid();
-    this.layoutBackButton(menu, false);
-    const pad = FRLG_WINDOW_PADDING;
-    const count = this.menuItems.length;
-    const cols = MENU_GRID_COLS;
-    const rows = Math.max(1, Math.ceil(count / cols));
-    const left = menu.x + pad.x + MOVE_GRID_INSET;
-    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET - MOVE_MEGA_COL;
-    const top = menu.y + pad.top + MOVE_GRID_INSET;
-    const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
-    const cellW = (right - left - (cols - 1) * MENU_GRID_GAP) / cols;
-    const cellH = (bottom - top - (rows - 1) * MENU_GRID_GAP) / rows;
-    const cellX = (i: number): number => left + (i % cols) * (cellW + MENU_GRID_GAP);
-    const cellY = (i: number): number => top + Math.floor(i / cols) * (cellH + MENU_GRID_GAP);
-
-    this.menuRows.forEach((row, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
-        row.setVisible(false);
-        return;
-      }
-      row
-        .setText(item.label)
-        .setTint(i === this.menuIndex ? FRLG_ACCENT : FRLG_INK)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setFontSize(FRLG_FONT_SIZE)
-        .setMaxWidth(cellW - 32)
-        .setOrigin(0.5, 0.5)
-        .setPosition(cellX(i) + cellW / 2, cellY(i) + cellH / 2)
-        .setVisible(true);
-    });
-    this.commandCells.forEach((cell, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      if (!item) {
-        cell.setVisible(false);
-        return;
-      }
-      const selected = i === this.menuIndex;
-      cell
-        .setPosition(cellX(i), cellY(i))
-        .setSize(cellW, cellH)
-        .setFillStyle(
-          selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-          selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-        )
-        .setStrokeStyle(
-          1,
-          selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-          selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-        )
-        .setVisible(true);
-    });
-    this.menuZones.forEach((zone, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      zone.setData('item', item ? i : -1);
-      if (zone.input) zone.input.enabled = Boolean(item);
-      if (item) zone.setPosition(cellX(i), cellY(i)).setSize(cellW, cellH);
-    });
-    this.layoutInfoControl(menu, top, bottom);
-    if (this.infoSelected) {
-      this.menuCursor
-        .setFlipX(true)
-        .setScale(1)
-        .setPosition(
-          this.infoCell.x + this.infoCell.width - 12,
-          this.infoCell.y + this.infoCell.height / 2,
-        )
-        .setVisible(true);
-      return;
-    }
-    this.menuCursor
-      .setFlipX(true)
-      .setScale(1)
-      .setPosition(cellX(this.menuIndex) + cellW - 48, cellY(this.menuIndex) + cellH / 2)
-      .setVisible(count > 0);
-  }
-
-  /** A fifth control at the right edge of the command window, the column `MOVE_MEGA_COL` reserves in the moves menu. */
-  private layoutInfoControl(menu: Rect, top: number, bottom: number): void {
-    const x = menu.x + menu.w - FRLG_WINDOW_PADDING.x - MOVE_GRID_INSET - MOVE_MEGA_COL;
-    const h = bottom - top;
-    const selected = this.infoSelected;
-    this.infoCell
-      .setPosition(x, top)
-      .setSize(MOVE_MEGA_COL, h)
-      .setFillStyle(
-        selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-        selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-      )
-      .setStrokeStyle(
-        1,
-        selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-        selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-      )
-      .setVisible(true);
-    this.infoText
-      .setText(t('battle.infoControl'))
-      .setPosition(x + MOVE_MEGA_COL / 2, top + h / 2)
-      .setVisible(true);
-    this.infoZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
-    if (this.infoZone.input) this.infoZone.input.enabled = true;
-  }
-
-  /** Hides the info control's cell, label and hit zone. */
-  private hideInfoControl(): void {
-    this.infoCell.setVisible(false);
-    this.infoText.setVisible(false);
-    if (this.infoZone.input) this.infoZone.input.enabled = false;
-  }
-
-  /**
-   * The battle-state window: the model's lines as the shipped list rows in the
-   * shipped window — the weather and the terrain, the field and side conditions
-   * with their counts and each active's stat stages and status.
-   */
-  private renderInfoWindow(menu: Rect): void {
-    this.menuPanel.setVisible(true);
-    this.hideBagChrome();
-    this.hideMoveChrome();
-    this.hidePartyGrid();
-    this.hideInfoControl();
-    this.layoutBackButton(menu, false);
-    this.layoutMenuRows(
-      menu,
-      this.menuItems,
-      menu.y + FRLG_WINDOW_PADDING.top + MOVE_GRID_INSET,
-      MENU_ROWS,
-      0,
-    );
-  }
-
-  /**
-   * The party (switch) menu as a single column of rows: one fixed-size row per
-   * member — the same size whether the party holds two Pokémon or six — with the
-   * portrait, name and HP bar scaled down into the row rather than the row
-   * growing around them. The ◀ back control sits centred on the grid's left edge,
-   * as in the moves menu.
-   */
-  private renderPartyGrid(menu: Rect): void {
-    if (DOM_HUD) {
-      // The DOM card draws the whole grid, so every canvas piece of it goes dark —
-      // the window, the ◀, the cells, the avatars, the labels, the bars, the detail
-      // window and its ⓘs. `hideMenu` is that one call.
-      this.hideMenu();
-      return;
-    }
-    this.menuPanel.setVisible(true);
-    this.hideBagChrome();
-    this.hideMoveChrome();
-    this.hideInfoControl();
-    const party = this.state.sides.player.party;
-    const count = this.menuItems.length;
-    // The rows a double battle already has on the field carry the accent: those are
-    // the ones the grid refuses, so the player can see which two are out.
-    const fieldRows = this.double
-      ? partyGridFieldRows(
-          this.state.sides.player.activeIndex,
-          this.state.sides.player.secondActiveIndex,
-        )
-      : [];
-    const { rects, avatarScale, hpBarScale, labelMaxWidth } = partyGridLayout(menu, {
-      padding: FRLG_WINDOW_PADDING,
-      avatarScaleCap: PARTY_AVATAR_SCALE,
-      hpBarScaleCap: PARTY_CELL_HPBAR_SCALE,
-    });
-    const avatarW = PORTRAIT_SIZE * avatarScale;
-    const hpBarW = FRLG_HPBAR.width * hpBarScale;
-    const hpBarH = FRLG_HPBAR.height * hpBarScale;
-    const labelH = (FRLG_LINE_HEIGHT * PARTY_LABEL_SIZE) / FRLG_FONT_SIZE;
-
-    // The ◀ back control, centred on the grid's left edge, as in the moves menu.
-    const top = rects[0].y;
-    const bottom = rects[rects.length - 1].y + rects[rects.length - 1].h;
-    const backX = menu.x + FRLG_WINDOW_PADDING.x + 14;
-    const backY = (top + bottom) / 2;
-    this.backArrow.setVisible(true).setPosition(backX, backY);
-    this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
-    if (this.backZone.input) this.backZone.input.enabled = true;
-
-    // The shared list rows are not used by the row grid.
-    for (const row of this.menuRows) row.setVisible(false);
-    for (const zone of this.menuZones) {
-      zone.setData('item', -1);
-      if (zone.input) zone.input.enabled = false;
-    }
-
-    this.partyCells.forEach((cell, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      const member = i < count ? party[i] : undefined;
-      const rect = rects[i];
-      if (!item || !member || !rect) {
-        cell.setVisible(false);
-        this.partyAvatars[i].setVisible(false);
-        this.partyLabels[i].setVisible(false);
-        this.partyHpBars[i].setVisible(false);
-        this.partyHpFills[i].setVisible(false);
-        return;
-      }
-      const selected = i === this.menuIndex;
-      cell
-        .setPosition(rect.x, rect.y)
-        .setSize(rect.w, rect.h)
-        .setFillStyle(
-          selected ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-          selected ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-        )
-        .setStrokeStyle(
-          1,
-          selected ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-          selected ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-        )
-        .setVisible(true);
-      const portrait = portraitFor(member.speciesId, member.shiny);
-      this.partyAvatars[i]
-        .setVisible(portrait !== null)
-        .setAlpha(item.enabled ? 1 : 0.45)
-        .setScale(avatarScale)
-        .setPosition(rect.x + 8 + avatarW / 2, rect.y + rect.h / 2);
-      if (portrait) this.partyAvatars[i].setTexture(portrait.key, portrait.frame);
-
-      // The label is clipped to one line, never wrapped, and the HP bar sits at
-      // the row's right edge, so a long nickname can never stretch the row.
-      const labelX = rect.x + 8 + avatarW + 6;
-      this.partyLabels[i]
-        .setText(fitPartyLabel(item.label, labelMaxWidth, PARTY_LABEL_SIZE))
-        .setTint(fieldRows.includes(i) ? FRLG_ACCENT : FRLG_INK)
-        .setAlpha(item.enabled ? 1 : 0.45)
-        .setOrigin(0, 0)
-        .setPosition(labelX, rect.y + (rect.h - labelH) / 2)
-        .setVisible(true);
-
-      const barX = rect.x + rect.w - 8 - hpBarW;
-      const barY = rect.y + (rect.h - hpBarH) / 2;
-      const fraction = hpFraction(member.hp, member.maxHp);
-      const alive = member.hp > 0;
-      this.partyHpBars[i].setVisible(alive).setScale(hpBarScale).setPosition(barX, barY);
-      this.partyHpFills[i]
-        .setVisible(alive)
-        .setPosition(barX + FRLG_HPBAR.fill.x * hpBarScale, barY + FRLG_HPBAR.fill.y * hpBarScale)
-        .setSize(
-          Math.max(0, FRLG_HPBAR.fill.width * hpBarScale * fraction),
-          FRLG_HPBAR.fill.height * hpBarScale,
-        )
-        .setFillStyle(hpColorInt(fraction));
-    });
-    this.partyZones.forEach((zone, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      const rect = rects[i];
-      zone.setData('item', item ? i : -1);
-      if (zone.input) zone.input.enabled = Boolean(item);
-      if (item && rect) zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h);
-    });
-    // The row is only a sixth of the panel, so the cursor shrinks to fit it.
-    const cursorRow = rects[this.menuIndex];
-    this.menuCursor
-      .setFlipX(true)
-      .setScale(Math.min(1, cursorRow.h / this.menuCursor.height))
-      .setPosition(cursorRow.x + cursorRow.w - 48, cursorRow.y + cursorRow.h / 2)
-      .setVisible(count > 0);
-    this.renderPartyDetail(menu);
-  }
-
-  /**
-   * The party detail window for the member under the cursor, floating above the
-   * avatar grid. No tabs: the five battle stats, nature, ability and held item in
-   * a left column, the four moves (tinted by type) in a 2x2 grid on the right. The
-   * window scales down to fit a narrow stage.
-   */
-  private renderPartyDetail(menu: Rect): void {
-    const fighter = this.state.sides.player.party[this.menuIndex];
-    const detail = fighter ? fighterDetail(fighter) : null;
-    if (!detail) {
-      this.partyDetail.setVisible(false);
-      this.hidePartyAbilityInfo();
-      this.hidePartyMoveInfo();
-      return;
-    }
-    if (this.partyMoveInfoMember !== detail.id) this.hidePartyMoveInfo();
-    const scale = Math.min(1, menu.w / PARTY_DETAIL_W);
-    const height = PARTY_DETAIL_H * scale;
-    const x = Math.max(0, Math.min(menu.x, menu.x * 2 + menu.w - PARTY_DETAIL_W * scale));
-    const y = Math.max(0, menu.y - height - MOVE_POPUP_GAP);
-    this.partyDetail.setScale(scale).setPosition(x, y).setVisible(true);
-
-    this.partyDetailName.setText(detail.name);
-    this.partyDetailLevel.setText(t('common.level', { level: detail.level }));
-    this.partyDetailTypes.forEach((chip, i) => {
-      const type = detail.types[i];
-      chip.bg.setVisible(type !== undefined);
-      chip.label.setVisible(type !== undefined);
-      if (type === undefined) {
-        chip.label.setText('');
-        return;
-      }
-      const colour = typeColor(type);
-      chip.bg.setFillStyle(colour);
-      chip.label.setTint(badgeInkFor(colour));
-      chip.label.setText(type.toUpperCase());
-    });
-
-    const { hpText, rows, nature, ability, held } = this.partyDetailStats;
-    hpText.setText(t('detail.hp', { hp: detail.hp, max: detail.maxHp }));
-    rows.forEach((row, i) => {
-      const stat = DETAIL_STATS[i];
-      row.value.setText(String(detail.stats[stat]));
-      // Green for the stat a nature raises, red for the one it lowers.
-      const effect = natureEffect(detail.nature, stat);
-      const tint = effect === 'up' ? NATURE_UP_TINT : effect === 'down' ? NATURE_DOWN_TINT : FRLG_INK;
-      row.value.setTint(tint);
-      if (effect !== 'neutral') row.label.setTint(tint);
-    });
-    nature.setText(t('detail.nature', { nature: capitalize(detail.nature) }));
-    ability.setText(t('detail.ability', { ability: detail.ability }));
-    held.setText(t('detail.held', { held: detail.heldItemName ?? t('detail.none') }));
-    this.renderPartyAbilityInfo(detail);
-
-    this.partyDetailEmpty.setVisible(detail.moves.length === 0);
-    this.partyDetailMoves.forEach((row, i) => {
-      const move = detail.moves[i];
-      const visible = move !== undefined;
-      row.cell.setVisible(visible);
-      row.name.setVisible(visible);
-      row.pp.setVisible(visible);
-      if (!move) {
-        row.name.setText('');
-        row.pp.setText('');
-        return;
-      }
-      row.cell
-        .setFillStyle(FRLG_ROW_FILL.colour, FRLG_ROW_FILL.alpha)
-        .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha);
-      row.name.setText(move.name);
-      row.pp.setText(t('move.pp', { pp: move.pp, max: move.maxPp }));
-    });
-    this.renderPartyMoveInfo(detail);
-  }
-
-  /** Hides the party grid's cells, avatars, labels, HP bars and hit zones. */
-  private hidePartyGrid(): void {
-    for (const cell of this.partyCells) cell.setVisible(false);
-    for (const avatar of this.partyAvatars) avatar.setVisible(false);
-    for (const label of this.partyLabels) label.setVisible(false);
-    for (const bar of this.partyHpBars) bar.setVisible(false);
-    for (const fill of this.partyHpFills) fill.setVisible(false);
-    for (const zone of this.partyZones) {
-      zone.setData('item', -1);
-      if (zone.input) zone.input.enabled = false;
-    }
-    this.partyDetail.setVisible(false);
-    this.hidePartyAbilityInfo();
-    this.hidePartyMoveInfo();
-  }
-
-  /**
-   * The detail window's ability ⓘ: the spot comes from the ability text's own
-   * width, and both the spot and the zone stay in the container's coordinates
-   * (the panel is scaled and offset as a whole).
-   */
-  private renderPartyAbilityInfo(detail: MemberDetail): void {
-    const ability = this.partyDetailStats.ability;
-    const spot = abilityInfoSpot(ability.x + ability.width, ability.y);
-    this.partyAbilityButton.layout(
-      spot,
-      this.partyAbilityInfo,
-      abilityInfoContent(detail.ability, detail.abilityDesc),
-    );
-    this.partyAbilityZone.setPosition(spot.x, spot.y).setSize(spot.width, spot.height);
-    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = true;
-  }
-
-  /** Redraws the ability ⓘ for the member the cursor is on. */
-  private refreshPartyAbilityInfo(): void {
-    const fighter = this.state.sides.player.party[this.menuIndex];
-    if (!fighter || this.mode !== 'party') {
-      this.hidePartyAbilityInfo();
-      return;
-    }
-    this.renderPartyAbilityInfo(fighterDetail(fighter));
-  }
-
-  /** Shows or hides the ability window as the pointer reaches or leaves the ⓘ. */
-  private setPartyAbilityInfo(over: boolean): void {
-    if (over === this.partyAbilityInfo) return;
-    this.partyAbilityInfo = over;
-    this.refreshPartyAbilityInfo();
-  }
-
-  /** Hides the ability ⓘ, its window and its hover zone. */
-  private hidePartyAbilityInfo(): void {
-    this.partyAbilityInfo = false;
-    this.partyAbilityButton.hide();
-    if (this.partyAbilityZone.input) this.partyAbilityZone.input.enabled = false;
-  }
-
-  /** Lays the four ⓘ controls out for the described member and floats (or hides) the window. */
-  private renderPartyMoveInfo(detail: MemberDetail): void {
-    this.partyMoveInfoMember = detail.id;
-    this.partyMoveInfoRows.forEach((row, i) => {
-      const move = detail.moves[i];
-      const visible = move !== undefined;
-      row.button.setVisible(visible);
-      row.label.setVisible(visible);
-      if (row.zone.input) row.zone.input.enabled = visible;
-      if (!move) return;
-      const active = i === this.partyMoveInfo;
-      row.button
-        .setFillStyle(
-          active ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-          active ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-        )
-        .setStrokeStyle(
-          1,
-          active ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-          active ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-        );
-    });
-    const index = this.partyMoveInfo;
-    const anchor = index === null ? undefined : this.partyDetailMoves[index];
-    const move = index === null ? undefined : detail.moves[index];
-    if (!anchor || !move || move.desc.length === 0) {
-      this.partyMoveInfoPopup.hide();
-      return;
-    }
-    const cell: MoveGridCell = {
-      name: move.name,
-      type: move.type,
-      category: move.category,
-      pp: move.pp,
-      maxPp: move.maxPp,
-      desc: move.desc,
-      power: move.power,
-      basePower: move.basePower,
-      accuracy: move.accuracy,
-      baseAccuracy: move.baseAccuracy,
-      status: move.status,
-      enabled: true,
-    };
-    const infoY = anchor.cell.y + 6;
-    this.partyMoveInfoPopup.show(
-      {
-        x: FRLG_WINDOW_PADDING.x,
-        width: PARTY_DETAIL_W - FRLG_WINDOW_PADDING.x * 2,
-        above: infoY - MOVE_POPUP_GAP,
-        below: infoY + ABILITY_INFO_SIZE + MOVE_POPUP_GAP,
-      },
-      moveInfoContent(cell),
-    );
-  }
-
-  /** Redraws the ⓘ for the member the cursor is on. */
-  private refreshPartyMoveInfo(): void {
-    const fighter = this.state.sides.player.party[this.menuIndex];
-    if (!fighter || this.mode !== 'party') {
-      this.hidePartyMoveInfo();
-      return;
-    }
-    this.renderPartyMoveInfo(fighterDetail(fighter));
-  }
-
-  /** Hovering the ⓘ of row `index` floats its description, unless one is pinned. */
-  private setPartyMoveInfo(index: number): void {
-    if (this.partyMoveInfoPinned || this.partyMoveInfo === index) return;
-    this.partyMoveInfo = index;
-    this.refreshPartyMoveInfo();
-  }
-
-  /** Leaving the ⓘ hides an unpinned description. */
-  private clearPartyMoveInfo(index: number): void {
-    if (this.partyMoveInfoPinned || this.partyMoveInfo !== index) return;
-    this.partyMoveInfo = null;
-    this.refreshPartyMoveInfo();
-  }
-
-  /** A press pins that description, or closes it when it is already pinned. */
-  private togglePartyMoveInfo(index: number): void {
-    if (this.partyMoveInfoPinned && this.partyMoveInfo === index) {
-      this.partyMoveInfoPinned = false;
-      this.partyMoveInfo = null;
-    } else {
-      this.partyMoveInfoPinned = true;
-      this.partyMoveInfo = index;
-    }
-    this.refreshPartyMoveInfo();
-  }
-
-  /** Hides the four ⓘ controls, their zones and the window. */
-  private hidePartyMoveInfo(): void {
-    this.partyMoveInfo = null;
-    this.partyMoveInfoPinned = false;
-    this.partyMoveInfoMember = null;
-    for (const row of this.partyMoveInfoRows) {
-      row.button.setVisible(false);
-      row.label.setVisible(false);
-      if (row.zone.input) row.zone.input.enabled = false;
-    }
-    this.partyMoveInfoPopup.hide();
+    return 0;
   }
 
   /**
@@ -4317,9 +2515,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM command window's only receiver: hover moves the cursor exactly as
-   * `onMenuHover` does, and a press lands on the `confirmMenu` the canvas row's
-   * click already takes — a dimmed row is accepted here and refused there.
+   * The DOM command window's only receiver: a hover moves the cursor, and a press
+   * lands on `confirmMenu`, the one path a key takes too — a dimmed row is accepted
+   * here and refused there.
    */
   private onBattleCommandIntent(intent: BattleCommandIntent): void {
     if (this.mode !== 'menu' && this.mode !== 'partner') return;
@@ -4354,8 +2552,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The moves menu's four slots as the canvas's own cells, built once so the DOM
-   * card and the grid can never read different data.
+   * The moves menu's four slots as cells, built once so the card and the engine can
+   * never read different data.
    */
   private moveCells(): readonly MoveGridCell[] {
     return this.menuItems.map((item) => ({
@@ -4401,8 +2599,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM card's only receiver: every intent lands on the call the canvas already
-   * made, so a press and a key reach the same engine command.
+   * The DOM card's only receiver: every intent lands on the call a key makes, so a
+   * press and a key reach the same engine command.
    */
   private onBattleMoveIntent(intent: BattleMovesIntent): void {
     switch (intent.type) {
@@ -4473,8 +2671,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM bag's only receiver: every intent lands on the call the canvas already
-   * made, so a press and a key reach the same engine command.
+   * The DOM bag's only receiver: every intent lands on the call a key makes, so a
+   * press and a key reach the same engine command.
    */
   private onBattleBagIntent(intent: BattleBagIntent): void {
     switch (intent.type) {
@@ -4551,9 +2749,9 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The DOM switch grid's only receiver: every intent lands on the call the canvas
-   * already made, so a press and a key reach the same engine command — and the
-   * send-out beat stays the feed's (`playSwitch`), never the card's.
+   * The DOM switch grid's only receiver: every intent lands on the call a key makes,
+   * so a press and a key reach the same engine command — and the send-out beat stays
+   * the feed's (`playSwitch`), never the card's.
    */
   private onBattleSwitchIntent(intent: BattleSwitchIntent): void {
     switch (intent.type) {
@@ -4575,576 +2773,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * The moves menu: the shared grid fills the window (the same component the route
-   * HUD draws in its detail panel), the ◀ back control sits centred on the grid's
-   * left edge and the MEGA control takes a column on the right while it is usable.
-   * The grid's own popup floats the type and description of the move the cursor is
-   * on.
-   */
-  private renderMoveMenu(menu: Rect): void {
-    if (DOM_HUD) {
-      // The DOM card draws the whole menu, so every canvas piece of it goes dark —
-      // and `hideMenu` also drops the ⓘ pin, which this scene keeps feeding the card.
-      const info = this.infoMove;
-      const pinned = this.infoPinned;
-      this.hideMenu();
-      this.infoMove = info;
-      this.infoPinned = pinned;
-      return;
-    }
-    this.menuPanel.setVisible(true);
-    this.hideBagChrome();
-    this.hidePartyGrid();
-    this.hideInfoControl();
-    for (const row of this.menuRows) row.setVisible(false);
-    for (const cell of this.commandCells) cell.setVisible(false);
-    const pad = FRLG_WINDOW_PADDING;
-    const count = this.menuItems.length;
-    const left = menu.x + pad.x;
-    const right = menu.x + menu.w - pad.x - MOVE_GRID_INSET;
-    const top = menu.y + pad.top + MOVE_GRID_INSET;
-    const bottom = menu.y + menu.h - pad.bottom - MOVE_GRID_INSET;
-    // The Mega and G-Max controls take a column each on the right, but only while
-    // they are usable.
-    const mega = this.megaAvailable();
-    const gmax = this.gmaxAvailable();
-    if (!mega) this.megaSelected = false;
-    if (!gmax) this.gmaxSelected = false;
-
-    // The ◀ back control, centred in the grid's reserved left column.
-    const backY = (top + bottom) / 2;
-    const backW = this.backArrow.displayWidth;
-    const backX = left + Math.round((MOVE_BACK_COL - backW) / 2);
-    this.backArrow.setVisible(true).setPosition(backX, backY);
-    this.backZone.setPosition(backX + backW / 2 - 24, backY - 18).setSize(48, 36);
-    if (this.backZone.input) this.backZone.input.enabled = true;
-
-    this.layoutMegaControl(right, top, bottom, mega);
-    this.layoutGmaxControl(right, top, bottom, gmax, mega);
-
-    const cells = this.moveCells();
-    // Four slots always: the member's moves, then an empty container each. The
-    // empty ones draw no zone of their own, so they stay unselectable.
-    const slots = cells.length > 0 ? padMoveGridCells(cells, MAX_MOVES) : [];
-    this.moveGrid.layout({
-      x: menu.x,
-      y: menu.y,
-      w: menu.w,
-      h: menu.h,
-      cells: slots,
-      selected: this.megaSelected || this.gmaxSelected ? -1 : this.menuIndex,
-      info: this.megaSelected || this.gmaxSelected ? null : this.infoMove,
-      leftReserve: MOVE_BACK_COL,
-      rightReserve: (mega ? MOVE_MEGA_COL : 0) + (gmax ? MOVE_GMAX_COL : 0),
-    });
-
-    this.menuZones.forEach((zone, i) => {
-      const item = i < count ? this.menuItems[i] : undefined;
-      zone.setData('item', item ? i : -1);
-      if (zone.input) zone.input.enabled = Boolean(item);
-      if (!item) return;
-      const rect = this.moveGrid.cellRect(i);
-      if (!rect) return;
-      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h);
-    });
-    // The moves grid marks its selection with the cell's highlight alone and a
-    // dark ▶ cursor; the cursor jumps to whichever forme control is the target.
-    const control = this.megaSelected ? this.megaCell : this.gmaxSelected ? this.gmaxCell : null;
-    if (control) {
-      this.menuCursor
-        .setFlipX(true)
-        .setScale(1)
-        .setPosition(control.x + control.width - 12, control.y + control.height / 2)
-        .setVisible(true);
-      return;
-    }
-    const selectedCell = count > 0 ? this.moveGrid.cellRect(this.menuIndex) : null;
-    if (selectedCell) {
-      this.menuCursor
-        .setFlipX(true)
-        .setScale(1)
-        .setPosition(selectedCell.x + selectedCell.w - 48, selectedCell.y + selectedCell.h / 2)
-        .setVisible(true);
-      return;
-    }
-    this.menuCursor.setVisible(false);
-  }
-
-  /**
-   * Lays out the MEGA control at the right edge of the moves menu, or hides it
-   * when the active Pokémon cannot Mega Evolve (D34). The cell paints as a
-   * selected control while it is the cursor's target and while the evolution is
-   * armed, and the glyph takes the accent then.
-   */
-  private layoutMegaControl(right: number, top: number, bottom: number, show: boolean): void {
-    if (!show) {
-      this.megaCell.setVisible(false);
-      this.megaGlyph.setVisible(false);
-      if (this.megaZone.input) this.megaZone.input.enabled = false;
-      return;
-    }
-    const x = right - MOVE_MEGA_COL;
-    const h = bottom - top;
-    const armed = this.megaSelected || this.megaIntent;
-    this.megaCell
-      .setPosition(x, top)
-      .setSize(MOVE_MEGA_COL, h)
-      .setFillStyle(
-        armed ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-        armed ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-      )
-      .setStrokeStyle(
-        1,
-        armed ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-        armed ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-      )
-      .setVisible(true);
-    if (this.megaIntent) this.megaGlyph.setTint(FRLG_ACCENT);
-    else this.megaGlyph.clearTint();
-    this.megaGlyph.setPosition(x + MOVE_MEGA_COL / 2, top + h / 2).setVisible(true);
-    this.megaZone.setPosition(x, top).setSize(MOVE_MEGA_COL, h);
-    if (this.megaZone.input) this.megaZone.input.enabled = true;
-  }
-
-  /**
-   * Lays out the G-MAX control in the slot immediately inside the Mega one, or
-   * hides it when the active Pokémon's own species has no G-Max forme (D44). It
-   * paints and arms exactly like the Mega control.
-   */
-  private layoutGmaxControl(
-    right: number,
-    top: number,
-    bottom: number,
-    show: boolean,
-    mega: boolean,
-  ): void {
-    if (!show) {
-      this.gmaxCell.setVisible(false);
-      this.gmaxGlyph.setVisible(false);
-      if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
-      return;
-    }
-    const x = right - (mega ? MOVE_MEGA_COL : 0) - MOVE_GMAX_COL;
-    const h = bottom - top;
-    const armed = this.gmaxSelected || this.gmaxIntent;
-    this.gmaxCell
-      .setPosition(x, top)
-      .setSize(MOVE_GMAX_COL, h)
-      .setFillStyle(
-        armed ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-        armed ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-      )
-      .setStrokeStyle(
-        1,
-        armed ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-        armed ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-      )
-      .setVisible(true);
-    if (this.gmaxIntent) this.gmaxGlyph.setTint(FRLG_ACCENT);
-    else this.gmaxGlyph.clearTint();
-    this.gmaxGlyph.setPosition(x + MOVE_GMAX_COL / 2, top + h / 2).setVisible(true);
-    this.gmaxZone.setPosition(x, top).setSize(MOVE_GMAX_COL, h);
-    if (this.gmaxZone.input) this.gmaxZone.input.enabled = true;
-  }
-
-  /** Hides the grid and its popup: cells, badges, PP / power / accuracy, ⓘ and info. */
-  private hideMoveChrome(): void {
-    this.moveGrid.hide();
-    for (const cell of this.commandCells) cell.setVisible(false);
-    this.megaCell.setVisible(false);
-    this.megaGlyph.setVisible(false);
-    if (this.megaZone.input) this.megaZone.input.enabled = false;
-    this.gmaxCell.setVisible(false);
-    this.gmaxGlyph.setVisible(false);
-    if (this.gmaxZone.input) this.gmaxZone.input.enabled = false;
-    this.infoMove = null;
-    this.infoPinned = false;
-  }
-
-  /** The bag: a pocket tab strip over the active pocket's stacks. */
-  private renderBagMenu(menu: Rect): void {
-    if (DOM_HUD) {
-      // The DOM card draws the whole bag, so every canvas piece of it goes dark:
-      // the window, the tabs, the filter, the cells, the item card and the ◀.
-      this.hideMenu();
-      return;
-    }
-    this.menuPanel.setVisible(true);
-    this.hideMoveChrome();
-    this.hidePartyGrid();
-    this.hideInfoControl();
-    const pad = FRLG_WINDOW_PADDING;
-    const tabY = menu.y + pad.top;
-    this.bagTabs.forEach((tab, slot) => {
-      const category = this.bagCategories[slot];
-      if (!category) {
-        tab.bg.setVisible(false);
-        tab.label.setVisible(false);
-        return;
-      }
-      const x = menu.x + pad.x + slot * (MENU_TAB_W + MENU_TAB_GAP);
-      const active = category === this.bagCategory;
-      tab.bg
-        .setPosition(x, tabY)
-        .setSize(MENU_TAB_W, MENU_TAB_H)
-        .setFillStyle(
-          active ? FRLG_SELECTED_FILL.colour : FRLG_ROW_FILL.colour,
-          active ? FRLG_SELECTED_FILL.alpha : FRLG_ROW_FILL.alpha,
-        )
-        .setStrokeStyle(
-          1,
-          active ? FRLG_SELECTED_STROKE.colour : FRLG_ROW_STROKE.colour,
-          active ? FRLG_SELECTED_STROKE.alpha : FRLG_ROW_STROKE.alpha,
-        )
-        .setVisible(true);
-      if (active) {
-        // The active pocket carries a shape, not only a fill inversion (§10.1).
-        this.marks.fillStyle(FRLG_SELECTED_STROKE.colour, 1);
-        this.marks.fillRect(x, tabY + MENU_TAB_H - 2, MENU_TAB_W, 2);
-      }
-      tab.label
-        .setText(bagCategoryLabel(category))
-        .setTint(active ? FRLG_ACCENT : FRLG_INK)
-        .setPosition(x + MENU_TAB_W / 2, tabY + 5)
-        .setVisible(true);
-    });
-    // The rows of the other modes are not this one's: keep their objects dark.
-    for (const row of this.menuRows) row.setVisible(false);
-    for (const zone of this.menuZones) {
-      zone.setData('item', -1);
-      if (zone.input) zone.input.enabled = false;
-    }
-
-    // The filter field under the tabs, the route's own box and height.
-    const filterX = menu.x + pad.x;
-    const filterY = tabY + MENU_TAB_H + 8;
-    const filterW = menu.w - pad.x * 2;
-    this.bagSearchRect = { x: filterX, y: filterY, w: filterW, h: 24 };
-    this.bagSearchBg.setPosition(filterX, filterY).setSize(filterW, 24).setVisible(true);
-    const placeholder =
-      this.bagSearchFocused || this.bagQuery.length > 0 ? this.bagQuery : t('hud.searchItems');
-    this.bagSearchText
-      .setText(`${this.bagSearchFocused ? '>' : ' '} ${placeholder}`)
-      .setTint(this.bagQuery.length === 0 && !this.bagSearchFocused ? FRLG_MUTED : FRLG_INK)
-      .setPosition(filterX + 6, filterY + 4)
-      .setMaxWidth(filterW - 78)
-      .setVisible(true);
-
-    // The grid band: whatever the filter and the selected line leave between them.
-    // The menu rect moves with the stage, so the metrics are recomputed here; the
-    // cells themselves were built once and are only repositioned and repainted.
-    const gridY = filterY + 24 + 8;
-    const grid: Rect = {
-      x: filterX,
-      y: gridY,
-      w: filterW,
-      h: menu.y + menu.h - pad.bottom - MENU_BAG_DETAIL_H - MENU_BAG_DETAIL_GAP - gridY,
-    };
-    this.bagGridBand = grid;
-    this.bagGrid = bagGridLayout(grid, this.bagStacks.length, {
-      rows: MENU_BAG_ROWS,
-      gap: BAG_GRID_GAP,
-      maxCell: MENU_BAG_CELL_MAX,
-    });
-    this.paintBagCells();
-    this.bagEmptyText
-      .setPosition(grid.x + grid.w / 2, grid.y + grid.h / 2 - 8)
-      .setVisible(this.bagStacks.length === 0);
-
-    const selected = this.bagStacks[this.menuIndex];
-    this.bagDetailText
-      .setText(selected ? `${selected.item.name} x${selected.count}` : t('battle.noItems'))
-      .setPosition(menu.x + pad.x, menu.y + menu.h - pad.bottom - MENU_BAG_DETAIL_H)
-      .setVisible(true);
-
-    const text = selected ? `${selected.item.name}\n${selected.item.shortDesc}` : '';
-    this.bagInfoText = text;
-    if (selected) {
-      this.bagInfoPopup.show(
-        { x: menu.x + pad.x, width: BAG_INFO_W, above: grid.y - BAG_INFO_GAP, below: grid.y },
-        { text },
-      );
-    } else {
-      this.bagInfoPopup.hide();
-    }
-
-    // The ◀ back control sits centred on the grid band's left edge, as in the grids.
-    const backX = menu.x + pad.x + 14;
-    const backY = (gridY + menu.y + menu.h - pad.bottom) / 2;
-    this.backArrow.setVisible(true).setPosition(backX, backY);
-    this.backZone.setPosition(backX - 12, backY - 18).setSize(48, 36);
-    if (this.backZone.input) this.backZone.input.enabled = true;
-  }
-
-  /** Paints the ten grid cells from the drawn stacks and the cursor, and squares the zones. */
-  private paintBagCells(): void {
-    const grid = this.bagGrid;
-    if (!grid) return;
-    this.bagCells.forEach((cell, i) => {
-      const rect = grid.cells[i];
-      if (rect === undefined) return;
-      const slot = this.bagStacks[i];
-      cell.bg.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setVisible(true);
-      if (slot === undefined) {
-        cell.bg
-          .setFillStyle(FRLG_ROW_FILL.colour, 0)
-          .setStrokeStyle(1, FRLG_ROW_STROKE.colour, FRLG_ROW_STROKE.alpha * 0.4);
-        cell.icon.setVisible(false);
-        cell.badgeBg.setVisible(false);
-        cell.badge.setText('').setVisible(false);
-        return;
-      }
-      const selected = i === this.menuIndex;
-      const fill = selected ? FRLG_SELECTED_FILL : FRLG_ROW_FILL;
-      const stroke = selected ? FRLG_SELECTED_STROKE : FRLG_ROW_STROKE;
-      cell.bg.setFillStyle(fill.colour, fill.alpha).setStrokeStyle(1, stroke.colour, stroke.alpha);
-      const frame = itemIconFrame(slot.item.id);
-      cell.icon.setVisible(frame !== null).setPosition(rect.x + rect.w / 2, rect.y + rect.h / 2);
-      if (frame !== null) cell.icon.setFrame(frame);
-      const badgeW = cell.badge
-        .setText(`x${slot.count}`)
-        .setPosition(rect.x + rect.w - 4, rect.y + rect.h - 18)
-        .setVisible(true)
-        .getTextBounds().global.width;
-      cell.badgeBg
-        .setSize(badgeW + 6, 16)
-        .setPosition(rect.x + rect.w - 4 - badgeW - 3, rect.y + rect.h - 18)
-        .setFillStyle(FRLG_SURFACE, 0.85)
-        .setVisible(true);
-    });
-    this.bagZones.forEach((zone, i) => {
-      const rect = grid.cells[i];
-      if (rect === undefined) return;
-      zone.setPosition(rect.x, rect.y).setSize(rect.w, rect.h).setVisible(true);
-      if (zone.input) zone.input.enabled = true;
-    });
-  }
-
-  /** True when a press lands on the bag's filter field. */
-  private pointerOnBagSearch(pointer: Phaser.Input.Pointer): boolean {
-    const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y, this.hitPoint);
-    const rect = this.bagSearchRect;
-    return (
-      point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h
-    );
-  }
-
-  /**
-   * Routes a key into the bag's filter field while it holds focus: the route's
-   * own rule, redrawing the pocket instead of a HUD panel.
+   * Swallows every key while the bag's field holds focus: the native input owns
+   * the text, so nothing typed here reaches the battle underneath.
    */
   private typeInBagSearch(event: KeyboardEvent): boolean {
     if (!this.bagSearchFocused) return false;
-    // Under the DOM bag the native field owns the text, so the canvas only swallows
-    // the key: appending here would type every character twice.
-    if (DOM_HUD) return true;
-    if (event.key === 'Escape' || event.key === 'Enter') {
-      this.bagSearchFocused = false;
-    } else if (event.key === 'Backspace') {
-      if (this.bagQuery.length === 0) return true;
-      this.bagQuery = this.bagQuery.slice(0, -1);
-    } else if (event.key.length === 1 && /[a-z0-9 '-]/i.test(event.key)) {
-      this.bagQuery += event.key;
-    } else {
-      return true;
-    }
-    event.preventDefault();
-    this.refreshBagItems();
+    if (event.key === 'Escape' || event.key === 'Enter') this.bagSearchFocused = false;
     return true;
-  }
-
-  /**
-   * Dev only: the bag grid as drawn, in canvas (pointer) coordinates. Null when
-   * no bag is on screen.
-   */
-  bagDebugState(): BagGridDebugState | null {
-    if (!IS_DEVELOP || this.mode !== 'bag' || !this.bagGrid) return null;
-    const camera = this.cameras.main;
-    const shift = (x: number, y: number, w: number, h: number): BagGridRect => ({
-      x: x + camera.x,
-      y: y + camera.y,
-      w,
-      h,
-    });
-    const rectOf = (rect: Phaser.Geom.Rectangle): BagGridRect =>
-      shift(rect.x, rect.y, rect.width, rect.height);
-    const cells = this.bagCells.map((cell, index) => {
-      const slot = this.bagStacks[index];
-      const selected =
-        slot !== undefined &&
-        cell.bg.fillColor === FRLG_SELECTED_FILL.colour &&
-        cell.bg.fillAlpha === FRLG_SELECTED_FILL.alpha;
-      return {
-        index,
-        itemId: slot?.item.id ?? null,
-        count: slot?.count ?? 0,
-        badge: cell.badge.text,
-        iconFrame: cell.icon.visible ? Number(cell.icon.frame.name) : null,
-        selected,
-        fill: cell.bg.fillColor,
-        fillAlpha: cell.bg.fillAlpha,
-        stroke: cell.bg.strokeColor,
-        strokeAlpha: cell.bg.strokeAlpha,
-        rect: rectOf(cell.bg.getBounds()),
-      };
-    });
-    // `InfoPopup` builds its window first, so the layer's first child is the card
-    // the scene handed `show`; reading its bounds measures what is on screen.
-    const card = this.bagInfoLayer.list[0] as Phaser.GameObjects.NineSlice;
-    const cardBounds = card.getBounds();
-    return {
-      category: this.bagCategory,
-      query: this.bagQuery,
-      focused: this.bagSearchFocused,
-      columns: this.bagGrid.columns,
-      rows: this.bagGrid.rows,
-      cellW: this.bagGrid.cellW,
-      cellH: this.bagGrid.cellH,
-      gap: this.bagGrid.gap,
-      search: rectOf(this.bagSearchBg.getBounds()),
-      grid: shift(this.bagGridBand.x, this.bagGridBand.y, this.bagGridBand.w, this.bagGridBand.h),
-      tabs: this.bagCategories.map((category, slot) => ({
-        category,
-        rect: rectOf(this.bagTabs[slot].bg.getBounds()),
-      })),
-      cells,
-      info: {
-        visible: this.bagInfoPopup.visible,
-        text: this.bagInfoText,
-        x: cardBounds.x + camera.x,
-        width: cardBounds.width,
-      },
-      footer: this.bagDetailText.text,
-    };
-  }
-
-  /** Places the ◀ back control in the submenu header, or hides it. */
-  private layoutBackButton(menu: Rect, visible: boolean): void {
-    this.backArrow.setVisible(visible);
-    if (this.backZone.input) this.backZone.input.enabled = visible;
-    if (!visible) return;
-    const x = menu.x + menu.w - FRLG_WINDOW_PADDING.x - 26;
-    const y = menu.y + FRLG_WINDOW_PADDING.top + MENU_TAB_H / 2;
-    this.backArrow.setPosition(x, y);
-    this.backZone.setPosition(x - 12, y - 18).setSize(50, 36);
-  }
-
-  /** Draws a windowed list of rows and lines the click zones up with them. */
-  private layoutMenuRows(
-    menu: Rect,
-    items: readonly MenuItem[],
-    top: number,
-    visibleRows: number,
-    leftInset = 0,
-  ): void {
-    const count = items.length;
-    const windowStart = Math.max(0, Math.min(this.menuIndex - 1, count - visibleRows));
-    this.menuRows.forEach((row, i) => {
-      const item = i < visibleRows ? items[windowStart + i] : undefined;
-      if (!item) {
-        row.setVisible(false);
-        return;
-      }
-      row
-        .setText(item.label)
-        .setTint(FRLG_INK)
-        .setAlpha(item.enabled ? 1 : 0.4)
-        .setFontSize(FRLG_FONT_SIZE)
-        .setMaxWidth(menu.w - 80 - leftInset)
-        .setOrigin(0, 0)
-        .setPosition(menu.x + 58 + leftInset, top + i * ROW_H)
-        .setVisible(true);
-    });
-    this.menuZones.forEach((zone, i) => {
-      const item = i < visibleRows ? items[windowStart + i] : undefined;
-      zone.setData('item', item ? windowStart + i : -1);
-      if (zone.input) zone.input.enabled = Boolean(item);
-      if (item) {
-        zone
-          .setPosition(menu.x + 10 + leftInset, top + i * ROW_H - 4)
-          .setSize(menu.w - 20 - leftInset, ROW_H);
-      }
-    });
-    this.menuCursor
-      .setFlipX(false)
-      .setScale(1)
-      .setPosition(menu.x + 18 + leftInset, top + (this.menuIndex - windowStart) * ROW_H + 16)
-      .setVisible(count > 0);
-  }
-
-  /** Hides every piece of the menu chrome when nothing is open. */
-  private hideMenu(): void {
-    this.menuPanel.setVisible(false);
-    this.menuCursor.setVisible(false);
-    for (const row of this.menuRows) row.setVisible(false);
-    for (const zone of this.menuZones) {
-      zone.setData('item', -1);
-      if (zone.input) zone.input.enabled = false;
-    }
-    this.hideMoveChrome();
-    this.hidePartyGrid();
-    this.hideBagChrome();
-    this.hideInfoControl();
-    this.backArrow.setVisible(false);
-    if (this.backZone.input) this.backZone.input.enabled = false;
-  }
-
-  /** Hides every piece of the bag window: tabs, filter, grid, cells and card. */
-  private hideBagChrome(): void {
-    for (const tab of this.bagTabs) {
-      tab.bg.setVisible(false);
-      tab.label.setVisible(false);
-    }
-    this.bagSearchBg.setVisible(false);
-    this.bagSearchText.setVisible(false);
-    this.bagEmptyText.setVisible(false);
-    this.bagDetailText.setVisible(false);
-    for (const cell of this.bagCells) {
-      cell.bg.setVisible(false);
-      cell.icon.setVisible(false);
-      cell.badgeBg.setVisible(false);
-      cell.badge.setVisible(false);
-    }
-    for (const zone of this.bagZones) {
-      zone.setVisible(false);
-      if (zone.input) zone.input.enabled = false;
-    }
-    this.bagInfoPopup.hide();
-    this.bagInfoText = '';
-    this.bagGrid = null;
-  }
-
-  /** Hovering a row moves the cursor onto it, like the arrow keys. */
-  private onMenuHover(zone: Phaser.GameObjects.Zone): void {
-    const index = zone.getData('item');
-    if (typeof index !== 'number' || index < 0) return;
-    const changed =
-      this.megaSelected || this.gmaxSelected || this.infoSelected || index !== this.menuIndex;
-    this.megaSelected = false;
-    this.gmaxSelected = false;
-    this.infoSelected = false;
-    if (!changed) return;
-    this.menuIndex = index;
-    this.refreshHud();
-  }
-
-  /** Clicking a row selects it; in the moves grid a press on its ⓘ opens the info. */
-  private onMenuClick(zone: Phaser.GameObjects.Zone, localX = -1, localY = -1): void {
-    const index = zone.getData('item');
-    if (typeof index !== 'number' || index < 0) return;
-    if (
-      this.mode === 'moves' &&
-      localX >= 0 &&
-      localY >= 0 &&
-      this.moveInfoAt(zone.x + localX, zone.y + localY) === index
-    ) {
-      this.onInfoClick(index);
-      return;
-    }
-    const item = this.menuItems[index];
-    if (!item?.enabled) return;
-    this.menuIndex = index;
-    this.confirmMenu();
   }
 
   /**
@@ -5174,45 +2809,6 @@ export class BattleScene extends Phaser.Scene {
   /** Drops an unpinned popup when the pointer leaves the canvas. */
   private clearMoveInfo(): void {
     if (this.infoMove !== null) this.onInfoOut(this.infoMove);
-  }
-
-  /** Leaving a moves cell hides an unpinned info popup. */
-  private onMenuPointerOut(zone: Phaser.GameObjects.Zone): void {
-    if (this.mode !== 'moves') return;
-    const index = zone.getData('item');
-    if (typeof index === 'number') this.onInfoOut(index);
-  }
-
-  /** Hovering the MEGA control moves the keyboard cursor onto it. */
-  private onMegaHover(): void {
-    if (this.mode !== 'moves' || this.megaSelected || !this.megaAvailable()) return;
-    this.megaSelected = true;
-    this.gmaxSelected = false;
-    this.refreshHud();
-  }
-
-  /** Clicking the MEGA control arms or disarms it. */
-  private onMegaClick(): void {
-    if (this.mode !== 'moves' || !this.megaAvailable()) return;
-    this.megaSelected = true;
-    this.gmaxSelected = false;
-    this.toggleMega();
-  }
-
-  /** Hovering the G-MAX control moves the keyboard cursor onto it. */
-  private onGmaxHover(): void {
-    if (this.mode !== 'moves' || this.gmaxSelected || !this.gmaxAvailable()) return;
-    this.gmaxSelected = true;
-    this.megaSelected = false;
-    this.refreshHud();
-  }
-
-  /** Clicking the G-MAX control arms or disarms it. */
-  private onGmaxClick(): void {
-    if (this.mode !== 'moves' || !this.gmaxAvailable()) return;
-    this.gmaxSelected = true;
-    this.megaSelected = false;
-    this.toggleGmax();
   }
 
   /** Hovering a move's ⓘ button floats its info popup, unless one is pinned. */
@@ -5272,45 +2868,41 @@ export class BattleScene extends Phaser.Scene {
 }
 
 /**
- * The number of display objects the HP boxes draw right now: 0 under `?hud=dom`,
- * where the four kits are built but never shown. The live flag contract reads it
- * with `(await import('/src/scenes/BattleScene.ts')).battleHpDrawnObjectCount(...)`.
+ * The number of display objects the HP boxes draw in Phaser: none, they are the DOM
+ * card. The gate reads it with
+ * `(await import('/src/scenes/BattleScene.ts')).battleHpDrawnObjectCount(...)`.
  */
 export function battleHpDrawnObjectCount(scene: BattleScene): number {
   return scene.hpDrawnObjectCount();
 }
 
-/**
- * The number of display objects the move menu draws right now: 0 under `?hud=dom`,
- * where the card is the DOM one and the grid, the ◀ and the forme columns are dark.
- */
+/** The display objects the move menu draws in Phaser: none, it is the DOM card. */
 export function battleMovesDrawnObjectCount(scene: BattleScene): number {
   return scene.movesDrawnObjectCount();
 }
 
-/** The display objects the bag draws right now: 0 under `?hud=dom`. */
+/** The display objects the bag draws in Phaser: none, it is the DOM card. */
 export function battleBagDrawnObjectCount(scene: BattleScene): number {
   return scene.bagDrawnObjectCount();
 }
 
-/** The display objects the switch grid draws right now: 0 under `?hud=dom`. */
+/** The display objects the switch grid draws in Phaser: none, it is the DOM card. */
 export function battleSwitchDrawnObjectCount(scene: BattleScene): number {
   return scene.switchDrawnObjectCount();
 }
 
 /**
  * The mode a back press opens from the scene's current mode, without performing
- * it: `'party'` while the player owes a replacement, `'menu'` otherwise. The live
- * flag contract reads it with
- * `(await import('/src/scenes/BattleScene.ts')).battleBackPressMode(...)`.
+ * it: `'party'` while the player owes a replacement, `'menu'` otherwise. The gate
+ * reads it with `(await import('/src/scenes/BattleScene.ts')).battleBackPressMode(...)`.
  */
 export function battleBackPressMode(scene: BattleScene): string {
   return scene.backPressMode();
 }
 
 /**
- * The number of display objects the message box draws right now: 0 under `?hud=dom`,
- * where the box is the `battle-log` card. The live flag contract reads it with
+ * The number of display objects the message box draws in Phaser: none, it is the
+ * `battle-log` card. The gate reads it with
  * `(await import('/src/scenes/BattleScene.ts')).battleLogDrawnObjectCount(...)`.
  */
 export function battleLogDrawnObjectCount(scene: BattleScene): number {

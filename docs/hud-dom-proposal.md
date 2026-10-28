@@ -292,3 +292,40 @@ Three things, and they are the only disagreements between this document and the 
 3. **The board is not the source of the code, the diff is.** `tokens.json` is generated, only the
    frames a screen needs are exported, and identity is a `pixelmatch` gate rather than a visual pass.
    A screen that cannot pass keeps its Phaser version.
+
+### 13.1 The canvas layer retired (`Task-200`)
+
+The DOM HUD is not a flag any more: `mountHud` runs on every boot, `?hud=dom` is a no-op alias and
+`parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a
+**controller**: it mounts its card into `#hud`, feeds the view and forwards intents. The HUD's panels,
+strip, rows, windows and panel text are DOM-only; the level-up/evolution popup and the reset ring
+remain canvas and their DOM parity is a follow-up, not assumed here.
+
+The canvas keeps the game itself — the route's map, tiles, grass, fog, trainers, actors and the
+player's sprite, the battle's fighters, platforms and effects — **plus two transient overlays the
+board has no card for**, which this task carried over untouched rather than invent a DOM twin for
+them:
+
+- **The level-up / evolution popup, in full.** `buildLearnPopup` (`src/scenes/panels/detail.ts:351-382`)
+  runs unconditionally from `buildDom` (`src/scenes/panels/detail.ts:683`), so the canvas receives
+  its full-screen scrim (`:358`), an FRLG nine-slice window (`:359`), its three bitmap texts —
+  title, body and hint — (`:360`, `:364`, `:369`), the whole-screen press zone that dismisses it
+  (`:374`) and the container around them (`:377`).
+- **The hold-to-reset feedback.** The scrim (`src/scenes/panels/pause.ts:120`) and the ring that
+  fills while the key is held (`src/scenes/panels/pause.ts:125`).
+
+The DOM parity of those two, or their retirement, is follow-up under `Task-208`: it is not part of
+this task, and no card in `design/` was drawn for either.
+
+The canvas layer that went was the only carrier of three things, and they left **with** it:
+
+1. **The collapse chip.** A collapsed card's edge chip is the DOM strip (`src/ui/hud/panels/hud/`);
+   the Phaser icon button that stood in the frame's corner is gone.
+2. **The header drag with its clamp.** Panels no longer move: there is no drag, no clamp and no
+   `startPanelDrag` / `applyStoredHudLayout` pair.
+3. **The saved slot.** `src/data/hudLayout.ts` keeps its stored shape (a save is still valid), and
+   the `collapsed` flags it holds still decide which cards a fresh boot opens — only PARTY by
+   default — but nothing writes the drag offset back any more.
+
+The DOM parity of those three (a chip that toggles, a card the player can move, and a layout worth
+saving) is **`Task-208`**, Batch 91: it is cut as its own task and nothing here assumes it shipped.

@@ -133,22 +133,16 @@ describe('stripView', () => {
 
 describe('the live flag contract', () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.resetModules();
   });
 
   // A cold scene import globs 525 packed cues (~7 s), so the default 5 s budget starves the assertions.
-  it('counts the canvas strip with the flag off and 0 under ?hud=dom', async () => {
+  it('counts no canvas strip at all: the chips are the DOM panel’s', async () => {
     vi.resetModules();
-    const flagOff = await import('../../../../scenes/panels/hud');
-    expect(flagOff.HUD_HEADER_OBJECTS).toBe(7);
-    flagOff.noteHudDrawnObjects(9);
-    expect(flagOff.hudDrawnObjectCount()).toBe(9);
-
-    vi.stubGlobal('window', { location: { search: '?hud=dom' } });
-    vi.resetModules();
-    const flagOn = await import('../../../../scenes/panels/hud');
-    flagOn.noteHudDrawnObjects(9);
-    expect(flagOn.hudDrawnObjectCount()).toBe(0);
+    const strip = await import('../../../../scenes/panels/hud');
+    strip.noteHudDrawnObjects(9);
+    expect(strip.hudDrawnObjectCount()).toBe(0);
+    expect(strip.noteHudDrawnObjects(-4)).toBeUndefined();
+    expect(strip.hudDrawnObjectCount()).toBe(0);
   }, 30_000);
 });

@@ -317,23 +317,16 @@ describe('the mirrored board constants', () => {
 
 describe('the live flag contract', () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.resetModules();
   });
 
-  // Two cold dynamic imports of the panel's whole graph: the default 5 s is the
-  // test runner's budget for a transform, not for anything this test asserts.
-  it('reports the canvas count with the flag off and 0 under ?hud=dom', async () => {
+  // A cold dynamic import of the panel's whole graph: the default 5 s is the test
+  // runner's budget for a transform, not for anything this test asserts.
+  it('reports no canvas card at all: the reward is the DOM panel’s', async () => {
     vi.resetModules();
-    const flagOff = await import('../../../../scenes/panels/rewards');
-    flagOff.noteRewardsDrawnObjects(12);
-    expect(flagOff.rewardsDrawnObjectCount()).toBe(12);
-
-    vi.stubGlobal('window', { location: { search: '?hud=dom' } });
-    vi.resetModules();
-    const flagOn = await import('../../../../scenes/panels/rewards');
-    flagOn.noteRewardsDrawnObjects(12);
-    expect(flagOn.rewardsDrawnObjectCount()).toBe(0);
+    const scene = await import('../../../../scenes/panels/rewards');
+    scene.noteRewardsDrawnObjects(12);
+    expect(scene.rewardsDrawnObjectCount()).toBe(0);
   }, 30000);
 
   it('never reports a negative canvas count', async () => {

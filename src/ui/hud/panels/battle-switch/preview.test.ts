@@ -8,6 +8,8 @@ describe('previewRequested', () => {
       '?hudFixture=05d-battle-pokemon&hud=dom',
       '?hud=dom&hudFixture=05d-battle-pokemon&extra=1',
       '?extra=1&hud=DOM&hudFixture=05D-BATTLE-POKEMON',
+      '?hud=game&hudFixture=05d-battle-pokemon',
+      '?hudFixture=05d-battle-pokemon',
     ]) {
       expect(previewRequested(search), search).toBe(true);
     }
@@ -17,13 +19,11 @@ describe('previewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=05d-battle-pokemon',
       '?hud=dom&hudFixture=05-battle-hud',
       '?hud=dom&hudFixture=05c-battle-bag',
       '?hud=dom&hudFixture=m05d-battle-pokemon',
       '?hud=dom&hudFixture=05d battle pokemon',
       '?hud=dom&hudFixture=05d%20battle%20pokemon',
-      '?hud=game&hudFixture=05d-battle-pokemon',
     ]) {
       expect(previewRequested(search), search).toBe(false);
     }

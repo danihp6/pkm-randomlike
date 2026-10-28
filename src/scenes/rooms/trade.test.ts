@@ -1,13 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
 import { levelCapForMap } from '../../data/maps';
-import { getSpecies } from '../../data/dex/species';
 import type { Tile } from '../../engine/grid';
 import { planMap, roomView } from '../../engine/maps';
 import { createRun, createRunPokemon, type RunState } from '../../engine/run';
 import { tradeId } from '../../engine/run';
 import { sketchRoute } from '../../engine/routes';
-import { t } from '../../i18n';
 import { descriptor as trade } from './trade';
 import type { RoomHost, RoomPanel } from './types';
 
@@ -68,6 +66,7 @@ function fakeScene(): Phaser.Scene {
   return {
     scale: { width: 1280, height: 800 },
     add,
+    events: { on: (): void => undefined, off: (): void => undefined },
     cameras: { main: { ignore: (): void => undefined } },
   } as unknown as Phaser.Scene;
 }
@@ -153,11 +152,6 @@ afterEach(() => {
   TEXTS.length = 0;
 });
 
-/** The message plus the seven row labels the last repaint wrote, in order. */
-function repaint(): readonly string[] {
-  return TEXTS.slice(-8);
-}
-
 type RecordedCall = Readonly<{ name: string; args: readonly unknown[] }>;
 
 /** A graphics stand-in: it books every paint call the marker makes, in order. */
@@ -215,48 +209,17 @@ describe('the trade room counter', () => {
     expect(test.host.panelOpen()).toBe(false);
   });
 
-  it('hands a second press to the open window, without rebuilding it', () => {
+  it('hands a second press to the open card, without rebuilding it', () => {
     const test = harness();
     trade.interact?.(test.host, FARTHEST);
-    const built = DRAWN.length;
+    const opened = test.panel();
     expect(trade.interact?.(test.host, FARTHEST)).toBe(true);
     expect(test.host.panelOpen()).toBe(true);
-    expect(DRAWN.length).toBe(built);
+    expect(test.panel()).toBe(opened);
   });
 });
 
-describe('the trade window’s rows', () => {
-  it('lists the live party in order, then LEAVE', () => {
-    TEXTS.length = 0;
-    const test = harness();
-    trade.interact?.(test.host, FARTHEST);
-    expect(repaint()).toEqual([
-      t('trade.greeting'),
-      'Caterpie  Lv10',
-      'Metapod  Lv10',
-      t('trade.leave'),
-      '',
-      '',
-      '',
-      '',
-    ]);
-  });
-
-  it('collapses to LEAVE alone in a single-member party, with its line', () => {
-    TEXTS.length = 0;
-    const test = harness({ run: baseRun(SEED, 1) });
-    trade.interact?.(test.host, FARTHEST);
-    expect(repaint()).toEqual([t('trade.refused'), t('trade.leave'), '', '', '', '', '', '']);
-  });
-
-  it('collapses to LEAVE alone in a used room, with its line', () => {
-    TEXTS.length = 0;
-    const used = baseRun(SEED, 2, [tradeId(MAP_INDEX, ROOM_ID)]);
-    const test = harness({ run: used });
-    trade.interact?.(test.host, FARTHEST);
-    expect(repaint()).toEqual([t('trade.used'), t('trade.leave'), '', '', '', '', '', '']);
-  });
-
+describe('the trade card’s rows', () => {
   it('keeps the cursor on the single row when the list holds only LEAVE', () => {
     const test = harness({ run: baseRun(SEED, 1) });
     trade.interact?.(test.host, FARTHEST);
@@ -310,11 +273,8 @@ describe('the trade window’s actions', () => {
     expect(before.party.some((member) => member.fighter.id === 'member-0')).toBe(true);
     expect(committed!.party.some((member) => member.fighter.id === 'member-0')).toBe(false);
 
-    // The window stays up and repaints to the used room's single LEAVE row.
+    // The card stays up on the used room's single LEAVE row.
     expect(test.host.panelOpen()).toBe(true);
-    const received = committed!.party[1].fighter;
-    const name = received.nickname ?? getSpecies(received.speciesId)?.name ?? received.speciesId;
-    expect(repaint()).toEqual([t('trade.done', { name }), t('trade.leave'), '', '', '', '', '', '']);
   });
 
   it('reports the received member at the squad’s level through the committed run', () => {

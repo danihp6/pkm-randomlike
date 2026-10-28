@@ -1167,6 +1167,34 @@ covered by the diff), no testing-library, no CSS toolchain.
 (2) Options `02` as the spike; (3) the route panels, one per task; (4) the battle boxes, one per
 task; (5) the route HUD chips and the pad decision last.
 
+### D49 addendum — the canvas HUD layer retired (`Task-200`)
+
+**The decision.** The DOM HUD is the HUD: `mountHud` mounts on a clean boot, `?hud=dom` is a no-op
+alias, and `parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a
+controller that mounts its card into `#hud`; no scene and no panel branches on the flag any more. The HUD's panels, strip, rows, windows and panel text are DOM-only; the level-up/evolution
+popup and the reset ring remain canvas and their DOM parity is a follow-up, not assumed here.
+
+**What still draws, and why.** Two transient overlays have no card on the board, so this decision
+neither migrates nor removes them — they stay in the canvas exactly as they were:
+
+- **The level-up / evolution popup, in full** — `buildLearnPopup` in
+  `src/scenes/panels/detail.ts:351-382`, called unconditionally from `buildDom`
+  (`src/scenes/panels/detail.ts:683`), so a clean route boot really does build it: the full-screen
+  scrim (`:358`), the FRLG nine-slice window (`:359`), its three bitmap texts — title, body and the
+  press-any-key hint — (`:360`, `:364`, `:369`), the whole-screen press zone that dismisses it
+  (`:374`) and the container that holds them (`:377`).
+- **The hold-to-reset feedback** — the scrim at `src/scenes/panels/pause.ts:120` and the ring that
+  fills while the key is held at `src/scenes/panels/pause.ts:125`.
+
+Their DOM parity — or their retirement, whichever the board asks for — is follow-up work under
+`Task-208`: it is not part of this task and nothing here assumes it shipped.
+
+**What went with the canvas layer, named and not hidden.** The collapse chip, the panel drag with
+its clamp and the saved slot were carried by that layer alone (`src/data/hudLayout.ts`,
+`src/scenes/panels/hud.ts`). The stored shape stays — `hudLayout`'s `collapsed` flags still decide
+which cards a fresh boot opens — but the drag offset is never written again. Their DOM parity is
+`Task-208` (Batch 91).
+
 ### D49 addendum — the touch pad stays in Phaser
 
 **The decision.** The touch pad stays in Phaser. It is an **input surface, not chrome**: it draws

@@ -43,7 +43,7 @@ describe('parseHudFlags', () => {
       '?HudFixture=02-Options',
       '?hudFixture= 02-options ',
     ]) {
-      expect(parseHudFlags(search), search).toEqual({ dom: false, fixture: '02-options' });
+      expect(parseHudFlags(search), search).toEqual({ dom: true, fixture: '02-options' });
     }
   });
 
@@ -66,14 +66,15 @@ describe('parseHudFlags', () => {
       '?hudFixture=a b',
       '?hudFixture=a/b',
     ]) {
-      expect(parseHudFlags(search), search).toEqual({ dom: false, fixture: null });
+      expect(parseHudFlags(search), search).toEqual({ dom: true, fixture: null });
     }
   });
 
-  it('reads no fixture without the DOM HUD, and vice versa', () => {
+  it('mounts the DOM HUD on a clean boot, with no fixture and with an alias', () => {
+    expect(parseHudFlags('')).toEqual({ dom: true, fixture: null });
     expect(parseHudFlags('?hud=dom')).toEqual({ dom: true, fixture: null });
-    expect(parseHudFlags('?hud=phaser')).toEqual({ dom: false, fixture: null });
-    expect(parseHudFlags('')).toEqual({ dom: false, fixture: null });
+    expect(parseHudFlags('?hud=phaser')).toEqual({ dom: true, fixture: null });
+    expect(parseHudFlags('?hudFixture=02-options')).toEqual({ dom: true, fixture: '02-options' });
   });
 
   it('never throws on any search', () => {

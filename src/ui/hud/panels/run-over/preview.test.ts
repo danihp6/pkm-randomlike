@@ -11,6 +11,9 @@ describe('runOverPreviewRequested', () => {
       '?hudFixture=06-run-over-defeat&hud=dom',
       '?hud=dom&hudFixture=07b-run-over-victory-pokemon&extra=1',
       '?extra=1&hud=DOM&hudFixture=06-RUN-OVER-DEFEAT',
+      '?hudFixture=06-run-over-defeat',
+      '?hud=game&hudFixture=06-run-over-defeat',
+      '?hudFixture=07-run-over-victory',
     ]) {
       expect(runOverPreviewRequested(search), search).toBe(true);
     }
@@ -20,9 +23,6 @@ describe('runOverPreviewRequested', () => {
     for (const search of [
       '',
       '?hud=dom',
-      '?hudFixture=06-run-over-defeat',
-      '?hudFixture=07-run-over-victory',
-      '?hud=game&hudFixture=06-run-over-defeat',
       '?hud=dom&hudFixture=01-main-menu',
       '?hud=dom&hudFixture=m06-run-over-defeat',
       '?hud=dom&hudFixture=m07-run-over-victory',
