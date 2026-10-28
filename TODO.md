@@ -8507,6 +8507,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   | **89** | `205` · `211` · `213` · `214` | the evolution tab · STATS and RANKING as two rows · the stage chips · the move card without its ⓘ. |
   | **90** | `200` | the DOM HUD as the default. It claims **every scene**, so it follows every task that touches one and no filler can ride it. |
   | **91** | `208` | the panels' chip, drag and saved slot, which build on 200's shell, 203's kit and 207's strip — the one task that can only come after all three. |
+  | **92** | `215` · `216` · `217` · `218` | the desk row's label · a phone move's name · a fainted member's tallies · the run-over README's rule 6. Four disjoint sets: `main-menu/**` (§9), `battle-moves/**` (§5), `engine/run/history.ts`, the run-over README. 215 waits on 211 and 216 on 214, the last holders of their paths; 217 and 218 are free today. |
 
   **The serial chains, named so a later cycle does not "fix" them.** `src/scenes/MainMenuScene.ts`:
   `198 → 199 → 201 → 211`, with `200` after them. `src/scenes/BattleScene.ts`: `196 → 206`, then `200`.
@@ -9276,6 +9277,61 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/battle-moves/**` + tests, `src/ui/hud/kit/**` (the card's icons) and
       `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-193]`, `[Task-196]` and `[Task-203]` (same view).
       *(Batch 89)*
+
+- [ ] **[Task-215] The desk CONTINUE row elides its map label before the portraits, not under them.**
+      Issue #75, measured on `[Task-191]`'s merged tree (`?hud=dom`, 1280×800, a four-member save at
+      map 1): the row's `.main-menu__value` is `{x: 1010.98, y: 322, w: 147.02, h: 15}` holding
+      `MAP 1 · DEEP FOREST` and the fourth portrait is `{1012, 314, 26, 26}`, so the label's first
+      glyphs are painted **under** the portrait across 26 × 15 px. The frame's own short label
+      (`MAP 3 · FOREST`, 109.5 px) clears by 10.48 px, which is why the board never showed it —
+      the defect appears the moment a real map name is longer. **Fix shape:** the row reserves the
+      portraits' block and the label takes what is left, **elided** (`MAP 1 · DEEP FO…`) rather
+      than allowed to slide under the last box; the wide layout keeps both, and the compact row is
+      untouched. **Docs:** `docs/hud-fidelity.md` §9 (the desk row's label is bounded by the
+      portraits). **Tests:** `[unit]` the wide view model returns `label.right <= portraits.left`
+      for a long name; `[live]` at 1280 with four members and a long map name no glyph of the
+      label is painted under a portrait. Claims `src/ui/hud/panels/main-menu/**` + tests and
+      `docs/hud-fidelity.md` §9. *Dependencies:* `[Task-211]` (the row's siblings land first).
+      *(Batch 92)*
+
+- [ ] **[Task-216] A phone move cell paints the move's name.** Issue #76, measured on
+      `[Task-192]`'s round-2 tree at 390×844 with FIGHT open: the card is 358×236 at (16, 592) and
+      each `.battle-moves__slot` is **119×94** — a 91-px content box that cannot hold the 60-px
+      category column, its two 8-px gaps and the 22-px ⓘ, so the name column collapses to
+      `clientWidth: 0` with an empty `textContent` in **all four** slots. On a phone the player
+      chooses between four unnamed moves. At 1280 the same grid gives the name 96 px and paints it.
+      **Fix shape:** the compact cell drops what it cannot show — the category column becomes the
+      **type chip alone** (icon, no word) and the accuracy moves to the second row — so the name
+      keeps a real column; the wide layout is untouched. **Docs:** `docs/hud-fidelity.md` §5 (the
+      phone cell's columns). **Tests:** `[unit]` the compact view model returns a name box wider
+      than 40 px in every filled slot; `[live]` at 390×844 all four move names are painted and the
+      card still fits its window. Claims `src/ui/hud/panels/battle-moves/**` + tests and
+      `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-214]` (the same view loses its ⓘ first).
+      *(Batch 92)*
+
+- [ ] **[Task-217] A fainted member's tallies reach the run's record.** Issue #77, measured on
+      `main` @ `b5a06cc`: a run whose only Pokémon dies books the damage it took and then loses the
+      member to `rip` (`releaseFainted`), and `makeHistoryRecord` reads `[...run.party, ...run.box]`
+      only (`history.ts`'s `speciesRecords`), so the record's `species` is `[]`: **a lost run's
+      Pokémon table is always empty** and a won run loses each casualty's KOs and damage. Measured:
+      a fainting wild battle wrote `{casualties: 1, species: []}` where the same battle won wrote
+      `species: [{ speciesId: 'slakoth', kos: 1, damage: 13 }]`. **Fix shape:** `speciesRecords`
+      reads the **rip** beside the party and the box — the dead keep their counters, that is the
+      point of permadeath — and the record's cap and order stay as they are. No save field and no
+      `SAVE_VERSION` step: the record is derived. **Docs:** `docs/design-spec.md` §2 (a lost run's
+      table lists the fallen). **Tests:** `[unit]` a run whose only member died returns that member
+      in `species` with its tallies; `[live]` a lost run's run-over board lists its Pokémon.
+      Claims `src/engine/run/history.ts` + test and `docs/design-spec.md` §2. *Dependencies:* none.
+      *(Batch 92)*
+
+- [ ] **[Task-218] The run-over README stops saying the board has no figures.** Issue #78.
+      `src/ui/hud/panels/run-over/README.md` rule 6 still reads "the live screen has no sortable
+      columns **because it has no figures**", and that second clause died with
+      `[Task-183]`/`[Task-181]`: the board prints `RunStats.faints` and each member's
+      `kos`/`damage`/`damageTaken`. **Fix shape:** keep the two true halves — the frame's filter row
+      is not drawn, sorting is out of scope — and drop the false reason. One line, no code, no
+      test. **Docs:** that README, rule 6. Claims `src/ui/hud/panels/run-over/README.md`.
+      *Dependencies:* none. *(Batch 92)*
 
 ---
 
