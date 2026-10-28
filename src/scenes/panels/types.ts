@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { KeybindAction } from '../../data/keybinds';
-import type { HudPanelId } from '../../data/hudLayout';
+import type { HudLayout, HudPanelId } from '../../data/hudLayout';
 import type { MapPlan } from '../../engine/maps';
 import type { RouteMap, RouteTrainer } from '../../engine/routes/routeMap';
 import type { RunState } from '../../engine/run/state';
@@ -55,6 +55,10 @@ export type RoutePanelHost = Readonly<{
   run(): RunState;
   /** The live settings. */
   settings(): Settings;
+  /** The saved HUD layout: every card's drag offset and collapsed flag (D22). */
+  hudLayout(): HudLayout;
+  /** Replaces the HUD layout and persists it with the settings, then repaints. */
+  setHudLayout(layout: HudLayout): void;
   /** The HUD metrics the cards lay themselves out from (`hudMetrics`). */
   hud(): HudMetrics;
   /** Whether a HUD card is open rather than collapsed to its edge chip. */

@@ -235,7 +235,7 @@ import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
 import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking } from '../net/ranking';
-import { loadSettings } from '../settings';
+import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
@@ -751,6 +751,12 @@ export class RouteScene extends Phaser.Scene {
       scene,
       run: () => scene.run,
       settings: () => scene.settings,
+      hudLayout: () => scene.settings.hudLayout,
+      setHudLayout: (layout) => {
+        scene.settings = { ...scene.settings, hudLayout: layout };
+        saveSettings(scene.settings);
+        scene.refreshHud();
+      },
       hud: () => scene.hud,
       hudCardOpen: (id) => scene.hudOpen.has(id),
       setHudCardOpen: (id, open) => scene.setHudCardOpen(id, open),
@@ -786,14 +792,22 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Opens or collapses a HUD card: the quick keys, a bulk's key chip and the edge
-   * strip all land here, and every card repaints from the new state.
+   * Opens or collapses a HUD card: the quick keys, a bulk's key chip, the edge strip
+   * and a card's own frame chip all land here, and every card repaints from the new
+   * state. The new flag is persisted with the settings, so a reload keeps it; a pause
+   * never reaches this method.
    */
   private setHudCardOpen(id: HudPanelId, open: boolean): void {
     const changed = open ? !this.hudOpen.has(id) : this.hudOpen.has(id);
     if (!changed) return;
     if (open) this.hudOpen.add(id);
     else this.hudOpen.delete(id);
+    const layout = this.settings.hudLayout;
+    this.settings = {
+      ...this.settings,
+      hudLayout: { ...layout, [id]: { ...layout[id], collapsed: !open } },
+    };
+    saveSettings(this.settings);
     this.refreshHud();
   }
 

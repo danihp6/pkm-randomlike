@@ -34,7 +34,7 @@ import {
 import { maxScrollTop, scrollByRows } from '../../ui/scroll';
 import type { LevelUpBeat } from '../../ui/beats';
 import type Phaser from 'phaser';
-import { panelExpanded } from './hud';
+import { panelExpanded, panelFrameMount } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -686,7 +686,12 @@ function buildDom(host: RoutePanelHost): void {
   domView = view;
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (layer !== null) {
-    domDispose = mountDetailPanel(layer, view, (intent) => runDetailIntent(host, intent));
+    domDispose = mountDetailPanel(
+      layer,
+      view,
+      (intent) => runDetailIntent(host, intent),
+      panelFrameMount(host, 'detail'),
+    );
     domOpener = installPartyOpener(host, layer);
   }
   subscribeScene(host);

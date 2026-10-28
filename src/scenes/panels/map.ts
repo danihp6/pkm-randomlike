@@ -5,7 +5,7 @@ import { isFinalMap } from '../../engine/maps';
 import { t } from '../../i18n';
 import { mapPanelView, mountMapPanel, type MapPanelView } from '../../ui/hud/panels/map';
 import { buildMapView, type MapRoomMarker, type MapView } from '../../ui/mapView';
-import { panelExpanded } from './hud';
+import { panelExpanded, panelFrameMount } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
@@ -137,7 +137,8 @@ function buildDom(host: RoutePanelHost): void {
   domView = view;
   domHost = host;
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
-  if (layer !== null) domDispose = mountMapPanel(layer, view, undefined);
+  if (layer !== null)
+    domDispose = mountMapPanel(layer, view, undefined, panelFrameMount(host, 'header'));
   domScene = scene;
   domScene.events.on(SCENE_PAUSE, pauseDomPanel);
   domScene.events.on(SCENE_RESUME, resumeDomPanel);
