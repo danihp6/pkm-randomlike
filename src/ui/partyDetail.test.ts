@@ -438,6 +438,13 @@ describe('the carried detail tab (Task-171)', () => {
     expect(carriedDetailTab(closeDetail(setDetailTab(openDetail('starter'), 'moves')))).toBe('stats');
   });
 
+  it('carries the EVOLUTION tab too, and forgets it when the panel closes', () => {
+    expect(carriedDetailTab(setDetailTab(openDetail('starter'), 'evolution'))).toBe('evolution');
+    expect(carriedDetailTab(closeDetail(setDetailTab(openDetail('starter'), 'evolution')))).toBe(
+      'stats',
+    );
+  });
+
   it('re-opens on another member keeping the tab and dropping the grab', () => {
     expect(
       openDetail('boxed', carriedDetailTab(grabMove(setDetailTab(openDetail('starter'), 'moves'), 1))),
@@ -447,24 +454,41 @@ describe('the carried detail tab (Task-171)', () => {
 
 describe('detail stops', () => {
   it('lists the tabs and wraps between them', () => {
-    expect(DETAIL_TABS).toEqual(['stats', 'moves']);
-    expect(nextDetailTab('stats', 1)).toBe('moves');
+    expect(DETAIL_TABS).toEqual(['stats', 'evolution', 'moves']);
+    expect(nextDetailTab('stats', 1)).toBe('evolution');
+    expect(nextDetailTab('evolution', 1)).toBe('moves');
     expect(nextDetailTab('moves', 1)).toBe('stats');
     expect(nextDetailTab('stats', -1)).toBe('moves');
-    expect(nextDetailTab('moves', 2)).toBe('moves');
+    expect(nextDetailTab('moves', -1)).toBe('evolution');
+    expect(nextDetailTab('evolution', -1)).toBe('stats');
+    expect(nextDetailTab('stats', 2)).toBe('moves');
+    expect(nextDetailTab('moves', 2)).toBe('evolution');
+    expect(nextDetailTab('moves', 3)).toBe('moves');
+    expect(nextDetailTab('evolution', 3)).toBe('evolution');
+    expect(nextDetailTab('stats', 0)).toBe('stats');
   });
 
-  it('reads the STATS stops as name, ability and one per ready branch', () => {
+  it('reads the STATS stops as the name and the ability alone', () => {
     expect(detailStops('stats', { evolutions: 2, slots: 0, pool: 0 })).toEqual([
       { kind: 'name', index: 0 },
       { kind: 'ability', index: 0 },
-      { kind: 'evolution', index: 0 },
-      { kind: 'evolution', index: 1 },
     ]);
     expect(detailStops('stats', { evolutions: 0, slots: 4, pool: 2 })).toEqual([
       { kind: 'name', index: 0 },
       { kind: 'ability', index: 0 },
     ]);
+  });
+
+  it('reads the EVOLUTION stops as one per ready branch, and none for no family', () => {
+    expect(detailStops('evolution', { evolutions: 2, slots: 4, pool: 2 })).toEqual([
+      { kind: 'evolution', index: 0 },
+      { kind: 'evolution', index: 1 },
+    ]);
+    expect(detailStops('evolution', { evolutions: 0, slots: 4, pool: 2 })).toEqual([]);
+    expect(detailStops('stats', { evolutions: 0, slots: 4, pool: 2 })).not.toContainEqual({
+      kind: 'evolution',
+      index: 0,
+    });
   });
 
   it('reads the MOVES stops as search, the slots then the pool', () => {

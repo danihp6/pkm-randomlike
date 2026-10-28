@@ -3,6 +3,7 @@ import type { MemberDetail } from '../../../partyDetail';
 import {
   DETAIL_CONTENT_LEFT,
   DETAIL_CONTENT_TOP,
+  DETAIL_EVO_TITLE_TOP,
   DETAIL_EVO_TOP,
   DETAIL_INFO_ROW,
   DETAIL_INFO_TOP,
@@ -18,6 +19,7 @@ import {
   DETAIL_TABS_TOP,
   detailPanelBox,
   detailPanelView,
+  detailPadX,
   initialDetailPanelUi,
   type DetailMoveSlotView,
   type DetailPanelUi,
@@ -117,7 +119,8 @@ describe('the mirrored constants', () => {
     expect(DETAIL_INFO_TOP).toBe(194);
     expect(DETAIL_SEARCH_TOP).toBe(288);
     expect(DETAIL_POOL_TOP).toBe(320);
-    expect(DETAIL_EVO_TOP).toBe(272);
+    expect(DETAIL_EVO_TITLE_TOP).toBe(108);
+    expect(DETAIL_EVO_TOP).toBe(130);
   });
 });
 
@@ -147,18 +150,62 @@ describe('initialDetailPanelUi', () => {
 });
 
 describe('detailPanelView', () => {
-  it('lays the two tabs out at the shipped pitch', () => {
+  it('lays the three tabs out in board order at the shipped pitch', () => {
     const desktop = detailPanelView(detailOf(), [], uiOf(), DESKTOP);
-    expect(desktop.tabs.map((tab) => tab.tab)).toEqual(['stats', 'moves']);
-    expect(desktop.tabs[0].label).toBe('STATS');
-    expect(desktop.tabs[1].label).toBe('MOVES');
-    expect(absolute(desktop.tabs[0].box, desktop)).toEqual({ x: 128, y: 144, w: 208, h: 26 });
-    expect(absolute(desktop.tabs[1].box, desktop)).toEqual({ x: 340, y: 144, w: 208, h: 26 });
+    expect(desktop.tabs.map((tab) => [tab.tab, tab.label])).toEqual([
+      ['stats', 'STATS'],
+      ['evolution', 'EVOLUTION'],
+      ['moves', 'MOVES'],
+    ]);
+    expect(desktop.tabs.map((tab) => tab.active)).toEqual([true, false, false]);
+    expect(desktop.tabs.map((tab) => absolute(tab.box, desktop))).toEqual([
+      { x: 128, y: 144, w: 137, h: 26 },
+      { x: 269, y: 144, w: 137, h: 26 },
+      { x: 410, y: 144, w: 138, h: 26 },
+    ]);
     expect(desktop.tabs[1].box.x - (desktop.tabs[0].box.x + desktop.tabs[0].box.w)).toBe(4);
+    expect(desktop.tabs[2].box.x - (desktop.tabs[1].box.x + desktop.tabs[1].box.w)).toBe(4);
 
-    const phone = detailPanelView(detailOf(), [], uiOf(), PHONE);
-    expect(absolute(phone.tabs[0].box, phone)).toEqual({ x: 20, y: 144, w: 173, h: 26 });
-    expect(absolute(phone.tabs[1].box, phone)).toEqual({ x: 197, y: 144, w: 173, h: 26 });
+    const phone = detailPanelView(detailOf(), [], uiOf({ tab: 'moves' }), PHONE);
+    expect(phone.tabs.map((tab) => [tab.tab, tab.active])).toEqual([
+      ['stats', false],
+      ['evolution', false],
+      ['moves', true],
+    ]);
+    expect(phone.tabs.map((tab) => absolute(tab.box, phone))).toEqual([
+      { x: 20, y: 144, w: 114, h: 26 },
+      { x: 138, y: 144, w: 114, h: 26 },
+      { x: 256, y: 144, w: 114, h: 26 },
+    ]);
+  });
+
+  it('marks exactly the tab the state names, and clamps an unknown one to STATS', () => {
+    for (const tab of ['stats', 'evolution', 'moves'] as const) {
+      const view = detailPanelView(detailOf(), [], uiOf({ tab }), DESKTOP);
+      expect(view.tabs.filter((entry) => entry.active).map((entry) => entry.tab)).toEqual([tab]);
+    }
+    const unknown = detailPanelView(
+      detailOf(),
+      [],
+      uiOf({ tab: 'held' as unknown as DetailPanelUi['tab'] }),
+      DESKTOP,
+    );
+    expect(unknown.tabs.filter((entry) => entry.active).map((entry) => entry.tab)).toEqual(['stats']);
+  });
+
+  it('ends the tab row on the card s inner right edge at every viewport', () => {
+    for (const viewport of [DESKTOP, PHONE]) {
+      for (const tab of ['stats', 'evolution', 'moves'] as const) {
+        const view = detailPanelView(detailOf(), [], uiOf({ tab }), viewport);
+        const innerRight = view.box.w - detailPadX(viewport.width);
+        view.tabs.forEach((entry) => {
+          expect(entry.box.y).toBe(DETAIL_TABS_TOP);
+          expect(entry.box.h).toBe(DETAIL_TAB_H);
+          expect(entry.box.x + entry.box.w).toBeLessThanOrEqual(innerRight);
+        });
+        expect(view.tabs[2].box.x + view.tabs[2].box.w).toBe(innerRight);
+      }
+    }
   });
 
   it('lays the six stats in two columns of three with the value inset 12 px', () => {
@@ -407,7 +454,7 @@ describe('detailPanelView', () => {
     expect(view.nickname.value).toBe('Sparky');
   });
 
-  it('keeps the evolution graph off the MOVES tab and hands the STATS tab its box', () => {
+  it('keeps the evolution graph off the STATS and MOVES tabs and hands it to EVOLUTION', () => {
     const nodes = [
       {
         id: 'a',
@@ -434,17 +481,33 @@ describe('detailPanelView', () => {
         kind: 'species' as const,
       },
     ];
-    const stats = detailPanelView(detailOf({ evolutions: nodes }), [], uiOf(), DESKTOP);
-    expect(stats.evolution).not.toBeNull();
-    expect(stats.evolution?.title).toBe('EVOLUTION');
-    expect(stats.evolution?.empty).toBe('no evolution');
-    expect(stats.evolution?.rows).toHaveLength(2);
-    expect(stats.evolution?.edges).toHaveLength(1);
-    expect(stats.evolution?.box).toEqual({ x: 20, y: 272, w: 420, h: 56 });
+    const evolution = detailPanelView(
+      detailOf({ evolutions: nodes }),
+      [],
+      uiOf({ tab: 'evolution' }),
+      DESKTOP,
+    );
+    expect(evolution.evolution).not.toBeNull();
+    expect(evolution.evolution?.title).toBe('EVOLUTION');
+    expect(evolution.evolution?.empty).toBe('no evolution');
+    expect(evolution.evolution?.rows).toHaveLength(2);
+    expect(evolution.evolution?.edges).toHaveLength(1);
+    expect(evolution.evolution?.box).toEqual({ x: 20, y: 130, w: 420, h: 56 });
 
-    const moves = detailPanelView(detailOf({ evolutions: nodes }), [], uiOf({ tab: 'moves' }), DESKTOP);
-    expect(moves.evolution).toBeNull();
-    expect(detailPanelView(detailOf(), [], uiOf(), DESKTOP).evolution).toBeNull();
+    const phone = detailPanelView(
+      detailOf({ evolutions: nodes }),
+      [],
+      uiOf({ tab: 'evolution' }),
+      PHONE,
+    );
+    expect(phone.evolution?.box).toEqual({ x: 12, y: 130, w: 350, h: 56 });
+
+    for (const tab of ['stats', 'moves'] as const) {
+      const view = detailPanelView(detailOf({ evolutions: nodes }), [], uiOf({ tab }), DESKTOP);
+      expect(view.evolution).toBeNull();
+    }
+    const familyless = detailPanelView(detailOf(), [], uiOf({ tab: 'evolution' }), DESKTOP);
+    expect(familyless.evolution).toBeNull();
   });
 
   it('shows the ability info only when the member has a description', () => {

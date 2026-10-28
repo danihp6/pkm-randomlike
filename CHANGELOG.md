@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Evolution is its own tab, between STATS and MOVES.** `[Task-205]`, the first of Batch 89: the
+      detail card had two tabs (`'stats' | 'moves'`) and the evolution graph lived as a band inside STATS,
+      so the board's third tab did not exist. `'evolution'` joins `DetailTab` and `DETAIL_TABS`, the tab
+      row recomputes for three boxes (137/137/138 px at 1280×800, 114 px each at 390×844), `nextDetailTab`
+      steps `stats → evolution → moves → stats` in both directions, `detailStops` emits the family's stops
+      only on the evolution tab, and the band leaves STATS. Gates: `npm test` 4992 passed / 69 skipped and
+      `npm run build` green at task QA, 5039 passed on the batch's combined tree. Measured live over CDP on
+      the merged tree at 1280×800 and 390×844: the three boxes sit at `{128,144,137,26}`, `{269,144,137,26}`,
+      `{410,144,138,26}`, one real `ArrowRight` opens EVOLUTION with its six rows and the next opens MOVES,
+      and no visible descendant of the card falls outside `{8,72,374,560}`.
 - [x] **A trainer's remaining Pokémon show as balls under its panel.** `[Task-212]`, the fourth of
       Batch 88: the foe's HP card said how much was left but not how many were left. `foeBallRow` in
       `src/ui/hud/panels/battle-hp/view.ts` turns the battle's own party into a 16 px row (16 px cells,

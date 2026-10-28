@@ -9159,7 +9159,7 @@ without moving either batch.
       *Dependencies:* none — `[Task-199]`'s shared helper lands in the same folder a batch later and
       inherits the rule. *(Batch 86)*
 
-- [ ] **[Task-205] Evolution is its own tab, between STATS and MOVES.** Asked by the human on
+- [x] **[Task-205] Evolution is its own tab, between STATS and MOVES.** Asked by the human on
       `2026-10-27`, looking at the detail panel with `?hud=dom`: the panel's tabs are
       `'stats' | 'moves'` (`src/ui/hud/panels/detail/view.ts` 35) and the evolution graph is a **band
       inside STATS** (`evolution: DetailEvolutionView | null` — "null off the STATS tab"), so the board's

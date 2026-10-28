@@ -1,5 +1,6 @@
 import { h, render } from 'preact';
 import type { Signal } from '@preact/signals';
+import type { DetailTab } from '../../../partyDetail';
 import { DetailPanel } from './detailPanel';
 import type { DetailPanelView } from './view';
 
@@ -11,7 +12,7 @@ import type { DetailPanelView } from './view';
  * writer of the run.
  */
 export type DetailIntent =
-  | Readonly<{ type: 'tab'; tab: 'stats' | 'moves' }>
+  | Readonly<{ type: 'tab'; tab: DetailTab }>
   | Readonly<{ type: 'cursor'; index: number }>
   | Readonly<{ type: 'poolCursor'; index: number }>
   | Readonly<{ type: 'page'; delta: number }>
