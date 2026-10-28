@@ -3,7 +3,13 @@ import { getMove, type MoveCategory } from '../../data/dex';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
 import { barredMovesFor, legalMoveIndices, switchablePartyIndices } from '../../engine/battle/commands';
-import type { BattleFighter, Gender, StatusId } from '../../engine/battle/fighter';
+import {
+  BOOST_IDS,
+  type BattleFighter,
+  type BoostId,
+  type Gender,
+  type StatusId,
+} from '../../engine/battle/fighter';
 import {
   activeFighter,
   liveSlots,
@@ -94,9 +100,18 @@ export type HudBattleFighter = Readonly<{
   canSwitchTo: boolean;
 }>;
 
-/** One live active: the row plus its slot and the moves its menu offers. */
+/** One non-zero stat stage of an active, as the HUD prints it. */
+export type HudStatStage = Readonly<{
+  stat: BoostId;
+  /** The chip's label: `t('battle.stage.<stat>')` — `ATK`, `SPA`, `ACC`, … */
+  label: string;
+  /** −6…+6, never 0 (a zero stage is not carried). */
+  stage: number;
+}>;
+
+/** One live active: the row plus its slot, the moves its menu offers and its stages. */
 export type HudBattleActive = Readonly<
-  HudBattleFighter & { slot: Slot; moves: readonly HudBattleMove[] }
+  HudBattleFighter & { slot: Slot; moves: readonly HudBattleMove[]; stages: readonly HudStatStage[] }
 >;
 
 export type HudBattleSide = Readonly<{
@@ -239,6 +254,20 @@ function hudMoves(battle: BattleState, side: SideId, fighter: BattleFighter): re
   });
 }
 
+/**
+ * The fighter's stat stages as the HUD prints them: only the non-zero ones, in
+ * `BOOST_IDS` order — which is the board's own order — each label resolved once.
+ */
+function hudStages(fighter: BattleFighter): readonly HudStatStage[] {
+  const stages: HudStatStage[] = [];
+  for (const stat of BOOST_IDS) {
+    const stage = fighter.boosts[stat];
+    if (stage === 0) continue;
+    stages.push({ stat, label: t(`battle.stage.${stat}`), stage });
+  }
+  return stages;
+}
+
 function hudBattleFighter(
   fighter: BattleFighter,
   switchable: readonly number[],
@@ -273,6 +302,7 @@ function hudSide(battle: BattleState, side: SideId): HudBattleSide {
         ...hudBattleFighter(fighter, switchable, index),
         slot,
         moves: hudMoves(battle, side, fighter),
+        stages: hudStages(fighter),
       };
     }),
     awaitingReplacement: battleSide.awaitingReplacement,

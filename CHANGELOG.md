@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A stat change is a chip in a grid beside the HP panel.** `[Task-213]`, the third of Batch 89: the
+      board's `05` prints the active's stages as a 3×2 grid beside the player's HP box and the game printed
+      nothing, so a player never saw that their Attack was up or that their Speed fell. `projectHud` now
+      carries the lead's `boosts` in `BOOST_IDS` order, `battleHpStages` returns the chips and their box, and
+      the panel paints one `[data-hud-stage]` per stage — `+2` over `ATK`, green above zero and red below,
+      34×34 px on a 40 px pitch, right-aligned to the player's column 8 px over its top edge — with **no
+      grid at all** when every stage is zero. Seven i18n keys (`battle.stage.*`) and a stage bullet in
+      `docs/battle-spec.md` §3. Gates: `npm test` 4999 passed / 69 skipped and `npm run build` green at both
+      task QA passes, 5039 passed on the combined tree. Measured live over CDP: after a real Swords Dance the
+      chip is `{398,618,34,34}` at 1280×800 and `{340,462,34,34}` at 390×844, `rgb(74, 222, 128)` on
+      `rgba(74, 222, 128, 0.14)`, meeting neither HP box nor the command window; a switch clears it.
 - [x] **STATS and RANKING are two rows of the main menu.** `[Task-211]`, the second of Batch 89, and a
       decision the human took on `2026-10-27` ("dividir en dos botones del menú stats y ranking"): `ranking`
       joins `MAIN_MENU_ROW_IDS`, so the menu's card grows to five rows and the monthly table is one press

@@ -9330,7 +9330,7 @@ without moving either batch.
       block and `docs/battle-spec.md` §7's roster bullet. *Dependencies:* `[Task-193]` (same panel).
       *(Batch 88)*
 
-- [ ] **[Task-213] A stat change is a chip in a grid beside the HP panel.** Seen in battle with
+- [x] **[Task-213] A stat change is a chip in a grid beside the HP panel.** Seen in battle with
       `?hud=dom` on `2026-10-27`: the board's `05` prints the active's stages as a 3×2 grid to the right of
       the player's HP box — `+2 ATK`, `+1 DEF`, `+3 SPA` in green over `-1 SPD`, `-2 SPE`, `-1 ACC` in red
       — and the game prints **nothing**: `src/ui/hud/panels/battle-hp/**` has no boost or stage field (no

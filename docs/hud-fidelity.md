@@ -186,6 +186,19 @@ charges painting 66.67 px of the 100 px track), and that step is the **model's o
 `vialStep(charges, max)` in the panel's view, clamped to `0…min(VIAL_STEPS, max)` — never recomputed by the
 component, so a repaint and the meter cannot drift.
 
+**The stage grid.** The player lead's stat changes are a grid of 34×34 chips, 6 px apart, three to a row,
+green (the frame's `#4ADE80` at 14 % fill / 60 % stroke) for a raise and red (`#F87171`, the same alphas) for
+a drop, and no grid at all while every stage is zero. The board draws its chips at `(448, 673)`, inside the
+576 px gap its own menu leaves between the HP column (ending at 432) and the card (starting at 664); the
+shipped card starts at **440** here, so that origin is inside the moves grid and cannot be used — the grid is
+anchored to the player's HP column instead, right-aligned to that column's own right edge (432 at 1280×800,
+374 at 390×844) and 8 px above its topmost box: one chip is `(398, 618, 34, 34)`, two `(358, 618, 74, 34)`,
+six `(318, 578, 114, 74)` and seven `(318, 538, 114, 114)` (three rows) on the desktop, and one
+`(340, 462, 34, 34)` with six `(260, 422, 114, 74)` on the phone. A double anchors the grid above the
+**partner** box (552 at 1280×800, 416 at 390×844) even though only the lead's chips are drawn, so the grid is
+never painted over its own partner. The chip paints a 13 px sign over a 7 px label, and the sign is what
+carries the direction — `+2`, `-1` — so the colour is never the only carrier (`D45`).
+
 ## 6. Frame → node map
 
 Every Phase 12 task takes its frames from here; the desktop id is the first column, the mobile one the

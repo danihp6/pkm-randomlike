@@ -3,7 +3,12 @@ import { getBiome } from '../../data/biomes';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
 import { barredMovesFor, legalMoveIndices } from '../../engine/battle/commands';
-import { createFighter, snapshotFighter, type BattleFighter } from '../../engine/battle/fighter';
+import {
+  createFighter,
+  snapshotFighter,
+  type BattleFighter,
+  type BoostId,
+} from '../../engine/battle/fighter';
 import { createBattle, type BattleState } from '../../engine/battle/state';
 import { biomeForMap } from '../../engine/maps/plan';
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
@@ -11,7 +16,7 @@ import { missionMet } from '../../engine/run/missions';
 import { experienceFraction } from '../../engine/run/progression';
 import { createRun, squadLevel, type RunState } from '../../engine/run/state';
 import { Rng } from '../../engine/rng';
-import { t } from '../../i18n';
+import { setLocale, t } from '../../i18n';
 import { hpFraction } from '../metrics';
 import { partyRow } from '../partyScreen';
 import { projectHud, syncHud, type HudBattleBagRow, type HudState } from './state';
@@ -72,6 +77,27 @@ function bagRow(state: HudState, itemId: string): HudBattleBagRow {
   const row = state.battle?.bag.find((entry) => entry.itemId === itemId);
   if (!row) throw new Error(`no bag row for ${itemId}`);
   return row;
+}
+
+/** A battle whose stages are set on the fighters, the way a stat change leaves them. */
+function stagedBattle(
+  boosts: Readonly<Partial<Record<BoostId, number>>>,
+  options: Readonly<{ foe?: Readonly<Partial<Record<BoostId, number>>>; double?: boolean }> = {},
+): BattleState {
+  const battle = battleWith({
+    player: options.double
+      ? [fighter('player-1', 'charmander', ['ember']), fighter('player-2', 'squirtle', ['watergun'])]
+      : [fighter('player-1', 'charmander', ['ember'])],
+    enemy: [
+      fighter('enemy-1', 'bulbasaur', ['tackle']),
+      ...(options.double ? [fighter('enemy-2', 'geodude', ['tackle'])] : []),
+    ],
+    isWild: true,
+    ...(options.double ? { double: true } : {}),
+  });
+  Object.assign(battle.sides.player.party[0].boosts, boosts);
+  if (options.foe !== undefined) Object.assign(battle.sides.enemy.party[0].boosts, options.foe);
+  return battle;
 }
 
 describe('projectHud on the route', () => {
@@ -378,5 +404,73 @@ describe('projectHud in battle', () => {
       name: 'no-such-mission',
       met: true,
     });
+  });
+});
+
+describe('projectHud stat stages', () => {
+  it('carries the non-zero stages in BOOST_IDS order, each with its label', () => {
+    const battle = stagedBattle({ atk: 2, spe: -1 });
+    const lead = projectHud({ screen: 'battle', battle, canCapture: true }).battle!.sides.player
+      .actives[0]!;
+
+    expect(lead.stages).toStrictEqual([
+      { stat: 'atk', label: 'ATK', stage: 2 },
+      { stat: 'spe', label: 'SPE', stage: -1 },
+    ]);
+  });
+
+  it('carries no stage at all while every stage is zero', () => {
+    const state = projectHud({ screen: 'battle', battle: singleBattle(), canCapture: true });
+
+    expect(state.battle!.sides.player.actives[0]!.stages).toStrictEqual([]);
+  });
+
+  it('gives every active and both sides their own list', () => {
+    const battle = stagedBattle({ def: -3 }, { foe: { spa: 1, accuracy: -2 }, double: true });
+    Object.assign(battle.sides.player.party[1].boosts, { evasion: 6 });
+    const snapshot = projectHud({ screen: 'battle', battle, canCapture: true }).battle!;
+
+    expect(
+      snapshot.sides.player.actives.map((active) => active.stages.map((row) => row.stat)),
+    ).toStrictEqual([['def'], ['evasion']]);
+    expect(snapshot.sides.player.actives[0]!.stages[0]).toStrictEqual({
+      stat: 'def',
+      label: 'DEF',
+      stage: -3,
+    });
+    expect(snapshot.sides.player.actives[1]!.stages[0]).toStrictEqual({
+      stat: 'evasion',
+      label: 'EVA',
+      stage: 6,
+    });
+    expect(snapshot.sides.enemy.actives[0]!.stages).toStrictEqual([
+      { stat: 'spa', label: 'SPA', stage: 1 },
+      { stat: 'accuracy', label: 'ACC', stage: -2 },
+    ]);
+  });
+
+  it('resolves the chip labels through the locale table', () => {
+    const battle = stagedBattle({ atk: 1, spe: 2 });
+    setLocale('es');
+    try {
+      const lead = projectHud({ screen: 'battle', battle, canCapture: true }).battle!.sides.player
+        .actives[0]!;
+      const labels = lead.stages.map((row) => t(`battle.stage.${row.stat}`));
+
+      expect(labels).toStrictEqual(['ATA', 'VEL']);
+      expect(lead.stages.map((row) => row.label)).toStrictEqual(labels);
+    } finally {
+      setLocale('en');
+    }
+  });
+
+  it('is pure: the same battle and locale deep-equal', () => {
+    const battle = stagedBattle({ atk: 2, spe: -1 });
+    const first = projectHud({ screen: 'battle', battle, canCapture: true });
+    const second = projectHud({ screen: 'battle', battle, canCapture: true });
+
+    expect(second).toStrictEqual(first);
+    expect(second).not.toBe(first);
+    expect(battle.sides.player.party[0].boosts.atk).toBe(2);
   });
 });

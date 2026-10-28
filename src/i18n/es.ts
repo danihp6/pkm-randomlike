@@ -426,6 +426,15 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'battle.info.stat.accuracy': 'PRECISIÓN',
   'battle.info.stat.evasion': 'EVASIÓN',
 
+  // battleStage — the HP panel's stat-stage chips
+  'battle.stage.atk': 'ATA',
+  'battle.stage.def': 'DEF',
+  'battle.stage.spa': 'AT.E',
+  'battle.stage.spd': 'DF.E',
+  'battle.stage.spe': 'VEL',
+  'battle.stage.accuracy': 'PRE',
+  'battle.stage.evasion': 'EVAS',
+
   // battleLog — the action log the engine keys (D43, amended)
   'battle.log.hit': '¡{move} alcanzó a {name}!',
   'battle.log.hitCrit': '¡{move} alcanzó a {name}! ¡Golpe crítico!',
