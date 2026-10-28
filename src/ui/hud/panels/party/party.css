@@ -124,16 +124,6 @@
   white-space: nowrap;
 }
 
-.party__xp-text {
-  position: absolute;
-  top: var(--party-pad-top);
-  right: calc(var(--party-pad-x) + var(--party-xp-inset));
-  color: var(--hud-text-muted);
-  font-size: var(--hud-type-readout-size);
-  line-height: var(--hud-type-readout-line);
-  white-space: nowrap;
-}
-
 .party__xp,
 .party__vial,
 .party__hp {

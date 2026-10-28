@@ -51,12 +51,12 @@ const ROUTE: HudRoute = {
   stats: { catches: 1, casualties: 0 },
 };
 
-function partyView(members: readonly HudPartyRow[]): PartyPanelView {
+function partyView(members: readonly HudPartyRow[], route: HudRoute | null = ROUTE): PartyPanelView {
   const state: HudState = {
     party: members,
     bag: [],
     money: 120,
-    route: ROUTE,
+    route,
     battle: null,
     notice: null,
   };
@@ -263,6 +263,78 @@ describe('the card’s HP fills', () => {
     expect(rule![1]).toContain('left: 0;');
     expect(rule![1]).toContain('top: 0;');
     expect(rule![1]).toContain('height: 100%;');
+  });
+});
+
+describe('the card’s header readouts', () => {
+  // Spelled in two pieces so the repo-wide grep for the retired class stays empty
+  // (`docs/hud-fidelity.md` §5): the guard below is the only place that names it.
+  const XP_TEXT_CLASS = ['party', 'xp-text'].join('__');
+
+  it('paints no XP digits beside the bar', () => {
+    const view = partyView([member('a'), member('b')]);
+    const card = paint({ view, drag: dragCell() });
+    const painted = nodes(card.props.children);
+    const digits = painted.filter(
+      (node) =>
+        typeof node.props.class === 'string' &&
+        (node.props.class as string).split(' ').includes(XP_TEXT_CLASS),
+    );
+    expect(digits).toHaveLength(0);
+    expect(JSON.stringify(card.props.children)).not.toContain(XP_TEXT_CLASS);
+  });
+
+  it('names the XP bar with the model’s label, which is the only carrier of the number', () => {
+    const view = partyView([member('a')]);
+    const card = paint({ view, drag: dragCell() });
+    const bars = nodes(card.props.children).filter((node) => node.props['data-hud-party'] === 'xp');
+    expect(bars).toHaveLength(1);
+    const bar = bars[0]!;
+    expect(bar.props.role).toBe('progressbar');
+    expect(bar.props['aria-valuemin']).toBe(0);
+    expect(bar.props['aria-valuemax']).toBe(100);
+    expect(bar.props['aria-valuenow']).toBe(50);
+    expect(bar.props['aria-label']).toBe(view.xp.label);
+    expect(bar.props['aria-label']).toBe(t('hud.xp', { xp: 480 }));
+    expect(bar.props.style).toStrictEqual({ left: '32px', top: '38px', width: '186px', height: '8px' });
+    expect(JSON.stringify(bar.props.children)).not.toContain('480');
+  });
+
+  it('paints the vial’s fill step from the model, once per charge', () => {
+    for (const charges of [0, 1, 2, 3]) {
+      const view = partyView([member('a')], { ...ROUTE, pokevialCharges: charges });
+      const card = paint({ view, drag: dragCell() });
+      const vials = nodes(card.props.children).filter((node) => node.props['data-hud-party'] === 'vial');
+      expect(vials, String(charges)).toHaveLength(1);
+      const fill = nodes(vials[0]!.props.children).find(
+        (node) => node.props.class === 'party__vial-fill',
+      );
+      expect(fill, String(charges)).toBeDefined();
+      expect(fill!.props['data-step'], String(charges)).toBe(String(view.vial.step));
+      expect(fill!.props['data-step'], String(charges)).toBe(String(charges));
+      expect(fill!.props.style, String(charges)).toStrictEqual({
+        width: `${view.vial.fill * view.vial.box.w}px`,
+      });
+    }
+  });
+
+  it('keeps the level line the header has always printed', () => {
+    const view = partyView([member('a'), member('b')]);
+    const card = paint({ view, drag: dragCell() });
+    const levels = nodes(card.props.children).filter((node) => node.props['data-hud-party'] === 'level');
+    expect(levels).toHaveLength(1);
+    expect(levels[0]!.props.children).toBe(view.level.text);
+    expect(levels[0]!.props.children).toBe('Lv12');
+    expect(levels[0]!.props.style).toStrictEqual({
+      left: '32px',
+      top: '16px',
+      width: '186px',
+      height: '20px',
+    });
+  });
+
+  it('no longer carries the retired XP text rule', () => {
+    expect(readFileSync(PARTY_CSS, 'utf8')).not.toContain(XP_TEXT_CLASS);
   });
 });
 

@@ -149,6 +149,15 @@ band — `x = card.x + 20`, `y = card.y + 1`, `w = card.w − 40`, `h = 22` on b
 above the first cell (the grid starts at the card's 16 px padding plus its 8 px inset) and is one line that
 never meets the four cells at 1280×800 or 390×844; it prints the marked foe's name and nothing else.
 
+**The route header's readouts.** The party card's 82 px header prints three readouts and nothing else: the
+squad's level line at `(32, 16, 186, 20)` (`Lv12` for a level-12 squad), the shared XP **bar alone** at
+`(32, 38, 186, 8)` — no digits painted beside it, so the number lives in the bar's accessible label
+(`D45`/§10.1: a fill is never the only carrier) — and the Pokevial at `(75, 54, 100, 20)`. The vial fills one
+step per charge (three `--party-vial-fill-*` colours, a spent or absent vial painting **no** fill at all, two
+charges painting 66.67 px of the 100 px track), and that step is the **model's own** — `VIAL_STEPS = 3` and
+`vialStep(charges, max)` in the panel's view, clamped to `0…min(VIAL_STEPS, max)` — never recomputed by the
+component, so a repaint and the meter cannot drift.
+
 ## 6. Frame → node map
 
 Every Phase 12 task takes its frames from here; the desktop id is the first column, the mobile one the
