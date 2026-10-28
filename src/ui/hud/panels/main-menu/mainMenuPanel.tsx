@@ -1,6 +1,7 @@
 import type { CSSProperties, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { getBiome } from '../../../../data/biomes';
+import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../../../../data/pokemonOverworld';
 import { COMMON_ATLAS_URL, TILESETS } from '../../../../data/tilesets';
 import {
   previewWalkers,
@@ -9,16 +10,19 @@ import {
   type PreviewWalker,
 } from '../../../../engine/routes/preview';
 import { Panel, Row } from '../../kit';
-import { portraitBackground, portraitCrop, type PortraitCrop } from '../../portrait';
+import { portraitBackground, type PortraitCrop } from '../../portrait';
 import type { MainMenuIntent } from './mount';
 import {
   ROUTE_PREVIEW_STEP_MS,
+  WALK_FRAME_MS,
+  WALK_STEP_MS,
   previewRoomFor,
   previewTileBox,
-  previewWalkerBox,
   tileBackground,
+  walkerPaint,
   type PreviewTileset,
   type TileBackground,
+  type WalkerPaint,
 } from './routeWindow';
 import {
   MAIN_MENU_BOARD,
@@ -130,17 +134,100 @@ function tileStyle(
   };
 }
 
-function walkerStyle(
-  window: Readonly<{ x: number; y: number; w: number; h: number }>,
-  room: PreviewRoom,
-  walker: PreviewWalker,
-): CSSProperties {
-  const box = previewWalkerBox(window, room, walker);
-  const crop = portraitCrop(walker.speciesId);
+function walkerStyle(walker: WalkerPaint): CSSProperties {
   return {
-    ...boxPaint(box),
-    ...(crop === null ? {} : portraitBackground(crop, box.w)),
+    ...boxPaint(walker.box),
+    backgroundImage: walker.backgroundImage,
+    backgroundPosition: walker.backgroundPosition,
+    backgroundSize: walker.backgroundSize,
+    transform: walker.transform,
+    transitionDuration: `${walker.transitionMs}ms`,
   };
+}
+
+/** One repaint of the window: the walkers, who is in flight and where the walk clock stands. */
+type PreviewWalk = Readonly<{
+  walkers: readonly PreviewWalker[];
+  /** The ids whose tile this tick moved; empty once they have landed. */
+  moving: readonly number[];
+  /** The paint clock's reading in ms — elapsed time only, so no draw and no fold moves. */
+  clock: number;
+  /** True on a first paint and on a room change: the boxes are set, never slid into. */
+  instant: boolean;
+}>;
+
+/** A mount or a room change: every walker is born on its own tile. */
+function firstPaint(room: PreviewRoom): PreviewWalk {
+  return { walkers: previewWalkers(room), moving: [], clock: 0, instant: true };
+}
+
+/** The paint clock: elapsed time, never a random draw (`D11`). */
+function nowMs(): number {
+  return typeof performance === 'undefined' ? 0 : performance.now();
+}
+
+/** The `walk` strip's frame the clock stands on, wrapped to that pair's own `count`. */
+function walkFrameStep(sheet: PokemonOverworldSheet | null, clock: number): number {
+  const count = sheet === null ? 0 : sheet.anims.walk.count;
+  if (!(count > 0)) return 0;
+  return Math.floor(clock / WALK_FRAME_MS) % count;
+}
+
+/** The ids the tick moved: those are the walkers it paints in flight for `WALK_STEP_MS`. */
+function movedIds(before: readonly PreviewWalker[], after: readonly PreviewWalker[]): readonly number[] {
+  const ids: number[] = [];
+  for (const walker of after) {
+    const previous = before.find((candidate) => candidate.id === walker.id);
+    if (
+      previous === undefined ||
+      previous.tile.x !== walker.tile.x ||
+      previous.tile.y !== walker.tile.y
+    ) {
+      ids.push(walker.id);
+    }
+  }
+  return ids;
+}
+
+const PAIR_SHEETS = new Map<string, PokemonOverworldSheet | null>();
+const PAIR_READY = new Set<string>();
+const PAIR_FAILURES = new Set<string>();
+const PAIR_PROBES = new Set<string>();
+
+/** A species' committed pair, resolved once per boot; null when the manifest has none. */
+function pairSheet(speciesId: string): PokemonOverworldSheet | null {
+  const cached = PAIR_SHEETS.get(speciesId);
+  if (cached !== undefined) return cached;
+  const sheet = pokemonOverworldSheet(speciesId);
+  PAIR_SHEETS.set(speciesId, sheet);
+  return sheet;
+}
+
+/** The sheet a walker may draw: null for a pair whose image the browser refused. */
+function drawablePair(speciesId: string): PokemonOverworldSheet | null {
+  if (PAIR_FAILURES.has(speciesId)) return null;
+  return pairSheet(speciesId);
+}
+
+/**
+ * Probes a pair PNG once and remembers the answer, so a 404 flips the walker to its
+ * portrait on the next paint instead of leaving an empty box or a thrown error.
+ */
+function probePairImage(speciesId: string, sheet: PokemonOverworldSheet, onFail: () => void): void {
+  if (PAIR_READY.has(speciesId) || PAIR_FAILURES.has(speciesId)) return;
+  if (PAIR_PROBES.has(speciesId)) return;
+  PAIR_PROBES.add(speciesId);
+  const image = new Image();
+  image.onload = () => {
+    PAIR_PROBES.delete(speciesId);
+    PAIR_READY.add(speciesId);
+  };
+  image.onerror = () => {
+    PAIR_PROBES.delete(speciesId);
+    PAIR_FAILURES.add(speciesId);
+    onFail();
+  };
+  image.src = sheet.url;
 }
 
 /** The window's floor: one span per cell of the room, painted from the tileset's frames. */
@@ -175,18 +262,83 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
   const room = previewRoomFor(view.previewSeed, routeWindow);
   const tileset = previewTilesetFor(room.biomeId);
   const tiles = useMemo(() => routeTiles(routeWindow, room, tileset), [routeWindow, room, tileset]);
-  const [walkers, setWalkers] = useState<readonly PreviewWalker[]>(() => previewWalkers(room));
+  const [walk, setWalk] = useState<PreviewWalk>(() => firstPaint(room));
+  const [, setPairEpoch] = useState(0);
   const step = useRef(0);
 
   useEffect(() => {
     step.current = 0;
-    setWalkers(previewWalkers(room));
+    setWalk(firstPaint(room));
     const timer = setInterval(() => {
       step.current += 1;
-      setWalkers((current) => stepPreviewWalkers(room, current, step.current));
+      const tick = step.current;
+      const clock = nowMs();
+      setWalk((current) => {
+        const walkers = stepPreviewWalkers(room, current.walkers, tick);
+        return { walkers, moving: movedIds(current.walkers, walkers), clock, instant: false };
+      });
     }, ROUTE_PREVIEW_STEP_MS);
     return () => clearInterval(timer);
   }, [room]);
+
+  // The walk's paint clock: one repaint per frame boundary while a walker is in
+  // flight, and the stand that ends `WALK_STEP_MS` after the tick. The frame strip
+  // runs on elapsed time at `FOLLOWER_FRAME_RATE`, so a 24 px slide spans a step.
+  useEffect(() => {
+    if (walk.moving.length === 0) return undefined;
+    const rest = window.setTimeout(() => {
+      setWalk((current) => (current.moving.length === 0 ? current : { ...current, moving: [] }));
+    }, WALK_STEP_MS);
+    let frame = 0;
+    const atBoundary = (): void => {
+      const now = nowMs();
+      const next = (Math.floor(now / WALK_FRAME_MS) + 1) * WALK_FRAME_MS;
+      frame = window.setTimeout(
+        () => {
+          setWalk((current) => (current.moving.length === 0 ? current : { ...current, clock: next }));
+          atBoundary();
+        },
+        Math.max(0, next - now),
+      );
+    };
+    atBoundary();
+    return () => {
+      window.clearTimeout(rest);
+      window.clearTimeout(frame);
+    };
+  }, [walk.moving]);
+
+  // A pair the manifest names but the browser cannot fetch (the PNGs are local-only)
+  // keeps its portrait crop: the probe runs once per species and the failure repaints.
+  useEffect(() => {
+    if (typeof Image === 'undefined') return undefined;
+    let live = true;
+    const repaint = (): void => {
+      if (live) setPairEpoch((value) => value + 1);
+    };
+    for (const walker of walk.walkers) {
+      const sheet = drawablePair(walker.speciesId);
+      if (sheet !== null) probePairImage(walker.speciesId, sheet, repaint);
+    }
+    return () => {
+      live = false;
+    };
+  }, [walk.walkers]);
+
+  const walkerPaintOf = (walker: PreviewWalker): WalkerPaint => {
+    const sheet = drawablePair(walker.speciesId);
+    return walkerPaint(
+      routeWindow,
+      room,
+      walker,
+      {
+        moving: walk.moving.includes(walker.id),
+        frameStep: walkFrameStep(sheet, walk.clock),
+        instant: walk.instant,
+      },
+      sheet,
+    );
+  };
 
   const press = (id: MainMenuRowId): void => {
     if (handler === undefined) return;
@@ -222,12 +374,12 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
           <div class="main-menu__tiles" data-hud-main-menu-tiles>
             {tiles}
           </div>
-          {walkers.map((walker) => (
+          {walk.walkers.map((walker) => (
             <span
               key={walker.id}
               class="main-menu__walker"
               data-hud-main-menu-walker={String(walker.id)}
-              style={walkerStyle(routeWindow, room, walker)}
+              style={walkerStyle(walkerPaintOf(walker))}
             />
           ))}
         </div>
