@@ -1195,6 +1195,17 @@ its clamp and the saved slot were carried by that layer alone (`src/data/hudLayo
 which cards a fresh boot opens — but the drag offset is never written again. Their DOM parity is
 `Task-208` (Batch 91).
 
+**Restored, and what stays open (`Task-208`).** The three arrived, in one place and not five:
+`PanelFrame` (`src/ui/hud/panels/hud/panelFrame.tsx`) is the shell every route card mounts in, so a
+chip that collapses its card, a drag whose offset `clampPanelOffset` keeps inside the window, and
+the `hudLayout` write behind both are inherited by a card that mounts inside it — a card with no
+frame still renders unwrapped, so a fixture or a scene with no HUD is untouched. `hudLayout.dx` /
+`dy` are live again: `RouteScene.setHudCardOpen` is the only writer of `collapsed`, the frame never
+derives it from a paused card's `open`, and the strip's chip now rides on the dragged dock. Two
+things stay canvas and stay open, exactly as the paragraph above names them: the
+level-up/evolution popup and the hold-to-reset ring. This task corrects that record rather than
+absorbing them.
+
 ### D49 addendum — the touch pad stays in Phaser
 
 **The decision.** The touch pad stays in Phaser. It is an **input surface, not chrome**: it draws

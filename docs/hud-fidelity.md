@@ -97,6 +97,21 @@ route window in `M 01b` is 358×240 at x=16, and the battle panels keep the desk
 **Chips.** A 26×26 badge at the panel's left edge, `#10161F` at 90 %, white 22 % border, radius 6,
 **the initial only** at 11 px Bold (`M`, `I`, `P`, `C`, `S`), cyan border when active.
 
+**A panel's chip and its compressed state.** Every route card — the map header, PARTY, the bag, the
+PC box and the member detail window — hangs in one shared frame, and its chip is the badge above,
+unchanged: **26 × 26** at the card's own top-left corner, the initial at 11/15 px bold, and the
+panel's name plus its **live quick key** as the accessible label, so a rebind is announced and not
+painted. The chip is two controls in one: a press that does not move **collapses** the card — the
+same toggle its quick key runs — and a press that moves it **drags** the whole card, the chip riding
+along with it because the frame moves the card and its chip together and paints no position of its
+own. The drag is **clamped**: the card's default rect is measured once per gesture and the offset is
+cut so `left` stays `≥ 0` and `right ≤` the window, and a card wider (or taller) than the window
+takes **no** offset on that axis rather than hanging off it. A **collapsed** card paints nothing of
+its own, chip included — the strip's edge chip is its compressed form, and two layers never draw the
+same object twice. The offset (`dx`, `dy`) and the collapsed flag are the panel's own `hudLayout`
+record (`D22`), which is what a reload restores; the board draws no chip for the member detail
+window, so that card keeps its own way back and takes only the saved offset.
+
 **The detail card's three-tab row.** The member detail card carries three tabs, `STATS · EVOLUTION ·
 MOVES`, on one row: three boxes **26 px** tall at `y = 72` in the card's own coordinates, with a
 **4 px** gap between two of them and the card's own lateral padding at both ends — **20 px** on the

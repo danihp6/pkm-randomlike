@@ -230,24 +230,25 @@ carries over.
   the cap) and a floor's **boss** fills the bar to the top; the meter **carries
   over** between floors, and only a fresh run starts it full.
 - The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
-  detail window — **move when grabbed**: by their frame or from any empty spot
-  inside them that is not a control, while a click on a row, tab, cell or button
-  still acts on it. The panels **overlap** freely: a dragged panel is **raised**
-  over the rest, so the one in hand reads on top of the others, and a drag
-  released off-screen lets go instead of following the pointer. A narrow screen
-  clamps every panel to the window width (the detail window also drops its lateral
-  padding), so nothing runs off the side on a phone. Each panel shows
-  its own **icon** at the top-left: clicking it **collapses** the panel to just
-  the icon, and clicking again **expands** it and raises it over the rest. On a
-  keyboard screen the button is a small rectangle that prints, under the icon, the
-  **quick key** that opens that panel (`P` party, `I` bag, `M` map, `O` PC box); a
-  touch screen shows only the icon. The icon is also a **drag handle** — press and
-  move to reposition the panel, and a press released without moving is the
-  collapse/expand click. The detail window opens beside the PC box the first time
-  and can then be moved freely. The positions and collapsed states are a global
-  preference saved with the settings (D22), so they survive a reload and the next
-  run; every panel's window is the same **dark glass card** at its own
-  translucency, so
+  detail window — are one card each in the same frame, and each card shows its own
+  **icon** at its top-left: 26 × 26, the panel's initial. The icon is both the
+  **collapse button** and the **drag handle**. Clicking it **collapses** the panel
+  to just the icon — which is the edge chip the chip strip then draws — and clicking
+  again **expands** it; pressing it and moving repositions the whole card, while a
+  press released without moving is the collapse/expand click, so a click on a row,
+  tab, cell or button still acts on it. The drag is **clamped to the window**: the
+  card stops at the edge instead of following the pointer off it, overlapping the
+  other panels freely where the player leaves it. A narrow screen clamps every
+  panel to the window width (the detail window also drops its lateral padding), so
+  nothing runs off the side on a phone. The **quick key** that opens a panel
+  (`P` party, `I` bag, `M` map, `O` PC box) is the icon's accessible name, beside
+  the panel's own name, so the binding is announced on a keyboard screen and on a
+  touch one alike and a rebind stays discoverable. The detail window opens beside
+  the PC box the first time; the board gives it no icon chip, so it keeps the saved
+  offset and the way back it has, and is not dragged. The positions and collapsed
+  states are a global preference saved with the settings (D22), so they survive a
+  reload and the next run; every panel's window is the same **dark glass card** at
+  its own translucency, so
   the map reads through it, and the **Transparent HUD** option (see the settings
   screen) drops that window altogether — only the panel's content shows over the
   map behind it — keeping a drawn **outline** around each panel (the muted tone)
