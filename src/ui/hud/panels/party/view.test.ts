@@ -22,9 +22,11 @@ import {
   PARTY_XP_H,
   PARTY_XP_INSET,
   PARTY_XP_Y,
+  VIAL_STEPS,
   initialPartyPanelUi,
   partyPanelBox,
   partyPanelView,
+  vialStep,
 } from './view';
 
 const DESKTOP = { width: 1280, height: 800 } as const;
@@ -94,7 +96,8 @@ describe('partyPanelView', () => {
     expect(view.xp.box).toEqual({ x: 32, y: 38, w: 186, h: 8 });
     expect(view.vial.box).toEqual({ x: 75, y: 54, w: 100, h: 20 });
     expect(view.level.text).toBe(t('hud.level', { level: 12 }));
-    expect(view.xp.text).toBe(t('hud.xp', { xp: 480 }));
+    expect(view.xp.label).toBe(t('hud.xp', { xp: 480 }));
+    expect(view.xp).not.toHaveProperty('text');
     expect(view.vial.text).toBe(t('hud.vial'));
   });
 
@@ -117,6 +120,19 @@ describe('partyPanelView', () => {
     expect(view.vial.fill).toBeCloseTo(2 / 3, 6);
     expect(view.vial.fill * view.vial.box.w).toBeCloseTo(66.666, 2);
     expect(row!.hpFraction * row!.hpBar.w).toBeCloseTo(77, 6);
+  });
+
+  it('reads the vial’s step from the model, and the step is the charge count', () => {
+    const stepped = (charges: number): number =>
+      partyPanelView(
+        hudState([member('a')], { ...ROUTE, pokevialCharges: charges }),
+        initialPartyPanelUi(),
+        DESKTOP,
+      ).vial.step;
+    expect(stepped(0)).toBe(0);
+    expect(stepped(2)).toBe(2);
+    expect(stepped(3)).toBe(3);
+    expect(partyPanelView(hudState([member('a')]), initialPartyPanelUi(), DESKTOP).vial.step).toBe(2);
   });
 
   it('sizes the fill to the track, so a full bar is 154 px and a half one 77', () => {
@@ -227,9 +243,10 @@ describe('partyPanelView', () => {
     const view = partyPanelView(hudState([member('a')], null), initialPartyPanelUi(), DESKTOP);
     expect(view.level.text).toBe('');
     expect(view.xp.fraction).toBe(0);
-    expect(view.xp.text).toBe('');
+    expect(view.xp.label).toBe('');
     expect(view.vial.charges).toBe(0);
     expect(view.vial.fill).toBe(0);
+    expect(view.vial.step).toBe(0);
   });
 
   it('is pure: the same input deep-equals, and nothing is mutated', () => {
@@ -239,6 +256,28 @@ describe('partyPanelView', () => {
     const second = partyPanelView(state, { cursor: 1 }, DESKTOP);
     expect(second).toEqual(first);
     expect(JSON.stringify(state)).toBe(before);
+  });
+});
+
+describe('vialStep', () => {
+  it('counts one step per charge, and no step for a spent or absent vial', () => {
+    expect(VIAL_STEPS).toBe(3);
+    expect(vialStep(0, 3)).toBe(0);
+    expect(vialStep(1, 3)).toBe(1);
+    expect(vialStep(2, 3)).toBe(2);
+    expect(vialStep(3, 3)).toBe(3);
+    expect(vialStep(5, 3)).toBe(3);
+    expect(vialStep(-1, 3)).toBe(0);
+    expect(vialStep(2, 0)).toBe(0);
+    expect(vialStep(2, 1)).toBe(1);
+  });
+
+  it('answers 0 for anything unreadable, and truncates a fractional count', () => {
+    expect(vialStep(Number.NaN, 3)).toBe(0);
+    expect(vialStep(2, Number.NaN)).toBe(0);
+    expect(vialStep(Number.POSITIVE_INFINITY, 3)).toBe(0);
+    expect(vialStep(2, Number.POSITIVE_INFINITY)).toBe(0);
+    expect(vialStep(2.9, 3)).toBe(2);
   });
 });
 

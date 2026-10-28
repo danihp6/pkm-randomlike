@@ -9189,7 +9189,7 @@ without moving either batch.
       Claims `src/ui/hud/panels/battle-command/**` (new) + tests, `src/scenes/BattleScene.ts` + test,
       `docs/hud-fidelity.md` §5 and `docs/design-spec.md` §4. *Dependencies:* none. *(Batch 87)*
 
-- [ ] **[Task-207] The route strip draws the Pokevial, and the EXP stops being a string.** Seen with
+- [x] **[Task-207] The route strip draws the Pokevial, and the EXP stops being a string.** Seen with
       `?hud=dom` on `2026-10-27`: the strip carries the level and the XP but **no Pokevial** — a grep of
       `src/ui/hud/panels/hud/{view.ts,strip.tsx}` finds no `vial` and no `charge` at all, so the three
       charges the board draws (§`03`) never render. The same panel prints the EXP as a **numeric string**

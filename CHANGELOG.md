@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route header's EXP stops being a string, and the vial's step is the model's.** `[Task-207]`,
+      the second of Batch 88: the party card's EXP bar painted `480/1728` beside itself while every
+      sibling readout was geometry, and its Pokevial step lived in the component. `PartyPanelView.xp`
+      loses `text` and carries `label` (`t('hud.xp', { xp })`, which is also the bar's `aria-label`),
+      `PartyPanelView.vial` gains `step` computed by `vialStep(charges, max)` and clamped to
+      `VIAL_STEPS`, and the card's `.party__xp-text` span and its stylesheet rule are gone — the bar
+      keeps its fraction, its `role="progressbar"` and its box. Gates: `npm test` 4938 passed / 69
+      skipped and `npm run build` green at task QA, 4982 passed on the batch's combined tree. Measured
+      live over CDP on a real two-member run at level 12 with two of three charges, at 1280×800 and at
+      390×844: `aria-valuenow=2` / `aria-valuemax=3`, the fill reads 66.656 px for `data-step="2"`, the
+      XP bar has `aria-label="XP 1728"` with zero digits painted, and the retired class appears in no
+      node.
+
 - [x] **The main menu's oval shows the board's gradient.** `[Task-201]`, the first of Batch 88:
       the backdrop behind the title was a flat, hard-edged ellipse painted by `main-menu.css`,
       where the board's `01` has a soft radial glow. The gradient is the view's now —

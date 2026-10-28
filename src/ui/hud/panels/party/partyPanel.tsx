@@ -35,8 +35,6 @@ export type PartyCardProps = Readonly<{
   onReorder?: ((from: number, to: number) => void) | undefined;
 }>;
 
-/** The Pokevial's one fill step per charge, the shipped `HUD_VIAL_FILL_COLORS`. */
-const VIAL_STEPS = 3;
 /** The held badge's box, row-relative: the shipped item icon's own cell. */
 const HELD_INSET = 27;
 const HELD_SIZE = 24;
@@ -65,10 +63,6 @@ function innerStyle(rect: Rect, origin: Rect): CSSProperties {
 function portraitImageStyle(portrait: PortraitCrop | null, box: number): CSSProperties | undefined {
   if (portrait === null) return undefined;
   return { ...portraitBackground(portrait, box) };
-}
-
-function vialStep(charges: number): number {
-  return Math.min(VIAL_STEPS, Math.max(1, Math.trunc(charges)));
 }
 
 type PartyRowProps = Readonly<{
@@ -195,7 +189,6 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
         <span class="party__level" data-hud-party="level" style={boxStyle(view.level.box)}>
           {view.level.text}
         </span>
-        <span class="party__xp-text">{view.xp.text}</span>
         <span
           class="party__xp"
           data-hud-party="xp"
@@ -203,7 +196,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.trunc(view.xp.fraction * 100)}
-          aria-label={view.xp.text}
+          aria-label={view.xp.label}
           style={boxStyle(view.xp.box)}
         >
           <span class="party__xp-fill" style={{ width: `${view.xp.fraction * view.xp.box.w}px` }} />
@@ -220,7 +213,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
         >
           <span
             class="party__vial-fill"
-            data-step={view.vial.charges <= 0 ? 0 : vialStep(view.vial.charges)}
+            data-step={String(view.vial.step)}
             style={{ width: `${view.vial.fill * view.vial.box.w}px` }}
           />
           <span class="party__vial-label">{view.vial.text}</span>

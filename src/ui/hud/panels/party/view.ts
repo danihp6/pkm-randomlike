@@ -46,8 +46,17 @@ export type PartyPanelView = Readonly<{
   highlight: Rect;
   chip: Readonly<{ letter: string; box: Rect }>;
   level: Readonly<{ text: string; box: Rect }>;
-  xp: Readonly<{ text: string; fraction: number; box: Rect }>;
-  vial: Readonly<{ text: string; charges: number; max: number; fill: number; box: Rect }>;
+  /** `label` is the accessible string only: the board paints a bar and no digits. */
+  xp: Readonly<{ label: string; fraction: number; box: Rect }>;
+  vial: Readonly<{
+    text: string;
+    charges: number;
+    max: number;
+    fill: number;
+    /** `vialStep(charges, max)` — the model's, never the component's. */
+    step: number;
+    box: Rect;
+  }>;
   rows: readonly PartyRowView[];
 }>;
 
@@ -114,6 +123,20 @@ const HIGHLIGHT_BOX: Rect = {
 };
 
 const CHIP_BOX: Rect = { x: 0, y: 0, w: PARTY_CHIP, h: PARTY_CHIP };
+
+/** The Pokevial's one fill step per charge, the shipped `HUD_VIAL_FILL_COLORS`. */
+export const VIAL_STEPS = 3;
+
+/**
+ * The fill step the meter paints: the charge count clamped to `0…min(VIAL_STEPS, max)`.
+ * `0` means "no fill" (a spent or absent vial), never "one step".
+ */
+export function vialStep(charges: number, max: number): number {
+  if (!Number.isFinite(charges) || !Number.isFinite(max)) return 0;
+  const cap = Math.min(VIAL_STEPS, Math.max(0, Math.trunc(max)));
+  if (cap <= 0) return 0;
+  return Math.min(Math.max(Math.trunc(charges), 0), cap);
+}
 
 function clampFraction(fraction: number): number {
   if (!Number.isFinite(fraction)) return 0;
@@ -206,7 +229,7 @@ export function partyPanelView(state: HudState, ui: PartyPanelUi, viewport: View
     chip: { letter: PARTY_CHIP_LETTER, box: CHIP_BOX },
     level: { text: route === null ? '' : t('hud.level', { level: route.squadLevel }), box: LEVEL_BOX },
     xp: {
-      text: route === null ? '' : t('hud.xp', { xp: route.xp }),
+      label: route === null ? '' : t('hud.xp', { xp: route.xp }),
       fraction: clampFraction(route?.xpFraction ?? 0),
       box: XP_BOX,
     },
@@ -215,6 +238,7 @@ export function partyPanelView(state: HudState, ui: PartyPanelUi, viewport: View
       charges,
       max,
       fill: max > 0 ? clampFraction(charges / max) : 0,
+      step: vialStep(charges, max),
       box: VIAL_BOX,
     },
     rows: members.map((member, index) => rowView(member, index, index === cursor)),
