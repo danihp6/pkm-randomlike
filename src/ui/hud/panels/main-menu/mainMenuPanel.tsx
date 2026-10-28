@@ -28,6 +28,7 @@ import {
   glowBackground,
   type MainMenuRowId,
   type MainMenuView,
+  type Rect,
 } from './view';
 import './main-menu.css';
 
@@ -105,6 +106,15 @@ function backgroundPaint(background: TileBackground): CSSProperties {
 
 function boxPaint(box: Readonly<{ x: number; y: number; w: number; h: number }>): CSSProperties {
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` };
+}
+
+/**
+ * The value's own box, row-relative: the view measures it in page coordinates and the
+ * row's own left is `MAIN_MENU_BOARD.row.x`. The string is already elided to it, so the
+ * bound only stops a font fallback from reaching under the portraits.
+ */
+function valueStyle(box: Rect): CSSProperties {
+  return { left: `${box.x - MAIN_MENU_BOARD.row.x}px`, width: `${box.w}px` };
 }
 
 function tileStyle(
@@ -251,7 +261,11 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
                     </>
                   ) : null}
                   <span class="main-menu__label">{row.label}</span>
-                  {row.value === '' ? null : <span class="main-menu__value">{row.value}</span>}
+                  {row.valueBox === null ? null : (
+                    <span class="main-menu__value" style={valueStyle(row.valueBox)}>
+                      {row.value}
+                    </span>
+                  )}
                   {row.id === 'continue' && view.portraits.length > 0 ? (
                     <span class="main-menu__portraits">{portraits()}</span>
                   ) : null}

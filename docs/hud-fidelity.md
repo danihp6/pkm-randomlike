@@ -345,10 +345,25 @@ x 258..355, everything to the right of the CONTINUE label, so the map/biome valu
 **absent** there — not elided to fewer letters and not moved into a tooltip.
 `forLayout(view, 'compact')` in `src/ui/hud/panels/main-menu/view.ts` is the seam: it drops
 that one row's `value` (`runPositionLabel`, which the STATS and route HUDs still read) and
-returns every other field, row and the portrait list unchanged, and the panel applies it from
-`MAIN_MENU_NARROW_QUERY`, so a resize flips the row without the scene re-mounting it. The
-empty-value rule paints no node at all, which is what keeps the label off the screen. The desk
-frame keeps both fields: `forLayout(view, 'wide')` returns the very same object.
+its `valueBox` and returns every other field, row and the portrait list unchanged, and the
+panel applies it from `MAIN_MENU_NARROW_QUERY`, so a resize flips the row without the scene
+re-mounting it. The empty-value rule paints no node at all, which is what keeps the label off
+the screen. The desk frame keeps both fields: `forLayout(view, 'wide')` returns the very same
+object.
+
+**The desk row's label is bounded by its portraits.** On the desk (`01`, 420 × 54 at
+(744, 300)) the same row reserves its portraits' block at the row's own 6 px right inset —
+the four 26 px cells at a 30 px pitch fill x 1042..1158, and the cell size, pitch and top stay
+the frame's. The block is the row's, so the map/biome label can only own the strip to its
+left: from the CONTINUE label's measured end plus the kit's 8 px gutter to one gutter before
+the block, 124 px with four members and 214 px with one, in `valueBox` and `portraitsBox` on
+the view (`mainMenuPortraitsBox` / `elideValue`). The label is elided with `…` against the
+Silkscreen advance at the value's 12 px, so **no glyph of a map name is ever painted under a
+party cell**: a four-member save on `Map 1 · Deep Forest` paints `MAP 1 · DEEP F…` at
+x 910..1034 — 8 px clear of the block and 4 px clear of the word CONTINUE — where the same
+row used to paint its first glyphs 26 px beneath the fourth portrait. The value keeps its
+`main-menu__value` node, class and right alignment; the box it is handed is the only bound,
+and the 12 px string never needs clipping.
 
 **The party card's rows.** The route card's `party__portrait` cell is **45 px** and uses the same
 `portraitCrop`/`portraitBackground` arithmetic as the 26 px desk and 22 px phone cells, so the sheet

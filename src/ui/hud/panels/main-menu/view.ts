@@ -4,6 +4,7 @@ import { t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
 import { portraitCrop, type PortraitCrop } from '../../portrait';
+import { drawnTextWidth } from '../battle-moves/view';
 import { historyBestFloor, historyWins, recordMonthKey } from '../stats/records';
 import { statsMonthLabel } from '../stats/view';
 
@@ -24,8 +25,10 @@ export type MainMenuRowView = Readonly<{
   id: MainMenuRowId;
   /** The label exactly as printed; the stylesheet uppercases it. */
   label: string;
-  /** The right-aligned value; '' draws no value node at all. */
+  /** The value as painted: already elided to `valueBox.w` when it did not fit. '' = no node. */
   value: string;
+  /** The box the value is painted in; null exactly when `value` is ''. */
+  valueBox: Rect | null;
   /** False draws the row inert (`disabled` + `aria-disabled="true"`); the boards never do. */
   enabled: boolean;
 }>;
@@ -80,6 +83,8 @@ export type MainMenuView = Readonly<{
   rows: readonly MainMenuRowView[];
   /** The CONTINUE row's party portraits, in party order; [] without a run. */
   portraits: readonly MainMenuPortraitView[];
+  /** The CONTINUE row's portraits' block, in the view's own px space; null with no portraits. */
+  portraitsBox: Rect | null;
   /** The footer's figures, left to right; [] draws no footer. */
   stats: readonly MainMenuStatView[];
   /** The id drawn selected (accent bar, `>`, accent fill + border), or null. */
@@ -96,15 +101,18 @@ export type MainMenuLayout = 'wide' | 'compact';
 /**
  * The view as one layout draws it. `'compact'` drops the CONTINUE row's secondary
  * datum — the map/biome label — because the row's 326 px at 390×844 hold the
- * portraits and nothing else; every other field, every other row and the portrait
- * list itself are returned **unchanged**. `'wide'` returns the very same object.
+ * portraits and nothing else, so that row also loses its `valueBox`; every other
+ * field, every other row and the portrait list itself are returned **unchanged**.
+ * `'wide'` returns the very same object.
  */
 export function forLayout(view: MainMenuView, layout: MainMenuLayout): MainMenuView {
   if (layout !== 'compact') return view;
   const at = view.rows.findIndex((row) => row.id === 'continue');
   if (at < 0) return view;
   if (view.rows[at]!.value === '') return view;
-  const rows = view.rows.map((row, index) => (index === at ? { ...row, value: '' } : row));
+  const rows = view.rows.map((row, index) =>
+    index === at ? { ...row, value: '', valueBox: null } : row,
+  );
   return { ...view, rows };
 }
 
@@ -155,6 +163,112 @@ export const MAIN_MENU_NARROW_QUERY = '(max-width: 600px)';
 
 /** A page coordinate box, as the board's frames measure it. */
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+/** The row's own right inset: `.main-menu__portraits`' `right: 6px` and the value's right edge. */
+export const MAIN_MENU_VALUE_INSET = 6;
+/** `.main-menu__value`'s `top: 22px` and the 15 px line it draws. */
+const VALUE_TOP = 22;
+const VALUE_H = 15;
+/** `--main-menu-row-value-size`, which the stylesheet paints and the elision measures. */
+export const MAIN_MENU_VALUE_SIZE = 12;
+/** `.main-menu__label`'s `left: 38px` and `--main-menu-row-label-size`. */
+const LABEL_LEFT = 38;
+const LABEL_SIZE = 20;
+/** The gutter a row keeps between its label and its value: the kit's one 8 px gap. */
+export const MAIN_MENU_ROW_GAP = 8;
+/** The glyph an elided value ends in, so a cut map label always reads as cut. */
+const ELLIPSIS = '\u2026';
+
+/**
+ * The CONTINUE row's reserved block: the party's portrait cells hugging the row's
+ * right inset, one box per member. The row keeps this strip for itself, so the map
+ * label can only ever be painted to its left. Null with no portraits.
+ */
+export function mainMenuPortraitsBox(count: number): Rect | null {
+  if (!(count > 0)) return null;
+  const { size, y, pitch } = MAIN_MENU_BOARD.portrait;
+  const width = count * size + (count - 1) * (pitch - size);
+  const right = MAIN_MENU_BOARD.row.x + MAIN_MENU_BOARD.row.w - MAIN_MENU_VALUE_INSET;
+  return { x: right - width, y, w: width, h: size };
+}
+
+/** The px a row's label paints at its 20 px, measured against the Silkscreen advance. */
+function labelWidth(label: string): number {
+  return drawnTextWidth(label.toUpperCase(), LABEL_SIZE);
+}
+
+/**
+ * `text` reduced to the widest prefix that fits `width` at the value's 12 px, ending
+ * in `'\u2026'` when a glyph had to go; `text` itself when it already fits, `''` when
+ * nothing fits. Callers pass the painted (uppercase) form, since the stylesheet
+ * uppercases it; a cut never leaves the space it stopped on before the ellipsis.
+ */
+export function elideValue(text: string, width: number): string {
+  if (!(width > 0)) return '';
+  const measure = (part: string): number => drawnTextWidth(part, MAIN_MENU_VALUE_SIZE);
+  if (measure(text) <= width) return text;
+  const budget = width - measure(ELLIPSIS);
+  if (budget < 0) return '';
+  let used = 0;
+  let head = '';
+  for (const char of text) {
+    const advance = measure(char);
+    if (used + advance > budget) break;
+    used += advance;
+    head += char;
+  }
+  const kept = head.trimEnd();
+  return kept.length === 0 ? '' : `${kept}${ELLIPSIS}`;
+}
+
+/**
+ * The box a row's value is painted in: it starts one gutter past the row's own label
+ * and ends one gutter before the row's reserved portraits' block — or on the row's
+ * right inset when the row reserves none. The desk's 20 px CONTINUE label fills its
+ * column, so the strip between it and the block is the only width the map label can
+ * own; a longer name is elided there instead of sliding under the party's cells. Null
+ * when the row prints no value.
+ */
+function valueBoxOf(
+  label: string,
+  index: number,
+  printed: string,
+  portraits: Rect | null,
+): Rect | null {
+  if (printed === '') return null;
+  const right = MAIN_MENU_BOARD.row.x + MAIN_MENU_BOARD.row.w - MAIN_MENU_VALUE_INSET;
+  const x = MAIN_MENU_BOARD.row.x + LABEL_LEFT + labelWidth(label) + MAIN_MENU_ROW_GAP;
+  const end = portraits === null ? right : portraits.x - MAIN_MENU_ROW_GAP;
+  const width = Math.max(0, Math.min(right, end) - x);
+  const y = MAIN_MENU_BOARD.row.top + index * MAIN_MENU_BOARD.row.pitch + VALUE_TOP;
+  return { x, y, w: width, h: VALUE_H };
+}
+
+/** A parsed row, before its value's box and elision are worked out. */
+type MainMenuRowDraft = Readonly<{
+  id: MainMenuRowId;
+  label: string;
+  value: string;
+  enabled: boolean;
+}>;
+
+/** One row with the value cut to the box it is painted in; '' and a null box with no value. */
+function rowView(draft: MainMenuRowDraft, index: number, portraitsBox: Rect | null): MainMenuRowView {
+  const box = valueBoxOf(
+    draft.label,
+    index,
+    draft.value,
+    draft.id === 'continue' ? portraitsBox : null,
+  );
+  const value = box === null ? '' : elideValue(draft.value.toUpperCase(), box.w);
+  return {
+    id: draft.id,
+    label: draft.label,
+    value,
+    valueBox: value === '' ? null : box,
+    enabled: draft.enabled,
+  };
+}
 
 /** One stop of the oval's radial gradient; `at` is 0…1 of the gradient's radius. */
 export type MainMenuGlowStop = Readonly<{ at: number; color: string }>;
@@ -258,19 +372,30 @@ export function liveMainMenuView(
   records: MainMenuRecords = EMPTY_MAIN_MENU_RECORDS,
   version: string | null = null,
 ): MainMenuView {
-  const rows: MainMenuRowView[] = [];
+  const portraits =
+    run === null
+      ? []
+      : partyRows(run).map((row) => ({
+          memberId: row.id,
+          name: row.name,
+          portrait: portraitCrop(row.speciesId, row.shiny),
+        }));
+  const portraitsBox = mainMenuPortraitsBox(portraits.length);
+
+  const drafts: MainMenuRowDraft[] = [];
   if (run !== null) {
-    rows.push({
+    drafts.push({
       id: 'continue',
       label: t('menu.continue'),
       value: runPositionLabel(run),
       enabled: true,
     });
   }
-  rows.push({ id: 'new', label: t('menu.new'), value: '', enabled: true });
-  rows.push({ id: 'options', label: t('menu.options'), value: '', enabled: true });
-  rows.push({ id: 'stats', label: t('menu.stats'), value: '', enabled: true });
-  rows.push({ id: 'ranking', label: t('stats.actionRanking'), value: '', enabled: true });
+  drafts.push({ id: 'new', label: t('menu.new'), value: '', enabled: true });
+  drafts.push({ id: 'options', label: t('menu.options'), value: '', enabled: true });
+  drafts.push({ id: 'stats', label: t('menu.stats'), value: '', enabled: true });
+  drafts.push({ id: 'ranking', label: t('stats.actionRanking'), value: '', enabled: true });
+  const rows = drafts.map((draft, at) => rowView(draft, at, portraitsBox));
 
   const last = rows.length - 1;
   const at = Math.min(Math.max(0, Math.trunc(index)), last);
@@ -280,14 +405,8 @@ export function liveMainMenuView(
     title: t('menu.title'),
     version,
     rows,
-    portraits:
-      run === null
-        ? []
-        : partyRows(run).map((row) => ({
-            memberId: row.id,
-            name: row.name,
-            portrait: portraitCrop(row.speciesId, row.shiny),
-          })),
+    portraits,
+    portraitsBox,
     stats: mainMenuStats(records),
     selected,
     previewSeed,
@@ -311,7 +430,7 @@ function isRowId(value: unknown): value is MainMenuRowId {
   return typeof value === 'string' && (MAIN_MENU_ROW_IDS as readonly string[]).includes(value);
 }
 
-function fixtureRow(value: unknown): MainMenuRowView | null {
+function fixtureRow(value: unknown): MainMenuRowDraft | null {
   if (!isPlainObject(value)) return null;
   const { id, label, value: printed, enabled } = value;
   if (!isRowId(id) || !isNonEmpty(label) || typeof printed !== 'string') return null;
@@ -320,11 +439,11 @@ function fixtureRow(value: unknown): MainMenuRowView | null {
 }
 
 /** The rows, in `MAIN_MENU_ROW_IDS` order, one id each; anything else is null. */
-function fixtureRows(value: unknown): readonly MainMenuRowView[] | null {
+function fixtureRows(value: unknown): readonly MainMenuRowDraft[] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > MAIN_MENU_ROW_IDS.length) {
     return null;
   }
-  const rows: MainMenuRowView[] = [];
+  const rows: MainMenuRowDraft[] = [];
   let previous = -1;
   for (const entry of value) {
     const row = fixtureRow(entry);
@@ -399,11 +518,15 @@ export function fixtureMainMenuView(payload: unknown): MainMenuView | null {
     selection = selected;
   }
 
+  const portraits = fixturePortraits(payload.state);
+  const portraitsBox = mainMenuPortraitsBox(portraits.length);
+
   return {
     title,
     version,
-    rows,
-    portraits: fixturePortraits(payload.state),
+    rows: rows.map((row, at) => rowView(row, at, portraitsBox)),
+    portraits,
+    portraitsBox,
     stats,
     selected: selection,
     previewSeed: isNonEmpty(previewSeed) ? previewSeed : MAIN_MENU_SLUG,
