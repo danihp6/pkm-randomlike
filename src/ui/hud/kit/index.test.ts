@@ -6,6 +6,8 @@ import type {
   ChipProps,
   KitTone,
   MetaProps,
+  MoveCategoryIconProps,
+  MoveTypeBadgeProps,
   PanelProps,
   PrimaryButtonProps,
   RowProps,
@@ -17,6 +19,9 @@ const CONTRACT = [
   'Bar',
   'Chip',
   'Meta',
+  'MoveCategoryIcon',
+  'MoveTypeBadge',
+  'MOVE_ICON_BOX',
   'Panel',
   'PrimaryButton',
   'Row',
@@ -26,8 +31,11 @@ const CONTRACT = [
   'chipClass',
   'fillPercent',
   'joinClasses',
+  'moveCategorySprite',
+  'moveTypeSprite',
   'panelClass',
   'rowClass',
+  'spriteBox',
   'typeBadgeClass',
   'typeBadgeTone',
 ] as const;
@@ -37,10 +45,12 @@ describe('the kit barrel', () => {
     expect(Object.keys(kit).sort()).toEqual([...CONTRACT].sort());
   });
 
-  it('exports only functions at runtime', () => {
+  it('exports the move icons as functions and their box as the board s 24', () => {
     for (const name of CONTRACT) {
+      if (name === 'MOVE_ICON_BOX') continue;
       expect(typeof kit[name], name).toBe('function');
     }
+    expect(kit.MOVE_ICON_BOX).toBe(24);
   });
 
   it('accepts the contract prop types', () => {
@@ -54,6 +64,8 @@ describe('the kit barrel', () => {
     const button: PrimaryButtonProps = { children: 'Go', onPress: () => undefined, disabled: false };
     const meta: MetaProps = { children: '9/9', tone: 'warning' };
     const badge: TypeBadgeProps = { type: 'fire', label: 'Fire' };
+    const typeIcon: MoveTypeBadgeProps = { type: 'fire' };
+    const categoryIcon: MoveCategoryIconProps = { category: 'Physical' };
 
     expect(kit.Panel(panel).type).toBe('section');
     expect(kit.Row(row).type).toBe('button');
@@ -63,6 +75,17 @@ describe('the kit barrel', () => {
     expect(kit.PrimaryButton(button).type).toBe('button');
     expect(kit.Meta(meta).type).toBe('span');
     expect(kit.TypeBadge(badge).type).toBe('span');
+    expect(kit.MoveTypeBadge(typeIcon).type).toBe('span');
+    expect(kit.MoveCategoryIcon(categoryIcon).type).toBe('span');
     expect(tone).toBe('accent');
+  });
+
+  it('paints the type badge as the atlas glyph and never as a word', () => {
+    const icon = kit.MoveTypeBadge({ type: 'fire' });
+    expect(icon.props.class).toBe('kit-move-type');
+    expect(icon.props.children).toBeUndefined();
+    const word = kit.MoveTypeBadge({ type: 'nonsense' });
+    expect(word.props.class).toBe('kit-type');
+    expect(word.props.children).toBe('nonsense');
   });
 });

@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A move prints its type and its category as icons, never as words.** `[Task-203]`, the
+      second of Batch 87: no move surface outside the canvas prints `dragon` / `PHYSICAL` any
+      more. `src/ui/hud/kit/moveIcons.tsx` is the pair the panels share — `moveTypeSprite` /
+      `moveCategorySprite` over the two packed atlases (19 type frames on a 4-column grid, 3
+      category frames on one row, 32×14 each), `spriteBox` containing a frame in the board's
+      24 px box (96×52.5 at `-48 / -14.25` for a type, 72×10.5 for a category) and
+      `clipPath: inset(6.75px 0px)` so a frame never paints its neighbours' rows — plus
+      `MoveTypeBadge` / `MoveCategoryIcon` and the text `TypeBadge` kept as the fallback for a
+      type the atlas does not name. The battle's four cells and the description card's head
+      draw the glyphs, the detail panel's four move cells draw them at the boxes its own view
+      measures and its learnset pool row swaps the word chip for the icon, and
+      `CATEGORY_LABELS` / `CATEGORY_W` are gone. `docs/hud-fidelity.md` §5's two blocks and §6
+      record the geometry. Gates: `npm test` 4895 passed / 69 skipped at task QA,
+      `npm run build` green. Measured live over CDP at 1280×800 and 390×844: one type frame and
+      one category frame per filled cell in the battle and in the detail panel, 264 painted px
+      per icon (a non-first frame is not blank), the top and bottom 6 px bands byte-identical
+      with and without the image, and no painted category word.
+
 - [x] **The main menu prints its three records and its version.** `[Task-199]`, the first of
       Batch 87: the footer drew an empty list and no version line because `liveMainMenuView`
       returned `version: null` / `stats: []` written by hand, while the data existed in

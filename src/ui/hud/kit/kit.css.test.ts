@@ -14,6 +14,8 @@ const SIZED = [
   '.kit-sheet__close',
   '.kit-button',
   '.kit-type',
+  '.kit-move-type',
+  '.kit-move-category',
 ] as const;
 
 const COLOUR_PROPERTIES = new Set([
@@ -183,6 +185,12 @@ describe('kit.css keeps the measured geometry', () => {
     expect(highlight).toContain('top: 12px;');
     expect(highlight).toContain('height: 1px;');
     expect(highlight).toContain('background: var(--hud-row-border);');
+  });
+
+  it('makes each move icon a block box, so the inline width it carries is its own', () => {
+    for (const selector of ['.kit-move-type', '.kit-move-category']) {
+      expect(body(selector), selector).toContain('display: block;');
+    }
   });
 
   it('keeps one block per primitive in the components order', () => {

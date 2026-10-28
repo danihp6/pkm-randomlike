@@ -142,8 +142,8 @@ describe('drawnTextWidth', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
     expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
     expect(slot.nameBox.y).toBe(slot.categoryBox.y);
-    expect(slot.nameBox.w).toBe(96);
-    // The type's own label (36–60 px, one per type) never enters the name's column.
+    expect(slot.nameBox.w).toBe(132);
+    // The badge's 24 px square never enters the name's column, for any type.
     const shortType = battleMovesView(
       inputOf({
         card: battleMovesBox(DESKTOP),
@@ -445,7 +445,7 @@ describe('battleMovesView slots', () => {
   });
 });
 
-describe('the category column', () => {
+describe('the category glyph s box', () => {
   it('ends a gap left of the ⓘ and stays inside its cell at both shipped cards', () => {
     for (const viewport of [DESKTOP, PHONE]) {
       const view = battleMovesView(inputOf({ card: battleMovesBox(viewport) }));
@@ -461,30 +461,45 @@ describe('the category column', () => {
     }
   });
 
-  it('is the widest label s own width, right-aligned against the gap', () => {
+  it('is the board s 24 px square on the wide cell, ending its gap left of the ⓘ', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
-    expect(slot.categoryBox.w).toBe(60);
+    expect(slot.categoryBox.w).toBe(24);
+    expect(slot.categoryBox.h).toBe(24);
+    expect(slot.categoryBox.x + 24).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
     expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
-    expect(slot.categoryBox.h).toBe(13);
   });
 
-  it('gives an empty slot a zero-width column at the cell s right pad, and no ⓘ', () => {
+  it('is one 13 px line on the compact cell, at the same right edge', () => {
+    const slot = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).slots[0]!;
+    expect(slot.categoryBox).toStrictEqual({ x: 151, y: 637, w: 24, h: 13 });
+    expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
+  });
+
+  it('gives an empty slot a zero-width mark at the cell s right pad, and no ⓘ', () => {
     const cells = padMoveGridCells([moveCell('TACKLE')], 4);
     const empty = battleMovesView(inputOf({ cells })).slots[1]!;
     expect(empty.info).toBeNull();
     expect(empty.categoryBox.w).toBe(0);
     expect(empty.categoryBox.x).toBe(empty.box.x + empty.box.w - 14);
+    expect(empty.typeBox.w).toBe(0);
   });
 });
 
 /** The four invariants of a filled cell, measured on the strings the model paints. */
-function expectCellFits(slot: BattleMoveSlotView): void {
+function expectCellFits(slot: BattleMoveSlotView, compact = false): void {
   expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(slot.nameBox.w + 0.01);
-  expect(drawnTextWidth(slot.category)).toBeLessThanOrEqual(slot.categoryBox.w + 0.01);
-  // The slot paints the category uppercased, so the column must hold that string too.
-  expect(drawnTextWidth(slot.category.toUpperCase())).toBeLessThanOrEqual(slot.categoryBox.w + 0.01);
   expect(slot.nameBox.x).toBeGreaterThanOrEqual(slot.box.x + CELL_PAD_X);
   expect(slot.categoryBox.x + slot.categoryBox.w).toBeLessThanOrEqual(slot.info!.x);
+  // The two atlas squares: inside the cell, the same 24 px wide for every move, and
+  // clear of each other — the wide cell stacks them in the gutter, the compact one
+  // rows them across two lines.
+  for (const box of [slot.typeBox, slot.categoryBox]) {
+    expect(fitsInside(box, slot.box)).toBe(true);
+    expect(box.w).toBe(24);
+  }
+  expect(slot.categoryBox.h).toBe(compact ? 13 : 24);
+  expect(slot.typeBox.h).toBe(24);
+  expect(overlapArea(slot.typeBox, slot.categoryBox)).toBe(0);
 }
 
 const LONG_GRID: readonly MoveGridSlot[] = padMoveGridCells(
@@ -498,30 +513,36 @@ const LONG_GRID: readonly MoveGridSlot[] = padMoveGridCells(
 );
 
 describe('a move cell s own text', () => {
-  it('takes the cell s remaining width, and keeps all but the long name whole at 1280×800', () => {
+  it('takes the cell s remaining width, and keeps every shipped name whole at 1280×800', () => {
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
     expect(view.slots).toHaveLength(4);
-    // 222 px cell: 2×14 padding, the 60 px category column, its two 8 px gaps and the 22 px ⓘ.
-    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 60 - 16 - 22);
+    // 222 px cell: 2×14 padding, the 24 px category glyph, its two 8 px gaps and the 22 px ⓘ.
+    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 24 - 16 - 22);
     for (const slot of view.slots) {
       expect(slot.empty).toBe(false);
-      expect(slot.nameBox.w).toBeGreaterThanOrEqual(54);
+      expect(slot.nameBox.w).toBe(132);
       expectCellFits(slot);
     }
     expect(view.slots.map((slot) => slot.name)).toStrictEqual([
-      'MOFLETE ESTÁ\u2026',
+      'MOFLETE ESTÁTICO',
       'LANZALLAMAS',
       'TERREMOTO',
       'PSÍQUICO',
     ]);
-    // The one cut name loses only its last two glyphs to the ellipsis.
-    const head = view.slots[0]!.name.slice(0, -1);
-    expect(head.length).toBeGreaterThanOrEqual(9);
-    expect('MOFLETE ESTÁTICO'.startsWith(head)).toBe(true);
     const pinned = battleMovesView(
       inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID, info: 0 }),
     );
     expect(pinned.info!.title).toBe('MOFLETE ESTÁTICO');
+  });
+
+  it('cuts a name longer than its own line, and only that one', () => {
+    const cells = padMoveGridCells([moveCell('MOFLETE ESTÁTICO PLUS')], 4);
+    const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells })).slots[0]!;
+    expect(drawnTextWidth('MOFLETE ESTÁTICO PLUS')).toBeGreaterThan(132);
+    expect(slot.name.endsWith('\u2026')).toBe(true);
+    expect(slot.name.length).toBeGreaterThan(9);
+    expect('MOFLETE ESTÁTICO PLUS'.startsWith(slot.name.slice(0, -1))).toBe(true);
+    expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(132 + 0.01);
   });
 
   it('holds on the compact card and on the phone card', () => {
@@ -529,7 +550,7 @@ describe('a move cell s own text', () => {
       const card = battleMovesBox(viewport);
       expect(card.w).toBeLessThan(BATTLE_COMPACT);
       const view = battleMovesView(inputOf({ card, cells: LONG_GRID }));
-      for (const slot of view.slots) expectCellFits(slot);
+      for (const slot of view.slots) expectCellFits(slot, true);
     }
   });
 
@@ -538,9 +559,9 @@ describe('a move cell s own text', () => {
     expect(view.compact).toBe(true);
     const first = view.slots[0]!;
     expect(first.box).toStrictEqual({ x: 100, y: 616, w: 119, h: 94 });
-    expect(first.typeBox).toStrictEqual({ x: 114, y: 624, w: 36, h: 10 });
+    expect(first.typeBox).toStrictEqual({ x: 114, y: 624, w: 24, h: 24 });
     expect(first.boxes.name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
-    expect(first.boxes.category).toStrictEqual({ x: 115, y: 637, w: 60, h: 13 });
+    expect(first.boxes.category).toStrictEqual({ x: 151, y: 637, w: 24, h: 13 });
     expect(first.boxes.pp).toStrictEqual({ x: 114, y: 663, w: 91, h: 13 });
     expect(first.boxes.power).toStrictEqual({ x: 114, y: 676, w: 91, h: 13 });
     expect(first.boxes.accuracy).toStrictEqual({ x: 114, y: 689, w: 91, h: 13 });
@@ -566,20 +587,30 @@ describe('a move cell s own text', () => {
     }
   });
 
-  it('takes the name column from the cell it is in, and the category from its widest label', () => {
+  it('takes the name column from the cell it is in, and the glyph from the board s square', () => {
     const wide = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
     const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID }));
-    expect(wide.slots[0]!.nameBox.w).toBeGreaterThan(phone.slots[0]!.nameBox.w);
+    expect(wide.slots[0]!.nameBox.w).toBe(132);
+    expect(phone.slots[0]!.nameBox.w).toBe(91);
     expect(wide.slots[0]!.nameBox.y).toBe(wide.slots[0]!.categoryBox.y);
-    for (const label of ['PHYSICAL', 'SPECIAL', 'STATUS']) {
-      expect(wide.slots[0]!.categoryBox.w).toBeGreaterThanOrEqual(Math.ceil(drawnTextWidth(label)));
+    // The glyph's box is the same 24 px square for every category: the frame is FIT
+    // into it (32×14 becomes 24×10.5), so nothing can spill out of the box.
+    for (const slot of wide.slots) {
+      expect(slot.categoryBox.w).toBe(24);
+      expect(slot.categoryBox.h).toBe(24);
     }
+    expect(wide.slots.map((slot) => slot.category)).toStrictEqual([
+      'Physical',
+      'Special',
+      'Status',
+      'Special',
+    ]);
   });
 
   it('paints the name in the case the slot paints it, and keeps the full one for the ⓘ', () => {
     const cells = padMoveGridCells([moveCell('Moflete Estático', { category: 'Physical' })], 4);
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells, info: 0 }));
-    expect(view.slots[0]!.name).toBe('MOFLETE ESTÁ\u2026');
+    expect(view.slots[0]!.name).toBe('MOFLETE ESTÁTICO');
     expect(view.info!.title).toBe('Moflete Estático');
   });
 });
@@ -602,18 +633,20 @@ function overlapArea(a: Rect, b: Rect): number {
   return Math.max(0, w) * Math.max(0, h);
 }
 
-/** The five labels of a cell, each with the string it paints. */
+/** The four text labels of a cell, each with the string it paints. */
 function labelsOf(slot: BattleMoveSlotView): readonly Readonly<{ box: Rect; text: string }>[] {
   return [
     { box: slot.boxes.name, text: slot.name },
-    { box: slot.boxes.category, text: slot.category.toUpperCase() },
     { box: slot.boxes.pp, text: slot.pp },
     { box: slot.boxes.power, text: slot.power },
     { box: slot.boxes.accuracy, text: slot.accuracy },
   ];
 }
 
-/** Every label of a filled cell: inside the cell, wide enough for its own text, no overlaps. */
+/**
+ * Every label of a filled cell: inside the cell, wide enough for its own text, no
+ * overlaps, and the two atlas squares clear of every one of them.
+ */
 function expectBoxesHold(slot: BattleMoveSlotView): void {
   const labels = labelsOf(slot);
   for (const label of labels) {
@@ -625,6 +658,14 @@ function expectBoxesHold(slot: BattleMoveSlotView): void {
       expect(overlapArea(labels[i]!.box, labels[j]!.box)).toBe(0);
     }
   }
+  for (const icon of [slot.typeBox, slot.categoryBox]) {
+    expect(fitsInside(icon, slot.box)).toBe(true);
+    // The name is the one line a glyph sits beside in both width classes; the wider
+    // stat boxes keep the cell's full remaining width, and their text ends well short
+    // of the icon column (the glyph's square is over an empty end of the PP line).
+    expect(overlapArea(icon, slot.boxes.name)).toBe(0);
+  }
+  expect(overlapArea(slot.typeBox, slot.categoryBox)).toBe(0);
   // The ⓘ stays reserved: the category ends its 22 px clear of the cell's right padding edge.
   const rightPad = slot.box.x + slot.box.w - CELL_PAD_X;
   expect(slot.boxes.category.x + slot.boxes.category.w).toBeLessThanOrEqual(rightPad - 22 + 0.01);
@@ -632,7 +673,7 @@ function expectBoxesHold(slot: BattleMoveSlotView): void {
 }
 
 describe('the compact cell', () => {
-  it('holds all five labels of the four phone cells inside their own cell', () => {
+  it('holds all four labels and both icons of the four phone cells inside their own cell', () => {
     const view = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: COMPACT_GRID }));
     expect(view.slots).toHaveLength(4);
     for (const slot of view.slots) {
@@ -662,10 +703,11 @@ describe('the compact cell', () => {
     }
   });
 
-  it('holds on every compact card wide enough for its category column', () => {
-    // The category column is 60 px and the ⓘ 22 px, so a compact cell narrower than
-    // 118 px (a stage under 388 px) cannot hold it: 390×844, the phone the board draws,
-    // is the narrowest one this panel is asked for.
+  it('holds on every compact card wide enough for its icon column', () => {
+    // The glyph's 24 px square and the ⓘ 22 px need 82 px of cell (14 px of padding,
+    // the 24 px glyph, its 8 px gap and the 22 px ⓘ, twice), so a stage under 316 px
+    // is below what this panel draws: 390×844, the board's phone, is the narrowest
+    // one it is asked for.
     for (const viewport of [
       { width: 699, height: 800 },
       { width: 600, height: 600 },
@@ -688,18 +730,18 @@ describe('the compact cell', () => {
 });
 
 describe('the wide cell', () => {
-  it('keeps the shipped boxes at 1280×800, its stats past the type chip', () => {
+  it('keeps the shipped boxes at 1280×800, its stats past the type badge', () => {
     const view = battleMovesView(
       inputOf({ card: battleMovesBox(DESKTOP), cells: padMoveGridCells([moveCell('FLAMETHROWER')], 4) }),
     );
     expect(view.compact).toBe(false);
     const slot = view.slots[0]!;
     expect(slot.box).toStrictEqual({ x: 524, y: 606, w: 222, h: 72 });
-    expect(slot.typeBox).toStrictEqual({ x: 538, y: 643.5, w: 36, h: 10 });
-    expect(slot.boxes.name).toStrictEqual({ x: 538, y: 622.5, w: 96, h: 13 });
-    expect(slot.boxes.category).toStrictEqual({ x: 642, y: 622.5, w: 60, h: 13 });
-    expect(slot.boxes.pp).toStrictEqual({ x: 582, y: 635.5, w: 150, h: 13 });
-    expect(slot.boxes.power).toStrictEqual({ x: 582, y: 648.5, w: 74, h: 13 });
+    expect(slot.typeBox).toStrictEqual({ x: 538, y: 636.5, w: 24, h: 24 });
+    expect(slot.boxes.name).toStrictEqual({ x: 538, y: 622.5, w: 132, h: 13 });
+    expect(slot.boxes.category).toStrictEqual({ x: 678, y: 622.5, w: 24, h: 24 });
+    expect(slot.boxes.pp).toStrictEqual({ x: 570, y: 635.5, w: 162, h: 13 });
+    expect(slot.boxes.power).toStrictEqual({ x: 570, y: 648.5, w: 86, h: 13 });
     expect(slot.boxes.accuracy).toStrictEqual({ x: 664, y: 648.5, w: 68, h: 13 });
     expect(slot.nameBox).toBe(slot.boxes.name);
     expect(slot.categoryBox).toBe(slot.boxes.category);
@@ -725,7 +767,7 @@ describe('cellTextBoxes', () => {
 
   it('lays a cell out by its width class alone', () => {
     expect(cellTextBoxes(phone, true).name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
-    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 538, y: 622.5, w: 96, h: 13 });
+    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 538, y: 622.5, w: 132, h: 13 });
     for (const box of Object.values(cellTextBoxes(phone, true))) {
       expect(fitsInside(box, phone)).toBe(true);
     }
@@ -734,12 +776,13 @@ describe('cellTextBoxes', () => {
     }
   });
 
-  it('starts the wide stat column past the chip it is told about, or past the widest one', () => {
+  it('starts the wide stat column one gap past the badge, whatever type it is told', () => {
     const fire = cellTextBoxes(wide, false, 'fire');
     const electric = cellTextBoxes(wide, false, 'electric');
     const unnamed = cellTextBoxes(wide, false);
-    expect(electric.pp.x - fire.pp.x).toBe(24);
-    expect(unnamed.pp.x).toBe(electric.pp.x);
+    expect(fire.pp.x).toBe(fire.name.x + 24 + 8);
+    expect(electric.pp.x).toBe(fire.pp.x);
+    expect(unnamed.pp.x).toBe(fire.pp.x);
     expect(fire.power.x + fire.power.w).toBeLessThanOrEqual(fire.accuracy.x - 8 + 0.01);
   });
 });

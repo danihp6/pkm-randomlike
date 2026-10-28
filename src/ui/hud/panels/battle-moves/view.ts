@@ -8,6 +8,7 @@ import {
   type MoveGridRect,
   type MoveGridSlot,
 } from '../../../moveGrid';
+import { MOVE_ICON_BOX } from '../../kit/moveIcons';
 import { battleHpBox } from '../battle-hp/view';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
@@ -62,10 +63,6 @@ const FONT_UNIT = fontManifest.size / fontManifest.scale;
 const BODY_SIZE = 10;
 /** The glyph an elided string ends in, so a cut name always reads as cut. */
 const ELLIPSIS = '\u2026';
-/** The three category labels the grid prints, in the case the slot paints them. */
-const CATEGORY_LABELS: readonly string[] = ['PHYSICAL', 'SPECIAL', 'STATUS'];
-/** The category column: the widest label's own drawn px, so none of the three can spill. */
-const CATEGORY_W = Math.max(...CATEGORY_LABELS.map((label) => Math.ceil(drawnTextWidth(label))));
 /** The slot's own column gap, from `.battle-moves__slot`'s `gap: 0 8px`. */
 const CELL_GAP = 8;
 /** The cell's own padding, from `.battle-moves__slot`: 8 px down, 14 px in on each side. */
@@ -75,10 +72,6 @@ const CELL_PAD_Y = 8;
 const BODY_LINE_H = 13;
 const CELL_LINES = 3;
 const COMPACT_CELL_LINES = 6;
-/** The type chip's own font: `--hud-type-tag-size`, its line and its 6 px side padding. */
-const TYPE_TAG_SIZE = 8;
-const TYPE_TAG_LINE_H = 10;
-const TYPE_TAG_PAD = 12;
 /** The accuracy column: the widest line a cell prints (`ACC 300 ↑`), so none of them is elided. */
 const ACCURACY_W = 68;
 
@@ -109,14 +102,6 @@ export function elideToWidth(text: string, width: number): string {
   }
   return head.length === 0 ? '' : `${head}${ELLIPSIS}`;
 }
-
-/** The type chip's own drawn width: its label at the tag size plus the 6 px it pads each side. */
-function chipWidth(type: string): number {
-  return Math.ceil(drawnTextWidth(type.toUpperCase(), TYPE_TAG_SIZE)) + TYPE_TAG_PAD;
-}
-
-/** The widest chip's column (`ELECTRIC`, `FIGHTING`), kept for a caller that names no type. */
-const TYPE_CHIP_MAX_W = chipWidth('ELECTRIC');
 
 /** Below this square side the stacked, full-width phone card is used. */
 export const BATTLE_COMPACT = 700;
@@ -204,13 +189,13 @@ export type BattleMoveSlotView = Readonly<{
   enabled: boolean;
   selected: boolean;
   box: Rect;
-  /** The cell's first line: from its side padding to a gap left of the category column. */
+  /** The cell's first line: from its side padding to a gap left of the category glyph. */
   nameBox: Rect;
-  /** The category column: it ends left of the ⓘ by at least its gap. */
+  /** The category glyph's box: its own 24 px square, ending its gap left of the ⓘ. */
   categoryBox: Rect;
   /** The five labels' own boxes, laid out for the card's width class (`cellTextBoxes`). */
   boxes: BattleCellTextBoxes;
-  /** The type chip's own box: the wide cell's left gutter, the compact cell's first row. */
+  /** The type badge's box: the wide cell's stat gutter, the compact cell's first row. */
   typeBox: Rect;
   /** The ⓘ button: `{ x: box.x + box.w - 36, y: box.y + 8, w: 22, h: 22 }`, empty slots none. */
   info: Rect | null;
@@ -271,22 +256,20 @@ function categoryBandTop(box: Rect): number {
 }
 
 /**
- * The wide cell's category column: the widest label's own width, right-aligned
- * against the ⓘ's gap, never reaching past the cell's own padding, on its first
- * text row.
+ * The wide cell's category column: the glyph's own 24 px box, ending its gap left of
+ * the ⓘ, on the cell's first text row.
  */
 function categoryBoxOf(box: Rect, info: Rect): Rect {
   const right = info.x - MOVE_CATEGORY_GAP;
-  const left = Math.max(box.x + CELL_PAD_X, right - CATEGORY_W);
-  return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
+  const left = Math.max(box.x + CELL_PAD_X, right - MOVE_ICON_BOX);
+  return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: MOVE_ICON_BOX };
 }
 
 /**
  * The wide cell's name column: its own first line, from the side padding to a gap
- * left of the category column — one count of each, so the ⓘ and the category take
- * only the width they are drawn in. The type chip sits beside the stat block on the
- * lines below, never on this one, so a long type name cannot charge the move's name
- * for its own label.
+ * left of the category glyph — one count of each, so the ⓘ and the category take
+ * only the width they are drawn in. The type badge sits in the stat gutter below,
+ * never on this line, so no type can charge the move's name for its own width.
  */
 function nameBoxOf(box: Rect, category: Rect): Rect {
   const left = box.x + CELL_PAD_X;
@@ -317,16 +300,17 @@ function compactBandTop(cell: Rect): number {
 
 /**
  * The wide cell's boxes: the shipped three-line grid. The name and the category
- * share the first line, PP takes the second and the power / accuracy pair the
- * third — the stats one gutter past the type chip's own column, as the stylesheet's
- * `auto` first track put them, and the accuracy right-aligned at the padding edge.
+ * glyph share the first line, PP takes the second and the power / accuracy pair the
+ * third — the stats one gap past the type badge's own 24 px column, as the old
+ * stylesheet's first track put them, and the accuracy right-aligned at the padding
+ * edge.
  */
-function wideCellTextBoxes(cell: Rect, type: string): BattleCellTextBoxes {
+function wideCellTextBoxes(cell: Rect): BattleCellTextBoxes {
   const category = categoryBoxOf(cell, infoBoxOf(cell));
   const name = nameBoxOf(cell, category);
   const right = cell.x + cell.w - CELL_PAD_X;
   const band = categoryBandTop(cell);
-  const gutter = name.x + (type === '' ? TYPE_CHIP_MAX_W : chipWidth(type)) + CELL_GAP;
+  const gutter = name.x + MOVE_ICON_BOX + CELL_GAP;
   const accuracy: Rect = {
     x: right - ACCURACY_W,
     y: band + BODY_LINE_H * 2,
@@ -348,11 +332,11 @@ function wideCellTextBoxes(cell: Rect, type: string): BattleCellTextBoxes {
 }
 
 /**
- * The compact cell's boxes: one label a line — the type chip, the category, the
- * name and the three stat lines — because the phone cell's 91 px content box cannot
- * hold two of them side by side (`PP 15/15` and `PWR 90` alone are 105 px with their
- * gap). The six lines fill the cell's padding box, and the category keeps its
- * column left of the ⓘ the badge shares the first row with.
+ * The compact cell's boxes: one label a line — the type badge, the category glyph,
+ * the name and the three stat lines — because the phone cell's 91 px content box
+ * cannot hold two of them side by side (`PP 15/15` and `PWR 90` alone are 105 px with
+ * their gap). The six lines fill the cell's padding box, and the category keeps its
+ * 24 px column left of the ⓘ the badge shares the first row with.
  */
 function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
   const info = infoBoxOf(cell);
@@ -365,7 +349,7 @@ function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
     h: BODY_LINE_H,
   });
   const right = info.x - MOVE_CATEGORY_GAP;
-  const left = Math.max(content.x, right - CATEGORY_W);
+  const left = Math.max(content.x, right - MOVE_ICON_BOX);
   return {
     name: plane(2),
     category: { x: left, y: band + BODY_LINE_H, w: Math.max(0, right - left), h: BODY_LINE_H },
@@ -377,12 +361,12 @@ function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
 
 /**
  * The text boxes of one cell, laid out for the card's width class: the wide cell keeps
- * the shipped three-line grid, the compact one stacks its six lines. `type` is the chip
- * the wide stat column starts past; without it the widest chip's column is kept, so a
- * caller that lays out a cell alone never runs a stat line under a chip.
+ * the shipped three-line grid, the compact one stacks its six lines. The third
+ * argument is the canvas's own call shape and no longer moves any box: the type
+ * badge's width is the same 24 px for every type.
  */
-export function cellTextBoxes(cell: Rect, compact: boolean, type = ''): BattleCellTextBoxes {
-  return compact ? compactCellTextBoxes(cell) : wideCellTextBoxes(cell, type);
+export function cellTextBoxes(cell: Rect, compact: boolean, _type = ''): BattleCellTextBoxes {
+  return compact ? compactCellTextBoxes(cell) : wideCellTextBoxes(cell);
 }
 
 /** True when `inner` lies inside `outer` on all four edges, within `tolerance` px. */
@@ -396,19 +380,12 @@ export function fitsInside(inner: Rect, outer: Rect, tolerance = 0.5): boolean {
 }
 
 /**
- * The type chip's box: the wide cell's left gutter, centred over its two stat lines,
+ * The type badge's box: the wide cell's left gutter, centred over its two stat lines,
  * and the compact cell's own first row, beside the ⓘ.
  */
-function typeBoxOf(cell: Rect, compact: boolean, type: string): Rect {
-  const w = chipWidth(type);
-  if (compact) return { x: contentBoxOf(cell).x, y: compactBandTop(cell), w, h: TYPE_TAG_LINE_H };
-  const band = categoryBandTop(cell) + BODY_LINE_H;
-  return {
-    x: contentBoxOf(cell).x,
-    y: band + (BODY_LINE_H * 2 - TYPE_TAG_LINE_H) / 2,
-    w,
-    h: TYPE_TAG_LINE_H,
-  };
+function typeBoxOf(cell: Rect, compact: boolean): Rect {
+  const y = compact ? compactBandTop(cell) : categoryBandTop(cell) + BODY_LINE_H + 1;
+  return { x: contentBoxOf(cell).x, y, w: MOVE_ICON_BOX, h: MOVE_ICON_BOX };
 }
 
 /** The empty container: no name, no stats, no ⓘ — the grid's own rule. */
@@ -435,7 +412,7 @@ function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotV
     nameBox,
     categoryBox,
     boxes: { name: nameBox, category: categoryBox, pp: mark(), power: mark(), accuracy: mark() },
-    typeBox: { x: box.x + CELL_PAD_X, y: rowY, w: 0, h: TYPE_TAG_LINE_H },
+    typeBox: { x: box.x + CELL_PAD_X, y: rowY, w: 0, h: BODY_LINE_H },
     info: null,
   };
 }
@@ -468,7 +445,7 @@ function slotView(
     nameBox: boxes.name,
     categoryBox: boxes.category,
     boxes,
-    typeBox: typeBoxOf(box, compact, cell.type),
+    typeBox: typeBoxOf(box, compact),
     info,
   };
 }

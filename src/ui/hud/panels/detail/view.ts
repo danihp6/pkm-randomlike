@@ -2,6 +2,7 @@ import type { StatId } from '../../../../data/dex';
 import { t } from '../../../../i18n';
 import { moveGridCellRects, type MoveGridEmptyCell, type MoveGridSlot } from '../../../moveGrid';
 import { natureEffect, statLabel, type MemberDetail } from '../../../partyDetail';
+import { MOVE_ICON_BOX } from '../../kit/moveIcons';
 import { evolutionView } from './evolution';
 
 /**
@@ -75,6 +76,16 @@ export type DetailMoveSlotView = Readonly<{
   box: Rect;
   /** The ⓘ hit box, cell-relative (the canvas's own `moveGridInfoAt` box). */
   info: Rect;
+  /** The badge's box: the cell's left column, the board's own insets. */
+  typeBox: Rect;
+  /** The category glyph's box, 2 px under the badge. */
+  categoryBox: Rect;
+  /** The move's own name line: right of the icon column and clear of the ⓘ. */
+  nameBox: Rect;
+  /** `PP 12/15` on its own line, the board's three-line column. */
+  ppBox: Rect;
+  /** The power / accuracy pair's line: power left-aligned, accuracy right-aligned inside it. */
+  statsBox: Rect;
 }>;
 
 export type DetailPoolRowView = Readonly<{
@@ -183,6 +194,12 @@ const DETAIL_MOVE_SLOTS = 4; // MAX_MOVES
 const DETAIL_INFO_BUTTON = 22;
 /** The width the learnset band keeps clear for its `<` / `>` scroll arrows. */
 const DETAIL_SEARCH_NAV_W = 78;
+/** The move cell's left icon column, its text column and the ⓘ the name line leaves clear. */
+const DETAIL_MOVE_ICON_INSET = 10;
+const DETAIL_MOVE_TEXT_LEFT = 44;
+const DETAIL_MOVE_PAD_X = 14;
+const DETAIL_MOVE_INFO_W = 28;
+const DETAIL_MOVE_LINE_H = 13;
 const DETAIL_STAT_COLUMNS: readonly (readonly StatId[])[] = [
   ['hp', 'atk', 'def'],
   ['spa', 'spd', 'spe'],
@@ -231,6 +248,41 @@ function cellRects(
 /** A box moved into the panel's own coordinates. */
 function inner(rect: Rect, box: Rect): Rect {
   return { x: rect.x - box.x, y: rect.y - box.y, w: rect.w, h: rect.h };
+}
+
+/** A box with no width: the mark a box the panel prints nothing in collapses to. */
+function mark(rect: Rect): Rect {
+  return { ...rect, w: 0 };
+}
+
+/**
+ * A move cell's five boxes, in the panel's own coordinates: the two atlas squares in
+ * the cell's icon column, and the name, PP and power / accuracy lines in the text
+ * column beside it. The name line is the only one that also leaves the ⓘ clear.
+ */
+function moveBoxes(cell: Rect): Readonly<{
+  typeBox: Rect;
+  categoryBox: Rect;
+  nameBox: Rect;
+  ppBox: Rect;
+  statsBox: Rect;
+}> {
+  const iconX = cell.x + DETAIL_MOVE_ICON_INSET;
+  const iconY = cell.y + DETAIL_MOVE_ICON_INSET;
+  const textX = cell.x + DETAIL_MOVE_TEXT_LEFT;
+  const textW = Math.max(0, cell.w - DETAIL_MOVE_TEXT_LEFT - DETAIL_MOVE_PAD_X);
+  return {
+    typeBox: { x: iconX, y: iconY, w: MOVE_ICON_BOX, h: MOVE_ICON_BOX },
+    categoryBox: { x: iconX, y: iconY + MOVE_ICON_BOX + 2, w: MOVE_ICON_BOX, h: MOVE_ICON_BOX },
+    nameBox: {
+      x: textX,
+      y: cell.y + 8,
+      w: Math.max(0, textW - DETAIL_MOVE_INFO_W),
+      h: DETAIL_MOVE_LINE_H,
+    },
+    ppBox: { x: textX, y: cell.y + 24, w: textW, h: DETAIL_MOVE_LINE_H },
+    statsBox: { x: textX, y: cell.y + 38, w: textW, h: DETAIL_MOVE_LINE_H },
+  };
 }
 
 /** `hudMetrics().detailPadX`: a card narrower than the design width drops its padding. */
@@ -334,6 +386,7 @@ function moveSlots(box: Rect, detail: MemberDetail, cursor: number): readonly De
     const cell = inner(absolute, box);
     const move = detail.moves[index];
     const info: Rect = { ...infoBox, x: cell.w - DETAIL_INFO_BUTTON - 14 };
+    const boxes = moveBoxes(cell);
     if (move === undefined) {
       return {
         index,
@@ -349,6 +402,11 @@ function moveSlots(box: Rect, detail: MemberDetail, cursor: number): readonly De
         enabled: false,
         box: cell,
         info,
+        typeBox: mark(boxes.typeBox),
+        categoryBox: mark(boxes.categoryBox),
+        nameBox: mark(boxes.nameBox),
+        ppBox: mark(boxes.ppBox),
+        statsBox: mark(boxes.statsBox),
       };
     }
     return {
@@ -368,6 +426,11 @@ function moveSlots(box: Rect, detail: MemberDetail, cursor: number): readonly De
       enabled: true,
       box: cell,
       info,
+      typeBox: boxes.typeBox,
+      categoryBox: boxes.categoryBox,
+      nameBox: boxes.nameBox,
+      ppBox: boxes.ppBox,
+      statsBox: boxes.statsBox,
     };
   });
 }

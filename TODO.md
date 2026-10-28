@@ -9052,7 +9052,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/engine/run/state.ts` (the reorder seam) + test, `docs/design-spec.md` §3 and
       `docs/hud-fidelity.md`. *Dependencies:* none. *(Batch 86)*
 
-- [ ] **[Task-203] A move prints its type and its category as icons, never as words.** Seen with
+- [x] **[Task-203] A move prints its type and its category as icons, never as words.** Seen with
       `?hud=dom` on `2026-10-27`: in the detail panel's MOVES tab the type under a move's name is the
       **word** (`dragon`, and the same for every row), and the battle's move cells print
       `PHYSICAL`/`SPECIAL`/`STATUS` as text (`CATEGORY_LABELS` in

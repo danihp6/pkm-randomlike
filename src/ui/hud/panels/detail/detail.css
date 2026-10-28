@@ -392,33 +392,45 @@
   opacity: 0.4;
 }
 
-.detail__slot-name {
-  display: block;
+/* The move cell's two atlas squares in its left column, and the three text lines the
+   panel places at the model's own boxes: the wrapper only positions a box. */
+.detail__slot-type,
+.detail__slot-category {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+}
+
+.detail__slot-name,
+.detail__slot-pp,
+.detail__slot-pwr,
+.detail__slot-acc {
+  position: absolute;
   overflow: hidden;
-  padding-right: 28px;
+  white-space: nowrap;
+}
+
+.detail__slot-name {
   color: inherit;
   font-size: var(--hud-type-name-size);
   font-weight: 700;
   line-height: var(--hud-type-name-line);
-  white-space: nowrap;
 }
 
 .detail__slot[data-selected='true'] .detail__slot-name {
   color: var(--hud-accent);
 }
 
-.detail__slot-meta {
-  position: absolute;
-  right: 14px;
-  bottom: 8px;
-  left: 14px;
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
+.detail__slot-pp,
+.detail__slot-pwr,
+.detail__slot-acc {
   color: var(--hud-text-muted);
   font-size: var(--hud-type-meta-size);
   line-height: var(--hud-type-meta-line);
-  white-space: nowrap;
+}
+
+.detail__slot-acc {
+  text-align: right;
 }
 
 .detail__slot-info {
@@ -488,6 +500,13 @@
   font-size: var(--hud-type-body-size);
   line-height: var(--hud-type-body-line);
   white-space: nowrap;
+}
+
+/* The pool row's type badge: the same atlas square the move cells draw, kept off the
+   row's baseline so it does not move the name and the source line. */
+.detail__pool-type {
+  display: flex;
+  align-self: flex-start;
 }
 
 .detail__pool-source {

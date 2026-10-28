@@ -112,28 +112,34 @@ description, and the click still pins it.
 
 **A cell's text is bounded by its own box.** Every label in a battle move cell is measured against the font
 the panel actually draws with — `font.json`'s advances at `--hud-type-body-size` — never a per-glyph
-constant: **the name takes the cell's own remaining width** — its content box less the measured category
-column, the two 8 px gaps and the 22 px ⓘ, one count of each (96 px in the 222 px cell at 1280×800) — and is
-cut to that width with an ellipsis (the ⓘ card keeps the whole name), while the type chip rides with the stat
-block so its own label never eats that line; the category column is **its widest label's measured width** —
-`PHYSICAL`, 60 px — and the 22 px ⓘ stays clear of it. A box that merely avoids its neighbour is not enough:
-`PHYSICAL` paints 56 px in the 48 px column `[Task-189]` shipped, so the string ran under the ⓘ beside boxes
-that did not intersect. A wide cell narrower than the 90 px the category column and the ⓘ need — the 222 px
-cell at 1280×800 is the narrowest one shipped — gives the name what is left of it, and the ⓘ card is where
-its whole text stays readable; the phone card's 119 px cell takes the compact geometry below instead.
+constant: **the name takes the cell's own remaining width** — its content box less the category glyph's
+24 px square, the two 8 px gaps and the 22 px ⓘ, one count of each (**132 px** in the 222 px cell at
+1280×800) — and is cut to that width with an ellipsis (the ⓘ card keeps the whole name), while the type
+badge is a **24×24 square in the stat gutter**, its right edge one gap past the name's left column so the
+stat lines start clear of it and no type can charge the move's name for its own width. The category is the
+atlas glyph in a **24 px square** that ends the same 8 px left of the ⓘ the text column used to, at the
+cell's first text row: that square is the whole column, so nothing prints right-aligned and `PHYSICAL` /
+`SPECIAL` / `STATUS` are never drawn as words. A box that merely avoids its neighbour is not enough — the
+retired text column shipped 48 px wide against a 56 px label and the string ran under the ⓘ; the glyph
+cannot spill, because the frame is FIT into its square (32×14 becomes 24×10.5) and clipped to the frame's
+own band, so a badge never paints the rows above or below it. A wide cell narrower than the 58 px the
+glyph's square and the ⓘ need — the 222 px cell at 1280×800 is the narrowest one shipped — gives the name
+what is left of it, and the ⓘ card is where its whole text stays readable; the phone card's 119 px cell
+takes the compact geometry below instead.
 
 **The compact battle has its own cell.** At 390×844 the menu card keeps its shipped rect — 358×236 at
 (16,592), starting 8 px under the player's 358×80 card at y 504…584, so no HP box is drawn behind it — but
-its four cells are 119×94 and paint **six stacked lines** instead of the wide three: the type chip and the
-ⓘ share the first row, the category column (60 px, `PHYSICAL`) takes the second right-aligned 8 px left of
-the ⓘ and 30 px inside the cell's right padding edge, and the name, PP, power and accuracy each get a full
-91 px line of their own — one label a line, because `PP 15/15` (55 px) and `PWR 90` (50 px) side by side are
-105 px with their gap in a 91 px content box. In both width classes every label is now painted at the box
-`cellTextBoxes` measures for it (`BattleMoveSlotView.boxes`) instead of at a stylesheet grid, so a cell's
-text is bounded by its own model rect: the name is the one line that is ever cut — 91 px at 390 against the
-96 px the wide 222 px cell gives it — and nothing else needs eliding. The stack needs a 118 px cell (14 px
-of padding, the 60 px category, its 8 px gap and the 22 px ⓘ, twice), so a stage under 388 px is below what
-this panel is asked to draw.
+its four cells are 119×94 and paint **six stacked lines** instead of the wide three: the type badge and the
+ⓘ share the first row, the category glyph takes the second line's **13 px band** at the same right edge
+(24 px wide, its frame drawn 24×10.5, ending 8 px left of the ⓘ, and it clears the name line under it), and
+the name, PP, power and accuracy each get a full **91 px** line of their own — one label a line, because
+`PP 15/15` (55 px) and `PWR 90` (50 px) side by side are 105 px with their gap in a 91 px content box. In
+both width classes every label is now painted at the box `cellTextBoxes` measures for it
+(`BattleMoveSlotView.boxes`) and both atlas squares at their own `typeBox` / `categoryBox`, instead of at a
+stylesheet grid, so a cell's text is bounded by its own model rect: the name is the one line that is ever
+cut — 91 px at 390 against the 132 px the wide 222 px cell gives it — and nothing else needs eliding. The
+stack needs an **82 px** cell (14 px of padding, the 24 px glyph, its 8 px gap and the 22 px ⓘ, twice), so
+a stage under 316 px is below what this panel is asked to draw.
 
 **The target step's prompt.** The row is **22 px** tall (the ⓘ's own size) and lives inside the card's top
 band — `x = card.x + 20`, `y = card.y + 1`, `w = card.w − 40`, `h = 22` on both widths — so it ends **1 px**
@@ -187,6 +193,23 @@ at **8 %** (`--stats-rule`, never a new alpha), **320 px** at x `120` / `480` / 
 run list and the Pokémon table carry the same 1 px rule flush with the bottom of each row card (no frame
 node — the row cards are the frame's own node there), and a new figure inherits the rule by being a
 figure.
+
+**The move icons.** A move's type and category are drawn from the two packed atlases and never as words:
+`move chip N` / `move category N` is a **24×24 box** with an `IMAGE` fill, `scaleMode: FIT`, so the frame
+is contained and centred (32×14 becomes 24×10.5 in that square). The background is the **whole atlas
+scaled**, moved by the frame's column and row and **clipped to the frame's own band**, so a badge never
+paints the rows above or below it; `moveIcons.tsx` carries that arithmetic (`spriteBox`) and the two
+resolvers. The frames, read from the two manifests:
+
+| badge | frames | grid |
+| --- | --- | --- |
+| type (`type-icons.png`) | 19, dex order: normal 0, fighting 1, flying 2, poison 3, ground 4, rock 5, bug 6, ghost 7, steel 8, unknown 9, fire 10, water 11, grass 12, electric 13, psychic 14, ice 15, dragon 16, dark 17, fairy 18 | 4 columns × 5 rows, 32×14 a frame |
+| category (`move-categories.png`) | Physical 0, Special 1, Status 2 | 1 row of 3, 32×14 a frame |
+
+They are painted in the battle's four cells (`typeBox` / `categoryBox`), in the battle's description
+card head, in the detail panel's four move cells and — the type badge alone, since a pool row carries no
+category — in the detail's learnset pool row. A name the atlas does not carry falls back to the word,
+never to an empty box.
 
 ## 7. What this analysis changes in the plan
 
