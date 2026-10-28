@@ -1,23 +1,37 @@
-import { describe, expect, it } from 'vitest';
-import { createFighter, type BattleFighter } from '../../../../engine/battle/fighter';
+import { describe, expect, it, vi } from 'vitest';
+import { createFighter, type BattleFighter, type BoostId } from '../../../../engine/battle/fighter';
 import { createBattle } from '../../../../engine/battle/state';
 import { Rng } from '../../../../engine/rng';
 import type { HudState } from '../../state';
 import { projectHud } from '../../state';
+import { battleMovesBox } from '../battle-moves/view';
+import { BattleHp } from './battleHp';
 import {
   BATTLE_BALL_GAP,
   BATTLE_BALL_ROW_GAP,
   BATTLE_BALL_SIZE,
   BATTLE_HP_BREAKPOINT,
   HP_FILL_MS,
+  STAGE_CHIP,
+  STAGE_CLEARANCE,
+  STAGE_COLS,
+  STAGE_GAP,
   battleHpBox,
   battleHpLayout,
+  battleHpStages,
   battleHpView,
   foeBallRow,
   type BattleHpView,
   type Rect,
   type Viewport,
 } from './view';
+
+// The layer keeps one piece of state (its settled flag), so the panel is read as the
+// vnode tree it builds: the hooks answer their initial value and never re-render.
+vi.mock('preact/hooks', () => ({
+  useState: <T>(initial: T): [T, (next: T) => void] => [initial, () => {}],
+  useEffect: (): void => {},
+}));
 
 const DESKTOP: Viewport = { width: 1280, height: 800 };
 const PHONE: Viewport = { width: 390, height: 844 };
@@ -168,6 +182,8 @@ describe('battleHpView', () => {
       boxes: [],
       foeBalls: [],
       foeBallsBox: null,
+      stageChips: [],
+      stageBox: null,
     });
   });
 
@@ -282,5 +298,246 @@ describe('foeBallRow', () => {
     expect(second).toStrictEqual(first);
     expect(second).not.toBe(first);
     expect(battleHpView(state, DESKTOP, SINGLE).foeBallsBox).toStrictEqual(first.box);
+  });
+});
+
+const STAGE_ORDER: readonly BoostId[] = ['atk', 'def', 'spa', 'spd', 'spe', 'accuracy', 'evasion'];
+
+/** The first `count` stats of the board's order, one stage each. */
+function stagesOf(count: number, stage = 1): Partial<Record<BoostId, number>> {
+  const boosts: Partial<Record<BoostId, number>> = {};
+  for (const stat of STAGE_ORDER.slice(0, count)) boosts[stat] = stage;
+  return boosts;
+}
+
+/** A battle whose stages are set on the fighters, the way a stat change leaves them. */
+function stagedBattle(
+  boosts: Readonly<Partial<Record<BoostId, number>>>,
+  options: Readonly<{ foe?: Readonly<Partial<Record<BoostId, number>>>; doubles?: boolean }> = {},
+): HudState {
+  const doubles = options.doubles ?? false;
+  const battle = createBattle({
+    player: doubles
+      ? [fighter('player-1', 'charmander', ['ember']), fighter('player-2', 'squirtle', ['tackle'])]
+      : [fighter('player-1', 'charmander', ['ember'])],
+    enemy: [fighter('enemy-1', 'bulbasaur', ['tackle'])],
+    rng: new Rng(213),
+    isWild: true,
+    ...(doubles ? { double: true } : {}),
+  });
+  Object.assign(battle.sides.player.party[0].boosts, boosts);
+  if (options.foe !== undefined) Object.assign(battle.sides.enemy.party[0].boosts, options.foe);
+  return projectHud({ screen: 'battle', battle, canCapture: true });
+}
+
+/** Every node of a vnode tree whose props carry `attribute`, at any depth. A component
+ * vnode is answered by calling it, so the layer's own spans are walked too. */
+function nodesWith(
+  value: unknown,
+  attribute: string,
+  found: Record<string, unknown>[] = [],
+): Record<string, unknown>[] {
+  if (Array.isArray(value)) {
+    for (const entry of value) nodesWith(entry, attribute, found);
+    return found;
+  }
+  if (typeof value !== 'object' || value === null) return found;
+  const node = value as Readonly<{ type?: unknown; props?: Record<string, unknown> }>;
+  if (node.props === undefined) return found;
+  if (attribute in node.props) found.push(node.props);
+  if (typeof node.type === 'function') {
+    nodesWith((node.type as (given: Record<string, unknown>) => unknown)(node.props), attribute, found);
+    return found;
+  }
+  return nodesWith(node.props.children, attribute, found);
+}
+
+/** The props of every node carrying `className` in its `class` attribute. */
+function classProps(tree: unknown, className: string): Record<string, unknown>[] {
+  return nodesWith(tree, 'class').filter((props) => props.class === className);
+}
+
+describe('battleHpStages', () => {
+  it('pins the board chip cell, its spacing and its clearance', () => {
+    expect(STAGE_CHIP).toBe(34);
+    expect(STAGE_GAP).toBe(6);
+    expect(STAGE_COLS).toBe(3);
+    expect(STAGE_CLEARANCE).toBe(8);
+  });
+
+  it('right-aligns the grid to the player column at 1280×800', () => {
+    const boxOf = (count: number): Rect | null =>
+      battleHpStages(stagedBattle(stagesOf(count)), DESKTOP, SINGLE).box;
+
+    expect(boxOf(1)).toStrictEqual({ x: 398, y: 618, w: 34, h: 34 });
+    expect(boxOf(2)).toStrictEqual({ x: 358, y: 618, w: 74, h: 34 });
+    expect(boxOf(6)).toStrictEqual({ x: 318, y: 578, w: 114, h: 74 });
+    expect(boxOf(7)).toStrictEqual({ x: 318, y: 538, w: 114, h: 114 });
+    for (const count of [1, 2, 6, 7]) {
+      const box = boxOf(count)!;
+      expect(box.x + box.w).toBe(432);
+      expect(box.y + box.h).toBe(660 - STAGE_CLEARANCE);
+    }
+  });
+
+  it('right-aligns the same grid in the phone column', () => {
+    const boxOf = (count: number): Rect | null =>
+      battleHpStages(stagedBattle(stagesOf(count)), PHONE, SINGLE).box;
+
+    expect(boxOf(1)).toStrictEqual({ x: 340, y: 462, w: 34, h: 34 });
+    expect(boxOf(6)).toStrictEqual({ x: 260, y: 422, w: 114, h: 74 });
+    expect(boxOf(6)!.x + boxOf(6)!.w).toBe(374);
+  });
+
+  it('lays the chips 40 px apart on both axes, three to a row', () => {
+    const chips = battleHpStages(stagedBattle(stagesOf(7)), DESKTOP, SINGLE).chips;
+
+    expect(chips.map((chip) => chip.stat)).toStrictEqual([...STAGE_ORDER]);
+    expect(chips.map((chip) => chip.box)).toStrictEqual([
+      { x: 318, y: 538, w: 34, h: 34 },
+      { x: 358, y: 538, w: 34, h: 34 },
+      { x: 398, y: 538, w: 34, h: 34 },
+      { x: 318, y: 578, w: 34, h: 34 },
+      { x: 358, y: 578, w: 34, h: 34 },
+      { x: 398, y: 578, w: 34, h: 34 },
+      { x: 318, y: 618, w: 34, h: 34 },
+    ]);
+    for (const [index, chip] of chips.entries()) {
+      if (index > 0 && index % STAGE_COLS !== 0) {
+        expect(chip.box.x - chips[index - 1]!.box.x).toBe(STAGE_CHIP + STAGE_GAP);
+      }
+      if (index >= STAGE_COLS) {
+        expect(chip.box.y - chips[index - STAGE_COLS]!.box.y).toBe(STAGE_CHIP + STAGE_GAP);
+      }
+    }
+  });
+
+  it('takes the label, the sign and the tone from the snapshot stage', () => {
+    const chips = battleHpStages(
+      stagedBattle({ atk: 2, spa: 1, spe: -1, evasion: -3 }),
+      DESKTOP,
+      SINGLE,
+    ).chips;
+
+    expect(chips.map((chip) => chip.label)).toStrictEqual(['ATK', 'SPA', 'SPE', 'EVA']);
+    expect(chips.map((chip) => chip.sign)).toStrictEqual(['+2', '+1', '-1', '-3']);
+    expect(chips.map((chip) => chip.tone)).toStrictEqual(['up', 'up', 'down', 'down']);
+    expect(chips.map((chip) => chip.stage)).toStrictEqual([2, 1, -1, -3]);
+  });
+
+  it('paints nothing without a battle, with an all-zero lead or with the foe is the only one raised', () => {
+    expect(battleHpStages(NO_BATTLE, DESKTOP, SINGLE)).toStrictEqual({ chips: [], box: null });
+    expect(battleHpStages(battleState(false), DESKTOP, SINGLE)).toStrictEqual({
+      chips: [],
+      box: null,
+    });
+    const foeOnly = stagedBattle({}, { foe: { atk: 2, spe: -1 } });
+    expect(battleHpStages(foeOnly, DESKTOP, SINGLE)).toStrictEqual({ chips: [], box: null });
+    expect(battleHpView(foeOnly, DESKTOP, SINGLE).stageBox).toBeNull();
+    expect(battleHpView(foeOnly, DESKTOP, SINGLE).stageChips).toStrictEqual([]);
+  });
+
+  it('anchors above the player partner in a double, never over it', () => {
+    const state = stagedBattle(stagesOf(6), { doubles: true });
+    const grid = battleHpStages(state, DESKTOP, DOUBLE).box!;
+    const partner = battleHpBox(DESKTOP, 'player', 1);
+
+    expect(grid.y + grid.h).toBe(partner.y - STAGE_CLEARANCE);
+    expect(overlaps(grid, partner)).toBe(false);
+    expect(overlaps(grid, battleHpBox(DESKTOP, 'player', 0))).toBe(false);
+    expect(battleHpStages(state, DESKTOP, DOUBLE).chips.map((chip) => chip.stat)).toStrictEqual([
+      'atk',
+      'def',
+      'spa',
+      'spd',
+      'spe',
+      'accuracy',
+    ]);
+  });
+
+  it('keeps off both HP columns and the command card at both viewports', () => {
+    for (const viewport of [DESKTOP, PHONE]) {
+      for (const count of [6, 7]) {
+        const state = stagedBattle(stagesOf(count), { doubles: true });
+        const { box, chips } = battleHpStages(state, viewport, DOUBLE);
+        expect(box).not.toBeNull();
+        expect(chips).toHaveLength(count);
+        expect(overlaps(box!, battleHpBox(viewport, 'player', 0))).toBe(false);
+        expect(overlaps(box!, battleHpBox(viewport, 'player', 1))).toBe(false);
+        expect(overlaps(box!, battleHpBox(viewport, 'enemy', 0))).toBe(false);
+        expect(overlaps(box!, battleMovesBox(viewport))).toBe(false);
+
+        const single = battleHpStages(stagedBattle(stagesOf(count)), viewport, SINGLE);
+        expect(overlaps(single.box!, battleHpBox(viewport, 'player', 0))).toBe(false);
+        expect(overlaps(single.box!, battleHpBox(viewport, 'enemy', 0))).toBe(false);
+        expect(overlaps(single.box!, battleMovesBox(viewport))).toBe(false);
+      }
+    }
+  });
+
+  it('is pure: the same snapshot and viewport deep-equal', () => {
+    const state = stagedBattle({ atk: 2, spe: -1 });
+    const first = battleHpStages(state, DESKTOP, SINGLE);
+    const second = battleHpStages(state, DESKTOP, SINGLE);
+
+    expect(second).toStrictEqual(first);
+    expect(second).not.toBe(first);
+    expect(battleHpView(state, DESKTOP, SINGLE).stageBox).toStrictEqual(first.box);
+    expect(battleHpView(state, DESKTOP, SINGLE).stageChips).toStrictEqual(first.chips);
+  });
+});
+
+describe('the stage grid layer', () => {
+  it('draws the grid box and one chip per stage', () => {
+    const view = battleHpView(stagedBattle({ atk: 2, spe: -1 }), DESKTOP, SINGLE);
+    const tree = BattleHp({ view }) as unknown;
+    const layers = nodesWith(tree, 'data-hud-battle-stages');
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0]!.style).toStrictEqual({
+      left: '358px',
+      top: '618px',
+      width: '74px',
+      height: '34px',
+    });
+
+    const chips = nodesWith(tree, 'data-hud-stage');
+    expect(chips.map((chip) => chip['data-hud-stage'])).toStrictEqual(['atk', 'spe']);
+    expect(chips.map((chip) => chip['data-stage'])).toStrictEqual(['2', '-1']);
+    expect(chips.map((chip) => chip['data-tone'])).toStrictEqual(['up', 'down']);
+    expect(chips.map((chip) => chip.role)).toStrictEqual(['img', 'img']);
+    expect(chips.map((chip) => chip['aria-label'])).toStrictEqual(['ATK +2', 'SPE -1']);
+    expect(chips.map((chip) => chip.class)).toStrictEqual(['battle-hp__stage', 'battle-hp__stage']);
+    expect(chips[0]!.style).toStrictEqual({
+      left: '358px',
+      top: '618px',
+      width: '34px',
+      height: '34px',
+    });
+    expect(chips[1]!.style).toStrictEqual({
+      left: '398px',
+      top: '618px',
+      width: '34px',
+      height: '34px',
+    });
+  });
+
+  it('paints the sign over the label, both hidden from the accessible name', () => {
+    const tree = BattleHp({ view: battleHpView(stagedBattle({ spe: -1 }), DESKTOP, SINGLE) }) as unknown;
+    const signs = classProps(tree, 'battle-hp__stage-sign');
+    const labels = classProps(tree, 'battle-hp__stage-label');
+
+    expect(signs.map((props) => props.children)).toStrictEqual(['-1']);
+    expect(labels.map((props) => props.children)).toStrictEqual(['SPE']);
+    expect(signs.every((props) => props['aria-hidden'] === 'true')).toBe(true);
+    expect(labels.every((props) => props['aria-hidden'] === 'true')).toBe(true);
+  });
+
+  it('paints no layer at all when there is no chip', () => {
+    const tree = BattleHp({ view: battleHpView(NO_BATTLE, DESKTOP, DOUBLE) }) as unknown;
+
+    expect(nodesWith(tree, 'data-hud-battle-stages')).toStrictEqual([]);
+    expect(nodesWith(tree, 'data-hud-stage')).toStrictEqual([]);
+    expect(classProps(tree, 'battle-hp__stage')).toStrictEqual([]);
   });
 });

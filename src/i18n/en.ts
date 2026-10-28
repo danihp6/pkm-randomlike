@@ -423,6 +423,15 @@ export const en = {
   'battle.info.stat.accuracy': 'ACCURACY',
   'battle.info.stat.evasion': 'EVASION',
 
+  // battleStage — the HP panel's stat-stage chips
+  'battle.stage.atk': 'ATK',
+  'battle.stage.def': 'DEF',
+  'battle.stage.spa': 'SPA',
+  'battle.stage.spd': 'SPD',
+  'battle.stage.spe': 'SPE',
+  'battle.stage.accuracy': 'ACC',
+  'battle.stage.evasion': 'EVA',
+
   // battleLog — the action log the engine keys (D43, amended)
   'battle.log.hit': '{move} hit {name}!',
   'battle.log.hitCrit': '{move} hit {name}! A critical hit!',

@@ -86,6 +86,10 @@ moves either.
   duration.
 - Type effectiveness comes from the generated 18x18 chart, not a hand-written
   table.
+- A **stat stage** is `clampBoost`'s −6…+6 on `BattleFighter.boosts`, and it
+  multiplies the stat (`stageMultiplier`, `accuracyStageMultiplier`); a surface
+  that prints a stage — the HUD's chip grid — reads that stored value and never
+  recomputes one of its own.
 
 ### 3.1 The number the formula multiplies
 
