@@ -81,6 +81,8 @@ export type MainMenuView = Readonly<{
   selected: MainMenuRowId | null;
   /** The decorative route preview’s seed: `randomSeed()` once per boot, or the slug’s own. */
   previewSeed: string;
+  /** The backdrop's oval; always present, so the panel never invents geometry. */
+  glow: MainMenuGlow;
 }>;
 
 /** The board's two layouts: the desk frame (`01`) and the phone frame (`m01`). */
@@ -148,6 +150,40 @@ export const MAIN_MENU_NARROW_QUERY = '(max-width: 600px)';
 
 /** A page coordinate box, as the board's frames measure it. */
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+/** One stop of the oval's radial gradient; `at` is 0…1 of the gradient's radius. */
+export type MainMenuGlowStop = Readonly<{ at: number; color: string }>;
+
+/** The board's oval: its box in stage coordinates and the stops that fade it out. */
+export type MainMenuGlow = Readonly<{
+  box: Rect;
+  stops: readonly MainMenuGlowStop[];
+}>;
+
+/**
+ * The board's `01` oval: 1000 × 720 at (−180, −140), accent 10 % at the mean. The
+ * centre stops brighter than the flat fill it replaces, so the falloff to nothing
+ * at the rim keeps the backdrop's measured brightness.
+ */
+export const MAIN_MENU_GLOW: MainMenuGlow = {
+  box: { x: -180, y: -140, w: 1000, h: 720 },
+  stops: [
+    { at: 0, color: 'rgb(125 211 252 / 22%)' },
+    { at: 0.45, color: 'rgb(125 211 252 / 10%)' },
+    { at: 1, color: 'rgb(125 211 252 / 0%)' },
+  ],
+};
+
+/** A stop's position as a percentage, rounded to two decimals at most. */
+function stopPercent(at: number): string {
+  return String(Math.round(at * 10000) / 100);
+}
+
+/** The CSS value the panel paints: one `radial-gradient`, never a flat fill. */
+export function glowBackground(glow: MainMenuGlow): string {
+  const stops = glow.stops.map((stop) => `${stop.color} ${stopPercent(stop.at)}%`).join(', ');
+  return `radial-gradient(closest-side, ${stops})`;
+}
 
 /** The compact blocks share one box; the kit's 8 px gutter separates both axes. */
 const COMPACT_BLOCK: Readonly<{ w: number; h: number }> = { w: 172, h: 48 };
@@ -249,6 +285,7 @@ export function liveMainMenuView(
     stats: mainMenuStats(records),
     selected,
     previewSeed,
+    glow: MAIN_MENU_GLOW,
   };
 }
 
@@ -364,5 +401,6 @@ export function fixtureMainMenuView(payload: unknown): MainMenuView | null {
     stats,
     selected: selection,
     previewSeed: isNonEmpty(previewSeed) ? previewSeed : MAIN_MENU_SLUG,
+    glow: MAIN_MENU_GLOW,
   };
 }

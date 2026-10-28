@@ -15,17 +15,27 @@ import {
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
   MAIN_MENU_FOOTER_NARROW,
+  MAIN_MENU_GLOW,
   MAIN_MENU_SLUG,
+  fixtureMainMenuView,
   forLayout,
+  glowBackground,
   liveMainMenuView,
   mainMenuRecords,
   mainMenuStats,
+  type MainMenuGlow,
   type MainMenuLayout,
   type MainMenuRecords,
   type Rect,
 } from './view';
 
 const MAIN_MENU_CSS = readFileSync(fileURLToPath(new URL('./main-menu.css', import.meta.url)), 'utf8');
+const MAIN_MENU_FIXTURE: unknown = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../../../../design/fixtures/01-main-menu.json', import.meta.url)),
+    'utf8',
+  ),
+);
 
 const SEED = 'pkm-145';
 const NOW = new Date('2026-10-18T12:00:00.000Z');
@@ -423,6 +433,83 @@ describe('forLayout', () => {
 
     expect(forLayout(view, 'compact')).toEqual(forLayout(view, 'compact'));
     expect(JSON.parse(JSON.stringify(view))).toEqual(before);
+  });
+});
+
+describe("the board's glow", () => {
+  it('paints one radial gradient, never a flat fill', () => {
+    expect(glowBackground(MAIN_MENU_GLOW)).toBe(
+      'radial-gradient(closest-side, rgb(125 211 252 / 22%) 0%, rgb(125 211 252 / 10%) 45%, rgb(125 211 252 / 0%) 100%)',
+    );
+  });
+
+  it('carries the frame’s oval box and its three stops', () => {
+    expect(MAIN_MENU_GLOW.box).toEqual({ x: -180, y: -140, w: 1000, h: 720 });
+    expect(MAIN_MENU_GLOW.stops).toEqual([
+      { at: 0, color: 'rgb(125 211 252 / 22%)' },
+      { at: 0.45, color: 'rgb(125 211 252 / 10%)' },
+      { at: 1, color: 'rgb(125 211 252 / 0%)' },
+    ]);
+    expect(MAIN_MENU_GLOW.box.w / 2).toBe(500);
+    expect(MAIN_MENU_GLOW.box.h / 2).toBe(360);
+  });
+
+  it('prints a stop’s position as a percentage of two decimals at most', () => {
+    const glow: MainMenuGlow = {
+      box: { x: 0, y: 0, w: 400, h: 200 },
+      stops: [
+        { at: 0.5, color: 'red' },
+        { at: 0.333333, color: 'green' },
+        { at: 0.125, color: 'blue' },
+      ],
+    };
+
+    expect(glowBackground(glow)).toBe(
+      'radial-gradient(closest-side, red 50%, green 33.33%, blue 12.5%)',
+    );
+    expect(glowBackground(glow)).not.toContain('.00%');
+  });
+
+  it('hands the live menu the oval with and without a run', () => {
+    const records: MainMenuRecords = { wins: 23, elite: 2, monthly: 7, monthlyLabel: 'OCT 2026' };
+
+    expect(liveMainMenuView(null, 0).glow).toEqual(MAIN_MENU_GLOW);
+    expect(liveMainMenuView(savedRun(), 1, 'seed', records, 'v1').glow).toEqual(MAIN_MENU_GLOW);
+    expect(liveMainMenuView(savedRun(), 0).glow).toBe(MAIN_MENU_GLOW);
+  });
+
+  it('hands the fixture’s unedited payload the same oval, which it does not carry', () => {
+    const view = fixtureMainMenuView(MAIN_MENU_FIXTURE);
+
+    expect(view).not.toBeNull();
+    expect(view!.glow).toEqual(MAIN_MENU_GLOW);
+    expect(JSON.stringify(MAIN_MENU_FIXTURE)).not.toContain('glowBackground');
+  });
+
+  it('keeps the very same oval through both layouts and away from the Continue row', () => {
+    const view = liveMainMenuView(savedRun(), 0);
+
+    expect(forLayout(view, 'wide').glow).toBe(view.glow);
+    expect(forLayout(view, 'compact').glow).toBe(view.glow);
+    expect(forLayout(view, 'compact').glow).toEqual(MAIN_MENU_GLOW);
+  });
+
+  it('leaves the stylesheet nothing but the box’s position, so the view owns the paint', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const glow = declarations(desktopCss, '.main-menu__glow');
+
+    expect([...glow.entries()]).toEqual([['position', 'absolute']]);
+    expect(MAIN_MENU_CSS).not.toContain('border-radius: 50%');
+    expect(MAIN_MENU_CSS).not.toContain('rgb(125 211 252 / 10%)');
+    expect(MAIN_MENU_CSS).not.toContain('radial-gradient');
+  });
+
+  it('paints that gradient on the glow node, boxed from the view', () => {
+    const panel = readFileSync(fileURLToPath(new URL('./mainMenuPanel.tsx', import.meta.url)), 'utf8');
+
+    expect(panel).toContain('data-hud-main-menu-glow');
+    expect(panel).toContain('backgroundImage: glowBackground(view.glow)');
+    expect(panel).toContain('boxPaint(view.glow.box)');
   });
 });
 

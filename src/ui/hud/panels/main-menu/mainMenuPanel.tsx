@@ -25,6 +25,7 @@ import {
   MAIN_MENU_BOARD_NARROW,
   MAIN_MENU_NARROW_QUERY,
   forLayout,
+  glowBackground,
   type MainMenuRowId,
   type MainMenuView,
 } from './view';
@@ -193,10 +194,15 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
       />
     ));
 
+  const glowStyle: CSSProperties = {
+    ...boxPaint(view.glow.box),
+    backgroundImage: glowBackground(view.glow),
+  };
+
   return (
     <div class="main-menu" data-hud-panel="main-menu">
       <div class="main-menu__stage">
-        <div class="main-menu__glow" />
+        <div class="main-menu__glow" data-hud-main-menu-glow style={glowStyle} />
         <div
           class="main-menu__window"
           data-hud-main-menu-window
