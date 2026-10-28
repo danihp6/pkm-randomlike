@@ -36,9 +36,10 @@ Create or modify **nothing** outside this list.
 - `src/ui/hud/panels/battle-hp/view.test.ts`
 - `src/ui/hud/panels/battle-hp/battleHp.tsx`
 - `src/ui/hud/panels/battle-hp/battleHp.css`
-- `src/ui/hud/panels/battle-hp/mount.tsx` — **one line only (line 27)**: the initial
-  `BattleHpView` literal gains `stageChips: []` and `stageBox: null`, because the
-  widened `BattleHpView` makes both fields required. Nothing else in the file moves.
+- `src/ui/hud/panels/battle-hp/mount.tsx` — **one declaration only (line 27)**: the
+  initial `BattleHpView` literal gains `stageChips: []` and `stageBox: null`, because
+  the widened `BattleHpView` makes both fields required. Nothing else in the file
+  moves.
 - `src/ui/hud/panels/battle-hp/README.md` (only the role lines this task changes)
 - `src/i18n/en.ts`
 - `src/i18n/es.ts`
@@ -229,11 +230,21 @@ let view: BattleHpView = { boxes: [], foeBalls: [], foeBallsBox: null, stageChip
   the DOM painted before the first snapshot is identical to today's.
 - Nothing else in `src/ui/hud/panels/battle-hp/mount.tsx` is edited, and no other
   mount or barrel file is touched.
+- **Prettier splits that literal, and the split is the same declaration.**
+  `.prettierrc.json` sets `printWidth: 105`, and the one-line literal is wider than
+  that, so `npx prettier --write` (and the check `npm run lint` runs) puts one
+  property per line: the object opens on `let view: BattleHpView = {`, lists
+  `boxes`, `foeBalls`, `foeBallsBox`, `stageChips`, `stageBox` one per line, and
+  closes on `};` — seven lines where one stood. That form is this task's whole
+  change: do not fight the formatter to keep the literal on one line.
 
 ### `battleHp.css` — the board's colours
 
-- `.battle-hp__stage { position: absolute; border-radius: 8px; text-align: center;
-  font-weight: 700; }`
+- `.battle-hp__stage { position: fixed; border-radius: 8px; text-align: center;
+  font-weight: 700; }` — `fixed`, not `absolute`: that is the shipped value, measured
+  with `getComputedStyle` on `[data-hud-stage]` while the chip's own box is the pinned
+  `{398,618,34,34}` at 1280×800 and `{340,462,34,34}` at 390×844, and the chip is its
+  own positioning context for the sign and the label under it.
 - `.battle-hp__stage[data-tone='up'] { background: rgb(74 222 128 / 14%);
   box-shadow: inset 0 0 0 1px rgb(74 222 128 / 60%); color: rgb(74 222 128); }`
 - `.battle-hp__stage[data-tone='down'] { background: rgb(248 113 113 / 14%);
@@ -290,9 +301,13 @@ only configuration, and they live in the i18n pair, not in `src/data/`.
   - `npm run lint`.
   - `git diff --name-only main...task-213` — every path must be in the exclusive list,
     which now includes `src/ui/hud/panels/battle-hp/mount.tsx`. That file's diff must
-    be **one changed line** (line 27's initial `BattleHpView` literal), checked with
+    be **one hunk around one declaration** (line 27's initial `BattleHpView` literal),
+    checked with
     `git diff --numstat main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx`
-    (expect `1  1`) and read in full at
+    (expect `7  1`: `.prettierrc.json`'s `printWidth: 105` is narrower than the
+    one-line literal, so Prettier splits it to one property per line — one line
+    removed, seven added, one declaration either way; the invariant is **one hunk,
+    one declaration, nothing else in the file**) and read in full at
     `git diff main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx`.
   - **This task owes a browser pass**: three `[live]` criteria below.
     `npm run dev` (the dev menu exists only in a dev build — `.env.development`), open
@@ -325,9 +340,11 @@ only configuration, and they live in the i18n pair, not in `src/data/`.
       `[data-hud-battle-stages]` node when `stageBox` is null.
     - [ ] `[unit]` It typechecks and builds clean.
     - [ ] `[unit]` `mount.tsx` carries **only** the literal change: its whole diff is
-      line 27 gaining `stageChips: []` and `stageBox: null`, with `paint`, `update`
+      one hunk on line 27's declaration, gaining `stageChips: []` and `stageBox: null`
+      in the shape Prettier gives them at `printWidth: 105` (the object opened on its
+      own line, one property per line, closed on its own line), with `paint`, `update`
       and `dispose` byte-identical to `main` — `git diff --numstat
-      main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx` prints `1  1`, and no
+      main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx` prints `7  1`, and no
       other hunk appears in that file's diff.
     - [ ] `[unit]` Nothing outside the exclusive paths was touched — in particular
       `src/engine/**`, `src/scenes/**`, `src/ui/hud/panels/battle-moves/**` and
