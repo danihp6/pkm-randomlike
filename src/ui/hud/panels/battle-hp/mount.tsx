@@ -24,7 +24,7 @@ export function mountBattleHp(
   container.className = 'battle-hp-mount';
   host.appendChild(container);
 
-  let view: BattleHpView = { boxes: [] };
+  let view: BattleHpView = { boxes: [], foeBalls: [], foeBallsBox: null };
   const paint = (): void => {
     render(h(BattleHp, { view }), container);
   };

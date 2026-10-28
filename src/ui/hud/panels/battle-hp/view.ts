@@ -22,10 +22,26 @@ export type HpBoxView = Readonly<{
   statusLabel: string | null;
 }>;
 
+export type HpBallState = 'filled' | 'spent';
+
+/** One ball of the foe's remaining team, under its box. */
+export type HpBallView = Readonly<{
+  /** 0-based index in the foe's fielded party, which is the row's left-to-right order. */
+  index: number;
+  /** `spent` once that member has fainted (`hpFraction <= 0`). */
+  state: HpBallState;
+  /** Viewport coordinates, the ball's own 16 × 16 cell. */
+  box: Rect;
+}>;
+
 export type BattleHpView = Readonly<{
   /** Every box the battle fields right now, in draw order: foe lead, foe partner,
    * player lead, player partner. A side that fields one active has one box. */
   boxes: readonly HpBoxView[];
+  /** One ball per member the foe fielded; `[]` in a wild battle or with no battle. */
+  foeBalls: readonly HpBallView[];
+  /** The row's box (the balls' union), or null when `foeBalls` is empty. */
+  foeBallsBox: Rect | null;
 }>;
 
 /** How long a fill takes to reach its new fraction, in ms. Below the 900 ms frame
@@ -33,6 +49,12 @@ export type BattleHpView = Readonly<{
 export const HP_FILL_MS = 300;
 /** 600: below it the phone column's boxes are used (`m05`). */
 export const BATTLE_HP_BREAKPOINT = 600;
+
+/** The board's ball cell and the row's own spacing, in px. */
+export const BATTLE_BALL_SIZE = 16;
+export const BATTLE_BALL_GAP = 4;
+/** The gap between the foe's box's bottom edge and the row's top edge. */
+export const BATTLE_BALL_ROW_GAP = 8;
 
 /** `--hud-gutter`: the gap a partner box keeps from its lead, beside, below or above. */
 const GUTTER = 8;
@@ -133,6 +155,40 @@ function boxId(side: HpSide, slot: 0 | 1): HpBoxView['id'] {
   return slot === 0 ? 'player-0' : 'player-1';
 }
 
+/**
+ * The foe's ball row: one ball per member the trainer fielded, in party order, 8 px
+ * under the foe's box and one gap apart. A wild battle draws no row — the wild's
+ * party is the wild itself — and a fainted member keeps its ball, so the row counts
+ * the team the trainer started with.
+ */
+export function foeBallRow(
+  state: HudState,
+  viewport: Viewport,
+): Readonly<{ balls: readonly HpBallView[]; box: Rect | null }> {
+  const battle = state.battle;
+  if (battle === null || battle.isWild) return { balls: [], box: null };
+
+  const lead = battleHpBox(viewport, 'enemy', 0);
+  const top = lead.y + lead.h + BATTLE_BALL_ROW_GAP;
+  const step = BATTLE_BALL_SIZE + BATTLE_BALL_GAP;
+  const balls: HpBallView[] = battle.sides.enemy.party.map((member, index) => ({
+    index,
+    state: member.hpFraction <= 0 ? 'spent' : 'filled',
+    box: { x: lead.x + index * step, y: top, w: BATTLE_BALL_SIZE, h: BATTLE_BALL_SIZE },
+  }));
+  if (balls.length === 0) return { balls, box: null };
+
+  return {
+    balls,
+    box: {
+      x: lead.x,
+      y: top,
+      w: balls.length * BATTLE_BALL_SIZE + (balls.length - 1) * BATTLE_BALL_GAP,
+      h: BATTLE_BALL_SIZE,
+    },
+  };
+}
+
 /** Reads only `state.battle`; a snapshot with no battle paints no box. */
 export function battleHpView(
   state: HudState,
@@ -140,7 +196,8 @@ export function battleHpView(
   doubles: Readonly<{ enemy: boolean; player: boolean }>,
 ): BattleHpView {
   const battle = state.battle;
-  if (battle === null) return { boxes: [] };
+  const row = foeBallRow(state, viewport);
+  if (battle === null) return { boxes: [], foeBalls: row.balls, foeBallsBox: row.box };
 
   const rects = new Map<string, Rect>();
   for (const entry of battleHpLayout(viewport, doubles)) {
@@ -167,5 +224,5 @@ export function battleHpView(
       });
     }
   }
-  return { boxes };
+  return { boxes, foeBalls: row.balls, foeBallsBox: row.box };
 }
