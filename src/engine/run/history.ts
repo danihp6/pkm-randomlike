@@ -43,6 +43,12 @@ export type RunHistory = Readonly<{
   stats: RunStats;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
+  /**
+   * The fallen. A lost run's party is empty, so the record's species rows would
+   * lose every tally the dead earned; permadeath keeps the counters, so the rip
+   * counts beside the party and the box (`Task-217`).
+   */
+  rip: readonly RunPokemon[];
 }>;
 
 /**
@@ -108,10 +114,14 @@ export function makeHistoryRecord(
   };
 }
 
-/** The species rows of a run: party **and** box summed per species, sorted by id. */
+/**
+ * The species rows of a run: party, box **and** rip summed per species, sorted by
+ * id. The rip is read last because it is appended-only, so a member that somehow
+ * sits in two lists still lands in one row.
+ */
 function speciesRecords(run: RunHistory): readonly RunSpeciesRecord[] {
   const tallies = new Map<string, { speciesId: string; kos: number; damage: number }>();
-  for (const member of [...run.party, ...run.box]) {
+  for (const member of [...run.party, ...run.box, ...run.rip]) {
     const tally = member as RunPokemon & MemberTally;
     const kos = countOf(tally.kos);
     const damage = countOf(tally.damage);
