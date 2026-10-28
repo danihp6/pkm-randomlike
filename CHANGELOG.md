@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The move's info is the board's card, and the ⓘ leaves the cells.** `[Task-214]`, the fourth of
+      Batch 89: every cell carried a 22 px ⓘ that hover-floated the description, where the board draws no
+      button at all and instead puts the selected move's card above the command window. The ⓘ and its 22 px
+      reserve leave the cells, the freed column goes back to the name (162 px wide at the desk, 91 px on the
+      phone), and `battleMovesView` returns the card — title, `PP`, `PWR`, `ACC`, the type and category
+      badges and the description — for the cell the cursor is on, `null` with no cell. No cell carries an
+      info box any more, and the scene's `info` field is no longer read. On the phone the card cedes a
+      122 px rail to `[Task-213]`'s stage grid (`COMPACT_CARD_RAIL_W = 34·3 + 6·2 + 8`), which is the fix
+      Integration QA asked for after the first combined pass. Gates: `npm test` 5018 passed / 69 skipped and
+      `npm run build` green at the re-run, 5039 passed on the combined tree. Measured live over CDP: no
+      `[data-hud-move-info]` node exists, the card is `{460,414,524,160}` at 1280×800 and `{36,336,216,160}`
+      at 390×844, the arrows and a real press move it, and it meets neither the HP boxes, nor the command
+      window, nor the six-chip grid at `{260,422,114,74}` (8 px of clearance). Hovering a cell does not move
+      it yet — that needs a scene hover intent, tracked in issue #80.
 - [x] **A stat change is a chip in a grid beside the HP panel.** `[Task-213]`, the third of Batch 89: the
       board's `05` prints the active's stages as a 3×2 grid beside the player's HP box and the game printed
       nothing, so a player never saw that their Attack was up or that their Speed fell. `projectHud` now

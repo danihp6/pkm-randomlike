@@ -1,5 +1,4 @@
 import type { CSSProperties, JSX } from 'preact';
-import { useState } from 'preact/hooks';
 import { MoveCategoryIcon, MoveTypeBadge, joinClasses } from '../../kit';
 import type { BattleMovesIntent } from './mount';
 import type { BattleMoveSlotView, BattleMovesView, Rect } from './view';
@@ -13,16 +12,6 @@ export type BattleMovesProps = Readonly<{
 /** The intent a slot press sends: the index that slot's own view carries. */
 export function slotPressIntent(slot: BattleMoveSlotView): BattleMovesIntent {
   return { type: 'move', moveIndex: slot.index };
-}
-
-/** The pointer entering a slot's ⓘ asks for that slot's description, as the press does. */
-export function infoEnterIntent(slot: BattleMoveSlotView): BattleMovesIntent {
-  return { type: 'info', moveIndex: slot.index };
-}
-
-/** The pointer leaving the ⓘ drops the description. */
-export function infoLeaveIntent(): BattleMovesIntent {
-  return { type: 'info', moveIndex: null };
 }
 
 /** The card in viewport coordinates: the layer is `fixed`, so the model's page rects are its own. */
@@ -128,22 +117,14 @@ export function cardClass(compact: boolean): string {
  * The battle's move menu over the canvas (`D49`, frame `05 Battle HUD`). The layer
  * takes no pointer event and every control takes its own: the canvas's pads and
  * keys keep every other press. Each control answers with a `BattleMovesIntent`; the
- * scene maps it onto the call the canvas already made.
+ * scene maps it onto the call the canvas already made. The card floats above the
+ * layer and describes the cell the cursor is on, so it takes no press of its own.
  */
 export function BattleMoves(props: BattleMovesProps): JSX.Element {
   const { view } = props;
   const card = view.card;
   const emit = (intent: BattleMovesIntent): void => props.onIntent?.(intent);
-  // The ⓘ is a toggle: the view carries the open card, not the slot it belongs to,
-  // so the press that opened it is the press that closes it.
-  const [opened, setOpened] = useState<number | null>(null);
-  const pinned = view.info === null ? null : opened;
-
-  const pressInfo = (index: number): void => {
-    const next = pinned === index ? null : index;
-    setOpened(next);
-    emit({ type: 'info', moveIndex: next });
-  };
+  const info = view.info;
 
   return (
     <div
@@ -166,25 +147,6 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
       {view.slots.map((slot) => (
         <MoveSlot key={slot.index} slot={slot} card={card} onPress={() => emit(slotPressIntent(slot))} />
       ))}
-      {view.slots.map((slot) =>
-        slot.info === null ? null : (
-          <button
-            key={`info-${slot.index}`}
-            type="button"
-            class={joinClasses(
-              'battle-moves__info',
-              pinned === slot.index && 'battle-moves__info--active',
-            )}
-            data-hud-move-info={String(slot.index)}
-            style={insetStyle(slot.info, card)}
-            onClick={() => pressInfo(slot.index)}
-            onPointerEnter={() => emit(infoEnterIntent(slot))}
-            onPointerLeave={() => emit(infoLeaveIntent())}
-          >
-            i
-          </button>
-        ),
-      )}
       <button
         type="button"
         class="battle-moves__back"
@@ -218,17 +180,28 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
           {view.gmax.label}
         </button>
       )}
-      {view.info === null ? null : (
-        <div class="battle-moves__desc" style={insetStyle(view.info.box, card)}>
+      {info === null ? null : (
+        <div class="battle-moves__desc" data-hud-move-card style={insetStyle(info.box, card)}>
           <span class="battle-moves__desc-head">
-            <MoveTypeBadge type={view.info.type} />
-            <span class="battle-moves__desc-title">{view.info.title}</span>
+            <MoveTypeBadge type={info.type} />
+            <span class="battle-moves__desc-title" data-hud-move-card-title>
+              {info.title}
+            </span>
             <span class="battle-moves__desc-category">
-              <MoveCategoryIcon category={view.info.category} />
+              <MoveCategoryIcon category={info.category} />
+            </span>
+            <span class="battle-moves__desc-pp" data-hud-move-card-pp>
+              {info.pp}
+            </span>
+            <span class="battle-moves__desc-pwr" data-hud-move-card-pwr>
+              {info.power}
+            </span>
+            <span class="battle-moves__desc-acc" data-hud-move-card-acc>
+              {info.accuracy}
             </span>
           </span>
           <p class="battle-moves__desc-text" data-hud-move-desc>
-            {view.info.text}
+            {info.text}
           </p>
         </div>
       )}

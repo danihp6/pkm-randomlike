@@ -9350,7 +9350,7 @@ without moving either batch.
       `docs/hud-fidelity.md` §5 and `docs/battle-spec.md`. *Dependencies:* `[Task-193]` (same panel).
       *(Batch 89)*
 
-- [ ] **[Task-214] The move's info is the board's card, and the ⓘ leaves the cells.** Asked by the human
+- [x] **[Task-214] The move's info is the board's card, and the ⓘ leaves the cells.** Asked by the human
       on `2026-10-27` ("quitar botón info por chips a la esquina derecha como en figma"), in battle. The
       board has **no ⓘ**: the selected move's card sits at the top-right above the command window
       (`FLAMETHROWER`, `PP 12/15`, `PWR 90 ACC 100`, its type and category icons and the description), and

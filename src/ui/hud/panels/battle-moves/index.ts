@@ -5,6 +5,9 @@ export type { BattleMovesController, BattleMovesIntent } from './mount';
 export {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
+  COMPACT_CARD_CLEARANCE,
+  COMPACT_CARD_RAIL_W,
+  INFO_CARD_H,
   MOVE_BACK_COL,
   MOVE_CATEGORY_GAP,
   MOVE_GMAX_COL,
@@ -21,6 +24,7 @@ export {
 } from './view';
 export type {
   BattleCellTextBoxes,
+  BattleMoveInfoView,
   BattleMoveSlotView,
   BattleMovesInput,
   BattleMovesView,

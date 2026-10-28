@@ -1,31 +1,24 @@
-import { describe, expect, it, vi } from 'vitest';
-import {
-  BattleMoves,
-  MoveSlot,
-  cardClass,
-  infoEnterIntent,
-  infoLeaveIntent,
-  slotPressIntent,
-  type MoveSlotProps,
-} from './battleMoves';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { BattleMoves, MoveSlot, cardClass, slotPressIntent, type MoveSlotProps } from './battleMoves';
 import type { BattleMovesIntent } from './mount';
 import { padMoveGridCells, type MoveGridCell } from '../../../moveGrid';
-import { battleMovesView, type BattleMoveSlotView, type BattleMovesView, type Rect } from './view';
-
-// The card keeps one piece of state (the pinned ⓘ), so the panel is read as the
-// vnode tree it builds: the hook answers its initial value and never re-renders.
-vi.mock('preact/hooks', () => ({
-  useState: <T>(initial: T): [T, (next: T) => void] => [initial, () => {}],
-}));
+import {
+  battleMovesView,
+  type BattleMoveSlotView,
+  type BattleMovesInput,
+  type BattleMovesView,
+  type Rect,
+} from './view';
 
 const CARD: Rect = { x: 276, y: 582, w: 728, h: 192 };
 
 function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): BattleMoveSlotView {
   const rowY = 606 + Math.floor(index / 2) * 80;
   const box: Rect = { x: 360, y: rowY, w: 273, h: 72 };
-  const info: Rect = { x: box.x + box.w - 36, y: rowY + 8, w: 22, h: 22 };
-  const nameBox: Rect = { x: box.x + 14, y: rowY + 16.5, w: 132, h: 13 };
-  const categoryBox: Rect = { x: info.x - 8 - 24, y: rowY + 16.5, w: 24, h: 24 };
+  const nameBox: Rect = { x: box.x + 14, y: rowY + 16.5, w: box.w - 60, h: 13 };
+  const categoryBox: Rect = { x: box.x + box.w - 14 - 24, y: rowY + 16.5, w: 24, h: 24 };
   return {
     index,
     empty: false,
@@ -50,7 +43,6 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
       accuracy: { x: box.x + 205, y: rowY + 42.5, w: 68, h: 13 },
     },
     typeBox: { x: box.x + 14, y: rowY + 30.5, w: 24, h: 24 },
-    info,
     ...overrides,
   };
 }
@@ -77,6 +69,28 @@ function nodesWithClass(props: Record<string, unknown>, className: string): Reco
     if (node.props === undefined) return;
     const classes = typeof node.props.class === 'string' ? node.props.class.split(' ') : [];
     if (classes.includes(className)) found.push(node.props);
+    if (typeof node.type === 'function') {
+      walk((node.type as (given: Record<string, unknown>) => unknown)(node.props));
+      return;
+    }
+    walk(node.props.children);
+  };
+  walk(props.children);
+  return found;
+}
+
+/** Every node of a vnode tree carrying the `key` prop, at any depth. */
+function nodesWithProp(props: Record<string, unknown>, key: string): Record<string, unknown>[] {
+  const found: Record<string, unknown>[] = [];
+  const walk = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const entry of value) walk(entry);
+      return;
+    }
+    if (typeof value !== 'object' || value === null) return;
+    const node = value as Readonly<{ type?: unknown; props?: Record<string, unknown> }>;
+    if (node.props === undefined) return;
+    if (key in node.props) found.push(node.props);
     if (typeof node.type === 'function') {
       walk((node.type as (given: Record<string, unknown>) => unknown)(node.props));
       return;
@@ -132,7 +146,7 @@ describe('the move slot button', () => {
     expect(marked['data-enabled']).toBe('false');
 
     const empty = buttonProps({
-      slot: slot(3, { empty: true, enabled: false, name: '', info: null }),
+      slot: slot(3, { empty: true, enabled: false, name: '' }),
       card: CARD,
       onPress: () => {},
     });
@@ -149,7 +163,7 @@ describe('the move slot button', () => {
   it('paints the category glyph at the model s own rect, in the slot s space', () => {
     const props = buttonProps({ slot: slot(0), card: CARD, onPress: () => {} });
     expect(insideStyle(props, 'battle-moves__category')).toStrictEqual({
-      left: '205px',
+      left: '235px',
       top: '16.5px',
       width: '24px',
       height: '24px',
@@ -171,7 +185,7 @@ describe('the move slot button', () => {
     expect(insideStyle(props, 'battle-moves__name')).toStrictEqual({
       left: '14px',
       top: '16.5px',
-      width: '132px',
+      width: '213px',
       height: '13px',
     });
     expect(insideStyle(props, 'battle-moves__pp')).toStrictEqual({
@@ -209,7 +223,7 @@ describe('the move slot button', () => {
 
   it('paints neither icon on an empty slot', () => {
     const empty = buttonProps({
-      slot: slot(3, { empty: true, enabled: false, name: '', info: null }),
+      slot: slot(3, { empty: true, enabled: false, name: '' }),
       card: CARD,
       onPress: () => {},
     });
@@ -222,73 +236,6 @@ describe('the card', () => {
   it('takes its width class from the model, and says which one it is in the DOM', () => {
     expect(cardClass(false)).toBe('battle-moves');
     expect(cardClass(true)).toBe('battle-moves battle-moves--compact');
-  });
-});
-
-describe('the ⓘ hover', () => {
-  it('asks for its own slot on enter and drops it on leave', () => {
-    expect(infoEnterIntent(slot(2))).toStrictEqual({ type: 'info', moveIndex: 2 });
-    expect(infoLeaveIntent()).toStrictEqual({ type: 'info', moveIndex: null });
-  });
-});
-
-/** The card's own vnode, as the props Preact will mount it with. */
-function cardProps(view: BattleMovesView): Record<string, unknown> {
-  return (BattleMoves({ view }) as unknown as Readonly<{ props: Record<string, unknown> }>).props;
-}
-
-/** Every node of a vnode tree carrying `data-hud-move-target`, at any depth. */
-function targetNodes(props: Record<string, unknown>): Record<string, unknown>[] {
-  const found: Record<string, unknown>[] = [];
-  const walk = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      for (const entry of value) walk(entry);
-      return;
-    }
-    if (typeof value !== 'object' || value === null) return;
-    const node = value as Readonly<{ props?: Record<string, unknown> }>;
-    if (node.props === undefined) return;
-    if ('data-hud-move-target' in node.props) found.push(node.props);
-    walk(node.props.children);
-  };
-  walk(props.children);
-  return found;
-}
-
-/** The card's view at one target step state, from the model itself. */
-function cardView(target: string | null): BattleMovesView {
-  return battleMovesView({
-    open: true,
-    card: CARD,
-    cells: [],
-    selected: 0,
-    info: null,
-    mega: false,
-    gmax: false,
-    megaArmed: false,
-    gmaxArmed: false,
-    target,
-  });
-}
-
-describe('the target step s prompt row', () => {
-  it('paints exactly one node, carrying the model s label', () => {
-    const view = cardView('Pidgey');
-    const nodes = targetNodes(cardProps(view));
-    expect(nodes).toHaveLength(1);
-    expect(nodes[0]!.class).toBe('battle-moves__target');
-    expect(nodes[0]!['data-hud-move-target']).toBe(true);
-    expect(nodes[0]!.children).toBe(view.target!.label);
-    expect(nodes[0]!.style).toStrictEqual({
-      left: '20px',
-      top: '1px',
-      width: '688px',
-      height: '22px',
-    });
-  });
-
-  it('paints none while the step is closed', () => {
-    expect(targetNodes(cardProps(cardView(null)))).toHaveLength(0);
   });
 });
 
@@ -307,36 +254,163 @@ const MOVE_CELL: MoveGridCell = {
   enabled: true,
 };
 
-/** The card with its ⓘ pinned on a real move, so the description window is painted. */
-function pinnedCardView(): BattleMovesView {
-  return battleMovesView({
-    open: true,
+const FOUR_MOVES: readonly MoveGridCell[] = [
+  MOVE_CELL,
+  { ...MOVE_CELL, name: 'AIR SLASH', type: 'flying', accuracy: 95, baseAccuracy: 95 },
+  { ...MOVE_CELL, name: 'DRAGON CLAW', category: 'Physical' },
+  { ...MOVE_CELL, name: 'EARTHQUAKE', type: 'ground' },
+];
+
+/** The card's own vnode, as the props Preact will mount it with. */
+function cardProps(view: BattleMovesView): Record<string, unknown> {
+  return (BattleMoves({ view }) as unknown as Readonly<{ props: Record<string, unknown> }>).props;
+}
+
+type ViewOverrides = Readonly<{
+  open?: boolean;
+  cells?: readonly MoveGridCell[];
+  selected?: number;
+  target?: string | null;
+}>;
+
+/** The move menu's input at one state, built the way the scene builds it. */
+function inputOf(overrides: ViewOverrides = {}): BattleMovesInput {
+  return {
+    open: overrides.open ?? true,
     card: CARD,
-    cells: padMoveGridCells([MOVE_CELL], 4),
-    selected: 0,
-    info: 0,
+    cells: padMoveGridCells(overrides.cells ?? [], 4),
+    selected: overrides.selected ?? 0,
+    info: null,
     mega: false,
     gmax: false,
     megaArmed: false,
     gmaxArmed: false,
-    target: null,
-  });
+    target: overrides.target ?? null,
+  };
 }
 
-describe('the description card s head', () => {
-  it('paints the category glyph and the type badge, never the words', () => {
-    const view = pinnedCardView();
-    expect(view.info).not.toBeNull();
-    const card = nodesWithClass(cardProps(view), 'battle-moves__desc');
-    expect(card).toHaveLength(1);
-    const head: Record<string, unknown> = { children: card[0]!.children };
-    const categories = nodesWithClass(head, 'kit-move-category');
+/** The move menu's view at one state, from the model itself. */
+function viewOf(overrides: ViewOverrides = {}): BattleMovesView {
+  return battleMovesView(inputOf(overrides));
+}
+
+describe('no cell carries a button', () => {
+  it('paints no ⓘ node over a four-move grid', () => {
+    const view = viewOf({ cells: FOUR_MOVES });
+    const props = cardProps(view);
+    expect(nodesWithProp(props, 'data-hud-move-info')).toHaveLength(0);
+    expect(nodesWithClass(props, 'battle-moves__info')).toHaveLength(0);
+    expect(view.slots.every((entry) => !('info' in entry))).toBe(true);
+  });
+
+  it('keeps the four slot buttons themselves, which still choose their move', () => {
+    const view = viewOf({ cells: FOUR_MOVES });
+    const slots = nodesWithProp(cardProps(view), 'data-hud-move-slot');
+    expect(slots.map((entry) => entry['data-hud-move-slot'])).toStrictEqual(['0', '1', '2', '3']);
+    expect(slots.every((entry) => typeof entry.onClick === 'function')).toBe(true);
+  });
+});
+
+const TARGET_VIEW = viewOf();
+
+describe('the target step s prompt row', () => {
+  it('paints exactly one node, carrying the model s label', () => {
+    const view = viewOf({ target: 'Pidgey' });
+    const nodes = nodesWithProp(cardProps(view), 'data-hud-move-target');
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]!.class).toBe('battle-moves__target');
+    expect(nodes[0]!['data-hud-move-target']).toBe(true);
+    expect(nodes[0]!.children).toBe(view.target!.label);
+    expect(nodes[0]!.style).toStrictEqual({
+      left: '20px',
+      top: '1px',
+      width: '688px',
+      height: '22px',
+    });
+  });
+
+  it('paints none while the step is closed', () => {
+    expect(TARGET_VIEW.target).toBeNull();
+    expect(nodesWithProp(cardProps(TARGET_VIEW), 'data-hud-move-target')).toHaveLength(0);
+  });
+});
+
+describe('the move card', () => {
+  it('is one node at the model s box, painted in the layer s own space', () => {
+    const view = viewOf({ cells: FOUR_MOVES, selected: 0 });
+    const cards = nodesWithProp(cardProps(view), 'data-hud-move-card');
+    expect(cards).toHaveLength(1);
+    expect(cards[0]!.class).toBe('battle-moves__desc');
+    expect(cards[0]!.style).toStrictEqual({
+      left: '20px',
+      top: '-168px',
+      width: '688px',
+      height: '160px',
+    });
+    expect(view.info!.box).toStrictEqual({ x: 296, y: 414, w: 688, h: 160 });
+  });
+
+  it('prints the cursor s move: the name, the three readouts and the text', () => {
+    const view = viewOf({ cells: FOUR_MOVES, selected: 2 });
+    const card = nodesWithProp(cardProps(view), 'data-hud-move-card')[0]!;
+    const head: Record<string, unknown> = { children: card.children };
+    const pick = (key: string): unknown => nodesWithProp(head, key)[0]!.children;
+    expect(pick('data-hud-move-card-title')).toBe('DRAGON CLAW');
+    expect(pick('data-hud-move-card-pp')).toBe(view.info!.pp);
+    expect(pick('data-hud-move-card-pwr')).toBe(view.info!.power);
+    expect(pick('data-hud-move-card-acc')).toBe(view.info!.accuracy);
+    expect(pick('data-hud-move-desc')).toBe('A SHORT LINE.');
+    expect(nodesWithProp(head, 'data-hud-move-card-title')).toHaveLength(1);
+    expect(nodesWithProp(head, 'data-hud-move-desc')).toHaveLength(1);
+  });
+
+  it('paints the type badge and the category glyph, never the words', () => {
+    const view = viewOf({ cells: FOUR_MOVES });
+    const card = nodesWithProp(cardProps(view), 'data-hud-move-card')[0]!;
+    const head: Record<string, unknown> = { children: card.children };
     const types = nodesWithClass(head, 'kit-move-type');
-    expect(categories).toHaveLength(1);
-    expect(categories[0]!['aria-label']).toBe('Special');
+    const categories = nodesWithClass(head, 'kit-move-category');
     expect(types).toHaveLength(1);
     expect(types[0]!['aria-label']).toBe('fire');
+    expect(categories).toHaveLength(1);
+    expect(categories[0]!['aria-label']).toBe('Special');
     expect(nodesWithClass(head, 'kit-type')).toHaveLength(0);
     expect(JSON.stringify(head)).not.toMatch(/PHYSICAL|SPECIAL|STATUS/);
+  });
+
+  it('is not painted while the menu is closed, nor for an empty cell', () => {
+    expect(nodesWithProp(cardProps(viewOf({ open: false })), 'data-hud-move-card')).toHaveLength(0);
+    const one = viewOf({ cells: [MOVE_CELL], selected: 1 });
+    expect(nodesWithProp(cardProps(one), 'data-hud-move-card')).toHaveLength(0);
+  });
+});
+
+describe('battleMoves.css', () => {
+  const CSS = readFileSync(fileURLToPath(new URL('./battleMoves.css', import.meta.url)), 'utf8');
+
+  it('keeps the card out of the pointer s way', () => {
+    const card = /\.battle-moves__desc\s*\{([^}]*)\}/.exec(CSS);
+    expect(card).not.toBeNull();
+    expect(card![1]).toContain('pointer-events: none;');
+    expect(card![1]).toContain('overflow: hidden;');
+  });
+
+  it('lets the description scroll inside the 160 px card instead of growing it', () => {
+    const text = /\.battle-moves__desc-text\s*\{([^}]*)\}/.exec(CSS);
+    expect(text).not.toBeNull();
+    expect(text![1]).toContain('overflow-y: auto;');
+  });
+
+  it('has no per-cell ⓘ left at all', () => {
+    expect(CSS).not.toMatch(/\.battle-moves__info/);
+    const focus = /\.battle-moves__slot:focus-visible[^{]*\{([^}]*)\}/.exec(CSS);
+    expect(focus).not.toBeNull();
+    expect(focus![1]).toContain('outline: 2px solid var(--hud-accent);');
+  });
+
+  it('keeps the layer overflow visible, so the card can paint above its own box', () => {
+    const layer = /\.battle-moves\s*\{([^}]*)\}/.exec(CSS);
+    expect(layer).not.toBeNull();
+    expect(layer![1]).toContain('overflow: visible;');
   });
 });
