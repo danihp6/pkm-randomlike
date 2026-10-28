@@ -17,8 +17,8 @@ import type { RoomPanel } from '../rooms/types';
  * over. `Phaser` is a **type-only** import here, so the descriptor surface stays
  * testable headless.
  *
- * Every panel is a **render-free controller** (`D49` amended): it mounts its card
- * into `#hud` and forwards intents, and it draws no Phaser object at all.
+ * Every panel is a **controller** (`D49` amended): it builds no HUD chrome of its own —
+ * its card is DOM, and the folder's two canvas overlays are listed in this folder's README.
  */
 
 /** The route's overlay panels, one descriptor each, in `order` sequence. */

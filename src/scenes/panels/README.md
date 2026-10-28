@@ -11,9 +11,11 @@ scene.
 ## Layout
 
 - `types.ts` — the port a panel mounts and reads through, the descriptor shape, the frozen
-  panel ids and the HUD metrics. A panel is a **controller without chrome**: it mounts its
-  card into `#hud`, feeds the view and forwards intents, and it draws no window, row,
-  text or strip of its own (`D49` amended).
+  panel ids and the HUD metrics. A panel is a **controller**: it mounts its card into `#hud`,
+  feeds it the view and forwards its intents. The HUD's windows, rows, texts and strip are
+  DOM-only; the folder's two canvas overlays — the level-up/evolution popup and the reset
+  ring, both listed under _The canvas residue_ below — are the only Phaser objects a panel
+  still builds (`D49` amended).
 - `registry.ts` — collects the folder's `descriptor` exports, keyed by id and sorted
   by `order`; it throws on a duplicate id or a duplicate order.
 - `registry.test.ts` — the collection rules and the folder's own module convention.
@@ -74,10 +76,10 @@ cannot compute on its own, treated as frozen from now on:
 it is open and the quick keys plus the chip strip write it, so no panel keeps a second copy
 of that state.
 
-A `close` is optional on every descriptor and the scene walks it, in build order, on
-shutdown. Every card in this folder implements one: it unmounts its `#hud` mount (and drops
-the scene events it subscribed), because the DOM layer outlives the scene and Phaser cannot
-destroy it.
+`close` is optional on every descriptor and the scene walks it with `panel.close?.()`.
+Eight of the eleven cards dispose their mount there; `rewards`, `shop` and `trade` ship no
+`close` and are torn down by their own room timers (`closeMiniBossReward`, `closeShopCard`,
+`closeTradeCard`), which the scene does not own.
 
 ## Rules
 
@@ -91,5 +93,6 @@ destroy it.
    object is built.
 5. A helper another panel also needs is exported by the module that owns it, never
    copied.
-6. A card unmounts what it mounted: `build` mounts once, `refresh` only pushes a view, and
-   `close` disposes the mount and its listeners.
+6. A card unmounts what it mounted when its descriptor says so: `build` mounts once,
+   `refresh` only pushes the view, and `close` — where the descriptor ships one — disposes
+   the mount and its listeners.
