@@ -1,6 +1,6 @@
 # `src/ui/hud/kit/` — the primitives every panel is made of
 
-The eight pieces of the board a panel composes, one module each, plus the class
+The pieces of the board a panel composes, one module each, plus the class
 helpers and the one kit stylesheet. Stateless by contract: no hooks, no context, no
 Phaser, no DOM, no i18n — text arrives as props or children, already localised.
 
@@ -25,9 +25,11 @@ Phaser, no DOM, no i18n — text arrives as props or children, already localised
 - `meta.test.ts` — the span shape and one modifier per tone.
 - `typeBadge.tsx` — the canon type chip: the type palette's fill and the readable ink chosen by contrast.
 - `typeBadge.test.ts` — the hex format, the 4.5:1 contrast for the eighteen types and the unknown fallback.
-- `kit.css` — the measured geometry of every primitive: tokens only, 1 px hairlines, the ten type pairs, the kit's three radii and the 44 px targets.
-- `kit.css.test.ts` — the stylesheet read as text: no literal colour, no literal size, no shadow, 1 px borders, the three scoped radii, the focus ring.
-- `index.test.ts` — the barrel's exact export list, asserted against a literal list.
+- `moveIcons.tsx` — a move's type badge and category glyph: one frame of a packed atlas drawn inside the board's 24 px square, the two resolvers and the background arithmetic (`spriteBox`) that fits, offsets and clips it; the word chip is the fallback.
+- `moveIcons.test.ts` — every type and category frame against its manifest, the whole-atlas background and the band's clip at both boxes, and the two components' glyph/word branches, headless.
+- `kit.css` — the measured geometry of every primitive: tokens only, 1 px hairlines, the ten type pairs, the kit's three radii, the 44 px targets and the two move-icon blocks that make a glyph's inline box its own.
+- `kit.css.test.ts` — the stylesheet read as text: no literal colour, no literal size, no shadow, 1 px borders, the three scoped radii, the focus ring, the move icons' block boxes.
+- `index.test.ts` — the barrel's exact export list, asserted against a literal list, plus the move icons' box and the type badge's glyph/word branch.
 - `README.md` — this map.
 
 ## Rules

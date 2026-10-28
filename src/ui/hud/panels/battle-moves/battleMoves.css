@@ -73,19 +73,22 @@
   cursor: default;
 }
 
-/* The type chip rides with the stat block, not with the name: on the name's own
-   line its label (30–60 px, one per type) would take the width the move's name
-   needs. The wide cell keeps it in the left gutter the stat lines start past; the
-   compact cell gives it a row of its own, beside the ⓘ. */
-.battle-moves__type {
+/* The type badge rides with the stat block, not with the name: the 24 px square on
+   the name's own line would take the width the move's name needs. The wide cell
+   keeps it in the left gutter the stat lines start past; the compact cell gives it
+   the first row, beside the ⓘ. Both it and the category glyph are one atlas frame,
+   drawn by the inline background `spriteBox` measures, so the wrapper only places
+   the model's box. */
+.battle-moves__type,
+.battle-moves__category {
   position: absolute;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 /* One label, one model rect: `left` / `top` / `width` / `height` come in inline. */
 .battle-moves__name,
-.battle-moves__category,
 .battle-moves__pp,
 .battle-moves__pwr,
 .battle-moves__acc {
@@ -102,10 +105,11 @@
   text-overflow: ellipsis;
 }
 
-.battle-moves__category {
-  color: var(--hud-text-muted);
-  text-align: right;
-  text-transform: uppercase;
+/* The compact cell's category box is one 13 px line, so the 24 px glyph element is
+   anchored to its bottom edge, a pixel clear of the name line under it. */
+.battle-moves--compact .battle-moves__category .kit-move-category,
+.battle-moves--compact .battle-moves__category .kit-move-category-text {
+  margin-bottom: 1px;
 }
 
 .battle-moves__pp {

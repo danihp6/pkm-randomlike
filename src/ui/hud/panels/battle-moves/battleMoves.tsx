@@ -1,6 +1,6 @@
 import type { CSSProperties, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { TypeBadge, joinClasses } from '../../kit';
+import { MoveCategoryIcon, MoveTypeBadge, joinClasses } from '../../kit';
 import type { BattleMovesIntent } from './mount';
 import type { BattleMoveSlotView, BattleMovesView, Rect } from './view';
 import './battleMoves.css';
@@ -65,8 +65,8 @@ export type MoveSlotProps = Readonly<{
 }>;
 
 /**
- * One move card: the type chip, the name, the category and the three stat lines,
- * each painted at the box `cellTextBoxes` measured for it — never at a CSS grid
+ * One move card: the type badge, the name, the category glyph and the three stat
+ * lines, each painted at the box `cellTextBoxes` measured for it — never at a CSS grid
  * area, so the model's own rects are what the browser draws.
  */
 export function MoveSlot(props: MoveSlotProps): JSX.Element {
@@ -90,13 +90,13 @@ export function MoveSlot(props: MoveSlotProps): JSX.Element {
       {slot.empty ? null : (
         <>
           <span class="battle-moves__type" style={labelStyle(slot, slot.typeBox)}>
-            <TypeBadge type={slot.type} />
+            <MoveTypeBadge type={slot.type} />
           </span>
           <span class="battle-moves__name" style={labelStyle(slot, slot.boxes.name)}>
             {slot.name}
           </span>
-          <span class="battle-moves__category" style={labelStyle(slot, slot.boxes.category)}>
-            {slot.category}
+          <span class="battle-moves__category" style={labelStyle(slot, slot.categoryBox)}>
+            <MoveCategoryIcon category={slot.category} />
           </span>
           <span class="battle-moves__pp" style={labelStyle(slot, slot.boxes.pp)}>
             {slot.pp}
@@ -221,9 +221,11 @@ export function BattleMoves(props: BattleMovesProps): JSX.Element {
       {view.info === null ? null : (
         <div class="battle-moves__desc" style={insetStyle(view.info.box, card)}>
           <span class="battle-moves__desc-head">
-            <TypeBadge type={view.info.type} />
+            <MoveTypeBadge type={view.info.type} />
             <span class="battle-moves__desc-title">{view.info.title}</span>
-            <span class="battle-moves__desc-category">{view.info.category}</span>
+            <span class="battle-moves__desc-category">
+              <MoveCategoryIcon category={view.info.category} />
+            </span>
           </span>
           <p class="battle-moves__desc-text" data-hud-move-desc>
             {view.info.text}

@@ -220,6 +220,85 @@ describe('detailPanelView', () => {
     ]);
   });
 
+  it('gives each move cell its two atlas squares and the three lines beside them', () => {
+    const desktop = detailPanelView(detailOf(), [], uiOf({ tab: 'moves' }), DESKTOP);
+    for (const slot of desktop.moves) {
+      expect(slot.typeBox).toEqual({ x: slot.box.x + 10, y: slot.box.y + 10, w: 24, h: 24 });
+      expect(slot.categoryBox).toEqual({ x: slot.box.x + 10, y: slot.box.y + 36, w: 24, h: 24 });
+      expect(slot.nameBox).toEqual({
+        x: slot.box.x + 44,
+        y: slot.box.y + 8,
+        w: 116,
+        h: 13,
+      });
+      expect(slot.ppBox).toEqual({
+        x: slot.box.x + 44,
+        y: slot.box.y + 24,
+        w: 144,
+        h: 13,
+      });
+      expect(slot.statsBox).toEqual({
+        x: slot.box.x + 44,
+        y: slot.box.y + 38,
+        w: 144,
+        h: 13,
+      });
+    }
+
+    const phone = detailPanelView(detailOf(), [], uiOf({ tab: 'moves' }), PHONE);
+    for (const slot of phone.moves) {
+      expect(slot.nameBox.w).toBe(73);
+      expect(slot.ppBox.w).toBe(101);
+      expect(slot.statsBox.w).toBe(101);
+    }
+  });
+
+  it('keeps the two icons and the three text lines inside the cell, clear of the ⓘ', () => {
+    const inside = (inner: Rect, outer: Rect): boolean =>
+      inner.x >= outer.x - 0.5 &&
+      inner.y >= outer.y - 0.5 &&
+      inner.x + inner.w <= outer.x + outer.w + 0.5 &&
+      inner.y + inner.h <= outer.y + outer.h + 0.5;
+    const overlaps = (a: Rect, b: Rect): boolean =>
+      Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) &&
+      Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+
+    for (const viewport of [DESKTOP, PHONE]) {
+      const view = detailPanelView(detailOf(), [], uiOf({ tab: 'moves' }), viewport);
+      for (const slot of view.moves) {
+        const info = { ...slot.info, x: slot.box.x + slot.info.x, y: slot.box.y + slot.info.y };
+        for (const box of [slot.typeBox, slot.categoryBox, slot.nameBox, slot.ppBox, slot.statsBox]) {
+          expect(inside(box, slot.box)).toBe(true);
+        }
+        expect(slot.categoryBox.y).toBe(slot.typeBox.y + 26);
+        expect(slot.nameBox.x).toBe(slot.typeBox.x + 34);
+        expect(slot.ppBox.y).toBe(slot.nameBox.y + 16);
+        expect(slot.statsBox.y).toBe(slot.ppBox.y + 14);
+        // The icons sit in the cell's own left column, well left of every text line.
+        for (const icon of [slot.typeBox, slot.categoryBox]) {
+          expect(overlaps(icon, info)).toBe(false);
+          expect(icon.x + icon.w).toBeLessThanOrEqual(slot.nameBox.x);
+        }
+        expect(overlaps(slot.nameBox, info)).toBe(false);
+        expect(overlaps(slot.statsBox, info)).toBe(false);
+      }
+    }
+  });
+
+  it('gives an empty slot the same five boxes, collapsed to no width', () => {
+    const view = detailPanelView(
+      detailOf({ moves: [move('flamethrower'), move('airslash', 75)] }),
+      [],
+      uiOf({ tab: 'moves' }),
+      DESKTOP,
+    );
+    const empty = slotOf(view, 2);
+    for (const box of [empty.typeBox, empty.categoryBox, empty.nameBox, empty.ppBox, empty.statsBox]) {
+      expect(box.w).toBe(0);
+    }
+    expect(empty.typeBox.y).toBe(empty.box.y + 10);
+  });
+
   it('pads a short moveset with empty slots and marks the cursor', () => {
     const view = detailPanelView(
       detailOf({ moves: [move('flamethrower'), move('airslash', 75)] }),

@@ -1,5 +1,5 @@
 import type { CSSProperties, JSX } from 'preact';
-import { TypeBadge } from '../../kit';
+import { MoveCategoryIcon, MoveTypeBadge, TypeBadge } from '../../kit';
 import type { DetailIntent } from './mount';
 import {
   DETAIL_CONTENT_LEFT,
@@ -122,11 +122,23 @@ function MoveSlot(
       >
         {slot.moveId === null ? null : (
           <>
-            <span class="detail__slot-name">{slot.name}</span>
-            <span class="detail__slot-meta">
-              <span>{slot.pp}</span>
-              <span>{slot.power}</span>
-              <span>{slot.accuracy}</span>
+            <span class="detail__slot-type" style={box(slot.typeBox, slot.box)}>
+              <MoveTypeBadge type={slot.type} />
+            </span>
+            <span class="detail__slot-category" style={box(slot.categoryBox, slot.box)}>
+              <MoveCategoryIcon category={slot.category} />
+            </span>
+            <span class="detail__slot-name" style={box(slot.nameBox, slot.box)}>
+              {slot.name}
+            </span>
+            <span class="detail__slot-pp" style={box(slot.ppBox, slot.box)}>
+              {slot.pp}
+            </span>
+            <span class="detail__slot-pwr" style={box(slot.statsBox, slot.box)}>
+              {slot.power}
+            </span>
+            <span class="detail__slot-acc" style={box(slot.statsBox, slot.box)}>
+              {slot.accuracy}
             </span>
           </>
         )}
@@ -169,7 +181,9 @@ function PoolRow(
       }}
     >
       <span class="detail__pool-name">{row.name}</span>
-      <TypeBadge type={row.type} />
+      <span class="detail__pool-type">
+        <MoveTypeBadge type={row.type} />
+      </span>
       <span class="detail__pool-source">{row.source}</span>
     </button>
   );

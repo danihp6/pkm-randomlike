@@ -318,6 +318,21 @@
   text-transform: uppercase;
 }
 
+/*
+ * A move's type badge and category glyph: one frame of a packed atlas, painted by
+ * the inline background `spriteBox` measures, so each keeps its own linear size and
+ * the box it is laid out in is the element's own.
+ */
+.kit-move-type {
+  display: block;
+  box-sizing: border-box;
+}
+
+.kit-move-category {
+  display: block;
+  box-sizing: border-box;
+}
+
 .kit-row:focus-visible,
 .kit-chip:focus-visible,
 .kit-sheet__close:focus-visible,

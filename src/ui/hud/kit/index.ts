@@ -17,3 +17,12 @@ export { Meta } from './meta';
 export type { KitTone, MetaProps } from './meta';
 export { TypeBadge, typeBadgeTone } from './typeBadge';
 export type { TypeBadgeProps } from './typeBadge';
+export {
+  MoveCategoryIcon,
+  MoveTypeBadge,
+  MOVE_ICON_BOX,
+  moveCategorySprite,
+  moveTypeSprite,
+  spriteBox,
+} from './moveIcons';
+export type { MoveCategoryIconProps, MoveIconSprite, MoveTypeBadgeProps } from './moveIcons';
