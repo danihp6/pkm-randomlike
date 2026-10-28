@@ -69,6 +69,16 @@ const CELL_LINES = 3;
 const COMPACT_CELL_LINES = 6;
 /** The accuracy column: the widest line a cell prints (`ACC 300 ↑`), so none of them is elided. */
 const ACCURACY_W = 68;
+/**
+ * The three category words the wide cell's label set carries, keyed by the cell's own
+ * category. The slot prints them uppercase; the compact cell has no column for one — its
+ * category is the atlas glyph alone — so there `categoryLabel` is `''`.
+ */
+export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
+  Physical: 'PHYSICAL',
+  Special: 'SPECIAL',
+  Status: 'STATUS',
+};
 
 /** The drawn px of `text` at `size` (default: `--hud-type-body-size`, 10 px), from `font.json`. */
 export function drawnTextWidth(text: string, size: number = BODY_SIZE): number {
@@ -190,6 +200,8 @@ export type BattleMoveSlotView = Readonly<{
   name: string;
   type: string;
   category: string;
+  /** The category **word** as painted; '' when the layout draws the chip alone. */
+  categoryLabel: string;
   pp: string;
   power: string;
   accuracy: string;
@@ -273,6 +285,11 @@ function ppLabel(cell: MoveGridCell): string {
 /** `PWR 90`, or the dash a status move reads. */
 function powerLabel(cell: MoveGridCell): string {
   return cell.basePower > 0 ? t('move.pwr', { value: cell.power }) : t('move.pwrNone');
+}
+
+/** The category's word in the case the slot paints it; a key the table misses reads as itself. */
+function categoryLabelOf(category: string): string {
+  return CATEGORY_LABELS[category] ?? category.toUpperCase();
 }
 
 /** The first text row's top inside a wide cell: three body lines centred in its padding box. */
@@ -360,6 +377,11 @@ function wideCellTextBoxes(cell: Rect): BattleCellTextBoxes {
  * their gap). The six lines fill the cell's padding box, and the category keeps its
  * 24 px column on the content box's right edge, the glyph the badge shares the first
  * row with having left no column of its own.
+ *
+ * The accuracy keeps its own line for the same reason: the widest hit-chance line
+ * (`ACC 300 ↑`, 67.5 px) plus the 8 px gap would leave the name 15 of those 91 px, so
+ * marrying the two on the second row would trade a name wider than 40 px — the one
+ * string that is ever cut — for a number that cannot be cut at all.
  */
 function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
   const content = contentBoxOf(cell);
@@ -423,6 +445,7 @@ function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotV
     name: '',
     type: '',
     category: '',
+    categoryLabel: '',
     pp: '',
     power: '',
     accuracy: '',
@@ -454,6 +477,7 @@ function slotView(
     name: elideToWidth(cell.name.toUpperCase(), boxes.name.w),
     type: cell.type,
     category: cell.category,
+    categoryLabel: compact ? '' : categoryLabelOf(cell.category),
     pp: ppLabel(cell),
     power: powerLabel(cell),
     accuracy: accuracyLabel(cell),
