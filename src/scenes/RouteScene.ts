@@ -240,12 +240,7 @@ import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
-import type {
-  RoomDescriptor,
-  RoomHost,
-  RoomPanel,
-  RoomWildBattle,
-} from './rooms/types';
+import type { RoomDescriptor, RoomHost, RoomPanel, RoomWildBattle } from './rooms/types';
 import { bagTextFieldFocused, typeInBagSearch } from './panels/bag';
 import {
   cancelNicknameEdit,

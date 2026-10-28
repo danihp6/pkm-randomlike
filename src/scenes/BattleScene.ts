@@ -96,9 +96,7 @@ import {
   type BagFocus,
 } from '../ui/bag';
 import { battleFrames, type FeedFrame } from '../ui/feed';
-import {
-  statusAbbreviation,
-} from '../ui/metrics';
+import { statusAbbreviation } from '../ui/metrics';
 import {
   advanceTypewriter,
   beginTypewriter,
@@ -154,13 +152,8 @@ import { syncHud } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
-import {
-  MoveGrid,
-  padMoveGridCells,
-  stepMoveGridCursor,
-  type MoveGridCell,
-} from '../ui/moveGrid';
-import {partyGridFieldRows, stepPartyCursor} from '../ui/partyGrid';
+import { MoveGrid, padMoveGridCells, stepMoveGridCursor, type MoveGridCell } from '../ui/moveGrid';
+import { partyGridFieldRows, stepPartyCursor } from '../ui/partyGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import { t } from '../i18n';
 import { moveName, moveShortDescription } from '../i18n/content';
@@ -241,7 +234,6 @@ export function monIdleFrames(manifestFrames: number, textureFrameTotal: number)
   if (wanted < 1 || available < 1) return [];
   return Array.from({ length: Math.min(wanted, available) }, (_, frame) => frame);
 }
-
 
 installBattleSwitchPreview(typeof window === 'undefined' ? '' : window.location.search);
 installBattleLogPreview(typeof window === 'undefined' ? '' : window.location.search);
@@ -756,7 +748,6 @@ export class BattleScene extends Phaser.Scene {
       .setScale(2)
       .setDepth(7)
       .setVisible(false);
-
   }
 
   private bindInput(): void {
@@ -2454,7 +2445,6 @@ export class BattleScene extends Phaser.Scene {
         (this.displayHp2.player > 0 || this.beat2.player === 'faint'),
     );
 
-
     // The one emit point (`D49`): the DOM boxes paint the snapshot while the canvas
     // keeps the arena. It runs after the whole layout, because the combatants' caps
     // and positions above are read by the arena, not by the boxes.
@@ -2469,13 +2459,10 @@ export class BattleScene extends Phaser.Scene {
     this.updateBattleLog();
   }
 
-
-
   /**
    * The second slot's window on a side, or nothing when the battle does not field
    * it (the shipped single layout, reached through the same code).
    */
-
 
   /** Counts the visible objects of the four HP kits: the `?hud=dom` flag contract's probe. */
   hpDrawnObjectCount(): number {

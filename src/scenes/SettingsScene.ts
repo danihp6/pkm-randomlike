@@ -4,10 +4,7 @@ import type { KeybindAction } from '../data/keybinds';
 import type { Settings } from '../engine/save';
 import { applyVolume, loadSettings, saveSettings } from '../settings';
 import { prefersTouchControls } from '../input/device';
-import {
-  reduceHudCommand,
-  type HudCommand,
-} from '../ui/hud/commands';
+import { reduceHudCommand, type HudCommand } from '../ui/hud/commands';
 import {
   installOptionsPreview,
   liveOptionsView,
@@ -189,12 +186,7 @@ export class SettingsScene extends Phaser.Scene {
   /** The one emit point of the DOM panel: the scene owns the settings, the panel paints them. */
   private pushView(): void {
     if (this.view === null) return;
-    this.view.value = liveOptionsView(
-      this.settings,
-      this.touch,
-      this.index,
-      this.capturing !== null,
-    );
+    this.view.value = liveOptionsView(this.settings, this.touch, this.index, this.capturing !== null);
   }
 
   /** Mounts the panel in the HUD layer; a missing layer mounts nothing. */

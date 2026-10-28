@@ -1,11 +1,5 @@
 import Phaser from 'phaser';
-import {
-  createRun,
-  createRunPokemon,
-  starterOffer,
-  type RunMode,
-  type RunShare,
-} from '../engine/run';
+import { createRun, createRunPokemon, starterOffer, type RunMode, type RunShare } from '../engine/run';
 import { STARTING_BAG } from '../data/run';
 import { randomSeed } from '../engine/rng';
 import { keyLabel, type KeybindAction } from '../data/keybinds';

@@ -23,17 +23,7 @@ import type { RoomPanel } from '../rooms/types';
 
 /** The route's overlay panels, one descriptor each, in `order` sequence. */
 export type RoutePanelId =
-  | 'map'
-  | 'party'
-  | 'hud'
-  | 'bag'
-  | 'pc'
-  | 'notices'
-  | 'rewards'
-  | 'shop'
-  | 'trade'
-  | 'pause'
-  | 'detail';
+  'map' | 'party' | 'hud' | 'bag' | 'pc' | 'notices' | 'rewards' | 'shop' | 'trade' | 'pause' | 'detail';
 
 /** One panel: what it is, when it paints and what it owns. */
 export type RoutePanelDescriptor = Readonly<{

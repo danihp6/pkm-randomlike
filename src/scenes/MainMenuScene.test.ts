@@ -392,7 +392,7 @@ describe('the RANKING row', () => {
     expect(mocks.mountMainMenu).toHaveBeenCalledTimes(1);
     expect(mocks.mountMainMenu.mock.calls[0]?.[0]).toBe(host);
     expect(mainMenuDrawnObjectCount(instance as unknown as Phaser.Scene)).toBe(0);
-    expect(SOURCE).not.toContain(['DOM','HUD'].join('_'));
+    expect(SOURCE).not.toContain(['DOM', 'HUD'].join('_'));
     expect(SOURCE).not.toContain('addFrlgText');
   });
 });
