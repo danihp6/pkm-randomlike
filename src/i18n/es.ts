@@ -58,6 +58,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'stats.blurbRuns': 'TODAS LAS PARTIDAS, LA MÁS NUEVA PRIMERO.',
   'stats.blurbPokemon': 'TODOS LOS POKÉMON QUE HAS CRIADO.',
   'stats.blurbRanking': 'REGISTRO MENSUAL · ESTE EQUIPO.',
+  'stats.blurbRankingGlobal': 'CLASIFICACIÓN MENSUAL · TODOS.',
   'stats.blurbRankingPokemon': 'CLASIFICACIÓN POKÉMON · TODAS LAS PARTIDAS.',
   'stats.tabTotals': 'TOTALES',
   'stats.tabRuns': 'PARTIDAS',

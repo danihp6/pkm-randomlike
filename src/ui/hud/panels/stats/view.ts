@@ -1,12 +1,14 @@
 import { getSpecies } from '../../../../data/dex/species';
 import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { t, type TranslationKey } from '../../../../i18n';
+import type { RankingBoard } from '../../../../net/ranking';
 import { historyBestFloor, historyWins, recordMonthKey } from './records';
 
 /**
- * The stats and ranking screen's value model (`D49`, frames `08` / `08b` / `08c` /
- * `09` / `09b` and their `m…` twins), as plain data: the totals grid, the run list,
- * the Pokédex-style Pokémon table and the **local** monthly record.
+ * The stats and ranking screen's value model (`D49`, frames `08` / `08b` / `08c` / `09` /
+ * `09b` and their `m…` twins), as plain data: the totals grid, the run list, the
+ * Pokédex-style Pokémon table and the monthly board — the **global** one when the
+ * scene hands a `RankingBoard` in, the device's own record when it does not (`D56`).
  *
  * The figures come from the run-history store (`src/engine/run/history.ts`), which
  * records no damage taken: the tanked column is the em dash, never a made-up number.
@@ -470,31 +472,79 @@ function rankingView(
   history: readonly RunHistoryRecord[],
   months: readonly StatsMonth[],
   monthKey: string | null,
+  global: RankingBoard | null,
 ): StatsView {
   const at = monthIndex(months, monthKey);
   const month = months[at];
   const inMonth =
     month === undefined ? [] : history.filter((record) => utcMonthKey(record.endedAt) === month.key);
-  const runs = inMonth.length;
-  const wins = inMonth.filter((record) => record.won).length;
-  const bestFloor =
-    runs === 0 ? 0 : Math.max(...inMonth.map((record) => nonNegative(record.mapReached)));
+  const own = ownRankingRow(inMonth);
+
+  const columns: readonly string[] = [
+    t('stats.colPlayer'),
+    t('stats.colRuns'),
+    t('stats.colWins'),
+    t('stats.colBestFloor'),
+  ];
+  const selector =
+    month === undefined
+      ? null
+      : { label: month.label, canPrev: at < months.length - 1, canNext: at > 0 };
+
+  if (global === null) {
+    return {
+      mode: 'ranking',
+      title: t('stats.title'),
+      blurb: t('stats.blurbRanking'),
+      tabs: [],
+      figures: [],
+      columns,
+      rows: [own],
+      empty: inMonth.length === 0 ? t('stats.emptyMonth') : null,
+      month: selector,
+      actions: [action('ranking-pokemon'), action('back')],
+    };
+  }
+
+  const rows: StatsRow[] = global.rows.map((row, index) => ({
+    id: `global-${index}`,
+    cells: [
+      row.deviceId === global.ownDeviceId ? t('stats.you') : rankingTag(row.deviceId),
+      String(row.runs),
+      String(row.wins),
+      String(row.bestFloor),
+    ],
+  }));
+  if (!global.rows.some((row) => row.deviceId === global.ownDeviceId)) rows.push(own);
 
   return {
     mode: 'ranking',
     title: t('stats.title'),
-    blurb: t('stats.blurbRanking'),
+    blurb: t('stats.blurbRankingGlobal'),
     tabs: [],
     figures: [],
-    columns: [t('stats.colPlayer'), t('stats.colRuns'), t('stats.colWins'), t('stats.colBestFloor')],
-    rows: [{ id: 'you', cells: [t('stats.you'), String(runs), String(wins), String(bestFloor)] }],
-    empty: runs === 0 ? t('stats.emptyMonth') : null,
-    month:
-      month === undefined
-        ? null
-        : { label: month.label, canPrev: at < months.length - 1, canNext: at > 0 },
+    columns,
+    rows,
+    empty: global.rows.length === 0 && inMonth.length === 0 ? t('stats.emptyMonth') : null,
+    month: selector,
     actions: [action('ranking-pokemon'), action('back')],
   };
+}
+
+/** The device's own month, the row `ranking` always shows and the global board marks. */
+function ownRankingRow(inMonth: readonly RunHistoryRecord[]): StatsRow {
+  const wins = inMonth.filter((record) => record.won).length;
+  const bestFloor =
+    inMonth.length === 0 ? 0 : Math.max(...inMonth.map((record) => nonNegative(record.mapReached)));
+  return {
+    id: 'you',
+    cells: [t('stats.you'), String(inMonth.length), String(wins), String(bestFloor)],
+  };
+}
+
+/** Another player's label: the last four characters of the rotating id, `#XXXX`. */
+function rankingTag(deviceId: string): string {
+  return `#${deviceId.slice(-4).toUpperCase()}`;
 }
 
 /** The selected month's index; a stale key falls back to the newest month, never a crash. */
@@ -537,6 +587,7 @@ export function liveStatsView(
   mode: StatsMode,
   monthKey: string | null,
   now: Date,
+  global: RankingBoard | null = null,
 ): StatsView {
   const records = sortedHistory(history);
   switch (mode) {
@@ -547,7 +598,7 @@ export function liveStatsView(
     case 'pokemon':
       return pokemonView(records);
     case 'ranking':
-      return rankingView(records, statsMonths(records, now), monthKey);
+      return rankingView(records, statsMonths(records, now), monthKey, global);
     case 'ranking-pokemon':
       return rankingPokemonView(records);
   }

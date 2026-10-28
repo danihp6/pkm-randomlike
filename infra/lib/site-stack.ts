@@ -1,11 +1,14 @@
-import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { CloudflareDnsProvider } from './cloudflare';
 
 export interface SiteStackProps extends StackProps {
@@ -91,12 +94,45 @@ export class SiteStack extends Stack {
       ttl: 1,
     });
 
+    const rankingTable = new dynamodb.Table(this, 'RankingTable', {
+      tableName: 'PokeRandomLikeRanking',
+      partitionKey: { name: 'month', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'strike', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'expiresAt',
+    });
+
+    const rankingFunction = new lambda.Function(this, 'RankingFunction', {
+      runtime: lambda.Runtime.NODEJS_24_X,
+      handler: 'ranking.handler',
+      code: lambda.Code.fromAsset(join(__dirname, '..', 'lambda')),
+      timeout: Duration.seconds(10),
+      memorySize: 256,
+      environment: { RANKING_TABLE: rankingTable.tableName },
+      description: 'PokeRandomLike monthly ranking: POST a finished run, GET the month top.',
+    });
+    rankingTable.grantReadWriteData(rankingFunction);
+
+    const rankingUrl = rankingFunction.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: [`https://${props.siteDomain}`, 'http://localhost:5175'],
+        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
+        allowedHeaders: ['content-type'],
+        maxAge: Duration.hours(1),
+      },
+    });
+
     new s3deploy.BucketDeployment(this, 'DeploySite', {
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
       prune: true,
-      sources: [s3deploy.Source.asset(props.buildDir)],
+      sources: [
+        s3deploy.Source.asset(props.buildDir),
+        s3deploy.Source.jsonData('ranking.json', { endpoint: rankingUrl.url }),
+      ],
     });
 
     new CfnOutput(this, 'SiteUrl', {
@@ -108,6 +144,10 @@ export class SiteStack extends Stack {
     new CfnOutput(this, 'DistributionDomainName', {
       value: distribution.distributionDomainName,
       description: 'CloudFront domain (the Cloudflare CNAME target).',
+    });
+    new CfnOutput(this, 'RankingEndpoint', {
+      value: rankingUrl.url,
+      description: 'The monthly ranking endpoint (POST a run, GET the month top).',
     });
   }
 }

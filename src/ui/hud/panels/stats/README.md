@@ -10,15 +10,16 @@ handed.
 ## Layout
 
 - `view.ts` — the panel's value model: `liveStatsView` (the totals, the run rows, the
-  species aggregation and the monthly record, from the run-history store),
-  `fixtureStatsView` (the frame's own copy and its structural guards), `statsMonths`,
-  both boards' rects and their `figureRule`, `figureRuleBox` / `figureRuleLocal`, the
-  narrow breakpoint, the slugs, the modes and the three formats (`statsDuration`,
-  `statsDate`, `statsMonthLabel`, `statsDay`).
+  species aggregation and the monthly board — the global one when the scene hands a
+  `RankingBoard`, the device's own record otherwise), `fixtureStatsView` (the frame's
+  own copy and its structural guards), `statsMonths`, both boards' rects and their
+  `figureRule`, `figureRuleBox` / `figureRuleLocal`, the narrow breakpoint, the slugs,
+  the modes and the three formats (`statsDuration`, `statsDate`, `statsMonthLabel`,
+  `statsDay`).
 - `view.test.ts` — the twelve totals figures and their em dashes, the run rows and their
   re-sort, the species aggregation and both sort orders, the month list, the selector's
-  clamp and fallback, the empty states, both boards, the twelve rule boxes and the purity
-  checks, headless.
+  clamp and fallback, the empty states, the global board and its own marked line, both
+  boards, the twelve rule boxes and the purity checks, headless.
 - `records.ts` — the run-history arithmetic the stats totals and the main-menu footer
   share: the won runs, the deepest floor of a list and a UTC month key for an instant.
 - `records.test.ts` — the wins, the best floor over a hand-built store and a filtered
@@ -55,9 +56,13 @@ handed.
 2. **Data honesty.** A record carries no damage taken, so the tanked column — and only
    that column — is the em dash (`\u2014`, U+2014). The fixtures' DMG TANKED figures
    belong to the frame, not to the model, and no code derives them.
-3. **It is the local record, not a leaderboard.** There are no other players, so `09`
-   shows one `YOU` row for the month it holds and `09b` says ALL RUNS; the frames' names
-   and figures exist only in `design/fixtures/`.
+3. **The ranking is global; the rest is local.** `ranking` draws the month's board the
+   endpoint aggregated (`RankingBoard`, `D56`) and marks the device's own line, while
+   `totals`, `runs`, `pokemon` and `ranking-pokemon` read this device's store. With no
+   board — offline, no `ranking.json`, or an unreadable answer — `ranking` falls back to
+   the device's own record and says so in its blurb (`stats.blurbRanking`, the offline
+   copy). The other player's label is `#` + the last four characters of its rotating
+   device id, because the save carries no player name.
 4. The panel is data: no scene, no run, no RNG, no clock, no storage and no Phaser. Every
    label arrives in the `StatsView` (the i18n call sites live in `view.ts`), and a fixture
    payload's own copy wins when it carries one.

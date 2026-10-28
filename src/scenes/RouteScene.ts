@@ -137,7 +137,7 @@ import {
 } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, loadSave, storeHistory, storeRun, type Settings } from '../engine/save';
-import { emptyEndLog, endRun, type RunEndLog } from '../engine/run/history';
+import { emptyEndLog, endRun, type RunEndLog, type RunHistoryRecord } from '../engine/run/history';
 import {
   DEFAULT_SHAPE,
   DEFAULT_TRAINER_SIGHT,
@@ -249,6 +249,7 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
+import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking } from '../net/ranking';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
@@ -570,6 +571,8 @@ export class RouteScene extends Phaser.Scene {
   private pendingBattle: BattleLaunch | null = null;
   /** The run-history log the end seam writes through; built from the loaded save. */
   private endLog: RunEndLog | null = null;
+  /** The monthly ranking's endpoint, resolved once; `undefined` = not asked yet. */
+  private rankingEndpoint: string | null | undefined;
   /** The movement keys behind the current bindings (arrows plus WASD), watched every frame. */
   private moveKeys!: Record<MoveKey, Phaser.Input.Keyboard.Key[]>;
   /** The run key; held while walking, it speeds the step and the walk cycle. */
@@ -3883,7 +3886,27 @@ export class RouteScene extends Phaser.Scene {
     });
     this.endLog = next;
     if (next.history !== log.history) storeHistory(browserStorage(), next.history);
+    const record = next.history[0];
+    if (!log.ended && record !== undefined) void this.submitFinishedRun(record);
     this.scene.start('RunOver', { run: this.run, won });
+  }
+
+  /**
+   * The finished run's one submission to the monthly ranking (`D56`). Fire and
+   * forget: the record is already in the save, so no failure here may reach the
+   * player, and the endpoint is resolved once per scene.
+   */
+  private async submitFinishedRun(record: RunHistoryRecord): Promise<void> {
+    try {
+      if (this.rankingEndpoint === undefined) {
+        this.rankingEndpoint = await loadRankingEndpoint();
+      }
+      const endpoint = this.rankingEndpoint;
+      if (endpoint === null || endpoint === undefined) return;
+      await submitRanking(buildRankingEntry(record, rankingDeviceId(browserStorage())), endpoint);
+    } catch {
+      this.rankingEndpoint = null;
+    }
   }
 
   /**

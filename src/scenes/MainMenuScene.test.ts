@@ -27,6 +27,10 @@ vi.mock('../audio/audio', () => ({ playMusic: mocks.playMusic }));
 
 import type { MainMenuView } from '../ui/hud/panels/main-menu';
 import { menuVersionLabel } from '../ui/hud/panels/main-menu';
+import type { RunHistoryRecord } from '../engine/run/history';
+import { t } from '../i18n';
+import type { RankingBoard } from '../net/ranking';
+import type { StatsMode, StatsView } from '../ui/hud/panels/stats';
 import type { MainMenuScene } from './MainMenuScene';
 
 /** The DOM path the scene takes under `?hud=dom`, with the Phaser seams stubbed. */
@@ -38,6 +42,11 @@ type SceneInternals = {
   events: { on: () => void; once: () => void };
   create(): void;
   menuView(): MainMenuView;
+  history: readonly RunHistoryRecord[];
+  statsMode: StatsMode;
+  statsMonth: string | null;
+  globalRanking: RankingBoard | null;
+  statsView(): StatsView;
 };
 
 let MainMenuSceneClass: typeof MainMenuScene;
@@ -115,6 +124,90 @@ describe('menuView', () => {
 
 /** The scene draws with Phaser, so its mount and repaint seams are read off the source. */
 const SOURCE = readFileSync(fileURLToPath(new URL('./MainMenuScene.ts', import.meta.url)), 'utf8');
+
+const BOARD: RankingBoard = {
+  month: '2026-10',
+  ownDeviceId: 'd-00000000beef',
+  rows: [{ deviceId: 'qa-device-0001', runs: 1, wins: 1, bestFloor: 3 }],
+};
+
+function rankingRecord(): RunHistoryRecord {
+  return {
+    seed: 'pkm-qa',
+    mode: 'finite',
+    mapReached: 4,
+    catches: 2,
+    casualties: 1,
+    playtimeMs: 3_600_000,
+    won: true,
+    endedAt: '2026-10-18T09:30:00.000Z',
+    species: [],
+  };
+}
+
+describe('statsView', () => {
+  it('hands the month’s global board through as the fifth argument', () => {
+    const instance = scene();
+    instance.history = [rankingRecord()];
+    instance.statsMode = 'ranking';
+    instance.statsMonth = '2026-10';
+    instance.globalRanking = BOARD;
+
+    const view = instance.statsView();
+
+    expect(view.mode).toBe('ranking');
+    expect(view.blurb).toBe(t('stats.blurbRankingGlobal'));
+    expect(view.rows).toEqual([
+      { id: 'global-0', cells: ['#0001', '1', '1', '3'] },
+      { id: 'you', cells: [t('stats.you'), '1', '1', '4'] },
+    ]);
+  });
+
+  it('paints the local blurb and the device’s own record with no board', () => {
+    const instance = scene();
+    instance.history = [rankingRecord()];
+    instance.statsMode = 'ranking';
+    instance.statsMonth = '2026-10';
+    instance.globalRanking = null;
+
+    const view = instance.statsView();
+
+    expect(view.blurb).toBe(t('stats.blurbRanking'));
+    expect(view.rows).toEqual([{ id: 'you', cells: [t('stats.you'), '1', '1', '4'] }]);
+  });
+});
+
+describe('the global board’s seams', () => {
+  it('is handed to the one live view', () => {
+    expect(SOURCE).toContain(
+      'return liveStatsView(this.history, this.statsMode, this.statsMonth, new Date(), this.globalRanking);',
+    );
+    expect(SOURCE).toContain('private globalRanking: RankingBoard | null = null;');
+    expect(SOURCE).toContain('private rankingEndpoint: string | null | undefined;');
+  });
+
+  it('is fetched when the panel opens and again on a month step', () => {
+    expect(SOURCE).toContain('this.loadGlobalRanking();');
+    const opAt = SOURCE.indexOf('private openStats(): void {');
+    const closeAt = SOURCE.indexOf('private closeStats(): void {');
+    const fetchAt = SOURCE.indexOf('this.loadGlobalRanking();');
+    expect(fetchAt).toBeGreaterThan(opAt);
+    expect(fetchAt).toBeLessThan(closeAt);
+    expect(SOURCE).toContain("if (intent.type === 'month') this.loadGlobalRanking();");
+    expect(SOURCE).toContain('this.globalRanking = null;');
+  });
+
+  it('marks its own line with the id the storage keeps, and awaits only in the fetch', () => {
+    expect(SOURCE).toContain(
+      '          : { ...board, month, ownDeviceId: rankingDeviceId(browserStorage()) };',
+    );
+    expect(SOURCE).toContain('if (this.statsMonth !== month) return;');
+    expect(SOURCE).toContain('if (this.statsOpen) this.stats?.update(this.statsView());');
+    const awaits = SOURCE.match(/\bawait\b/g) ?? [];
+    expect(awaits).toHaveLength(2);
+    expect(SOURCE).not.toContain('setTimeout');
+  });
+});
 
 describe('the seed’s seams', () => {
   it('starts empty and is drawn once inside create', () => {
