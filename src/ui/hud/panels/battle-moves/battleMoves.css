@@ -234,6 +234,16 @@
   text-transform: uppercase;
 }
 
+/* The phone card is 216 px wide — its right 122 px belong to the stage grid — so its
+   head row cannot grow: the title keeps the 126 px the two 24 px glyphs and their gaps
+   leave it and ellipsizes instead of pushing the readouts onto another line. */
+.battle-moves--compact .battle-moves__desc-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .battle-moves__desc-pp,
 .battle-moves__desc-pwr,
 .battle-moves__desc-acc {

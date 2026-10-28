@@ -152,11 +152,16 @@ the cursor is the info intent, and the freed 22 px button and its 8 px gap went 
 anchor is the menu's own top edge — `x = card.x + 20`, `y = card.y − 8 − 160`, `w = card.w − 40`, `h = 160`,
 which is `{460,414,524,160}` at 1280×800: its bottom 8 px above the menu, in the empty band between the
 foe's boxes (bottom 148) and the player's (top 660). It hangs off the menu's top edge rather than the board's
-own (664,372) offset because this menu starts at 440 where the board's starts at 664. The phone anchor keeps
-the same width rule and adds `COMPACT_CARD_CLEARANCE`, the 88 px between the menu's top edge and the
-player's lead box — `{36,336,318,160}` at 390×844, its bottom 8 px above that box at 504 — the only band
-`m05` leaves empty, because `m05` draws no card at all. The card takes no pointer event, and its description
-scrolls inside the 160 px: the text never grows the box.
+own (664,372) offset because this menu starts at 440 where the board's starts at 664. On the phone the card
+**cedes its right rail** to the stage grid instead of spanning the menu: it keeps its 20 px left margin and
+its `COMPACT_CARD_CLEARANCE` — the 88 px between the menu's top edge and the player's lead box — and stops
+`COMPACT_CARD_RAIL_W` short of that column's right edge, where the rail (122: three 34 px chips, their two
+6 px gaps and the grid's own 8 px clearance) is the grid's. So it is `{36,336,216,160}` at 390×844, its
+right edge **252** and its bottom 8 px above the box at 504, and it clears the grid whatever the chip count:
+the widest box is `{260,422,114,74}`, the one-chip box `{340,462,34,34}`, both right-aligned to 374, and
+252 + 8 = 260 is exactly the widest one's left edge. The board backs the rail — `05` draws its chips at
+448…562, left of its card at 664, and `m05` draws no card at all. The card takes no pointer event, and its
+description scrolls inside the 160 px: the text never grows the box.
 
 **The compact battle has its own cell.** At 390×844 the menu card keeps its shipped rect — 358×236 at
 (16,592), starting 8 px under the player's 358×80 card at y 504…584, so no HP box is drawn behind it — but

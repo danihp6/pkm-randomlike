@@ -9,7 +9,7 @@ import {
   type MoveGridSlot,
 } from '../../../moveGrid';
 import { MOVE_ICON_BOX } from '../../kit/moveIcons';
-import { battleHpBox } from '../battle-hp/view';
+import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox } from '../battle-hp/view';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type Viewport = Readonly<{ width: number; height: number }>;
@@ -122,6 +122,13 @@ export const INFO_CARD_H = 160;
  * ends 8 px above that box.
  */
 export const COMPACT_CARD_CLEARANCE = 88;
+/**
+ * The width the phone card gives back on its right: the widest the play-side stage
+ * grid can get — three `STAGE_CHIP` columns, `STAGE_GAP` apart — plus the
+ * `STAGE_CLEARANCE` that grid keeps from anything beside it. 34 * 3 + 6 * 2 + 8 = 122.
+ */
+export const COMPACT_CARD_RAIL_W =
+  STAGE_CHIP * STAGE_COLS + STAGE_GAP * (STAGE_COLS - 1) + STAGE_CLEARANCE;
 
 /**
  * The page-space card the scene's own `menu` rect becomes: the battle square's
@@ -476,7 +483,9 @@ export function infoLineCount(text: string): number {
  * slot is empty or the grid has no such slot. It floats above the menu card's top edge
  * — the phone's 88 px clear of its own HP box, so it ends 8 px above it — and it is
  * always `INFO_CARD_H` tall, so a long description clips instead of growing it. The
- * move's text is never a reason to hide the head.
+ * move's text is never a reason to hide the head. On the phone the card is narrower
+ * than the menu: its right `COMPACT_CARD_RAIL_W` belong to the stage grid, so the two
+ * panels never paint over each other.
  */
 function infoCardOf(
   input: BattleMovesInput,
@@ -488,7 +497,9 @@ function infoCardOf(
   if (slot === undefined || slot.empty) return null;
   const cell = input.cells[selected];
   if (isEmptySlot(cell)) return null;
-  const clearance = compactCard(input.card) ? COMPACT_CARD_CLEARANCE : 0;
+  const compact = compactCard(input.card);
+  const clearance = compact ? COMPACT_CARD_CLEARANCE : 0;
+  const rail = compact ? COMPACT_CARD_RAIL_W : INFO_MARGIN;
   return {
     title: cell.name,
     type: cell.type,
@@ -500,7 +511,7 @@ function infoCardOf(
     box: {
       x: input.card.x + INFO_MARGIN,
       y: input.card.y - clearance - INFO_GAP - INFO_CARD_H,
-      w: Math.max(0, input.card.w - INFO_MARGIN * 2),
+      w: Math.max(0, input.card.w - INFO_MARGIN - rail),
       h: INFO_CARD_H,
     },
   };

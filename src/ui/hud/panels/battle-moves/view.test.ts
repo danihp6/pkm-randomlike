@@ -9,11 +9,13 @@ import {
   type MoveGridSlot,
 } from '../../../moveGrid';
 import { FRLG_WINDOW_PADDING } from '../../../frlg';
-import { battleHpBox } from '../battle-hp/view';
+import { MOVE_ICON_BOX } from '../../kit/moveIcons';
+import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox } from '../battle-hp/view';
 import {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
   COMPACT_CARD_CLEARANCE,
+  COMPACT_CARD_RAIL_W,
   INFO_CARD_H,
   MOVE_BACK_COL,
   MOVE_CATEGORY_GAP,
@@ -656,6 +658,19 @@ function overlapArea(a: Rect, b: Rect): number {
   return Math.max(0, w) * Math.max(0, h);
 }
 
+/**
+ * The stage grid's box for `chips` chips, the same arithmetic `battleHpStages` does:
+ * three `STAGE_CHIP` columns `STAGE_GAP` apart, right-aligned to the player's column and
+ * `STAGE_CLEARANCE` above it.
+ */
+function stageGridBox(column: Rect, chips: number): Rect {
+  const cols = Math.min(STAGE_COLS, chips);
+  const rows = Math.ceil(chips / STAGE_COLS);
+  const w = cols * STAGE_CHIP + (cols - 1) * STAGE_GAP;
+  const h = rows * STAGE_CHIP + (rows - 1) * STAGE_GAP;
+  return { x: column.x + column.w - w, y: column.y - STAGE_CLEARANCE - h, w, h };
+}
+
 /** The four text labels of a cell, each with the string it paints. */
 function labelsOf(slot: BattleMoveSlotView): readonly Readonly<{ box: Rect; text: string }>[] {
   return [
@@ -913,8 +928,38 @@ describe('the move card', () => {
 
   it('clears the phone s own HP box: 8 px above it at 390×844', () => {
     const info = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).info!;
-    expect(info.box).toStrictEqual({ x: 36, y: 336, w: 318, h: 160 });
+    expect(info.box).toStrictEqual({ x: 36, y: 336, w: 216, h: 160 });
+    expect(info.box.x + info.box.w).toBe(252);
     expect(info.box.y + info.box.h).toBeLessThanOrEqual(battleHpBox(PHONE, 'player', 0).y - 8);
+  });
+
+  it('cedes its right rail to the stage grid at 390×844', () => {
+    const info = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).info!;
+    const column = battleHpBox(PHONE, 'player', 0);
+    // The rail is what the widest grid can take beside the card, so the card's right
+    // edge plus the grid's own clearance is that grid's left edge, for every count.
+    expect(COMPACT_CARD_RAIL_W).toBe(
+      STAGE_CHIP * STAGE_COLS + STAGE_GAP * (STAGE_COLS - 1) + STAGE_CLEARANCE,
+    );
+    expect(COMPACT_CARD_RAIL_W).toBe(122);
+    expect(column.x + column.w).toBe(374);
+    expect(info.box.x + info.box.w).toBe(column.x + column.w - COMPACT_CARD_RAIL_W);
+    for (const chips of [1, 2, 3, 6, 7]) {
+      const grid = stageGridBox(column, chips);
+      expect(overlapArea(info.box, grid), `${chips} chips`).toBe(0);
+      expect(info.box.x + info.box.w + STAGE_CLEARANCE, `${chips} chips`).toBeLessThanOrEqual(grid.x);
+    }
+    // The measured six-chip box and the one-chip box this clears, pinned by value.
+    expect(stageGridBox(column, 6)).toStrictEqual({ x: 260, y: 422, w: 114, h: 74 });
+    expect(stageGridBox(column, 1)).toStrictEqual({ x: 340, y: 462, w: 34, h: 34 });
+  });
+
+  it('never paints over the command window at either viewport', () => {
+    for (const viewport of [DESKTOP, PHONE]) {
+      const menu = battleMovesBox(viewport);
+      const info = battleMovesView(inputOf({ card: menu })).info!;
+      expect(overlapArea(info.box, menu), `${viewport.width}×${viewport.height}`).toBe(0);
+    }
   });
 
   it('never paints over a side s lead HP box at either viewport', () => {
@@ -929,6 +974,27 @@ describe('the move card', () => {
   it('keeps the phone s clearance between the menu s top and the player s HP box', () => {
     expect(COMPACT_CARD_CLEARANCE).toBe(88);
     expect(COMPACT_CARD_CLEARANCE).toBe(battleMovesBox(PHONE).y - battleHpBox(PHONE, 'player', 0).y);
+  });
+
+  it('holds its own content in the narrow phone card', () => {
+    const info = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).info!;
+    // 216 − 2 × 12 padding − 2 × 1 border, the same box the stylesheet gives.
+    const content = info.box.w - 24 - 2;
+    expect(content).toBe(190);
+    // The head's first line is the card: two 24 px glyphs, their two 8 px gaps and the
+    // 126 px the title keeps, and the title ellipsizes rather than grow it.
+    const titleW = content - (MOVE_ICON_BOX + 8) * 2;
+    expect(titleW).toBe(126);
+    // The three readouts and their two 8 px gaps fit a line of their own inside it.
+    const stats =
+      drawnTextWidth(t('move.pp', { pp: 12, max: 15 })) +
+      drawnTextWidth(t('move.pwr', { value: 90 })) +
+      drawnTextWidth(t('move.acc', { value: 100 })) +
+      8 * 2;
+    expect(stats).toBeLessThanOrEqual(content);
+    // The description is clipped inside the frozen card, never growing it.
+    expect(info.box.h).toBe(INFO_CARD_H);
+    expect(info.box.y + info.box.h).toBeLessThan(battleMovesBox(PHONE).y);
   });
 
   it('is the same 160 px whatever its description says', () => {

@@ -19,8 +19,9 @@ _is_ the info intent.
   containment test the panel and QA share), `battleMovesView` (the four slots with their own
   label boxes and the two atlas squares' boxes, the ◀, the two forme columns, the target
   step's prompt row and the card that describes the cursor's move, from a `BattleMovesInput`)
-  and the mirrored constants, including the card's height (`INFO_CARD_H`) and the phone's
-  clearance from its own HP box (`COMPACT_CARD_CLEARANCE`).
+  and the mirrored constants, including the card's height (`INFO_CARD_H`), the phone's
+  clearance from its own HP box (`COMPACT_CARD_CLEARANCE`) and the rail it cedes to the
+  stage grid (`COMPACT_CARD_RAIL_W`).
 - `view.test.ts` — both QA viewports' cards, the card's clearance of the HP column, the slot
   rects derived from the same `moveGridCellRects` call, the wide cell's pinned boxes (the
   162 px name line, the 24 px glyph square on the right padding edge), the compact cell's six
@@ -57,8 +58,8 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
   shipped card's right edge and height.
 - `index.ts` — the barrel the scene imports: the card and its mount, `battleMovesBox`,
   `battleMovesView`, `cellTextBoxes`, `compactCard`, `fitsInside`, the prompt row's two
-  numbers, `INFO_CARD_H` / `COMPACT_CARD_CLEARANCE`, and the view's input, slot and card
-  types.
+  numbers, `INFO_CARD_H` / `COMPACT_CARD_CLEARANCE` / `COMPACT_CARD_RAIL_W`, and the view's
+  input, slot and card types.
 - `README.md` — this map.
 
 ## Rules
@@ -109,14 +110,28 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
 10. **The move card belongs to the cursor.** A card exists while the menu is open and the
     cursor's slot is filled; `BattleMovesInput.info` is still accepted, because the scene's
     canvas ⓘ still feeds it, and this panel never reads it. The card is 160 px tall (the
-    board's `attack detail`) and 20 px in from the menu's sides: anchored to the menu's top
+    board's `attack detail`) and 20 px in from the menu's left edge: anchored to the menu's top
     edge minus its 8 px gap at 1280×800 — `{460,414,524,160}`, its bottom 8 px above the menu
-    — and to the phone's own HP box at 390×844 — `{36,336,318,160}`, its bottom 8 px above
+    — and to the phone's own HP box at 390×844 — `{36,336,216,160}`, its bottom 8 px above
     the player's box at 504. `05`'s own card sits at (664,372) because its menu starts at 664;
     this menu starts at 440, which is why the wide anchor is the menu's top edge. The card
     takes no pointer event, and its description scrolls inside the 160 px instead of growing
     the box.
-11. **The phone card clears the lead boxes only.** `COMPACT_CARD_CLEARANCE` (88) is the
+11. **The phone card cedes its right rail to the stage grid.** Its width is
+    `card.w − INFO_MARGIN − COMPACT_CARD_RAIL_W` — 358 − 20 − 122 = **216**, right edge 252 —
+    because the right 122 px of that band are `[Task-213]`'s grid: three 34 px chips, their two
+    6 px gaps and the 8 px the grid keeps beside anything else. `COMPACT_CARD_RAIL_W` is built
+    from `STAGE_CHIP` / `STAGE_GAP` / `STAGE_COLS` / `STAGE_CLEARANCE` in `battle-hp/view.ts`,
+    so the rail follows that grid and the two panels cannot drift apart. The grid is
+    right-aligned to the player's column (374 at 390×844), so its widest box starts at 260 and
+    the card's 252 leaves exactly its 8 px clearance; that holds for one chip, two, three, six
+    and seven, because the alignment is horizontal — a phone double anchors the grid above the
+    partner box but not further left. No floor is applied to this width: a floor would re-open
+    the collision. The narrower head row is why
+    `.battle-moves--compact .battle-moves__desc-title` carries `min-width: 0` and an ellipsis:
+    the two 24 px glyphs and their 8 px gaps leave the title 126 px of the 190 px content box,
+    so a long name ellipsizes instead of pushing the readouts to another line.
+12. **The phone card clears the lead boxes only.** `COMPACT_CARD_CLEARANCE` (88) is the
     distance from the menu's top edge to the player's lead box — the 80 px phone box and the
     8 px gutter above it — so the card ends 8 px above the lead. A doubles battle on the
     phone stacks the partner box 8 px above that lead, so the card paints over it; clearing
