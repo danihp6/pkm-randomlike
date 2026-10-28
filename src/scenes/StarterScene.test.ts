@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYBIND_LABEL_KEYS } from '../ui/settingsScreen';
 
 vi.mock('phaser', () => {
@@ -21,6 +21,10 @@ const mocks = vi.hoisted(() => {
     offers,
     randomSeed: vi.fn((): string => 'fresh-seed'),
     starterOffer: vi.fn((seed: string): readonly string[] => offers[seed] ?? ['missingno']),
+    mountStarter: vi.fn((_host: object, _view: unknown, _intent: unknown) => ({
+      update: vi.fn(),
+      dispose: vi.fn(),
+    })),
   };
 });
 
@@ -34,10 +38,15 @@ vi.mock('../engine/run', async (importOriginal) => {
   return { ...actual, starterOffer: mocks.starterOffer };
 });
 
+vi.mock('../ui/hud/panels/starter', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ui/hud/panels/starter')>();
+  return { ...actual, mountStarter: mocks.mountStarter };
+});
+
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { LOCALES, es, setLocale, t } from '../i18n';
 import { STARTER_POOL_SIZE } from '../data/run';
-import { StarterScene } from './StarterScene';
+import { starterDrawnObjectCount, StarterScene } from './StarterScene';
 
 type StarterInternals = {
   seed: string;
@@ -66,6 +75,85 @@ beforeEach(() => {
   mocks.randomSeed.mockClear();
   mocks.starterOffer.mockClear();
   mocks.randomSeed.mockReturnValue('fresh-seed');
+});
+
+/** A `#hud` host, so the scene's mount lands on it instead of bailing out. */
+function stubHud(host: object | null): void {
+  vi.stubGlobal('document', {
+    getElementById: (id: string): object | null => (id === 'hud' ? host : null),
+  });
+}
+
+/** The pieces of a Phaser scene `create` touches, recorded. */
+function sceneWithSeams(): {
+  scene: StarterScene;
+  drawn: string[];
+  events: { once: ReturnType<typeof vi.fn> };
+} {
+  const drawn: string[] = [];
+  const scene = new StarterScene() as unknown as {
+    scale: { width: number; height: number };
+    input: { keyboard: { on: () => void } };
+    events: { once: ReturnType<typeof vi.fn> };
+    add: unknown;
+    create(): void;
+  };
+  scene.scale = { width: 1280, height: 800 };
+  scene.input = { keyboard: { on: (): void => undefined } };
+  scene.events = { once: vi.fn() };
+  scene.add = new Proxy(
+    {},
+    {
+      get: (_t, property) => (): void => {
+        drawn.push(String(property));
+      },
+    },
+  );
+  return { scene: scene as unknown as StarterScene, drawn, events: scene.events };
+}
+
+describe('the DOM picker on a clean boot', () => {
+  beforeAll(() => {
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      localStorage: { getItem: (): null => null, setItem: (): void => undefined },
+    });
+  });
+
+  beforeEach(() => {
+    mocks.mountStarter.mockClear();
+    vi.unstubAllGlobals();
+  });
+
+  it('mounts its panel once, with no query string, and draws no chrome', () => {
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      localStorage: { getItem: (): null => null, setItem: (): void => undefined },
+    });
+    const host = {};
+    stubHud(host);
+    const { scene, drawn } = sceneWithSeams();
+
+    scene.create();
+
+    expect(mocks.mountStarter).toHaveBeenCalledTimes(1);
+    expect(mocks.mountStarter.mock.calls[0]?.[0]).toBe(host);
+    expect(drawn).toEqual([]);
+    expect(starterDrawnObjectCount(scene)).toBe(0);
+  });
+
+  it('mounts nothing without a HUD layer', () => {
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      localStorage: { getItem: (): null => null, setItem: (): void => undefined },
+    });
+    stubHud(null);
+    const { scene } = sceneWithSeams();
+
+    scene.create();
+
+    expect(mocks.mountStarter).not.toHaveBeenCalled();
+  });
 });
 
 describe('rerollOffer', () => {

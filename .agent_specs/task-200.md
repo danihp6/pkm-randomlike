@@ -34,12 +34,19 @@ Nothing outside this list. No other task in this batch touches any of it.
 - `src/scenes/rooms/**` **only** where a room calls into `src/scenes/panels/**`
 - `src/data/hudLayout.ts` + test — **read/keep**, delete only what the retired drag
   leaves unreferenced; do not change the stored shape
-- the four test files that import a `src/scenes/panels/*` module and would break:
+- the test files that a retired canvas module or the flag inversion makes stale:
   `src/ui/hud/panels/pause/view.test.ts`, `src/ui/hud/panels/hud/view.test.ts`,
   `src/ui/hud/panels/rewards/view.test.ts`, `src/ui/hud/panels/detail/evolution.test.ts`
-  — **only** their `src/scenes/panels` import/cases, nothing else in them
+  — **only** their `src/scenes/panels` import/cases — and the eight preview-flag tests
+  `src/ui/hud/panels/{main-menu,starter,options,run-over,stats,pause,battle-log,battle-switch}/preview.test.ts`
+  — **only** the `true`/`false` search lists, because a bare `?hudFixture=<slug>` now
+  resolves without `?hud=dom`. **Scope extension, round 1:** these eight and
+  `src/ui/hud/README.md` were edited by the dev in round 1 and the Orchestrator accepts
+  them (no batch-mate claims them and the change is the flag inversion's consequence);
+  any other file outside this list is still a red audit.
 - `docs/tech-decisions.md` (`D49` amended), `docs/hud-dom-proposal.md` §13,
-  `src/scenes/README.md`, `src/ui/README.md`, `src/scenes/panels/README.md` if it exists
+  `src/scenes/README.md`, `src/ui/README.md`, `src/ui/hud/README.md`,
+  `src/scenes/panels/README.md` if it exists
 
 ### Inputs (read-only)
 
@@ -93,6 +100,11 @@ export function parseHudFlags(search: string): HudFlags;
 
 - No new key. `src/data/hudLayout.ts`'s stored shape is unchanged (the collapse chip,
   the drag and the saved slot are inventoried as consequence, not reimplemented).
+
+- **The DOM panels' own attributes are the board's, not the spec's invention:** a
+  panel is `[data-hud-panel="<id>"]` (`main-menu`, `options`, …) and a party row is
+  `[data-hud-party-member]`. `[data-hud-main-menu]` / `[data-hud-options]` do not
+  exist and a live check must use the canonical selectors.
 
 ## 🧩 Data and configuration
 
