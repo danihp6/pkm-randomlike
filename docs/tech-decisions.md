@@ -1172,7 +1172,20 @@ task; (5) the route HUD chips and the pad decision last.
 **The decision.** The DOM HUD is the HUD: `mountHud` mounts on a clean boot, `?hud=dom` is a no-op
 alias, and `parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a
 render-free controller that mounts its card into `#hud`; no scene and no panel branches on the flag
-any more, and `src/scenes/panels/**` draws no Phaser object at all.
+any more, and the **HUD chrome** is DOM-only: no panel, no strip, no row, no window and no text of
+the HUD is drawn in Phaser.
+
+**What still draws, and why.** Three transient overlays have no DOM counterpart yet and stay in the
+canvas, carried over unchanged from before this decision — they are not HUD cards and nothing in them
+reads a panel record:
+
+- `src/scenes/panels/detail.ts:358` — the level-up / evolution popup's full-screen scrim;
+- `src/scenes/panels/detail.ts:374` — that popup's own input zone (a press dismisses it);
+- `src/scenes/panels/pause.ts:125` — the hold-to-reset ring (and the scrim beside it at
+  `src/scenes/panels/pause.ts:120`), the progress feedback of a key held down.
+
+Their DOM parity — or their retirement, whichever the board asks for — is follow-up work under
+`Task-208`, not assumed shipped here.
 
 **What went with the canvas layer, named and not hidden.** The collapse chip, the panel drag with
 its clamp and the saved slot were carried by that layer alone (`src/data/hudLayout.ts`,

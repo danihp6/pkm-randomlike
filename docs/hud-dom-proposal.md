@@ -297,10 +297,16 @@ Three things, and they are the only disagreements between this document and the 
 
 The DOM HUD is not a flag any more: `mountHud` runs on every boot, `?hud=dom` is a no-op alias and
 `parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a **render-free
-controller** — it mounts its card into `#hud`, feeds the view and forwards intents — so the canvas
-draws the game and nothing else: the route's map, tiles, grass, fog, trainers, actors and the
-player's sprite, the battle's fighters, platforms and effects, and the level-up / evolution popup
-the board has no card for.
+controller** — it mounts its card into `#hud`, feeds the view and forwards intents — and the HUD's
+chrome is DOM-only: no panel, strip, row, window or text object of it is painted in Phaser any more.
+
+The canvas keeps the game itself — the route's map, tiles, grass, fog, trainers, actors and the
+player's sprite, the battle's fighters, platforms and effects — **plus three transient overlays the
+board has no card for**, which this task carried over untouched rather than invent a DOM twin for
+them: the level-up / evolution popup's scrim (`src/scenes/panels/detail.ts:358`) and its own press
+zone (`src/scenes/panels/detail.ts:374`), and the hold-to-reset ring with its scrim
+(`src/scenes/panels/pause.ts:120` and `src/scenes/panels/pause.ts:125`). Their DOM parity, or their
+retirement, is follow-up under `Task-208`.
 
 The canvas layer that went was the only carrier of three things, and they left **with** it:
 
