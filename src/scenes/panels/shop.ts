@@ -3,7 +3,6 @@ import itemIcons from '../../data/anil/item-icons.json';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, itemIconFrame } from '../../data/itemIcons';
 import { getItem } from '../../data/items';
 import { t } from '../../i18n';
-import { parseHudFlags } from '../../ui/hud/fixtures';
 import {
   SHOP_ROWS,
   mountShopPanel,
@@ -19,18 +18,13 @@ import type { RoomHost } from '../rooms/types';
 import type { RoutePanelDescriptor } from './types';
 
 /**
- * The scene-side owner of the Mart's DOM card (`?hud=dom`, `D49`). The stock rules,
- * the cache key and the room panel stay in `src/scenes/rooms/shop.ts`; this module
- * paints the card into the `#hud` layer from `src/ui/hud/panels/shop/` and is the
- * **only** writer: one press, one `ShopTrade`, one `commitRun`. It holds no `Rng`
- * and no clock, so the same floor opens the same shelf with the flag on or off.
+ * The scene-side owner of the Mart's DOM card (`D49`). The stock rules, the cache key
+ * and the room panel stay in `src/scenes/rooms/shop.ts`; this module paints the card
+ * into the `#hud` layer from `src/ui/hud/panels/shop/` and is the **only** writer:
+ * one press, one `ShopTrade`, one `commitRun`. It holds no `Rng` and no clock, so the
+ * same floor opens the same shelf.
  */
 
-/**
- * `?hud=dom` read once, the way every scene module reads it. With the flag off this
- * module draws nothing: the Mart's card is the room's Phaser one.
- */
-const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 /** The item atlas' columns (`src/data/anil/item-icons.json`), for the sprite offsets. */
 const ITEM_ICON_COLS: number = itemIcons.cols;
 /**
@@ -58,23 +52,13 @@ let cardTitle = '';
 let cardStock: readonly ShopSlot[] = [];
 /** True while the route is paused behind a battle or the Settings screen. */
 let cardPaused = false;
-/** The shipped card's display-object count, reported by `rooms/shop.ts` (flag off). */
-let shippedDrawnObjects = 0;
-
-/**
- * The number of display objects the Mart draws in Phaser right now. Under the flag
- * the card is the DOM one and the answer is 0; with the flag off the drawing lives
- * in `src/scenes/rooms/shop.ts`, which reports its own count through
- * `noteShopDrawnObjects` — a panel module never imports a room.
- */
+/** The number of display objects the Mart draws in Phaser: none, it is the DOM card. */
 export function shopDrawnObjectCount(): number {
-  return DOM_HUD ? 0 : shippedDrawnObjects;
+  return 0;
 }
 
-/** The room's shipped card reports its display-object count (flag off only). */
-export function noteShopDrawnObjects(count: number): void {
-  shippedDrawnObjects = DOM_HUD ? 0 : Math.max(0, count);
-}
+/** The retired canvas card's reporter, kept so the count contract's call sites compile. */
+export function noteShopDrawnObjects(_count: number): void {}
 
 /** The atlas cell for an item, as the panel's `background-position` pair. */
 function shopIcon(itemId: string): ShopIcon | null {
@@ -281,8 +265,8 @@ function handleShopIntent(host: RoomHost, intent: ShopIntent): void {
 export const descriptor: RoutePanelDescriptor = {
   id: 'shop',
   order: 80,
-  // The card belongs to the room (flag off) or to this module's DOM mount (flag on),
-  // so the registry only names the panel: there is nothing to build here.
+  // The card belongs to the room's counter and mounts its own DOM card on open, so
+  // the registry only names the panel: there is nothing to build here.
   build(): void {
     return;
   },

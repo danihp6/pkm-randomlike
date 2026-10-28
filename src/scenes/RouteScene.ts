@@ -3,9 +3,8 @@ import { biomeForRoute, getBiome } from '../data/biomes';
 import { getMove, getSpecies, normalizeId, TYPE_NAMES } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { PROP_SIGN_FRAME, PROP_SIGN_SIZE, PROP_SIGN_TEXTURE_KEY } from '../data/tilesets/props';
-import { type HudPanelId } from '../data/hudLayout';
+import { HUD_PANEL_IDS, type HudPanelId } from '../data/hudLayout';
 import { FINITE_MAPS, levelCapForMap } from '../data/maps';
-import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { getItem } from '../data/items';
 import {
   BERRY_TREE_ENEMY_BOOSTS,
@@ -56,7 +55,6 @@ import { type BoostId, type FighterInput } from '../engine/battle';
 import {
   BOSS_MONEY_MULTIPLIER,
   MAX_MOVES,
-  POKEVIAL_MAX_CHARGES,
   addItem,
   addFaints,
   addPokemon,
@@ -69,7 +67,6 @@ import {
   createRun,
   createRunPokemon,
   editRunPokemon,
-  equipHeldItem,
   fullHealMember,
   hasLivingParty,
   isItemPicked,
@@ -83,7 +80,6 @@ import {
   squadLevel,
   trainerMoney,
   trainerRoster,
-  unequipHeldItem,
   updatePokemon,
   useCapture,
   withMemberTally,
@@ -108,7 +104,7 @@ import {
   type MemberEditLine,
   type MemberEditRefusal,
 } from '../engine/run/memberEdits';
-import { ownedTmIds, useItemOn } from '../engine/run/items';
+import { ownedTmIds } from '../engine/run/items';
 import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
 import {
   FORCED_FIELD_FLOORS,
@@ -211,23 +207,12 @@ import {
   type TileFrame,
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
-import { type BagGridDebugState } from '../ui/bag';
-import {
-  dragTo,
-  dropGrabbed,
-  grabAt,
-  initialPartyUi,
-  partyInput,
-  swapAcross,
-  type PartyUiState,
-  type PaneId,
-} from '../ui/partyScreen';
+import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
 import {
   catchToPcNotice,
   eggHatchNotice,
   itemPickupNotice,
-  itemUsedNotice,
   missionCompleteNotice,
   type Notice,
 } from '../ui/notice';
@@ -257,69 +242,18 @@ import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
 import type {
   RoomDescriptor,
-  RoomDrop,
   RoomHost,
   RoomPanel,
-  RoomRowDrag,
   RoomWildBattle,
 } from './rooms/types';
+import { bagTextFieldFocused, typeInBagSearch } from './panels/bag';
 import {
-  HUD_DRAG_SLOP,
-  applyHudBackground,
-  applyStoredHudLayout as applyHudLayout,
-  cancelPanelDrag,
-  draggedItemFrom,
-  draggedItemId,
-  finishHud,
-  grabMoved,
-  hudMetrics,
-  hudPanelAt,
-  hudPanelIconAt,
-  hudPanelOwnerAt,
-  panelPoint,
-  persistHudLayout as saveHudLayout,
-  refreshPanelKeyLabels,
-  registerHudOverlay,
-  resetHudOverlays,
-  setDraggedItem,
-  setGrabMoved,
-  setHudLevel,
-  setPointerPhase,
-  startPanelDrag,
-  toggleHudPanel as togglePanelById,
-  vialButtonAt,
-} from './panels/hud';
-import {
-  clearPartyPortraitTints,
-  hudPartyRowAt,
-  paneMembers,
-  partyHeldBadge,
-  pointerInPartyPanel,
-  setPartyPortraitTint,
-} from './panels/party';
-import {
-  bagDebugState as bagStateOf,
-  bagTextFieldFocused,
-  hudDraggableStackAt,
-  pointerInBagPanel,
-  typeInBagSearch,
-} from './panels/bag';
-import { boxHeldBadge, hudBoxCellAt, pointerInBoxPanel, stepBoxPage } from './panels/pc';
-import {
-  cancelDetailDrags,
   cancelNicknameEdit,
   clearDetailInfo,
   closeLearnPopup,
-  closeMemberDetail,
-  detailHover,
-  detailOpen,
   detailTextFieldFocused,
-  dismissLearnPopup,
   learnPopupOpenNow,
-  openMemberDetail,
-  pointerInLearnBand,
   refreshDetail,
-  scrollLearnset,
   showLearnPopup,
   typeInDetailSearch,
   typeInNickname,
@@ -333,8 +267,9 @@ import {
   pauseMenuOpenNow,
   updateReset as updateResetOverlay,
 } from './panels/pause';
+import { hudMetrics } from './panels/hud';
 import { collectPanels, type PanelRegistry } from './panels/registry';
-import type { HudMetrics, HudPanel, RoutePanelHost } from './panels/types';
+import type { HudMetrics, RoutePanelHost } from './panels/types';
 
 /**
  * Every special room kind's descriptor module (`D47`), discovered from the folder
@@ -363,9 +298,6 @@ const ROUTE_CAMERA_ZOOM = 2;
 const ROUTE_TOUCH_ZOOM_OUT = 0.75;
 const routeCameraZoom = (): number =>
   ROUTE_CAMERA_ZOOM * (prefersTouchControls() ? ROUTE_TOUCH_ZOOM_OUT : 1);
-
-/** The drag ghost a room row draws: above every panel, below nothing. */
-const ROW_DRAG_DEPTH = 640;
 
 /**
  * Render depth of a wall cell's walkable tip: above the actors so the character
@@ -592,29 +524,13 @@ export class RouteScene extends Phaser.Scene {
   private followerSpecies: string | null = null;
   /** The follower's own in-flight step, which trails the player's by one tile. */
   private followerTween: Phaser.Tweens.Tween | null = null;
-  private hudRoot!: Phaser.GameObjects.Container;
-  /** The draggable panels of the HUD, in draw order (the registry's own records). */
-  private hudPanels: HudPanel[] = [];
   /** The panel widths for this window, clamped to the screen (`hudMetrics`). */
   private hud!: HudMetrics;
-  /** The pinned HUD camera; a rebuild must teach it to ignore the new sprites. */
-  private hudCamera: Phaser.Cameras.Scene2D.Camera | null = null;
-  /** The HUD's party/box grab (the shared reducer's cursor). */
+  /** The HUD's party/box cursor; `ui()` in the panel port reads it. */
   private hudUi: PartyUiState = initialPartyUi();
-  /** The avatar held in hand while a party/box member or an item is dragged. */
-  private hudDragGhost!: Phaser.GameObjects.Image;
+  /** Which HUD cards are open, keyed by id. A quick key and the edge strip toggle them. */
+  private hudOpen = new Set<HudPanelId>();
   private searchKeyStamps = new Set<number>();
-  /**
-   * A member press waiting to become a click or a drag: a release without
-   * movement opens the detail panel, a move past the slop grabs and reorders.
-   */
-  private hudPress: {
-    pane: PaneId;
-    index: number;
-    memberId: string;
-    originX: number;
-    originY: number;
-  } | null = null;
   private releaseRoot: Phaser.GameObjects.Container | null = null;
   private releaseQueue: ReleaseBeat[] = [];
   private releaseOnDone: (() => void) | null = null;
@@ -644,10 +560,6 @@ export class RouteScene extends Phaser.Scene {
   private panelHost!: RoutePanelHost;
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
   private roomPanel: RoomPanel | null = null;
-  /** The room row in hand: the scene owns its ghost and resolves its drop. */
-  private roomRowDrag: RoomRowDrag | null = null;
-  private roomRowGhostIcon: Phaser.GameObjects.Image | null = null;
-  private roomRowGhostLabel: Phaser.GameObjects.BitmapText | null = null;
 
   constructor() {
     super('Route');
@@ -829,40 +741,31 @@ export class RouteScene extends Phaser.Scene {
       startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
       startWildBattle: (encounter) => scene.startRoomWildBattle(encounter),
       showNotice: (notice) => scene.showNotice(notice),
-      beginRowDrag: (drag) => scene.beginRowDrag(drag),
     };
   }
 
   /**
-   * The port a route panel draws through (`D47`'s shape, one folder over): the
-   * scene's own surface, with the run, the settings and the HUD metrics read live
-   * so a panel always paints the current ones. A panel mutates the scene only
-   * through these methods, and never writes the run itself.
+   * The port a route panel mounts its card through (`D47`'s shape, one folder
+   * over): the scene's own surface, with the run, the settings and the HUD metrics
+   * read live so a panel always paints the current ones. A panel mutates the scene
+   * only through these methods, and never writes the run itself.
    */
   private buildPanelHost(): RoutePanelHost {
     const scene = this;
-    const port: RoutePanelHost = {
+    return {
       scene,
       run: () => scene.run,
       settings: () => scene.settings,
       hud: () => scene.hud,
-      hudRoot: () => scene.hudRoot,
-      panels: () => scene.hudPanels,
-      registerPanel: (panel) => {
-        scene.hudPanels.push(panel);
-      },
+      hudCardOpen: (id) => scene.hudOpen.has(id),
+      setHudCardOpen: (id, open) => scene.setHudCardOpen(id, open),
       ui: () => scene.hudUi,
       setUi: (state) => {
         scene.hudUi = state;
       },
-      hudPointer: (pointer) =>
-        hudPanelOwnerAt(port, pointer) === null ? null : { x: pointer.x, y: pointer.y },
       commitRun: (run) => scene.commitRun(run),
       persistRun: () => scene.persistRun(),
       refreshHud: () => scene.refreshHud(),
-      persistHudLayout: () => saveHudLayout(port),
-      applyStoredHudLayout: () => applyHudLayout(port),
-      releaseHudKeyboard: () => undefined,
       openPanel: (panel) => scene.openPanel(panel),
       closePanel: () => scene.closePanel(),
       panelOpen: () => scene.panelOpen(),
@@ -872,11 +775,31 @@ export class RouteScene extends Phaser.Scene {
       route: () => scene.route,
       plan: () => scene.plan,
       rooms: () => scene.roomRegistry,
-      beginRowDrag: (drag) => scene.beginRowDrag(drag),
       openSettings: () => scene.openSettings(),
       restartRun: () => scene.restartRun(),
     };
-    return port;
+  }
+
+  /**
+   * A fresh save opens only PARTY (`src/data/hudLayout.ts`); this reads the stored
+   * collapsed flags once per build so an existing save keeps its own arrangement.
+   * The placement half of that record (the drag offset) left with the canvas layer.
+   */
+  private applyHudOpenState(): void {
+    const layout = this.settings.hudLayout;
+    this.hudOpen = new Set(HUD_PANEL_IDS.filter((id) => !layout[id].collapsed));
+  }
+
+  /**
+   * Opens or collapses a HUD card: the quick keys, a bulk's key chip and the edge
+   * strip all land here, and every card repaints from the new state.
+   */
+  private setHudCardOpen(id: HudPanelId, open: boolean): void {
+    const changed = open ? !this.hudOpen.has(id) : this.hudOpen.has(id);
+    if (!changed) return;
+    if (open) this.hudOpen.add(id);
+    else this.hudOpen.delete(id);
+    this.refreshHud();
   }
 
   /** Sets the scene's run, persists it and repaints the HUD (a Mart trade). */
@@ -945,7 +868,6 @@ export class RouteScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(BATTLEFIELD_DEPTH);
     this.battlefieldOverlay = overlay;
-    this.hudCamera?.ignore([overlay]);
   }
 
   /** The portal is open once the map's boss has fallen, except on the final map (D31). */
@@ -1170,12 +1092,10 @@ export class RouteScene extends Phaser.Scene {
     this.entitySprites = [];
     this.itemSprites = [];
     this.grassStep = null;
-    this.hudPanels = [];
     this.trainerSprites = [];
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
     this.chase = null;
-    this.hudPress = null;
     this.passThrough = false;
     this.ignoreEncounters = false;
     this.ignoreTrainers = false;
@@ -1190,9 +1110,6 @@ export class RouteScene extends Phaser.Scene {
     this.roomPanel = null;
     this.shopCounter = null;
     this.npc = null;
-    this.roomRowDrag = null;
-    this.roomRowGhostIcon = null;
-    this.roomRowGhostLabel = null;
     this.facing = 'down';
     this.walkTween = null;
     this.followerSprite = null;
@@ -1263,47 +1180,15 @@ export class RouteScene extends Phaser.Scene {
       typeInDetailSearch(this.panelHost, event);
       typeInBagSearch(this.panelHost, event);
     });
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.handleHudPointerDown(pointer));
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.handleHudPointerMove(pointer));
-    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => this.handleHudPointerUp(pointer));
-    // A drag whose button is released off the canvas (or that leaves the screen)
-    // must let go, or the held panel/member keeps following a pointer that is gone.
-    this.input.on('pointerupoutside', () => this.cancelHudDrags());
+    // The board owns every press over its own cards: the route keeps no pointer
+    // path of its own, so the canvas only ever answers the world.
     this.input.on('gameout', () => {
-      this.cancelHudDrags();
       clearDetailInfo(this.panelHost);
     });
-    // The mouse wheel flips the PC box pages while the pointer is over it, and
-    // scrolls the learnset band one row at a time while it is over that instead.
-    // The box is tested first, so it wins where the two rects overlap.
-    this.input.on(
-      'wheel',
-      (pointer: Phaser.Input.Pointer, _objects: unknown, _dx: number, dy: number) => {
-        if (!this.scene.isActive()) return;
-        if (pointerInBoxPanel(this.panelHost, pointer)) {
-          stepBoxPage(this.panelHost, dy > 0 ? 1 : -1);
-          return;
-        }
-        if (pointerInLearnBand(this.panelHost, pointer)) {
-          scrollLearnset(this.panelHost, dy > 0 ? 1 : -1);
-        }
-      },
-    );
     this.hud = hudMetrics(this.scale.width);
-    this.hudRoot = this.add.container(0, 0).setDepth(150);
-    // The pinned camera is built against an empty root, so every panel and card the
-    // folder builds next lands on the HUD camera and only there.
-    this.setupHudCamera();
-    // The overlay registry is emptied before anything registers into it, and the
-    // drag ghost is booked first, so `finishHud` adds it to the root at rank 0 —
-    // above the panels' containers, below the learnset chip and the bag's card.
-    resetHudOverlays();
-    this.hudDragGhost = this.add.image(0, 0, PORTRAIT_TEXTURE_KEY, 0).setScale(0.9).setVisible(false);
-    registerHudOverlay(this.hudDragGhost, 0);
+    this.applyHudOpenState();
     for (const panel of this.panels.all) panel.build(this.panelHost);
-    finishHud(this.panelHost);
-    // The touch pad and the pause menu live on the pinned HUD camera (screen
-    // space) and are ignored by the zoomed world camera, like the HUD.
+    // The touch pad lives on a screen-space root the zoomed world camera ignores.
     this.touch = createTouchControls(this, {
       onAction: (action) => this.handleAction(action),
     });
@@ -1314,10 +1199,8 @@ export class RouteScene extends Phaser.Scene {
       this.detachBack = listenForBack(() => this.onBackGesture());
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachBack?.());
     }
-    // A stopped scene hands every panel its own teardown, in build order. Every
-    // object a shipped panel owns already lives in the HUD root or a screen-space
-    // root that Phaser destroys with the scene, so no panel needs a `close` today;
-    // the walk is here so a later panel that owns something else has the hook.
+    // A stopped scene hands every panel its own teardown, in build order, so each
+    // card is unmounted from `#hud` before the route goes away.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const panel of this.panels.all) panel.close?.(this.panelHost);
     });
@@ -1408,16 +1291,16 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * Opens or collapses the HUD panel a quick key points at, exactly as a click on
-   * its collapse icon does. Ignored while another overlay (the pause menu, a
-   * release beat) owns the input.
+   * Opens or collapses the HUD card a quick key points at, exactly as a press on
+   * its edge chip or its own key chip does. Ignored while another overlay (the
+   * pause menu, a release beat) owns the input.
    *
    * A quick key is a plain toggle (D45): it never takes the keyboard, so the
-   * arrows keep walking the route while a pane is open.
+   * arrows keep walking the route while a card is open.
    */
   private toggleHudPanel(id: HudPanelId): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot || pauseMenuOpenNow()) return;
-    togglePanelById(this.panelHost, id);
+    this.setHudCardOpen(id, !this.hudOpen.has(id));
   }
 
   /** Resolves the movement keys from the shared map; re-run when it changes. */
@@ -1435,7 +1318,6 @@ export class RouteScene extends Phaser.Scene {
    * never paint out of order or half-way.
    */
   private refreshHud(): void {
-    if (!this.hudRoot) return;
     for (const panel of this.panels.all) panel.refresh?.(this.panelHost);
     // The party's lead walks behind the player: a lead change loads its pair once
     // and rebuilds the follower, so nothing here runs per frame.
@@ -1445,519 +1327,6 @@ export class RouteScene extends Phaser.Scene {
   /** True while any in-panel text field owns the keyboard. */
   private textFieldFocused(): boolean {
     return detailTextFieldFocused() || bagTextFieldFocused();
-  }
-
-  /**
-   * HUD pointer input. A press goes to the panel layer first — every descriptor
-   * whose panel owns the point — and only then runs the scene's own drag path: a
-   * click on a party row or a box cell opens that member's detail panel (STATS /
-   * MOVES), dragging instead picks the member up and reorders it live, and a
-   * release over the other pane moves it between the party and the PC box. A press
-   * on an equipment stack (or on a member's held badge) takes the item in hand.
-   */
-  private handleHudPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (!this.scene.isActive()) return;
-    // A room row's own press starts its drag; nothing under it sees the press.
-    if (this.roomRowDrag) return;
-    // A modal room panel's own zones own the pointer while it is up.
-    if (this.modalPanelOpen()) return;
-    // The level-up popup is modal: a click just dismisses it.
-    if (learnPopupOpenNow()) {
-      closeLearnPopup();
-      return;
-    }
-    setPointerPhase('down');
-    const panels = this.panels.all;
-    for (let i = panels.length - 1; i >= 0; i--) {
-      if (panels[i].pointer?.(this.panelHost, pointer) === true) return;
-    }
-    this.pressHudDrags(pointer);
-  }
-
-  /**
-   * The scene's own drag path: what a press picks up once no panel control took it.
-   * A stack (or a held badge) goes in hand, a member's row defers its grab until
-   * the pointer moves, and a panel's empty interior moves that panel.
-   */
-  private pressHudDrags(pointer: Phaser.Input.Pointer): void {
-    if (!this.hudUi.grabbed) {
-      const badge = this.hudHeldBadgeAt(pointer);
-      if (badge) {
-        this.startHudItemDrag(badge.itemId, pointer, badge.memberId);
-        return;
-      }
-      const itemId = hudDraggableStackAt(this.panelHost, pointer);
-      if (itemId !== null) {
-        this.startHudItemDrag(itemId, pointer);
-        return;
-      }
-    }
-    const target = this.hudTarget(pointer);
-    const grabbed = this.hudUi.grabbed;
-    if (!target) {
-      if (grabbed) {
-        this.dropHudGrab();
-        return;
-      }
-      // Nothing interactive under the pointer: grab the panel's empty interior to
-      // move it. The open detail is kept when its own empty space is grabbed, and
-      // closed when the press is anywhere else.
-      const owner = hudPanelOwnerAt(this.panelHost, pointer);
-      if (owner?.id !== 'detail' && detailOpen()) closeMemberDetail(this.panelHost);
-      if (owner && owner.expanded) {
-        startPanelDrag(this.panelHost, owner, pointer);
-        return;
-      }
-      return;
-    }
-    // The row's member is read before the close: a press that only picks a member
-    // keeps the open detail so its tab carries over, while a press that drops an
-    // item closes it as before.
-    const memberId = target.pane === 'rip' ? null : this.memberIdAt(target);
-    if (detailOpen() && (grabbed || memberId === null)) closeMemberDetail(this.panelHost);
-    if (grabbed) {
-      if (grabbed.pane === target.pane) {
-        const next = dragTo(this.run, this.hudUi, target.index);
-        this.run = next.run;
-        this.hudUi = dropGrabbed(next.ui);
-      } else {
-        this.dropHudAcross(grabbed, target);
-        return;
-      }
-      this.finishHudGrab();
-      return;
-    }
-    // Defer the grab: a release without movement is a click that opens the detail
-    // panel, a move past the slop is a drag that reorders (see pointermove).
-    if (memberId === null) return;
-    this.hudPress = {
-      pane: target.pane,
-      index: target.index,
-      memberId,
-      originX: pointer.x,
-      originY: pointer.y,
-    };
-    this.input.setDefaultCursor('pointer');
-  }
-
-  /**
-   * The party or box/rip member whose held-item badge is under the pointer, if
-   * any. Grabbing a badge picks the item up instead of the Pokémon, so it can be
-   * moved to another member or dropped on the bag to unequip it.
-   */
-  private hudHeldBadgeAt(pointer: Phaser.Input.Pointer): { itemId: string; memberId: string } | null {
-    const target = this.hudTarget(pointer);
-    if (!target || target.pane === 'rip') return null;
-    const member = paneMembers(this.panelHost, target.pane)[target.index];
-    const itemId = member?.fighter.heldItem;
-    if (!member || !itemId) return null;
-    const badge = target.pane === 'party' ? partyHeldBadge(target.index) : boxHeldBadge(target.index);
-    if (!badge || !badge.visible) return null;
-    const point = panelPoint(this.panelHost, pointer, target.pane);
-    const radius = Math.max(badge.displayWidth, badge.displayHeight) / 2;
-    if (Math.hypot(point.x - badge.x, point.y - badge.y) > radius) return null;
-    return { itemId, memberId: member.fighter.id };
-  }
-
-  /** Shows the grabbed member's avatar in hand, following the pointer. */
-  private showHudGhost(pane: PaneId, index: number, pointer: Phaser.Input.Pointer): void {
-    const member = paneMembers(this.panelHost, pane)[index];
-    const portrait = member ? portraitFor(member.fighter.speciesId, member.fighter.shiny) : null;
-    if (!portrait) {
-      this.hudDragGhost.setVisible(false);
-      return;
-    }
-    this.hudDragGhost
-      .setTexture(portrait.key, portrait.frame)
-      .setPosition(pointer.x, pointer.y)
-      .setVisible(true);
-  }
-
-  /**
-   * Picks an equipment stack up so it can be dropped on a member to equip it: the
-   * icon rides the pointer and leaves the bag list while in hand.
-   */
-  private startHudItemDrag(
-    itemId: string,
-    pointer: Phaser.Input.Pointer,
-    from: string | null = null,
-  ): void {
-    const frame = itemIconFrame(itemId);
-    if (frame === null) return;
-    setDraggedItem(itemId, from);
-    setGrabMoved(false);
-    this.hudDragGhost
-      .setTexture(ITEM_ICON_TEXTURE_KEY, frame)
-      .setPosition(pointer.x, pointer.y)
-      .setVisible(true);
-    this.input.setDefaultCursor('grabbing');
-    this.refreshHud();
-  }
-
-  /**
-   * Starts a room row's drag (`D45`): the item icon or the row's own printed label
-   * follows the pointer and the scene resolves the drop. A row never buys on press.
-   */
-  private beginRowDrag(drag: RoomRowDrag): void {
-    this.endRowDrag();
-    this.roomRowDrag = drag;
-    this.ensureRowDragGhost();
-    const frame = drag.itemId === null ? null : itemIconFrame(drag.itemId);
-    if (frame !== null && this.roomRowGhostIcon) {
-      this.roomRowGhostIcon.setFrame(frame).setPosition(drag.pointer.x, drag.pointer.y).setVisible(true);
-      this.roomRowGhostLabel?.setVisible(false);
-    } else {
-      this.roomRowGhostIcon?.setVisible(false);
-      this.roomRowGhostLabel
-        ?.setPosition(drag.pointer.x, drag.pointer.y)
-        .setText(drag.label)
-        .setVisible(true);
-    }
-    this.input.setDefaultCursor('grabbing');
-  }
-
-  /** The two ghost objects, built once and reused by every room row drag. */
-  private ensureRowDragGhost(): void {
-    if (!this.roomRowGhostIcon) {
-      this.roomRowGhostIcon = this.add
-        .image(0, 0, ITEM_ICON_TEXTURE_KEY, 0)
-        .setDepth(ROW_DRAG_DEPTH)
-        .setVisible(false);
-      this.cameras.main.ignore(this.roomRowGhostIcon);
-    }
-    if (!this.roomRowGhostLabel) {
-      this.roomRowGhostLabel = addFrlgText(this, 0, 0, '', {
-        size: 16,
-        tint: FRLG_INK,
-        origin: [0.5, 0.5],
-      })
-        .setDepth(ROW_DRAG_DEPTH)
-        .setVisible(false);
-      this.cameras.main.ignore(this.roomRowGhostLabel);
-    }
-  }
-
-  /** Puts the ghost away and restores the cursor; says nothing about the drop. */
-  private endRowDrag(): void {
-    if (!this.roomRowDrag) return;
-    this.roomRowDrag = null;
-    this.roomRowGhostIcon?.setVisible(false);
-    this.roomRowGhostLabel?.setVisible(false);
-    this.input.setDefaultCursor('default');
-  }
-
-  /** Resolves a released row and calls its `onDrop` exactly once. */
-  private dropRowDrag(pointer: Phaser.Input.Pointer): void {
-    const drag = this.roomRowDrag;
-    if (!drag) return;
-    const drop = this.roomDropAt(pointer, drag);
-    this.endRowDrag();
-    drag.onDrop(drop);
-  }
-
-  /** The bag, a living party/box member, the party panel for a Pokémon row, or none. */
-  private roomDropAt(pointer: Phaser.Input.Pointer, drag: RoomRowDrag): RoomDrop {
-    if (pointerInBagPanel(this.panelHost, pointer)) return { onto: 'bag' };
-    const target = this.hudTarget(pointer);
-    const memberId = target && target.pane !== 'rip' ? this.memberIdAt(target) : null;
-    if (memberId) return { onto: 'member', memberId };
-    if (drag.itemId === null && pointerInPartyPanel(this.panelHost, pointer)) return { onto: 'party' };
-    return { onto: 'none' };
-  }
-
-  private handleHudPointerMove(pointer: Phaser.Input.Pointer): void {
-    if (!this.scene.isActive()) return;
-    // A room row in hand follows the pointer; the release decides its drop.
-    if (this.roomRowDrag) {
-      if (!pointer.isDown) {
-        this.endRowDrag();
-        return;
-      }
-      this.roomRowGhostIcon?.setPosition(pointer.x, pointer.y);
-      this.roomRowGhostLabel?.setPosition(pointer.x, pointer.y);
-      this.input.setDefaultCursor('grabbing');
-      return;
-    }
-    if (learnPopupOpenNow() || this.modalPanelOpen()) return;
-    // A button released off-screen never fired `pointerup`; let go on the next move.
-    if (!pointer.isDown) this.cancelHudDrags();
-    setPointerPhase('move');
-    const panels = this.panels.all;
-    for (let i = panels.length - 1; i >= 0; i--) {
-      if (panels[i].pointer?.(this.panelHost, pointer) === true) return;
-    }
-    this.moveHudDrags(pointer);
-  }
-
-  /** The scene's own drags: the item in hand, the member press and its grab. */
-  private moveHudDrags(pointer: Phaser.Input.Pointer): void {
-    if (draggedItemId() !== null) {
-      this.hudDragGhost.setPosition(pointer.x, pointer.y);
-      this.input.setDefaultCursor('grabbing');
-      return;
-    }
-    // A pending member press turns into a grab once the pointer passes the slop.
-    if (this.hudPress && !this.hudUi.grabbed) {
-      const press = this.hudPress;
-      if (Math.hypot(pointer.x - press.originX, pointer.y - press.originY) <= HUD_DRAG_SLOP) {
-        this.input.setDefaultCursor('pointer');
-        return;
-      }
-      const next = grabAt(this.run, this.hudUi, press.pane, press.index);
-      this.hudPress = null;
-      if (!next.ui.grabbed) {
-        this.input.setDefaultCursor('default');
-        return;
-      }
-      this.run = next.run;
-      this.hudUi = next.ui;
-      setGrabMoved(true);
-      this.showHudGhost(press.pane, press.index, pointer);
-      this.refreshHud();
-    }
-    if (this.hudUi.grabbed) {
-      this.hudDragGhost.setPosition(pointer.x, pointer.y);
-      this.input.setDefaultCursor('grabbing');
-      const target = this.hudTarget(pointer);
-      if (!target || target.pane !== this.hudUi.grabbed.pane) return;
-      const next = dragTo(this.run, this.hudUi, target.index);
-      if (next.run === this.run && next.ui === this.hudUi) return;
-      this.run = next.run;
-      this.hudUi = next.ui;
-      this.refreshHud();
-      return;
-    }
-    this.updateHudCursor(pointer);
-  }
-
-  /**
-   * The hover cursor: the route's own hint at what a press would do under the
-   * pointer. A panel reads its own controls; the frame layer reads the frames.
-   */
-  private updateHudCursor(pointer: Phaser.Input.Pointer): void {
-    const overMember = this.hudTarget(pointer) !== null;
-    const hover = detailHover(this.panelHost, pointer);
-    const overItem = hudDraggableStackAt(this.panelHost, pointer) !== null;
-    const overIcon = hudPanelIconAt(this.panelHost, pointer) !== null;
-    // The Pokevial only reads as clickable with a full meter; a partial one does
-    // nothing on click.
-    const overVial =
-      this.run.pokevialCharges >= POKEVIAL_MAX_CHARGES && vialButtonAt(this.panelHost, pointer);
-    const overPanel =
-      overMember || hover.overMove || overItem || hover.overEvolution || overVial
-        ? false
-        : hudPanelAt(this.panelHost, pointer) !== null;
-    this.input.setDefaultCursor(
-      hover.overInfo ||
-        hover.overAbilityInfo ||
-        overMember ||
-        overIcon ||
-        hover.overEvolution ||
-        hover.overDetailName ||
-        overVial
-        ? 'pointer'
-        : overItem || hover.overMove
-          ? 'grab'
-          : overPanel
-            ? 'move'
-            : 'default',
-    );
-  }
-
-  /**
-   * Lets go of any drag in progress without acting on the drop: used when the
-   * pointer leaves the canvas or its button is released off-screen. A dragged
-   * panel keeps the position it reached; a member or an item simply goes back.
-   */
-  private cancelHudDrags(): void {
-    if (this.roomRowDrag) {
-      this.endRowDrag();
-      return;
-    }
-    if (cancelPanelDrag(this.panelHost)) return;
-    if (cancelDetailDrags(this.panelHost)) return;
-    if (draggedItemId() !== null) {
-      this.endHudItemDrag();
-      return;
-    }
-    if (this.hudPress) {
-      this.hudPress = null;
-      this.input.setDefaultCursor('default');
-      return;
-    }
-    if (this.hudUi.grabbed) this.dropHudGrab();
-  }
-
-  private handleHudPointerUp(pointer: Phaser.Input.Pointer): void {
-    // A room row's release resolves its drop before any panel gate: the Mart and
-    // the reward are floating, so their rows work while they are open.
-    if (this.roomRowDrag) {
-      this.dropRowDrag(pointer);
-      return;
-    }
-    if (learnPopupOpenNow()) {
-      dismissLearnPopup(this.panelHost);
-      return;
-    }
-    if (this.modalPanelOpen()) {
-      this.cancelHudDrags();
-      return;
-    }
-    setPointerPhase('up');
-    const panels = this.panels.all;
-    for (let i = panels.length - 1; i >= 0; i--) {
-      if (panels[i].pointer?.(this.panelHost, pointer) === true) return;
-    }
-    this.releaseHudDrags(pointer);
-  }
-
-  /** Lands the scene's own drags: the item in hand, the press and the member. */
-  private releaseHudDrags(pointer: Phaser.Input.Pointer): void {
-    const itemId = draggedItemId();
-    if (itemId !== null) {
-      const from = draggedItemFrom();
-      const target = this.hudTarget(pointer);
-      const intoBag = pointerInBagPanel(this.panelHost, pointer);
-      // The dead are not a drop target: a badge released on RIP goes back on its member.
-      const targetId = target && target.pane !== 'rip' ? this.memberIdAt(target) : null;
-      this.endHudItemDrag();
-      if (targetId) {
-        if (from === null) {
-          const item = getItem(itemId);
-          if (item && (item.kind === 'heal' || item.kind === 'status')) {
-            const next = useItemOn(this.run, targetId, itemId);
-            if (next !== this.run) {
-              this.run = next;
-              this.persistRun();
-              this.refreshHud();
-              this.showNotice(itemUsedNotice(item.name));
-            }
-          } else {
-            this.equipHudItem(itemId, target);
-          }
-        } else if (targetId !== from) {
-          this.run = equipHeldItem(unequipHeldItem(this.run, from), targetId, itemId);
-          this.persistRun();
-          this.refreshHud();
-        }
-      } else if (from !== null && intoBag) {
-        // A badge dropped on the bag takes the item off for good.
-        this.run = unequipHeldItem(this.run, from);
-        this.persistRun();
-        this.refreshHud();
-      }
-      // A badge dropped anywhere else just goes back on its member (nothing to do).
-      return;
-    }
-    // A member pressed and released without moving is a click: open its detail.
-    if (this.hudPress) {
-      const memberId = this.hudPress.memberId;
-      this.hudPress = null;
-      openMemberDetail(this.panelHost, memberId);
-      return;
-    }
-    const grabbed = this.hudUi.grabbed;
-    // A drag dropped over the other pane moves the member across; a drop on one
-    // of its members swaps the two instead (so a full party can still take a
-    // boxed member); otherwise it just drops where it last pointed. There is no
-    // cancel.
-    if (!grabbed || !grabMoved()) return;
-    const across =
-      grabbed.pane === 'party'
-        ? pointerInBoxPanel(this.panelHost, pointer)
-        : pointerInPartyPanel(this.panelHost, pointer);
-    if (across) this.dropHudAcross(grabbed, this.hudTarget(pointer));
-    else this.dropHudGrab();
-  }
-
-  /** Equips the dragged stack to the member under the drop, saving the swap. */
-  private equipHudItem(itemId: string, target: { pane: PaneId; index: number } | null): void {
-    if (!target) return;
-    if (target.pane === 'rip') return;
-    const member = paneMembers(this.panelHost, target.pane)[target.index];
-    if (!member) return;
-    const next = equipHeldItem(this.run, member.fighter.id, itemId);
-    if (next === this.run) return;
-    this.run = next;
-    this.persistRun();
-    this.refreshHud();
-  }
-
-  /** The id of the member at `target`, or null if that slot is empty. */
-  private memberIdAt(target: { pane: PaneId; index: number }): string | null {
-    const member = paneMembers(this.panelHost, target.pane)[target.index];
-    return member?.fighter.id ?? null;
-  }
-
-  /** Puts the dragged stack down and clears the in-hand state. */
-  private endHudItemDrag(): void {
-    setDraggedItem(null, null);
-    setGrabMoved(false);
-    this.hudDragGhost.setVisible(false);
-    this.input.setDefaultCursor('default');
-    this.refreshHud();
-  }
-
-  /** Moves the grabbed member to the other pane (deposit / withdraw). */
-  private moveHudAcross(from: PaneId): void {
-    const input = from === 'party' ? 'right' : 'left';
-    const next = partyInput(this.run, this.hudUi, input);
-    this.run = next.run;
-    this.hudUi = next.ui;
-    this.finishHudGrab();
-  }
-
-  /**
-   * Drops the grabbed member over the other pane. A drop on one of its members
-   * swaps the two (so a boxed member can join a full party); a drop on empty
-   * space falls back to the plain deposit/withdraw.
-   */
-  private dropHudAcross(
-    grabbed: { pane: PaneId },
-    target: { pane: PaneId; index: number } | null,
-  ): void {
-    if (target && target.pane !== grabbed.pane && target.pane !== 'rip') {
-      const next = swapAcross(this.run, this.hudUi, target.index);
-      if (next.run !== this.run) {
-        this.run = next.run;
-        this.hudUi = next.ui;
-        this.finishHudGrab();
-        return;
-      }
-    }
-    this.moveHudAcross(grabbed.pane);
-  }
-
-  /** Drops the grabbed member where it stands, saves it and redraws the HUD. */
-  private dropHudGrab(): void {
-    this.hudUi = dropGrabbed(this.hudUi);
-    this.finishHudGrab();
-  }
-
-  private finishHudGrab(): void {
-    setGrabMoved(false);
-    this.hudDragGhost.setVisible(false);
-    this.persistRun();
-    this.refreshHud();
-  }
-
-  /** The party row or box/rip cell under the pointer, or null. */
-  private hudTarget(pointer: Phaser.Input.Pointer): { pane: PaneId; index: number } | null {
-    const row = hudPartyRowAt(this.panelHost, pointer);
-    if (row !== null) return { pane: 'party', index: row };
-    const cell = hudBoxCellAt(this.panelHost, pointer);
-    if (cell !== null) return { pane: this.hudUi.pane === 'rip' ? 'rip' : 'box', index: cell };
-    return null;
-  }
-
-  /** Two cameras: one follows the world, one pins the HUD overlay to the screen. */
-  private setupHudCamera(): void {
-    const hud = this.cameras.add(0, 0, this.scale.width, this.scale.height);
-    hud.setScroll(0, 0);
-    const keep = new Set<Phaser.GameObjects.GameObject>([this.hudRoot]);
-    hud.ignore(this.children.list.filter((child) => !keep.has(child)));
-    this.cameras.main.ignore([this.hudRoot]);
-    this.hudCamera = hud;
   }
 
   /**
@@ -2076,7 +1445,6 @@ export class RouteScene extends Phaser.Scene {
     }
     // At create time the HUD camera does not exist yet and ignores everything
     // afterwards; on a rebuild it must ignore only the freshly drawn cells.
-    this.hudCamera?.ignore(created);
   }
 
   private drawEntities(): void {
@@ -2109,7 +1477,6 @@ export class RouteScene extends Phaser.Scene {
     // tuft overlay is only for tilesets that still fall back to plain ground.
     const overlayGrass = config.frames[TALL_GRASS] === config.frames[FLOOR];
     if (!overlayGrass) {
-      this.hudCamera?.ignore(created);
       return;
     }
     for (let y = 0; y < this.renderTiles.length; y++) {
@@ -2121,7 +1488,6 @@ export class RouteScene extends Phaser.Scene {
         created.push(image);
       }
     }
-    this.hudCamera?.ignore(created);
   }
 
   /**
@@ -2158,7 +1524,6 @@ export class RouteScene extends Phaser.Scene {
       this.entitySprites.push(sprite);
       created.push(sprite);
     }
-    this.hudCamera?.ignore(created);
     // The signs ride the same draw pass as the items on purpose: `drawItems` is the
     // last draw every rebuild runs (`create`, `transitionTo`, `rebuildRoom` and the
     // two debug rebuilds), so ending it here keeps the sign on screen everywhere.
@@ -2181,7 +1546,6 @@ export class RouteScene extends Phaser.Scene {
       this.entitySprites.push(sprite);
       created.push(sprite);
     }
-    this.hudCamera?.ignore(created);
   }
 
   /**
@@ -2196,7 +1560,6 @@ export class RouteScene extends Phaser.Scene {
     const created: Phaser.GameObjects.GameObject[] = [];
     for (const trainer of this.route.trainers) this.drawTrainer(trainer, created);
     this.drawRoomNpc(created);
-    this.hudCamera?.ignore(created);
   }
 
   /** Draws one trainer's sprite (the body of `drawTrainers`' loop), booking it into `created`. */
@@ -2282,7 +1645,6 @@ export class RouteScene extends Phaser.Scene {
     const created = this.children.list.slice(before);
     if (created.length === 0) return;
     for (const sprite of created) this.entitySprites.push(sprite);
-    this.hudCamera?.ignore(created);
   }
 
   /** Poses a resting trainer: the facing's idle frame, flipped for the right side. */
@@ -2483,7 +1845,6 @@ export class RouteScene extends Phaser.Scene {
       .setFlipX(this.facingDir === 'right');
     this.followerSprite = sprite;
     this.entitySprites.push(sprite);
-    this.hudCamera?.ignore([sprite]);
     this.restFollower();
   }
 
@@ -3483,9 +2844,6 @@ export class RouteScene extends Phaser.Scene {
     // A rebind happened behind this screen; re-resolve the movement keys so the
     // new keys are live the moment the route resumes.
     this.refreshMoveKeys();
-    refreshPanelKeyLabels(this.panelHost);
-    // The Transparent HUD option may have changed.
-    applyHudBackground(this.panelHost);
   }
 
   /** Pauses the route and rolls the battle on top of it (Phase 5 transition). */
@@ -3601,15 +2959,6 @@ export class RouteScene extends Phaser.Scene {
       alpha: this.battlefieldOverlay.fillAlpha,
       visible: this.battlefieldOverlay.visible,
     };
-  }
-
-  /**
-   * Dev only: the bag grid as drawn, in canvas (pointer) coordinates. Null when
-   * there is no live run.
-   */
-  bagDebugState(): BagGridDebugState | null {
-    if (!IS_DEVELOP || !this.run || !this.hudRoot) return null;
-    return bagStateOf(this.panelHost);
   }
 
   /**
@@ -4013,36 +3362,14 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * The level-up beat: the squad's shared level counts up in the party header
-   * with a gold flash on every member that levelled, then the HUD resyncs
-   * (Phase 5). Since all members share one level, the count is a single tween.
+   * The level-up beat: the cue, a repaint of the cards (the party card reads the
+   * squad's shared level from the run) and the learn popup (Phase 5).
    */
   private playLevelUp(beats: readonly LevelUpBeat[]): void {
     if (beats.length === 0) return;
     playCue(this, 'level-up');
-    const from = Math.min(...beats.map((beat) => beat.fromLevel));
-    const to = Math.max(...beats.map((beat) => beat.toLevel));
-    const counter = { level: from };
-    const paint = (): void => {
-      setHudLevel(Math.round(counter.level));
-    };
-    paint();
-    for (const beat of beats) {
-      const index = this.run.party.findIndex((member) => member.fighter.id === beat.id);
-      setPartyPortraitTint(index, FRLG_ACCENT);
-    }
-    this.tweens.add({
-      targets: counter,
-      level: to,
-      duration: 520,
-      ease: 'Quad.easeOut',
-      onUpdate: paint,
-      onComplete: () => {
-        clearPartyPortraitTints();
-        this.refreshHud();
-        showLearnPopup(this.panelHost, beats);
-      },
-    });
+    this.refreshHud();
+    showLearnPopup(this.panelHost, beats);
   }
 
   private rewardFor(trigger: BattleTrigger): BattleReward {
@@ -4183,7 +3510,6 @@ export class RouteScene extends Phaser.Scene {
     this.removeTrainerSprite(trainer.id);
     const created: Phaser.GameObjects.GameObject[] = [];
     this.drawTrainer(swapped, created);
-    this.hudCamera?.ignore(created);
     this.refreshTrainerVisibility();
     return true;
   }
@@ -4251,7 +3577,6 @@ export class RouteScene extends Phaser.Scene {
         .setDepth(31);
       // Both cameras render every object unless told otherwise; the pinned HUD
       // camera would otherwise draw a second marker at the unscrolled position.
-      this.hudCamera?.ignore([this.hoverMarker, this.hoverLabel]);
       return;
     }
     this.hoverMarker.setPosition(this.centerX(tile.x), this.centerY(tile.y));

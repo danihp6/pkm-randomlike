@@ -273,16 +273,11 @@ describe('the band is pure', () => {
     expect(imports).toEqual(['../../../evolutionGraph', '../../../scroll', './view']);
   });
 
-  it('shares its pool and window with the scene instead of a second copy', () => {
+  it('leaves the band to its own card instead of a second copy', () => {
     const source = readFileSync(new URL('../../../../scenes/panels/detail.ts', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/HUD_DETAIL_EVO_MAX/);
-    expect(source).not.toMatch(/HUD_DETAIL_EVO_ROW_H/);
-    const imported = source.match(
-      /import\s*\{([^}]*)\}\s*from '\.\.\/\.\.\/ui\/hud\/panels\/detail\/evolution'/,
-    );
-    expect(imported).not.toBeNull();
+    expect(source).not.toMatch(/HUD_DETAIL_EVO_/);
     for (const name of ['EVO_MAX_ROWS', 'EVO_WINDOW_ROWS', 'EVO_ROW_H', 'levelColumnWidth']) {
-      expect(imported![1], name).toContain(name);
+      expect(source, name).not.toContain(name);
     }
   });
 });

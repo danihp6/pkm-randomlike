@@ -286,21 +286,14 @@ describe('src/scenes/panels/pause.ts', () => {
 
 describe('the live flag contract', () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.resetModules();
   });
 
-  it('reports the canvas count with the flag off and 0 under ?hud=dom', async () => {
+  it('reports no canvas card at all: the menu is the DOM panel’s', async () => {
     vi.resetModules();
-    const flagOff = await import('../../../../scenes/panels/pause');
-    flagOff.notePauseDrawnObjects(9);
-    expect(flagOff.pauseDrawnObjectCount()).toBe(9);
-
-    vi.stubGlobal('window', { location: { search: '?hud=dom' } });
-    vi.resetModules();
-    const flagOn = await import('../../../../scenes/panels/pause');
-    flagOn.notePauseDrawnObjects(9);
-    expect(flagOn.pauseDrawnObjectCount()).toBe(0);
+    const scene = await import('../../../../scenes/panels/pause');
+    scene.notePauseDrawnObjects(9);
+    expect(scene.pauseDrawnObjectCount()).toBe(0);
   });
 
   it('never reports a negative canvas count', async () => {

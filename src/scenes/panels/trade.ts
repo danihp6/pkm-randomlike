@@ -1,7 +1,6 @@
-import type Phaser from 'phaser';
 import { signal, type Signal } from '@preact/signals';
 import { getSpecies } from '../../data/dex/species';
-import { keyLabel, type KeybindAction } from '../../data/keybinds';
+import type { KeybindAction } from '../../data/keybinds';
 import { portraitFor } from '../../data/portraits';
 import type { RoomView } from '../../engine/maps';
 import {
@@ -13,16 +12,6 @@ import {
   type RunState,
 } from '../../engine/run';
 import { t } from '../../i18n';
-import { loadSettings } from '../../settings';
-import {
-  FRLG_ACCENT,
-  FRLG_MUTED,
-  FRLG_SELECTED_FILL,
-  FRLG_SELECTED_STROKE,
-  addFrlgWindow,
-} from '../../ui/frlg';
-import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
-import { parseHudFlags } from '../../ui/hud/fixtures';
 import {
   mountTradePanel,
   tradePanelView,
@@ -35,20 +24,12 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
  * The trade card's scene-side owner (`D33`/`D47`/`D49`): the room's counter opens it,
- * this module draws it. With the flag off it is the shipped 640 × 540 Phaser window,
- * moved here verbatim from `src/scenes/rooms/trade.ts`; with `?hud=dom` on it is the
- * board's `03i`/`03j` card, mounted into `#hud` from `src/ui/hud/panels/trade/`. The
- * **rule** stays in `src/engine/run/trade.ts`: this module holds the card's own state
- * (the selection, the line and the received member) and is the only writer, through
- * one `tradePokemon` call and one `commitRun` per landed trade.
+ * this module mounts it. The card is the board's `03i`/`03j` one, mounted into `#hud`
+ * from `src/ui/hud/panels/trade/`. The **rule** stays in `src/engine/run/trade.ts`:
+ * this module holds the card's own state (the selection, the line and the received
+ * member) and is the only writer, through one `tradePokemon` call and one
+ * `commitRun` per landed trade.
  */
-
-/**
- * `?hud=dom` read once, the way every scene module reads it. With the flag off the
- * card is the shipped Phaser window this module draws; with it on nothing is drawn in
- * canvas and the Preact card paints the frames.
- */
-const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 
 /**
  * `Phaser.Scenes.Events.PAUSE` / `RESUME`, spelled out because this folder's modules
@@ -60,13 +41,6 @@ const SCENE_RESUME = 'resume';
 /** The scene's own teardown: the DOM card is outside Phaser and must be unmounted. */
 const SCENE_SHUTDOWN = 'shutdown';
 
-const TRADE_W = 640;
-const TRADE_H = 540;
-const TRADE_PAD = 24;
-const TRADE_ROW_H = 44;
-/** The party's six rows plus `LEAVE`. */
-const TRADE_ROWS = 7;
-
 /**
  * The hosts this card can open on: the room's own `RoomHost`, and the scene's
  * `RoutePanelHost` (the card's registry entry and the dev route's panel layer), which
@@ -75,11 +49,6 @@ const TRADE_ROWS = 7;
 export type TradeCardHost = RoomHost | RoutePanelHost;
 
 type TradeRow = Readonly<{ kind: 'member'; memberId: string }> | Readonly<{ kind: 'leave' }>;
-
-type TradeRowObjects = {
-  highlight: Phaser.GameObjects.Rectangle;
-  label: Phaser.GameObjects.BitmapText;
-};
 
 /** The card's session: the host, the view signal and the mount's disposer. */
 let cardHost: TradeCardHost | null = null;
@@ -92,19 +61,10 @@ let cardKind: 'pick' | 'result' = 'pick';
 let cardMessage = '';
 let cardReceived: TradeInput['received'] = null;
 let cardPaused = false;
-/** The shipped window's own objects (flag off) and how many it draws. */
-let tradeRoot: Phaser.GameObjects.Container | null = null;
-let tradeRows: TradeRowObjects[] = [];
-let tradeMessageText: Phaser.GameObjects.BitmapText | null = null;
-let shippedDrawnObjects = 0;
 
-/**
- * The number of display objects the card draws in Phaser right now. Under the flag
- * the card is the DOM one and the answer is 0; with the flag off it is the shipped
- * window's own count, the same shape `shopDrawnObjectCount` reports.
- */
+/** The number of display objects the card draws in Phaser: none, it is the DOM card. */
 export function tradeDrawnObjectCount(): number {
-  return DOM_HUD ? 0 : shippedDrawnObjects;
+  return 0;
 }
 
 /** The live run of either host: `RoomHost` carries it, `RoutePanelHost` reads it. */
@@ -137,33 +97,12 @@ function memberType(member: RunPokemon): string {
   return getSpecies(member.fighter.speciesId)?.types[0] ?? '';
 }
 
-/** The rows the shipped window offers right now, rebuilt from the live run on paint. */
-function rows(host: TradeCardHost): readonly TradeRow[] {
-  const room = roomOf(host);
-  const run = runOf(host);
-  if (isItemPicked(run, tradeId(room.mapIndex, room.roomId)) || !canTrade(run)) {
-    return [{ kind: 'leave' }];
-  }
-  const members: TradeRow[] = run.party.map((member) => ({
-    kind: 'member',
-    memberId: member.fighter.id,
-  }));
-  return [...members, { kind: 'leave' }];
-}
-
 /** The line the card opens with, in the room's three states. */
 function openingMessage(host: TradeCardHost): string {
   const room = roomOf(host);
   const run = runOf(host);
   if (isItemPicked(run, tradeId(room.mapIndex, room.roomId))) return t('trade.used');
   return canTrade(run) ? t('trade.greeting') : t('trade.refused');
-}
-
-/** A member row's label, the shipped `party.rowLabel` with an empty status. */
-function memberLabel(host: TradeCardHost, memberId: string): string {
-  const member = runOf(host).party.find((entry) => entry.fighter.id === memberId);
-  if (!member) return '';
-  return t('party.rowLabel', { name: memberName(member), level: member.fighter.level, status: '' });
 }
 
 /** The input the pure view reads, from the live run and this module's own state. */
@@ -207,9 +146,25 @@ function isPaused(host: TradeCardHost): boolean {
   return typeof sys?.isPaused === 'function' ? sys.isPaused() : false;
 }
 
-/** The member the current selection names, or null on the shipped window's LEAVE. */
+/**
+ * The rows the card offers right now: the live party, or the single LEAVE row of a
+ * room that already traded or holds one member.
+ */
+function rows(host: TradeCardHost): readonly TradeRow[] {
+  const room = roomOf(host);
+  const run = runOf(host);
+  if (isItemPicked(run, tradeId(room.mapIndex, room.roomId)) || !canTrade(run)) {
+    return [{ kind: 'leave' }];
+  }
+  const members: TradeRow[] = run.party.map((member) => ({
+    kind: 'member',
+    memberId: member.fighter.id,
+  }));
+  return [...members, { kind: 'leave' }];
+}
+
+/** The member the current selection names, or null on the card's LEAVE row. */
 function selectedMember(host: TradeCardHost): string | null {
-  if (DOM_HUD) return runOf(host).party[cardIndex]?.fighter.id ?? null;
   const row = rows(host)[cardIndex];
   return row !== undefined && row.kind === 'member' ? row.memberId : null;
 }
@@ -221,19 +176,13 @@ function selectedMember(host: TradeCardHost): string | null {
 export function openTradeCard(host: TradeCardHost): void {
   if (host.panelOpen()) return;
   closeTradeCard();
-  host.releaseHudKeyboard();
   cardHost = host;
   cardIndex = 0;
   cardKind = 'pick';
   cardReceived = null;
   cardMessage = openingMessage(host);
   cardPaused = isPaused(host);
-  if (DOM_HUD) {
-    mountCard(host);
-  } else {
-    buildTradePanel(host);
-    refreshTrade(host);
-  }
+  mountCard(host);
   host.openPanel(PANEL);
 }
 
@@ -258,13 +207,6 @@ export function closeTradeCard(): void {
   cardMessage = '';
   cardReceived = null;
   cardPaused = false;
-  shippedDrawnObjects = 0;
-  tradeRows = [];
-  tradeMessageText = null;
-  if (tradeRoot !== null) {
-    tradeRoot.destroy(true);
-    tradeRoot = null;
-  }
 }
 
 /** Opens the DOM card: the signal, the `#hud` mount and the scene's own beats. */
@@ -344,124 +286,22 @@ function give(host: TradeCardHost, memberId: string): void {
   host.commitRun(result.run);
   cardMessage = t('trade.done', { name: memberName(result.received) });
   cardIndex = 0;
-  if (DOM_HUD) {
-    cardKind = 'result';
-    cardReceived = {
-      name: memberName(result.received),
-      level: result.received.fighter.level,
-      type: memberType(result.received),
-      frame: memberFrame(result.received),
-    };
-  }
+  cardKind = 'result';
+  cardReceived = {
+    name: memberName(result.received),
+    level: result.received.fighter.level,
+    type: memberType(result.received),
+    frame: memberFrame(result.received),
+  };
   repaint(host);
 }
 
-/** Repaints whichever card is live: the DOM mount or the shipped window. */
+/** Repaints the mounted card. */
 function repaint(host: TradeCardHost): void {
-  if (DOM_HUD) pushTradeCard(host);
-  else refreshTrade(host);
+  pushTradeCard(host);
 }
 
-/* ------------------------------------------------------------------ *
- * The shipped window (flag off), moved verbatim from `rooms/trade.ts`.
- * ------------------------------------------------------------------ */
-
-/** Builds the window's static frame and its seven row objects once per open. */
-function buildTradePanel(host: TradeCardHost): void {
-  const scene = host.scene;
-  const { width, height } = scene.scale;
-  const x = (width - TRADE_W) / 2;
-  const y = (height - TRADE_H) / 2;
-  const left = x + TRADE_PAD;
-  const right = x + TRADE_W - TRADE_PAD;
-  const children: Phaser.GameObjects.GameObject[] = [
-    scene.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
-    addFrlgWindow(scene, x, y, TRADE_W, TRADE_H),
-    addFrlgText(scene, left, y + 20, t('trade.title'), { size: 24, tint: FRLG_INK }),
-  ];
-
-  tradeRows = [];
-  for (let i = 0; i < TRADE_ROWS; i++) {
-    const rowY = y + 88 + i * TRADE_ROW_H;
-    const highlight = scene.add
-      .rectangle(
-        left,
-        rowY,
-        TRADE_W - TRADE_PAD * 2,
-        TRADE_ROW_H - 8,
-        FRLG_SELECTED_FILL.colour,
-        FRLG_SELECTED_FILL.alpha,
-      )
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
-      .setVisible(false);
-    const label = addFrlgText(scene, left + 16, rowY + 10, '', { size: 16, tint: FRLG_INK });
-    const zone = scene.add
-      .zone(left, rowY, TRADE_W - TRADE_PAD * 2, TRADE_ROW_H)
-      .setOrigin(0, 0)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => {
-      const open = cardHost;
-      if (!open || i >= rows(open).length || i === cardIndex) return;
-      cardIndex = i;
-      refreshTrade(open);
-    });
-    zone.on('pointerdown', () => {
-      const open = cardHost;
-      if (!open || i >= rows(open).length) return;
-      cardIndex = i;
-      refreshTrade(open);
-      activate(open);
-    });
-    tradeRows.push({ highlight, label });
-    children.push(highlight, label, zone);
-  }
-
-  tradeMessageText = addFrlgText(scene, left, y + TRADE_H - 74, '', { size: 16, tint: FRLG_INK });
-  children.push(
-    tradeMessageText,
-    addFrlgText(
-      scene,
-      right,
-      y + TRADE_H - 42,
-      t('trade.controls', {
-        confirm: keyLabel(loadSettings().keybinds.confirm),
-        cancel: keyLabel(loadSettings().keybinds.cancel),
-      }),
-      { size: 16, tint: FRLG_MUTED, origin: [1, 0] },
-    ),
-  );
-
-  tradeRoot = scene.add.container(0, 0, children).setDepth(500);
-  scene.cameras.main.ignore(tradeRoot);
-  shippedDrawnObjects = children.length;
-}
-
-/** Repaints the shipped window for the live run, the cursor and the current line. */
-function refreshTrade(host: TradeCardHost): void {
-  if (!tradeRoot) return;
-  const model = rows(host);
-  cardIndex = model.length === 0 ? 0 : Math.max(0, Math.min(cardIndex, model.length - 1));
-  tradeMessageText?.setText(cardMessage);
-  tradeRows.forEach((rowObject, i) => {
-    const row = model[i];
-    const visible = row !== undefined;
-    const selected = visible && i === cardIndex;
-    rowObject.highlight.setVisible(selected);
-    rowObject.label.setVisible(visible);
-    if (!row) {
-      rowObject.label.setText('');
-      return;
-    }
-    rowObject.label.setText(row.kind === 'member' ? memberLabel(host, row.memberId) : t('trade.leave'));
-    rowObject.label.setTint(selected ? FRLG_ACCENT : FRLG_INK);
-  });
-}
-
-/**
- * The window's keys: move the cursor, trade (or leave) on confirm, close on cancel.
- * A key and a press reach the same `activate` / `give` pair either way.
- */
+/** The card's keys: move the cursor, trade on confirm, close on cancel. */
 function handleTradeAction(host: TradeCardHost, action: KeybindAction): void {
   switch (action) {
     case 'up':
@@ -482,9 +322,9 @@ function handleTradeAction(host: TradeCardHost, action: KeybindAction): void {
   }
 }
 
-/** Steps the selection through the members (flag on) or the shipped rows (off). */
+/** Steps the selection through the rows, so the LEAVE row stays reachable. */
 function moveCard(host: TradeCardHost, delta: number): void {
-  const total = DOM_HUD ? runOf(host).party.length : rows(host).length;
+  const total = rows(host).length;
   if (total === 0) return;
   cardIndex = (cardIndex + delta + total) % total;
   repaint(host);

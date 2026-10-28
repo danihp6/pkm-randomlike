@@ -1,16 +1,8 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import type { KeybindAction } from '../../data/keybinds';
-import { t, type TranslationKey } from '../../i18n';
-import {
-  FRLG_ACCENT,
-  FRLG_SELECTED_FILL,
-  FRLG_SELECTED_STROKE,
-  FRLG_SURFACE,
-  addFrlgWindow,
-} from '../../ui/frlg';
-import { FRLG_INK, addFrlgText } from '../../ui/frlgFont';
-import { parseHudFlags } from '../../ui/hud/fixtures';
+import { FRLG_ACCENT, FRLG_SURFACE } from '../../ui/frlg';
+import { FRLG_INK } from '../../ui/frlgFont';
 import {
   installPausePreview,
   mountPausePanel,
@@ -28,20 +20,15 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * menu is up, so the pad and A / B still drive it. The run's own restart belongs
  * to the scene; this module only asks for it.
  *
- * Under `?hud=dom` (`D49`) the card is the board's `03n` card in the HUD's Preact
- * layer (`src/ui/hud/panels/pause/`) and this module draws nothing for it: it still
- * owns the open state, the cursor, the two-press Reset and the keys, and the mount
- * paints them. The hold-to-reset overlay stays in Phaser on both paths.
+ * The card is the board's `03n` card in the HUD's Preact layer
+ * (`src/ui/hud/panels/pause/`) and this module draws nothing for it: it owns the
+ * open state, the cursor, the two-press Reset and the keys, and the mount paints
+ * them. The hold-to-reset overlay is the one piece of feedback the board has no
+ * card for, so it stays drawn.
  */
 
-/** The pause menu (ESC / left-edge swipe): a centred window with two rows. */
-const PAUSE_MENU_W = 360;
-const PAUSE_MENU_ROW_H = 56;
+/** The pause menu's rows, in order: the index the cursor and the keys agree on. */
 const PAUSE_MENU_ITEMS = ['settings', 'reset'] as const;
-const PAUSE_MENU_LABELS: Readonly<Record<(typeof PAUSE_MENU_ITEMS)[number], TranslationKey>> = {
-  settings: 'pause.settings',
-  reset: 'pause.reset',
-};
 
 /** Hold the reset key this long to start a fresh run: a filling ring + a fade. */
 const RESET_HOLD_MS = 1600;
@@ -51,99 +38,41 @@ const RESET_FADE_IN_MS = 260;
 const DEG_TO_RAD = Math.PI / 180;
 
 /**
- * `?hud=dom` read once, the way every scene module reads it. The fixture preview
- * mounts on its own, even before a route is ever opened, so
+ * The fixture preview mounts on its own, even before a route is ever opened, so
  * `?hudFixture=03n-panels-pause-menu` can be screenshotted without walking the menu.
  */
-const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
 const HUD_SEARCH = typeof window === 'undefined' ? '' : window.location.search;
 installPausePreview(HUD_SEARCH);
 
-/** The pause menu (ESC, or a left-edge swipe on mobile): Settings and Reset. */
-let pauseMenu: Phaser.GameObjects.Container | null = null;
 let pauseMenuOpen = false;
 let pauseMenuIndex = 0;
 /** Reset is two-press: the first arms it, the second starts the new run. */
 let pauseMenuArmed = false;
-let pauseMenuRows: {
-  highlight: Phaser.GameObjects.Rectangle;
-  label: Phaser.GameObjects.BitmapText;
-}[] = [];
 let resetHold = 0;
 let resetScrim: Phaser.GameObjects.Rectangle | null = null;
 let resetRing: Phaser.GameObjects.Graphics | null = null;
 
-/** The DOM card (flag on): its host, its view signal, its mount and the shipped count. */
+/** The DOM card: its host, its view signal, its mount and the shipped count. */
 let cardHost: RoutePanelHost | null = null;
 let cardView: Signal<PausePanelView> | null = null;
 let cardDispose: (() => void) | null = null;
-let shippedDrawnObjects = 0;
 
 /** True while the pause menu owns the input. */
 export function pauseMenuOpenNow(): boolean {
   return pauseMenuOpen;
 }
 
-/** The pause menu's own display objects; 0 under `?hud=dom`, where the card is the DOM panel's. */
+/** The pause menu's own display objects: none, the card is the DOM panel's. */
 export function pauseDrawnObjectCount(): number {
-  return DOM_HUD ? 0 : shippedDrawnObjects;
+  return 0;
 }
 
-/** The Phaser card reports its own display-object count; under the flag it is discarded. */
-export function notePauseDrawnObjects(count: number): void {
-  shippedDrawnObjects = DOM_HUD ? 0 : Math.max(0, count);
-}
+/** The retired canvas card's reporter, kept so the count contract's call sites compile. */
+export function notePauseDrawnObjects(_count: number): void {}
 
 /** The view's viewport: the scene's own window, which the card is centred in. */
 function viewport(host: RoutePanelHost): { width: number; height: number } {
   return { width: host.scene.scale.width, height: host.scene.scale.height };
-}
-
-function buildPauseMenu(host: RoutePanelHost): void {
-  const scene = host.scene;
-  const { width, height } = scene.scale;
-  const panelH = 88 + PAUSE_MENU_ITEMS.length * PAUSE_MENU_ROW_H;
-  const x = (width - PAUSE_MENU_W) / 2;
-  const y = (height - panelH) / 2;
-  const rowX = x + 24;
-  const rowW = PAUSE_MENU_W - 48;
-
-  const scrim = scene.add.rectangle(0, 0, width, height, 0x05070c, 0.55).setOrigin(0, 0);
-  const panel = addFrlgWindow(scene, x, y, PAUSE_MENU_W, panelH);
-  const title = addFrlgText(scene, x + 24, y + 20, t('hud.menu'), { size: 32, tint: FRLG_INK });
-
-  const children: Phaser.GameObjects.GameObject[] = [scrim, panel, title];
-  pauseMenuRows = PAUSE_MENU_ITEMS.map((_item, i) => {
-    const rowY = y + 76 + i * PAUSE_MENU_ROW_H;
-    const highlight = scene.add
-      .rectangle(
-        rowX,
-        rowY,
-        rowW,
-        PAUSE_MENU_ROW_H - 8,
-        FRLG_SELECTED_FILL.colour,
-        FRLG_SELECTED_FILL.alpha,
-      )
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
-      .setVisible(false);
-    const label = addFrlgText(scene, rowX + 16, rowY + 12, t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]), {
-      size: 16,
-      tint: FRLG_INK,
-    });
-    const zone = scene.add.zone(rowX, rowY, rowW, PAUSE_MENU_ROW_H).setOrigin(0, 0);
-    zone.setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => {
-      pressPauseMenuRow(host, i);
-    });
-    children.push(highlight, label, zone);
-    return { highlight, label };
-  });
-
-  const container = scene.add.container(0, 0, children).setDepth(450).setVisible(false);
-  pauseMenu = container;
-  scene.cameras.main.ignore(container);
-  notePauseDrawnObjects(container.list.length);
 }
 
 /**
@@ -181,19 +110,9 @@ function paintPauseCard(host: RoutePanelHost | null): void {
   );
 }
 
-/** The one repaint point: the DOM card under the flag, the shipped rows without it. */
-function repaintPause(host: RoutePanelHost): void {
-  if (DOM_HUD) {
-    paintPauseCard(host);
-    return;
-  }
-  refreshPauseMenu();
-}
-
 /**
  * The hold-to-reset overlay: a full-screen scrim that fades the whole screen
- * out and a small ring that fills. Screen-space, so the world camera ignores it
- * and only the pinned camera draws it.
+ * out and a small ring that fills. Screen-space, so the world camera ignores it.
  */
 function buildResetOverlay(host: RoutePanelHost): void {
   const scene = host.scene;
@@ -216,18 +135,13 @@ export function openPauseMenu(host: RoutePanelHost): void {
   pauseMenuOpen = true;
   pauseMenuIndex = 0;
   pauseMenuArmed = false;
-  pauseMenu?.setVisible(true);
-  repaintPause(host);
+  paintPauseCard(host);
 }
 
 export function closePauseMenu(): void {
   pauseMenuOpen = false;
   pauseMenuArmed = false;
-  if (DOM_HUD) {
-    paintPauseCard(cardHost);
-    return;
-  }
-  pauseMenu?.setVisible(false);
+  paintPauseCard(cardHost);
 }
 
 /**
@@ -258,7 +172,7 @@ function movePauseMenu(host: RoutePanelHost, delta: number): void {
   const count = PAUSE_MENU_ITEMS.length;
   pauseMenuIndex = (pauseMenuIndex + delta + count) % count;
   pauseMenuArmed = false;
-  repaintPause(host);
+  paintPauseCard(host);
 }
 
 /** Runs the chosen row: Settings pauses onto it; Reset arms, then starts over. */
@@ -271,29 +185,17 @@ function activatePauseMenu(host: RoutePanelHost): void {
   }
   if (!pauseMenuArmed) {
     pauseMenuArmed = true;
-    repaintPause(host);
+    paintPauseCard(host);
     return;
   }
   closePauseMenu();
   host.restartRun();
 }
 
-/** The shipped rows' own repaint: which highlight shows and which label Reset prints. */
-function refreshPauseMenu(): void {
-  pauseMenuRows.forEach((row, i) => {
-    row.highlight.setVisible(i === pauseMenuIndex);
-    const reset = PAUSE_MENU_ITEMS[i] === 'reset';
-    row.label.setText(
-      reset && pauseMenuArmed ? t('pause.resetArmed') : t(PAUSE_MENU_LABELS[PAUSE_MENU_ITEMS[i]]),
-    );
-  });
-}
-
 /**
- * A press on a row, shared by the shipped zones and the DOM card: a press on
- * another row moves the cursor and disarms Reset; a press on the row that is
- * already armed keeps it armed, so the second press on `Reset run` starts the
- * fresh run exactly as the key path's second `confirm` does.
+ * A press on a row: a press on another row moves the cursor and disarms Reset; a
+ * press on the row that is already armed keeps it armed, so the second press on
+ * `Reset run` starts the fresh run exactly as the key path's second `confirm` does.
  */
 function pressPauseMenuRow(host: RoutePanelHost, index: number): void {
   if (index !== pauseMenuIndex) {
@@ -303,19 +205,13 @@ function pressPauseMenuRow(host: RoutePanelHost, index: number): void {
   activatePauseMenu(host);
 }
 
-/** The DOM's twin of a row's `pointerdown` zone: a press names a row and runs it. */
+/** The DOM card's press: a named row is run exactly as a click on it. */
 function handlePauseIntent(host: RoutePanelHost, intent: PausePanelIntent): void {
-  switch (intent.type) {
-    case 'row': {
-      const index = intent.index;
-      if (!Number.isInteger(index)) return;
-      if (index < 0 || index >= PAUSE_MENU_ITEMS.length) return;
-      pressPauseMenuRow(host, index);
-      return;
-    }
-    default:
-      return;
-  }
+  if (intent.type !== 'row') return;
+  const index = intent.index;
+  if (!Number.isInteger(index)) return;
+  if (index < 0 || index >= PAUSE_MENU_ITEMS.length) return;
+  pressPauseMenuRow(host, index);
 }
 
 /**
@@ -399,21 +295,14 @@ export const descriptor: RoutePanelDescriptor = {
     pauseMenuOpen = false;
     pauseMenuIndex = 0;
     pauseMenuArmed = false;
-    pauseMenuRows = [];
-    pauseMenu = null;
     resetHold = 0;
     resetScrim = null;
     resetRing = null;
     disposePauseCard();
-    shippedDrawnObjects = 0;
     buildResetOverlay(host);
-    if (DOM_HUD) {
-      buildPauseCard(host);
-      return;
-    }
-    buildPauseMenu(host);
+    buildPauseCard(host);
   },
-  // The DOM card lives outside Phaser, so the scene's teardown has to unmount it.
+  // The card lives outside Phaser, so the scene's teardown has to unmount it.
   close(): void {
     disposePauseCard();
   },
