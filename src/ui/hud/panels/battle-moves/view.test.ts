@@ -13,6 +13,8 @@ import { battleHpBox } from '../battle-hp/view';
 import {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
+  COMPACT_CARD_CLEARANCE,
+  INFO_CARD_H,
   MOVE_BACK_COL,
   MOVE_CATEGORY_GAP,
   MOVE_GMAX_COL,
@@ -61,7 +63,7 @@ const FOUR: readonly MoveGridSlot[] = padMoveGridCells(
   [
     moveCell('FLAMETHROWER'),
     moveCell('AIR SLASH', { type: 'flying', accuracy: 95, baseAccuracy: 95 }),
-    moveCell('DRAGON CLAW', { category: 'Physical' }),
+    moveCell('DRAGON CLAW', { category: 'Physical', type: 'dragon' }),
     moveCell('EARTHQUAKE', { type: 'ground' }),
   ],
   4,
@@ -142,7 +144,7 @@ describe('drawnTextWidth', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
     expect(slot.nameBox.x).toBe(slot.box.x + CELL_PAD_X);
     expect(slot.nameBox.y).toBe(slot.categoryBox.y);
-    expect(slot.nameBox.w).toBe(132);
+    expect(slot.nameBox.w).toBe(162);
     // The badge's 24 px square never enters the name's column, for any type.
     const shortType = battleMovesView(
       inputOf({
@@ -310,16 +312,10 @@ describe('battleMovesView geometry', () => {
     expect(view.slots[0]!.box).toStrictEqual({ x: 360, y: 606, w: 304, h: 72 });
   });
 
-  it('puts the ⓘ 36 px inside the cell s right edge, 8 from its top', () => {
+  it('keeps every label of the four cells in the cell s own boxes', () => {
     const view = battleMovesView(inputOf({ mega: true }));
-    const slot = view.slots[0]!;
-    expect(slot.info).toStrictEqual({
-      x: slot.box.w - 36 + slot.box.x,
-      y: slot.box.y + 8,
-      w: 22,
-      h: 22,
-    });
-    expect(slot.info!.x).toBe(360 + 273 - 36);
+    expect(view.slots[0]!.box).toStrictEqual({ x: 360, y: 606, w: 273, h: 72 });
+    for (const slot of view.slots) expect(slot.empty).toBe(false);
   });
 
   it('centres the ◀ on the card s left padding', () => {
@@ -376,9 +372,9 @@ describe('battleMovesView slots', () => {
     expect(view.slots.map((slot) => slot.selected)).toStrictEqual([false, false, true, false]);
   });
 
-  it('paints an empty slot with no name, no stats and no ⓘ', () => {
+  it('paints an empty slot with no name and no stats', () => {
     const cells = padMoveGridCells([moveCell('TACKLE')], 4);
-    const view = battleMovesView(inputOf({ cells, info: 1 }));
+    const view = battleMovesView(inputOf({ cells, selected: 1 }));
     const empty = view.slots[1]!;
     expect(empty).toStrictEqual({
       index: 1,
@@ -392,15 +388,13 @@ describe('battleMovesView slots', () => {
       powerTone: 'level',
       accuracyTone: 'level',
       enabled: false,
-      selected: false,
+      selected: true,
       box: view.slots[1]!.box,
       nameBox: view.slots[1]!.nameBox,
       categoryBox: view.slots[1]!.categoryBox,
       boxes: view.slots[1]!.boxes,
       typeBox: view.slots[1]!.typeBox,
-      info: null,
     });
-    expect(view.slots[3]!.info).toBeNull();
     expect(view.info).toBeNull();
   });
 
@@ -446,42 +440,62 @@ describe('battleMovesView slots', () => {
 });
 
 describe('the category glyph s box', () => {
-  it('ends a gap left of the ⓘ and stays inside its cell at both shipped cards', () => {
+  it('ends on the cell s own right padding edge, inside its cell at both shipped cards', () => {
     for (const viewport of [DESKTOP, PHONE]) {
       const view = battleMovesView(inputOf({ card: battleMovesBox(viewport) }));
       for (const slot of view.slots) {
-        expect(slot.categoryBox.x + slot.categoryBox.w).toBeLessThanOrEqual(
-          slot.info!.x - MOVE_CATEGORY_GAP + 0.001,
-        );
+        expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.box.x + slot.box.w - CELL_PAD_X);
         expect(slot.categoryBox.x).toBeGreaterThanOrEqual(slot.box.x);
         expect(slot.categoryBox.y).toBeGreaterThanOrEqual(slot.box.y);
-        expect(slot.categoryBox.x + slot.categoryBox.w).toBeLessThanOrEqual(slot.box.x + slot.box.w);
         expect(slot.categoryBox.y + slot.categoryBox.h).toBeLessThanOrEqual(slot.box.y + slot.box.h);
       }
     }
   });
 
-  it('is the board s 24 px square on the wide cell, ending its gap left of the ⓘ', () => {
+  it('is the board s 24 px square on the wide cell, ending on the padding edge', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
     expect(slot.categoryBox.w).toBe(24);
     expect(slot.categoryBox.h).toBe(24);
-    expect(slot.categoryBox.x + 24).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
-    expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
+    expect(slot.categoryBox.x).toBe(slot.box.x + slot.box.w - CELL_PAD_X - 24);
   });
 
   it('is one 13 px line on the compact cell, at the same right edge', () => {
     const slot = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).slots[0]!;
-    expect(slot.categoryBox).toStrictEqual({ x: 151, y: 637, w: 24, h: 13 });
-    expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.info!.x - MOVE_CATEGORY_GAP);
+    expect(slot.categoryBox).toStrictEqual({ x: 181, y: 637, w: 24, h: 13 });
+    expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.box.x + slot.box.w - CELL_PAD_X);
   });
 
-  it('gives an empty slot a zero-width mark at the cell s right pad, and no ⓘ', () => {
+  it('gives an empty slot a zero-width mark at the cell s right pad', () => {
     const cells = padMoveGridCells([moveCell('TACKLE')], 4);
     const empty = battleMovesView(inputOf({ cells })).slots[1]!;
-    expect(empty.info).toBeNull();
     expect(empty.categoryBox.w).toBe(0);
     expect(empty.categoryBox.x).toBe(empty.box.x + empty.box.w - 14);
     expect(empty.typeBox.w).toBe(0);
+  });
+});
+
+describe('the freed column', () => {
+  it('gives the ⓘ s 22 px and its gap back to the move s name', () => {
+    const wide = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) }));
+    for (const slot of wide.slots) {
+      expect(slot.nameBox.w).toBe(slot.box.w - 60);
+      expect(slot.nameBox.x + slot.nameBox.w).toBeLessThanOrEqual(slot.categoryBox.x);
+    }
+    // The phone cell already gave the name its whole content box: its six lines are
+    // untouched, and the glyph moved out of the ⓘ column to that same edge.
+    const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE) }));
+    for (const slot of phone.slots) {
+      expect(slot.boxes.name.w).toBe(slot.box.w - 28);
+      expect(overlapArea(slot.boxes.name, slot.categoryBox)).toBe(0);
+    }
+  });
+
+  it('is the 30 px the wide cell used to reserve for the button and its gap', () => {
+    const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
+    expect(slot.box.w - 60).toBe(162);
+    expect(slot.categoryBox.w + 8 + 14 + 14).toBe(60);
+    expect(MOVE_INFO_SIZE).toBe(22);
+    expect('info' in slot).toBe(false);
   });
 });
 
@@ -489,7 +503,13 @@ describe('the category glyph s box', () => {
 function expectCellFits(slot: BattleMoveSlotView, compact = false): void {
   expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(slot.nameBox.w + 0.01);
   expect(slot.nameBox.x).toBeGreaterThanOrEqual(slot.box.x + CELL_PAD_X);
-  expect(slot.categoryBox.x + slot.categoryBox.w).toBeLessThanOrEqual(slot.info!.x);
+  // The glyph ends on the cell's own right padding edge: no column is reserved for a
+  // button, so the freed 30 px are the name's.
+  expect(slot.categoryBox.x + slot.categoryBox.w).toBe(slot.box.x + slot.box.w - CELL_PAD_X);
+  // The wide cell gives the name the line beside the glyph, one gap short of it; the
+  // compact cell rows the two, so their area is what has to be empty there.
+  if (compact) expect(overlapArea(slot.boxes.name, slot.categoryBox)).toBe(0);
+  else expect(slot.nameBox.x + slot.nameBox.w).toBeLessThanOrEqual(slot.categoryBox.x);
   // The two atlas squares: inside the cell, the same 24 px wide for every move, and
   // clear of each other — the wide cell stacks them in the gutter, the compact one
   // rows them across two lines.
@@ -516,11 +536,11 @@ describe('a move cell s own text', () => {
   it('takes the cell s remaining width, and keeps every shipped name whole at 1280×800', () => {
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
     expect(view.slots).toHaveLength(4);
-    // 222 px cell: 2×14 padding, the 24 px category glyph, its two 8 px gaps and the 22 px ⓘ.
-    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 24 - 16 - 22);
+    // 222 px cell: 2×14 padding, the 24 px category glyph and its 8 px gap.
+    for (const slot of view.slots) expect(slot.nameBox.w).toBe(222 - 28 - 24 - 8);
     for (const slot of view.slots) {
       expect(slot.empty).toBe(false);
-      expect(slot.nameBox.w).toBe(132);
+      expect(slot.nameBox.w).toBe(162);
       expectCellFits(slot);
     }
     expect(view.slots.map((slot) => slot.name)).toStrictEqual([
@@ -529,20 +549,24 @@ describe('a move cell s own text', () => {
       'TERREMOTO',
       'PSÍQUICO',
     ]);
-    const pinned = battleMovesView(
-      inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID, info: 0 }),
-    );
-    expect(pinned.info!.title).toBe('MOFLETE ESTÁTICO');
+    expect(view.info!.title).toBe('MOFLETE ESTÁTICO');
   });
 
   it('cuts a name longer than its own line, and only that one', () => {
-    const cells = padMoveGridCells([moveCell('MOFLETE ESTÁTICO PLUS')], 4);
+    // The freed column made the old 132 px overflow fit: `MOFLETE ESTÁTICO PLUS` is
+    // 152.5 px, so it now keeps its whole string, and the longer one below is cut.
+    const fits = padMoveGridCells([moveCell('MOFLETE ESTÁTICO PLUS')], 4);
+    const whole = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: fits })).slots[0]!;
+    expect(drawnTextWidth('MOFLETE ESTÁTICO PLUS')).toBeLessThan(162);
+    expect(whole.name).toBe('MOFLETE ESTÁTICO PLUS');
+
+    const cells = padMoveGridCells([moveCell('MOFLETE ESTÁTICO PLUS ONE')], 4);
     const slot = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells })).slots[0]!;
-    expect(drawnTextWidth('MOFLETE ESTÁTICO PLUS')).toBeGreaterThan(132);
+    expect(drawnTextWidth('MOFLETE ESTÁTICO PLUS ONE')).toBeGreaterThan(162);
     expect(slot.name.endsWith('\u2026')).toBe(true);
     expect(slot.name.length).toBeGreaterThan(9);
-    expect('MOFLETE ESTÁTICO PLUS'.startsWith(slot.name.slice(0, -1))).toBe(true);
-    expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(132 + 0.01);
+    expect('MOFLETE ESTÁTICO PLUS ONE'.startsWith(slot.name.slice(0, -1))).toBe(true);
+    expect(drawnTextWidth(slot.name)).toBeLessThanOrEqual(162 + 0.01);
   });
 
   it('holds on the compact card and on the phone card', () => {
@@ -561,7 +585,7 @@ describe('a move cell s own text', () => {
     expect(first.box).toStrictEqual({ x: 100, y: 616, w: 119, h: 94 });
     expect(first.typeBox).toStrictEqual({ x: 114, y: 624, w: 24, h: 24 });
     expect(first.boxes.name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
-    expect(first.boxes.category).toStrictEqual({ x: 151, y: 637, w: 24, h: 13 });
+    expect(first.boxes.category).toStrictEqual({ x: 181, y: 637, w: 24, h: 13 });
     expect(first.boxes.pp).toStrictEqual({ x: 114, y: 663, w: 91, h: 13 });
     expect(first.boxes.power).toStrictEqual({ x: 114, y: 676, w: 91, h: 13 });
     expect(first.boxes.accuracy).toStrictEqual({ x: 114, y: 689, w: 91, h: 13 });
@@ -583,14 +607,13 @@ describe('a move cell s own text', () => {
       expect(slot.name).toBe('');
       expect(slot.nameBox.w).toBe(0);
       expect(slot.nameBox.x).toBe(slot.box.x + slot.box.w - CELL_PAD_X);
-      expect(slot.info).toBeNull();
     }
   });
 
   it('takes the name column from the cell it is in, and the glyph from the board s square', () => {
     const wide = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: LONG_GRID }));
     const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID }));
-    expect(wide.slots[0]!.nameBox.w).toBe(132);
+    expect(wide.slots[0]!.nameBox.w).toBe(162);
     expect(phone.slots[0]!.nameBox.w).toBe(91);
     expect(wide.slots[0]!.nameBox.y).toBe(wide.slots[0]!.categoryBox.y);
     // The glyph's box is the same 24 px square for every category: the frame is FIT
@@ -607,9 +630,9 @@ describe('a move cell s own text', () => {
     ]);
   });
 
-  it('paints the name in the case the slot paints it, and keeps the full one for the ⓘ', () => {
+  it('paints the name in the case the slot paints it, and keeps the full one for the card', () => {
     const cells = padMoveGridCells([moveCell('Moflete Estático', { category: 'Physical' })], 4);
-    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells, info: 0 }));
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells }));
     expect(view.slots[0]!.name).toBe('MOFLETE ESTÁTICO');
     expect(view.info!.title).toBe('Moflete Estático');
   });
@@ -666,9 +689,9 @@ function expectBoxesHold(slot: BattleMoveSlotView): void {
     expect(overlapArea(icon, slot.boxes.name)).toBe(0);
   }
   expect(overlapArea(slot.typeBox, slot.categoryBox)).toBe(0);
-  // The ⓘ stays reserved: the category ends its 22 px clear of the cell's right padding edge.
+  // The freed ⓘ column is the name's: the glyph ends on the cell's own right pad edge.
   const rightPad = slot.box.x + slot.box.w - CELL_PAD_X;
-  expect(slot.boxes.category.x + slot.boxes.category.w).toBeLessThanOrEqual(rightPad - 22 + 0.01);
+  expect(slot.boxes.category.x + slot.boxes.category.w).toBe(rightPad);
   expect(slot.boxes.category.x).toBeGreaterThanOrEqual(slot.box.x);
 }
 
@@ -738,8 +761,8 @@ describe('the wide cell', () => {
     const slot = view.slots[0]!;
     expect(slot.box).toStrictEqual({ x: 524, y: 606, w: 222, h: 72 });
     expect(slot.typeBox).toStrictEqual({ x: 538, y: 636.5, w: 24, h: 24 });
-    expect(slot.boxes.name).toStrictEqual({ x: 538, y: 622.5, w: 132, h: 13 });
-    expect(slot.boxes.category).toStrictEqual({ x: 678, y: 622.5, w: 24, h: 24 });
+    expect(slot.boxes.name).toStrictEqual({ x: 538, y: 622.5, w: 162, h: 13 });
+    expect(slot.boxes.category).toStrictEqual({ x: 708, y: 622.5, w: 24, h: 24 });
     expect(slot.boxes.pp).toStrictEqual({ x: 570, y: 635.5, w: 162, h: 13 });
     expect(slot.boxes.power).toStrictEqual({ x: 570, y: 648.5, w: 86, h: 13 });
     expect(slot.boxes.accuracy).toStrictEqual({ x: 664, y: 648.5, w: 68, h: 13 });
@@ -767,7 +790,7 @@ describe('cellTextBoxes', () => {
 
   it('lays a cell out by its width class alone', () => {
     expect(cellTextBoxes(phone, true).name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
-    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 538, y: 622.5, w: 132, h: 13 });
+    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 538, y: 622.5, w: 162, h: 13 });
     for (const box of Object.values(cellTextBoxes(phone, true))) {
       expect(fitsInside(box, phone)).toBe(true);
     }
@@ -810,11 +833,11 @@ describe('fitsInside', () => {
 });
 
 describe('battleMovesView purity', () => {
-  it('clamps selected and info into the four slots', () => {
-    const high = battleMovesView(inputOf({ selected: 9, info: 7 }));
+  it('clamps selected into the four slots, and never reads the scene s pin', () => {
+    const high = battleMovesView(inputOf({ selected: 9, info: 0 }));
     expect(high.slots[3]!.selected).toBe(true);
     expect(high.info!.title).toBe('EARTHQUAKE');
-    const low = battleMovesView(inputOf({ selected: -4, info: -2 }));
+    const low = battleMovesView(inputOf({ selected: -4, info: 3 }));
     expect(low.slots[0]!.selected).toBe(true);
     expect(low.info!.title).toBe('FLAMETHROWER');
     const absurd = battleMovesView(inputOf({ selected: Number.NaN, info: Number.NaN }));
@@ -839,7 +862,7 @@ describe('battleMovesView purity', () => {
   });
 });
 
-describe('the description card', () => {
+describe('the move card', () => {
   it('counts 44 characters a line, per paragraph', () => {
     expect(infoLineCount('')).toBe(0);
     expect(infoLineCount('HELLO')).toBe(1);
@@ -848,33 +871,71 @@ describe('the description card', () => {
     expect(infoLineCount(`${'x'.repeat(44)}\n${'x'.repeat(45)}`)).toBe(3);
   });
 
-  it('is 48 + 13 a line tall, 20 px in from the card s sides', () => {
-    const short = battleMovesView(inputOf({ info: 0 }));
-    expect(short.info!.box).toStrictEqual({ x: 296, y: 686, w: 688, h: 61 });
-    const long = battleMovesView(
-      inputOf({ cells: padMoveGridCells([moveCell('LONG', { desc: 'x'.repeat(45) })], 4), info: 0 }),
-    );
-    expect(long.info!.box.h).toBe(48 + 13 * 2);
+  it('describes the cursor s cell, never the scene s ⓘ pin', () => {
+    const selected = battleMovesView(inputOf({ selected: 2 }));
+    expect(selected.info).not.toBeNull();
+    expect(selected.info!.title).toBe('DRAGON CLAW');
+    expect(selected.info!.type).toBe('dragon');
+    expect(selected.info!.category).toBe('Physical');
+    expect(selected.info!.pp).toBe(t('move.pp', { pp: 15, max: 15 }));
+    expect(selected.info!.power).toBe(t('move.pwr', { value: 40 }));
+    expect(selected.info!.accuracy).toBe(t('move.acc', { value: 100 }));
+    expect(selected.info!.text).toBe('A SHORT LINE.');
+    const pinned = battleMovesView(inputOf({ selected: 2, info: 0 }));
+    expect(pinned.info).toStrictEqual(selected.info);
   });
 
-  it('floats above the cell when there is room, and below it otherwise', () => {
-    const threeLines = `${'x'.repeat(44)}\n${'x'.repeat(45)}`;
-    const cells = padMoveGridCells(
-      [moveCell('ONE'), moveCell('TWO'), moveCell('LOWER', { desc: threeLines }), moveCell('FOUR')],
-      4,
-    );
-    const above = battleMovesView(inputOf({ cells, info: 2 }));
-    const slot = above.slots[2]!.box;
-    expect(above.info!.box.y).toBe(slot.y - 8 - (48 + 13 * 3));
-    expect(above.info!.box.y).toBeGreaterThanOrEqual(CARD.y);
-
-    const below = battleMovesView(inputOf({ info: 0 }));
-    const top = below.slots[0]!.box;
-    expect(below.info!.box.y).toBe(top.y + top.h + 8);
+  it('is null while the menu is closed, on an empty cell and past the grid', () => {
+    expect(battleMovesView(inputOf({ open: false })).info).toBeNull();
+    const one = padMoveGridCells([moveCell('TACKLE')], 4);
+    expect(battleMovesView(inputOf({ cells: one, selected: 1 })).info).toBeNull();
+    expect(battleMovesView(inputOf({ cells: [], selected: 0 })).info).toBeNull();
+    expect(battleMovesView(inputOf({ cells: one, selected: 3 })).info).toBeNull();
   });
 
-  it('is null when nothing is pinned', () => {
-    expect(battleMovesView(inputOf()).info).toBeNull();
+  it('answers a filled cell whose description is empty: the head alone, no text', () => {
+    const cells = padMoveGridCells([moveCell('GROWL', { desc: '' })], 4);
+    const info = battleMovesView(inputOf({ cells })).info!;
+    expect(info.text).toBe('');
+    expect(info.title).toBe('GROWL');
+    expect(info.pp).toBe(t('move.pp', { pp: 15, max: 15 }));
+    expect(info.power).toBe(t('move.pwr', { value: 40 }));
+    expect(info.accuracy).toBe(t('move.acc', { value: 100 }));
+  });
+
+  it('is the board s 160 px card, 8 px above the menu s top edge at 1280×800', () => {
+    const card = battleMovesBox(DESKTOP);
+    const info = battleMovesView(inputOf({ card })).info!;
+    expect(INFO_CARD_H).toBe(160);
+    expect(info.box).toStrictEqual({ x: 460, y: 414, w: 524, h: 160 });
+    expect(info.box.y + info.box.h).toBeLessThanOrEqual(card.y - 8);
+  });
+
+  it('clears the phone s own HP box: 8 px above it at 390×844', () => {
+    const info = battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).info!;
+    expect(info.box).toStrictEqual({ x: 36, y: 336, w: 318, h: 160 });
+    expect(info.box.y + info.box.h).toBeLessThanOrEqual(battleHpBox(PHONE, 'player', 0).y - 8);
+  });
+
+  it('never paints over a side s lead HP box at either viewport', () => {
+    for (const viewport of [DESKTOP, PHONE]) {
+      const info = battleMovesView(inputOf({ card: battleMovesBox(viewport) })).info!;
+      for (const side of ['player', 'enemy'] as const) {
+        expect(overlapArea(info.box, battleHpBox(viewport, side, 0))).toBe(0);
+      }
+    }
+  });
+
+  it('keeps the phone s clearance between the menu s top and the player s HP box', () => {
+    expect(COMPACT_CARD_CLEARANCE).toBe(88);
+    expect(COMPACT_CARD_CLEARANCE).toBe(battleMovesBox(PHONE).y - battleHpBox(PHONE, 'player', 0).y);
+  });
+
+  it('is the same 160 px whatever its description says', () => {
+    const cells = padMoveGridCells([moveCell('LONG', { desc: 'x'.repeat(400) })], 4);
+    const info = battleMovesView(inputOf({ cells })).info!;
+    expect(info.box.h).toBe(INFO_CARD_H);
+    expect(info.text).toBe('x'.repeat(400));
   });
 });
 

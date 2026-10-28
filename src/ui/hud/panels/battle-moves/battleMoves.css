@@ -154,8 +154,7 @@
   pointer-events: none;
 }
 
-/* the ⓘ inside each filled cell, and the ◀ and the two forme columns */
-.battle-moves__info,
+/* the ◀ and the two forme columns */
 .battle-moves__back,
 .battle-moves__forme {
   position: absolute;
@@ -175,13 +174,6 @@
   cursor: pointer;
 }
 
-.battle-moves__info {
-  border-radius: 6px;
-  font-size: var(--hud-type-chip-size);
-  line-height: var(--hud-type-chip-line);
-}
-
-.battle-moves__info--active,
 .battle-moves__forme[aria-pressed='true'] {
   border-color: var(--hud-accent);
   background: var(--battle-moves-selected-fill);
@@ -198,7 +190,11 @@
   word-break: break-word;
 }
 
-/* the floating description card the ⓘ pins */
+/* The move card: the cursor's move, painted above the card's own top edge. It floats
+   over the layer, so it takes no pointer event at all. Its head row is one line while
+   the width allows and wraps the readouts when it does not (the phone card), and the
+   description is the only part that scrolls: 160 px is the card's height, whatever the
+   text is. */
 .battle-moves__desc {
   position: absolute;
   display: flex;
@@ -215,18 +211,22 @@
 
 .battle-moves__desc-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
   color: var(--hud-text-muted);
   font-size: var(--hud-type-meta-size);
   line-height: var(--hud-type-meta-line);
 }
 
 .battle-moves__desc-title {
+  overflow: hidden;
   color: var(--hud-text-ink);
   font-size: var(--hud-type-body-size);
   line-height: var(--hud-type-body-line);
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .battle-moves__desc-category {
@@ -234,8 +234,17 @@
   text-transform: uppercase;
 }
 
+.battle-moves__desc-pp,
+.battle-moves__desc-pwr,
+.battle-moves__desc-acc {
+  white-space: nowrap;
+}
+
 .battle-moves__desc-text {
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 0;
+  overflow-y: auto;
   color: var(--hud-text-secondary);
   font-size: var(--hud-type-body-size);
   line-height: var(--hud-type-body-line);
@@ -243,7 +252,6 @@
 }
 
 .battle-moves__slot:focus-visible,
-.battle-moves__info:focus-visible,
 .battle-moves__back:focus-visible,
 .battle-moves__forme:focus-visible {
   outline: 2px solid var(--hud-accent);

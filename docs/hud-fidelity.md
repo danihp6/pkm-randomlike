@@ -121,8 +121,8 @@ x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG 
 the boxes the four move cells occupy — 219×72 in the desk's 2×2, 116×94 on the phone — and its fifth **INFO**
 control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. The category is drawn as the
 atlas glyph in the box `[Task-203]`'s §5 blocks describe (`MOVE_ICON_BOX`), not as a right-aligned word, so a
-category cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
-description, and the click still pins it. The foe's box also carries the trainer's remaining team as a **ball row**: one 16 px
+category cannot run under a button. No cell carries one: the card above the menu describes the cursor's own
+cell. The foe's box also carries the trainer's remaining team as a **ball row**: one 16 px
 ball per **fielded** member, 4 px apart, its top edge 8 px under that box's bottom edge — 56 px wide at (64,156)
 at 1280×800 and at (16,104) on the phone — so it never meets the player's card or the battle menu card. A spent
 ball keeps its cell at 35 % opacity, so the row counts the team the trainer fielded, and a wild battle draws no
@@ -131,35 +131,47 @@ row at all.
 **A cell's text is bounded by its own box.** Every label in a battle move cell is measured against the font
 the panel actually draws with — `font.json`'s advances at `--hud-type-body-size` — never a per-glyph
 constant: **the name takes the cell's own remaining width** — its content box less the category glyph's
-24 px square, the two 8 px gaps and the 22 px ⓘ, one count of each (**132 px** in the 222 px cell at
-1280×800) — and is cut to that width with an ellipsis (the ⓘ card keeps the whole name), while the type
-badge is a **24×24 square in the stat gutter**, its right edge one gap past the name's left column so the
-stat lines start clear of it and no type can charge the move's name for its own width. The category is the
-atlas glyph in a **24 px square** that ends the same 8 px left of the ⓘ the text column used to, at the
-cell's first text row: that square is the whole column, so nothing prints right-aligned and `PHYSICAL` /
-`SPECIAL` / `STATUS` are never drawn as words. A box that merely avoids its neighbour is not enough — the
-retired text column shipped 48 px wide against a 56 px label and the string ran under the ⓘ; the glyph
-cannot spill, because the frame is FIT into its square (32×14 becomes 24×10.5) and clipped to the frame's
-own band, so a badge never paints the rows above or below it. A wide cell narrower than the 58 px the
-glyph's square and the ⓘ need — the 222 px cell at 1280×800 is the narrowest one shipped — gives the name
-what is left of it, and the ⓘ card is where its whole text stays readable; the phone card's 119 px cell
-takes the compact geometry below instead.
+24 px square and the 8 px gap beside it, one count of each (**162 px** in the 222 px cell at 1280×800) — and
+is cut to that width with an ellipsis (the move card keeps the whole name), while the type badge is a
+**24×24 square in the stat gutter**, its right edge one gap past the name's left column so the stat lines
+start clear of it and no type can charge the move's name for its own width. The category is the atlas glyph
+in a **24 px square that ends on the cell's own right padding edge**, at the cell's first text row: that
+square is the whole column, so nothing prints right-aligned and `PHYSICAL` / `SPECIAL` / `STATUS` are never
+drawn as words. A box that merely avoids its neighbour is not enough — the retired text column shipped 48 px
+wide against a 56 px label and the string ran under the button it shared the row with; the glyph cannot
+spill, because the frame is FIT into its square (32×14 becomes 24×10.5) and clipped to the frame's own band,
+so a badge never paints the rows above or below it. A wide cell narrower than the 52 px the glyph's square
+and the cell's two paddings need — the 222 px cell at 1280×800 is the narrowest one shipped — gives the name
+what is left of it, and the move card is where its whole text stays readable; the phone card's 119 px cell
+takes the compact geometry below.
+
+**The move card.** The menu's own `attack detail`: **one 160 px card**, 20 px in from the menu's sides, that
+always describes the cell the cursor is on — the move's name, its type badge, its category glyph and its
+`PP` / `PWR` / `ACC`, then its description. It has no ⓘ to open because no cell carries a button any more:
+the cursor is the info intent, and the freed 22 px button and its 8 px gap went back to the name. The wide
+anchor is the menu's own top edge — `x = card.x + 20`, `y = card.y − 8 − 160`, `w = card.w − 40`, `h = 160`,
+which is `{460,414,524,160}` at 1280×800: its bottom 8 px above the menu, in the empty band between the
+foe's boxes (bottom 148) and the player's (top 660). It hangs off the menu's top edge rather than the board's
+own (664,372) offset because this menu starts at 440 where the board's starts at 664. The phone anchor keeps
+the same width rule and adds `COMPACT_CARD_CLEARANCE`, the 88 px between the menu's top edge and the
+player's lead box — `{36,336,318,160}` at 390×844, its bottom 8 px above that box at 504 — the only band
+`m05` leaves empty, because `m05` draws no card at all. The card takes no pointer event, and its description
+scrolls inside the 160 px: the text never grows the box.
 
 **The compact battle has its own cell.** At 390×844 the menu card keeps its shipped rect — 358×236 at
 (16,592), starting 8 px under the player's 358×80 card at y 504…584, so no HP box is drawn behind it — but
-its four cells are 119×94 and paint **six stacked lines** instead of the wide three: the type badge and the
-ⓘ share the first row, the category glyph takes the second line's **13 px band** at the same right edge
-(24 px wide, its frame drawn 24×10.5, ending 8 px left of the ⓘ, and it clears the name line under it), and
-the name, PP, power and accuracy each get a full **91 px** line of their own — one label a line, because
-`PP 15/15` (55 px) and `PWR 90` (50 px) side by side are 105 px with their gap in a 91 px content box. In
-both width classes every label is now painted at the box `cellTextBoxes` measures for it
-(`BattleMoveSlotView.boxes`) and both atlas squares at their own `typeBox` / `categoryBox`, instead of at a
-stylesheet grid, so a cell's text is bounded by its own model rect: the name is the one line that is ever
-cut — 91 px at 390 against the 132 px the wide 222 px cell gives it — and nothing else needs eliding. The
-stack needs an **82 px** cell (14 px of padding, the 24 px glyph, its 8 px gap and the 22 px ⓘ, twice), so
-a stage under 316 px is below what this panel is asked to draw.
+its four cells are 119×94 and paint **six stacked lines** instead of the wide three: the type badge takes
+the first row, the category glyph the second line's **13 px band**, ending on the content box's right edge
+(24 px wide, its frame drawn 24×10.5, and it clears the name line under it), and the name, PP, power and
+accuracy each get a full **91 px** line of their own — one label a line, because `PP 15/15` (55 px) and
+`PWR 90` (50 px) side by side are 105 px with their gap in a 91 px content box. In both width classes every
+label is now painted at the box `cellTextBoxes` measures for it (`BattleMoveSlotView.boxes`) and both atlas
+squares at their own `typeBox` / `categoryBox`, instead of at a stylesheet grid, so a cell's text is bounded
+by its own model rect: the name is the one line that is ever cut — 91 px at 390 against the 162 px the wide
+222 px cell gives it — and nothing else needs eliding. The stack needs a **52 px** cell (its two 14 px
+paddings and the 24 px glyph column), so a stage under 256 px is below what this panel is asked to draw.
 
-**The target step's prompt.** The row is **22 px** tall (the ⓘ's own size) and lives inside the card's top
+**The target step's prompt.** The row is **22 px** tall (`MOVE_TARGET_H`) and lives inside the card's top
 band — `x = card.x + 20`, `y = card.y + 1`, `w = card.w − 40`, `h = 22` on both widths — so it ends **1 px**
 above the first cell (the grid starts at the card's 16 px padding plus its 8 px inset) and is one line that
 never meets the four cells at 1280×800 or 390×844; it prints the marked foe's name and nothing else.

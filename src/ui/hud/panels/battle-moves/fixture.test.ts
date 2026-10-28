@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fixture from '../../../../../design/fixtures/05-battle-hud.json';
 import { t } from '../../../../i18n';
 import { isHudState } from '../../fixtures';
-import { battleMovesBox, battleMovesView } from './view';
+import { INFO_CARD_H, battleMovesBox, battleMovesView } from './view';
 
 describe('design/fixtures/05-battle-hud.json', () => {
   it('carries an empty HudState, which the panel itself does not read', () => {
@@ -51,7 +51,7 @@ describe('design/fixtures/05-battle-hud.json', () => {
     expect(first.enabled).toBe(true);
   });
 
-  it('marks the first cell selected and floats its description', () => {
+  it('marks the first cell selected and describes it in the card', () => {
     const view = battleMovesView({ ...fixture.moves, target: null });
     expect(view.slots.filter((slot) => slot.selected)).toHaveLength(1);
     expect(view.slots[0]!.selected).toBe(true);
@@ -60,7 +60,24 @@ describe('design/fixtures/05-battle-hud.json', () => {
     expect(view.info!.type).toBe('fire');
     expect(view.info!.category).toBe('Special');
     expect(view.info!.text).toBe(fixture.moves.cells[0]!.desc);
-    expect(view.info!.box.h).toBe(48 + 13 * 3);
+    expect(view.info!.pp).toBe(t('move.pp', { pp: 12, max: 15 }));
+    expect(view.info!.power).toBe(t('move.pwr', { value: 90 }));
+    expect(view.info!.accuracy).toBe(t('move.acc', { value: 100 }));
+    expect(view.info!.box.h).toBe(INFO_CARD_H);
+  });
+
+  it('draws the move card as the frame s own 160 px detail, 8 px above the menu', () => {
+    const view = battleMovesView({ ...fixture.moves, target: null });
+    const card = fixture.moves.card;
+    expect(view.info!.box).toStrictEqual({
+      x: card.x + 20,
+      y: card.y - 8 - 160,
+      w: card.w - 40,
+      h: 160,
+    });
+    // The frame's own `attack detail` is 576×160 at (664,372), above its 576 px menu:
+    // the same height, anchored to this menu's top edge instead of the frame's.
+    expect(view.info!.box.h).toBe(160);
   });
 
   it('draws the MEGA column and no G-MAX one', () => {

@@ -25,16 +25,11 @@ export type BattleCellTextBoxes = Readonly<{
 
 /** The four slots the battle's move grid always reserves (`MoveGrid`'s own `GRID_CELLS`). */
 const SLOTS = 4;
-/** The ⓘ button's box inside its cell, the same one `moveGridInfoAt` hit-tests. */
+/** The ⓘ button's box, as the canvas still draws it (`moveGridInfoAt` hit-tests it there). */
 const INFO_SIZE = 22;
-/** Its right-edge inset: the cell's side padding plus the button (`CELL_PAD` in `moveGrid`). */
-const INFO_OFFSET = 36;
-const INFO_TOP = 8;
-/** The floating description card: its side margin, the gap from its cell, and its height floor. */
+/** The card's side margin and the gap it keeps from the menu card's top edge. */
 const INFO_MARGIN = 20;
 const INFO_GAP = 8;
-const INFO_BASE_H = 48;
-const INFO_LINE_H = 13;
 /** The width the shipped `InfoPopup` wraps a description line at. */
 const INFO_WRAP = 44;
 /** The ◀ control's height. */
@@ -47,7 +42,7 @@ const CARD_H = 192;
 const CARD_CLEARANCE = 8;
 const CARD_MIN_W = 240;
 
-/** The gap the category column keeps from the ⓘ square: 36 px of ⓘ offset + this = the 44 px CSS `right`. */
+/** The gap the category column keeps from its cell's neighbour box, in the panel's own arithmetic. */
 export const MOVE_CATEGORY_GAP = 8;
 /** The glyph advances `src/data/ui/font.json` carries, keyed by code point. */
 const ADVANCES = new Map<number, number>(
@@ -114,11 +109,19 @@ export const MOVE_MEGA_COL = 62;
 /** Width reserved at the right of the grid for the G-Max control (D44). */
 export const MOVE_GMAX_COL = 62;
 export const MOVE_GRID_INSET = 8;
-/** The ⓘ button's side, as the grid draws it. */
+/** The ⓘ button's side, as the canvas grid still draws it. */
 export const MOVE_INFO_SIZE = INFO_SIZE;
 /** The target step's prompt row: one px under the card's top edge, one ⓘ tall. */
 export const MOVE_TARGET_TOP = 1;
 export const MOVE_TARGET_H = MOVE_INFO_SIZE;
+/** The move card's height: the board's `attack detail` (`05`, 576×160). */
+export const INFO_CARD_H = 160;
+/**
+ * The clearance the phone's card keeps between its own top edge and the player's HP
+ * box: `PHONE_H` (80) plus the 8 px gutter `battleHpBox` leaves under it, so the card
+ * ends 8 px above that box.
+ */
+export const COMPACT_CARD_CLEARANCE = 88;
 
 /**
  * The page-space card the scene's own `menu` rect becomes: the battle square's
@@ -160,7 +163,7 @@ export type BattleMovesInput = Readonly<{
   cells: readonly MoveGridSlot[];
   /** `menuIndex`. */
   selected: number;
-  /** The slot whose ⓘ popup floats, or null. */
+  /** The canvas's pinned ⓘ slot; the DOM panel never reads it (the cursor is the card). */
   info: number | null;
   mega: boolean;
   gmax: boolean;
@@ -191,14 +194,30 @@ export type BattleMoveSlotView = Readonly<{
   box: Rect;
   /** The cell's first line: from its side padding to a gap left of the category glyph. */
   nameBox: Rect;
-  /** The category glyph's box: its own 24 px square, ending its gap left of the ⓘ. */
+  /** The category glyph's box: its own 24 px square, ending on the cell's right padding edge. */
   categoryBox: Rect;
   /** The five labels' own boxes, laid out for the card's width class (`cellTextBoxes`). */
   boxes: BattleCellTextBoxes;
   /** The type badge's box: the wide cell's stat gutter, the compact cell's first row. */
   typeBox: Rect;
-  /** The ⓘ button: `{ x: box.x + box.w - 36, y: box.y + 8, w: 22, h: 22 }`, empty slots none. */
-  info: Rect | null;
+}>;
+
+/** The board's card: the cursor's move, laid out above the menu. */
+export type BattleMoveInfoView = Readonly<{
+  /** The move's display name (`MoveGridCell.name`, unmodified). */
+  title: string;
+  /** The atlas type the badge draws. */
+  type: string;
+  /** The atlas category the glyph draws. */
+  category: string;
+  /** `ppLabel(cell)`, the same string the cell prints. */
+  pp: string;
+  power: string;
+  accuracy: string;
+  /** `MoveGridCell.desc`, which may be `''`. */
+  text: string;
+  /** Viewport coordinates. */
+  box: Rect;
 }>;
 
 export type BattleMovesView = Readonly<{
@@ -212,8 +231,8 @@ export type BattleMovesView = Readonly<{
   gmax: Readonly<{ label: string; box: Rect; armed: boolean }> | null;
   /** The step's prompt row: the question naming the marked foe, or null. */
   target: Readonly<{ label: string; box: Rect }> | null;
-  /** The floating description card: the move's, or null when nothing is pinned. */
-  info: Readonly<{ title: string; type: string; category: string; text: string; box: Rect }> | null;
+  /** The cursor's move, or null while the menu is closed or the cursor is on an empty cell. */
+  info: BattleMoveInfoView | null;
 }>;
 
 /** A slot index clamped into the one grid the panel draws; `NaN` lands on the first. */
@@ -256,30 +275,26 @@ function categoryBandTop(box: Rect): number {
 }
 
 /**
- * The wide cell's category column: the glyph's own 24 px box, ending its gap left of
- * the ⓘ, on the cell's first text row.
+ * The wide cell's category column: the glyph's own 24 px box, ending on the cell's
+ * right padding edge, on the cell's first text row.
  */
-function categoryBoxOf(box: Rect, info: Rect): Rect {
-  const right = info.x - MOVE_CATEGORY_GAP;
+function categoryBoxOf(box: Rect): Rect {
+  const right = box.x + box.w - CELL_PAD_X;
   const left = Math.max(box.x + CELL_PAD_X, right - MOVE_ICON_BOX);
   return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: MOVE_ICON_BOX };
 }
 
 /**
  * The wide cell's name column: its own first line, from the side padding to a gap
- * left of the category glyph — one count of each, so the ⓘ and the category take
- * only the width they are drawn in. The type badge sits in the stat gutter below,
- * never on this line, so no type can charge the move's name for its own width.
+ * left of the category glyph — one count of each, so the category takes only the
+ * width it is drawn in and the freed ⓘ column goes back to the name. The type badge
+ * sits in the stat gutter below, never on this line, so no type can charge the move's
+ * name for its own width.
  */
 function nameBoxOf(box: Rect, category: Rect): Rect {
   const left = box.x + CELL_PAD_X;
   const right = category.x - CELL_GAP;
   return { x: left, y: categoryBandTop(box), w: Math.max(0, right - left), h: BODY_LINE_H };
-}
-
-/** The ⓘ button's box inside a filled cell: the one the canvas's own hit test uses. */
-function infoBoxOf(cell: Rect): Rect {
-  return { x: cell.x + cell.w - INFO_OFFSET, y: cell.y + INFO_TOP, w: INFO_SIZE, h: INFO_SIZE };
 }
 
 /** A cell's content box: its own padding taken off all four edges. */
@@ -306,7 +321,7 @@ function compactBandTop(cell: Rect): number {
  * edge.
  */
 function wideCellTextBoxes(cell: Rect): BattleCellTextBoxes {
-  const category = categoryBoxOf(cell, infoBoxOf(cell));
+  const category = categoryBoxOf(cell);
   const name = nameBoxOf(cell, category);
   const right = cell.x + cell.w - CELL_PAD_X;
   const band = categoryBandTop(cell);
@@ -336,10 +351,10 @@ function wideCellTextBoxes(cell: Rect): BattleCellTextBoxes {
  * the name and the three stat lines — because the phone cell's 91 px content box
  * cannot hold two of them side by side (`PP 15/15` and `PWR 90` alone are 105 px with
  * their gap). The six lines fill the cell's padding box, and the category keeps its
- * 24 px column left of the ⓘ the badge shares the first row with.
+ * 24 px column on the content box's right edge, the glyph the badge shares the first
+ * row with having left no column of its own.
  */
 function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
-  const info = infoBoxOf(cell);
   const content = contentBoxOf(cell);
   const band = compactBandTop(cell);
   const plane = (row: number): Rect => ({
@@ -348,7 +363,7 @@ function compactCellTextBoxes(cell: Rect): BattleCellTextBoxes {
     w: content.w,
     h: BODY_LINE_H,
   });
-  const right = info.x - MOVE_CATEGORY_GAP;
+  const right = content.x + content.w;
   const left = Math.max(content.x, right - MOVE_ICON_BOX);
   return {
     name: plane(2),
@@ -381,14 +396,14 @@ export function fitsInside(inner: Rect, outer: Rect, tolerance = 0.5): boolean {
 
 /**
  * The type badge's box: the wide cell's left gutter, centred over its two stat lines,
- * and the compact cell's own first row, beside the ⓘ.
+ * and the compact cell's own first row, above the category glyph.
  */
 function typeBoxOf(cell: Rect, compact: boolean): Rect {
   const y = compact ? compactBandTop(cell) : categoryBandTop(cell) + BODY_LINE_H + 1;
   return { x: contentBoxOf(cell).x, y, w: MOVE_ICON_BOX, h: MOVE_ICON_BOX };
 }
 
-/** The empty container: no name, no stats, no ⓘ — the grid's own rule. */
+/** The empty container: no name and no stats — the grid's own rule. */
 function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotView {
   const rowY = categoryBandTop(box);
   // Nothing is printed in an empty cell, so its columns are zero-width marks at the right pad.
@@ -413,7 +428,6 @@ function emptySlot(index: number, box: Rect, selected: boolean): BattleMoveSlotV
     categoryBox,
     boxes: { name: nameBox, category: categoryBox, pp: mark(), power: mark(), accuracy: mark() },
     typeBox: { x: box.x + CELL_PAD_X, y: rowY, w: 0, h: BODY_LINE_H },
-    info: null,
   };
 }
 
@@ -426,7 +440,6 @@ function slotView(
 ): BattleMoveSlotView {
   const box: Rect = { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
   if (isEmptySlot(cell)) return emptySlot(index, box, index === selected);
-  const info = infoBoxOf(box);
   const boxes = cellTextBoxes(box, compact, cell.type);
   return {
     index,
@@ -446,7 +459,6 @@ function slotView(
     categoryBox: boxes.category,
     boxes,
     typeBox: typeBoxOf(box, compact),
-    info,
   };
 }
 
@@ -459,29 +471,37 @@ export function infoLineCount(text: string): number {
   return lines;
 }
 
-/** The floating card, or null when nothing is pinned, the slot is empty or the move has no text. */
+/**
+ * The board's card: the cursor's move, or null while the menu is closed, the cursor's
+ * slot is empty or the grid has no such slot. It floats above the menu card's top edge
+ * — the phone's 88 px clear of its own HP box, so it ends 8 px above it — and it is
+ * always `INFO_CARD_H` tall, so a long description clips instead of growing it. The
+ * move's text is never a reason to hide the head.
+ */
 function infoCardOf(
   input: BattleMovesInput,
   slots: readonly BattleMoveSlotView[],
-  pinned: number | null,
-): BattleMovesView['info'] {
-  if (pinned === null) return null;
-  const slot = slots[pinned];
+  selected: number,
+): BattleMoveInfoView | null {
+  if (!input.open) return null;
+  const slot = slots[selected];
   if (slot === undefined || slot.empty) return null;
-  const cell = input.cells[pinned];
-  if (isEmptySlot(cell) || cell.desc.length === 0) return null;
-  const height = INFO_BASE_H + INFO_LINE_H * infoLineCount(cell.desc);
-  const above = slot.box.y - INFO_GAP - height >= input.card.y;
+  const cell = input.cells[selected];
+  if (isEmptySlot(cell)) return null;
+  const clearance = compactCard(input.card) ? COMPACT_CARD_CLEARANCE : 0;
   return {
     title: cell.name,
     type: cell.type,
     category: cell.category,
+    pp: ppLabel(cell),
+    power: powerLabel(cell),
+    accuracy: accuracyLabel(cell),
     text: cell.desc,
     box: {
       x: input.card.x + INFO_MARGIN,
-      y: above ? slot.box.y - INFO_GAP - height : slot.box.y + slot.box.h + INFO_GAP,
+      y: input.card.y - clearance - INFO_GAP - INFO_CARD_H,
       w: Math.max(0, input.card.w - INFO_MARGIN * 2),
-      h: height,
+      h: INFO_CARD_H,
     },
   };
 }
@@ -514,9 +534,9 @@ function targetRowOf(input: BattleMovesInput): BattleMovesView['target'] {
 
 /**
  * The move menu as plain data: the four cells `moveGridCellRects` lays out inside
- * the scene's own card, the ◀ control, the two forme columns and the floating
- * description. Pure and total: out-of-range indices clamp, an empty or absent slot
- * reads empty, and the same input always yields deep-equal output.
+ * the scene's own card, the ◀ control, the two forme columns and the card that
+ * describes the cursor's move. Pure and total: out-of-range indices clamp, an empty
+ * or absent slot reads empty, and the same input always yields deep-equal output.
  */
 export function battleMovesView(input: BattleMovesInput): BattleMovesView {
   const card = input.card;
@@ -526,11 +546,11 @@ export function battleMovesView(input: BattleMovesInput): BattleMovesView {
   const gmax = input.gmax;
   const rightReserve = (mega ? MOVE_MEGA_COL : 0) + (gmax ? MOVE_GMAX_COL : 0);
   const selected = clampIndex(input.selected);
-  const pinned = input.info === null ? null : clampIndex(input.info);
   const right = card.x + card.w - pad.x - MOVE_GRID_INSET - rightReserve;
   const top = card.y + pad.top + MOVE_GRID_INSET;
   const bottom = card.y + card.h - pad.bottom - MOVE_GRID_INSET;
-  // The identical call the canvas makes, so the two grids can never diverge.
+  // The identical call the canvas makes, so the two grids can never diverge. The DOM
+  // panel has no pinned cell of its own: the cursor is the card.
   const rects = moveGridCellRects({
     x: card.x,
     y: card.y,
@@ -538,7 +558,7 @@ export function battleMovesView(input: BattleMovesInput): BattleMovesView {
     h: card.h,
     cells: input.cells,
     selected,
-    info: pinned,
+    info: null,
     leftReserve: MOVE_BACK_COL,
     rightReserve,
   });
@@ -574,6 +594,6 @@ export function battleMovesView(input: BattleMovesInput): BattleMovesView {
         }
       : null,
     target: targetRowOf(input),
-    info: infoCardOf(input, slots, pinned),
+    info: infoCardOf(input, slots, selected),
   };
 }
