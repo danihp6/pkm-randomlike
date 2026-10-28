@@ -297,16 +297,25 @@ Three things, and they are the only disagreements between this document and the 
 
 The DOM HUD is not a flag any more: `mountHud` runs on every boot, `?hud=dom` is a no-op alias and
 `parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a **render-free
-controller** — it mounts its card into `#hud`, feeds the view and forwards intents — and the HUD's
-chrome is DOM-only: no panel, strip, row, window or text object of it is painted in Phaser any more.
+controller**: it mounts its card into `#hud`, feeds the view and forwards intents. The HUD's panels,
+strip, rows, windows and panel text are DOM-only; the level-up/evolution popup and the reset ring
+remain canvas and their DOM parity is a follow-up, not assumed here.
 
 The canvas keeps the game itself — the route's map, tiles, grass, fog, trainers, actors and the
-player's sprite, the battle's fighters, platforms and effects — **plus three transient overlays the
+player's sprite, the battle's fighters, platforms and effects — **plus two transient overlays the
 board has no card for**, which this task carried over untouched rather than invent a DOM twin for
-them: the level-up / evolution popup's scrim (`src/scenes/panels/detail.ts:358`) and its own press
-zone (`src/scenes/panels/detail.ts:374`), and the hold-to-reset ring with its scrim
-(`src/scenes/panels/pause.ts:120` and `src/scenes/panels/pause.ts:125`). Their DOM parity, or their
-retirement, is follow-up under `Task-208`.
+them:
+
+- **The level-up / evolution popup, in full.** `buildLearnPopup` (`src/scenes/panels/detail.ts:351-382`)
+  runs unconditionally from `buildDom` (`src/scenes/panels/detail.ts:683`), so the canvas receives
+  its full-screen scrim (`:358`), an FRLG nine-slice window (`:359`), its three bitmap texts —
+  title, body and hint — (`:360`, `:364`, `:369`), the whole-screen press zone that dismisses it
+  (`:374`) and the container around them (`:377`).
+- **The hold-to-reset feedback.** The scrim (`src/scenes/panels/pause.ts:120`) and the ring that
+  fills while the key is held (`src/scenes/panels/pause.ts:125`).
+
+The DOM parity of those two, or their retirement, is follow-up under `Task-208`: it is not part of
+this task, and no card in `design/` was drawn for either.
 
 The canvas layer that went was the only carrier of three things, and they left **with** it:
 
