@@ -8,6 +8,7 @@ import {
   STRIP_CHIP_SIZE,
   STRIP_NARROW,
   STRIP_PHONE_SLOTS,
+  chipLabel,
   stripView,
   type StripInput,
   type StripSlot,
@@ -53,6 +54,13 @@ describe('the strip’s pinned board values', () => {
       party: { x: 38, y: 55 },
       bag: { x: 38, y: 551 },
     });
+  });
+});
+
+describe('chipLabel', () => {
+  it('is the one label a chip and a card’s own frame chip both announce', () => {
+    expect(chipLabel('box', DEFAULT_KEYBINDS)).toBe(`${t('keybind.box')} (O)`);
+    expect(chipLabel('box', { ...DEFAULT_KEYBINDS, box: 'P' })).toBe(`${t('keybind.box')} (P)`);
   });
 });
 

@@ -83,8 +83,11 @@ export type StripView = Readonly<{
   chips: readonly StripChip[];
 }>;
 
-/** The accessible label: the panel's name from the keybind table, then its live key. */
-function chipLabel(action: KeybindAction, keybinds: Keybinds): string {
+/**
+ * The accessible label: the panel's name from the keybind table, then its live key.
+ * Exported because a card's own frame chip names the same panel and the same key.
+ */
+export function chipLabel(action: KeybindAction, keybinds: Keybinds): string {
   return `${t(`keybind.${action}`)} (${keyLabel(keybinds[action])})`;
 }
 

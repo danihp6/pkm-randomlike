@@ -12,7 +12,7 @@ view, so a turn of `?hud=dom` swaps the drawing and not the rules.
 - `view.test.ts` — the mirrored constants against their literals, both panel boxes, the page slice with its empty cells, the tab strip, the RIP tab, the highlight, the key chip, the selected/locked marks and purity, headless.
 - `pcPanel.tsx` — the panel itself: the card, the key chip, the page tabs, the RIP tab, the 16 cells with their name, level, HP bar, HP text, status mark and lock veil, and the commands they emit.
 - `pc.css` — the board's card and slot paint plus the shipped tab strip, one scoped custom property per board value.
-- `mount.tsx` — `mountPcPanel`: renders the panel into a host element against the scene's signal and returns its disposer.
+- `mount.tsx` — `mountPcPanel`: renders the panel into a host element against the scene's signal, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.
 

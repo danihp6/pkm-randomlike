@@ -1,10 +1,13 @@
-# `src/ui/hud/panels/hud/` — the route strip (`03`)
+# `src/ui/hud/panels/hud/` — the route strip (`03`) and its panel frame
 
 The edge chips of the route HUD under `?hud=dom` (`D49`): the 26×26 letter badges a collapsed
 panel leaves behind, laid out by a pure module and painted by Preact over `#hud`. A collapsed DOM
 card hides its whole root — its own accent chip included — so this strip is the only way back to a
 collapsed bag, box or map. Everything else the route HUD shows in its cards (the party's level, XP
 and Pokevial meter, the bag's money footer) is those panels' own and is never redrawn here.
+
+The folder also owns the **frame** each card mounts in: the one implementation of the chip, the
+drag with its clamp and the saved offset, so a new card inherits all three by mounting inside it.
 
 ## Layout
 
@@ -14,6 +17,10 @@ and Pokevial meter, the bag's money footer) is those panels' own and is never re
 - `strip.tsx` — the strip itself: one chip per view entry, the letter inside it and the press that becomes `{ type: 'panel', panel }`.
 - `strip.css` — the board's badge paint (fill, 1 px inside border, radius 6, the 11/15 px bold ink) over the `styles/root.css` tokens, and the 44 px thumb overlay.
 - `mount.tsx` — `mountHudStrip`: renders the strip into a host element behind a view signal and returns its disposer.
+- `panelFrameView.ts` — the frame's pure geometry: `clampPanelOffset` (the nearest offset that keeps a card inside the window) and `frameLabel` (the chip's accessible name, or `null` for the detail card the board draws no chip for).
+- `panelFrameView.test.ts` — the clamp at 1280 × 800 and at 390 × 844, a card wider or taller than the window, a card that fills it, non-finite junk, and the label against the live keybinds, headless.
+- `panelFrame.tsx` — `PanelFrame`: the shell every route card mounts in, with the 26 px chip that collapses and drags it, the clamped commit through `onLayout` and the root `transform` that moves the card, its chip and nothing else.
+- `panelFrame.css` — the frame's own geometry over the `styles/root.css` tokens: the overlay root that paints no position, the chip's badge paint, the 44 px thumb overlay and the no-scroll `touch-action`.
 - `index.ts` — the barrel the scene module imports.
 - `README.md` — this map.
 

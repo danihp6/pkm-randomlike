@@ -1,0 +1,62 @@
+/*
+ * A panel frame (`D49` amended): the box that carries every route card's chip and its
+ * drag. Geometry only — the panel fill, the hairline, the radius and the type size are
+ * `styles/root.css`'s tokens. The root paints no position of its own: the card inside
+ * keeps its own absolute box, and the frame only translates it, so the chip moves with
+ * the card it belongs to.
+ */
+.hud-frame {
+  position: absolute;
+  inset: 0;
+  font-family: var(--hud-font);
+  pointer-events: none;
+}
+
+.hud-frame__chip {
+  position: absolute;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-row-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-ink);
+  font-family: var(--hud-font);
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  font-weight: 700;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  /* The chip is a drag handle, so the pointer never scrolls or selects under it. */
+  touch-action: none;
+}
+
+.hud-frame__chip:active {
+  cursor: grabbing;
+}
+
+/* A thumb needs more than 26 px, so the hit area grows without moving the paint. */
+.hud-frame__chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.hud-frame__chip:focus-visible {
+  outline: 2px solid var(--hud-accent);
+  outline-offset: 2px;
+}
+
+.hud-frame__letter {
+  color: var(--hud-text-ink);
+  font-size: var(--hud-type-chip-size);
+  font-weight: 700;
+  line-height: var(--hud-type-chip-line);
+}
