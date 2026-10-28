@@ -8503,7 +8503,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   | **85** | `190` · `193` · `195` · `197` | the starter scene + i18n pair · the compact battle cell · the NPC's spot · the panel gate. Four disjoint sets, and 197's instrument is what judges every later panel fix. |
   | **86** | `196` · `198` · `202` · `204` | the target prompt · the menu's live route · the party panel · the stats' rule. 196 takes the i18n pair 190 released in 85. |
   | **87** | `199` · `203` · `206` · `209` | the menu's records · a move's icons · the battle's command panel · the bag's description card. |
-  | **88** | `201` · `207` · `210` · `212` | the menu's oval · the strip's Pokevial · the global ranking · the foe's ball row. |
+  | **88** | `201` · `207` · `210` · `212` | the menu's oval (`main-menu/**`) · the route header's EXP string (`party/**`; the Pokevial already ships) · the global ranking (`src/net/**` new, `infra/**`, `stats/**`, `MainMenuScene.ts`, the i18n pair) · the foe's ball row (`battle-hp/**`). |
   | **89** | `205` · `211` · `213` · `214` | the evolution tab · STATS and RANKING as two rows · the stage chips · the move card without its ⓘ. |
   | **90** | `200` | the DOM HUD as the default. It claims **every scene**, so it follows every task that touches one and no filler can ride it. |
   | **91** | `208` | the panels' chip, drag and saved slot, which build on 200's shell, 203's kit and 207's strip — the one task that can only come after all three. |
@@ -8525,6 +8525,72 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   `src/storage.ts`, which is why the panel's blurb reads "MONTHLY RECORD · THIS DEVICE". `[Task-210]`
   builds the store (a DynamoDB table plus the one endpoint that feeds it) and `[Task-211]` splits the
   menu's single STATS row into STATS and RANKING so the global table is one press away.
+
+**Batch 88 is `[Task-201]`, `[Task-207]`, `[Task-210]` and `[Task-212]`: the cut, four
+wide, and there was nothing to fill (2026-10-28).** It is the lowest pending batch — 81
+to 87 are merged and archived, `[Task-183]` and `[Task-190]` are `[x]`, and `[Task-194]`
+is `[!]` and unscheduled — and the re-cut table above already binds four tasks to it, so
+the cycle runs it whole as one dev wave and one QA wave. **No slot is empty:** the fill
+search still ran, and every candidate from a later batch is named with the constraint that
+would have blocked it had a slot existed — `[Task-205]` (Batch 89) claims
+`src/ui/hud/panels/detail/**`, free here, but its `docs/design-spec.md` line would have to
+share the file 210 writes §2 of; `[Task-213]` (89) claims `battle-hp/**`, which 212 holds;
+`[Task-214]` (89) claims `battle-moves/**` and `kit/**`, both free; `[Task-215]` and
+`[Task-216]` (92) are written against `[Task-211]` and `[Task-214]` and are unmerged
+dependencies; `[Task-217]` (92) shares `docs/design-spec.md` §2 with 210; and `[Task-200]`
+(90) claims **every scene**, `src/scenes/MainMenuScene.ts` included, which 210 holds.
+`[Task-208]` (91) needs `[Task-200]`, `[Task-207]` and `[Task-203]`, two of them unmerged.
+
+**Hot files, one holder each:** `src/ui/hud/panels/main-menu/**` → 201;
+`src/ui/hud/panels/party/**` → 207; `src/ui/hud/panels/battle-hp/**` → 212; and 210 holds
+five serial resources at once — `src/ui/hud/panels/stats/**`, the new `src/net/**` folder,
+`infra/**` (the one CDK stack every deploy reads), **`src/scenes/MainMenuScene.ts`** (it builds
+the stats view) and **`src/scenes/RouteScene.ts`** (the shipped `endRun` is the run's only end
+seam, so the submit is fired there) — with the i18n pair. No `package.json`, no
+`vite.config.ts`, no `src/main.ts`, no `src/data/**` and no `src/data/dex/**` is claimed by any
+of the four, and no task regenerates a generated file, so the batch packs no atlas and runs no
+packer.
+
+**`docs/hud-fidelity.md` §5 is the batch's one shared document, claimed by block.** 212
+appends its ball-row sentences to the existing **Battle zones.** block; 201 inserts a new
+**The main menu's glow.** block between **Chips.** and **The pad**; 207 inserts a new
+**The route header's readouts.** block after **The target step's prompt.**, which is the last
+block of §5. Three different anchors and three different hunks, so a merge cannot drop a
+line, and Integration QA reads the combined §5. Everything else is single-writer: 210 takes
+`docs/design-spec.md` §2 (the STATS bullet's ranking sentence), `docs/tech-decisions.md`
+(`D56`) and `infra/README.md`; 212 takes `docs/battle-spec.md` §7's roster bullet.
+
+**Two corrections this cut owes the tree, both measured on `main` @ `74bcdb2`.**
+(a) **`[Task-207]` is re-scoped.** The route header's level, XP bar and Pokevial are no
+longer in `src/ui/hud/panels/hud/**` — that module is the collapsed-panel chip rail
+(`stripView`, `STRIP_CHIP_ORDER`) — they moved with the panel into
+`src/ui/hud/panels/party/**`: `partyPanelView` already returns `level`, `xp`
+(`text` + `fraction` + `box`) and `vial` (`charges`, `max`, `fill`, `box`), and
+`partyPanel.tsx` already paints all three (`data-hud-party="level" / "xp" / "vial"`, with
+`party__vial-fill[data-step]`). So the report's first half **ships** and what remains is its
+second: the EXP's numeric string leaves the paint while the bar keeps its fraction and its
+accessible label. The entry records the correction and takes `party/**`; its `docs/design-spec.md`
+line retires with the stale claim, so the batch needs no second section split there.
+(b) **`[Task-210]` takes `src/scenes/MainMenuScene.ts` and `[Task-201]` releases it.** The
+stats view is built by the menu scene (`MainMenuScene.statsView()` → `liveStatsView`), so
+the global snapshot has to be threaded there, while the oval 201 fixes is already a CSS
+layer (`.main-menu__glow`, a flat 10 % ellipse in `main-menu.css`) and the scene draws **no**
+glow at all under either HUD path. 210 also takes **`src/scenes/RouteScene.ts`** for the one
+call the report's own text requires ("submits once per finished run from the `endRun` seam"):
+the shipped private `endRun` is the single end seam, and the batch leaves that scene free
+(201 is the menu, 207 the party card, 212 the battle HP cards).
+
+**No `SAVE_VERSION` step:** all four are presentation, one is a network read and none adds a
+run field, so `main` stays at **26** (`src/engine/save.ts` 83) and `src/engine/save.ts` is
+nobody's in this batch. No task draws RNG of its own, so no fixed seed moves: 201 reads the
+frame, 207 reads the run's own level/XP/charges, 212 reads the foe's party the battle
+already fields, and 210 sends a finished run's record and reads a month's board.
+
+**One stale edge this cut leaves standing, and says so:** `[Task-208]`'s `*Dependencies:*` names
+`[Task-207]` "(the strip)" because 207 was cut against `src/ui/hud/panels/hud/**`. 207 now holds
+`party/**` and never touches that module, so the edge is an ordering preference rather than a
+file dependency; it keeps 208 behind 200 and 203 regardless, and a later cycle may drop it
+without moving either batch.
 
 - **The HUD gate is honest as of Batch 85, and its table is the backlog (2026-10-27).**
   `[Task-197]` made `node scripts/hud/diff.mjs` boot from the dev server, find the machine's own
@@ -9021,15 +9087,21 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
 - [ ] **[Task-201] The main menu's oval shows the board's gradient.** Seen with `?hud=dom` at 1280×800 on
       `2026-10-27`: the backdrop behind the title is a **flat, hard-edged ellipse** where the board's `01`
       has a soft radial glow. No `glow`/`oval`/`circle` exists in
-      `src/ui/hud/panels/main-menu/view.ts` — the ellipse is drawn by the canvas and the DOM layer paints
-      no gradient over or around it — and `main-menu.css` carries no `radial-gradient` at all.
+      `src/ui/hud/panels/main-menu/view.ts`, and the oval is the DOM's own layer
+      (`.main-menu__glow` in `main-menu.css`: a 1000×720 box, `border-radius: 50%`, a flat
+      `rgb(125 211 252 / 10%)` fill) — `main-menu.css` carries no `radial-gradient` at all, and the
+      canvas scene draws no glow under either HUD path.
       **Fix shape:** the panel draws the board's oval as one CSS layer (a `radial-gradient` at the board's
-      centre and radii) so the DOM owns it, and the canvas stops drawing its flat ellipse under
-      `?hud=dom`; the geometry is read from the frame the way §5 reads every other panel. **Docs:**
+      centre and radii) whose box and stops are data in the view model, so the DOM owns it and the
+      geometry is read from the frame the way §5 reads every other panel. **Docs:**
       `docs/hud-fidelity.md` §5 (the menu's backdrop). **Tests:** `[unit]` the view returns the oval's box
-      and the two gradient stops; `[live]` at 1280 and at 390 the backdrop fades with no visible edge.
-      Claims `src/ui/hud/panels/main-menu/**` + tests, `src/scenes/MainMenuScene.ts` + test and
-      `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-198]` and `[Task-199]` (same panel and scene).
+      and the three gradient stops; `[live]` at 1280 and at 390 the backdrop fades with no visible edge.
+      Claims `src/ui/hud/panels/main-menu/**` + tests and `docs/hud-fidelity.md` §5's new
+      **The main menu's glow.** block. **Corrected 2026-10-28:** the glow is the panel's own layer
+      (`.main-menu__glow` in `main-menu.css`, a flat 10 % ellipse), and the scene draws no glow under
+      either HUD path, so `src/scenes/MainMenuScene.ts` is **`[Task-210]`'s** in this batch; the
+      batch plan in Phase 17 records the trade. *Dependencies:* `[Task-198]` and `[Task-199]` (same
+      panel and its footer).
       *(Batch 88)*
 
 - [x] **[Task-202] The party panel draws its Pokémon, drags them to reorder, and its HP bar has no gap.**
@@ -9121,14 +9193,26 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       `src/ui/hud/panels/hud/{view.ts,strip.tsx}` finds no `vial` and no `charge` at all, so the three
       charges the board draws (§`03`) never render. The same panel prints the EXP as a **numeric string**
       where the board draws the bar alone, which the human asked to drop ("string exp fuera").
-      **Fix shape:** the strip's view returns one chip per readout (level, XP bar, Pokevial with its
-      charges, filled and spent) with the board's geometry, and the EXP's string leaves the view while
-      the bar keeps its fraction; a run without the vial (`null`) draws no chip rather than an empty one.
-      **Docs:** `docs/hud-fidelity.md` (the strip's readouts) and `docs/design-spec.md` §2.
-      **Tests:** `[unit]` the view returns three chips in board order and the vial's filled/spent counts
-      from the run's charges; `[unit]` the EXP chip carries no text; `[live]` a run with two of three
-      charges shows the vial filled twice, and the XP shows a bar and no number, at both widths.
-      Claims `src/ui/hud/panels/hud/**` + tests and `docs/hud-fidelity.md`. *Dependencies:* none.
+      **Fix shape (corrected 2026-10-28 against the shipped tree):** the route header's readouts are
+      `src/ui/hud/panels/party/**`'s, not `panels/hud/**`'s — `partyPanelView` already returns `level`,
+      `xp` (`text` + `fraction` + `box`) and `vial` (`charges`, `max`, `fill`, `box`) and `PartyCard`
+      already paints all three. What remains of the report is its second half: the XP's numeric string
+      leaves the paint (the bar keeps its fraction, and the model's `label` becomes the accessible
+      name), and the vial's fill step moves from the component's local helper into the view as
+      `vialStep(charges, max)` / `vial.step`, so the paint reads the model and the two cannot drift.
+      **Docs:** `docs/hud-fidelity.md` §5's new **The route header's readouts.** block.
+      **Tests:** `[unit]` the view returns `xp.label` and no painted text, `vial.step` for 0-3
+      charges and the vial's filled/spent counts from the run's charges; `[unit]` the card's vnode
+      tree carries no `party__xp-text` node and one `[data-hud-party="vial"]` with its `data-step`;
+      `[live]` a run with two of three charges shows the vial filled twice, and the XP shows a bar
+      and no digits, at both widths.
+      Claims `src/ui/hud/panels/party/**` + tests and `docs/hud-fidelity.md` §5's new block — **not**
+      `src/ui/hud/panels/hud/**`, whose `stripView` is the collapsed-panel chip rail.
+      **Corrected 2026-10-28:** the level line, the XP bar and the Pokevial already ship in this
+      panel (`partyPanelView` returns `level`, `xp` and `vial`; `PartyCard` paints all three), so the
+      task delivers the report's second half — the EXP's numeric string leaves the paint — and
+      guards the first half against a regression. Its old `docs/design-spec.md` line retires with the
+      stale claim. *Dependencies:* none.
       *(Batch 88)*
 
 - [ ] **[Task-208] The DOM panels collapse to their chip, drag and keep their slot.** Asked by the human
@@ -9196,8 +9280,12 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       ranking from a second browser profile, and the same URL with the network blocked shows the local
       table.
       Claims `infra/lib/site-stack.ts` + `infra/lambda/**` (the endpoint) + their tests, a new client
-      module under `src/net/**` + test, `src/ui/hud/panels/stats/**` + tests, `docs/tech-decisions.md`,
-      `docs/design-spec.md` and `infra/README.md`.
+      module under `src/net/**` + test and its folder README, `src/ui/hud/panels/stats/**` + tests,
+      **`src/scenes/MainMenuScene.ts` + test** (the scene builds the stats view, so it threads the
+      global snapshot), **`src/scenes/RouteScene.ts`** (the shipped `endRun`'s one submit call),
+      `src/i18n/{en,es}.ts`, `docs/tech-decisions.md`, `docs/design-spec.md` §2 and
+      `infra/README.md`. The menu scene is this task's and not `[Task-201]`'s: the batch plan in
+      Phase 17 records the trade, because the oval is a CSS layer and the ranking is a call-site.
       *Dependencies:* `[Task-181]` (merged) and `[Task-199]` (the records the ranking counts). *(Batch 88)*
 
 - [ ] **[Task-211] STATS and RANKING are two rows of the main menu.** Decided by the human on
@@ -9230,14 +9318,16 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       (`BattleSide.party`, `src/engine/battle/state.ts` 98-104): **filled** for a member still standing,
       **spent** for a fainted one, and **no row** in a wild battle (the party is the wild itself). The row
       takes the board's size and gap, sits under the foe's box and never meets the player's panel or the
-      command window. **Docs:** `docs/hud-fidelity.md` §5 (the ball row) and `docs/battle-spec.md` (the
-      count is the foe's living party, not its roster).
+      command window. **Docs:** `docs/hud-fidelity.md` §5's **Battle zones.** block (the ball row) and
+      `docs/battle-spec.md` §7's roster bullet (the row counts the foe's **fielded party**, fainted
+      members included, and a wild battle has none).
       **Tests:** `[unit]` the view returns three filled and none spent for a full party of three, two
       filled and one spent after a faint, and no row for a wild battle; `[unit]` the row's box sits under
       the foe's panel and intersects neither the player's panel nor the command window at 1280 and 390;
       `[live]` a trainer battle shows the balls, and one dims when a member faints, at both widths.
-      Claims `src/ui/hud/panels/battle-hp/**` + tests, `docs/hud-fidelity.md` §5 and `docs/battle-spec.md`.
-      *Dependencies:* `[Task-193]` (same panel). *(Batch 88)*
+      Claims `src/ui/hud/panels/battle-hp/**` + tests, `docs/hud-fidelity.md` §5's **Battle zones.**
+      block and `docs/battle-spec.md` §7's roster bullet. *Dependencies:* `[Task-193]` (same panel).
+      *(Batch 88)*
 
 - [ ] **[Task-213] A stat change is a chip in a grid beside the HP panel.** Seen in battle with
       `?hud=dom` on `2026-10-27`: the board's `05` prints the active's stages as a 3×2 grid to the right of
