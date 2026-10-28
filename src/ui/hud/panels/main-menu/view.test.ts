@@ -9,6 +9,7 @@ import { DEFAULT_LOCALE, setLocale, t } from '../../../../i18n';
 import { partyRows } from '../../../partyScreen';
 import { runPositionLabel } from '../../../runSummary';
 import { portraitCrop } from '../../portrait';
+import { drawnTextWidth } from '../battle-moves/view';
 import {
   EMPTY_MAIN_MENU_RECORDS,
   MAIN_MENU_ACTIONS,
@@ -18,7 +19,10 @@ import {
   MAIN_MENU_CARD_H_NARROW,
   MAIN_MENU_FOOTER_NARROW,
   MAIN_MENU_GLOW,
+  MAIN_MENU_ROW_GAP,
   MAIN_MENU_SLUG,
+  MAIN_MENU_VALUE_INSET,
+  MAIN_MENU_VALUE_SIZE,
   fixtureMainMenuView,
   forLayout,
   glowBackground,
@@ -28,6 +32,7 @@ import {
   type MainMenuGlow,
   type MainMenuLayout,
   type MainMenuRecords,
+  type MainMenuView,
   type Rect,
 } from './view';
 
@@ -101,6 +106,7 @@ describe('liveMainMenuView', () => {
   it('draws the five navigable rows, in board order, with the run’s position', () => {
     const run = savedRun();
     const view = liveMainMenuView(run, 0);
+    const continueRow = view.rows[0]!;
 
     expect(view.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats', 'ranking']);
     expect(view.rows.map((row) => row.id)).toEqual([...MAIN_MENU_ACTIONS]);
@@ -112,8 +118,9 @@ describe('liveMainMenuView', () => {
       t('menu.stats'),
       t('stats.actionRanking'),
     ]);
-    expect(view.rows[0]!.value).toBe(runPositionLabel(run));
-    expect(view.rows[0]!.value).toContain(getBiome(biomeForMap(run.seed, run.mapIndex)).name);
+    expect(continueRow.valueBox).not.toBeNull();
+    expect(continueRow.value.toUpperCase()).toMatch(/^MAP 3 · /);
+    expect(runPositionLabel(run).toUpperCase().startsWith(continueRow.value.replace('…', '').toUpperCase())).toBe(true);
     expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '', '', '']);
     expect(view.title).toBe(t('menu.title'));
     expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
@@ -128,12 +135,14 @@ describe('liveMainMenuView', () => {
         id: 'stats',
         label: t('menu.stats'),
         value: '',
+        valueBox: null,
         enabled: true,
       });
       expect(rows.at(-1)).toEqual({
         id: 'ranking',
         label: t('stats.actionRanking'),
         value: '',
+        valueBox: null,
         enabled: true,
       });
     }
@@ -387,7 +396,7 @@ describe('forLayout', () => {
     const wide = forLayout(view, 'wide');
 
     expect(wide).toBe(view);
-    expect(wide.rows[0]!.value).toBe(runPositionLabel(run));
+    expect(wide.rows[0]!.valueBox).toEqual(view.rows[0]!.valueBox);
     expect(wide.rows[0]!.value.toUpperCase()).toMatch(/^MAP 3 · /);
   });
 
@@ -398,11 +407,13 @@ describe('forLayout', () => {
     const row = rowAt(compact, 'continue');
 
     expect(row.value).toBe('');
+    expect(row.valueBox).toBeNull();
     expect(row.label).toBe(view.rows[0]!.label);
     expect(row.enabled).toBe(true);
     expect(compact.rows.map((entry) => entry.id)).toEqual(view.rows.map((entry) => entry.id));
     expect(compact.rows.slice(1)).toEqual(view.rows.slice(1));
-    expect(rowAt(view, 'continue').value).toBe(runPositionLabel(run));
+    expect(rowAt(view, 'continue').valueBox).not.toBeNull();
+    expect(rowAt(view, 'continue').value).not.toBe('');
   });
 
   it('keeps the portrait list, the title, the stats and the cursor identical', () => {
@@ -446,6 +457,141 @@ describe('forLayout', () => {
     expect(JSON.parse(JSON.stringify(view))).toEqual(before);
   });
 });
+
+/** A run standing on map 1 with only the first `members` of the four. */
+function runOnMapOne(members = 4): RunState {
+  const run = savedRun();
+  return { ...run, mapIndex: 1, party: run.party.slice(0, members) };
+}
+
+const VALUE_RIGHT = MAIN_MENU_BOARD.row.x + MAIN_MENU_BOARD.row.w - MAIN_MENU_VALUE_INSET;
+
+describe('the CONTINUE row’s value box', () => {
+  it('reserves the portraits’ block and boxes the map label before it', () => {
+    const run = runOnMapOne();
+    const view = liveMainMenuView(run, 0);
+    const row = rowAt(view, 'continue');
+
+    expect(row.valueBox).not.toBeNull();
+    expect(view.portraitsBox).not.toBeNull();
+    expect(view.portraits.length).toBe(4);
+    expect(row.valueBox!.x + row.valueBox!.w).toBeLessThanOrEqual(view.portraitsBox!.x);
+    expect(row.valueBox!.x + row.valueBox!.w).toBe(
+      view.portraitsBox!.x - MAIN_MENU_ROW_GAP,
+    );
+    expect(gap(row.valueBox!, view.portraitsBox!)).toBe(MAIN_MENU_ROW_GAP);
+    expect(row.valueBox!.y).toBe(MAIN_MENU_BOARD.row.top + 22);
+    expect(row.valueBox!.h).toBe(15);
+    expect(row.valueBox!.x).toBeGreaterThan(
+      MAIN_MENU_BOARD.row.x + row.label.length + MAIN_MENU_ROW_GAP,
+    );
+  });
+
+  it('elides the label it cannot fit, and no glyph of it reaches a portrait', () => {
+    const view = liveMainMenuView(runOnMapOne(), 0);
+    const row = rowAt(view, 'continue');
+    const label = runPositionLabel(runOnMapOne());
+
+    expect(label.toUpperCase()).toContain(getBiome(biomeForMap(runOnMapOne().seed, 1)).name.toUpperCase());
+    expect(row.value.endsWith('\u2026')).toBe(true);
+    expect(row.value).not.toBe(label.toUpperCase());
+    expect(drawnTextWidth(row.value, MAIN_MENU_VALUE_SIZE)).toBeLessThanOrEqual(row.valueBox!.w);
+
+    const ink = valueInk(row);
+    for (const cell of portraitCells(view)) expect(ink.x + ink.w).toBeLessThanOrEqual(cell.x);
+  });
+
+  it('paints a label that fits verbatim, with no ellipsis and no padding', () => {
+    const view = fixtureMainMenuView(MAIN_MENU_FIXTURE);
+    const row = rowAt(view!, 'continue');
+
+    expect(row.value).toBe('MAP 3 · FOREST');
+    expect(row.value).not.toContain('\u2026');
+    expect(drawnTextWidth(row.value, MAIN_MENU_VALUE_SIZE)).toBeLessThan(row.valueBox!.w);
+  });
+
+  it('hugs the row’s right inset and widens the label as the cells go', () => {
+    const boxes: number[] = [];
+    for (let members = 1; members <= 4; members += 1) {
+      const view = liveMainMenuView(runOnMapOne(members), 0);
+      const row = rowAt(view, 'continue');
+      const block = view.portraitsBox!;
+
+      expect(block.y).toBe(MAIN_MENU_BOARD.portrait.y);
+      expect(block.h).toBe(MAIN_MENU_BOARD.portrait.size);
+      expect(block.x + block.w).toBe(VALUE_RIGHT);
+      expect(block.w).toBe(
+        members * MAIN_MENU_BOARD.portrait.size +
+          (members - 1) * (MAIN_MENU_BOARD.portrait.pitch - MAIN_MENU_BOARD.portrait.size),
+      );
+      expect(row.valueBox!.x + row.valueBox!.w).toBe(block.x - MAIN_MENU_ROW_GAP);
+      boxes.push(row.valueBox!.w);
+    }
+
+    expect(boxes).toEqual([...boxes].sort((a, b) => b - a));
+    expect(new Set(boxes).size).toBe(4);
+    expect(boxes[3]).toBe(124);
+  });
+
+  it('hands a run with no party a null block and the row’s own right edge', () => {
+    const view = liveMainMenuView(null, 0);
+
+    expect(view.portraitsBox).toBeNull();
+    expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
+    for (const row of view.rows) expect(row.valueBox).toBeNull();
+  });
+
+  it('leaves the phone row without a value box, and every other row as it was', () => {
+    const view = liveMainMenuView(savedRun(), 0);
+    const compact = forLayout(view, 'compact');
+
+    expect(rowAt(compact, 'continue').valueBox).toBeNull();
+    expect(rowAt(compact, 'continue').value).toBe('');
+    expect(compact.portraitsBox).toEqual(view.portraitsBox);
+    expect(compact.rows.slice(1)).toEqual(view.rows.slice(1));
+    for (const row of compact.rows) expect(row.valueBox === null).toBe(row.value === '');
+  });
+
+  it('paints the value in the box the view measured, and the block in its own slot', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const value = declarations(desktopCss, '.main-menu__value');
+    const strip = declarations(desktopCss, '.main-menu__portraits');
+    const panel = readFileSync(
+      fileURLToPath(new URL('./mainMenuPanel.tsx', import.meta.url)),
+      'utf8',
+    );
+
+    expect(sharp(value.get('top'))).toBe(22);
+    expect(value.get('text-align')).toBe('right');
+    expect(value.get('white-space')).toBe('nowrap');
+    expect(value.get('overflow')).toBe('hidden');
+    expect(value.get('right')).toBeUndefined();
+    expect(sharp(strip.get('right'))).toBe(MAIN_MENU_VALUE_INSET);
+    expect(sharp(strip.get('top'))).toBe(MAIN_MENU_BOARD.portrait.y - MAIN_MENU_BOARD.row.top);
+    expect(panel).toContain('style={valueStyle(row.valueBox)}');
+    expect([...declarations(COMPACT_CSS, '.main-menu__value').keys()]).toEqual([]);
+  });
+});
+
+/** The four portrait cells of the CONTINUE row, in party order. */
+function portraitCells(view: MainMenuView): readonly Rect[] {
+  const block = view.portraitsBox;
+  if (block === null) return [];
+  const { size, pitch } = MAIN_MENU_BOARD.portrait;
+  return Array.from({ length: view.portraits.length }, (_, at) => ({
+    x: block.x + at * pitch,
+    y: block.y,
+    w: size,
+    h: size,
+  }));
+}
+
+/** The glyphs' own box inside a row's value: the string is right-aligned in its box. */
+function valueInk(row: { value: string; valueBox: Rect | null }): Rect {
+  const box = row.valueBox!;
+  const w = drawnTextWidth(row.value, MAIN_MENU_VALUE_SIZE);
+  return { x: box.x + box.w - w, y: box.y, w, h: box.h };
+}
 
 describe("the board's glow", () => {
   it('paints one radial gradient, never a flat fill', () => {

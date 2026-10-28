@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The desk CONTINUE row elides its map label before the portraits, not under them.** `[Task-215]`,
+      Batch 92's first filler in Batch 90: at 1280×800 the row's value (`MAP 1 · DEEP FOREST`) slid under the
+      fourth portrait — measured on the merged `[Task-191]` tree, the value box `{1010.98, 322, 147.02, 15}`
+      under a portrait at `{1012, 314, 26, 26}`, 26 × 15 px of glyphs — because the frame's own short label
+      cleared by 10.48 px and the board never showed it. `MainMenuView` now carries `portraitsBox` and
+      `MainMenuRowView` a `valueBox`, both computed from the card's own layout constants; the label is cut to
+      that box with the Silkscreen advance, so `value.right <= portraits.box.x` for one to four portraits,
+      and the span is bounded so a fallback font cannot re-open the gap. Compact is untouched (no value node,
+      portraits alone) and a run with no party keeps the full-width label. Gates: `npm test` 5046 passed /
+      69 skipped and `npm run build` green. Measured live over CDP: with four members and a long name the
+      value is `{910, 322, 124, 15}` reading `MAP 1 · DEEP F…`, the last portrait `x 1132` — 98 px of
+      clearance where `main` overlapped — and at 390×844 `document.querySelectorAll('.main-menu__value')`
+      is `0` with the portraits still drawn.
+
 - [x] **The DOM HUD is the HUD, and the canvas panel layer retires.** `[Task-200]`, Batch 90's first task:
       the board's HUD was only reachable by typing `?hud=dom`, and every scene drew a Phaser HUD of its own
       otherwise. `hudRequested` is now always true — `?hud=dom` stays as an inert alias and

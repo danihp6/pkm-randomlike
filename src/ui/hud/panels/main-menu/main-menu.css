@@ -253,16 +253,21 @@
   white-space: nowrap;
 }
 
-/* 01 · row value CONTINUE (accent) / NEW RUN (muted) */
+/*
+ * 01 · row value CONTINUE (accent) / NEW RUN (muted). The view hands the span its own
+ * `valueBox` (`left` and `width`, row-relative): the string is already elided to that
+ * box, so the bound only keeps a font fallback from painting past it.
+ */
 .main-menu__value {
   position: absolute;
   top: 22px;
-  right: 6px;
   transform: translateZ(0);
   color: var(--hud-text-muted);
   font-size: var(--main-menu-row-value-size);
   line-height: var(--main-menu-row-value-line);
   text-transform: uppercase;
+  overflow: hidden;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -270,11 +275,15 @@
   color: var(--hud-accent);
 }
 
-/* 01 · slot 0…3: the party's portrait cells, in party order; the cell's scale is inline (`portraitBackground`) */
+/*
+ * 01 · the CONTINUE row's reserved block: the party's cells hug the row's right inset,
+ * so the map label always has the strip to their left (`mainMenuPortraitsBox`). The
+ * cell's scale is inline (`portraitBackground`).
+ */
 .main-menu__portraits {
   position: absolute;
   top: 14px;
-  left: 178px;
+  right: 6px;
   display: flex;
   gap: 4px;
 }
@@ -467,6 +476,7 @@
   /* m01 · portrait CH */
   .main-menu__portraits {
     top: 13px;
+    right: auto;
     left: 226px;
     gap: 3px;
   }

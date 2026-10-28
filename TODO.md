@@ -9369,7 +9369,7 @@ without moving either batch.
       `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-193]`, `[Task-196]` and `[Task-203]` (same view).
       *(Batch 89)*
 
-- [ ] **[Task-215] The desk CONTINUE row elides its map label before the portraits, not under them.**
+- [x] **[Task-215] The desk CONTINUE row elides its map label before the portraits, not under them.**
       Issue #75, measured on `[Task-191]`'s merged tree (`?hud=dom`, 1280×800, a four-member save at
       map 1): the row's `.main-menu__value` is `{x: 1010.98, y: 322, w: 147.02, h: 15}` holding
       `MAP 1 · DEEP FOREST` and the fourth portrait is `{1012, 314, 26, 26}`, so the label's first
