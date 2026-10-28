@@ -1174,6 +1174,22 @@ The batches below carry at most one `src/scenes/RouteScene.ts` task each (the ta
 | 55 | 116 | `src/scenes/rooms/casino.ts` + test, `src/ui/casinoReels.ts` + test → 116 |
 | 57 | 118 | `src/ui/capture.ts` + test, `src/scenes/BattleScene.ts`, `src/i18n/{en,es}.ts` → 118 |
 
+**Batch 91 was filled with `[Task-218]` (Batch 92) and `[Task-219]` (Batch 93) in this cycle, and shipped
+three wide.** The cut was `[Task-208]` alone. The fill search took `[Task-218]` because its one path,
+`src/ui/hud/panels/run-over/README.md`, is disjoint from 208's whole set and it needs no file a batch-mate
+produces, and `[Task-219]` because `[Task-198]` is merged and its folder
+(`src/ui/hud/panels/main-menu/**`) is free after Batch 92's `[Task-215]` — its own two docs are
+`docs/design-spec.md` §2 and `D55`, disjoint blocks from 208's. The fourth slot stays empty and names its
+blocker: the only other open item is `[Task-194]`, which is `[!]` and unscheduled. The two shared documents
+are claimed by block — `docs/design-spec.md` is 208's **§3** HUD-panels paragraph and 219's **§2**
+live-route sentence, `docs/tech-decisions.md` is 208's `D49` and 219's `D55` — and Integration QA proved
+neither block lost or duplicated a line. **One stale record is corrected rather than carried:**
+`[Task-208]`'s `**Docs:**` line named `docs/design-spec.md` §2, which has never described a panel; the
+promise it makes true is §3's HUD-panels paragraph, and that is the block the task wrote. All three merged
+in ID order behind the green gate (5086 passed / 69 skipped on the combined tree), and `[Task-218]` needed
+one corrective round: its first edit wrapped the sentence a pinned grep measured, and the fix broke the
+rule after `drawn;`.
+
 **Batch 39 was filled with `[Task-116]` (Batch 55) in this cycle.** The cut was
 `[Task-93]` alone; the fill search pulled `[Task-116]` because `[Task-115]` is merged
 and its paths — `src/scenes/rooms/casino.ts`, the new pure `src/ui/casinoReels.ts`,
