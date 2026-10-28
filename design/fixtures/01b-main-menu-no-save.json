@@ -16,7 +16,8 @@
     "rows": [
       { "id": "new", "label": "NEW RUN", "value": "NEW SEED" },
       { "id": "options", "label": "OPTIONS", "value": "" },
-      { "id": "stats", "label": "STATS", "value": "" }
+      { "id": "stats", "label": "STATS", "value": "" },
+      { "id": "ranking", "label": "RANKING", "value": "" }
     ],
     "stats": [
       { "id": "wins", "label": "WINS", "value": "23", "name": null },

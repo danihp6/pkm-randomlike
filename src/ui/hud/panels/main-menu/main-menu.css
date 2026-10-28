@@ -130,8 +130,9 @@
 
 /*
  * 01 · menu card. The wrapper is the measured node and carries the board's paint;
- * the kit `Panel` is its skin and fills it. The 3-row height is also the live
- * menu's (it never draws more than three rows); only `01`'s 4-row card is taller.
+ * the kit `Panel` is its skin and fills it. The 300 px default is any row count the
+ * `data-rows` rules below do not name; the live DOM menu draws four rows with a save
+ * and five once RANKING is there.
  */
 .main-menu__card {
   position: absolute;
@@ -151,6 +152,14 @@
 
 .main-menu__card[data-rows='4'] {
   height: 362px;
+}
+
+/*
+ * 01 · a fifth row needs 63 + 5·54 + 4·8 = 365 px of content; 372 keeps 8 px above
+ * the footer's first label at y 616. 424 would paint over the monthly figure.
+ */
+.main-menu__card[data-rows='5'] {
+  height: 372px;
 }
 
 /* 01 · card highlight: 12 px inside the card's top edge */
@@ -179,10 +188,11 @@
   display: none;
 }
 
-/* 01 · row box */
+/* 01 · row box; the card's height is computed from these, so a row never shrinks */
 .main-menu__row {
   width: 420px;
   height: 54px;
+  flex-shrink: 0;
 }
 
 /* The measured wrapper and the kit row are one box: the skin sits inside it. */
@@ -426,6 +436,11 @@
 
   .main-menu__card[data-rows='4'] {
     height: 264px;
+  }
+
+  /* m01 · a fifth row needs 11 + 5·48 + 4·6 = 275 px; the footer starts at y 676. */
+  .main-menu__card[data-rows='5'] {
+    height: 275px;
   }
 
   /* m01 · m row * */

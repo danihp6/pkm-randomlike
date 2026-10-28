@@ -42,6 +42,7 @@ const ROW_INTENTS: Readonly<Record<MainMenuRowId, MainMenuIntent['type']>> = {
   new: 'new-run',
   options: 'options',
   stats: 'stats',
+  ranking: 'ranking',
 };
 
 function rowClass(selected: boolean): string {

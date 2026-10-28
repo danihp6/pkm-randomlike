@@ -8,12 +8,17 @@ import { historyBestFloor, historyWins, recordMonthKey } from '../stats/records'
 import { statsMonthLabel } from '../stats/view';
 
 /** Every row the board can draw, in board order. */
-export const MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats'] as const;
+export const MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats', 'ranking'] as const;
 export type MainMenuRowId = (typeof MAIN_MENU_ROW_IDS)[number];
 
-/** The rows the scene can navigate. `stats` opens the stats panel on the DOM path. */
-export const MAIN_MENU_ACTIONS = ['continue', 'new', 'options', 'stats'] as const;
+/** The rows the scene can navigate. `stats` shows the panel, `ranking` its ranking mode. */
+export const MAIN_MENU_ACTIONS = ['continue', 'new', 'options', 'stats', 'ranking'] as const;
 export type MainMenuAction = (typeof MAIN_MENU_ACTIONS)[number];
+
+/** The card's own height per drawn row count, the desk frame's numbers plus the fifth row. */
+export const MAIN_MENU_CARD_H: Readonly<Record<number, number>> = { 4: 362, 5: 372 };
+/** The same, for the phone card (`@media (max-width: 600px)`). */
+export const MAIN_MENU_CARD_H_NARROW: Readonly<Record<number, number>> = { 4: 264, 5: 275 };
 
 export type MainMenuRowView = Readonly<{
   id: MainMenuRowId;
@@ -265,6 +270,7 @@ export function liveMainMenuView(
   rows.push({ id: 'new', label: t('menu.new'), value: '', enabled: true });
   rows.push({ id: 'options', label: t('menu.options'), value: '', enabled: true });
   rows.push({ id: 'stats', label: t('menu.stats'), value: '', enabled: true });
+  rows.push({ id: 'ranking', label: t('stats.actionRanking'), value: '', enabled: true });
 
   const last = rows.length - 1;
   const at = Math.min(Math.max(0, Math.trunc(index)), last);

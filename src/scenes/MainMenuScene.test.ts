@@ -16,6 +16,8 @@ vi.mock('phaser', () => {
 const mocks = vi.hoisted(() => ({
   randomSeed: vi.fn((): string => 'boot-seed'),
   playMusic: vi.fn(),
+  mountStats: vi.fn(() => ({ update: vi.fn(), dispose: vi.fn() })),
+  loadRankingEndpoint: vi.fn(async (): Promise<string | null> => null),
 }));
 
 vi.mock('../engine/rng', async (importOriginal) => {
@@ -25,9 +27,20 @@ vi.mock('../engine/rng', async (importOriginal) => {
 
 vi.mock('../audio/audio', () => ({ playMusic: mocks.playMusic }));
 
-import type { MainMenuView } from '../ui/hud/panels/main-menu';
+vi.mock('../ui/hud/panels/stats', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ui/hud/panels/stats')>();
+  return { ...actual, mountStats: mocks.mountStats };
+});
+
+vi.mock('../net/ranking', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../net/ranking')>();
+  return { ...actual, loadRankingEndpoint: mocks.loadRankingEndpoint };
+});
+
+import type { MainMenuIntent, MainMenuView } from '../ui/hud/panels/main-menu';
 import { menuVersionLabel } from '../ui/hud/panels/main-menu';
 import type { RunHistoryRecord } from '../engine/run/history';
+import { createRun, createRunPokemon, type RunState } from '../engine/run';
 import { t } from '../i18n';
 import type { RankingBoard } from '../net/ranking';
 import type { StatsMode, StatsView } from '../ui/hud/panels/stats';
@@ -36,17 +49,24 @@ import type { MainMenuScene } from './MainMenuScene';
 /** The DOM path the scene takes under `?hud=dom`, with the Phaser seams stubbed. */
 type SceneInternals = {
   previewSeed: string;
-  run: null;
+  run: RunState | null;
   index: number;
+  items: string[];
+  dom: boolean;
+  statsOpen: boolean;
   input: { keyboard: { on: () => void } };
   events: { on: () => void; once: () => void };
   create(): void;
+  createDom(): void;
   menuView(): MainMenuView;
   history: readonly RunHistoryRecord[];
   statsMode: StatsMode;
   statsMonth: string | null;
   globalRanking: RankingBoard | null;
   statsView(): StatsView;
+  handleIntent(intent: MainMenuIntent): void;
+  move(delta: number): void;
+  openStats(mode?: StatsMode): void;
 };
 
 let MainMenuSceneClass: typeof MainMenuScene;
@@ -62,6 +82,8 @@ beforeEach(() => {
   mocks.randomSeed.mockClear();
   mocks.randomSeed.mockReturnValue('boot-seed');
   mocks.playMusic.mockClear();
+  mocks.mountStats.mockClear();
+  mocks.loadRankingEndpoint.mockClear();
 });
 
 function scene(): SceneInternals {
@@ -103,7 +125,7 @@ describe('menuView', () => {
 
     expect(view.previewSeed).toBe('kept-seed');
     expect(view.selected).toBe('stats');
-    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
+    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats', 'ranking']);
   });
 
   it('is a pure read: two calls are deep-equal', () => {
@@ -188,7 +210,7 @@ describe('the global board’s seams', () => {
 
   it('is fetched when the panel opens and again on a month step', () => {
     expect(SOURCE).toContain('this.loadGlobalRanking();');
-    const opAt = SOURCE.indexOf('private openStats(): void {');
+    const opAt = SOURCE.indexOf("private openStats(mode: StatsMode = 'totals'): void {");
     const closeAt = SOURCE.indexOf('private closeStats(): void {');
     const fetchAt = SOURCE.indexOf('this.loadGlobalRanking();');
     expect(fetchAt).toBeGreaterThan(opAt);
@@ -243,5 +265,102 @@ describe('the seed’s seams', () => {
     expect(SOURCE).toContain('this.records = mainMenuRecords(this.history, new Date());');
     const reads = SOURCE.match(/mainMenuRecords\(/g) ?? [];
     expect(reads).toHaveLength(1);
+  });
+});
+
+/** A HUD layer whose `#hud` host is `host` (or absent); the panel mounts are stubbed. */
+function stubDocument(host: object | null): void {
+  vi.stubGlobal('document', {
+    getElementById: (id: string): object | null => (id === 'hud' ? host : null),
+  });
+}
+
+/** A saved run with a living party, the only shape that draws the CONTINUE row. */
+function savedRun(): RunState {
+  const starter = createRunPokemon({
+    id: 'charmander-1',
+    speciesId: 'charmander',
+    level: 12,
+    moves: ['tackle'],
+  });
+  return createRun({ seed: 'pkm-211', starter });
+}
+
+describe('the RANKING row', () => {
+  it('opens the stats panel on its ranking mode', () => {
+    stubDocument({});
+    const instance = scene();
+    instance.dom = true;
+    instance.history = [rankingRecord()];
+
+    instance.handleIntent({ type: 'ranking' });
+
+    expect(mocks.mountStats).toHaveBeenCalledTimes(1);
+    expect(instance.statsOpen).toBe(true);
+    expect(instance.statsMode).toBe('ranking');
+    expect(instance.statsView().mode).toBe('ranking');
+  });
+
+  it('leaves STATS opening the panel on TOTALS', () => {
+    stubDocument({});
+    const instance = scene();
+    instance.dom = true;
+    instance.history = [rankingRecord()];
+
+    instance.handleIntent({ type: 'stats' });
+
+    expect(instance.statsMode).toBe('totals');
+    expect(instance.statsView().mode).toBe('totals');
+  });
+
+  it('keeps TOTALS as the default parameter', () => {
+    stubDocument({});
+    const instance = scene();
+    instance.dom = true;
+    instance.openStats('totals');
+
+    expect(instance.statsMode).toBe('totals');
+    expect(instance.statsView().mode).toBe('totals');
+  });
+
+  it('walks to the fifth row and wraps back to the first', () => {
+    stubDocument(null);
+    const instance = scene();
+    instance.dom = true;
+    instance.run = savedRun();
+    instance.createDom();
+
+    expect(instance.items).toEqual(['continue', 'new', 'options', 'stats', 'ranking']);
+    expect(instance.index).toBe(0);
+    for (const expected of [1, 2, 3, 4]) {
+      instance.move(1);
+      expect(instance.index).toBe(expected);
+    }
+    instance.move(1);
+    expect(instance.index).toBe(0);
+    instance.move(-1);
+    expect(instance.index).toBe(4);
+    expect(instance.menuView().selected).toBe('ranking');
+  });
+
+  it('draws four rows without a save, ending on RANKING', () => {
+    stubDocument(null);
+    const instance = scene();
+    instance.dom = true;
+    instance.run = null;
+    instance.createDom();
+
+    expect(instance.items).toEqual(['new', 'options', 'stats', 'ranking']);
+    instance.move(1);
+    expect(instance.index).toBe(1);
+    instance.move(2);
+    expect(instance.menuView().selected).toBe('ranking');
+  });
+
+  it('keeps the canvas path at three rows', () => {
+    expect(SOURCE).toContain(
+      "this.items = this.run ? ['continue', 'new', 'options'] : ['new', 'options'];",
+    );
+    expect(SOURCE).toContain("ranking: 'stats.actionRanking',");
   });
 });

@@ -7,7 +7,8 @@ export type MainMenuIntent =
   | Readonly<{ type: 'continue' }>
   | Readonly<{ type: 'new-run' }>
   | Readonly<{ type: 'options' }>
-  | Readonly<{ type: 'stats' }>;
+  | Readonly<{ type: 'stats' }>
+  | Readonly<{ type: 'ranking' }>;
 
 export type MainMenuHandle = Readonly<{
   /** Repaints from a new view. Exactly one render per call. */

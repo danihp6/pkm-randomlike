@@ -7,6 +7,7 @@ import noSaveFixture from '../../../../../design/fixtures/01b-main-menu-no-save.
 import fixture from '../../../../../design/fixtures/01-main-menu.json';
 import { isHudState } from '../../fixtures';
 import { PORTRAIT_SHINY_ATLAS_URL } from '../../../../data/portraits';
+import { t } from '../../../../i18n';
 import { portraitCrop } from '../../portrait';
 import {
   MAIN_MENU_BOARD,
@@ -34,8 +35,8 @@ type Frame = Readonly<{ slug: string; geometry: readonly Node[]; text: readonly 
 
 type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
-/** The frame's own row nodes, in board order. */
-const ROW_NODES: Readonly<Record<MainMenuRowId, string>> = {
+/** The frame's own row nodes, in board order; RANKING has none (the board predates it). */
+const ROW_NODES: Readonly<Partial<Record<MainMenuRowId, string>>> = {
   continue: 'row sel CONTINUE',
   new: 'row NEW RUN',
   options: 'row OPTIONS',
@@ -89,7 +90,9 @@ function selectedAtTop(view: MainMenuView, frame: Frame): MainMenuRowId | null {
   let top = Number.POSITIVE_INFINITY;
   let id: MainMenuRowId | null = null;
   for (const row of view.rows) {
-    const rect = rectOf(frame, ROW_NODES[row.id]);
+    const name = ROW_NODES[row.id];
+    if (name === undefined) continue;
+    const rect = rectOf(frame, name);
     if (rect.y < top) {
       top = rect.y;
       id = row.id;
@@ -113,19 +116,20 @@ describe('design/fixtures/01-main-menu.json', () => {
     expect(Object.keys(fixture.state)).toEqual(['party', 'bag', 'money', 'route', 'battle', 'notice']);
   });
 
-  it('draws the frame’s four rows with its own labels and values', () => {
+  it('draws the frame’s four rows and the fifth, RANKING, with its own labels and values', () => {
     expect(view).not.toBeNull();
     const desktop = frame as Frame;
-    expect(view!.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats']);
+    expect(view!.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats', 'ranking']);
     expect(view!.rows.map((row) => row.label)).toEqual([
       textOf(desktop, 'row label CONTINUE'),
       textOf(desktop, 'row label NEW RUN'),
       textOf(desktop, 'row label OPTIONS'),
       textOf(desktop, 'row label STATS'),
+      t('stats.actionRanking'),
     ]);
     expect(view!.rows[0]!.value).toBe(textOf(desktop, 'row value CONTINUE'));
     expect(view!.rows[1]!.value).toBe(textOf(desktop, 'row value NEW RUN'));
-    expect(view!.rows.map((row) => row.value).slice(2)).toEqual(['', '']);
+    expect(view!.rows.map((row) => row.value).slice(2)).toEqual(['', '', '']);
     expect(view!.rows.every((row) => row.enabled)).toBe(true);
   });
 
@@ -133,7 +137,7 @@ describe('design/fixtures/01-main-menu.json', () => {
     const desktop = frame as Frame;
     expect(selectedAtTop(view!, desktop)).toBe('continue');
     expect(view!.selected).toBe('continue');
-    expect(rectOf(desktop, ROW_NODES.continue).y).toBe(MAIN_MENU_BOARD.row.top);
+    expect(rectOf(desktop, ROW_NODES.continue!).y).toBe(MAIN_MENU_BOARD.row.top);
   });
 
   it('draws one portrait per party member, in party order', () => {
@@ -188,8 +192,8 @@ describe('design/fixtures/01-main-menu.json', () => {
       w: card.w,
     });
 
-    const first = rectOf(desktop, ROW_NODES.continue);
-    const second = rectOf(desktop, ROW_NODES.new);
+    const first = rectOf(desktop, ROW_NODES.continue!);
+    const second = rectOf(desktop, ROW_NODES.new!);
     expect(MAIN_MENU_BOARD.row).toEqual({
       x: first.x,
       w: first.w,
@@ -235,27 +239,28 @@ describe('design/fixtures/01b-main-menu-no-save.json', () => {
     expect(noSaveFixture.state.route).toBeNull();
   });
 
-  it('draws the frame’s three rows and no CONTINUE anywhere', () => {
+  it('draws the frame’s three rows plus RANKING, and no CONTINUE anywhere', () => {
     expect(view).not.toBeNull();
     const desktop = noSaveFrame as Frame;
-    expect(view!.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
+    expect(view!.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats', 'ranking']);
     expect(JSON.stringify(noSaveFixture)).not.toContain('CONTINUE');
     expect(view!.rows.map((row) => row.label)).toEqual([
       textOf(desktop, 'row label NEW RUN'),
       textOf(desktop, 'row label OPTIONS'),
       textOf(desktop, 'row label STATS'),
+      t('stats.actionRanking'),
     ]);
     expect(view!.rows[0]!.value).toBe(textOf(desktop, 'row value NEW RUN'));
-    expect(view!.rows.map((row) => row.value).slice(1)).toEqual(['', '']);
+    expect(view!.rows.map((row) => row.value).slice(1)).toEqual(['', '', '']);
   });
 
   it('selects NEW RUN, the row drawn at the frame’s first row y', () => {
     const desktop = noSaveFrame as Frame;
     expect(selectedAtTop(view!, desktop)).toBe('new');
     expect(view!.selected).toBe('new');
-    const first = rectOf(desktop, ROW_NODES.new);
+    const first = rectOf(desktop, ROW_NODES.new!);
     expect(first.y).toBe(MAIN_MENU_BOARD.row.top);
-    expect(rectOf(desktop, ROW_NODES.options).y - first.y).toBe(MAIN_MENU_BOARD.row.pitch);
+    expect(rectOf(desktop, ROW_NODES.options!).y - first.y).toBe(MAIN_MENU_BOARD.row.pitch);
   });
 
   it('draws no portrait and keeps the frame’s footer and version', () => {
@@ -352,7 +357,7 @@ describe('fixtureMainMenuView guards', () => {
   it('rejects a row with an unknown id', () => {
     const payload = payloadWith((menu) => {
       const rows = menu.rows as Record<string, unknown>[];
-      rows[1]!.id = 'ranking';
+      rows[1]!.id = 'missions';
     });
     expect(fixtureMainMenuView(payload)).toBeNull();
   });
@@ -390,6 +395,7 @@ describe('fixtureMainMenuView guards', () => {
       fixtureMainMenuView(
         payloadWith((menu) => {
           menu.selected = 'ranking';
+          menu.rows = (menu.rows as Record<string, unknown>[]).slice(0, 4);
         }),
       ),
     ).toBeNull();
@@ -401,7 +407,7 @@ describe('fixtureMainMenuView guards', () => {
       menu.selected = 'new';
     }) as { state: { party: unknown[] } };
     const view = fixtureMainMenuView(payload);
-    expect(view!.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
+    expect(view!.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats', 'ranking']);
     expect(view!.portraits.length).toBe(payload.state.party.length);
   });
 });
