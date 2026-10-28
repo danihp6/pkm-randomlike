@@ -9151,7 +9151,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       *Dependencies:* `[Task-200]` (the canvas layer it replaces), `[Task-203]` (the kit) and
       `[Task-207]` (the strip). *(Batch 91)*
 
-- [ ] **[Task-209] The bag's description card prints the item's text, in the player's language.** Seen
+- [x] **[Task-209] The bag's description card prints the item's text, in the player's language.** Seen
       with `?hud=dom` on `2026-10-27` ("faltan traducciones por ejemplo en descripción de items del panel
       bag"). There is nothing to translate yet: `src/ui/hud/panels/bag/view.ts` builds the floating card
       with `text: ''` (182-195) — the title is the item's name and the body is **always empty**, which the

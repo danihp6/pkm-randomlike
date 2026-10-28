@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { t } from '../../../../i18n';
+import { itemText } from '../../../../i18n/content';
 import type { HudBagRow, HudState } from '../../state';
 import {
   BAG_CAP,
@@ -17,6 +18,23 @@ import {
   type BagIconResolver,
   type BagPanelUi,
 } from './index';
+
+// No catalogue row wraps to three lines, so the growth rule's 120-character case
+// arrives through a stub of the one seam the card reads its body from.
+const WRAPPED = vi.hoisted(() => ({
+  textOf: {
+    wrapsixtychars: 'x'.repeat(60),
+    wraponehundredtwenty: 'x'.repeat(120),
+  } as Readonly<Record<string, string>>,
+}));
+
+vi.mock('../../../../i18n/content', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../i18n/content')>();
+  return {
+    ...actual,
+    itemText: (id: string): string => WRAPPED.textOf[id] ?? actual.itemText(id),
+  };
+});
 
 const CONSUMABLES: readonly HudBagRow[] = [
   { itemId: 'potion', name: 'Potion', count: 3, category: 'consumable' },
@@ -187,6 +205,59 @@ describe('bagPanelView', () => {
 
   it('starts on the equipment pocket with the cursor and the query empty', () => {
     expect(initialBagPanelUi()).toEqual({ pocket: 'equipment', cursor: 0, query: '' });
+  });
+});
+
+describe('the description card body', () => {
+  function infoOf(itemId: string | null) {
+    const state: HudState = {
+      ...STATE,
+      bag: [{ itemId: itemId as unknown as string, name: 'Stack', count: 1, category: 'consumable' }],
+    };
+    const panel = bagPanelView(state, CONSUMABLE_UI, DESKTOP, stub);
+    expect(panel.info).not.toBeNull();
+    return panel.info!;
+  }
+
+  it("prints the selected stack's own text and keeps the one-line floor and rect", () => {
+    const info = view().info!;
+    expect(info.title).toBe('Potion');
+    expect(info.text).toBe(itemText('potion'));
+    expect(info.text.length).toBeLessThanOrEqual(44);
+    expect(info.box).toEqual({ x: 640, y: 504, w: BAG_INFO_W, h: 56 });
+  });
+
+  it('keeps the 56 px floor for the second one-line potion', () => {
+    const info = view({ ...CONSUMABLE_UI, cursor: 1 }).info!;
+    expect(info.text).toBe(itemText('superpotion'));
+    expect(info.box.h).toBe(56);
+    expect(info.box.x).toBe(640);
+    expect(info.box.w).toBe(BAG_INFO_W);
+  });
+
+  it('grows 13 px per wrapped line over the 56 px floor', () => {
+    const two = infoOf('wrapsixtychars');
+    expect(two.text).toHaveLength(60);
+    expect(two.box).toEqual({ x: 640, y: 499, w: BAG_INFO_W, h: 61 });
+    const three = infoOf('wraponehundredtwenty');
+    expect(three.text).toHaveLength(120);
+    expect(three.box).toEqual({ x: 640, y: 486, w: BAG_INFO_W, h: 74 });
+  });
+
+  it('wraps a real two-line catalogue row', () => {
+    const info = infoOf('sitrusberry');
+    expect(info.text).toBe(itemText('sitrusberry'));
+    expect(info.text).toHaveLength(60);
+    expect(info.box.h).toBe(61);
+  });
+
+  it('draws the title only for a stack with no text', () => {
+    const none = infoOf(null);
+    expect(none.text).toBe('');
+    expect(none.box.h).toBe(56);
+    const unknown = infoOf('nonsense');
+    expect(unknown.text).toBe('');
+    expect(unknown.box).toEqual({ x: 640, y: 504, w: BAG_INFO_W, h: 56 });
   });
 });
 

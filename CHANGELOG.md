@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The bag's description card prints the item's text, in the player's language.**
+      `[Task-209]`, the fourth of Batch 87: the floating card under the stack list passed
+      `''` as its body, so the bag described nothing. `src/i18n/content.ts` gains `itemText(id)`,
+      which resolves the player's locale from the new **hand-authored**
+      `src/data/i18n/es/items.json` (item id → Spanish body) and falls back to the catalogue's
+      English `shortDesc` — `''` for an id the catalogue does not know — and the card's height
+      grows by the wrapped lines it prints at `BAG_INFO_LINE`. A test guarantees a Spanish line
+      for every `ball`, `heal` and `status` row of `src/data/items.ts`, the stacks a run hands
+      the player, while held-item and valuable prose stay English until a generated table
+      exists; item **names** stay English, as `D43`'s boundary says, and `docs/tech-decisions.md`
+      records the amendment. `docs/data-spec.md`, `src/data/README.md` and `src/i18n/README.md`
+      map the new table. Gates: `npm test` 4853 passed at task QA, `npm run build` green.
+      Measured live over CDP at 1280×800 and 390×844: the card's body carries the English
+      `shortDesc` under `en` and the Spanish line under `es`, with the card 13 px taller per
+      extra wrapped line.
+
 - [x] **The battle's command menu is the HUD's.** `[Task-206]`, the third of Batch 87: the
       FIGHT / BAG / POKÉMON / RUN window was the last battle panel still drawn by Phaser while
       every sibling was DOM. `src/ui/hud/panels/battle-command/**` is that card — one button per
