@@ -8508,6 +8508,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
   | **90** | `200` | the DOM HUD as the default. It claims **every scene**, so it follows every task that touches one and no filler can ride it. |
   | **91** | `208` | the panels' chip, drag and saved slot, which build on 200's shell, 203's kit and 207's strip — the one task that can only come after all three. |
   | **92** | `215` · `216` · `217` · `218` | the desk row's label · a phone move's name · a fainted member's tallies · the run-over README's rule 6. Four disjoint sets: `main-menu/**` (§9), `battle-moves/**` (§5), `engine/run/history.ts`, the run-over README. 215 waits on 211 and 216 on 214, the last holders of their paths; 217 and 218 are free today. |
+  | **93** | `219` | the main menu's walkers: the pair sheet's walk strip and a continuous step on the route's own cadence. It holds `main-menu/**` alone (215's folder, released in 92) plus `docs/design-spec.md` §2 and `D55`, and no scene — the animation is the DOM panel's own clock, so the route queue does not grow. |
 
   **The serial chains, named so a later cycle does not "fix" them.** `src/scenes/MainMenuScene.ts`:
   `198 → 199 → 201 → 211`, with `200` after them. `src/scenes/BattleScene.ts`: `196 → 206`, then `200`.
@@ -9422,6 +9423,54 @@ without moving either batch.
       is not drawn, sorting is out of scope — and drop the false reason. One line, no code, no
       test. **Docs:** that README, rule 6. Claims `src/ui/hud/panels/run-over/README.md`.
       *Dependencies:* none. *(Batch 92)*
+
+- [ ] **[Task-219] The main menu's walkers walk: the route's own step and the pair's walk strip.** Seen by
+      the human on `2026-10-28`: «en el menu principal el panle de la ruta los pokes deberian salir animados
+      como en el propio juego no teletransporte» — a walker stands for 600 ms and then is on the next tile.
+      The panel's only clock is the tile tick: `setInterval(…, ROUTE_PREVIEW_STEP_MS)` (`mainMenuPanel.tsx`
+      172-175, the constant at `routeWindow.ts` 8, pinned to 600 by `routeWindow.test.ts` 61), and a tick
+      recomputes the model tiles and paints them. The walker's box is the **model tile's** box, never an
+      interpolation: `walkerStyle` (121-132) → `boxPaint` (104-106) over `previewWalkerBox`
+      (`routeWindow.ts` 53-59), and `.main-menu__walker` carries **no `transition`** at all (`main-menu.css`
+      98-109: `position: absolute`, a 24 px box and a 4 % white backing). The sprite is the 64 px **party
+      portrait's** crop (`walkerStyle` 127, `portraitCrop`), not the overworld pair, so there is no walk
+      cycle either, and the walker's `facing` — modelled in `preview.ts` 31-45 and set on every step
+      (255-259) — is read by nothing in the folder (no `facing` match under
+      `src/ui/hud/panels/main-menu/**`). Net: a still portrait that jumps one cell.
+      **Fix shape:** "animated like the game" is the **route scene's own cadence, reused**, not a second
+      one. One tile's move takes the route's `WALK_STEP_MS` (**200 ms**, `RouteScene.ts` 399) linearly — the
+      follower's own tween (2520-2525) — and the rest of the 600 ms tick is a stand, so the model keeps its
+      floor of four idles between steps instead of sprinting. The sprite becomes the committed pair
+      (`pokemonOverworldSheet`, `src/data/pokemonOverworld.ts` 115-137), drawn `24 / 32` inside the same
+      24 px box (`TILE_SIZE / sheet.size`, `RouteScene.ts` 2478) with its `side` row flipped for `E`/`W`
+      (`RouteScene.ts` 2480; the facing row is `pokemonFollower.ts` 32-39), playing the `walk` strip while
+      it moves and the `idle` strip while it stands (`followerAnims`, 81-97) at the route's own
+      `FOLLOWER_FRAME_RATE` (**5 fps**, 20); a species whose pair is absent — the pair PNGs are
+      gitignored (`.gitignore` 37), so a clone without the asset store has none — falls back to today's
+      portrait crop. The **model does not
+      move**: the step counter still advances once per 600 ms, so `stepPreviewWalkers`' per-walker stream
+      (`preview.ts` 242) and every fold regression in `preview.test.ts` replay exactly as today; the paint
+      clock reads elapsed time only and never draws a number (D11). The 200 ms is declared **once**, beside
+      the tick, and written into the box's inline `transition-duration` rather than repeated in CSS; a
+      walker's first paint and a room change set their box with no transition, so a mount never slides in
+      from the window's corner.
+      **Docs:** `docs/design-spec.md` §2's live-route sentence (33-36 — the two or three Pokémon *walk* the
+      window, they do not blink between cells) and `docs/tech-decisions.md` `D55` (1289-1305: a tick is
+      600 ms, its step spends the route's own 200 ms, the strip runs at the route's 5 fps, the fallback is
+      the portrait cell, and no other screen adopts the cadence).
+      **Tests:** `[unit]` the walk constant is 200 while the tick stays 600; `[unit]` the walker's paint
+      names the pair's `walk` frame for the facing it stepped in, flips the side row for `E` and `W`, and
+      returns the portrait crop for a species with no pair; `[unit]` `preview.test.ts`'s fixed-seed fold
+      still replays the same walk, so a tile is a function of the tick count alone; `[live]` at 1280×800 and
+      390×844 with `?hud=dom`, sampling one walker's `getBoundingClientRect().left` every 50 ms across a
+      tick shows no two consecutive samples 24 px or more apart (it crosses the cell) and its background
+      frame changes while it moves.
+      Claims `src/ui/hud/panels/main-menu/mainMenuPanel.tsx`,
+      `src/ui/hud/panels/main-menu/routeWindow.ts`, `.../routeWindow.test.ts`, `.../main-menu.css`,
+      `.../README.md` (rule 6, the two clocks), `docs/design-spec.md` §2 and `docs/tech-decisions.md`
+      `D55`. *Dependencies:* `[Task-198]` (the panel and its model, merged) — and the folder is
+      `[Task-201]`'s in Batch 88, `[Task-211]`'s in 89 and `[Task-215]`'s in 92, so this task cannot run in
+      the wave in flight; Batch 93 already follows all three. *(Batch 93)*
 
 ---
 
