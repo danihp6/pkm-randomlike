@@ -97,6 +97,19 @@ route window in `M 01b` is 358×240 at x=16, and the battle panels keep the desk
 **Chips.** A 26×26 badge at the panel's left edge, `#10161F` at 90 %, white 22 % border, radius 6,
 **the initial only** at 11 px Bold (`M`, `I`, `P`, `C`, `S`), cyan border when active.
 
+**The detail card's three-tab row.** The member detail card carries three tabs, `STATS · EVOLUTION ·
+MOVES`, on one row: three boxes **26 px** tall at `y = 72` in the card's own coordinates, with a
+**4 px** gap between two of them and the card's own lateral padding at both ends — **20 px** on the
+460 px desktop card, **12 px** on the 374 px phone one. The first two boxes take
+`floor((inner − 2 × 4) / 3)`, the third takes the remainder, so the row ends exactly on the card's
+inner right edge: at **1280×800** the three are `{128, 144, 137, 26}`, `{269, 144, 137, 26}` and
+`{410, 144, 138, 26}` in page coordinates, and at **390×844** `{20, 144, 114, 26}`,
+`{138, 144, 114, 26}`, `{256, 144, 114, 26}`. Each box is a row-filled button with the 1 px row
+border, the active one on the accent `#7DD3FC` at a 16 % tint with the accent as its border, and its
+label is the chip type size in uppercase. The boxes come from the view model
+(`detailPanelView(...).tabs`), never from a grid template, so a fourth tab is one array entry in
+`DETAIL_TABS` and one label key.
+
 **The main menu's glow.** `01` / `01b` draw the backdrop as a soft radial glow, never a flat oval:
 the ellipse is **1000 × 720 at (−180, −140)** — stage coordinates, so it runs off the page's left and
 top edges — painted by one `radial-gradient(closest-side, …)` whose stops are the accent `#7DD3FC`

@@ -1,4 +1,5 @@
 import type { CSSProperties, JSX } from 'preact';
+import { nextDetailTab } from '../../../partyDetail';
 import { MoveCategoryIcon, MoveTypeBadge, TypeBadge } from '../../kit';
 import type { DetailIntent } from './mount';
 import {
@@ -294,10 +295,10 @@ function Evolution(
 }
 
 /**
- * The member detail card: the header over the STATS / MOVES tabs, the six stats, the
- * evolution graph, the 2x2 move grid, the search field with its learnset pool and the
- * rename field. It paints a `DetailPanelView` and answers in `DetailIntent`s; the
- * scene module owns the run, the panel record and every write.
+ * The member detail card: the header over the STATS / EVOLUTION / MOVES tabs, the six
+ * stats, the evolution graph on its own tab, the 2x2 move grid, the search field with
+ * its learnset pool and the rename field. It paints a `DetailPanelView` and answers in
+ * `DetailIntent`s; the scene module owns the run, the panel record and every write.
  */
 export function DetailPanel(props: DetailPanelProps): JSX.Element {
   const { view } = props;
@@ -306,6 +307,7 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
   const innerW = view.box.w - padX * 2;
   const active = view.tabs.find((tab) => tab.active)?.tab ?? 'stats';
   const stats = active === 'stats';
+  const evolution = active === 'evolution';
   const moves = active === 'moves';
 
   return (
@@ -315,6 +317,17 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
       data-open={view.open ? 'true' : 'false'}
       hidden={!view.open}
       style={cardStyle(view)}
+      onKeyDown={(event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        const target = event.target;
+        if (target instanceof Element && target.tagName === 'INPUT') return;
+        event.preventDefault();
+        event.stopPropagation();
+        send({
+          type: 'tab',
+          tab: nextDetailTab(active, event.key === 'ArrowRight' ? 1 : -1),
+        });
+      }}
     >
       <div class="detail__body">
         <span class="detail__highlight" data-hud-detail="highlight" style={box(view.highlight)} />
@@ -447,7 +460,7 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
           </div>
         ) : null}
 
-        {view.evolution === null ? null : (
+        {view.evolution === null || !evolution ? null : (
           <Evolution evolution={view.evolution} hint={view.hints.evolve} send={send} />
         )}
 

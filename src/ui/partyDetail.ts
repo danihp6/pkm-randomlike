@@ -31,12 +31,13 @@ import { FRLG_NEGATIVE, FRLG_POSITIVE } from './frlg';
 
 /**
  * The party detail panel (Phase 6): a click on a party or PC-box member opens a
- * window with two tabs — STATS and MOVES — and the moves can be dragged to
- * reorder them. The view model and the tab/grab state are pure so the route
- * scene only draws what these return (like `partyScreen`).
+ * window with three tabs — STATS, EVOLUTION and MOVES — and the moves can be
+ * dragged to reorder them. The view model and the tab/grab state are pure so the
+ * route scene only draws what these return (like `partyScreen`).
  */
 
-export type DetailTab = 'stats' | 'moves';
+/** The panel's three tabs, in board order. */
+export type DetailTab = 'stats' | 'evolution' | 'moves';
 
 /** One move row: what the MOVES tab lists, with its type for colour-coding. */
 export type MoveDetail = Readonly<{
@@ -107,7 +108,7 @@ export type MemberDetail = Readonly<{
   moves: readonly MoveDetail[];
   /** Where the member was caught ("Deep Forest · Map 1 · Route 2"), or null. */
   caughtLabel: string | null;
-  /** The member's evolution family as a graph, for the STATS tab. */
+  /** The member's evolution family as a graph, for the EVOLUTION tab. */
   evolutions: readonly FamilyNode[];
 }>;
 
@@ -274,7 +275,7 @@ export function setDetailTab(state: DetailState, tab: DetailTab): DetailState {
   return state.tab === tab && state.grab === null ? state : { ...state, tab, grab: null };
 }
 
-export const DETAIL_TABS: readonly DetailTab[] = ['stats', 'moves'];
+export const DETAIL_TABS: readonly DetailTab[] = ['stats', 'evolution', 'moves'];
 
 /** The tab `delta` steps away from `tab`, wrapping. */
 export function nextDetailTab(tab: DetailTab, delta: number): DetailTab {
@@ -290,8 +291,9 @@ export type DetailStop = Readonly<{ kind: DetailStopKind; index: number }>;
 
 /**
  * The ordered stops of a tab:
- *  - `stats`: one `name`, one `ability`, then one `evolution` per ready branch
- *    (`counts.evolutions`).
+ *  - `stats`: one `name` and one `ability`.
+ *  - `evolution`: one `evolution` stop per ready branch (`counts.evolutions`), so a
+ *    member with no family has no stops.
  *  - `moves`: one `search`, then `counts.slots` `slot` stops, then `counts.pool` `pool` stops.
  */
 export function detailStops(
@@ -301,6 +303,9 @@ export function detailStops(
   const stops: DetailStop[] = [];
   if (tab === 'stats') {
     stops.push({ kind: 'name', index: 0 }, { kind: 'ability', index: 0 });
+    return stops;
+  }
+  if (tab === 'evolution') {
     for (let i = 0; i < Math.max(0, Math.trunc(counts.evolutions)); i++) {
       stops.push({ kind: 'evolution', index: i });
     }

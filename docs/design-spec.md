@@ -103,16 +103,19 @@ carries over.
   everywhere else both directions are refused and the boxed members read as
   locked. A plain **click**
   on a member
-  opens a **detail panel** (its own window) with **STATS** — HP, the five battle
+  opens a **detail panel** (its own window) with three tabs, in this order:
+  **STATS · EVOLUTION · MOVES**. **STATS** carries the HP, the five battle
   stats (the one a nature raises painted green, the one it lowers red), nature,
-  ability, held item and the member's **evolution graph**: its whole family from
+  ability and held item. **EVOLUTION** carries the member's **evolution graph**:
+  its whole family from
   the base form on down, one row per species indented by stage, each showing its
-  sprite and the level it evolves at. The band draws **ten** rows at a time — the
+  sprite and the level it evolves at; a member with no family draws no graph. The
+  tab draws **ten** rows at a time — the
   tallest family is exactly ten, an Eevee's (its eight evolutions, the Eevee row
   itself and its Gigantamax row) — and its window ends on the card's own inner
   bottom edge; a family longer than that scrolls a row at a time through a `<` / `>`
-  pair on the band's title row, drawn only when there is more than the window holds,
-  and the band's pool keeps **eleven** rows so a future forme has a cell without
+  pair on the graph's title row, drawn only when there is more than the window holds,
+  and the graph's pool keeps **eleven** rows so a future forme has a cell without
   another layout pass. Besides the species rows the graph lists one
   **information row** per battle-only forme of every species of the family that has
   one, hanging off that species' own row: a Mega — dimmed and **never clickable**,
@@ -126,13 +129,18 @@ carries over.
   evolution row keyed by the species that promotes (`D38`) — or, for Greninja's Ash
   forme, as a **second Mega information row** beside `Mega Greninja`, so "one
   information row per battle-only forme" still holds.
-  The **ABILITY** row carries the same **ⓘ**
+  The **ABILITY** row, on STATS, carries the same **ⓘ**
   control a move cell does, floating that ability's own one-line description over
   the panel on hover or a click. A branch the member's level already allows
   is green and a click evolves the member into it — Eevee's eight forms sit
-  side by side and the player picks the one they want — and **MOVES**, which
-  always draws its **four slots** — an empty one is an empty container, with no
-  name and no **ⓘ**, that only takes a dragged move. The tab belongs to the panel,
+  side by side and the player picks the one they want — and **MOVES** always draws
+  its **four slots** — an empty one is an empty container, with no
+  name and no **ⓘ**, that only takes a dragged move. The three tabs are boxes of one
+  row, the first two a third of the card's inner width each and the third the
+  remainder, so the row ends on the card's inner right edge; a click on a box
+  switches tab, and so do `ArrowLeft` / `ArrowRight` while the card holds the
+  keyboard (the nickname field keeps its own arrows while it has the caret). The tab
+  belongs to the panel,
   so picking another member keeps it; a closed panel opens on STATS. The slotted
   moves can be dragged to reorder them (that order is what the battle menu lists)
   over a **learnset** band: a search field and a full-width grid the wheel, the

@@ -1,15 +1,22 @@
 import type { StatId } from '../../../../data/dex';
-import { t } from '../../../../i18n';
+import { t, type TranslationKey } from '../../../../i18n';
 import { moveGridCellRects, type MoveGridEmptyCell, type MoveGridSlot } from '../../../moveGrid';
-import { natureEffect, statLabel, type MemberDetail } from '../../../partyDetail';
+import {
+  DETAIL_TABS,
+  natureEffect,
+  statLabel,
+  type DetailTab,
+  type MemberDetail,
+} from '../../../partyDetail';
 import { MOVE_ICON_BOX } from '../../kit/moveIcons';
 import { evolutionView } from './evolution';
 
 /**
  * The member detail panel's layout model (`D49`): the shipped Phaser window — name,
- * level and types over the STATS / MOVES tabs, the six stats with their nature tint,
- * the evolution graph, the 2x2 move grid, the learnset search field and pool, and
- * the rename field — rebuilt from `MemberDetail` and the panel's own cursor state.
+ * level and types over the STATS / EVOLUTION / MOVES tabs, the six stats with their
+ * nature tint, the evolution graph on its own tab, the 2x2 move grid, the learnset
+ * search field and pool, and the rename field — rebuilt from `MemberDetail` and the
+ * panel's own cursor state.
  * Every constant below is named after the Phaser constant it mirrors, so a drift
  * between the canvas and the DOM is a failing test rather than a diff nobody reads.
  *
@@ -33,7 +40,7 @@ export type DetailPoolRow = Readonly<{
 
 /** The panel's own cursor state. The scene module owns it; the panel paints it. */
 export type DetailPanelUi = Readonly<{
-  tab: 'stats' | 'moves';
+  tab: DetailTab;
   /** The move slot under the cursor (0…3), or -1. */
   cursor: number;
   /** The learnset pool's scroll offset in rows (0…). */
@@ -134,7 +141,7 @@ export type DetailPanelView = Readonly<{
   level: string;
   statusLabel: string | null;
   types: readonly Readonly<{ type: string; box: Rect }>[];
-  tabs: readonly Readonly<{ tab: 'stats' | 'moves'; label: string; active: boolean; box: Rect }>[];
+  tabs: readonly Readonly<{ tab: DetailTab; label: string; active: boolean; box: Rect }>[];
   stats: readonly DetailStatView[];
   nature: string;
   ability: string;
@@ -144,7 +151,7 @@ export type DetailPanelView = Readonly<{
   abilityInfo: Readonly<{ pinned: boolean; box: Rect }> | null;
   held: string;
   caught: string;
-  /** Null off the STATS tab or with no family. */
+  /** Null off the EVOLUTION tab or with no family. */
   evolution: DetailEvolutionView | null;
   moves: readonly DetailMoveSlotView[];
   /** `t('detail.noMoves')` while the MOVES tab is empty. */
@@ -223,9 +230,16 @@ export const DETAIL_INFO_TOP = DETAIL_CONTENT_TOP + DETAIL_STAT_ROWS * DETAIL_ST
 export const DETAIL_SEARCH_TOP = DETAIL_GRID_TOP + DETAIL_MOVE_GRID_H + DETAIL_LEARN_GAP;
 /** The learnset pool, under the search field, filling the rest of the card. */
 export const DETAIL_POOL_TOP = DETAIL_SEARCH_TOP + HUD_SEARCH_H + DETAIL_LEARN_GAP;
-/** The evolution band's title row, and the SVG under it. */
-export const DETAIL_EVO_TITLE_TOP = 250; // HUD_DETAIL_EVO_TITLE_TOP
-export const DETAIL_EVO_TOP = DETAIL_EVO_TITLE_TOP + 22; // HUD_DETAIL_EVO_TOP
+/** The evolution tab's title row, and the SVG under it. */
+export const DETAIL_EVO_TITLE_TOP = DETAIL_CONTENT_TOP; // 108
+export const DETAIL_EVO_TOP = DETAIL_EVO_TITLE_TOP + 22; // 130
+
+/** The three tab labels, keyed: the row resolves them as it draws each box. */
+const DETAIL_TAB_LABELS: Readonly<Record<DetailTab, TranslationKey>> = {
+  stats: 'detail.tabStats',
+  evolution: 'detail.evolution',
+  moves: 'detail.tabMoves',
+};
 
 function clampInt(value: number, min: number, max: number): number {
   if (max < min) return min;
@@ -497,10 +511,11 @@ export function detailPanelView(
   const padX = detailPadX(viewport.width);
   const innerW = box.w - padX * 2;
   const right = box.w - padX;
-  const tab: 'stats' | 'moves' = ui.tab === 'moves' ? 'moves' : 'stats';
-  const statsTab = tab === 'stats';
+  const tab: DetailTab = ui.tab === 'moves' || ui.tab === 'evolution' ? ui.tab : 'stats';
+  const evolutionTab = tab === 'evolution';
   const movesTab = tab === 'moves';
-  const tabW = (innerW - HUD_TAB_GAP) / 2;
+  const tabBase = Math.floor((innerW - HUD_TAB_GAP * 2) / 3);
+  const tabWidths: readonly number[] = [tabBase, tabBase, innerW - HUD_TAB_GAP * 2 - tabBase * 2];
   const cursor = detail.moves.length === 0 ? -1 : clampInt(ui.cursor, 0, detail.moves.length - 1);
   const visible = movesTab ? poolWindow(pool, ui.page) : [];
   const poolCursor = visible.length === 0 ? -1 : clampInt(ui.poolCursor, 0, visible.length - 1);
@@ -528,11 +543,16 @@ export function detailPanelView(
         h: DETAIL_TYPE_H,
       },
     })),
-    tabs: (['stats', 'moves'] as const).map((id, i) => ({
+    tabs: DETAIL_TABS.map((id, i) => ({
       tab: id,
-      label: t(id === 'stats' ? 'detail.tabStats' : 'detail.tabMoves'),
+      label: t(DETAIL_TAB_LABELS[id]),
       active: id === tab,
-      box: { x: padX + i * (tabW + HUD_TAB_GAP), y: DETAIL_TABS_TOP, w: tabW, h: DETAIL_TAB_H },
+      box: {
+        x: padX + i * (tabBase + HUD_TAB_GAP),
+        y: DETAIL_TABS_TOP,
+        w: tabWidths[i],
+        h: DETAIL_TAB_H,
+      },
     })),
     stats: statViews(padX, box.w, detail),
     nature: t('detail.nature', { nature: capitalize(detail.nature) }),
@@ -555,7 +575,8 @@ export function detailPanelView(
           },
     held: t('detail.held', { held: detail.heldItemName ?? t('detail.none') }),
     caught: t('detail.caughtLabel', { caught: detail.caughtLabel ?? t('detail.starter') }),
-    evolution: statsTab && detail.evolutions.length > 0 ? evolutionSection(padX, box.w, detail) : null,
+    evolution:
+      evolutionTab && detail.evolutions.length > 0 ? evolutionSection(padX, box.w, detail) : null,
     moves: movesTab ? moveSlots(box, detail, cursor) : [],
     emptyMoves: movesTab && detail.moves.length === 0 ? t('detail.noMoves') : null,
     search: {
