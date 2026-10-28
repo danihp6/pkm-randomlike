@@ -86,8 +86,10 @@ carries over.
 - Losing every Pokémon in the party ends the run: the run writes **one** record to
   the history — its seed, the floor reached, the catches, the casualties, the
   playtime counted from the instant it began, and the per-species KOs and damage its
-  battles produced — so STATS lists it from then on. A run that reaches the end seam
-  twice records nothing more.
+  battles produced — so STATS lists it from then on. The per-species table counts
+  **every** member that earned a KO or damage, the **fallen included**: the RIP keeps
+  their counters, so a lost run's table names its dead instead of staying empty. A
+  run that reaches the end seam twice records nothing more.
 
 ## 3. The party
 

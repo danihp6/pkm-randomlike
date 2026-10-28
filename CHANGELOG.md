@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A fainted member's tallies reach the run's record.** `[Task-217]`, Batch 92's third filler in Batch 90:
+      a run whose only Pokémon dies books the damage it took and then loses the member to `releaseFainted`,
+      and `makeHistoryRecord` read `[...run.party, ...run.box]` only, so the record's `species` was `[]` — a
+      lost run's Pokémon table was always empty and a won run dropped each casualty's KOs and damage.
+      `speciesRecords` now reads the **rip** beside the party and the box, so the dead keep their counters
+      (the point of permadeath), with the aggregation, the `countOf` clamp, the zero-tally skip, the sort by
+      `speciesId`, the record's cap and every other field unchanged; the record is derived, so there is no
+      save field and no `SAVE_VERSION` step. Gates: `npm test` 5043 passed / 69 skipped and `npm run build`
+      green. Measured over CDP with a real `releaseFainted` and a real `debugEndRun`: the save's
+      `history[0].species` is `[{slakoth, kos 1, damage 13}]` with `casualties: 1`, where the old formula
+      over the same state gave zero rows.
+
 - [x] **A phone move cell paints the move's name.** `[Task-216]`, Batch 92's second filler in Batch 90:
       issue #76 measured every compact `.battle-moves__slot` at 119×94 with a `clientWidth: 0` name and no
       text at all, so a phone player chose between four unnamed moves. `[Task-214]` had already taken the

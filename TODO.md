@@ -9400,7 +9400,7 @@ without moving either batch.
       `docs/hud-fidelity.md` §5. *Dependencies:* `[Task-214]` (the same view loses its ⓘ first).
       *(Batch 92)*
 
-- [ ] **[Task-217] A fainted member's tallies reach the run's record.** Issue #77, measured on
+- [x] **[Task-217] A fainted member's tallies reach the run's record.** Issue #77, measured on
       `main` @ `b5a06cc`: a run whose only Pokémon dies books the damage it took and then loses the
       member to `rip` (`releaseFainted`), and `makeHistoryRecord` reads `[...run.party, ...run.box]`
       only (`history.ts`'s `speciesRecords`), so the record's `species` is `[]`: **a lost run's

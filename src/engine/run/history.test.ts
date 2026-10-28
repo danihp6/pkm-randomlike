@@ -11,6 +11,8 @@ import {
   type RunHistoryRecord,
 } from './history';
 import { createRunPokemon, type RunPokemon } from './progression';
+import { createRun } from './state';
+import { releaseFainted } from './perms';
 
 const ENDING = { endedAt: '2026-10-25T12:00:00.000Z', playtimeMs: 540000, won: false } as const;
 
@@ -36,7 +38,18 @@ function history(): RunHistory {
     stats: { catches: 5, casualties: 2 },
     party: [createRunPokemon({ id: 'p0', speciesId: 'charmander', level: 9 })],
     box: [createRunPokemon({ id: 'p1', speciesId: 'sentret', level: 4 })],
+    rip: [],
   };
+}
+
+/** `member` carrying its own tallies, the way a resolved battle leaves it. */
+function withTally(member: RunPokemon, kos: number, damage: number): RunPokemon {
+  return { ...member, kos, damage } as RunPokemon;
+}
+
+/** `member` at 0 HP, so `releaseFainted` sends it to the rip. */
+function fainted(member: RunPokemon, kos: number, damage: number): RunPokemon {
+  return { ...withTally(member, kos, damage), fighter: { ...member.fighter, hp: 0 } };
 }
 
 describe('emptyHistory', () => {
@@ -118,6 +131,61 @@ describe('makeHistoryRecord', () => {
       { speciesId: 'charmander', kos: 4, damage: 150 },
       { speciesId: 'sentret', kos: 0, damage: 45 },
     ]);
+  });
+
+  it('books a lost run’s only member from the rip, with its tallies, and counts it lost', () => {
+    const starter = fainted(createRunPokemon({ id: 'p0', speciesId: 'slakoth', level: 5 }), 1, 13);
+    const lost = releaseFainted(createRun({ seed: 'seed-loss', starter })).run;
+    expect(lost.party).toEqual([]);
+    expect(lost.rip).toHaveLength(1);
+    const record = makeHistoryRecord(lost, ENDING);
+    expect(record.species).toEqual([{ speciesId: 'slakoth', kos: 1, damage: 13 }]);
+    expect(record.casualties).toBe(1);
+  });
+
+  it('reads the rip beside a live member and a boxed one, ascending by species', () => {
+    const run: RunHistory = {
+      ...history(),
+      party: [withTally(createRunPokemon({ id: 'p0', speciesId: 'sentret', level: 5 }), 1, 20)],
+      box: [withTally(createRunPokemon({ id: 'p1', speciesId: 'zigzagoon', level: 5 }), 2, 40)],
+      rip: [withTally(createRunPokemon({ id: 'p2', speciesId: 'charmander', level: 5 }), 1, 30)],
+    };
+    expect(makeHistoryRecord(run, ENDING).species).toEqual([
+      { speciesId: 'charmander', kos: 1, damage: 30 },
+      { speciesId: 'sentret', kos: 1, damage: 20 },
+      { speciesId: 'zigzagoon', kos: 2, damage: 40 },
+    ]);
+  });
+
+  it('sums the same species into one row when the party and the rip both carry it', () => {
+    const run: RunHistory = {
+      ...history(),
+      party: [withTally(history().party[0], 1, 30)],
+      rip: [withTally(history().party[0], 2, 40)],
+    };
+    expect(makeHistoryRecord(run, ENDING).species).toEqual([
+      { speciesId: 'charmander', kos: 3, damage: 70 },
+    ]);
+  });
+
+  it('builds no row for a rippen member that never earned a KO or damage', () => {
+    const run: RunHistory = {
+      ...history(),
+      party: [],
+      box: [],
+      rip: [createRunPokemon({ id: 'p9', speciesId: 'slakoth', level: 5 })],
+    };
+    expect(makeHistoryRecord(run, ENDING)).toEqual({
+      seed: 'seed-a',
+      mode: 'infinite',
+      mapReached: 3,
+      catches: 5,
+      casualties: 2,
+      playtimeMs: 540000,
+      won: false,
+      endedAt: '2026-10-25T12:00:00.000Z',
+      species: [],
+    });
   });
 });
 
