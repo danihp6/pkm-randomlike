@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu's oval shows the board's gradient.** `[Task-201]`, the first of Batch 88:
+      the backdrop behind the title was a flat, hard-edged ellipse painted by `main-menu.css`,
+      where the board's `01` has a soft radial glow. The gradient is the view's now —
+      `MAIN_MENU_GLOW` (three stops: `22%` / `10%` / `0%` of `rgb(125 211 252)`) and
+      `glowBackground`, carried by `MainMenuView.glow` from both live builders and from the
+      unedited `01-main-menu.json` fixture, and passed through `forLayout` by identity so the
+      compact layout keeps the same oval — and the stylesheet keeps only `position: absolute;`
+      for the node. Gates: `npm test` 4938 passed / 69 skipped and `npm run build` green at task
+      QA, 4982 passed on the batch's combined tree. Measured live over CDP at 1280×800: the node
+      computes `radial-gradient(closest-side, rgb(125 211 252 / 22%) 0%, … / 10% 45%, … / 0%
+      100%)` in a `1000×720` box at `-180,-140`, a pixel sweep at `y=100` rises `16 → 41 → 16`
+      across it, and the old hard edge at `x=820` reads Δ0. The phone frames still draw no glow
+      (their own pre-existing `≤600px` rule), which is what the board's `m01` does.
+
 - [x] **The bag's description card prints the item's text, in the player's language.**
       `[Task-209]`, the fourth of Batch 87: the floating card under the stack list passed
       `''` as its body, so the bag described nothing. `src/i18n/content.ts` gains `itemText(id)`,

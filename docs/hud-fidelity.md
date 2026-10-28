@@ -97,6 +97,17 @@ route window in `M 01b` is 358×240 at x=16, and the battle panels keep the desk
 **Chips.** A 26×26 badge at the panel's left edge, `#10161F` at 90 %, white 22 % border, radius 6,
 **the initial only** at 11 px Bold (`M`, `I`, `P`, `C`, `S`), cyan border when active.
 
+**The main menu's glow.** `01` / `01b` draw the backdrop as a soft radial glow, never a flat oval:
+the ellipse is **1000 × 720 at (−180, −140)** — stage coordinates, so it runs off the page's left and
+top edges — painted by one `radial-gradient(closest-side, …)` whose stops are the accent `#7DD3FC`
+at **22 %** in the centre, **10 %** at 45 % of the radius and **0 %** at the rim. `closest-side`
+gives the gradient the box's own **500 × 360** radii, so it fills the ellipse the retired
+`border-radius: 50%` box drew, with the falloff the board's frame has and a rim that reaches nothing.
+Its mean is the frame's measured 10 %, which is why the centre stops at 22 %. The box and the three
+stops are the view model's data (`MAIN_MENU_GLOW` in `panels/main-menu/view.ts`, painted by
+`glowBackground`), so `main-menu.css` keeps **only** the layer's `position: absolute` and a repaint
+cannot drift from the frame; the phone frames draw no glow at all.
+
 **The pad** (unchanged, for `[Task-139]`): 156×156 at (103,741), A at (334,767) r35, B at (235,788)
 r35, 3 px white at 50 %, letters at 32 px white 60.
 

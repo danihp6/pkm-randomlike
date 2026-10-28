@@ -9085,7 +9085,7 @@ without moving either batch.
       *Dependencies:* `[Task-198]` and `[Task-199]` — they rewrite the same menu scene's DOM path, so they
       ship first and this task deletes the canvas path they left alone. *(Batch 90)*
 
-- [ ] **[Task-201] The main menu's oval shows the board's gradient.** Seen with `?hud=dom` at 1280×800 on
+- [x] **[Task-201] The main menu's oval shows the board's gradient.** Seen with `?hud=dom` at 1280×800 on
       `2026-10-27`: the backdrop behind the title is a **flat, hard-edged ellipse** where the board's `01`
       has a soft radial glow. No `glow`/`oval`/`circle` exists in
       `src/ui/hud/panels/main-menu/view.ts`, and the oval is the DOM's own layer

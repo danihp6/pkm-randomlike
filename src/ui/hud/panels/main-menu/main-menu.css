@@ -64,15 +64,9 @@
   transform: translate(-50%, -50%);
 }
 
-/* 01 · glow: ellipse 1000 × 720 at (−180, −140), accent 10 % */
+/* 01 · glow: the oval's box and its gradient stops are `MAIN_MENU_GLOW`, in the view */
 .main-menu__glow {
   position: absolute;
-  top: -140px;
-  left: -180px;
-  width: 1000px;
-  height: 720px;
-  border-radius: 50%;
-  background: rgb(125 211 252 / 10%);
 }
 
 /* 01 · route window; its interior is the world's (D50), this panel owns the chrome */
