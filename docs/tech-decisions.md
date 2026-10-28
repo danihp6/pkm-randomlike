@@ -1304,6 +1304,52 @@ frame and the live panel render the same model (the view carries `previewSeed`, 
 paints `previewRoomFor`), so the two renderings cannot drift — and **no other screen may
 adopt a random seed by citing this decision**.
 
+## D56 - The monthly ranking is global, anonymous and discovered at deploy time *(decided)*
+
+Until this decision every STATS figure came from `save.history`, so the ranking screen
+(`09`) showed one `YOU` row per month and its blurb had to read `MONTHLY RECORD · THIS
+DEVICE.`: the store is `window.localStorage`, and no finished run ever left the browser.
+A monthly board that names nobody is impossible, and the game has no accounts, no login
+and no player name — the save is a run, not an identity.
+
+**Decided (`2026-10-28`): the ranking is a global monthly board fed by one endpoint, and
+everything else stays local.** A finished run POSTs its payload to a Lambda behind a
+function URL; the panel GETs the month's top and prints it, marking the device's own line.
+Three seams, one each:
+
+- **The endpoint is discovered, not built in.** The deploy writes `ranking.json`
+  (`{ "endpoint": "…" }`) into the same `prune: true` bucket deployment as `dist/`, and
+  the client reads that file (`src/net/ranking.ts`). A build-time variable would make
+  `npm run build` depend on a deployed stack and break a plain build on a fresh clone;
+  a file in the bucket costs one GET and keeps the build pure.
+- **The identity is a rotating anonymous id.** `rankingDeviceId` mints `d-` + twelve hex
+  under `RANKING_DEVICE_KEY` in `localStorage`, **outside** the save document, so this
+  adds no `SAVE_VERSION` step and no run field — `src/engine/save.ts` is untouched. It
+  survives a new run and is the only thing tying two runs together. Another player's row
+  is labelled `#` + the last four characters of its id, because there is no name to print;
+  `D5`'s "nothing carries over" is about the run's party and stays true.
+- **The payload is client-authored, and both sides clamp it.** `buildRankingEntry` sends
+  seven keys (`seed`, `mode`, `mapReached`, `won`, `playtimeMs`, `species` — the first six
+  ids — and `deviceId`); the handler re-validates the seed, the mode, the id pattern and
+  the species list, and re-applies the same two clamps (`99` floors, `86 400 000` ms of
+  playtime). Those numbers exist in exactly two places, `RANKING_MAX_*` in the client and
+  `MAX_*` in `infra/lambda/ranking.mjs`, and must move together. Beyond that the board is a
+  ledger of claims: anti-cheat is out of scope, and `infra/README.md` says so.
+
+The monthly ledger is one DynamoDB table (`month` partition key, `strike` sort key
+`NNN#<endedAt>#<deviceId>`, per-request billing, a 400-day `expiresAt` TTL), so a future
+per-run or per-species board is a second sort key, never a second table.
+
+**The failure path is invisible by construction.** `src/net/**` never throws into a scene:
+a missing `ranking.json`, an offline browser or an unreadable answer read as `null`/`false`,
+the submit is fired `void` from the shipped `endRun` seam so a finished run never waits on
+the network, and the ranking view falls back to the device's own record under
+`stats.blurbRanking` — so the panel still draws, the offline copy still reads
+`MONTHLY RECORD · THIS DEVICE.`, and no run can be lost to a request.
+
+The next screen — the menu's two separate STATS and RANKING rows — must reuse
+`statsMode = 'ranking'` plus `MainMenuScene.loadGlobalRanking()`, not add a second fetch.
+
 ## Open questions
 
 - **O1 — Overworld art.** Battle trainer sprites (`D20`), trainer overworld

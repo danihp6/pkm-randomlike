@@ -55,6 +55,7 @@ export const en = {
   'stats.blurbRuns': 'EVERY RUN, NEWEST FIRST.',
   'stats.blurbPokemon': 'EVERY POKÉMON YOU HAVE RAISED.',
   'stats.blurbRanking': 'MONTHLY RECORD · THIS DEVICE.',
+  'stats.blurbRankingGlobal': 'MONTHLY RANKING · EVERYONE.',
   'stats.blurbRankingPokemon': 'POKÉMON RANKING · EVERY RUN.',
   'stats.tabTotals': 'TOTALS',
   'stats.tabRuns': 'RUNS',

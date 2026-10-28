@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The ranking is global: a DynamoDB table and the one endpoint that feeds it.** `[Task-210]`,
+      the third of Batch 88, and the first thing in this game that leaves the browser. `infra/` gains
+      `PokeRandomLikeRanking` (month + strike, on-demand billing, TTL on `expiresAt`), one Lambda with
+      a function URL behind `src/net/ranking.ts`, and a `/ranking.json` document the site publishes at
+      deploy time so a plain `npm run build` needs no build-time variable. A finished run submits once
+      from the shipped `endRun` seam — `seed`, mode, `mapReached`, `won`, playtime and up to six
+      species, never the save — and the server clamps every number, rate-limits per source and refuses
+      a malformed body. The stats screen's RANKING mode reads the month's board with the player's own
+      line marked (`YOU` / `TÚ`, other rows `#` + four hex of a rotating device id), says
+      `MONTHLY RANKING · EVERYONE.` while it is global and falls back to `MONTHLY RECORD · THIS DEVICE.`
+      with the local table when the network is gone. `D56` records what a finished run sends and what
+      the server may refuse. Gates: `npm test` 4961 passed / 69 skipped, `npm run build`, `infra` `tsc`
+      and `synth` all green at task QA, 4982 passed on the batch's combined tree. Measured live after
+      one real `cdk deploy` (stack `PokeRandomLikeSite`, endpoint
+      `https://rw5xkdcp7otp35xfw4is5bqe7u0yvejw.lambda-url.eu-west-1.on.aws/`): `POST` of a run answers
+      `{"ok":true}`, `GET ?month=` returns the month's board ordered floor → wins → runs, a bad
+      `deviceId` answers `400`, a month out of range falls back to the current one, a second browser
+      context reads the same board, and with the network blocked the panel silently shows the local
+      table with no error thrown into the scene.
+
 - [x] **The route header's EXP stops being a string, and the vial's step is the model's.** `[Task-207]`,
       the second of Batch 88: the party card's EXP bar painted `480/1728` beside itself while every
       sibling readout was geometry, and its Pokevial step lived in the component. `PartyPanelView.xp`

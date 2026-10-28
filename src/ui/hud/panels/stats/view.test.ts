@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { t } from '../../../../i18n';
+import type { RankingBoard } from '../../../../net/ranking';
 import {
   STATS_EM_DASH,
   STATS_FIGURE_IDS,
@@ -18,6 +19,16 @@ import {
 } from './view';
 
 const NOW = new Date('2026-10-25T12:00:00.000Z');
+
+/** The month's global board, the device's line second: the view's fifth argument. */
+const BOARD: RankingBoard = {
+  month: '2026-10',
+  ownDeviceId: 'd-00000000beef',
+  rows: [
+    { deviceId: 'qa-device-0001', runs: 9, wins: 3, bestFloor: 12 },
+    { deviceId: 'd-00000000beef', runs: 2, wins: 1, bestFloor: 4 },
+  ],
+};
 
 /** A finished run; the store's records are the model's only input. */
 function record(edit: Partial<RunHistoryRecord> & Pick<RunHistoryRecord, 'seed'>): RunHistoryRecord {
@@ -363,6 +374,78 @@ describe('liveStatsView — ranking', () => {
     expect(empty.month).toEqual({ label: 'OCT 2026', canPrev: false, canNext: false });
     expect(empty.empty).toBe(t('stats.emptyMonth'));
     expect(empty.rows).toEqual([{ id: 'you', cells: [t('stats.you'), '0', '0', '0'] }]);
+  });
+});
+
+describe('liveStatsView — the global board', () => {
+  it('is the shipped local view when the fifth argument is omitted or null', () => {
+    for (const mode of STATS_MODES) {
+      const four = liveStatsView(history(), mode, '2026-10', NOW);
+      const five = liveStatsView(history(), mode, '2026-10', NOW, null);
+
+      expect(five).toEqual(four);
+    }
+  });
+
+  it('reads the board’s order and marks the own line', () => {
+    const view = liveStatsView(history(), 'ranking', '2026-10', NOW, BOARD);
+
+    expect(view.rows).toEqual([
+      { id: 'global-0', cells: ['#0001', '9', '3', '12'] },
+      { id: 'global-1', cells: [t('stats.you'), '2', '1', '4'] },
+    ]);
+    expect(view.blurb).toBe(t('stats.blurbRankingGlobal'));
+    expect(view.columns).toEqual([
+      t('stats.colPlayer'),
+      t('stats.colRuns'),
+      t('stats.colWins'),
+      t('stats.colBestFloor'),
+    ]);
+    expect(view.empty).toBeNull();
+  });
+
+  it('appends the device’s own line last when the board does not hold it', () => {
+    const board: RankingBoard = { ...BOARD, rows: [BOARD.rows[0]!] };
+
+    const view = liveStatsView(history(), 'ranking', '2026-10', NOW, board);
+
+    expect(view.rows.map((row) => row.id)).toEqual(['global-0', 'you']);
+    expect(view.rows[1]!.cells).toEqual([t('stats.you'), '2', '1', '4']);
+  });
+
+  it('keeps the shipped month selector and its arrows', () => {
+    const view = liveStatsView(history(), 'ranking', '2026-09', NOW, BOARD);
+
+    expect(view.month).toEqual({ label: 'SEP 2026', canPrev: false, canNext: true });
+  });
+
+  it('draws its empty line only when neither the board nor the month has a run', () => {
+    const emptyBoard: RankingBoard = { month: '2026-10', ownDeviceId: '', rows: [] };
+
+    const empty = liveStatsView([], 'ranking', null, NOW, emptyBoard);
+    const localRuns = liveStatsView(history(), 'ranking', '2026-10', NOW, {
+      ...emptyBoard,
+      ownDeviceId: BOARD.ownDeviceId,
+    });
+
+    expect(empty.empty).toBe(t('stats.emptyMonth'));
+    expect(empty.rows).toEqual([{ id: 'you', cells: [t('stats.you'), '0', '0', '0'] }]);
+    expect(localRuns.empty).toBeNull();
+    expect(localRuns.rows).toEqual([{ id: 'you', cells: [t('stats.you'), '2', '1', '4'] }]);
+  });
+
+  it('reads the board only in the ranking mode', () => {
+    for (const mode of ['totals', 'runs', 'pokemon', 'ranking-pokemon'] as const) {
+      expect(liveStatsView(history(), mode, '2026-10', NOW, BOARD)).toEqual(
+        liveStatsView(history(), mode, '2026-10', NOW),
+      );
+    }
+  });
+
+  it('is still pure: two board reads are deep-equal', () => {
+    expect(liveStatsView(history(), 'ranking', '2026-10', NOW, BOARD)).toEqual(
+      liveStatsView(history(), 'ranking', '2026-10', NOW, BOARD),
+    );
   });
 });
 

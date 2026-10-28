@@ -8,6 +8,7 @@ import { randomSeed } from '../engine/rng';
 import { loadSave, type Settings } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
 import { t, type TranslationKey } from '../i18n';
+import { fetchRanking, loadRankingEndpoint, rankingDeviceId, type RankingBoard } from '../net/ranking';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import {
@@ -130,6 +131,10 @@ export class MainMenuScene extends Phaser.Scene {
   private statsOpen = false;
   private statsMode: StatsMode = 'totals';
   private statsMonth: string | null = null;
+  /** The month's global board the ranking view draws; null is the device's own record. */
+  private globalRanking: RankingBoard | null = null;
+  /** The endpoint `ranking.json` named, resolved once; `undefined` = not asked yet. */
+  private rankingEndpoint: string | null | undefined;
 
   constructor() {
     super('MainMenu');
@@ -300,6 +305,34 @@ export class MainMenuScene extends Phaser.Scene {
     this.statsMonth = statsMonths(this.history, new Date())[0]?.key ?? null;
     this.stats = mountStats(host, this.statsView(), (intent) => this.handleStatsIntent(intent));
     this.statsOpen = true;
+    this.loadGlobalRanking();
+  }
+
+  /**
+   * Fetches the selected month's global board, once per opening (`D56`): the endpoint
+   * from `ranking.json` is resolved once and cached, and a missing file, an offline
+   * browser or an unreadable answer all leave the panel on the device's own record.
+   */
+  private loadGlobalRanking(): void {
+    void (async (): Promise<void> => {
+      if (this.rankingEndpoint === undefined) {
+        this.rankingEndpoint = await loadRankingEndpoint();
+      }
+      const endpoint = this.rankingEndpoint;
+      if (endpoint === null || endpoint === undefined) {
+        this.globalRanking = null;
+        return;
+      }
+      const month = this.statsMonth;
+      const board = month === null ? null : await fetchRanking(month, endpoint);
+      // A month step while this was in flight owns the state: its own fetch answers.
+      if (this.statsMonth !== month) return;
+      this.globalRanking =
+        board === null || month === null
+          ? null
+          : { ...board, month, ownDeviceId: rankingDeviceId(browserStorage()) };
+      if (this.statsOpen) this.stats?.update(this.statsView());
+    })();
   }
 
   /** Drops the stats panel and puts the menu back where it was. */
@@ -312,7 +345,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   /** The live panel's view for the mode and month this scene holds. */
   private statsView(): StatsView {
-    return liveStatsView(this.history, this.statsMode, this.statsMonth, new Date());
+    return liveStatsView(this.history, this.statsMode, this.statsMonth, new Date(), this.globalRanking);
   }
 
   /** A tab, an action or a month step: the scene owns the mode and the month. */
@@ -341,10 +374,13 @@ export class MainMenuScene extends Phaser.Scene {
         const from = at < 0 ? 0 : at;
         const next = Math.min(Math.max(0, from + intent.delta), months.length - 1);
         this.statsMonth = months[next]?.key ?? null;
+        // The new month has no board yet: the local record paints first, then the fetch.
+        this.globalRanking = null;
         break;
       }
     }
     this.stats?.update(this.statsView());
+    if (intent.type === 'month') this.loadGlobalRanking();
   }
 
   /** The right-hand value of a row: the map a saved run stands on and its biome. */

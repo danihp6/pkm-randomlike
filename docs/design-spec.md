@@ -21,9 +21,11 @@ carries over.
   Starting a new run only replaces the saved one once its starter is picked, so
   cancelling at the starter pick returns to the menu with the run in progress intact.
   **STATS** opens over the menu on the history of every finished run — the totals
-  across every run, the run list, the Pokémon table and the local monthly record, each
-  with its own empty state — and **BACK** returns to the menu; the DOM HUD draws the
-  row, the canvas fallback keeps its three. The records footer under the menu prints
+  across every run, the run list, the Pokémon table and the monthly **ranking**, which
+  is **global** (every player's month, `D56`) while the totals, the runs and the table
+  stay this device's own record, each with its own empty state — and **BACK** returns
+  to the menu; the DOM HUD draws the row, the canvas fallback keeps its three. The
+  records footer under the menu prints
   three **live** figures — **WINS** (every finished run won), **MAX ELITE STRIKE** (the
   deepest floor a finite run reached) and **MONTHLY MAX STRIKE** (the deepest floor a
   finite run reached in the current UTC month, that month printed under the figure) —

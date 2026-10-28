@@ -9258,7 +9258,7 @@ without moving either batch.
       `src/ui/hud/panels/bag/**` + tests, `docs/data-spec.md` and `docs/tech-decisions.md`.
       *Dependencies:* `[Task-190]` and `[Task-196]` (the i18n pair). *(Batch 87)*
 
-- [ ] **[Task-210] The ranking is global: a DynamoDB table and the one endpoint that feeds it.**
+- [x] **[Task-210] The ranking is global: a DynamoDB table and the one endpoint that feeds it.**
       Decided by the human on `2026-10-27` ("usar dynamo"). Today nothing leaves the browser: `infra/`
       deploys the static site only (an S3 bucket, a CloudFront distribution and the certificate through
       Cloudflare) and every record lives in `window.localStorage` via `src/storage.ts`, which is why the
