@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's command menu is the HUD's.** `[Task-206]`, the third of Batch 87: the
+      FIGHT / BAG / POKÉMON / RUN window was the last battle panel still drawn by Phaser while
+      every sibling was DOM. `src/ui/hud/panels/battle-command/**` is that card — one button per
+      command on the board's `05` geometry at the move menu's own rect (564×192 at
+      `440,582` on the desk, 358×236 at `16,592` on the phone), the four row skins with the
+      selected and disabled states and the reason behind each, the fifth ⓘ / back control, and
+      the keyboard and pointer intents `BattleScene` already routed — while the scene stops
+      drawing the window and answers the card through `confirmMenu` / `openInfo`. The card's
+      box never meets the HP panels. `docs/hud-fidelity.md` §5 (Battle zones) and
+      `docs/design-spec.md` §4 record it. Gates: `npm test` 4858 passed at task QA,
+      `npm run build` green. Measured live over CDP at 1280×800 and 390×844: the DOM card at
+      those two rects, the canvas window no longer drawn, FIGHT opening the moves, RUN fleeing
+      and the single-Pokémon party's switch row flagged disabled.
+
 - [x] **A move prints its type and its category as icons, never as words.** `[Task-203]`, the
       second of Batch 87: no move surface outside the canvas prints `dragon` / `PHYSICAL` any
       more. `src/ui/hud/kit/moveIcons.tsx` is the pair the panels share — `moveTypeSprite` /

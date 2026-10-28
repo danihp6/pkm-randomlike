@@ -9099,7 +9099,7 @@ this phase adds a dependency edge except the one named on `[Task-183]`, and only
       Claims `src/ui/hud/panels/detail/**` + tests, `docs/design-spec.md` and `docs/hud-fidelity.md`.
       *Dependencies:* `[Task-203]` (same folder). *(Batch 89)*
 
-- [ ] **[Task-206] The battle's command menu is the HUD's.** Seen with `?hud=dom` on `2026-10-27`: every
+- [x] **[Task-206] The battle's command menu is the HUD's.** Seen with `?hud=dom` on `2026-10-27`: every
       other battle panel is DOM, and the four-button command window (FIGHT / BAG / POKÉMON / RUN) is still
       drawn by Phaser — no `battle-command` panel exists in `src/ui/hud/panels/`, while its siblings
       (`battle-moves`, `battle-bag`, `battle-switch`, `battle-hp`, `battle-log`) all do. **Fix shape:** a

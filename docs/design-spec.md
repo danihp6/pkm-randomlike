@@ -309,7 +309,10 @@ Full rules in `docs/battle-spec.md`. In short:
   and the appearance beats.
 - The command menu takes the **mouse** as well as the keyboard: hovering a row
   moves the ▶ cursor and a click picks it, and a click advances the battle text.
-  **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, which also reserves a fifth
+  Its window is a Preact card in `#hud` under `D49`
+  (`src/ui/hud/panels/battle-command/`), mounted exactly like the moves menu's
+  `battle-moves` card, so the DOM HUD paints the window and the canvas keeps the
+  arena. **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, which also reserves a fifth
   **INFO** control at that grid's right edge — the same column the moves menu keeps
   for **MEGA** and **G-MAX** (each of those two controls draws the shipped Mega
   Evolution glyph, the Hard Stone icon every Mega Stone borrows, never a word; an
@@ -362,8 +365,9 @@ Full rules in `docs/battle-spec.md`. In short:
   drawn 25% smaller so they sit clear of the stacked panels.
 - The battle's windows are the drawn chrome: the **message box** behind the
   message text is the shipped `textbox` card (the one stage that draws it), and
-  every other window — the HP panels, the command and moves
-  menus, the battle-state window the **INFO** control opens and the switch grid's
+  every other window — the HP panels, the **command window** (the FIGHT / BAG /
+  SWITCH / RUN card), the moves menu, the battle-state window the **INFO** control
+  opens and the switch grid's
   detail window — is the default card skin, each at its own degree of translucency
   so the field stays readable
   through it, and they ink their text with the light `FRLG_INK`. The line the message

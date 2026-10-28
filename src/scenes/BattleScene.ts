@@ -129,6 +129,14 @@ import {
   type BattleBagInput,
   type BattleBagIntent,
 } from '../ui/hud/panels/battle-bag';
+import {
+  battleCommandBox,
+  mountBattleCommand,
+  type BattleCommandController,
+  type BattleCommandInput,
+  type BattleCommandIntent,
+  type BattleCommandRowId,
+} from '../ui/hud/panels/battle-command';
 import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
 import {
   battleMovesBox,
@@ -280,6 +288,15 @@ const MENU_BAG_CAP = MENU_BAG_ROWS * BAG_GRID_COLS;
 /** The FIGHT / BAG / SWITCH / RUN grid: 2 columns, one gap and one inset. */
 const MENU_GRID_COLS = 2;
 const MENU_GRID_GAP = 8;
+/**
+ * The command each row of `menuItems` is, by the mode that built the list: the lead
+ * offers four and the partner only FIGHT and SWITCH. Keyed by mode, never matched
+ * against a translated label, so a locale can never reorder the intent channel.
+ */
+const COMMAND_IDS: Readonly<Record<'menu' | 'partner', readonly BattleCommandRowId[]>> = {
+  menu: ['fight', 'bag', 'switch', 'run'],
+  partner: ['fight', 'switch'],
+};
 /** Width reserved at the left of the command grid for the ◀ back control. */
 const MOVE_BACK_COL = 64;
 /** Width reserved at the right of the moves grid for the Mega control (D34). */
@@ -608,6 +625,8 @@ export class BattleScene extends Phaser.Scene {
   private hpController: BattleHpController | null = null;
   /** The mounted DOM move menu (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private movesController: BattleMovesController | null = null;
+  /** The mounted DOM command window (`?hud=dom`) and the controller `refreshHud` pushes to. */
+  private commandController: BattleCommandController | null = null;
   /** The mounted DOM bag (`?hud=dom`) and the controller `refreshHud` pushes to. */
   private bagController: BattleBagController | null = null;
   /** The mounted DOM switch grid (`?hud=dom`) and the controller `refreshHud` pushes to. */
@@ -870,6 +889,7 @@ export class BattleScene extends Phaser.Scene {
       this.releaseMonSprites();
       this.disposeHpPanel();
       this.disposeMovesPanel();
+      this.disposeCommandPanel();
       this.disposeBagPanel();
       this.disposeSwitchPanel();
       this.disposeBattleLogPanel();
@@ -877,6 +897,7 @@ export class BattleScene extends Phaser.Scene {
     });
     this.mountHpPanel();
     this.mountMovesPanel();
+    this.mountBattleCommandPanel();
     this.mountBagPanel();
     this.mountSwitchPanel();
     this.mountBattleLogPanel();
@@ -932,6 +953,21 @@ export class BattleScene extends Phaser.Scene {
     if (this.movesController === null) return;
     this.movesController.dispose();
     this.movesController = null;
+  }
+
+  /** Mounts the DOM command window into the HUD layer, once per battle (`?hud=dom`). */
+  private mountBattleCommandPanel(): void {
+    if (!DOM_HUD || typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeCommandPanel();
+    this.commandController = mountBattleCommand(host, (intent) => this.onBattleCommandIntent(intent));
+  }
+
+  private disposeCommandPanel(): void {
+    if (this.commandController === null) return;
+    this.commandController.dispose();
+    this.commandController = null;
   }
 
   /** Mounts the DOM bag into the HUD layer, once per battle (`?hud=dom`). */
@@ -3334,6 +3370,7 @@ export class BattleScene extends Phaser.Scene {
         (next) => this.hpController?.update(next),
       );
       this.movesController?.update(this.battleMovesInput(menu));
+      this.commandController?.update(this.battleCommandInput(menu));
       this.bagController?.update(this.battleBagInput(menu));
       this.switchController?.update(this.battleSwitchInput(menu));
       this.updateBattleLog();
@@ -3745,6 +3782,13 @@ export class BattleScene extends Phaser.Scene {
    * selected cell's end.
    */
   private renderCommandMenu(menu: Rect): void {
+    if (DOM_HUD) {
+      // The DOM card draws the whole command window, so every canvas piece of it
+      // goes dark — the window, the four cells, their labels, the cursor and the
+      // INFO control. `hideMenu` is that one call.
+      this.hideMenu();
+      return;
+    }
     this.menuPanel.setVisible(true);
     this.hideBagChrome();
     this.hideMoveChrome();
@@ -4244,6 +4288,69 @@ export class BattleScene extends Phaser.Scene {
       if (row.zone.input) row.zone.input.enabled = false;
     }
     this.partyMoveInfoPopup.hide();
+  }
+
+  /**
+   * The DOM command window's state: the card `battleCommandBox` derives from the
+   * viewport the camera viewport sits in, and the commands this scene offers.
+   */
+  private battleCommandInput(menu: Rect): BattleCommandInput {
+    // `battleMovesBox` already folds the camera viewport's origin into the card, so
+    // it reads the canvas the camera is placed in, never the stage square it centres.
+    const derived = battleCommandBox({ width: this.scale.width, height: this.scale.height });
+    // Before the first layout the stage has no size; the canvas's own rect is then
+    // the only card there is, and an open window must still land somewhere.
+    const card = derived.w > 0 && derived.h > 0 ? derived : menu;
+    const ids = COMMAND_IDS[this.mode === 'partner' ? 'partner' : 'menu'];
+    return {
+      open: this.mode === 'menu' || this.mode === 'partner',
+      card: { x: card.x, y: card.y, w: card.w, h: card.h },
+      rows: this.menuItems.map((item, index) => ({
+        id: ids[index] ?? 'fight',
+        label: item.label,
+        enabled: item.enabled,
+      })),
+      selected: this.menuIndex,
+      infoSelected: this.infoSelected,
+      infoLabel: t('battle.infoControl'),
+    };
+  }
+
+  /**
+   * The DOM command window's only receiver: hover moves the cursor exactly as
+   * `onMenuHover` does, and a press lands on the `confirmMenu` the canvas row's
+   * click already takes — a dimmed row is accepted here and refused there.
+   */
+  private onBattleCommandIntent(intent: BattleCommandIntent): void {
+    if (this.mode !== 'menu' && this.mode !== 'partner') return;
+    switch (intent.type) {
+      case 'hover': {
+        const index = moveIndexIn(intent.index, this.menuItems.length);
+        if (index === null) return;
+        const changed =
+          this.megaSelected || this.gmaxSelected || this.infoSelected || index !== this.menuIndex;
+        this.megaSelected = false;
+        this.gmaxSelected = false;
+        this.infoSelected = false;
+        if (!changed) return;
+        this.menuIndex = index;
+        this.refreshHud();
+        return;
+      }
+      case 'press': {
+        const index = moveIndexIn(intent.index, this.menuItems.length);
+        if (index === null) return;
+        this.menuIndex = index;
+        this.infoSelected = false;
+        this.confirmMenu();
+        return;
+      }
+      case 'info': {
+        this.infoSelected = true;
+        this.openInfo();
+        return;
+      }
+    }
   }
 
   /**

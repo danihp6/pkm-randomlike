@@ -81,3 +81,42 @@ describe('the target step', () => {
     expect(SOURCE).toContain("this.slotFighter('enemy', this.targetSlot)?.name ?? null");
   });
 });
+
+/**
+ * The command window is scene wiring over the `battle-command` panel's pure view,
+ * so the seam is read from the source: the grid arithmetic is that panel's own
+ * `view.test.ts`, and the card is `battle-moves`' `battleMovesBox`.
+ */
+describe('the DOM command window', () => {
+  it('is pushed once, from the emit point the other cards use', () => {
+    const pushes = SOURCE.match(
+      /this\.commandController\?\.update\(this\.battleCommandInput\(menu\)\);/g,
+    );
+    expect(pushes).toHaveLength(1);
+    expect(SOURCE.match(/mountBattleCommand\(/g)).toHaveLength(1);
+  });
+
+  it('mounts and disposes with the other DOM panels', () => {
+    expect(SOURCE).toContain('    this.mountBattleCommandPanel();\n');
+    expect(SOURCE).toContain('      this.disposeCommandPanel();\n');
+    expect(SOURCE).toContain(
+      'this.commandController = mountBattleCommand(host, (intent) => this.onBattleCommandIntent(intent));',
+    );
+  });
+
+  it('turns the canvas window off under the flag as its first statement', () => {
+    expect(SOURCE).toMatch(
+      /private renderCommandMenu\(menu: Rect\): void \{\n\s*if \(DOM_HUD\) \{\n[\s\S]*?this\.hideMenu\(\);\n\s*return;\n\s*\}/,
+    );
+  });
+
+  it('still draws the canvas window when the flag is off, and still uses hideMenu', () => {
+    const start = SOURCE.indexOf('private renderCommandMenu(');
+    const end = SOURCE.indexOf('private ', start + 1);
+    const body = SOURCE.slice(start, end);
+    const branch = body.indexOf('if (DOM_HUD)');
+    expect(branch).toBeGreaterThan(-1);
+    expect(body.indexOf('this.menuPanel.setVisible(true)')).toBeGreaterThan(branch);
+    expect(body.match(/this\.hideMenu\(\);/g)).toHaveLength(1);
+  });
+});
