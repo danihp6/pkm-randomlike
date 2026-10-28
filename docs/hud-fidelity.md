@@ -122,7 +122,11 @@ the boxes the four move cells occupy — 219×72 in the desk's 2×2, 116×94 on 
 control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. The category is drawn as the
 atlas glyph in the box `[Task-203]`'s §5 blocks describe (`MOVE_ICON_BOX`), not as a right-aligned word, so a
 category cannot run under the ⓘ square. The ⓘ answers the pointer: hover floats that move's
-description, and the click still pins it.
+description, and the click still pins it. The foe's box also carries the trainer's remaining team as a **ball row**: one 16 px
+ball per **fielded** member, 4 px apart, its top edge 8 px under that box's bottom edge — 56 px wide at (64,156)
+at 1280×800 and at (16,104) on the phone — so it never meets the player's card or the battle menu card. A spent
+ball keeps its cell at 35 % opacity, so the row counts the team the trainer fielded, and a wild battle draws no
+row at all.
 
 **A cell's text is bounded by its own box.** Every label in a battle move cell is measured against the font
 the panel actually draws with — `font.json`'s advances at `--hud-type-body-size` — never a per-glyph

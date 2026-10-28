@@ -9311,7 +9311,7 @@ without moving either batch.
       `docs/hud-fidelity.md` §9. *Dependencies:* `[Task-198]`, `[Task-199]` and `[Task-201]` (same panel).
       *(Batch 89)*
 
-- [ ] **[Task-212] The trainer's remaining Pokémon show as balls under its panel.** Seen in battle with
+- [x] **[Task-212] The trainer's remaining Pokémon show as balls under its panel.** Seen in battle with
       `?hud=dom` on `2026-10-27`: the board's `05` draws three pokéball icons under the foe's HP box (a
       trainer with two left after the active), and the game draws **none** — a grep of
       `src/ui/hud/panels/battle-hp/{view.ts,battleHp.tsx}` finds no `ball` and no remaining count at all.

@@ -550,7 +550,9 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   with two exceptions the floor injects on top of the route: the **boss** fields
   a fixed six (three on map 1) at the map's `maxLevel`, and the **mini-boss** a
   fixed three (two on map 1) at band levels (`src/data/bosses.ts`,
-  `bossPartySize`; `docs/maps-spec.md` §6/§7).
+  `bossPartySize`; `docs/maps-spec.md` §6/§7), and the foe's HP card draws one
+  ball per **fielded** member (a fainted one included), so the row counts the
+  party the trainer fielded.
 
 ### 7.1 Randomized learnsets and movesets (`D17`)
 

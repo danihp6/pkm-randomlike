@@ -53,6 +53,18 @@
   display: none;
 }
 
+.battle-hp__balls {
+  position: absolute;
+}
+
+.battle-hp__ball {
+  position: absolute;
+}
+
+.battle-hp__ball[data-hud-ball='spent'] {
+  opacity: 0.35;
+}
+
 /* The board measures every internal from the card's outer edge; the kit's 1 px
    hairline sits inside that edge, so the content box starts one pixel in. */
 .battle-hp__content {

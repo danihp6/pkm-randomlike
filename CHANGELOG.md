@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A trainer's remaining Pokémon show as balls under its panel.** `[Task-212]`, the fourth of
+      Batch 88: the foe's HP card said how much was left but not how many were left. `foeBallRow` in
+      `src/ui/hud/panels/battle-hp/view.ts` turns the battle's own party into a 16 px row (16 px cells,
+      4 px apart, 8 px under the box) — `filled` for a member with HP, `spent` at 35 % opacity for a
+      fainted one, with a digit-only `title` and `role="img"` for each ball — drawn from the item-icon
+      atlas at frame 545. Wild battles draw no row, and the row is placed so it meets neither the HP
+      cards nor the command card at either viewport. Gates: `npm test` 4935 passed / 69 skipped and
+      `npm run build` green at task QA, 4982 passed on the batch's combined tree. Measured live over
+      CDP in a real trainer battle at 1280×800: three `filled` balls at `{64,156,56,16}` with
+      `title="3/3"`, reported `2/3` with the spent ball at `opacity: 0.35` once the lead was knocked
+      out, the phone row at `{16,104,56,16}` with no overlap, and a wild battle with no row at all.
+
 - [x] **The ranking is global: a DynamoDB table and the one endpoint that feeds it.** `[Task-210]`,
       the third of Batch 88, and the first thing in this game that leaves the browser. `infra/` gains
       `PokeRandomLikeRanking` (month + strike, on-demand billing, TTL on `expiresAt`), one Lambda with

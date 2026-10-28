@@ -5,12 +5,17 @@ import { Rng } from '../../../../engine/rng';
 import type { HudState } from '../../state';
 import { projectHud } from '../../state';
 import {
+  BATTLE_BALL_GAP,
+  BATTLE_BALL_ROW_GAP,
+  BATTLE_BALL_SIZE,
   BATTLE_HP_BREAKPOINT,
   HP_FILL_MS,
   battleHpBox,
   battleHpLayout,
   battleHpView,
+  foeBallRow,
   type BattleHpView,
+  type Rect,
   type Viewport,
 } from './view';
 
@@ -19,6 +24,10 @@ const PHONE: Viewport = { width: 390, height: 844 };
 const SINGLE = { enemy: false, player: false };
 const DOUBLE = { enemy: true, player: true };
 const NO_BATTLE: HudState = { party: [], bag: [], money: null, route: null, battle: null, notice: null };
+
+/** The battle's command card, at each column (`docs/hud-fidelity.md` §5). */
+const DESK_COMMAND: Rect = { x: 440, y: 582, w: 564, h: 192 };
+const PHONE_COMMAND: Rect = { x: 16, y: 592, w: 358, h: 236 };
 
 function fighter(id: string, speciesId: string, moves: readonly string[]): BattleFighter {
   return createFighter({ id, speciesId, level: 5, moves });
@@ -45,6 +54,27 @@ function layoutOf(viewport: Viewport, doubles: Readonly<{ enemy: boolean; player
     slot: entry.slot,
     box: entry.box,
   }));
+}
+
+const FOE_SPECIES = ['bulbasaur', 'geodude', 'machop', 'pidgey', 'rattata', 'ekans'] as const;
+
+/** A trainer battle whose foe fields `size` members, with `fainted` left at 0 HP. */
+function trainerState(size: number, fainted: number | null, isWild = false): HudState {
+  const enemy = FOE_SPECIES.slice(0, size).map((speciesId, index) =>
+    fighter(`enemy-${index + 1}`, speciesId, ['tackle']),
+  );
+  const battle = createBattle({
+    player: [fighter('player-1', 'charmander', ['ember'])],
+    enemy,
+    rng: new Rng(212),
+    isWild,
+  });
+  if (fainted !== null) battle.sides.enemy.party[fainted]!.hp = 0;
+  return projectHud({ screen: 'battle', battle, canCapture: false });
+}
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
 describe('battleHpBox', () => {
@@ -134,7 +164,11 @@ describe('battleHpLayout', () => {
 
 describe('battleHpView', () => {
   it('paints no box without a battle', () => {
-    expect(battleHpView(NO_BATTLE, DESKTOP, DOUBLE)).toStrictEqual({ boxes: [] });
+    expect(battleHpView(NO_BATTLE, DESKTOP, DOUBLE)).toStrictEqual({
+      boxes: [],
+      foeBalls: [],
+      foeBallsBox: null,
+    });
   });
 
   it('paints one box per active, foe lead first and the player last', () => {
@@ -187,5 +221,66 @@ describe('battleHpView', () => {
 
   it('animates a fill below the frame dwell', () => {
     expect(HP_FILL_MS).toBe(300);
+  });
+});
+
+describe('foeBallRow', () => {
+  it('draws one ball per fielded member, in party order, spent once it faints', () => {
+    const view = battleHpView(trainerState(3, 2), DESKTOP, SINGLE);
+    expect(BATTLE_BALL_SIZE).toBe(16);
+    expect(BATTLE_BALL_GAP).toBe(4);
+    expect(BATTLE_BALL_ROW_GAP).toBe(8);
+    expect(view.foeBalls).toHaveLength(3);
+    expect(view.foeBalls.map((ball) => ball.index)).toStrictEqual([0, 1, 2]);
+    expect(view.foeBalls.map((ball) => ball.state)).toStrictEqual(['filled', 'filled', 'spent']);
+    expect(view.foeBalls.map((ball) => ball.box)).toStrictEqual([
+      { x: 64, y: 156, w: 16, h: 16 },
+      { x: 84, y: 156, w: 16, h: 16 },
+      { x: 104, y: 156, w: 16, h: 16 },
+    ]);
+    expect(view.foeBallsBox).toStrictEqual({ x: 64, y: 156, w: 56, h: 16 });
+  });
+
+  it('draws no row in a wild battle and none without a battle', () => {
+    const wild = battleHpView(trainerState(3, 0, true), DESKTOP, SINGLE);
+    expect(wild.foeBalls).toStrictEqual([]);
+    expect(wild.foeBallsBox).toBeNull();
+    expect(foeBallRow(trainerState(3, 0, true), DESKTOP)).toStrictEqual({ balls: [], box: null });
+    expect(foeBallRow(NO_BATTLE, PHONE)).toStrictEqual({ balls: [], box: null });
+  });
+
+  it('sits under the foe box and clears both HP columns and both command cards', () => {
+    const state = trainerState(3, 2);
+    expect(foeBallRow(state, PHONE).box).toStrictEqual({ x: 16, y: 104, w: 56, h: 16 });
+    for (const viewport of [DESKTOP, PHONE]) {
+      const row = foeBallRow(state, viewport).box!;
+      expect(overlaps(row, battleHpBox(viewport, 'player', 0))).toBe(false);
+      expect(overlaps(row, DESK_COMMAND)).toBe(false);
+      expect(overlaps(row, PHONE_COMMAND)).toBe(false);
+    }
+  });
+
+  it('spends one gap between neighbours and none past the last ball', () => {
+    expect(battleHpView(trainerState(4, null), DESKTOP, SINGLE).foeBallsBox).toStrictEqual({
+      x: 64,
+      y: 156,
+      w: 76,
+      h: 16,
+    });
+    expect(battleHpView(trainerState(1, null), DESKTOP, SINGLE).foeBallsBox).toStrictEqual({
+      x: 64,
+      y: 156,
+      w: 16,
+      h: 16,
+    });
+  });
+
+  it('is pure: the same snapshot and viewport deep-equal', () => {
+    const state = trainerState(3, 2);
+    const first = foeBallRow(state, DESKTOP);
+    const second = foeBallRow(state, DESKTOP);
+    expect(second).toStrictEqual(first);
+    expect(second).not.toBe(first);
+    expect(battleHpView(state, DESKTOP, SINGLE).foeBallsBox).toStrictEqual(first.box);
   });
 });
