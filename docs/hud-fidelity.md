@@ -182,12 +182,17 @@ its four cells are 119×94 and paint **six stacked lines** instead of the wide t
 the first row, the category glyph the second line's **13 px band**, ending on the content box's right edge
 (24 px wide, its frame drawn 24×10.5, and it clears the name line under it), and the name, PP, power and
 accuracy each get a full **91 px** line of their own — one label a line, because `PP 15/15` (55 px) and
-`PWR 90` (50 px) side by side are 105 px with their gap in a 91 px content box. In both width classes every
-label is now painted at the box `cellTextBoxes` measures for it (`BattleMoveSlotView.boxes`) and both atlas
-squares at their own `typeBox` / `categoryBox`, instead of at a stylesheet grid, so a cell's text is bounded
-by its own model rect: the name is the one line that is ever cut — 91 px at 390 against the 162 px the wide
-222 px cell gives it — and nothing else needs eliding. The stack needs a **52 px** cell (its two 14 px
-paddings and the 24 px glyph column), so a stage under 256 px is below what this panel is asked to draw.
+`PWR 90` (50 px) side by side are 105 px with their gap in a 91 px content box, and because the accuracy
+cannot share the name's line either: `ACC 300 ↑` is 67.5 px and its 8 px gap would leave the name 15 of
+those 91 px, under the 40 px a name column needs. The category column is the glyph and nothing else: the
+compact cell's `categoryLabel` is `''` — its label set is type chip · name · PP · PWR · accuracy — while
+the wide cell's is the word it carries, and a cell paints a word only where its own column is wide enough
+for it: **a cell never reserves a column it cannot paint**. In both width classes every label is painted at
+the box `cellTextBoxes` measures for it (`BattleMoveSlotView.boxes`) and both atlas squares at their own
+`typeBox` / `categoryBox`, instead of at a stylesheet grid, so a cell's text is bounded by its own model
+rect: the name is the one line that is ever cut — 91 px at 390 against the 162 px the wide 222 px cell
+gives it — and nothing else needs eliding. The stack needs a **52 px** cell (its two 14 px paddings and the
+24 px glyph column), so a stage under 256 px is below what this panel is asked to draw.
 
 **The target step's prompt.** The row is **22 px** tall (`MOVE_TARGET_H`) and lives inside the card's top
 band — `x = card.x + 20`, `y = card.y + 1`, `w = card.w − 40`, `h = 22` on both widths — so it ends **1 px**

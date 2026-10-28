@@ -5,6 +5,7 @@ export type { BattleMovesController, BattleMovesIntent } from './mount';
 export {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
+  CATEGORY_LABELS,
   COMPACT_CARD_CLEARANCE,
   COMPACT_CARD_RAIL_W,
   INFO_CARD_H,

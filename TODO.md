@@ -9385,7 +9385,7 @@ without moving either batch.
       `docs/hud-fidelity.md` §9. *Dependencies:* `[Task-211]` (the row's siblings land first).
       *(Batch 92)*
 
-- [ ] **[Task-216] A phone move cell paints the move's name.** Issue #76, measured on
+- [x] **[Task-216] A phone move cell paints the move's name.** Issue #76, measured on
       `[Task-192]`'s round-2 tree at 390×844 with FIGHT open: the card is 358×236 at (16, 592) and
       each `.battle-moves__slot` is **119×94** — a 91-px content box that cannot hold the 60-px
       category column, its two 8-px gaps and the 22-px ⓘ, so the name column collapses to

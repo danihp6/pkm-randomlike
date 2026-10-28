@@ -1,7 +1,7 @@
 import type { CSSProperties, JSX } from 'preact';
 import { MoveCategoryIcon, MoveTypeBadge, joinClasses } from '../../kit';
 import type { BattleMovesIntent } from './mount';
-import type { BattleMoveSlotView, BattleMovesView, Rect } from './view';
+import { drawnTextWidth, type BattleMoveSlotView, type BattleMovesView, type Rect } from './view';
 import './battleMoves.css';
 
 export type BattleMovesProps = Readonly<{
@@ -46,6 +46,17 @@ function flag(value: boolean): string {
   return value ? 'true' : 'false';
 }
 
+/**
+ * The category word a cell paints: only while its own category column can hold it. The
+ * wide cell's 24 px square holds the atlas glyph alone, so a wide slot paints no word —
+ * `05`'s rule that `PHYSICAL` / `SPECIAL` / `STATUS` are never drawn as words — and the
+ * compact cell's `categoryLabel` is already `''`.
+ */
+function categoryWord(slot: BattleMoveSlotView): string {
+  if (slot.categoryLabel === '') return '';
+  return drawnTextWidth(slot.categoryLabel) <= slot.categoryBox.w ? slot.categoryLabel : '';
+}
+
 /** One slot's press: the intent the card emits for it. */
 export type MoveSlotProps = Readonly<{
   slot: BattleMoveSlotView;
@@ -56,10 +67,14 @@ export type MoveSlotProps = Readonly<{
 /**
  * One move card: the type badge, the name, the category glyph and the three stat
  * lines, each painted at the box `cellTextBoxes` measured for it — never at a CSS grid
- * area, so the model's own rects are what the browser draws.
+ * area, so the model's own rects are what the browser draws. The category column paints
+ * the atlas glyph, plus the model's `categoryLabel` word only where that column is wide
+ * enough for it (`categoryWord`); the name node carries `data-hud-move-name` so a
+ * measurement can find the string a phone player reads.
  */
 export function MoveSlot(props: MoveSlotProps): JSX.Element {
   const { slot, card } = props;
+  const word = categoryWord(slot);
   return (
     <button
       type="button"
@@ -81,10 +96,15 @@ export function MoveSlot(props: MoveSlotProps): JSX.Element {
           <span class="battle-moves__type" style={labelStyle(slot, slot.typeBox)}>
             <MoveTypeBadge type={slot.type} />
           </span>
-          <span class="battle-moves__name" style={labelStyle(slot, slot.boxes.name)}>
+          <span
+            class="battle-moves__name"
+            data-hud-move-name={String(slot.index)}
+            style={labelStyle(slot, slot.boxes.name)}
+          >
             {slot.name}
           </span>
           <span class="battle-moves__category" style={labelStyle(slot, slot.categoryBox)}>
+            {word === '' ? null : <span class="battle-moves__category-word">{word}</span>}
             <MoveCategoryIcon category={slot.category} />
           </span>
           <span class="battle-moves__pp" style={labelStyle(slot, slot.boxes.pp)}>

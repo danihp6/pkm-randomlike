@@ -17,31 +17,38 @@ _is_ the info intent.
   page coordinates, starting where the HP column ends on the wide layout), `compactCard` (the
   card's width class), `cellTextBoxes` and `fitsInside` (a cell's five label boxes and the
   containment test the panel and QA share), `battleMovesView` (the four slots with their own
-  label boxes and the two atlas squares' boxes, the ◀, the two forme columns, the target
-  step's prompt row and the card that describes the cursor's move, from a `BattleMovesInput`)
+  label boxes, their `categoryLabel` word and the two atlas squares' boxes, the ◀, the two
+  forme columns, the target step's prompt row and the card that describes the cursor's move,
+  from a `BattleMovesInput`), `CATEGORY_LABELS` (the three category words a wide cell carries)
   and the mirrored constants, including the card's height (`INFO_CARD_H`), the phone's
   clearance from its own HP box (`COMPACT_CARD_CLEARANCE`) and the rail it cedes to the
   stage grid (`COMPACT_CARD_RAIL_W`).
 - `view.test.ts` — both QA viewports' cards, the card's clearance of the HP column, the slot
   rects derived from the same `moveGridCellRects` call, the wide cell's pinned boxes (the
   162 px name line, the 24 px glyph square on the right padding edge), the compact cell's six
-  lines (inside the cell, disjoint and wide enough for their own text), the freed ⓘ column
-  the name recovered, the glyph / ◀ / forme boxes, the stat tones, the clamping, the empty
-  slot, the target step's prompt (null / name, its label, and the 22 px row ending 1 px above
-  the first cell at both viewports) and the move card (the cursor's strings, the null cases,
-  its two anchors and its clearance from both sides' lead boxes), headless.
+  lines pinned on the measured 119×94 cell (a 91 px name line, the five boxes disjoint and
+  inside the padding box, the badge's 24 px square on its first row) and the name it paints
+  whole or cut, the freed ⓘ column the name recovered, the category word (the wide cell's
+  `PHYSICAL` / `SPECIAL` / `STATUS`, the compact cell's `''`), the glyph / ◀ / forme boxes,
+  the stat tones, the clamping, the empty slot, the target step's prompt (null / name, its
+  label, and the 22 px row ending 1 px above the first cell at both viewports) and the move
+  card (the cursor's strings, the null cases, its two anchors and its clearance from both
+  sides' lead boxes), headless.
 - `battleMoves.tsx` — the card: one button per slot whose labels and both atlas squares are
-  painted at the model's own boxes, the three controls, the target step's prompt row
-  (`data-hud-move-target`, painted only while the step is open) and the one move card
-  (`data-hud-move-card`, its title / `PP` / `PWR` / `ACC` / description on their own
-  attributes), each control answering with a `BattleMovesIntent`. A press on a cell still
-  chooses that move.
+  painted at the model's own boxes, the category word painted only where its own column is
+  wide enough to hold it, the name node marked `data-hud-move-name` so a measurement can find
+  it, the three controls, the target step's prompt row (`data-hud-move-target`, painted only
+  while the step is open) and the one move card (`data-hud-move-card`, its title / `PP` /
+  `PWR` / `ACC` / description on their own attributes), each control answering with a
+  `BattleMovesIntent`. A press on a cell still chooses that move.
 - `battleMoves.test.ts` — the slot button itself: its press emits that slot's `move` intent,
   the name, the stats and both icons land on the model's rects, one `.kit-move-type` and one
-  `.kit-move-category` per filled cell and none in an empty one, an unpickable slot is
-  disabled, the card carries its width class, the move card prints the cursor's move and
-  nothing carries `data-hud-move-info`, one prompt row for a marked foe and none for a closed
-  step, and the stylesheet keeps the card out of the pointer's way, headless.
+  `.kit-move-category` per filled cell and none in an empty one, the category word painted only
+  in a column that holds it (never on a shipped cell), the name node's `data-hud-move-name`
+  hook, an unpickable slot is disabled, the card carries its width class, the move card prints
+  the cursor's move and nothing carries `data-hud-move-info`, one prompt row for a marked foe
+  and none for a closed step, and the stylesheet keeps the card out of the pointer's way,
+  headless.
 - `battleMoves.css` — the board's cell skin (radius 8, the 12 % accent selected cell and
   the 4 % / 8 % row pair), the glass card and the move card (one head row of readouts that
   wraps on the phone, a description that scrolls inside the fixed height, `pointer-events:
@@ -57,9 +64,9 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
   card its `attack detail` measures; its card is the frame's measurement, pinned against the
   shipped card's right edge and height.
 - `index.ts` — the barrel the scene imports: the card and its mount, `battleMovesBox`,
-  `battleMovesView`, `cellTextBoxes`, `compactCard`, `fitsInside`, the prompt row's two
-  numbers, `INFO_CARD_H` / `COMPACT_CARD_CLEARANCE` / `COMPACT_CARD_RAIL_W`, and the view's
-  input, slot and card types.
+  `battleMovesView`, `cellTextBoxes`, `compactCard`, `fitsInside`, `CATEGORY_LABELS`, the prompt
+  row's two numbers, `INFO_CARD_H` / `COMPACT_CARD_CLEARANCE` / `COMPACT_CARD_RAIL_W`, and the
+  view's input, slot and card types.
 - `README.md` — this map.
 
 ## Rules
@@ -85,8 +92,11 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
    name and the category glyph on the first line, PP under them, power and accuracy on the
    third past the type badge's 24 px column); the compact class is six stacked lines — badge,
    glyph, name, PP, power, accuracy — because the phone cell's 91 px content box cannot hold
-   two labels side by side. The class is read off the card's height: `battleMovesBox` builds a
-   236 px card in one branch and a 192 px one in the other, and their widths overlap.
+   two labels side by side: `PP 15/15` (55 px) and `PWR 90` (42.5 px) are 105 px with their
+   gap, and the widest hit chance (`ACC 300 ↑`, 67.5 px) with its 8 px gap would leave the
+   name 15 of those 91 px, so the accuracy keeps its own line instead of taking the name's.
+   The class is read off the card's height: `battleMovesBox` builds a 236 px card in one
+   branch and a 192 px one in the other, and their widths overlap.
 7. **The freed ⓘ column is the name's.** No cell draws a button any more, so the glyph takes
    the cell's right padding edge and the wide name line grows from `cell.w − 90` to
    `cell.w − 60` — 132 → 162 px in the 222 px cell at 1280×800. The compact name already
@@ -136,3 +146,12 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
     8 px gutter above it — so the card ends 8 px above the lead. A doubles battle on the
     phone stacks the partner box 8 px above that lead, so the card paints over it; clearing
     the partner too belongs to the panel that owns the phone column.
+13. **A cell never reserves a column it cannot paint.** `BattleMoveSlotView.categoryLabel` is
+    the category word a layout carries — the wide cell's `PHYSICAL` / `SPECIAL` / `STATUS`, from
+    `CATEGORY_LABELS`, and `''` on the compact cell, whose category is the atlas glyph alone —
+    and `categoryWord` in `battleMoves.tsx` paints it only while the cell's own `categoryBox`
+    is wide enough for the string. No shipped cell is: the wide square is 24 px against
+    `SPECIAL`'s 52.5 px, so the glyph stays the whole column in both width classes (§5's own
+    rule) and a phone cell paints no word at all. `categoryLabel` is model data a later compact
+    layout reads instead of re-deriving it, never a second copy of `category`, which stays the
+    atlas key the glyph resolves.

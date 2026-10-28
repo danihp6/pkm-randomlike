@@ -25,6 +25,7 @@ function slot(index: number, overrides: Partial<BattleMoveSlotView> = {}): Battl
     name: 'WATER GUN',
     type: 'water',
     category: 'Special',
+    categoryLabel: 'SPECIAL',
     pp: 'PP 25/25',
     power: 'PWR 40',
     accuracy: 'ACC 100',
@@ -219,6 +220,33 @@ describe('the move slot button', () => {
     expect(type[0]!.children).toBeUndefined();
     expect(category[0]!.children).toBeUndefined();
     expect(JSON.stringify(props.children)).not.toMatch(/PHYSICAL|SPECIAL|STATUS/);
+  });
+
+  it('paints the category word only where its own column can hold it', () => {
+    // The wide cell's 24 px square holds the glyph alone, so its word never prints.
+    const shipped = buttonProps({ slot: slot(0), card: CARD, onPress: () => {} });
+    expect(nodesWithClass(shipped, 'battle-moves__category-word')).toHaveLength(0);
+    // Nor does the compact cell's, whose label is empty by construction.
+    const compact = buttonProps({ slot: slot(0, { categoryLabel: '' }), card: CARD, onPress: () => {} });
+    expect(nodesWithClass(compact, 'battle-moves__category-word')).toHaveLength(0);
+    // A cell that measures a column the word fits paints it.
+    const wide = slot(0);
+    const roomy = buttonProps({
+      slot: { ...wide, categoryBox: { x: wide.box.x + 200, y: wide.box.y + 16.5, w: 60, h: 24 } },
+      card: CARD,
+      onPress: () => {},
+    });
+    const words = nodesWithClass(roomy, 'battle-moves__category-word');
+    expect(words).toHaveLength(1);
+    expect(words[0]!.children).toBe('SPECIAL');
+  });
+
+  it('marks the name node so a measurement can find the string it paints', () => {
+    const props = buttonProps({ slot: slot(0), card: CARD, onPress: () => {} });
+    const names = nodesWithClass(props, 'battle-moves__name');
+    expect(names).toHaveLength(1);
+    expect(names[0]!['data-hud-move-name']).toBe('0');
+    expect(names[0]!.children).toBe('WATER GUN');
   });
 
   it('paints neither icon on an empty slot', () => {

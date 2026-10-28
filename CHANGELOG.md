@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A phone move cell paints the move's name.** `[Task-216]`, Batch 92's second filler in Batch 90:
+      issue #76 measured every compact `.battle-moves__slot` at 119×94 with a `clientWidth: 0` name and no
+      text at all, so a phone player chose between four unnamed moves. `[Task-214]` had already taken the
+      22 px ⓘ out of the cell, so this task closed the rest: the compact cell's category column is the type
+      chip alone (no word — `categoryLabel` is `''` while `category` stays the atlas key), the accuracy keeps
+      its own full-width row instead of squeezing the name (moving it beside the name would leave 15 px, and
+      the six row stack already fits the 78-px padding box), and the name keeps a real column in every filled
+      slot: 91 px at 390×844, 162 px at 1280 where the wide grid is pinned unchanged at
+      `162 / 24 / 162 / 86 / 68`. Gates: `npm test` 5051 passed / 69 skipped and `npm run build` green.
+      Measured live over CDP: at 390×844 the card is `{16, 592, 358, 236}` inside the viewport and all four
+      name nodes measure 91.00 px with real text (`FLAMETHROWER`, `AIR SLASH`, `DIG`, `GROWL`), no two boxes
+      of a slot overlapping; at 1280×800 the four names stay 162.00 px and no shipped cell paints a category
+      word.
+
 - [x] **The desk CONTINUE row elides its map label before the portraits, not under them.** `[Task-215]`,
       Batch 92's first filler in Batch 90: at 1280×800 the row's value (`MAP 1 · DEEP FOREST`) slid under the
       fourth portrait — measured on the merged `[Task-191]` tree, the value box `{1010.98, 322, 147.02, 15}`

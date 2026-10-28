@@ -14,6 +14,7 @@ import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox } from 
 import {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
+  CATEGORY_LABELS,
   COMPACT_CARD_CLEARANCE,
   COMPACT_CARD_RAIL_W,
   INFO_CARD_H,
@@ -253,6 +254,12 @@ describe('battleMovesBox', () => {
     expect(battleMovesBox(PHONE)).toStrictEqual({ x: 16, y: 592, w: 358, h: 236 });
   });
 
+  it('keeps the phone card inside the phone s own window', () => {
+    const card = battleMovesBox(PHONE);
+    expect(fitsInside(card, { x: 0, y: 0, w: PHONE.width, h: PHONE.height })).toBe(true);
+    expect(card.y + card.h).toBeLessThan(PHONE.height);
+  });
+
   it('keeps the shipped phone card in a wide viewport with a short stage', () => {
     // 800×600 centres a 600 px battle square the HP column runs past, and the compact
     // card is anchored to that square: it keeps its shipped rect rather than chasing
@@ -384,6 +391,7 @@ describe('battleMovesView slots', () => {
       name: '',
       type: '',
       category: '',
+      categoryLabel: '',
       pp: '',
       power: '',
       accuracy: '',
@@ -645,7 +653,13 @@ const COMPACT_GRID: readonly MoveGridSlot[] = padMoveGridCells(
   [
     moveCell('MOFLETE ESTÁTICO', { category: 'Physical' }),
     moveCell('LANZALLAMAS', { power: 90, basePower: 90 }),
-    moveCell('GRITO', { power: 0, basePower: 0, accuracy: null, baseAccuracy: null }),
+    moveCell('GRITO', {
+      power: 0,
+      basePower: 0,
+      category: 'Status',
+      accuracy: null,
+      baseAccuracy: null,
+    }),
     moveCell('PSÍQUICO', { accuracy: 300, baseAccuracy: 100 }),
   ],
   4,
@@ -741,11 +755,62 @@ describe('the compact cell', () => {
     }
   });
 
+  it('keeps the name a real column on the measured 119×94 phone cell, and no box over another', () => {
+    const cell: Rect = { x: 100, y: 616, w: 119, h: 94 };
+    const boxes = cellTextBoxes(cell, true);
+    // 119 − 2 × 14 padding = 91 px of content, and the name has all of it.
+    expect(boxes.name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
+    expect(boxes.name.w).toBeGreaterThan(40);
+    for (const box of Object.values(boxes)) {
+      expect(fitsInside(box, cell)).toBe(true);
+      expect(box.x).toBeGreaterThanOrEqual(cell.x + CELL_PAD_X);
+      expect(box.x + box.w).toBeLessThanOrEqual(cell.x + cell.w - CELL_PAD_X + 0.01);
+    }
+    const five = [boxes.name, boxes.category, boxes.pp, boxes.power, boxes.accuracy];
+    for (let i = 0; i < five.length; i++) {
+      for (let j = i + 1; j < five.length; j++) {
+        expect(overlapArea(five[i]!, five[j]!)).toBe(0);
+      }
+    }
+    // Six 13 px rows, the glyph's one under the badge's, fill the 78 px box edge to edge.
+    expect(five.map((box) => box.y)).toStrictEqual([650, 637, 663, 676, 689]);
+    expect(boxes.accuracy.y + boxes.accuracy.h).toBe(cell.y + cell.h - 8);
+  });
+
+  it('keeps the type badge its own 24 px square on the cell s first row', () => {
+    const view = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: COMPACT_GRID }));
+    for (const slot of view.slots) {
+      expect(slot.typeBox).toStrictEqual({
+        x: slot.box.x + CELL_PAD_X,
+        y: slot.box.y + 8,
+        w: 24,
+        h: 24,
+      });
+      expect(fitsInside(slot.typeBox, slot.box)).toBe(true);
+      expect(overlapArea(slot.typeBox, slot.boxes.name)).toBe(0);
+    }
+  });
+
+  it('paints a name whole while it fits and ends a cut one in an ellipsis, never both', () => {
+    const fits = padMoveGridCells([moveCell('GRITO')], 4);
+    const whole = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: fits })).slots[0]!;
+    expect(drawnTextWidth('GRITO')).toBeLessThanOrEqual(whole.nameBox.w);
+    expect(whole.name).toBe('GRITO');
+    expect(whole.name).not.toContain('\u2026');
+
+    const cut = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: LONG_GRID })).slots[0]!;
+    expect(drawnTextWidth('MOFLETE ESTÁTICO')).toBeGreaterThan(cut.nameBox.w);
+    expect(cut.name.endsWith('\u2026')).toBe(true);
+    // A head the player can read, not just the wasted ellipsis, and never past the box.
+    expect(cut.name.length).toBeGreaterThan(2);
+    expect('MOFLETE ESTÁTICO'.startsWith(cut.name.slice(0, -1))).toBe(true);
+    expect(drawnTextWidth(cut.name)).toBeLessThanOrEqual(cut.nameBox.w + 0.01);
+  });
+
   it('holds on every compact card wide enough for its icon column', () => {
-    // The glyph's 24 px square and the ⓘ 22 px need 82 px of cell (14 px of padding,
-    // the 24 px glyph, its 8 px gap and the 22 px ⓘ, twice), so a stage under 316 px
-    // is below what this panel draws: 390×844, the board's phone, is the narrowest
-    // one it is asked for.
+    // The glyph's 24 px column needs 52 px of cell (its 14 px side paddings twice and
+    // the 24 px glyph), so a stage under 256 px is below what this panel draws:
+    // 390×844, the board's phone, is the narrowest one it is asked for.
     for (const viewport of [
       { width: 699, height: 800 },
       { width: 600, height: 600 },
@@ -764,6 +829,62 @@ describe('the compact cell', () => {
     expect(compactCard(CARD)).toBe(false);
     expect(battleMovesView(inputOf({ card: battleMovesBox(PHONE) })).compact).toBe(true);
     expect(battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).compact).toBe(false);
+  });
+});
+
+describe('the category word of a slot', () => {
+  it('pins the three words the wide cell reads', () => {
+    expect(CATEGORY_LABELS).toStrictEqual({
+      Physical: 'PHYSICAL',
+      Special: 'SPECIAL',
+      Status: 'STATUS',
+    });
+  });
+
+  it('is the word on the wide cell and nothing at all on the compact one', () => {
+    const wide = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells: COMPACT_GRID }));
+    expect(wide.compact).toBe(false);
+    expect(wide.slots.map((slot) => slot.categoryLabel)).toStrictEqual([
+      'PHYSICAL',
+      'SPECIAL',
+      'STATUS',
+      'SPECIAL',
+    ]);
+    // The atlas key is untouched by the word: it is what the glyph reads.
+    expect(wide.slots.map((slot) => slot.category)).toStrictEqual([
+      'Physical',
+      'Special',
+      'Status',
+      'Special',
+    ]);
+
+    const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), cells: COMPACT_GRID }));
+    expect(phone.compact).toBe(true);
+    for (const slot of phone.slots) {
+      expect(slot.empty).toBe(false);
+      expect(slot.categoryLabel).toBe('');
+    }
+    expect(phone.slots.map((slot) => slot.category)).toStrictEqual([
+      'Physical',
+      'Special',
+      'Status',
+      'Special',
+    ]);
+  });
+
+  it('leaves the empty slot without one, whatever the width class', () => {
+    const cells = padMoveGridCells([moveCell('TACKLE')], 4);
+    for (const viewport of [DESKTOP, PHONE]) {
+      const view = battleMovesView(inputOf({ card: battleMovesBox(viewport), cells }));
+      expect(view.slots[1]!.empty).toBe(true);
+      expect(view.slots[1]!.categoryLabel).toBe('');
+    }
+  });
+
+  it('reads a category the table does not name as its own uppercase', () => {
+    const cells = padMoveGridCells([moveCell('ODD', { category: '???' })], 4);
+    const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), cells }));
+    expect(view.slots[0]!.categoryLabel).toBe('???');
   });
 });
 
@@ -812,6 +933,28 @@ describe('cellTextBoxes', () => {
     for (const box of Object.values(cellTextBoxes(wide, false, 'fire'))) {
       expect(fitsInside(box, wide)).toBe(true);
     }
+  });
+
+  it('pins the measured 119×94 phone cell: the six rows, the 91 px name, the 24 px glyph', () => {
+    expect(cellTextBoxes(phone, true)).toStrictEqual({
+      name: { x: 114, y: 650, w: 91, h: 13 },
+      category: { x: 181, y: 637, w: 24, h: 13 },
+      pp: { x: 114, y: 663, w: 91, h: 13 },
+      power: { x: 114, y: 676, w: 91, h: 13 },
+      accuracy: { x: 114, y: 689, w: 91, h: 13 },
+    });
+  });
+
+  it('pins the wide cell s five boxes, which this layout does not move', () => {
+    expect(cellTextBoxes(wide, false, 'fire')).toStrictEqual({
+      name: { x: 538, y: 622.5, w: 162, h: 13 },
+      category: { x: 708, y: 622.5, w: 24, h: 24 },
+      pp: { x: 570, y: 635.5, w: 162, h: 13 },
+      power: { x: 570, y: 648.5, w: 86, h: 13 },
+      accuracy: { x: 664, y: 648.5, w: 68, h: 13 },
+    });
+    expect(cellTextBoxes(wide, false, 'electric')).toStrictEqual(cellTextBoxes(wide, false, 'fire'));
+    expect(cellTextBoxes(wide, false)).toStrictEqual(cellTextBoxes(wide, false, 'fire'));
   });
 
   it('starts the wide stat column one gap past the badge, whatever type it is told', () => {

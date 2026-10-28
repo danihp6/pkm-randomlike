@@ -112,6 +112,14 @@
   margin-bottom: 1px;
 }
 
+/* The category word a cell paints once its own category column is wide enough for it
+   (`categoryWord`). Neither width class ships one — the 24 px square holds the atlas
+   glyph, and `05` never draws a category as a word — so this rule only ever applies to
+   a layout that measures a wider column. */
+.battle-moves__category-word {
+  white-space: nowrap;
+}
+
 .battle-moves__pp {
   color: var(--hud-text-muted);
 }
