@@ -9424,7 +9424,7 @@ without moving either batch.
       test. **Docs:** that README, rule 6. Claims `src/ui/hud/panels/run-over/README.md`.
       *Dependencies:* none. *(Batch 92)*
 
-- [ ] **[Task-219] The main menu's walkers walk: the route's own step and the pair's walk strip.** Seen by
+- [x] **[Task-219] The main menu's walkers walk: the route's own step and the pair's walk strip.** Seen by
       the human on `2026-10-28`: «en el menu principal el panle de la ruta los pokes deberian salir animados
       como en el propio juego no teletransporte» — a walker stands for 600 ms and then is on the next tile.
       The panel's only clock is the tile tick: `setInterval(…, ROUTE_PREVIEW_STEP_MS)` (`mainMenuPanel.tsx`

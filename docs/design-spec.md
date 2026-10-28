@@ -38,7 +38,11 @@ carries over.
   build metadata, so it is not translated while the three labels are keys. The window
   behind the title is a **live route** — a route generated from a fresh random seed on
   every boot (never the run's),
-  drawn with the first map's biome tileset, with two or three Pokémon wandering it — and
+  drawn with the first map's biome tileset, with two or three Pokémon wandering it: each
+  one takes one tile's 24 px step in the route's own **200 ms**, the rest of its 600 ms
+  tick a stand, drawn as its committed overworld pair playing the `walk` strip at 5 fps
+  (the `idle` strip while it stands) and, where the pair's local art is absent, as its
+  portrait cell, so a walker's box is never empty — and
   it is **decoration**: no encounters, no player, no input and no save write. On a phone
   the records footer under the menu wraps its figures into two rows, so the three blocks
   never collide on the narrow column, and the phone frames draw no version line.

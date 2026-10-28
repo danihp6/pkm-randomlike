@@ -100,6 +100,14 @@
 
 .main-menu__walker {
   background-color: rgb(255 255 255 / 4%);
+  /*
+   * A walker steps one tile at a time: only the box slides, over the route's own
+   * `WALK_STEP_MS` (inline, from `walkerPaint`) and linear. A duration on every
+   * property would smear the frame cut, so the sprite's `background-position` is
+   * outside the transition and changes instantly.
+   */
+  transition-property: left, top;
+  transition-timing-function: linear;
 }
 
 /* 01 · title */

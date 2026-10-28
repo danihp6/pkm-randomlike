@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu's walkers walk: the route's own step and the pair's walk strip.** `[Task-219]`,
+      Batch 93's one task, filled into Batch 91: a walker stood for 600 ms and then was on the next tile,
+      because its box was always the model tile's and `.main-menu__walker` carried no transition at all.
+      `routeWindow.ts` now declares `WALK_STEP_MS` (**200**, the route scene's own step) once beside the
+      600 ms `ROUTE_PREVIEW_STEP_MS` and a pure `walkerPaint` that returns the box, the pair's own
+      `background-position`/`background-size` at `24 / sheet.size`, the `walk` strip's frame while the
+      walker moves and `idle` frame 0 while it stands (`FOLLOWER_FRAME_RATE`, 5 fps) and `scaleX(-1)` for
+      `W`; a species whose pair is absent — or whose PNG fails to load, the ordinary case on a clone
+      without the asset store — keeps the portrait crop. The step counter and `preview.ts` are untouched,
+      so the per-walker stream and every fixed-seed fold replay exactly as before, and a first paint or a
+      room change sets its box with no transition. `D55` is amended and `docs/design-spec.md` §2's
+      live-route sentence says the party walks. Gates: `npm test` 5075 passed / 69 skipped and
+      `npm run build` green at task QA, 5086 passed / 69 skipped on the batch's combined tree. Measured
+      live over CDP at 1280×800 and 390×844: max consecutive `getBoundingClientRect().left` delta
+      **6.02 px** (never ≥ 24), one 24 px cell crossed in 196-215 ms of the 600 ms tick,
+      `background-position` changing 67-185 ms into the slide, `transition-duration: 200ms` (inline
+      `0ms` on the first paint), and both paints — the pair and the portrait fallback — 24 × 24.
+
 - [x] **The run-over README stops saying the board has no figures.** `[Task-218]`, Batch 92's fourth member,
       filled into Batch 91 and a docs-only task: `src/ui/hud/panels/run-over/README.md`'s rule 6 still read
       "the live screen has no sortable columns **because it has no figures**", and that second clause died

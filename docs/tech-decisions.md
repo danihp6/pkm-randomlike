@@ -1343,6 +1343,26 @@ frame and the live panel render the same model (the view carries `previewSeed`, 
 paints `previewRoomFor`), so the two renderings cannot drift — and **no other screen may
 adopt a random seed by citing this decision**.
 
+**Amended (`2026-10-28`): the walkers walk, on the route's own step.** The window used to
+draw still sprites that jumped from cell to cell. The **model keeps jumping**:
+`stepPreviewWalkers` still advances once per `ROUTE_PREVIEW_STEP_MS` (600 ms), the step
+counter is a function of the tick count alone and every `walker:<id>:<step>` stream replays
+exactly, so `preview.ts` and its fixed-seed replay do not move. Only the **paint** walks:
+one tile's 24 px slide takes the route scene's own `WALK_STEP_MS` (200 ms, linear) and the
+rest of the tick is a stand. `WALK_STEP_MS`, `WALK_FRAME_MS` and `walkerPaint` in
+`src/ui/hud/panels/main-menu/routeWindow.ts` are the one place a preview sprite is painted:
+the sprite is the species' committed overworld **pair** (`pokemonOverworldSheet`) drawn at
+`24 / sheet.size` in the same 24 px box, playing the pair's `walk` strip at
+`FOLLOWER_FRAME_RATE` (5 fps) while it moves and its `idle` strip while it stands, with the
+`side` row flipped for `W`. A first paint and a room change set the box with no transition,
+so a mount never slides in from the window's corner. The walk's clock is **elapsed time
+only** — no draw of any kind — which is why no fold re-pins. The pair PNGs are gitignored
+local art, so a clone without the asset store, and any species the manifest lists in
+`missing`, keeps the portrait crop the panel drew before; a pair whose image 404s is
+remembered in a failed set, flips its walker to that crop on the next paint and leaves no
+empty box and no thrown error. A later screen that wants the same cadence reuses
+`WALK_STEP_MS`; it does not declare a second one.
+
 ## D56 - The monthly ranking is global, anonymous and discovered at deploy time *(decided)*
 
 Until this decision every STATS figure came from `save.history`, so the ranking screen

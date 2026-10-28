@@ -7,16 +7,22 @@ vi.mock('../../../../engine/routes/preview', async (importOriginal) => {
 
 import { CARPET, EXIT, FLOOR, WALL } from '../../../../engine/map';
 import type { TileMap } from '../../../../engine/map';
+import type { PokemonOverworldSheet } from '../../../../data/pokemonOverworld';
+import { PORTRAIT_ATLAS_URL } from '../../../../data/portraits';
 import { previewRoute, previewWalkers, type PreviewRoom } from '../../../../engine/routes/preview';
 import { resolveGroundFrame } from '../../../../engine/tileFrames';
 import type { TilesetConfig } from '../../../../engine/tileset';
+import { FOLLOWER_FRAME_RATE } from '../../../../render/pokemonFollower';
 import {
   ROUTE_PREVIEW_STEP_MS,
+  WALK_FRAME_MS,
+  WALK_STEP_MS,
   previewOrigin,
   previewRoomFor,
   previewTileBox,
   previewWalkerBox,
   tileBackground,
+  walkerPaint,
   type PreviewTileset,
 } from './routeWindow';
 
@@ -59,6 +65,18 @@ function positionOf(frame: number, cols: number): string {
 describe('ROUTE_PREVIEW_STEP_MS', () => {
   it('is the panel’s one timer step', () => {
     expect(ROUTE_PREVIEW_STEP_MS).toBe(600);
+  });
+});
+
+describe('WALK_STEP_MS', () => {
+  it('is the route scene’s own step, inside the model’s tick', () => {
+    expect(WALK_STEP_MS).toBe(200);
+    expect(WALK_STEP_MS).toBeLessThan(ROUTE_PREVIEW_STEP_MS);
+  });
+
+  it('frames the strip at the route follower’s rate', () => {
+    expect(WALK_FRAME_MS).toBe(1000 / FOLLOWER_FRAME_RATE);
+    expect(WALK_FRAME_MS).toBe(200);
   });
 });
 
@@ -167,5 +185,84 @@ describe('tileBackground', () => {
 
     expect(background.images).toEqual(['atlas.png']);
     expect(background.positions).toEqual([positionOf(ground.frame, TILESET.atlas.cols)]);
+  });
+});
+
+/** A committed pair, shaped like `src/assets/pokemon/<fileId>.json` but small enough to pin. */
+const SHEET: PokemonOverworldSheet = {
+  speciesId: 'pikachu',
+  fileId: 25,
+  textureKey: 'pokemon:25',
+  url: 'pairs/25.png',
+  size: 32,
+  rows: 5,
+  cols: 28,
+  dirRows: ['down', 'downright', 'up', 'upright', 'left'],
+  anims: {
+    idle: { start: 0, count: 3, durationsMs: [1333, 200, 200] },
+    walk: { start: 3, count: 6, durationsMs: [133, 133, 133, 133, 133, 133] },
+    attack: { start: 9, count: 11, durationsMs: [] },
+    special: { start: 20, count: 6, durationsMs: [] },
+    hurt: { start: 26, count: 2, durationsMs: [] },
+  },
+};
+
+const WALKER = { id: 0, speciesId: 'pikachu', tile: { x: 2, y: 3 }, facing: 'S' } as const;
+
+const STILL = { moving: false, frameStep: 0, instant: false } as const;
+const STEPPING = { moving: true, frameStep: 1, instant: false } as const;
+
+describe('walkerPaint', () => {
+  it('walks on the pair’s own strip, one 24 px cell of the sheet', () => {
+    const room = previewRoomFor('walker-paint-south', DESK);
+    const paint = walkerPaint(DESK, room, WALKER, STEPPING, SHEET);
+
+    expect(paint.box).toEqual(previewWalkerBox(DESK, room, WALKER));
+    expect(paint.box).toEqual({ x: 52, y: 82, w: 24, h: 24 });
+    expect(paint.frame).toBe(4);
+    expect(paint.backgroundImage).toBe('url("pairs/25.png")');
+    expect(paint.backgroundPosition).toBe('-96px 0px');
+    expect(paint.backgroundSize).toBe('672px 120px');
+    expect(paint.transform).toBe('none');
+    expect(paint.transitionMs).toBe(WALK_STEP_MS);
+  });
+
+  it('stands on the idle strip’s first frame, whatever the clock says', () => {
+    const room = previewRoomFor('walker-paint-idle', DESK);
+    const paint = walkerPaint(DESK, room, WALKER, { ...STILL, frameStep: 4 }, SHEET);
+
+    expect(paint.frame).toBe(0);
+    expect(paint.backgroundPosition).toBe('0px 0px');
+  });
+
+  it('draws the side row flat for E and mirrored for W', () => {
+    const room = previewRoomFor('walker-paint-side', DESK);
+    const east = walkerPaint(DESK, room, { ...WALKER, facing: 'E' }, STEPPING, SHEET);
+    const west = walkerPaint(DESK, room, { ...WALKER, facing: 'W' }, STEPPING, SHEET);
+
+    expect(east.frame).toBe(116);
+    expect(east.backgroundPosition).toBe('-96px -96px');
+    expect(east.transform).toBe('none');
+    expect(west.frame).toBe(116);
+    expect(west.backgroundPosition).toBe('-96px -96px');
+    expect(west.transform).toBe('scaleX(-1)');
+  });
+
+  it('asks for no slide on a first paint and a room change', () => {
+    const room = previewRoomFor('walker-paint-instant', DESK);
+
+    expect(walkerPaint(DESK, room, WALKER, { ...STEPPING, instant: true }, SHEET).transitionMs).toBe(0);
+    expect(walkerPaint(DESK, room, WALKER, STEPPING, SHEET).transitionMs).toBe(WALK_STEP_MS);
+  });
+
+  it('falls back to the species’ portrait when the pair is absent', () => {
+    const room = previewRoomFor('walker-paint-portrait', DESK);
+    const paint = walkerPaint(DESK, room, WALKER, STEPPING, null);
+
+    expect(paint.frame).toBeNull();
+    expect(paint.backgroundImage).toBe(`url("${PORTRAIT_ATLAS_URL}")`);
+    expect(paint.backgroundImage).not.toContain('pairs/25.png');
+    expect(paint.backgroundSize).toContain('px');
+    expect(paint.box).toEqual({ x: 52, y: 82, w: 24, h: 24 });
   });
 });
