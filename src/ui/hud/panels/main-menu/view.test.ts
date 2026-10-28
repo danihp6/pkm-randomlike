@@ -14,6 +14,8 @@ import {
   MAIN_MENU_ACTIONS,
   MAIN_MENU_BOARD,
   MAIN_MENU_BOARD_NARROW,
+  MAIN_MENU_CARD_H,
+  MAIN_MENU_CARD_H_NARROW,
   MAIN_MENU_FOOTER_NARROW,
   MAIN_MENU_GLOW,
   MAIN_MENU_SLUG,
@@ -96,11 +98,11 @@ afterEach(() => {
 });
 
 describe('liveMainMenuView', () => {
-  it('draws the four navigable rows, in board order, with the run’s position', () => {
+  it('draws the five navigable rows, in board order, with the run’s position', () => {
     const run = savedRun();
     const view = liveMainMenuView(run, 0);
 
-    expect(view.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats']);
+    expect(view.rows.map((row) => row.id)).toEqual(['continue', 'new', 'options', 'stats', 'ranking']);
     expect(view.rows.map((row) => row.id)).toEqual([...MAIN_MENU_ACTIONS]);
     expect(view.rows.every((row) => row.enabled)).toBe(true);
     expect(view.rows.map((row) => row.label)).toEqual([
@@ -108,22 +110,29 @@ describe('liveMainMenuView', () => {
       t('menu.new'),
       t('menu.options'),
       t('menu.stats'),
+      t('stats.actionRanking'),
     ]);
     expect(view.rows[0]!.value).toBe(runPositionLabel(run));
     expect(view.rows[0]!.value).toContain(getBiome(biomeForMap(run.seed, run.mapIndex)).name);
-    expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '', '']);
+    expect(view.rows.slice(1).map((row) => row.value)).toEqual(['', '', '', '']);
     expect(view.title).toBe(t('menu.title'));
     expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
     expect(view.version).toBeNull();
   });
 
-  it('pushes the STATS row with and without a run', () => {
+  it('pushes the STATS and RANKING rows with and without a run', () => {
     for (const run of [savedRun(), null]) {
       const rows = liveMainMenuView(run, 0).rows;
 
-      expect(rows.at(-1)).toEqual({
+      expect(rows.at(-2)).toEqual({
         id: 'stats',
         label: t('menu.stats'),
+        value: '',
+        enabled: true,
+      });
+      expect(rows.at(-1)).toEqual({
+        id: 'ranking',
+        label: t('stats.actionRanking'),
         value: '',
         enabled: true,
       });
@@ -164,7 +173,7 @@ describe('liveMainMenuView', () => {
   it('drops the CONTINUE row and every portrait without a run', () => {
     const view = liveMainMenuView(null, 0);
 
-    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats']);
+    expect(view.rows.map((row) => row.id)).toEqual(['new', 'options', 'stats', 'ranking']);
     expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
     expect(view.portraits).toEqual([]);
     expect(view.stats.map((stat) => stat.id)).toEqual(['wins', 'elite', 'monthly']);
@@ -178,11 +187,13 @@ describe('liveMainMenuView', () => {
     expect(liveMainMenuView(run, 1).selected).toBe('new');
     expect(liveMainMenuView(run, 2).selected).toBe('options');
     expect(liveMainMenuView(run, 3).selected).toBe('stats');
-    expect(liveMainMenuView(run, 9).selected).toBe('stats');
+    expect(liveMainMenuView(run, 4).selected).toBe('ranking');
+    expect(liveMainMenuView(run, 9).selected).toBe('ranking');
     expect(liveMainMenuView(run, -4).selected).toBe('continue');
     expect(liveMainMenuView(null, 0).selected).toBe('new');
     expect(liveMainMenuView(null, 2).selected).toBe('stats');
-    expect(liveMainMenuView(null, 9).selected).toBe('stats');
+    expect(liveMainMenuView(null, 3).selected).toBe('ranking');
+    expect(liveMainMenuView(null, 9).selected).toBe('ranking');
   });
 
   it('is pure: the same input is deep-equal and JSON round-trips unchanged', () => {
@@ -416,7 +427,7 @@ describe('forLayout', () => {
 
     expect(view.portraits).toEqual([]);
     expect(view.rows.some((row) => row.id === 'continue')).toBe(false);
-    expect(view.rows.map((row) => row.value)).toEqual(['', '', '']);
+    expect(view.rows.map((row) => row.value)).toEqual(['', '', '', '']);
     expect(forLayout(view, 'wide')).toBe(view);
     expect(forLayout(view, 'compact')).toBe(view);
   });
@@ -612,6 +623,70 @@ describe('MAIN_MENU_FOOTER_NARROW', () => {
     expect([...MAIN_MENU_BOARD.footer.columns]).toEqual([96, 240, 724]);
     expect(MAIN_MENU_BOARD.footer.labelY).toBe(616);
     expect(declarations(desktopCss, '.main-menu__stat').get('top')).toBe('616px');
+  });
+});
+
+describe('the five-row card', () => {
+  const deskContent = 63 + 5 * 54 + 4 * 8;
+  const phoneContent = 11 + 5 * 48 + 4 * 6;
+
+  it('keeps the desk card above the footer’s first label', () => {
+    expect(MAIN_MENU_CARD_H[4]).toBe(362);
+    expect(MAIN_MENU_CARD_H[5]).toBe(372);
+    expect(deskContent).toBe(365);
+    expect(MAIN_MENU_CARD_H[5]).toBeGreaterThanOrEqual(deskContent);
+    expect(MAIN_MENU_BOARD.card.y + MAIN_MENU_CARD_H[5]!).toBeLessThanOrEqual(
+      MAIN_MENU_BOARD.footer.labelY - 8,
+    );
+  });
+
+  it('keeps the phone card above its footer’s first block', () => {
+    expect(MAIN_MENU_CARD_H_NARROW[4]).toBe(264);
+    expect(MAIN_MENU_CARD_H_NARROW[5]).toBe(275);
+    expect(phoneContent).toBe(275);
+    expect(MAIN_MENU_CARD_H_NARROW[5]).toBeGreaterThanOrEqual(phoneContent);
+    expect(MAIN_MENU_BOARD_NARROW.card.y + MAIN_MENU_CARD_H_NARROW[5]!).toBeLessThanOrEqual(
+      MAIN_MENU_FOOTER_NARROW.wins.y - 8,
+    );
+  });
+
+  it('draws exactly those heights in the stylesheet, both blocks', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const desk = declarations(desktopCss, ".main-menu__card[data-rows='5']");
+    const deskFour = declarations(desktopCss, ".main-menu__card[data-rows='4']");
+    const phone = declarations(COMPACT_CSS, ".main-menu__card[data-rows='5']");
+    const phoneFour = declarations(COMPACT_CSS, ".main-menu__card[data-rows='4']");
+
+    expect(sharp(desk.get('height'))).toBe(MAIN_MENU_CARD_H[5]);
+    expect(sharp(deskFour.get('height'))).toBe(MAIN_MENU_CARD_H[4]);
+    expect(sharp(phone.get('height'))).toBe(MAIN_MENU_CARD_H_NARROW[5]);
+    expect(sharp(phoneFour.get('height'))).toBe(MAIN_MENU_CARD_H_NARROW[4]);
+    expect(desk.get('height')).toBe('372px');
+    expect(phone.get('height')).toBe('275px');
+  });
+
+  it('computes the fit from the padding, the gap and the row height the stylesheet draws', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const desk = declarations(desktopCss, '.main-menu__card');
+    const phone = declarations(COMPACT_CSS, '.main-menu__card');
+
+    expect(sharp(desk.get('padding'))).toBe(63);
+    expect(sharp(desk.get('gap'))).toBe(8);
+    expect(sharp(declarations(desktopCss, '.main-menu__row').get('height'))).toBe(MAIN_MENU_BOARD.row.h);
+    expect(sharp(phone.get('padding'))).toBe(11);
+    expect(sharp(phone.get('gap'))).toBe(6);
+    expect(sharp(declarations(COMPACT_CSS, '.main-menu__row').get('height'))).toBe(
+      MAIN_MENU_BOARD_NARROW.row.h,
+    );
+  });
+
+  it('never shrinks a row, so the phone card keeps the frame’s 48 px and 54 px pitch', () => {
+    const desktopCss = MAIN_MENU_CSS.slice(0, MAIN_MENU_CSS.indexOf('@media (max-width: 600px)'));
+    const inner = MAIN_MENU_CARD_H_NARROW[5]! - 2;
+    const content = 11 + 5 * MAIN_MENU_BOARD_NARROW.row.h + 4 * 6;
+
+    expect(content).toBeGreaterThan(inner);
+    expect(declarations(desktopCss, '.main-menu__row').get('flex-shrink')).toBe('0');
   });
 });
 

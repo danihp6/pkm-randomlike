@@ -17,14 +17,18 @@ carries over.
   holds a run with a living party, and it shows the map it stands on, that map's
   biome and the party's own portraits — the CONTINUE row paints one portrait cell per
   member, in party order, and only an unnamed species falls back to an empty box),
-  **Options** (the settings screen) and **STATS** (the stats and ranking screen).
+  **Options** (the settings screen), **STATS** (the stats and ranking screen) and
+  **RANKING** (the same screen opened straight on its monthly ranking), which is the
+  card's last row and is drawn with and without a save.
   Starting a new run only replaces the saved one once its starter is picked, so
   cancelling at the starter pick returns to the menu with the run in progress intact.
   **STATS** opens over the menu on the history of every finished run — the totals
   across every run, the run list, the Pokémon table and the monthly **ranking**, which
   is **global** (every player's month, `D56`) while the totals, the runs and the table
   stay this device's own record, each with its own empty state — and **BACK** returns
-  to the menu; the DOM HUD draws the row, the canvas fallback keeps its three. The
+  to the menu; **RANKING** is that same screen opened on the ranking mode, one press
+  from the menu, and **BACK** returns to the five-row menu. The DOM HUD draws the rows,
+  the canvas fallback keeps its three. The
   records footer under the menu prints
   three **live** figures — **WINS** (every finished run won), **MAX ELITE STRIKE** (the
   deepest floor a finite run reached) and **MONTHLY MAX STRIKE** (the deepest floor a

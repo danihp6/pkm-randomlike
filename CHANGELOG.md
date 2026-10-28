@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **STATS and RANKING are two rows of the main menu.** `[Task-211]`, the second of Batch 89, and a
+      decision the human took on `2026-10-27` ("dividir en dos botones del menú stats y ranking"): `ranking`
+      joins `MAIN_MENU_ROW_IDS`, so the menu's card grows to five rows and the monthly table is one press
+      away instead of two. The row reuses the existing `stats.actionRanking` string, opens the stats panel
+      on its ranking mode (the panel already had the mode and its two sub-tabs, so no screen is duplicated)
+      and the arrow steps five and wraps. The card's frozen geometry grows with it — `MAIN_MENU_CARD_H[5]`
+      is 372 px at the desk (bottom 608, 8 px above the footer) and 275 px at the phone (bottom 665,
+      inside the 676 frame), with `data-rows="5"` driving both stylesheets. The `01-main-menu` fixture gains
+      the row and `01b-main-menu-no-save` keeps four. Gates: `npm test` 4993 passed / 69 skipped and
+      `npm run build` green at task QA, 5039 passed on the combined tree. Measured live over CDP at
+      1280×800 and 390×844: five rows in order at pitch 54, each opening its own view, the keyboard
+      reaching RANKING, and neither card intersecting the footer.
 - [x] **Evolution is its own tab, between STATS and MOVES.** `[Task-205]`, the first of Batch 89: the
       detail card had two tabs (`'stats' | 'moves'`) and the evolution graph lived as a band inside STATS,
       so the board's third tab did not exist. `'evolution'` joins `DetailTab` and `DETAIL_TABS`, the tab

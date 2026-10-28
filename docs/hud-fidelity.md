@@ -327,6 +327,28 @@ species the atlas does not name (or a row with no id) keeps the empty 4 % box, a
 keeps its violet hairline. The row's HP fill starts at the track's left edge — the baked FRLG
 track's 34.5 px inset retired — so a full bar paints edge to edge and a fractional one starts flush.
 
+**The menu card's five rows.** The main menu's card draws five rows on the desk — CONTINUE, NEW
+RUN, OPTIONS, STATS and RANKING — and four without a save (NEW RUN, OPTIONS, STATS, RANKING),
+because `liveMainMenuView` in `src/ui/hud/panels/main-menu/view.ts` pushes RANKING even with no
+run. RANKING is the STATS screen opened straight on its `ranking` mode: the row's label is the
+existing `stats.actionRanking` string and its value is empty, so it paints no value node and no
+portraits; the scene's `openStats('ranking')` mounts the very panel STATS mounts on `totals`, and
+BACK returns to the menu. The board has no `01` node for a fifth row — it predates the row — so
+the numbers below are data in the view, not a frame export.
+
+The card's height is data: `MAIN_MENU_CARD_H` is `{ 4: 362, 5: 372 }` and
+`MAIN_MENU_CARD_H_NARROW` is `{ 4: 264, 5: 275 }`, and `main-menu.css` draws exactly those
+numbers in `.main-menu__card[data-rows='5']` (372 px, and 275 px inside `max-width: 600px`),
+the wrapper's `data-rows` being `view.rows.length`. On the desk the card is
+`padding: 63px 0 0 19px`, `gap: 8px` and 54 px rows at a 62 px pitch, so five rows need
+`63 + 5·54 + 4·8 = 365` px: **372** puts the card's bottom at 608, 8 px above the footer's first
+label at y 616. 424 — the 4-row height plus one pitch — would reach 660 and paint over the
+MONTHLY MAX STRIKE figure. On the phone the card is `padding: 11px 0 0 23px`, `gap: 6px`, 48 px
+rows at a 54 px pitch, so five rows need `11 + 5·48 + 4·6 = 275` px of content: **275** puts its
+bottom at 665, 11 px above the footer's first block at 676, while 318 would collide. The card's
+1 px border leaves 273 px of content box, so the rows carry `flex-shrink: 0` and stay 48 px on
+the frame's 54 px pitch instead of squeezing to 47.6.
+
 ## The gate's measured table
 
 Status: **the gate's own evidence** (2026-10-27, branch `task-197`). One row per frame per viewport,

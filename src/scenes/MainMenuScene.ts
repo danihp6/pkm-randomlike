@@ -48,8 +48,8 @@ import {
 } from '../ui/hud/panels/stats';
 import { runPositionLabel } from '../ui/runSummary';
 
-/** The four things the menu can do; `continue` only exists with a saved run. */
-type MenuAction = 'continue' | 'new' | 'options' | 'stats';
+/** The five things the menu can do; `continue` only exists with a saved run. */
+type MenuAction = 'continue' | 'new' | 'options' | 'stats' | 'ranking';
 
 /** The row labels as keys: a table of translated strings would freeze the locale. */
 const MENU_LABELS: Readonly<Record<MenuAction, TranslationKey>> = {
@@ -57,6 +57,7 @@ const MENU_LABELS: Readonly<Record<MenuAction, TranslationKey>> = {
   new: 'menu.new',
   options: 'menu.options',
   stats: 'menu.stats',
+  ranking: 'stats.actionRanking',
 };
 
 function menuLabel(action: MenuAction): string {
@@ -292,16 +293,16 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   /**
-   * Swaps the menu panel for the stats one, opened on TOTALS and the newest month.
+   * Swaps the menu panel for the stats one, opened on `mode` and the newest month.
    * The menu's save, its history and every navigation stay here: the panel only
    * paints the view and answers an intent.
    */
-  private openStats(): void {
+  private openStats(mode: StatsMode = 'totals'): void {
     if (!this.dom || this.statsOpen || typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposePanel();
-    this.statsMode = 'totals';
+    this.statsMode = mode;
     this.statsMonth = statsMonths(this.history, new Date())[0]?.key ?? null;
     this.stats = mountStats(host, this.statsView(), (intent) => this.handleStatsIntent(intent));
     this.statsOpen = true;
@@ -428,6 +429,9 @@ export class MainMenuScene extends Phaser.Scene {
       case 'stats':
         this.openStats();
         return;
+      case 'ranking':
+        this.openStats('ranking');
+        return;
     }
   }
 
@@ -460,6 +464,9 @@ export class MainMenuScene extends Phaser.Scene {
         return;
       case 'stats':
         this.openStats();
+        return;
+      case 'ranking':
+        this.openStats('ranking');
         return;
     }
   }

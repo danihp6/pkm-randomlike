@@ -9289,7 +9289,7 @@ without moving either batch.
       Phase 17 records the trade, because the oval is a CSS layer and the ranking is a call-site.
       *Dependencies:* `[Task-181]` (merged) and `[Task-199]` (the records the ranking counts). *(Batch 88)*
 
-- [ ] **[Task-211] STATS and RANKING are two rows of the main menu.** Decided by the human on
+- [x] **[Task-211] STATS and RANKING are two rows of the main menu.** Decided by the human on
       `2026-10-27` ("dividir en dos botones del menú stats y ranking"). Today the menu has four rows —
       `MAIN_MENU_ROW_IDS = ['continue', 'new', 'options', 'stats']`
       (`src/ui/hud/panels/main-menu/view.ts` 8) — and the ranking is a **mode inside** the stats screen
