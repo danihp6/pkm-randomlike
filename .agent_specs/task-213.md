@@ -36,6 +36,9 @@ Create or modify **nothing** outside this list.
 - `src/ui/hud/panels/battle-hp/view.test.ts`
 - `src/ui/hud/panels/battle-hp/battleHp.tsx`
 - `src/ui/hud/panels/battle-hp/battleHp.css`
+- `src/ui/hud/panels/battle-hp/mount.tsx` — **one line only (line 27)**: the initial
+  `BattleHpView` literal gains `stageChips: []` and `stageBox: null`, because the
+  widened `BattleHpView` makes both fields required. Nothing else in the file moves.
 - `src/ui/hud/panels/battle-hp/README.md` (only the role lines this task changes)
 - `src/i18n/en.ts`
 - `src/i18n/es.ts`
@@ -60,11 +63,15 @@ pair** (`src/i18n/{en,es}.ts`) — `[Task-211]` released it (its RANKING row reu
 - `src/engine/battle/fighter.ts` — `BoostId`, `BOOST_IDS`, `Boosts`, `clampBoost`.
 - `src/engine/battle/state.ts` — `BattleState`, `liveSlots`, `slotActiveIndex`,
   `activeFighter` (all already imported by `state.ts`).
-- `src/ui/hud/panels/battle-hp/{mount.tsx,index.ts}` and
+- `src/ui/hud/panels/battle-hp/index.ts` and
   `src/ui/hud/panels/battle-hp/README.md`; `src/ui/hud/panels/battle-moves/view.ts`
   (`battleMovesBox`, for the tests' clearance assertions — **read-only**).
+  `src/ui/hud/panels/battle-hp/mount.tsx` is **not** read-only: it is the panel file
+  this task edits on one line (the initial literal, exclusive list above), and the
+  rest of it is read as-is.
 - `src/scenes/BattleScene.ts` — **read-only**: `mountBattleHp` builds its own view
-  through `battleHpView`, so a wider `BattleHpView` needs no scene change.
+  through `battleHpView`, so a wider `BattleHpView` needs no scene change — the only
+  mount-side edit this task makes is `mount.tsx`'s initial literal.
 - `design/frames/05-battle-hud.json` — read only, never edit (a Figma export).
 
 ## 🔒 Contract
@@ -198,6 +205,31 @@ Consequences, all of which the tests pin:
 - The layer keeps taking no pointer event (the battle is driven by keys and the pad);
   the chips are inert spans, never buttons.
 
+### `mount.tsx` — the initial literal, and nothing else
+
+Line 27 today is:
+
+```ts
+let view: BattleHpView = { boxes: [], foeBalls: [], foeBallsBox: null };
+```
+
+`stageChips` and `stageBox` are **required** on the widened `BattleHpView` (no `?`,
+no default), so that literal no longer typechecks and becomes:
+
+```ts
+let view: BattleHpView = { boxes: [], foeBalls: [], foeBallsBox: null, stageChips: [], stageBox: null };
+```
+
+- This is the **only** change this task makes in the file — the same declaration,
+  with the two fields appended in either order. `paint`, `update`, `dispose`, the
+  `BattleHpController` type and `mountBattleHp`'s three-parameter signature are
+  untouched, and `battleHpView(state, viewport, doubles)` stays the only writer of
+  `view` after the first paint.
+- **No behaviour change:** `[]` / `null` are exactly what "no chip yet" means, so
+  the DOM painted before the first snapshot is identical to today's.
+- Nothing else in `src/ui/hud/panels/battle-hp/mount.tsx` is edited, and no other
+  mount or barrel file is touched.
+
 ### `battleHp.css` — the board's colours
 
 - `.battle-hp__stage { position: absolute; border-radius: 8px; text-align: center;
@@ -256,7 +288,12 @@ only configuration, and they live in the i18n pair, not in `src/data/`.
     `npx vitest run src/ui/hud/state.test.ts src/ui/hud/panels/battle-hp`.
   - `npm run build` — `tsc --noEmit && vite build`.
   - `npm run lint`.
-  - `git diff --name-only main...task-213` — every path must be in the exclusive list.
+  - `git diff --name-only main...task-213` — every path must be in the exclusive list,
+    which now includes `src/ui/hud/panels/battle-hp/mount.tsx`. That file's diff must
+    be **one changed line** (line 27's initial `BattleHpView` literal), checked with
+    `git diff --numstat main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx`
+    (expect `1  1`) and read in full at
+    `git diff main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx`.
   - **This task owes a browser pass**: three `[live]` criteria below.
     `npm run dev` (the dev menu exists only in a dev build — `.env.development`), open
     `http://localhost:5173/?hud=dom`, continue a run, press `F` for the debug menu,
@@ -287,9 +324,15 @@ only configuration, and they live in the i18n pair, not in `src/data/`.
       `[data-hud-stage]` per chip, `data-tone` / `data-stage` set, and **no**
       `[data-hud-battle-stages]` node when `stageBox` is null.
     - [ ] `[unit]` It typechecks and builds clean.
+    - [ ] `[unit]` `mount.tsx` carries **only** the literal change: its whole diff is
+      line 27 gaining `stageChips: []` and `stageBox: null`, with `paint`, `update`
+      and `dispose` byte-identical to `main` — `git diff --numstat
+      main...task-213 -- src/ui/hud/panels/battle-hp/mount.tsx` prints `1  1`, and no
+      other hunk appears in that file's diff.
     - [ ] `[unit]` Nothing outside the exclusive paths was touched — in particular
       `src/engine/**`, `src/scenes/**`, `src/ui/hud/panels/battle-moves/**` and
-      `design/frames/**` are byte-identical to `main`.
+      `design/frames/**` are byte-identical to `main`, and no other file of
+      `src/ui/hud/panels/battle-hp/**` changes besides the six this task owns.
   - **Live.**
     - [ ] `[live]` At **1280×800**, after the lead's Swords Dance
       (`[data-hud-hp="player-0"]` is `{64,660,368,100}`): `[data-hud-battle-stages]`
@@ -341,7 +384,9 @@ only configuration, and they live in the i18n pair, not in `src/data/`.
   cell prints (`battle-moves` is `[Task-214]`'s).
 - Making a chip interactive (a press, a tooltip, a focus ring): the chips are paint.
 - `src/scenes/BattleScene.ts` in any form, the canvas HP kits, the ball row
-  (`[Task-212]`, merged), `src/ui/hud/panels/battle-hp/mount.tsx` (its
-  `battleHpView(state, viewport, doubles)` call already returns the new fields),
+  (`[Task-212]`, merged), **anything in `src/ui/hud/panels/battle-hp/mount.tsx`
+  beyond line 27's two new literal fields** (its `battleHpView(state, viewport,
+  doubles)` call already returns the new fields, so the call, the controller and the
+  `paint`/`update`/`dispose` bodies need no change),
   `design/frames/**`, `src/engine/**`, `src/data/**`, `package.json`,
   `vite.config.ts`, `src/main.ts`, any `SAVE_VERSION` step.
