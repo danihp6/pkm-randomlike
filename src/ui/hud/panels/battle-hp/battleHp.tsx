@@ -74,10 +74,11 @@ function HpBox(props: Readonly<{ box: HpBoxView }>): JSX.Element {
 }
 
 /**
- * The battle's HP boxes over the canvas, and the foe's remaining team as a ball row
- * under its box. The layer takes no pointer event and the cards take no press: the
- * battle is driven by keys, the pad and the canvas' own zones, so nothing here may
- * eat a tap. The row's count is its accessible name: digits only, no locale.
+ * The battle's HP boxes over the canvas, the foe's remaining team as a ball row
+ * under its box, and the player lead's stat stages as a chip grid above its column.
+ * The layer takes no pointer event and the cards take no press: the battle is driven
+ * by keys, the pad and the canvas' own zones, so nothing here may eat a tap. The
+ * row's count is its accessible name: digits only, no locale.
  */
 export function BattleHp(props: BattleHpProps): JSX.Element {
   const [settled, setSettled] = useState(false);
@@ -118,6 +119,29 @@ export function BattleHp(props: BattleHpProps): JSX.Element {
               aria-hidden="true"
               style={ballStyle(ball, row)}
             />
+          ))}
+        </div>
+      )}
+      {props.view.stageBox === null ? null : (
+        <div class="battle-hp__stages" data-hud-battle-stages style={rectStyle(props.view.stageBox)}>
+          {props.view.stageChips.map((chip) => (
+            <span
+              key={chip.stat}
+              class="battle-hp__stage"
+              data-hud-stage={chip.stat}
+              data-stage={String(chip.stage)}
+              data-tone={chip.tone}
+              role="img"
+              aria-label={`${chip.label} ${chip.sign}`}
+              style={rectStyle(chip.box)}
+            >
+              <span class="battle-hp__stage-sign" aria-hidden="true">
+                {chip.sign}
+              </span>
+              <span class="battle-hp__stage-label" aria-hidden="true">
+                {chip.label}
+              </span>
+            </span>
           ))}
         </div>
       )}

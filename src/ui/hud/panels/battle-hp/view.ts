@@ -1,3 +1,4 @@
+import type { BoostId } from '../../../../engine/battle/fighter';
 import type { HudState } from '../../state';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
@@ -42,6 +43,33 @@ export type BattleHpView = Readonly<{
   foeBalls: readonly HpBallView[];
   /** The row's box (the balls' union), or null when `foeBalls` is empty. */
   foeBallsBox: Rect | null;
+  /** The player's lead's non-zero stages, board order; `[]` with no battle or all zero. */
+  stageChips: readonly HpStageChipView[];
+  /** The chips' union box (viewport coordinates), or null when there is no chip. */
+  stageBox: Rect | null;
+}>;
+
+/** The board's chip: a 34 px square, 6 px apart, three to a row. */
+export const STAGE_CHIP = 34;
+export const STAGE_GAP = 6;
+export const STAGE_COLS = 3;
+/** The clearance the grid keeps above the player's box. */
+export const STAGE_CLEARANCE = 8;
+
+export type HpStageTone = 'up' | 'down';
+
+/** One stat stage painted as a chip: the stat, its label, its sign and its cell. */
+export type HpStageChipView = Readonly<{
+  stat: BoostId;
+  label: string;
+  /** `+2` / `-1` — the digit string painted above the label. */
+  sign: string;
+  /** −6…+6, never 0. */
+  stage: number;
+  /** `'up'` for a positive stage, `'down'` for a negative one. */
+  tone: HpStageTone;
+  /** Viewport coordinates: the chip's own 34 × 34 cell. */
+  box: Rect;
 }>;
 
 /** How long a fill takes to reach its new fraction, in ms. Below the 900 ms frame
@@ -189,6 +217,51 @@ export function foeBallRow(
   };
 }
 
+/**
+ * The player's lead's stage chips and their grid box. The board's own origin
+ * `(448, 673)` sits inside the shipped menu card, which starts at 440 here, so the
+ * grid is right-aligned to the player's HP column instead: 8 px above the topmost
+ * player box, ending on that column's own right edge, three chips a row. Zero
+ * stages and a missing battle paint nothing.
+ */
+export function battleHpStages(
+  state: HudState,
+  viewport: Viewport,
+  doubles: Readonly<{ enemy: boolean; player: boolean }>,
+): Readonly<{ chips: readonly HpStageChipView[]; box: Rect | null }> {
+  const battle = state.battle;
+  if (battle === null) return { chips: [], box: null };
+
+  const lead = battle.sides.player.actives.find((active) => active.slot === 0);
+  const stages = lead?.stages ?? [];
+  if (stages.length === 0) return { chips: [], box: null };
+
+  const column = battleHpBox(viewport, 'player', 0);
+  const above = doubles.player ? battleHpBox(viewport, 'player', 1) : column;
+  const top = Math.min(column.y, above.y);
+  const cols = Math.min(STAGE_COLS, stages.length);
+  const rows = Math.ceil(stages.length / STAGE_COLS);
+  const step = STAGE_CHIP + STAGE_GAP;
+  const w = cols * STAGE_CHIP + (cols - 1) * STAGE_GAP;
+  const h = rows * STAGE_CHIP + (rows - 1) * STAGE_GAP;
+  const box: Rect = { x: column.x + column.w - w, y: top - STAGE_CLEARANCE - h, w, h };
+
+  const chips: HpStageChipView[] = stages.map((entry, index) => ({
+    stat: entry.stat,
+    label: entry.label,
+    sign: entry.stage > 0 ? `+${entry.stage}` : `${entry.stage}`,
+    stage: entry.stage,
+    tone: entry.stage > 0 ? 'up' : 'down',
+    box: {
+      x: box.x + (index % STAGE_COLS) * step,
+      y: box.y + Math.floor(index / STAGE_COLS) * step,
+      w: STAGE_CHIP,
+      h: STAGE_CHIP,
+    },
+  }));
+  return { chips, box };
+}
+
 /** Reads only `state.battle`; a snapshot with no battle paints no box. */
 export function battleHpView(
   state: HudState,
@@ -197,7 +270,16 @@ export function battleHpView(
 ): BattleHpView {
   const battle = state.battle;
   const row = foeBallRow(state, viewport);
-  if (battle === null) return { boxes: [], foeBalls: row.balls, foeBallsBox: row.box };
+  const stages = battleHpStages(state, viewport, doubles);
+  if (battle === null) {
+    return {
+      boxes: [],
+      foeBalls: row.balls,
+      foeBallsBox: row.box,
+      stageChips: stages.chips,
+      stageBox: stages.box,
+    };
+  }
 
   const rects = new Map<string, Rect>();
   for (const entry of battleHpLayout(viewport, doubles)) {
@@ -224,5 +306,11 @@ export function battleHpView(
       });
     }
   }
-  return { boxes, foeBalls: row.balls, foeBallsBox: row.box };
+  return {
+    boxes,
+    foeBalls: row.balls,
+    foeBallsBox: row.box,
+    stageChips: stages.chips,
+    stageBox: stages.box,
+  };
 }
