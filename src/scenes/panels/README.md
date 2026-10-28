@@ -10,14 +10,15 @@ a headless test, and never imports the scene.
 
 ## Layout
 
-- `types.ts` — the port a panel draws through, the descriptor shape, the frozen panel
-  ids and the HUD records (`HudPanel`, `HudMetrics`).
+- `types.ts` — the port a panel mounts and reads through, the descriptor shape, the frozen
+  panel ids and the HUD metrics. A panel is a **render-free controller**: it mounts its
+  card into `#hud` and draws no Phaser object (`D49` amended).
 - `registry.ts` — collects the folder's `descriptor` exports, keyed by id and sorted
   by `order`; it throws on a duplicate id or a duplicate order.
 - `registry.test.ts` — the collection rules and the folder's own module convention.
-- `hud.ts` — the frame machinery and the DOM chip strip: the panel records, their collapse icons,
-  the drag/clamp/persist rules, the Transparent HUD repaint, and the party header's
-  shared level, XP and Pokevial bar.
+- `hud.ts` — the HUD's frame: the panel metrics, the open/collapsed state the quick keys and the
+  chips toggle, each card's default dock, and the mounted edge chip strip. The drag, its clamp
+  and the saved placement left with the canvas layer (`Task-208` owns their DOM parity).
 - `map.ts` — the route header, which is the floor minimap.
 - `party.ts` — the party window and its six rows.
 - `bag.ts` — the bag window: pocket tabs, filter field, item grid, money row and its

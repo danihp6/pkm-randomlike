@@ -292,3 +292,25 @@ Three things, and they are the only disagreements between this document and the 
 3. **The board is not the source of the code, the diff is.** `tokens.json` is generated, only the
    frames a screen needs are exported, and identity is a `pixelmatch` gate rather than a visual pass.
    A screen that cannot pass keeps its Phaser version.
+
+### 13.1 The canvas layer retired (`Task-200`)
+
+The DOM HUD is not a flag any more: `mountHud` runs on every boot, `?hud=dom` is a no-op alias and
+`parseHudFlags(search).dom` is always `true`. Every scene and every route panel is a **render-free
+controller** — it mounts its card into `#hud`, feeds the view and forwards intents — so the canvas
+draws the game and nothing else: the route's map, tiles, grass, fog, trainers, actors and the
+player's sprite, the battle's fighters, platforms and effects, and the level-up / evolution popup
+the board has no card for.
+
+The canvas layer that went was the only carrier of three things, and they left **with** it:
+
+1. **The collapse chip.** A collapsed card's edge chip is the DOM strip (`src/ui/hud/panels/hud/`);
+   the Phaser icon button that stood in the frame's corner is gone.
+2. **The header drag with its clamp.** Panels no longer move: there is no drag, no clamp and no
+   `startPanelDrag` / `applyStoredHudLayout` pair.
+3. **The saved slot.** `src/data/hudLayout.ts` keeps its stored shape (a save is still valid), and
+   the `collapsed` flags it holds still decide which cards a fresh boot opens — only PARTY by
+   default — but nothing writes the drag offset back any more.
+
+The DOM parity of those three (a chip that toggles, a card the player can move, and a layout worth
+saving) is **`Task-208`**, Batch 91: it is cut as its own task and nothing here assumes it shipped.

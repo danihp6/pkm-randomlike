@@ -295,6 +295,27 @@ function savedRun(): RunState {
   return createRun({ seed: 'pkm-211', starter });
 }
 
+describe('the canvas chrome path', () => {
+  const SCENES = [
+    'MainMenuScene.ts',
+    'StarterScene.ts',
+    'RouteScene.ts',
+    'BattleScene.ts',
+    'RunOverScene.ts',
+    'SettingsScene.ts',
+    'BootScene.ts',
+  ];
+
+  it('is gone from every scene: no flag, no DOM/canvas branch', () => {
+    const flag = ['DOM', 'HUD'].join('_');
+    for (const file of SCENES) {
+      const source = readFileSync(fileURLToPath(new URL(`./${file}`, import.meta.url)), 'utf8');
+      expect(source, file).not.toContain(flag);
+      expect(source, file).not.toMatch(/hudRequested|parseHudFlags\(/);
+    }
+  });
+});
+
 describe('the RANKING row', () => {
   it('opens the stats panel on its ranking mode', () => {
     stubDocument({});
@@ -371,7 +392,7 @@ describe('the RANKING row', () => {
     expect(mocks.mountMainMenu).toHaveBeenCalledTimes(1);
     expect(mocks.mountMainMenu.mock.calls[0]?.[0]).toBe(host);
     expect(mainMenuDrawnObjectCount(instance as unknown as Phaser.Scene)).toBe(0);
-    expect(SOURCE).not.toContain('DOM_HUD');
+    expect(SOURCE).not.toContain(['DOM','HUD'].join('_'));
     expect(SOURCE).not.toContain('addFrlgText');
   });
 });

@@ -1,8 +1,10 @@
 # `src/scenes/` — Phaser scenes
 
 One `Scene` per file, each registered in `src/main.ts`'s `scene` array: `Boot`, `MainMenu`,
-`Starter`, `Route`, `Battle`, `RunOver` and `Settings`. A scene draws and routes input; it
-decides nothing. Rules come from `src/engine/`, panels and their pure helpers from
+`Starter`, `Route`, `Battle`, `RunOver` and `Settings`. A scene draws the game and routes input,
+mounts its DOM card and decides nothing. **The DOM HUD is the HUD** (`D49` amended): every scene
+mounts its panel into `#hud` on a clean boot, `?hud=dom` is only an alias, and no scene draws HUD
+chrome in Phaser — `?hudFixture=<slug>` still pins a board frame. Rules come from `src/engine/`, panels and their pure helpers from
 `src/ui/`, animation registries from `src/render/` and key handling from `src/input/`. The
 dex is reached only through a typed accessor in `src/data/`, never by importing the JSON.
 
