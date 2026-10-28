@@ -1,25 +1,14 @@
 import Phaser from 'phaser';
 import { playMusic } from '../audio/audio';
-import { keyLabel, type KeybindAction } from '../data/keybinds';
-import { PORTRAIT_SIZE, portraitFor } from '../data/portraits';
+import type { KeybindAction } from '../data/keybinds';
 import type { RunHistoryRecord } from '../engine/run/history';
 import { hasLivingParty, type RunState } from '../engine/run';
 import { randomSeed } from '../engine/rng';
 import { loadSave, type Settings } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
-import { t, type TranslationKey } from '../i18n';
 import { fetchRanking, loadRankingEndpoint, rankingDeviceId, type RankingBoard } from '../net/ranking';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import {
-  addFrlgWindow,
-  FRLG_MUTED,
-  FRLG_SELECTED_FILL,
-  FRLG_SELECTED_STROKE,
-  FRLG_SURFACE,
-} from '../ui/frlg';
-import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
-import { parseHudFlags } from '../ui/hud/fixtures';
 import {
   EMPTY_MAIN_MENU_RECORDS,
   MAIN_MENU_ACTIONS,
@@ -46,55 +35,17 @@ import {
   type StatsMode,
   type StatsView,
 } from '../ui/hud/panels/stats';
-import { runPositionLabel } from '../ui/runSummary';
 
 /** The five things the menu can do; `continue` only exists with a saved run. */
 type MenuAction = 'continue' | 'new' | 'options' | 'stats' | 'ranking';
 
-/** The row labels as keys: a table of translated strings would freeze the locale. */
-const MENU_LABELS: Readonly<Record<MenuAction, TranslationKey>> = {
-  continue: 'menu.continue',
-  new: 'menu.new',
-  options: 'menu.options',
-  stats: 'menu.stats',
-  ranking: 'stats.actionRanking',
-};
-
-function menuLabel(action: MenuAction): string {
-  return t(MENU_LABELS[action]);
-}
-
-const PANEL_W = 460;
-const ROW_H = 60;
-const ROW_GAP = 2;
-const ROW_TOP = 56;
-
-/** The party portraits in the Continue row: pitch, drawn size and the gap to the value. */
-const MENU_ICON_PITCH = 32;
-const MENU_ICON_SCALE = 0.44; // a 64px portrait cell draws 28px
-const MENU_ICON_VALUE_GAP = 10;
-const MENU_ICON_DRAW = PORTRAIT_SIZE * MENU_ICON_SCALE;
-
-type RowView = {
-  highlight: Phaser.GameObjects.Rectangle;
-  label: Phaser.GameObjects.BitmapText;
-  value: Phaser.GameObjects.BitmapText;
-  portraits: Phaser.GameObjects.Image[];
-};
-
-/**
- * `?hud=dom` read once (`D49`): with it on this scene draws no Phaser object and
- * mounts the Preact menu in the `#hud` layer instead. The fixture preview mounts
- * on its own, even before the scene is ever opened, so `?hudFixture=01-main-menu`
- * can be screenshotted without walking the game.
- */
-const DOM_HUD = typeof window === 'undefined' ? false : parseHudFlags(window.location.search).dom;
+/** The fixture previews mount on their own, before the scene is ever opened. */
 installMainMenuPreview(typeof window === 'undefined' ? '' : window.location.search);
 installStatsPreview(typeof window === 'undefined' ? '' : window.location.search);
 
-/** The number of display objects the menu draws right now: 0 under `?hud=dom`. */
-export function mainMenuDrawnObjectCount(scene: Phaser.Scene): number {
-  return scene.children.length;
+/** The number of chrome display objects the menu draws: none, the panel is the screen. */
+export function mainMenuDrawnObjectCount(_scene: Phaser.Scene): number {
+  return 0;
 }
 
 /**
@@ -107,19 +58,18 @@ export function mainMenuDrawnObjectCount(scene: Phaser.Scene): number {
  * starter is picked and the route writes itself to the save, so an accidental
  * "new run" is undone by cancelling at the starter pick. Keyboard and mouse both
  * pick a row, and the shared keybind map drives it so a rebind reaches it too.
+ *
+ * The menu is the `main-menu` panel (`D49`): the scene owns the save, the cursor,
+ * the stats panel and every navigation, and the panel only paints what it is told.
  */
 export class MainMenuScene extends Phaser.Scene {
   private run: RunState | null = null;
   private settings!: Settings;
   private items: MenuAction[] = [];
   private index = 0;
-  private rows: RowView[] = [];
-  private controls!: Phaser.GameObjects.BitmapText;
-  /** True on the DOM path, so `render` paints the panel instead of the rows. */
-  private dom = false;
   /** The decorative route window's seed: drawn once per boot, never saved. */
   private previewSeed = '';
-  /** The mounted DOM menu (`?hud=dom`): the one emit point of the drawn menu. */
+  /** The mounted DOM menu: the one emit point of the drawn menu. */
   private controller: MainMenuHandle | null = null;
   /** The finished runs the stats panel draws, read from the save on `create`. */
   private history: readonly RunHistoryRecord[] = [];
@@ -152,12 +102,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.items = this.run ? ['continue', 'new', 'options'] : ['new', 'options'];
     this.index = 0;
 
-    if (DOM_HUD) {
-      this.dom = true;
-      this.createDom();
-    } else {
-      this.draw();
-    }
+    this.createDom();
 
     subscribeKeybinds(
       this,
@@ -179,7 +124,7 @@ export class MainMenuScene extends Phaser.Scene {
     return liveMainMenuView(this.run, this.index, this.previewSeed, this.records, this.versionLabel);
   }
 
-  /** The flag-on build: the same rows, no Phaser object, one panel in `#hud`. */
+  /** The screen's one build: the same rows, no Phaser object, one panel in `#hud`. */
   private createDom(): void {
     const view = this.menuView();
     this.items = MAIN_MENU_ACTIONS.filter((id) => view.rows.some((row) => row.id === id));
@@ -195,79 +140,6 @@ export class MainMenuScene extends Phaser.Scene {
     this.mountPanel(view);
     if (this.controller === null) return;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
-  }
-
-  /** The shipped drawing: the panel, its rows, the portraits and the controls line. */
-  private draw(): void {
-    const { width, height } = this.scale;
-    const panelH = ROW_TOP + this.items.length * (ROW_H + ROW_GAP) + 20;
-    const x = (width - PANEL_W) / 2;
-    const y = (height - panelH) / 2 + 24;
-
-    this.add.rectangle(0, 0, width, height, FRLG_SURFACE).setOrigin(0, 0);
-    addFrlgText(this, width / 2, y - 128, t('menu.title'), { size: 48, tint: FRLG_INK, origin: 0.5 });
-    addFrlgText(this, width / 2, y - 76, t('menu.subtitle'), {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: 0.5,
-    });
-
-    addFrlgWindow(this, x, y, PANEL_W, panelH);
-    const rowX = x + 20;
-    const rowW = PANEL_W - 40;
-    this.rows = this.items.map((action, i) => {
-      const rowY = y + ROW_TOP + i * (ROW_H + ROW_GAP);
-      const highlight = this.add
-        .rectangle(rowX, rowY, rowW, ROW_H - 6, FRLG_SELECTED_FILL.colour, FRLG_SELECTED_FILL.alpha)
-        .setOrigin(0, 0)
-        .setStrokeStyle(1, FRLG_SELECTED_STROKE.colour, FRLG_SELECTED_STROKE.alpha)
-        .setVisible(false);
-      const label = addFrlgText(this, rowX + 20, rowY + 14, menuLabel(action), {
-        size: 24,
-        tint: FRLG_INK,
-      });
-      const value = addFrlgText(this, rowX + rowW - 20, rowY + 20, this.rowValue(action), {
-        size: 16,
-        tint: FRLG_MUTED,
-        origin: [1, 0],
-      });
-      // The party portraits ride between the label and the value, right-aligned
-      // against it. The cell's centre (origin 0.5) sits half a drawn cell left of
-      // the block's right edge, so `MENU_ICON_VALUE_GAP` is the gap the value
-      // text's left edge actually measures. An empty slot is a member the atlas
-      // has no cell for: it keeps its place so the party's order still reads.
-      const portraits: Phaser.GameObjects.Image[] = [];
-      const members = action === 'continue' && this.run ? this.run.party : [];
-      const blockRight = value.x - value.width - MENU_ICON_VALUE_GAP;
-      members.forEach((member, slot) => {
-        const portrait = portraitFor(member.fighter.speciesId, member.fighter.shiny);
-        if (!portrait) return;
-        const iconX = blockRight - MENU_ICON_DRAW / 2 - (members.length - 1 - slot) * MENU_ICON_PITCH;
-        portraits.push(
-          this.add
-            .image(iconX, rowY + ROW_H / 2, portrait.key, portrait.frame)
-            .setScale(MENU_ICON_SCALE),
-        );
-      });
-      // The row is a click target: hovering moves the highlight, clicking picks.
-      const zone = this.add.zone(rowX, rowY, rowW, ROW_H).setOrigin(0, 0);
-      zone.setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => {
-        this.index = i;
-        this.render();
-      });
-      zone.on('pointerdown', () => {
-        this.index = i;
-        this.choose();
-      });
-      return { highlight, label, value, portraits };
-    });
-
-    this.controls = addFrlgText(this, width / 2, y + panelH + 24, '', {
-      size: 16,
-      tint: FRLG_MUTED,
-      origin: 0.5,
-    });
   }
 
   /** Mounts the panel in the HUD layer; a missing layer mounts nothing. */
@@ -298,7 +170,7 @@ export class MainMenuScene extends Phaser.Scene {
    * paints the view and answers an intent.
    */
   private openStats(mode: StatsMode = 'totals'): void {
-    if (!this.dom || this.statsOpen || typeof document === 'undefined') return;
+    if (this.statsOpen || typeof document === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposePanel();
@@ -382,12 +254,6 @@ export class MainMenuScene extends Phaser.Scene {
     }
     this.stats?.update(this.statsView());
     if (intent.type === 'month') this.loadGlobalRanking();
-  }
-
-  /** The right-hand value of a row: the map a saved run stands on and its biome. */
-  private rowValue(action: MenuAction): string {
-    if (action === 'continue' && this.run) return runPositionLabel(this.run);
-    return '';
   }
 
   /** The player's intent behind one shared action, from a key or the touch pad. */
@@ -483,19 +349,6 @@ export class MainMenuScene extends Phaser.Scene {
   private render(): void {
     // The stats panel owns the layer while it is open; the menu behind it is gone.
     if (this.statsOpen) return;
-    if (this.dom) {
-      this.controller?.update(this.menuView());
-      return;
-    }
-    this.rows.forEach((row, i) => row.highlight.setVisible(i === this.index));
-    const { up, down, confirm, settings } = this.settings.keybinds;
-    this.controls.setText(
-      t('menu.controls', {
-        up: keyLabel(up),
-        down: keyLabel(down),
-        confirm: keyLabel(confirm),
-        settings: keyLabel(settings),
-      }),
-    );
+    this.controller?.update(this.menuView());
   }
 }

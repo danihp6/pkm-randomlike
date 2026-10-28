@@ -16,6 +16,10 @@ vi.mock('phaser', () => {
 const mocks = vi.hoisted(() => ({
   randomSeed: vi.fn((): string => 'boot-seed'),
   playMusic: vi.fn(),
+  mountMainMenu: vi.fn((_host: object, _view: unknown, _intent: unknown) => ({
+    update: vi.fn(),
+    dispose: vi.fn(),
+  })),
   mountStats: vi.fn(() => ({ update: vi.fn(), dispose: vi.fn() })),
   loadRankingEndpoint: vi.fn(async (): Promise<string | null> => null),
 }));
@@ -26,6 +30,11 @@ vi.mock('../engine/rng', async (importOriginal) => {
 });
 
 vi.mock('../audio/audio', () => ({ playMusic: mocks.playMusic }));
+
+vi.mock('../ui/hud/panels/main-menu', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../ui/hud/panels/main-menu')>();
+  return { ...actual, mountMainMenu: mocks.mountMainMenu };
+});
 
 vi.mock('../ui/hud/panels/stats', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../ui/hud/panels/stats')>();
@@ -44,15 +53,15 @@ import { createRun, createRunPokemon, type RunState } from '../engine/run';
 import { t } from '../i18n';
 import type { RankingBoard } from '../net/ranking';
 import type { StatsMode, StatsView } from '../ui/hud/panels/stats';
-import type { MainMenuScene } from './MainMenuScene';
+import type Phaser from 'phaser';
+import { mainMenuDrawnObjectCount, type MainMenuScene } from './MainMenuScene';
 
-/** The DOM path the scene takes under `?hud=dom`, with the Phaser seams stubbed. */
+/** The scene's own state, with the Phaser seams stubbed. */
 type SceneInternals = {
   previewSeed: string;
   run: RunState | null;
   index: number;
   items: string[];
-  dom: boolean;
   statsOpen: boolean;
   input: { keyboard: { on: () => void } };
   events: { on: () => void; once: () => void };
@@ -72,9 +81,8 @@ type SceneInternals = {
 let MainMenuSceneClass: typeof MainMenuScene;
 
 beforeAll(async () => {
-  // `DOM_HUD` is read once at module load, so the flag has to be on the window
-  // before the scene is imported.
-  vi.stubGlobal('window', { location: { search: '?hud=dom' } });
+  // A clean boot, with no query string: the DOM HUD is the HUD.
+  vi.stubGlobal('window', { location: { search: '' } });
   ({ MainMenuScene: MainMenuSceneClass } = await import('./MainMenuScene'));
 });
 
@@ -82,6 +90,7 @@ beforeEach(() => {
   mocks.randomSeed.mockClear();
   mocks.randomSeed.mockReturnValue('boot-seed');
   mocks.playMusic.mockClear();
+  mocks.mountMainMenu.mockClear();
   mocks.mountStats.mockClear();
   mocks.loadRankingEndpoint.mockClear();
 });
@@ -290,7 +299,6 @@ describe('the RANKING row', () => {
   it('opens the stats panel on its ranking mode', () => {
     stubDocument({});
     const instance = scene();
-    instance.dom = true;
     instance.history = [rankingRecord()];
 
     instance.handleIntent({ type: 'ranking' });
@@ -304,7 +312,6 @@ describe('the RANKING row', () => {
   it('leaves STATS opening the panel on TOTALS', () => {
     stubDocument({});
     const instance = scene();
-    instance.dom = true;
     instance.history = [rankingRecord()];
 
     instance.handleIntent({ type: 'stats' });
@@ -316,7 +323,6 @@ describe('the RANKING row', () => {
   it('keeps TOTALS as the default parameter', () => {
     stubDocument({});
     const instance = scene();
-    instance.dom = true;
     instance.openStats('totals');
 
     expect(instance.statsMode).toBe('totals');
@@ -326,7 +332,6 @@ describe('the RANKING row', () => {
   it('walks to the fifth row and wraps back to the first', () => {
     stubDocument(null);
     const instance = scene();
-    instance.dom = true;
     instance.run = savedRun();
     instance.createDom();
 
@@ -346,7 +351,6 @@ describe('the RANKING row', () => {
   it('draws four rows without a save, ending on RANKING', () => {
     stubDocument(null);
     const instance = scene();
-    instance.dom = true;
     instance.run = null;
     instance.createDom();
 
@@ -357,10 +361,17 @@ describe('the RANKING row', () => {
     expect(instance.menuView().selected).toBe('ranking');
   });
 
-  it('keeps the canvas path at three rows', () => {
-    expect(SOURCE).toContain(
-      "this.items = this.run ? ['continue', 'new', 'options'] : ['new', 'options'];",
-    );
-    expect(SOURCE).toContain("ranking: 'stats.actionRanking',");
+  it('mounts its panel on a clean boot and draws no chrome of its own', () => {
+    const host = {};
+    stubDocument(host);
+    const instance = scene();
+
+    instance.create();
+
+    expect(mocks.mountMainMenu).toHaveBeenCalledTimes(1);
+    expect(mocks.mountMainMenu.mock.calls[0]?.[0]).toBe(host);
+    expect(mainMenuDrawnObjectCount(instance as unknown as Phaser.Scene)).toBe(0);
+    expect(SOURCE).not.toContain('DOM_HUD');
+    expect(SOURCE).not.toContain('addFrlgText');
   });
 });

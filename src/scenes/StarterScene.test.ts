@@ -44,9 +44,8 @@ type StarterInternals = {
   mode: string;
   index: number;
   pool: readonly string[];
-  dom: boolean;
+  compact: boolean;
   hint: string;
-  layout: { compact: boolean };
   handleAction(action: KeybindAction): void;
   rerollOffer(): void;
   controlsCopy(): string;
@@ -54,13 +53,12 @@ type StarterInternals = {
 
 function starter(): StarterInternals {
   const scene = new StarterScene() as unknown as StarterInternals;
-  scene.dom = true;
   scene.mode = 'finite';
   scene.seed = 'kept-seed';
   scene.index = 2;
   scene.pool = ['chikorita', 'cyndaquil', 'totodile'];
   scene.hint = '';
-  scene.layout = { compact: false };
+  scene.compact = false;
   return scene;
 }
 
@@ -110,9 +108,9 @@ describe('rerollOffer', () => {
 describe('footer copy', () => {
   it('names the reroll key the player bound, on both layouts', () => {
     const scene = starter();
-    scene.layout = { compact: false };
+    scene.compact = false;
     expect(scene.controlsCopy()).toContain(`${keyLabel('R')}  reroll`);
-    scene.layout = { compact: true };
+    scene.compact = true;
     expect(scene.controlsCopy()).toContain(`${keyLabel('R')}  reroll`);
   });
 

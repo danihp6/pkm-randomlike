@@ -80,7 +80,7 @@ function hudRoots(body: FakeElement): FakeElement[] {
 
 describe('mountHud', () => {
   afterEach(() => {
-    mountHud('').dispose();
+    mountHud('')?.dispose();
     vi.unstubAllGlobals();
   });
 
