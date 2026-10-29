@@ -122,6 +122,10 @@ tasks it integrates.
   the Orchestrator copies the spec into the worktree before launching its agent. A
   subagent receives **only** its spec path plus `AGENTS.md` — never the parent
   conversation. The spec must be enough for someone who has read nothing else.
+  A task that touches a routed screen or a HUD panel lists
+  `design/screens/<slug>.json` and `design/exports/<slug>.png` as read-only
+  inputs, with the frame's exact `caption`; a screen task that names no spec is
+  not ready to launch (`D57`).
 - **Host.** The loop has two hosts, documented in `docs/agent-ci.md` and
   `docs/agent-vm.md`: GitHub Actions (the repository is public, so its minutes are free)
   and an always-on VM whose code lives in `scripts/agent/vm/` — the cycle, the driver,

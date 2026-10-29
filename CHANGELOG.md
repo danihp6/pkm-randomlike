@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A screen task names its spec, or it is not ready to launch.** `[Task-222]`, Batch 94's third
+      member: `AGENTS.md`'s `- **Specs.**` bullet and `docs/agent-spec-template.md`'s
+      `### Inputs (read-only)` now require a task that creates or changes a routed screen or a HUD panel to
+      list `design/screens/<slug>.json` and `design/exports/<slug>.png` as read-only inputs, with the
+      frame's caption exactly as drawn and the slug rule that keeps spec, export and task from drifting
+      (`03 Route HUD` → `03-route-hud`); a screen task that names no spec is **not ready to launch**, and
+      the criterion rule adds that a `[live]` that compares pixels is not a criterion (`D57`).
+      `scripts/agent/specTemplate.test.mjs` holds both documents to it and was mutation-tested red on four
+      edits before being restored. Every criterion is `[unit]`, so the task owed no browser pass. Gates:
+      `npm test` 5091 passed / 69 skipped and `npm run build` green at task QA, 5100 passed / 69 skipped on
+      the batch's combined tree.
+
 - [x] **The pixel diff retires; fidelity is read from the spec, not from a screenshot.** `[Task-221]`,
       Batch 94's second task: the harness `D49` introduced is gone — `scripts/hud/` is deleted whole
       (`diff.mjs`, `diff.test.mjs`, `README.md`), `package.json` drops `hud:diff` (`design:tokens`

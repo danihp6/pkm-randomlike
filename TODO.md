@@ -9575,7 +9575,7 @@ is committed; until then it is unscheduled on purpose.
       Claims `scripts/hud/**` (delete), `package.json`, `docs/hud-fidelity.md` and
       `docs/hud-dom-proposal.md` §11. *Dependencies:* none.
 
-- [ ] **[Task-222] A screen task names its spec, or it is not ready to launch.** `../codebox`'s
+- [x] **[Task-222] A screen task names its spec, or it is not ready to launch.** `../codebox`'s
       `design/README.md` §6 states the rule this repo lacks: a task that creates or changes a screen
       lists its spec and its export as **read-only inputs**, with the frame's caption, and a screen
       task that names no spec is not ready to launch. Today only `[Task-201]`'s spec does; `[Task-207]`
