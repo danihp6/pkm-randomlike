@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-/** The view itself is covered by `npm run hud:diff`; the mount contract is what this file owns. */
+/** The view itself is covered by the spec check, `node scripts/design/check.mjs`; the mount contract is what this file owns. */
 vi.mock('preact', () => ({
   h: (type: unknown, props: unknown): unknown => ({ type, props }),
   render: (): void => undefined,

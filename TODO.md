@@ -9556,7 +9556,7 @@ is committed; until then it is unscheduled on purpose.
       `scripts/design/import.mjs`, `scripts/design/check.mjs` + test, `design/README.md` and
       `docs/tech-decisions.md` (`D57`). *Dependencies:* none.
 
-- [ ] **[Task-221] The pixel diff retires; fidelity is read from the spec, not from a screenshot.**
+- [x] **[Task-221] The pixel diff retires; fidelity is read from the spec, not from a screenshot.**
       `D57` (220) takes the measured gate away from `D49`, so the harness that implements it goes:
       `scripts/hud/diff.mjs`, `scripts/hud/diff.test.mjs` and `scripts/hud/README.md` are **deleted**,
       `package.json` drops `hud:diff`, and `design/diff/` stops being produced (the ignore line may

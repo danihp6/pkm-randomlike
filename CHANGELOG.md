@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The pixel diff retires; fidelity is read from the spec, not from a screenshot.** `[Task-221]`,
+      Batch 94's second task: the harness `D49` introduced is gone — `scripts/hud/` is deleted whole
+      (`diff.mjs`, `diff.test.mjs`, `README.md`), `package.json` drops `hud:diff` (`design:tokens`
+      becomes the last script) and nothing in `src`, `scripts`, `docs` or `package.json` names a pixel
+      verdict as a gate any more. `docs/hud-fidelity.md` keeps its 33-frame table as the historical record
+      and the **34** rows that read `unavailable: the frame needs screen "<id>"` now read
+      `backlog: needs screen "<id>"` — same ids, same measured numbers, no row dropped — while
+      `docs/hud-dom-proposal.md` §11 keeps the export recipe and swaps the verification loop for
+      `node scripts/design/check.mjs`; `D49`'s and `D50`'s paragraphs are amended in place (no decision
+      deleted) and point at `D57`. No runtime file moves at all. Gates: `npm test` 5069 passed / 69 skipped
+      and `npm run build` green at task QA, 5100 passed / 69 skipped on the combined tree. The `[live]`
+      criterion was measured over CDP at 1280×800 and 390×844: the DOM root set of
+      `?hudFixture=02-options` and `?hudFixture=05-battle-hud` is byte-identical to `origin/main`'s
+      (`02-options` mounts `[data-hud-panel="options"]` at both widths; `05-battle-hud` mounts only the
+      main-menu panel on both trees, because `mountBattleHp` is called from `BattleScene` alone and that
+      frame has no preview handler — so the spec's own `[data-hud-battle-hp]` selector was never
+      available and no mount path moved).
+
 - [x] **The board is an imported spec: one map, one extractor, one command, four checks.** `[Task-220]`,
       Batch 94's first task: `design/import.json` maps the board's **33** desktop frames by
       `{ slug, caption, panel, scene, mobile, states, snapshot }`, a pure `projectBoard(file, map)` in
