@@ -9516,7 +9516,7 @@ snapshot is already in the repo (`design/frames/<slug>.json` carries the text an
 `design/screens/<slug>.png` the rasters), so the import gains an **offline mode** and the artifacts are
 produced without a request. `[Task-223]` and `[Task-224]` stay `[!]` behind it.
 
-- [ ] **[Task-225] The import also runs from the committed snapshot, so a rate-limited PAT blocks
+- [x] **[Task-225] The import also runs from the committed snapshot, so a rate-limited PAT blocks
       nothing.** Measured on `2026-10-29`: `node scripts/design/import.mjs` stops at the first call with
       `figma 429 https://api.figma.com/v1/files/nfyJ8Yerc6lL1BouvCAfd3?depth=3`; the headers say
       `Retry-After: 390498`, `x-figma-plan-tier: starter`, `x-figma-rate-limit-type: low`, and the

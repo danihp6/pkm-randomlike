@@ -8,6 +8,37 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The import also runs from the committed snapshot, so a rate-limited PAT blocks nothing.**
+      `[Task-225]`, the whole of Batch 95: `node scripts/design/import.mjs` gains an **offline** mode,
+      `--from <framesDir>`, that rebuilds the Figma REST payload from the committed
+      `design/frames/<slug>.json` dumps and runs the **same** `projectBoard` the REST path uses.
+      `buildFileFromFrames` (in `scripts/design/importer.mjs`) is pure — no `fs`, no `fetch`, no clock —
+      sorts its inputs by slug, merges each dump's `text` tree back into its `geometry` tree by node id
+      (the exporter splits `characters`/`fontName`/`fontSize` away from the boxes), takes `lastModified`
+      from the greatest committed `exportedAt`, and reports a **duplicated caption** as `frame_duplicated`;
+      the command treats a missing, duplicated or twin-less caption as fatal (`1`), writes **nothing** on
+      that path, and on success writes the four artifact families in the REST path's own shape —
+      `tokens.json`, `board.json`, 33 specs and the **33 desktop** exports — hashing the bytes it copies.
+      Offline mode reads **no** environment variable and makes no request, `--check --from` recomputes and
+      compares without writing (`1` on one moved byte, listing the path), and the REST path is unchanged.
+      The four test fixtures (`fixtures/frames/*.json` in exporter shape, `fixtures/screens/*.png`) make
+      the two payloads describe the same board, so the offline projection deep-equals the REST fixture's
+      `screens` and `tokens`; the command's exit codes got their own `scripts/design/import.test.mjs`.
+      `scripts/design/README.md` and `design/README.md` now carry the two modes, when each is used, and
+      that a 429 does not block the repo. No generated artifact was committed: `design/tokens.json`,
+      `design/board.json`, `design/frames/**` and `design/import.json` are byte-identical to `main`, and
+      `node scripts/design/check.mjs` still prints `0 screens (run the import)` and `33 pending the import`.
+      Gates: `npm test` 5115 passed / 69 skipped and `npm run build` green at task QA and on the batch's
+      tree. The `[live]` criterion is a command measurement, not a browser pass: with `FIGMA_TOKEN` and
+      `FIGMA_FILE_KEY` unset, `--root <tmp> --from design/frames` exits `0` and writes **33** specs and
+      **33** exports, and `node scripts/design/check.mjs --root <tmp>` exits `0` with its four names —
+      `colour_outside_tokens: 33 screens, 0 violations`,
+      `frame_without_component: 33 entries, 0 violations`,
+      `snapshot_hash_mismatch: 0 mismatched, 0 pending the import`,
+      `variant_missing: 33 entries, 0 unresolved (report-only)`. Re-measured by the Orchestrator itself
+      as well as by Task QA. This is what `[Task-223]` and `[Task-224]` were blocked on: the artifacts
+      they read can now be produced with no PAT.
+
 - [x] **A screen task names its spec, or it is not ready to launch.** `[Task-222]`, Batch 94's third
       member: `AGENTS.md`'s `- **Specs.**` bullet and `docs/agent-spec-template.md`'s
       `### Inputs (read-only)` now require a task that creates or changes a routed screen or a HUD panel to

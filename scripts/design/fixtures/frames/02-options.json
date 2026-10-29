@@ -1,0 +1,326 @@
+{
+  "slug": "02-options",
+  "nodeId": "1:1557",
+  "exportedAt": "2026-10-21T18:23:44Z",
+  "geometry": [
+    {
+      "id": "1:1557",
+      "name": "02 Options",
+      "type": "FRAME",
+      "properties": {
+        "x": 3580,
+        "y": 0,
+        "width": 1280,
+        "height": 800,
+        "cornerRadius": 0,
+        "fills": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "color": {
+              "r": 0.019607843831181526,
+              "g": 0.027450980618596077,
+              "b": 0.0470588244497776
+            }
+          }
+        ],
+        "strokes": []
+      },
+      "children": [
+        {
+          "id": "1:1610",
+          "name": "panel",
+          "type": "RECTANGLE",
+          "properties": {
+            "x": 360,
+            "y": 216,
+            "width": 560,
+            "height": 342,
+            "cornerRadius": 11,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.92,
+                "color": {
+                  "r": 0.062745101749897,
+                  "g": 0.0862745,
+                  "b": 0.1215686
+                }
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.16,
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "1:1611",
+          "name": "row music",
+          "type": "RECTANGLE",
+          "properties": {
+            "x": 384,
+            "y": 300,
+            "width": 512,
+            "height": 44,
+            "cornerRadius": 8,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.04,
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1
+                }
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.08,
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "1:1612",
+          "name": "title",
+          "type": "TEXT",
+          "properties": {
+            "x": 384,
+            "y": 228,
+            "width": 255,
+            "height": 51,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "color": {
+                  "r": 0.9725490212440491,
+                  "g": 0.9803921580314636,
+                  "b": 0.9882352948188782
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "1:1613",
+          "name": "row label",
+          "type": "TEXT",
+          "properties": {
+            "x": 400,
+            "y": 312,
+            "width": 120,
+            "height": 13,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "color": {
+                  "r": 0.5803921818733215,
+                  "g": 0.6392157077789307,
+                  "b": 0.7215686440467834
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "1:1614",
+          "name": "chip group",
+          "type": "GROUP",
+          "properties": {
+            "x": 384,
+            "y": 360,
+            "width": 512,
+            "height": 100,
+            "fills": [],
+            "strokes": []
+          },
+          "children": [
+            {
+              "id": "1:1615",
+              "name": "chip",
+              "type": "RECTANGLE",
+              "properties": {
+                "x": 384,
+                "y": 360,
+                "width": 26,
+                "height": 26,
+                "cornerRadius": 6,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.9,
+                    "color": {
+                      "r": 0.062745101749897,
+                      "g": 0.0862745,
+                      "b": 0.1215686
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.22,
+                    "color": {
+                      "r": 1,
+                      "g": 1,
+                      "b": 1
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "1:1616",
+              "name": "chip letter",
+              "type": "TEXT",
+              "properties": {
+                "x": 390,
+                "y": 366,
+                "width": 12,
+                "height": 15,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "color": {
+                      "r": 0.4901960790157318,
+                      "g": 0.8274509906768799,
+                      "b": 0.9882352948188782
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1:1617",
+          "name": "accent rule",
+          "type": "RECTANGLE",
+          "properties": {
+            "x": 384,
+            "y": 380,
+            "width": 100,
+            "height": 1,
+            "cornerRadius": 0,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "color": {
+                  "r": 0.4901960790157318,
+                  "g": 0.8274509906768799,
+                  "b": 0.9882352948188782
+                }
+              }
+            ],
+            "strokes": []
+          }
+        }
+      ]
+    }
+  ],
+  "text": [
+    {
+      "id": "1:1557",
+      "name": "02 Options",
+      "type": "FRAME",
+      "children": [
+        {
+          "id": "1:1610",
+          "name": "panel",
+          "type": "RECTANGLE"
+        },
+        {
+          "id": "1:1611",
+          "name": "row music",
+          "type": "RECTANGLE"
+        },
+        {
+          "id": "1:1612",
+          "name": "title",
+          "type": "TEXT",
+          "properties": {
+            "characters": "SETTINGS",
+            "fontName": {
+              "family": "Silkscreen",
+              "style": "Bold"
+            },
+            "fontSize": 40
+          }
+        },
+        {
+          "id": "1:1613",
+          "name": "row label",
+          "type": "TEXT",
+          "properties": {
+            "characters": "MUSIC",
+            "fontName": {
+              "family": "Silkscreen",
+              "style": "Regular"
+            },
+            "fontSize": 10
+          }
+        },
+        {
+          "id": "1:1614",
+          "name": "chip group",
+          "type": "GROUP",
+          "children": [
+            {
+              "id": "1:1615",
+              "name": "chip",
+              "type": "RECTANGLE"
+            },
+            {
+              "id": "1:1616",
+              "name": "chip letter",
+              "type": "TEXT",
+              "properties": {
+                "characters": "M",
+                "fontName": {
+                  "family": "Silkscreen",
+                  "style": "Bold"
+                },
+                "fontSize": 11
+              }
+            }
+          ]
+        },
+        {
+          "id": "1:1617",
+          "name": "accent rule",
+          "type": "RECTANGLE"
+        }
+      ]
+    }
+  ]
+}

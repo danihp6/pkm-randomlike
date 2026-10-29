@@ -340,6 +340,90 @@ function knownVariants(frames) {
   return known;
 }
 
+const TEXT_KEYS = ['characters', 'fontName', 'fontSize'];
+
+function indexById(node, byId = new Map()) {
+  if (!node || typeof node !== 'object') return byId;
+  if (typeof node.id === 'string' && !byId.has(node.id)) byId.set(node.id, node);
+  for (const child of node.children ?? []) indexById(child, byId);
+  return byId;
+}
+
+function textKeysOf(textNode) {
+  if (!textNode) return null;
+  const properties = textNode.properties ?? textNode;
+  const picked = {};
+  for (const key of TEXT_KEYS) {
+    if (key in properties) picked[key] = properties[key];
+  }
+  return Object.keys(picked).length ? picked : null;
+}
+
+function mergeText(node, byId) {
+  if (!node || typeof node !== 'object') return node;
+  const picked = textKeysOf(byId.get(node.id) ?? null);
+  const children = node.children?.length ? node.children.map((child) => mergeText(child, byId)) : null;
+  if (!picked && !children) return node;
+  const merged = { ...node };
+  if (picked) merged.properties = { ...(node.properties ?? {}), ...picked };
+  if (children) merged.children = children;
+  return merged;
+}
+
+const bySlug = (a, b) => {
+  const left = String(a?.slug ?? '');
+  const right = String(b?.slug ?? '');
+  return left < right ? -1 : left > right ? 1 : 0;
+};
+
+/**
+ * Rebuilds the REST file payload from the exporter's committed dumps, so the same
+ * `projectBoard` projection runs with no request and no token.
+ *
+ * @param {object[]} frames  parsed `design/frames/*.json` dumps
+ *        (`{ slug, nodeId, exportedAt, geometry: [root], text: [root] }`)
+ * @param {{ page?: string, name?: string }} [options]
+ * @returns {{
+ *   file: { name: string, lastModified: string|null, document: object },
+ *   problems: { code: string, slug: string, detail: string }[]
+ * }}
+ */
+export function buildFileFromFrames(frames, { page = 'Page 1', name = 'pkm-randomlike' } = {}) {
+  const children = [];
+  const problems = [];
+  const captions = new Set();
+  let lastModified = null;
+
+  for (const dump of [...(frames ?? [])].sort(bySlug)) {
+    const exportedAt = dump?.exportedAt;
+    if (typeof exportedAt === 'string' && (lastModified === null || exportedAt > lastModified)) lastModified = exportedAt;
+
+    const root = dump?.geometry?.[0] ?? null;
+    if (!root) continue;
+    const caption = typeof root.name === 'string' ? root.name : '';
+    if (captions.has(caption)) {
+      problems.push({ code: 'frame_duplicated', slug: dump.slug, detail: caption });
+      continue;
+    }
+    captions.add(caption);
+    children.push(mergeText(root, indexById(dump?.text?.[0] ?? null)));
+  }
+
+  return {
+    file: {
+      name,
+      lastModified,
+      document: {
+        id: '0:0',
+        name,
+        type: 'DOCUMENT',
+        children: [{ id: '0:1', name: page, type: 'CANVAS', children }],
+      },
+    },
+    problems,
+  };
+}
+
 /**
  * @param {object} file   a `GET /v1/files/:key` payload: `{ name, lastModified, document }`
  * @param {object} map    the parsed contents of `design/import.json`

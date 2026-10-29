@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { projectBoard, slugOf } from './importer.mjs';
+import { buildFileFromFrames, projectBoard, slugOf } from './importer.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const readJson = (relative) => JSON.parse(readFileSync(`${ROOT}/${relative}`, 'utf8'));
@@ -9,6 +9,9 @@ const readJson = (relative) => JSON.parse(readFileSync(`${ROOT}/${relative}`, 'u
 const FIXTURE_FILE = 'scripts/design/fixtures/file.json';
 const FIXTURE_NODES = 'scripts/design/fixtures/nodes.json';
 const FIXTURE_MAP = 'scripts/design/fixtures/map.json';
+const FIXTURE_DUMPS = 'scripts/design/fixtures/frames';
+
+const fixtureDumps = () => [readJson(`${FIXTURE_DUMPS}/02-options.json`), readJson(`${FIXTURE_DUMPS}/m02-options.json`)];
 
 function fixturePayload() {
   const index = readJson(FIXTURE_FILE);
@@ -251,5 +254,116 @@ describe('problems', () => {  it('reports a caption the file does not draw and o
     const { screens, problems } = projectBoard(fixturePayload(), map);
     expect(problems).toEqual([{ code: 'variant_missing', slug: '02-options', detail: '02-options-armed' }]);
     expect(screens[0].states).toEqual(['02-options-armed']);
+  });
+});
+
+describe('buildFileFromFrames', () => {
+  const findNode = (node, id) => {
+    if (node.id === id) return node;
+    for (const child of node.children ?? []) {
+      const found = findNode(child, id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const walkAll = (node, visit) => {
+    visit(node);
+    for (const child of node.children ?? []) walkAll(child, visit);
+  };
+
+  it('rebuilds the REST payload the exporter dumps describe', () => {
+    const { file, problems } = buildFileFromFrames(fixtureDumps());
+
+    expect(problems).toEqual([]);
+    expect(file.name).toBe('pkm-randomlike');
+    expect(file.lastModified).toBe('2026-10-21T18:23:44Z');
+    expect(file.document).toMatchObject({ id: '0:0', type: 'DOCUMENT' });
+    expect(file.document.children).toHaveLength(1);
+    expect(file.document.children[0]).toMatchObject({ id: '0:1', name: 'Page 1', type: 'CANVAS' });
+    expect(file.document.children[0].children.map((node) => node.name)).toEqual(['02 Options', 'M 02 Options']);
+  });
+
+  it('projects the same screens and tokens as the REST fixture', () => {
+    const offline = projectBoard(buildFileFromFrames(fixtureDumps()).file, fixtureMap());
+    const rest = projectBoard(fixturePayload(), fixtureMap());
+
+    expect(offline.problems).toEqual([]);
+    expect(JSON.stringify(offline.screens)).toBe(JSON.stringify(rest.screens));
+    expect(JSON.stringify(rest.screens)).toBe(JSON.stringify(offline.screens));
+    expect(JSON.stringify(offline.tokens)).toBe(JSON.stringify(rest.tokens));
+    expect(JSON.stringify(rest.tokens)).toBe(JSON.stringify(offline.tokens));
+  });
+
+  it('does not depend on the order the dumps arrive in', () => {
+    const [desktop, mobile] = fixtureDumps();
+    const first = buildFileFromFrames([desktop, mobile]);
+    const second = buildFileFromFrames([mobile, desktop]);
+
+    expect(JSON.stringify(first.file)).toBe(JSON.stringify(second.file));
+    expect(second.problems).toEqual([]);
+
+    const duplicate = { ...desktop, slug: '00-duplicate' };
+    const duplicated = buildFileFromFrames([duplicate, desktop, mobile]);
+    const reversed = buildFileFromFrames([mobile, desktop, duplicate]);
+    expect(duplicated.problems).toEqual(reversed.problems);
+    expect(JSON.stringify(duplicated.file)).toBe(JSON.stringify(reversed.file));
+  });
+
+  it('merges the text tree back by node id, appending only the three text keys', () => {
+    const [desktop] = fixtureDumps();
+    const { file } = buildFileFromFrames([desktop]);
+    const root = file.document.children[0].children[0];
+    const geometryRoot = desktop.geometry[0];
+
+    expect(Object.keys(root)).toEqual(Object.keys(geometryRoot));
+    const holdsText = (node) => node.type === 'TEXT' || (node.children ?? []).some(holdsText);
+    walkAll(geometryRoot, (node) => {
+      const merged = findNode(root, node.id);
+      expect(Object.keys(merged), node.id).toEqual(Object.keys(node));
+      if (!holdsText(node)) expect(merged, node.id).toEqual(node);
+    });
+
+    const title = findNode(root, '1:1612');
+    expect(Object.keys(title.properties)).toEqual([
+      ...Object.keys(findNode(geometryRoot, '1:1612').properties),
+      'characters',
+      'fontName',
+      'fontSize',
+    ]);
+    expect(title.properties.characters).toBe('SETTINGS');
+    expect(title.properties.fontName).toEqual({ family: 'Silkscreen', style: 'Bold' });
+    expect(title.properties.fontSize).toBe(40);
+  });
+
+  it('is fatal and names a duplicated caption, keeping the first frame in sorted order', () => {
+    const [desktop, mobile] = fixtureDumps();
+    const duplicate = { ...desktop, slug: '02b-options-duplicate' };
+
+    const { file, problems } = buildFileFromFrames([desktop, mobile, duplicate]);
+    expect(problems).toEqual([{ code: 'frame_duplicated', slug: '02b-options-duplicate', detail: '02 Options' }]);
+    expect(file.document.children[0].children.map((node) => node.name)).toEqual(['02 Options', 'M 02 Options']);
+  });
+
+  it('takes lastModified from the dumps, never from a clock', () => {
+    const [desktop, mobile] = fixtureDumps();
+    const stale = { ...desktop, slug: '00-stale', exportedAt: '2026-01-01T00:00:00.000Z' };
+    const fresh = { ...mobile, exportedAt: '2026-02-02T00:00:00.000Z' };
+
+    expect(buildFileFromFrames([stale, fresh]).file.lastModified).toBe('2026-02-02T00:00:00.000Z');
+    expect(buildFileFromFrames([stale]).file.lastModified).toBe('2026-01-01T00:00:00.000Z');
+    expect(buildFileFromFrames([]).file.lastModified).toBeNull();
+    expect(buildFileFromFrames([{ slug: 'empty' }]).file.lastModified).toBeNull();
+  });
+
+  it('leaves a dump with no root node out, so the map reports it missing', () => {
+    const [desktop, mobile] = fixtureDumps();
+    const { file, problems } = buildFileFromFrames([{ slug: '02-options' }, mobile]);
+
+    expect(problems).toEqual([]);
+    expect(file.document.children[0].children.map((node) => node.name)).toEqual(['M 02 Options']);
+    expect(projectBoard(file, fixtureMap()).problems).toEqual([
+      { code: 'frame_missing', slug: '02-options', detail: '02 Options' },
+    ]);
   });
 });
