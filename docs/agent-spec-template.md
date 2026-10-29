@@ -29,6 +29,12 @@ Files this task may read, and only these, beyond `AGENTS.md` itself.
 
 - `docs/...`
 - `src/engine/...`
+- `design/screens/<slug>.json` and `design/exports/<slug>.png` — **mandatory for any task
+  that creates or changes a routed screen or a HUD panel**: the imported spec and its
+  export, named by slug, with the frame's `caption` exactly as the board draws it (middle
+  dot included). `<slug>` is the caption in lower-kebab (`03 Route HUD` → `03-route-hud`),
+  so the spec, the export and the task cannot drift. A screen task that names no spec is
+  not ready to launch (`D57`).
 
 ## 🔒 Contract
 
@@ -81,6 +87,9 @@ read the rest of the spec is not a criterion.
   - [ ] `[unit]` The declared tests exist and pass.
   - [ ] `[unit]` Nothing outside the exclusive paths was touched.
   - [ ] `[live]` <task-specific, objective, checkable condition, with its measurement>
+- **A `[live]` that compares pixels is not a criterion** (`D57`): the board enters as an
+  imported spec, so fidelity is read from `design/screens/<slug>.json`, never from a
+  screenshot diff.
 
 ## 📣 Coordination
 
