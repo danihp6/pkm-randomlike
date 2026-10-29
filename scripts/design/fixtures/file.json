@@ -1,0 +1,28 @@
+{
+  "name": "pkm-randomlike",
+  "lastModified": "2026-10-21T18:23:44Z",
+  "document": {
+    "id": "0:0",
+    "name": "Document",
+    "type": "DOCUMENT",
+    "children": [
+      {
+        "id": "0:1",
+        "name": "Page 1",
+        "type": "CANVAS",
+        "children": [
+          {
+            "id": "1:1557",
+            "name": "02 Options",
+            "type": "FRAME"
+          },
+          {
+            "id": "8:3231",
+            "name": "M 02 Options",
+            "type": "FRAME"
+          }
+        ]
+      }
+    ]
+  }
+}

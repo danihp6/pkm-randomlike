@@ -1,0 +1,7 @@
+{
+  "err": null,
+  "images": {
+    "1:1557": "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/fixture-desktop",
+    "8:3231": "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/fixture-mobile"
+  }
+}

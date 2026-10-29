@@ -1,0 +1,303 @@
+{
+  "fileKey": "nfyJ8Yerc6lL1BouvCAfd3",
+  "page": "Page 1",
+  "screens": [
+    {
+      "slug": "01-main-menu",
+      "caption": "01 Main menu",
+      "panel": "main-menu",
+      "scene": "src/scenes/MainMenuScene.ts",
+      "mobile": "m01-main-menu",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "01b-main-menu-no-save",
+      "caption": "01b Main menu · no save",
+      "panel": "main-menu",
+      "scene": "src/scenes/MainMenuScene.ts",
+      "mobile": "m01b-main-menu-no-save",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "02-options",
+      "caption": "02 Options",
+      "panel": "options",
+      "scene": "src/scenes/SettingsScene.ts",
+      "mobile": "m02-options",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03-route-hud",
+      "caption": "03 Route HUD",
+      "panel": "hud",
+      "scene": "src/scenes/panels/hud.ts",
+      "mobile": "m03-route-hud",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03b-panels-row-view",
+      "caption": "03b Panels · row view",
+      "panel": "bag",
+      "scene": "src/scenes/panels/bag.ts",
+      "mobile": "m03b-panels-row-view",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03c-panels-compress",
+      "caption": "03c Panels · compress",
+      "panel": "party",
+      "scene": "src/scenes/panels/party.ts",
+      "mobile": "m03c-panels-compress",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03d-route-shop-buy",
+      "caption": "03d Route · shop · buy",
+      "panel": "shop",
+      "scene": "src/scenes/panels/shop.ts",
+      "mobile": "m03d-route-shop-buy",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03e-route-shop-sell",
+      "caption": "03e Route · shop · sell",
+      "panel": "shop",
+      "scene": "src/scenes/panels/shop.ts",
+      "mobile": "m03e-route-shop-sell",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03f-panels-reward-item",
+      "caption": "03f Panels · reward item",
+      "panel": "rewards",
+      "scene": "src/scenes/panels/rewards.ts",
+      "mobile": "m03f-panels-reward-item",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03g-panels-reward-pokemon",
+      "caption": "03g Panels · reward pokemon",
+      "panel": "rewards",
+      "scene": "src/scenes/panels/rewards.ts",
+      "mobile": "m03g-panels-reward-pokemon",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03h-panels-rocket-slots",
+      "caption": "03h Panels · rocket slots",
+      "panel": "rocket",
+      "scene": "src/ui/rocketPanel.ts",
+      "mobile": "m03h-panels-rocket-slots",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03i-panels-trade-pick",
+      "caption": "03i Panels · trade pick",
+      "panel": "trade",
+      "scene": "src/scenes/panels/trade.ts",
+      "mobile": "m03i-panels-trade-pick",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03j-panels-trade-result",
+      "caption": "03j Panels · trade result",
+      "panel": "trade",
+      "scene": "src/scenes/panels/trade.ts",
+      "mobile": "m03j-panels-trade-result",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03k-panels-notice-item",
+      "caption": "03k Panels · notice item",
+      "panel": "notices",
+      "scene": "src/scenes/panels/notices.ts",
+      "mobile": "m03k-panels-notice-item",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03l-panels-notice-level-up",
+      "caption": "03l Panels · notice level up",
+      "panel": "notices",
+      "scene": "src/scenes/panels/notices.ts",
+      "mobile": "m03l-panels-notice-level-up",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03m-panels-pokemon-moves",
+      "caption": "03m Panels · pokemon moves",
+      "panel": "detail",
+      "scene": "src/scenes/panels/detail.ts",
+      "mobile": "m03m-panels-pokemon-moves",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03n-panels-pause-menu",
+      "caption": "03n Panels · pause menu",
+      "panel": "pause",
+      "scene": "src/scenes/panels/pause.ts",
+      "mobile": "m03n-panels-pause-menu",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03o-panels-map-routes",
+      "caption": "03o Panels · map routes",
+      "panel": "map",
+      "scene": "src/scenes/panels/map.ts",
+      "mobile": "m03o-panels-map-routes",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "03p-panels-pc-rip",
+      "caption": "03p Panels · pc rip",
+      "panel": "pc",
+      "scene": "src/scenes/panels/pc.ts",
+      "mobile": "m03p-panels-pc-rip",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "04-starter-pick",
+      "caption": "04 Starter pick",
+      "panel": "starter",
+      "scene": "src/scenes/StarterScene.ts",
+      "mobile": "m04-starter-pick",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "05-battle-hud",
+      "caption": "05 Battle HUD",
+      "panel": "battle-hp",
+      "scene": "src/scenes/BattleScene.ts",
+      "mobile": "m05-battle-hud",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "05b-battle-message",
+      "caption": "05b Battle · message",
+      "panel": "battle-log",
+      "scene": "src/scenes/BattleScene.ts",
+      "mobile": "m05b-battle-message",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "05c-battle-bag",
+      "caption": "05c Battle · bag",
+      "panel": "battle-bag",
+      "scene": "src/scenes/BattleScene.ts",
+      "mobile": "m05c-battle-bag",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "05d-battle-pokemon",
+      "caption": "05d Battle · pokemon",
+      "panel": "battle-switch",
+      "scene": "src/scenes/BattleScene.ts",
+      "mobile": "m05d-battle-pokemon",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "05e-battle-stats",
+      "caption": "05e Battle · stats",
+      "panel": "battle-switch",
+      "scene": "src/scenes/BattleScene.ts",
+      "mobile": "m05e-battle-stats",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "06-run-over-defeat",
+      "caption": "06 Run over · defeat",
+      "panel": "run-over",
+      "scene": "src/scenes/RunOverScene.ts",
+      "mobile": "m06-run-over-defeat",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "07-run-over-victory",
+      "caption": "07 Run over · victory",
+      "panel": "run-over",
+      "scene": "src/scenes/RunOverScene.ts",
+      "mobile": "m07-run-over-victory",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "07b-run-over-victory-pokemon",
+      "caption": "07b Run over · victory · pokemon",
+      "panel": "run-over",
+      "scene": "src/scenes/RunOverScene.ts",
+      "mobile": "m07b-run-over-victory-pokemon",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "08-stats-totals",
+      "caption": "08 Stats · totals",
+      "panel": "stats",
+      "scene": "src/ui/hud/panels/stats",
+      "mobile": "m08-stats-totals",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "08b-stats-runs",
+      "caption": "08b Stats · runs",
+      "panel": "stats",
+      "scene": "src/ui/hud/panels/stats",
+      "mobile": "m08b-stats-runs",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "08c-stats-pokemon",
+      "caption": "08c Stats · pokemon",
+      "panel": "stats",
+      "scene": "src/ui/hud/panels/stats",
+      "mobile": "m08c-stats-pokemon",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "09-ranking",
+      "caption": "09 Ranking",
+      "panel": "stats",
+      "scene": "src/ui/hud/panels/stats",
+      "mobile": "m09-ranking",
+      "states": [],
+      "snapshot": true
+    },
+    {
+      "slug": "09b-ranking-pokemon",
+      "caption": "09b Ranking · pokemon",
+      "panel": "stats",
+      "scene": "src/ui/hud/panels/stats",
+      "mobile": "m09b-ranking-pokemon",
+      "states": [],
+      "snapshot": true
+    }
+  ]
+}
