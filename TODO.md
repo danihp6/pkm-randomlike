@@ -9490,6 +9490,127 @@ without moving either batch.
 
 ---
 
+## Phase 18 - The imported board
+
+The board is read (`docs/hud-fidelity.md`, 2026-10-21) and the snapshot exported (2026-10-23), but
+the rework still treats it as a picture to match: `scripts/hud/diff.mjs` compares pixels, most route
+frames come back `unavailable`, and no screen task names its frame as an input. The live file's
+`lastModified` is **2026-10-21T18:23:44Z** — older than the export — so the snapshot is current; the
+defect is the method, not the export. This phase imports the board the way `../codebox`'s `D52` does:
+the repo holds the spec, Figma imports one way, the gate checks what is deterministic, and a pixel
+diff stops being a gate.
+
+**Batch 94 — three tasks, and no slot is empty.** `[Task-220]` (the import: map, extractor, command,
+four checks, `D57`) · `[Task-221]` (the pixel gate retires) · `[Task-222]` (the spec rule lands in the
+agent docs). The three path sets are disjoint: `design/import.json` + `scripts/design/**` +
+`docs/tech-decisions.md` + `design/README.md`; `scripts/hud/**` + `docs/hud-fidelity.md` +
+`docs/hud-dom-proposal.md` §11; `AGENTS.md` + `docs/agent-spec-template.md`. **Hot files:**
+`package.json` → 221 (it drops `hud:diff`), `docs/*.md` claimed by section, and nothing regenerates the
+dex, packs an atlas or touches a scene. A fourth slot stays empty because the only open item left is
+`[Task-194]` (`[!]`, parked) and the rename behind 220 and 221 needs both merged.
+
+**Batch 95 — `[Task-223]` alone, and not before the operator's run.** The rename to
+`design/screens/<slug>.json` and `design/exports/<slug>.png` needs the artifacts 220 writes, and the
+artifacts come from `import.mjs` with the PAT — a command the loop never gets. It is cut once that run
+is committed; until then it is unscheduled on purpose.
+
+- [ ] **[Task-220] The board is an imported spec: one map, one extractor, one command, four checks.**
+      Decided by the human on `2026-10-29` after reading `../codebox`'s `D52` and its Batch 21: the
+      mock's job is to become a **spec in the repo**, not a raster a task matches. The board is read
+      and current (`lastModified 2026-10-21T18:23:44Z`, 66 frames, **0 styles, 0 components**, so every
+      colour is a literal fill), and the file key is `nfyJ8Yerc6lL1BouvCAfd3`. Today the direction is
+      the opposite: `scripts/hud/diff.mjs` fails on fonts and viewport, and the frames are cited in
+      prose instead of named by the task. **Fix shape:** (1) `design/import.json`, committed and
+      hand-authored: `{ fileKey, page: "Page 1", screens: [...] }`, **one entry per desktop frame**
+      (33), each `{ slug, caption, panel, scene, mobile, states, snapshot }` — `caption` is the frame
+      name **exactly as drawn** (middle dot included), `panel`/`scene` come from `design/board.json`,
+      `mobile` is the twin's slug, `states` names a variant slug where the frame carries one, and
+      `snapshot: true`. (2) A **pure extractor**, `scripts/design/importer.mjs`:
+      `projectBoard(file, map)` returns `{ screens, tokens, board, problems }` from the node tree and
+      the map; no `fetch`, no `fs`, no clock. (3) The **command**, `scripts/design/import.mjs`: reads
+      `FIGMA_TOKEN` and `FIGMA_FILE_KEY` from the environment, calls `GET /v1/files/:key?depth=3` and
+      `GET /v1/images/:key?ids=…&format=png&scale=2`, then writes `design/tokens.json`,
+      `design/board.json`, `design/screens/<slug>.json` and `design/exports/<slug>.png`; `--check`
+      writes nothing and exits 1 on drift; a missing token names the variable, makes **no request**
+      and exits 2. (4) The **four deterministic checks**, in `scripts/design/check.mjs`:
+      `colour_outside_tokens` (every literal fill of a mapped frame is in `design/tokens.json`),
+      `frame_without_component` (every entry's `panel`/`scene` path exists), `snapshot_hash_mismatch`
+      (the PNG's sha256 equals the generated spec's) are **fatal**; `variant_missing` (a declared
+      state or twin slug with no frame) is **report-only** until the board draws it. No pixel diff is
+      written or read. **The REST run is the operator's**, never the loop's: it moves ~10 MB of PNGs
+      and needs the PAT, so the task ships the command, fixtures and `--check`, and the operator runs
+      it once after the merge and commits the four artifact families. **Docs:** `docs/tech-decisions.md`
+      `D57` (the board enters as a spec; amends `D49`'s measured gate, cites `D50`'s rasters) and
+      `design/README.md` (the map's shape, the command, the four checks, and **"a frame that stops
+      matching the code is fixed in Figma or deleted"**).
+      **Tests:** `[unit]` the shipped map parses to **33** screens, every `caption` equals the frame
+      name in `design/board.json`, and every `states`/`mobile` slug exists; `[unit]` `projectBoard`
+      over fixtures returns the expected tokens, board index and one spec per entry, with **no**
+      colour outside the token palette; `[unit]` an injected `fetch` writes the four families under a
+      temp root, and `--check` exits 1 when one byte moves; `[unit]` a missing `FIGMA_TOKEN` exits 2
+      before the first request and names it; `[unit]` a one-byte PNG edit is `snapshot_hash_mismatch`
+      and a declared variant with no frame is a **report-only** line, not a failure; `[live]`
+      `node scripts/design/check.mjs` on the committed `design/` exits **0** and prints its four names
+      once each (the measurement is the exit code and the four lines).
+      Claims `design/import.json` (new), `scripts/design/importer.mjs` + test + fixtures,
+      `scripts/design/import.mjs`, `scripts/design/check.mjs` + test, `design/README.md` and
+      `docs/tech-decisions.md` (`D57`). *Dependencies:* none.
+
+- [ ] **[Task-221] The pixel diff retires; fidelity is read from the spec, not from a screenshot.**
+      `D57` (220) takes the measured gate away from `D49`, so the harness that implements it goes:
+      `scripts/hud/diff.mjs`, `scripts/hud/diff.test.mjs` and `scripts/hud/README.md` are **deleted**,
+      `package.json` drops `hud:diff`, and `design/diff/` stops being produced (the ignore line may
+      stay). The 33-frame table in `docs/hud-fidelity.md` is **kept as the historical record** and its
+      "How the gate reads a frame" block becomes an evidence note, never a criterion; the rows that
+      were `unavailable` name the screen they needed instead of reading as failures.
+      `docs/hud-dom-proposal.md` §11 loses the harness half of the export recipe and keeps the export.
+      **Fix shape:** no file references `scripts/hud/diff.mjs`, `hud:diff` or a pixel verdict as a
+      gate; the replacement proof is a deterministic mount — the same fixture URL mounts its
+      `[data-hud-panel]` — which is what `D57` checks. **Docs:** `docs/hud-fidelity.md` (header + the
+      measured table's intro), `docs/hud-dom-proposal.md` §11.
+      **Tests:** `[unit]` `grep -r "hud/diff\|hud:diff" src scripts docs package.json` finds nothing,
+      and `npm test` is green with the deleted test gone; `[live]` at 1280×800 and 390×844
+      `?hudFixture=02-options` mounts `[data-hud-panel="options"]` and `?hudFixture=05-battle-hud`
+      mounts `[data-hud-battle-hp]`, measured over CDP as the panel id the page carries.
+      Claims `scripts/hud/**` (delete), `package.json`, `docs/hud-fidelity.md` and
+      `docs/hud-dom-proposal.md` §11. *Dependencies:* none.
+
+- [ ] **[Task-222] A screen task names its spec, or it is not ready to launch.** `../codebox`'s
+      `design/README.md` §6 states the rule this repo lacks: a task that creates or changes a screen
+      lists its spec and its export as **read-only inputs**, with the frame's caption, and a screen
+      task that names no spec is not ready to launch. Today only `[Task-201]`'s spec does; `[Task-207]`
+      and `[Task-212]` read `docs/hud-fidelity.md` §5 and never name `design/frames/05-battle-hud.json`.
+      **Fix shape:** `AGENTS.md`'s **Specs** bullet and `docs/agent-spec-template.md`'s **Inputs
+      (read-only)** section require `design/screens/<slug>.json` and `design/exports/<slug>.png` (the
+      paths `[Task-223]` lands) with the exact caption, for any task that touches a routed screen or a
+      HUD panel; the template's criterion rule adds that **a `[live]` that compares pixels is not a
+      criterion** (`D57`). The rule names the slug rule (`03 Route HUD` → `03-route-hud`) so spec,
+      export and task cannot drift. **Docs:** `AGENTS.md` (Specs) and
+      `docs/agent-spec-template.md` (Inputs + the criterion rule).
+      **Tests:** `[unit]` the template's Inputs section names both paths and the caption rule; `[unit]`
+      `AGENTS.md`'s Specs bullet carries the sentence and cites `D57`; `[live]` a new task spec written
+      from the template lists both files as read-only (the orchestrator's own next spec is the check).
+      Claims `AGENTS.md` and `docs/agent-spec-template.md`. *Dependencies:* none.
+
+- [ ] **[Task-223] The board's files take their codebox names: `screens/<slug>.json`, `exports/<slug>.png`.**
+      Blocked on the operator's run, not on code: `[Task-220]` writes the new names, but the 66 PNGs and
+      33 specs only exist after `node scripts/design/import.mjs` runs with the PAT, so this task cannot
+      start until that commit lands. **Fix shape:** move `design/frames/<slug>.json` →
+      `design/screens/<slug>.json` and `design/screens/<slug>.png|svg` → `design/exports/<slug>.png|svg`,
+      update every reference (`scripts/design/{export,tokens}.mjs`, `src/ui/hud/**/fixture.test.ts`,
+      `docs/**`, `design/README.md`, `TODO.md`), and keep `design/board.json` as the generated index
+      (the pkm word for codebox's `routes.json` — a "route" here is a room, never a screen).
+      **Docs:** `design/README.md`, `docs/hud-fidelity.md`, `docs/hud-dom-proposal.md`.
+      **Tests:** `[unit]` no file references `design/frames/` and every fixture test resolves its
+      `design/screens/<slug>.json`; `[unit]` `node scripts/design/check.mjs` is still exit 0; `[live]`
+      `?hudFixture=02-options` still mounts its panel at both widths.
+      Claims `design/frames/**`, `design/screens/**`, `design/exports/**`, `scripts/design/**`,
+      `src/ui/hud/**/fixture.test.ts`, `design/README.md`, `docs/**` and `TODO.md`.
+      *Dependencies:* `[Task-220]` and `[Task-221]`, plus the operator's import run committed.
+      *Unscheduled until then.*
+
+---
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
