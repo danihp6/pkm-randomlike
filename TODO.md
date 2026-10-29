@@ -9514,7 +9514,7 @@ dex, packs an atlas or touches a scene. A fourth slot stays empty because the on
 artifacts come from `import.mjs` with the PAT — a command the loop never gets. It is cut once that run
 is committed; until then it is unscheduled on purpose.
 
-- [ ] **[Task-220] The board is an imported spec: one map, one extractor, one command, four checks.**
+- [x] **[Task-220] The board is an imported spec: one map, one extractor, one command, four checks.**
       Decided by the human on `2026-10-29` after reading `../codebox`'s `D52` and its Batch 21: the
       mock's job is to become a **spec in the repo**, not a raster a task matches. The board is read
       and current (`lastModified 2026-10-21T18:23:44Z`, 66 frames, **0 styles, 0 components**, so every

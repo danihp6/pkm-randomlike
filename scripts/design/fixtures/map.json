@@ -1,0 +1,15 @@
+{
+  "fileKey": "fixtureFileKey",
+  "page": "Page 1",
+  "screens": [
+    {
+      "slug": "02-options",
+      "caption": "02 Options",
+      "panel": "options",
+      "scene": "src/scenes/SettingsScene.ts",
+      "mobile": "m02-options",
+      "states": [],
+      "snapshot": true
+    }
+  ]
+}

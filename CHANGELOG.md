@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The board is an imported spec: one map, one extractor, one command, four checks.** `[Task-220]`,
+      Batch 94's first task: `design/import.json` maps the board's **33** desktop frames by
+      `{ slug, caption, panel, scene, mobile, states, snapshot }`, a pure `projectBoard(file, map)` in
+      `scripts/design/importer.mjs` turns the Figma node tree into one screen spec per frame plus a complete
+      token palette and a board index, `scripts/design/import.mjs` calls the REST API guarded by
+      `FIGMA_TOKEN`/`FIGMA_FILE_KEY` (**no request and exit 2** when either is missing, `--check` writes
+      nothing and exits 1 on drift), and `scripts/design/check.mjs` runs the four deterministic checks —
+      `colour_outside_tokens`, `frame_without_component` and `snapshot_hash_mismatch` fatal,
+      `variant_missing` report-only. The operator's REST run still decides when the four artifact families
+      land; the loop never performs it. `D57` amends `D49`'s measured gate and `design/README.md`
+      documents the map, the command, the checks and the repair rule. Gates: `npm test` 5112 passed /
+      69 skipped and `npm run build` green at task QA, 5100 passed / 69 skipped on the batch's combined
+      tree; `node scripts/design/check.mjs` exits 0 printing its four lines (`0 screens (run the import)`,
+      `33 entries, 0 violations`, `0 mismatched, 33 pending the import`, `0 unresolved`).
+
 - [x] **The main menu's walkers walk: the route's own step and the pair's walk strip.** `[Task-219]`,
       Batch 93's one task, filled into Batch 91: a walker stood for 600 ms and then was on the next tile,
       because its box was always the model tile's and `.main-menu__walker` carried no transition at all.

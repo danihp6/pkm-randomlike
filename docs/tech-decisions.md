@@ -1423,3 +1423,63 @@ The next screen — the menu's two separate STATS and RANKING rows — must reus
   31 and drop EVs entirely (purer balance)? Lean: random IVs, zero EVs.
 - **O4 — Public build.** If the game ever ships, the imported Nintendo art must be
   replaced by CC0/placeholder art. Does that change the plan for `src/assets`?
+
+## D57 — The board enters as a spec: one map, one extractor, one command, four checks *(decided)*
+
+**The file is current.** The board was read on `2026-10-21T18:23:44Z` (`nfyJ8Yerc6lL1BouvCAfd3`,
+page `Page 1`): **66 frames, 33 desktop at 1280×800 and 33 mobile at 390×844**, and the file carries
+**0 styles and 0 components**. Nothing on it is a variable or a library instance, so every colour is
+a literal fill and every box is a drawn node: reading the file is enough to write the token table,
+and no style key has to be resolved first.
+
+**The repo holds the map and the specs; Figma is imported one way.** `design/import.json` is
+hand-authored — 33 rows, one per desktop frame, with the caption the board draws, the panel and the
+scene the code owns, the mobile twin and whether the frame owns a snapshot. From that map and one
+REST file payload, `scripts/design/importer.mjs` projects the four artifact families
+(`design/tokens.json`, `design/board.json`, `design/screens/<slug>.json`,
+`design/exports/<slug>.png`) without fetching, reading a clock or drawing a random number. The
+extractor is pure and the command is the only writer, so re-importing the same revision is
+byte-identical, and the direction is fixed: Figma → the artifacts → the code, never the reverse.
+
+**It amends `D49`'s measured gate.** `D49` made "identical to the board" a **measured** gate: a
+screenshot of the DOM compared pixel by pixel against the frame's PNG, with geometry within 2 px and
+mean ΔE ≤ 2 on the flat fills. That geometry-and-colour comparison **against a raster is retired as
+a gate**. A migrated screen is verified against its **spec**, not against a screenshot: identity is
+read from the spec — the box, the radius, the fill, the string — so two rasterisers disagreeing about
+a glyph stops being a verdict. The four checks below are the gate that replaces it; a screen task
+runs `node scripts/design/check.mjs`, and a `[live]` criterion that compares pixels is no longer a
+criterion.
+
+**The rasters stay, per `D50`.** `D50` accepted the board's own rasters in the repo with the game's
+screen inside them. They stay exactly that — the board's own record, not a gate's reference — and
+they move from `design/screens/` to `design/exports/` as the import's own output, one PNG per
+viewport.
+
+**The four checks, and which one may not fail.** `node scripts/design/check.mjs` prints one line per
+check, in this order:
+
+- `colour_outside_tokens` — **fatal**. Every colour a screen spec records is in `design/tokens.json`;
+  the palette is complete (no 24-entry truncation), so this holds by construction after an import.
+- `frame_without_component` — **fatal**. Every mapped `scene` exists on disk, every `panel` matches
+  `board.json`, and every panel has a component (`src/ui/hud/panels/<panel>/` or
+  `src/ui/<panel>Panel.ts`).
+- `snapshot_hash_mismatch` — **fatal for pairs that exist**. A screen spec and its PNG must agree on
+  the sha256 and on the file name. A pair that is not there yet is *pending*, not broken: the 33
+  specs and 66 PNGs only exist after the operator's run, so the check is green before it and a moved
+  byte is a failure after it. Fatal on absence would leave the merged tree red for a reason nobody
+  in the loop can fix.
+- `variant_missing` — **report-only**, never an exit code. A declared state or a mobile twin that no
+  frame carries is a report, not a broken screen: the board has not drawn that variant yet.
+
+**The operator's run is not the loop's.** This decision ships the map, the extractor, the command
+and the checks; `node scripts/design/import.mjs` is run by the operator with a personal access token
+**after** the merge, and the four artifact families land then. No CI job, dev task or QA task holds
+`FIGMA_TOKEN` or calls Figma, and no generated file in `design/` is written by hand.
+
+**The repair rule.** **A frame that stops matching the code is fixed in Figma or deleted.** Not
+patched by hand and not silenced: the next import rewrites the specs from the board, so a frame that
+lies has two honest outcomes — corrected on the board, or removed from it and from the map.
+
+`[Task-220]` ships the map, the extractor, the command, the checks and this decision. `[Task-223]`
+moves the old exporter's `design/frames/<slug>.json` and its rasters to the import's destinations
+and retires that exporter, so the folder has one pipeline and one shape per file.
