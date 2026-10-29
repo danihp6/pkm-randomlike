@@ -1,0 +1,120 @@
+{
+  "slug": "m02-options",
+  "nodeId": "8:3231",
+  "exportedAt": "2026-10-21T18:23:44Z",
+  "geometry": [
+    {
+      "id": "8:3231",
+      "name": "M 02 Options",
+      "type": "FRAME",
+      "properties": {
+        "x": 4900,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "cornerRadius": 0,
+        "fills": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "color": {
+              "r": 0.019607843831181526,
+              "g": 0.027450980618596077,
+              "b": 0.0470588244497776
+            }
+          }
+        ],
+        "strokes": []
+      },
+      "children": [
+        {
+          "id": "8:3232",
+          "name": "mobile panel",
+          "type": "RECTANGLE",
+          "properties": {
+            "x": 8,
+            "y": 271,
+            "width": 374,
+            "height": 302,
+            "cornerRadius": 11,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.92,
+                "color": {
+                  "r": 0.062745101749897,
+                  "g": 0.0862745,
+                  "b": 0.1215686
+                }
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.16,
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "8:3233",
+          "name": "mobile title",
+          "type": "TEXT",
+          "properties": {
+            "x": 32,
+            "y": 300,
+            "width": 200,
+            "height": 31,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "color": {
+                  "r": 0.9725490212440491,
+                  "g": 0.9803921580314636,
+                  "b": 0.9882352948188782
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "text": [
+    {
+      "id": "8:3231",
+      "name": "M 02 Options",
+      "type": "FRAME",
+      "children": [
+        {
+          "id": "8:3232",
+          "name": "mobile panel",
+          "type": "RECTANGLE"
+        },
+        {
+          "id": "8:3233",
+          "name": "mobile title",
+          "type": "TEXT",
+          "properties": {
+            "characters": "SETTINGS",
+            "fontName": {
+              "family": "Silkscreen",
+              "style": "Bold"
+            },
+            "fontSize": 24
+          }
+        }
+      ]
+    }
+  ]
+}
