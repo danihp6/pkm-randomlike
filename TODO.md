@@ -9617,6 +9617,53 @@ is committed; until then it is unscheduled on purpose.
       `FIGMA_TOKEN=… node scripts/design/import.mjs` has committed the four artifact
       families (issue #83).
 
+## Phase 19 - Every screen against its spec
+
+The last measurement left **2 of 66 viewports PASS, 28 FAIL and 36 unmeasured** (`docs/hud-fidelity.md`),
+and `D57` retires the pixel verdict: from here "fiel" means the panel's view model equals its spec —
+boxes, strings and tokens — plus a mount that names the panel. This phase turns that into work: one
+report that measures every screen against `design/screens/<slug>.json`, and one task per panel cut
+from its table.
+
+**Batch 96 — `[Task-224]` alone, waiting for the import.** It cannot be cut before Batch 95: the specs
+it reads are the artifacts `import.mjs` writes with the PAT, and the per-panel tasks cannot be written
+before its table says which boxes, strings and tokens are off — writing them now would ship a batch of
+guesses. No slot is filled because nothing else is open (`[Task-194]` is `[!]` and parked). **Batch 97
+onwards** holds the per-panel tasks, cut four per batch from 224's table, each with its own panel
+folder, its own spec row and its own mount check; the rename (`[Task-223]`) is their floor, so they
+are unscheduled until it merges.
+
+- [!] **[Task-224] The fidelity report: every screen measured against its spec, and the per-panel tasks
+      cut from it.** Asked by the human on `2026-10-29` ("hay tareas para revisar cada pantalla del
+      prototipo que sea fiel ya?"). There are none: Phase 17 fixed nineteen reported defects and the
+      measured table still has **28 FAIL rows** (fourteen frames, most of them dominated by the board's
+      painted scene) and **36 rows that were never measured** (`03`, `03b`, `03d`–`03p`, `05`, `05c`,
+      `05e`, `03c`), which is exactly where a player sees the gap. **Fix shape:** one pure module,
+      `src/ui/hud/specGap.ts`, with `gapFor(view, spec)` returning `{ missing, moved, strings, colours }`
+      — the panel's exported view model against the imported `design/screens/<slug>.json` (boxes within
+      **1 px**, every string equal, every colour a token) — and a Vitest that walks the **33** specs and
+      the panel views (one map, with an explicit allow-list for a frame whose subject is a scene, not a
+      panel) and snapshots the table. The table lands in `docs/hud-fidelity.md` as **"The spec gap,
+      measured (`D57`)"**, one row per panel: panel, frame, boxes missing or moved, wrong strings,
+      colours outside the token palette, states with no frame. **The per-panel tasks are cut from that
+      table**, never invented here; this task ships the measurement, not the fixes.
+      **Docs:** `docs/hud-fidelity.md` (the new section and the intro that stops calling the 2026-10-27
+      table a gate).
+      **Tests:** `[unit]` every spec in `design/screens/` has a mapped view or an allow-list reason, so a
+      new frame can never arrive unmeasured (same shape as `[Task-197]`'s enumeration); `[unit]`
+      `gapFor` on a hand-built view reports a moved box at 2 px, a wrong string and a literal colour, and
+      reports **nothing** for a view that equals its spec; `[unit]` the snapshot equals the table
+      committed in the doc; `[live]` at 1280×800 and 390×844 the panel of one failing row mounts under
+      `?hudFixture=<slug>` and its measured `[data-hud-panel]` rect equals the view's box (the mount
+      check `[Task-221]` leaves in place).
+      Claims `src/ui/hud/specGap.ts` + test, the Vitest that walks the specs, `docs/hud-fidelity.md`,
+      `src/ui/hud/README.md` and `src/ui/README.md`. *Dependencies:* `[Task-220]` (the importer and its
+      four checks), `[Task-223]` (the `screens/` names) and the operator's import run committed.
+      **BLOCKED:** the `design/screens/<slug>.json` artifacts do not exist on `main` yet — they are the
+      output of `node scripts/design/import.mjs` with `FIGMA_TOKEN`, a run the loop never gets — and
+      `[Task-223]`, the rename that gives them their name, is itself `[!]` on the same run. The task
+      moves to `[ ]` the day that commit lands; until then the cycle must skip it.
+
 ---
 
 ## Bugs
