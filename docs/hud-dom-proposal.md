@@ -235,20 +235,26 @@ letter badges, safe area 47/810, pad 156 at (103,741) with A (334,767) r35 and B
 
 **Done and in the repo:** the whole board is imported (33 frames, 66 viewports: ≈3.7 MB of JSON,
 3.9 MB of SVG, 10.1 MB of PNG) by `scripts/design/export.mjs`; `scripts/design/tokens.mjs` generates
-`design/tokens.json` from it and `scripts/hud/diff.mjs` is the gate. The frame → scene map lives in
-`design/README.md`, and `scripts/design/frames.mjs` is the one table the exporter reads.
+`design/tokens.json` from it and `node scripts/design/check.mjs` is the check (`D57`). The frame →
+scene map lives in `design/README.md`, and `scripts/design/frames.mjs` is the one table the exporter
+reads.
 
-Verification loop for every migrated screen (`D49`): `npm run hud:diff -- <slug>` screenshots the DOM
-at 390×844 and 1280×800 with `deviceScaleFactor: 2` and runs `pixelmatch` against `<slug>.png`, with
-`?hudFixture=<slug>` feeding the frame's own content. Geometry within 2 px on panel edges, row pitch,
-radii and chips; mean ΔE ≤ 2 on flat fills; text measured on its box and colour. The Phaser screenshot
-comparison is no longer the bar — it cannot be, since the panel no longer lives in Phaser.
+The check for every migrated screen (`D57`): `node scripts/design/check.mjs` reads the frame's own
+`design/screens/<slug>.json` and compares the panel against it, with `?hudFixture=<slug>` feeding the
+frame's own content. Identity is read from that tree, never from a pixel diff: the screenshot
+comparison retired with the pixel gate, because it cannot measure a panel that no longer lives in
+Phaser.
 
 **The fixture recipe.** One `design/fixtures/<slug>.json` per exported frame, and the file carries the
 frame's own copy, not a paraphrase:
 
 ```json
-{ "slug": "<frame>", "screen": "<panel id>", "state": { "party": [], "bag": [], "money": 0, "route": null, "battle": null, "notice": null }, "<panel block>": {} }
+{
+  "slug": "<frame>",
+  "screen": "<panel id>",
+  "state": { "party": [], "bag": [], "money": 0, "route": null, "battle": null, "notice": null },
+  "<panel block>": {}
+}
 ```
 
 - `state` is the snapshot the panels read and keeps `isHudState`'s **exact six keys**; every frame-specific
@@ -256,15 +262,16 @@ frame's own copy, not a paraphrase:
   it, where the panel's own view reads it.
 - `screen` sits beside `slug` and `state`, never inside `state`: it is the `data-hud-panel` value the frame
   draws (`options`, `main-menu`, `shop`, `battle-moves`, …) or the marker id of the panels whose root is a
-  bare attribute (`starter`, `hud`, `battle-hp`, `battle-log`, `run-over`). The gate reads it to name what it
-  measured, so a frame it cannot frame reports `unavailable` with the screen it needs instead of failing.
+  bare attribute (`starter`, `hud`, `battle-hp`, `battle-log`, `run-over`). It names the panel a frame
+  feeds, so a frame whose screen no panel carries is missing work, not a failure.
 - **The mobile twin is the same screen's phone layout, not a stale frame.** `m<slug>.png` is the same
   screen at 390×844, so the file carries both shapes — the desk block and the narrow one (`02-options`'s
   `mobile`, read by `fixtureOptionsView(payload, true)`) — and one file feeds both viewports. The board wins
   and both twins stay: no frame is dropped because its phone layout is drawn from the desk block.
-- A frame whose state a `HudState` genuinely cannot express names its reason in one line in
-  `scripts/hud/diff.mjs`'s `FIXTURE_ALLOWLIST`; `scripts/hud/diff.test.mjs` enumerates `design/screens/`
-  against `design/fixtures/` and refuses a frame that has neither.
+- The completeness guard that enumerated `design/screens/` against `design/fixtures/` — and the
+  per-frame allow-list a `HudState` that could not express a frame needed — retired with the pixel
+  harness. `node scripts/design/check.mjs` (`D57`) is the check in its place, and identity is never a
+  pixel diff.
 
 ## 12. References
 

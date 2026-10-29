@@ -30,4 +30,4 @@ spacing or type size is written, and every value comes from `design/tokens.json`
 
 1. The shell owns no Phaser object and reads no scene; the canvas is untouched by anything here.
 2. `mountHud` is the only place the flag is read and the root is created; a second call returns the same handle.
-3. A module that computes ships a co-located `*.test.ts`; a component is covered by `npm run hud:diff`, never by jsdom.
+3. A module that computes ships a co-located `*.test.ts`; a component is covered by the spec check, `node scripts/design/check.mjs`, never by jsdom.

@@ -24,8 +24,7 @@
     "infra:synth": "npm --prefix infra run synth",
     "infra:deploy": "npm run build && npm --prefix infra run deploy",
     "design:export": "node scripts/design/export.mjs",
-    "design:tokens": "node scripts/design/tokens.mjs",
-    "hud:diff": "node scripts/hud/diff.mjs"
+    "design:tokens": "node scripts/design/tokens.mjs"
   },
   "dependencies": {
     "@preact/signals": "^2.11.3",
