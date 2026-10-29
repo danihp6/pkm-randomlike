@@ -9509,10 +9509,40 @@ agent docs). The three path sets are disjoint: `design/import.json` + `scripts/d
 dex, packs an atlas or touches a scene. A fourth slot stays empty because the only open item left is
 `[Task-194]` (`[!]`, parked) and the rename behind 220 and 221 needs both merged.
 
-**Batch 95 — `[Task-223]` alone, and not before the operator's run.** The rename to
-`design/screens/<slug>.json` and `design/exports/<slug>.png` needs the artifacts 220 writes, and the
-artifacts come from `import.mjs` with the PAT — a command the loop never gets. It is cut once that run
-is committed; until then it is unscheduled on purpose.
+**Batch 95 — `[Task-225]` first, because the PAT is rate-limited.** The REST import failed on
+`2026-10-29` with **429** (`Retry-After: 390498`, `x-figma-plan-tier: starter`,
+`x-figma-rate-limit-type: low`), so the operator's run cannot happen through the API today. The
+snapshot is already in the repo (`design/frames/<slug>.json` carries the text and the boxes,
+`design/screens/<slug>.png` the rasters), so the import gains an **offline mode** and the artifacts are
+produced without a request. `[Task-223]` and `[Task-224]` stay `[!]` behind it.
+
+- [ ] **[Task-225] The import also runs from the committed snapshot, so a rate-limited PAT blocks
+      nothing.** Measured on `2026-10-29`: `node scripts/design/import.mjs` stops at the first call with
+      `figma 429 https://api.figma.com/v1/files/nfyJ8Yerc6lL1BouvCAfd3?depth=3`; the headers say
+      `Retry-After: 390498`, `x-figma-plan-tier: starter`, `x-figma-rate-limit-type: low`, and the
+      upgrade link carries `api_paywall=true`. The REST path is therefore unavailable for days, while
+      the repo already holds the same data: `design/frames/<slug>.json` (the exporter's node tree, text
+      included) and `design/screens/<slug>.png` (the export the operator made through the figma-edit
+      bridge). The extractor is pure over a file payload, so the payload can be assembled from those
+      files: that is the point of `D57` — the snapshot is the spec, the API is only how a new frame
+      arrives. **Fix shape:** `import.mjs` accepts `--from design/frames` (offline): it builds
+      `{ name, lastModified, document: { children: [{ name: map.page, children: frames }] } }` from the
+      committed `frames/<slug>.json`, matched by **exact caption** (a missing or duplicated caption is
+      fatal and names it), and calls the same `projectBoard`. It copies each `screens/<slug>.png` into
+      `design/exports/<slug>.png`, hashes it, and writes `design/screens/<slug>.json`,
+      `design/tokens.json` and `design/board.json`; `--check` runs in the same mode and writes nothing.
+      The REST path stays the default for a fresh board and keeps its `--check`; neither path needs a
+      token to **verify** the committed artifacts. **Docs:** `scripts/design/README.md` and
+      `design/README.md` (the two modes, when each is used, and that a 429 does not block the repo).
+      **Tests:** `[unit]` the offline payload built from fixtures yields the same `screens` and `tokens`
+      as the REST fixture; `[unit]` a missing or duplicated caption is fatal and names the caption;
+      `[unit]` `--check --from` exits 1 when one byte of a generated file moves and 0 when it does not;
+      `[unit]` the offline run needs no `FIGMA_TOKEN` (it exits 0 with the variable unset); `[live]` in a
+      temp `--root`, `node scripts/design/import.mjs --from design/frames` writes **33** specs and
+      **33** exports, and `node scripts/design/check.mjs` is exit 0 with its four names.
+      Claims `scripts/design/import.mjs`, `scripts/design/importer.mjs` (the payload builder) + its test,
+      `scripts/design/README.md` and `design/README.md`. *Dependencies:* `[Task-220]` and `[Task-221]`
+      (both merged). *(Batch 95)*
 
 - [x] **[Task-220] The board is an imported spec: one map, one extractor, one command, four checks.**
       Decided by the human on `2026-10-29` after reading `../codebox`'s `D52` and its Batch 21: the
