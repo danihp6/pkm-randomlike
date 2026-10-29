@@ -9592,7 +9592,7 @@ is committed; until then it is unscheduled on purpose.
       from the template lists both files as read-only (the orchestrator's own next spec is the check).
       Claims `AGENTS.md` and `docs/agent-spec-template.md`. *Dependencies:* none.
 
-- [ ] **[Task-223] The board's files take their codebox names: `screens/<slug>.json`, `exports/<slug>.png`.**
+- [!] **[Task-223] The board's files take their codebox names: `screens/<slug>.json`, `exports/<slug>.png`.**
       Blocked on the operator's run, not on code: `[Task-220]` writes the new names, but the 66 PNGs and
       33 specs only exist after `node scripts/design/import.mjs` runs with the PAT, so this task cannot
       start until that commit lands. **Fix shape:** move `design/frames/<slug>.json` →
@@ -9608,6 +9608,14 @@ is committed; until then it is unscheduled on purpose.
       `src/ui/hud/**/fixture.test.ts`, `design/README.md`, `docs/**` and `TODO.md`.
       *Dependencies:* `[Task-220]` and `[Task-221]`, plus the operator's import run committed.
       *Unscheduled until then.*
+      **BLOCKED:** the operator's Figma REST run has not landed: on `main` @ `df2a6f7`
+      `design/screens/*.json` is **0 of 33** and `design/exports/` does not exist
+      (`node scripts/design/check.mjs` prints `colour_outside_tokens: 0 screens (run the
+      import)` and `snapshot_hash_mismatch: 0 mismatched, 33 pending the import`), and
+      `FIGMA_TOKEN`/`FIGMA_FILE_KEY` are unset in the runner, so no cycle can import the
+      board and the rename has nothing to move. Free this row once
+      `FIGMA_TOKEN=… node scripts/design/import.mjs` has committed the four artifact
+      families (issue #83).
 
 ---
 
