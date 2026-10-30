@@ -144,6 +144,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   size, five direction rows and five animation blocks, so a scene draws the party's
   overworld art without knowing the sheet layout. An id the manifest lists as
   `missing` resolves to null. This file is the manifest's only reader.
+- `overworldSize.ts` — the overworld size table: `overworldScale(speciesId)`
+  compresses a species' canonical height into the frozen `0.8..1.6` band of its
+  tile through the battle sprite's own power curve (`spriteSize.ts`), with
+  `overworldDrawHeight` and `overworldCellHeight` for the follower and the main
+  menu's walkers (`docs/design-spec.md` §2/§5).
 
 ## Rules
 

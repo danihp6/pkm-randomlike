@@ -1,3 +1,4 @@
+import { overworldCellHeight } from '../../../../data/overworldSize';
 import type { PokemonOverworldSheet } from '../../../../data/pokemonOverworld';
 import type { PreviewRect, PreviewRoom, PreviewWalker } from '../../../../engine/routes/preview';
 import { PREVIEW_TILE, previewRoute } from '../../../../engine/routes/preview';
@@ -147,11 +148,6 @@ const FACING_POSE: Readonly<Record<Facing, Readonly<{ facing: FollowerFacing; fl
 /** No flip: the paint hands the stylesheet a plain box, not a transform chain. */
 const NO_FLIP = 'none';
 
-/** The pair's sheet drawn at the route's own `24 / size` scale, so one cell is `PREVIEW_TILE`. */
-function pairCellScale(sheet: PokemonOverworldSheet): number {
-  return PREVIEW_TILE / sheet.size;
-}
-
 /** The inline background pieces either paint shares. */
 type BackgroundPaint = Readonly<{
   backgroundImage: string;
@@ -173,10 +169,11 @@ function portraitPaint(speciesId: string, box: Rect): BackgroundPaint {
 
 /**
  * One walker's paint: the pair's own `walk` / `idle` strip, cut from its sheet and
- * scaled to the 24 px box, or — with no sheet, or one whose image failed to load —
- * the species' portrait crop, so a clone without the pair art still draws a Pokémon.
- * The box is always the model tile it is walking to: the slide is the stylesheet's,
- * over `WALK_STEP_MS`, and a first paint or a room change asks for no slide at all.
+ * drawn at the species' own cell inside the 24 px box, or — with no sheet, or one
+ * whose image failed to load — the species' portrait crop, so a clone without the
+ * pair art still draws a Pokémon. The box is always the model tile it is walking to:
+ * the slide is the stylesheet's, over `WALK_STEP_MS`, and a first paint or a room
+ * change asks for no slide at all.
  */
 export function walkerPaint(
   window: PreviewRect,
@@ -199,14 +196,16 @@ export function walkerPaint(
   const transitionMs = state.instant ? 0 : WALK_STEP_MS;
   const transform = pose.flip ? 'scaleX(-1)' : NO_FLIP;
   if (sheet !== null && frame !== null) {
-    const scale = pairCellScale(sheet);
+    const cell = overworldCellHeight(sheet.speciesId, PREVIEW_TILE);
     const col = frame % sheet.cols;
     const row = followerDirRow(sheet, pose.facing);
+    const dx = Math.floor((PREVIEW_TILE - cell) / 2);
+    const dy = PREVIEW_TILE - cell;
     return {
       box,
       backgroundImage: `url("${sheet.url}")`,
-      backgroundPosition: `${-col * PREVIEW_TILE}px ${-row * PREVIEW_TILE}px`,
-      backgroundSize: `${sheet.cols * sheet.size * scale}px ${sheet.rows * sheet.size * scale}px`,
+      backgroundPosition: `${-col * cell + dx}px ${-row * cell + dy}px`,
+      backgroundSize: `${sheet.cols * cell}px ${sheet.rows * cell}px`,
       transform,
       transitionMs,
       frame,

@@ -41,7 +41,9 @@ carries over.
   drawn with the first map's biome tileset, with two or three Pokémon wandering it: each
   one takes one tile's 24 px step in the route's own **200 ms**, the rest of its 600 ms
   tick a stand, drawn as its committed overworld pair playing the `walk` strip at 5 fps
-  (the `idle` strip while it stands) and, where the pair's local art is absent, as its
+  (the `idle` strip while it stands) at the species' own height inside its 24 px tile
+  (`overworldScale`, `src/data/overworldSize.ts`: the tallest fills the cell and the
+  smallest keeps headroom), and, where the pair's local art is absent, as its
   portrait cell, so a walker's box is never empty — and
   it is **decoration**: no encounters, no player, no input and no save write. On a phone
   the records footer under the menu wraps its figures into two rows, so the three blocks
@@ -458,6 +460,13 @@ Full rules in `docs/battle-spec.md`. In short:
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).
+- **The follower is the lead's own size.** The party's lead follows you drawn
+  from its own overworld pair at the species' canonical height, never at one fixed
+  tile height: `overworldScale` compresses the 0.1–20 m range into a frozen
+  `0.8..1.6` of the 24 px tile through the battle sprite's own power curve, the
+  sprite is anchored at the feet (bottom-centre of the tile) so a titan grows upward
+  and never off its tile, and the cadence is the same `FOLLOWER_FRAME_RATE` for
+  every species — the size differs, the rhythm does not.
 
 ## 6. What a run looks like
 

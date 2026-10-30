@@ -23,7 +23,7 @@ import {
 } from '../data/playerSprite';
 import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokemonOverworld';
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
-import { followerAnimKey, followerAnims } from '../render/pokemonFollower';
+import { followerAnimKey, followerAnims, followerFit } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
 import {
   ROOM_BATTLEFIELDS,
@@ -1845,11 +1845,12 @@ export class RouteScene extends Phaser.Scene {
     this.followerSheet = sheet;
     if (!sheet) return;
     this.registerFollowerAnims(sheet);
-    const footY = this.centerY(this.player.y) + TILE_SIZE / 2;
+    const fit = followerFit(sheet);
+    const footY = this.centerY(this.player.y) + fit.feetOffset;
     const sprite = this.add
       .sprite(this.centerX(this.player.x), footY, sheet.textureKey, 0)
       .setOrigin(0.5, 1)
-      .setScale(TILE_SIZE / sheet.size)
+      .setScale(fit.scale)
       .setDepth(actorDepth(footY))
       .setFlipX(this.facingDir === 'right');
     this.followerSprite = sprite;
