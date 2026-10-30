@@ -3,7 +3,7 @@
  * battle menu card the moves window shares, so it paints no rect of its own: every
  * child comes in at the box `battleCommandView` measured. The rows take the board's
  * `menu tab` skin — the `--hud-row-*` pair and the 16 % accent fill on the selected
- * one — and the fifth INFO column is a row with the same skin.
+ * one — and they take the card's whole two-column width.
  */
 .battle-command {
   /* 05 Battle HUD · the battle window behind the four menu tabs */
@@ -33,8 +33,7 @@
   box-sizing: border-box;
 }
 
-.battle-command__row,
-.battle-command__info {
+.battle-command__row {
   position: absolute;
   display: flex;
   align-items: center;
@@ -54,8 +53,7 @@
   cursor: pointer;
 }
 
-.battle-command__row--selected,
-.battle-command__info--selected {
+.battle-command__row--selected {
   border-color: var(--hud-accent);
   background: var(--battle-command-selected-fill);
   color: var(--hud-text-ink);
@@ -73,12 +71,7 @@
   text-overflow: ellipsis;
 }
 
-.battle-command__info {
-  color: var(--hud-text-ink);
-}
-
-.battle-command__row:focus-visible,
-.battle-command__info:focus-visible {
+.battle-command__row:focus-visible {
   outline: 2px solid var(--hud-accent);
   outline-offset: 2px;
 }

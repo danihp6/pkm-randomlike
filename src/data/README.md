@@ -123,6 +123,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   unsold **Mega Stone** per Mega forme from `dex/megas.ts` (`D34`); holding the
   matching stone lets a Pokémon Mega Evolve once per battle. It builds **no**
   G-Max item and no "Gigantamax factor": Gigantamax needs neither (`D44`).
+- `fieldIcons.ts` — the eight drawn glyphs the battle's field chips paint: one condition id
+  (the four weathers, the four terrains), its chip kind, its label key, its shape family and its
+  inline SVG path on a 24-unit square, read by `ui/hud/panels/battle-field/`.
 - `abilityText.ts` — the ability-text override table: the ids whose dex blurb is
   competitive-play boilerplate while the engine ports the ability
   (`docs/balance/effect-coverage.md`), read by `abilityDescription`

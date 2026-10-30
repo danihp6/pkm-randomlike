@@ -354,12 +354,9 @@ Full rules in `docs/battle-spec.md`. In short:
   Its window is a Preact card in `#hud` under `D49`
   (`src/ui/hud/panels/battle-command/`), mounted exactly like the moves menu's
   `battle-moves` card, so the DOM HUD paints the window and the canvas keeps the
-  arena. **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid**, which also reserves a fifth
-  **INFO** control at that grid's right edge — the same column the moves menu keeps
-  for **MEGA** and **G-MAX** (each of those two controls draws the shipped Mega
-  Evolution glyph, the Hard Stone icon every Mega Stone borrows, never a word; an
-  armed one reads as the accent fill plus the accent outline), so the 2x2 keeps its
-  shape — and so is the **moves** menu
+  arena. **FIGHT / BAG / SWITCH / RUN** is a 2x2 **grid** that takes the card's whole
+  width — the column the moves menu keeps for **MEGA** and **G-MAX** is the
+  grid's own here — and so is the **moves** menu
   (all four moves show at once, with no scrolling), which always reserves its full
   2x2 so a shorter list keeps one cell size and draws its spare slots as empty containers,
   which take no press and float no **ⓘ**: each move cell is a glass row that shows
@@ -384,15 +381,20 @@ Full rules in `docs/battle-spec.md`. In short:
   its own, sized to the button: hovering one floats that move's own description and
   a press on it **pins** the description open — the press is swallowed there, so
   the member the window describes is not switched.
-  The arrows reach the **INFO** control from the command grid's last column, and a
-  confirm or a press on it opens the battle's **own state** in a window of its own:
-  the weather and the terrain, each live field condition and each side's own
-  conditions with their counts, each active's stat stages and its non-volatile
-  status. Any confirm or back press or a click closes it and it spends no turn. The
-  engine models no **entry hazards** (Stealth Rock, Spikes, Toxic Spikes and Sticky
+- The field's **weather** and **terrain** are the only field state the HUD
+  draws, as icons at the battle stage's top right
+  (`src/ui/hud/panels/battle-field/`): one 32 px chip per live condition — a
+  sun, drops, a swirl or a flake for the weather, a bolt, blades, mist or
+  rings for the terrain — with its remaining turns as the chip's own small
+  numeral and no text row, 8 px apart and 16 px inside the square's own
+  edges, the weather holding the corner and the terrain one gap to its left;
+  both at once is one row of two and neither draws nothing. The chips read
+  the stored condition, so a weather under Air Lock still shows. The engine
+  models no **entry hazards** (Stealth Rock, Spikes, Toxic Spikes and Sticky
   Web are absent from the whole engine — `Tidy Up`'s handler in
   `src/engine/battle/effects/moves.ts` says so) and keeps the per-fighter
-  **volatiles** hidden, so the window lists neither.
+  **volatiles** hidden: the state window, its field and side rows and its
+  stat-stage and status lines were retired with the fifth command control.
 - The bag opens as pockets like the route HUD — **CONSUM** everywhere and
   **BALL** while a wild can still be caught; trainer battles offer only
   consumables. The pocket is the same **icon grid** as the route's, two rows of
@@ -418,10 +420,9 @@ Full rules in `docs/battle-spec.md`. In short:
   card keeps the measured 8 px gutter above the player's box).
 - The battle's windows are the drawn chrome: the **message box** behind the
   message text is the shipped `textbox` card (the one stage that draws it), and
-  every other window — the HP panels, the **command window** (the FIGHT / BAG /
-  SWITCH / RUN card), the moves menu, the battle-state window the **INFO** control
-  opens and the switch grid's
-  detail window — is the default card skin, each at its own degree of translucency
+  every other window — the HP panels, the **command window** (the FIGHT / BAG
+  / SWITCH / RUN card), the moves menu and the switch grid's detail window — is
+  the default card skin, each at its own degree of translucency
   so the field stays readable
   through it, and they ink their text with the light `FRLG_INK`. The line the message
   box prints is the engine's own `battle.log.*` key resolved in the active locale

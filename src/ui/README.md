@@ -46,8 +46,6 @@ testable logic belongs in the computing half.
   the module's export list.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
   the battle's switch window read the same way.
-- `battleInfo.ts` — the battle-state window's rows: the weather, the terrain, the field and side
-  conditions, the stat stages and the status, and how the list window draws them.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.
 - `partyDetail.ts` — the party detail popup: STATS/MOVES tabs, nature effects and move reordering.
 - `partyGrid.ts` — the battle SWITCH window's row geometry: one fixed-size row per party member and the pure label truncation.

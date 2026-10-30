@@ -157,10 +157,13 @@ partner never leaves its side's column: the foe's stacks 8 px under its lead and
 own, so a double keeps the single's right edge. The battle menu card therefore starts at **440** (the column's
 right edge plus the 8 px gutter) and keeps the shipped right edge, 1004: 564 wide, and no `[data-hud-hp]` box
 can be drawn behind it. On a phone the card keeps its shipped full-width rect under both boxes (390×844 →
-x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG / SWITCH / RUN is painted at
-`battleMovesBox`'s rect (440 → 1004 at 1280×800, the 358×236 phone card at 390×844), so its four cells occupy
-the boxes the four move cells occupy — 219×72 in the desk's 2×2, 116×94 on the phone — and its fifth **INFO**
-control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. **The message box is that
+x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG / SWITCH / RUN is painted
+at `battleMovesBox`'s own rect, and its four cells take the card's whole two-column width —
+**250×72** in the desk's 2×2 and **147×94** on the phone — with no fifth control in the moves menu's MEGA
+column. The **field chips** are one 32 px cell per live weather and terrain, 8 px apart, the row's right edge
+16 px inside `battleStage`'s right edge and its top 16 px inside the square's top edge (1280×800 → the corner
+cell at (992,16), the terrain at (952,16)); a viewport under 600 px keeps that right edge and drops the row
+under the foe's lowest HP box, 8 px below it (390×844 → (342,104) and (302,104)). **The message box is that
 same window**: the feed paints the menu's live card (`battleMovesBox`'s rect) and its two lines on the
 frame's insets inside it, so a menu opening swaps the lines for the rows and never resizes or moves the
 window; the board's own 576×216 at (664,544) is the copy the live box replaces. The category is drawn as the

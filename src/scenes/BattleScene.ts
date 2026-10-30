@@ -125,6 +125,11 @@ import {
 } from '../ui/hud/panels/battle-command';
 import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
 import {
+  mountBattleField,
+  type BattleFieldController,
+  type BattleFieldInput,
+} from '../ui/hud/panels/battle-field';
+import {
   battleMovesBox,
   mountBattleMoves,
   type BattleMovesController,
@@ -159,7 +164,6 @@ import {
 } from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
-import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
 import { MoveGrid, padMoveGridCells, stepMoveGridCursor, type MoveGridCell } from '../ui/moveGrid';
 import { partyGridFieldRows, stepPartyCursor } from '../ui/partyGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
@@ -244,8 +248,7 @@ export function monIdleFrames(manifestFrames: number, textureFrameTotal: number)
 installBattleSwitchPreview(typeof window === 'undefined' ? '' : window.location.search);
 installBattleLogPreview(typeof window === 'undefined' ? '' : window.location.search);
 
-type Mode =
-  'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over' | 'info';
+type Mode = 'entry' | 'feed' | 'menu' | 'partner' | 'moves' | 'target' | 'bag' | 'party' | 'over';
 
 /** A sprite beat that owns the mon's position/scale until it completes. */
 type BeatKind = 'faint' | 'switch';
@@ -393,8 +396,6 @@ export class BattleScene extends Phaser.Scene {
   private megaSelected = false;
   /** True while the keyboard cursor sits on the G-Max control instead of a move. */
   private gmaxSelected = false;
-  /** True while the keyboard cursor sits on the INFO control instead of a command cell. */
-  private infoSelected = false;
   private playerSprite!: Phaser.GameObjects.Sprite;
   private foeSprite!: Phaser.GameObjects.Sprite;
   /** The second slot's sprites: hidden in a single battle, drawn on the same field. */
@@ -410,6 +411,8 @@ export class BattleScene extends Phaser.Scene {
   private bagController: BattleBagController | null = null;
   /** The mounted DOM switch grid and the controller `refreshHud` pushes to. */
   private switchController: BattleSwitchController | null = null;
+  /** The mounted DOM field chips and the controller `refreshHud` pushes to. */
+  private fieldController: BattleFieldController | null = null;
   /** The mounted DOM message box and the line `refreshHud` pushes to it. */
   private logController: BattleLogHandle | null = null;
   private foeTrainer!: Phaser.GameObjects.Image;
@@ -572,10 +575,12 @@ export class BattleScene extends Phaser.Scene {
       this.disposeCommandPanel();
       this.disposeBagPanel();
       this.disposeSwitchPanel();
+      this.disposeBattleFieldPanel();
       this.disposeBattleLogPanel();
       if (IS_DEVELOP) delete (globalThis as Record<string, unknown>).__pkmBattle;
     });
     this.mountHpPanel();
+    this.mountBattleFieldPanel();
     this.mountMovesPanel();
     this.mountBattleCommandPanel();
     this.mountBagPanel();
@@ -618,6 +623,21 @@ export class BattleScene extends Phaser.Scene {
     if (this.hpController === null) return;
     this.hpController.dispose();
     this.hpController = null;
+  }
+
+  /** Mounts the DOM field chips into the HUD layer, once per battle. */
+  private mountBattleFieldPanel(): void {
+    if (typeof document === 'undefined') return;
+    const host = document.getElementById('hud');
+    if (host === null) return;
+    this.disposeBattleFieldPanel();
+    this.fieldController = mountBattleField(host);
+  }
+
+  private disposeBattleFieldPanel(): void {
+    if (this.fieldController === null) return;
+    this.fieldController.dispose();
+    this.fieldController = null;
   }
 
   /** Mounts the DOM move menu into the HUD layer, once per battle. */
@@ -815,10 +835,6 @@ export class BattleScene extends Phaser.Scene {
       this.onConfirm();
       return;
     }
-    if (this.mode === 'info') {
-      this.openMenu();
-      return;
-    }
     if (this.mode === 'over') this.returnToRoute();
   }
 
@@ -846,10 +862,6 @@ export class BattleScene extends Phaser.Scene {
       this.returnToRoute();
       return;
     }
-    if (this.mode === 'info') {
-      this.openMenu();
-      return;
-    }
     this.confirmMenu();
   }
 
@@ -865,10 +877,6 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.mode === 'over') {
       this.returnToRoute();
-      return;
-    }
-    if (this.mode === 'info') {
-      this.openMenu();
       return;
     }
     if (this.mode === 'moves' || this.mode === 'bag' || this.mode === 'party') {
@@ -1680,7 +1688,6 @@ export class BattleScene extends Phaser.Scene {
     if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
     this.megaSelected = false;
     this.gmaxSelected = false;
-    this.infoSelected = false;
     this.menuItems = [
       { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves() },
       {
@@ -1711,7 +1718,6 @@ export class BattleScene extends Phaser.Scene {
     if (!canGigantamax(this.state, 'player')) this.gmaxIntent = false;
     this.megaSelected = false;
     this.gmaxSelected = false;
-    this.infoSelected = false;
     this.menuItems = [
       { label: t('battle.command.fight'), enabled: true, onSelect: () => this.openMoves(1) },
       {
@@ -1747,19 +1753,6 @@ export class BattleScene extends Phaser.Scene {
       if (activeFighter(this.state, 'enemy', slot).hp > 0) slots.push(slot);
     }
     return slots;
-  }
-
-  /** Opens the battle-state window: the model's lines as the list's items, in `mode = 'info'`. */
-  private openInfo(): void {
-    this.menuItems = battleInfoLines(battleInfoRows(this.state)).map((line) => ({
-      label: line,
-      enabled: true,
-      onSelect: () => this.openMenu(),
-    }));
-    this.menuIndex = 0;
-    this.infoSelected = false;
-    this.mode = 'info';
-    this.refreshHud();
   }
 
   /** True while the active Pokémon can still spend its Mega Stone this battle. */
@@ -2184,18 +2177,6 @@ export class BattleScene extends Phaser.Scene {
     const cols = MENU_GRID_COLS;
     const mega = this.mode === 'moves' && this.megaAvailable();
     const gmax = this.mode === 'moves' && this.gmaxAvailable();
-    const info = this.mode === 'menu' || this.mode === 'partner';
-
-    // The INFO control sits to the right of the command grid, in the column the
-    // moves menu reserves for MEGA: `right` from the last column reaches it and
-    // `left` walks back out into the grid.
-    if (this.infoSelected) {
-      if (action === 'left') {
-        this.infoSelected = false;
-        this.refreshHud();
-      }
-      return;
-    }
 
     // The Mega and G-Max controls sit to the right of the grid, the G-Max one
     // innermost: `right` from the last column reaches them, and `left` walks back
@@ -2227,12 +2208,6 @@ export class BattleScene extends Phaser.Scene {
       this.refreshHud();
       return;
     }
-    if (action === 'right' && info && (col === cols - 1 || this.menuIndex === count - 1)) {
-      this.infoSelected = true;
-      this.refreshHud();
-      return;
-    }
-
     const next = stepMoveGridCursor(
       this.menuIndex,
       action,
@@ -2246,10 +2221,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private confirmMenu(): void {
-    if (this.mode === 'menu' && this.infoSelected) {
-      this.openInfo();
-      return;
-    }
     if (this.mode === 'moves' && this.megaSelected && this.megaAvailable()) {
       this.toggleMega();
       return;
@@ -2438,6 +2409,7 @@ export class BattleScene extends Phaser.Scene {
     this.commandController?.update(this.battleCommandInput(menu));
     this.bagController?.update(this.battleBagInput(menu));
     this.switchController?.update(this.battleSwitchInput(menu));
+    this.fieldController?.update(this.battleFieldInput());
     this.updateBattleLog();
   }
 
@@ -2492,8 +2464,6 @@ export class BattleScene extends Phaser.Scene {
         enabled: item.enabled,
       })),
       selected: this.menuIndex,
-      infoSelected: this.infoSelected,
-      infoLabel: t('battle.infoControl'),
     };
   }
 
@@ -2508,11 +2478,9 @@ export class BattleScene extends Phaser.Scene {
       case 'hover': {
         const index = moveIndexIn(intent.index, this.menuItems.length);
         if (index === null) return;
-        const changed =
-          this.megaSelected || this.gmaxSelected || this.infoSelected || index !== this.menuIndex;
+        const changed = this.megaSelected || this.gmaxSelected || index !== this.menuIndex;
         this.megaSelected = false;
         this.gmaxSelected = false;
-        this.infoSelected = false;
         if (!changed) return;
         this.menuIndex = index;
         this.refreshHud();
@@ -2522,13 +2490,7 @@ export class BattleScene extends Phaser.Scene {
         const index = moveIndexIn(intent.index, this.menuItems.length);
         if (index === null) return;
         this.menuIndex = index;
-        this.infoSelected = false;
         this.confirmMenu();
-        return;
-      }
-      case 'info': {
-        this.infoSelected = true;
-        this.openInfo();
         return;
       }
     }
@@ -2619,6 +2581,17 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
     }
+  }
+
+  private battleFieldInput(): BattleFieldInput {
+    return {
+      viewport: { width: this.scale.width, height: this.scale.height },
+      doubles: this.doublesInPlay(),
+      weather: this.state.weather,
+      weatherTurns: this.state.weatherTurns,
+      terrain: this.state.terrain,
+      terrainTurns: this.state.terrainTurns,
+    };
   }
 
   /**

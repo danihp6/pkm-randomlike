@@ -34,8 +34,6 @@ function inputOf(overrides: Partial<BattleCommandInput> = {}): BattleCommandInpu
     card: battleCommandBox(DESKTOP),
     rows: LEAD,
     selected: 0,
-    infoSelected: false,
-    infoLabel: 'INFO',
     ...overrides,
   };
 }
@@ -56,54 +54,50 @@ describe('battleCommandBox', () => {
 });
 
 describe('the four command cells', () => {
-  it('take the boxes renderCommandMenu lays out at 1280x800', () => {
+  it('take the whole card at 1280x800', () => {
     const view = battleCommandView(inputOf());
     expect(view.compact).toBe(false);
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 468, y: 606, w: 219, h: 72 },
-      { x: 695, y: 606, w: 219, h: 72 },
-      { x: 468, y: 686, w: 219, h: 72 },
-      { x: 695, y: 686, w: 219, h: 72 },
+      { x: 468, y: 606, w: 250, h: 72 },
+      { x: 726, y: 606, w: 250, h: 72 },
+      { x: 468, y: 686, w: 250, h: 72 },
+      { x: 726, y: 686, w: 250, h: 72 },
     ]);
-    expect(view.info?.box).toEqual({ x: 914, y: 606, w: 62, h: 152 });
   });
 
-  it('take the boxes renderCommandMenu lays out at 390x844', () => {
+  it('take the whole card at 390x844', () => {
     const view = battleCommandView(inputOf({ card: battleCommandBox(PHONE) }));
     expect(view.compact).toBe(true);
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 44, y: 616, w: 116, h: 94 },
-      { x: 168, y: 616, w: 116, h: 94 },
-      { x: 44, y: 718, w: 116, h: 94 },
-      { x: 168, y: 718, w: 116, h: 94 },
+      { x: 44, y: 616, w: 147, h: 94 },
+      { x: 199, y: 616, w: 147, h: 94 },
+      { x: 44, y: 718, w: 147, h: 94 },
+      { x: 199, y: 718, w: 147, h: 94 },
     ]);
-    expect(view.info?.box).toEqual({ x: 284, y: 616, w: 62, h: 196 });
+  });
+
+  it('answers no fifth control at all', () => {
+    const view = battleCommandView(inputOf());
+    expect('info' in view).toBe(false);
+    expect(view.rows).toHaveLength(4);
   });
 
   it('keep every box inside the card at both viewports', () => {
     for (const viewport of [DESKTOP, PHONE]) {
       const view = battleCommandView(inputOf({ card: battleCommandBox(viewport) }));
-      const boxes = [...view.rows.map((row) => row.box), ...(view.info ? [view.info.box] : [])];
-      expect(boxes).toHaveLength(5);
-      for (const box of boxes) expect(fitsInside(box, view.card)).toBe(true);
-    }
-  });
-
-  it('never meet the INFO column', () => {
-    for (const viewport of [DESKTOP, PHONE]) {
-      const view = battleCommandView(inputOf({ card: battleCommandBox(viewport) }));
-      expect(view.info).not.toBeNull();
-      for (const row of view.rows) expect(overlaps(row.box, view.info!.box)).toBe(false);
+      expect(view.rows).toHaveLength(4);
+      for (const row of view.rows) expect(fitsInside(row.box, view.card)).toBe(true);
     }
   });
 
   it('never meet an HP box at either viewport', () => {
     for (const viewport of [DESKTOP, PHONE]) {
       const view = battleCommandView(inputOf({ card: battleCommandBox(viewport) }));
-      const boxes = [...view.rows.map((row) => row.box), ...(view.info ? [view.info.box] : [])];
       for (const side of SIDES) {
-        const hp = battleHpBox(viewport, side, 0);
-        for (const box of boxes) expect(overlaps(box, hp)).toBe(false);
+        for (const slot of [0, 1] as const) {
+          const hp = battleHpBox(viewport, side, slot);
+          for (const row of view.rows) expect(overlaps(row.box, hp)).toBe(false);
+        }
       }
     }
   });
@@ -113,28 +107,28 @@ describe('the partner window', () => {
   it('is one full-height row of two cells at 1280x800', () => {
     const view = battleCommandView(inputOf({ card: battleCommandBox(DESKTOP), rows: PARTNER }));
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 468, y: 606, w: 219, h: 152 },
-      { x: 695, y: 606, w: 219, h: 152 },
+      { x: 468, y: 606, w: 250, h: 152 },
+      { x: 726, y: 606, w: 250, h: 152 },
     ]);
-    expect(overlaps(view.rows[0].box, view.info!.box)).toBe(false);
-    expect(overlaps(view.rows[1].box, view.info!.box)).toBe(false);
   });
 
   it('is one full-height row of two cells at 390x844', () => {
     const view = battleCommandView(inputOf({ card: battleCommandBox(PHONE), rows: PARTNER }));
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 44, y: 616, w: 116, h: 196 },
-      { x: 168, y: 616, w: 116, h: 196 },
+      { x: 44, y: 616, w: 147, h: 196 },
+      { x: 199, y: 616, w: 147, h: 196 },
     ]);
-    expect(overlaps(view.rows[0].box, view.info!.box)).toBe(false);
-    expect(overlaps(view.rows[1].box, view.info!.box)).toBe(false);
   });
 
-  it('keeps both cells and the INFO column inside its card', () => {
-    for (const viewport of [DESKTOP, PHONE]) {
+  it('keeps both cells and the card itself measured', () => {
+    for (const [viewport, compact] of [
+      [DESKTOP, false],
+      [PHONE, true],
+    ] as const) {
       const view = battleCommandView(inputOf({ card: battleCommandBox(viewport), rows: PARTNER }));
       for (const row of view.rows) expect(fitsInside(row.box, view.card)).toBe(true);
-      expect(fitsInside(view.info!.box, view.card)).toBe(true);
+      expect(view.card).toStrictEqual(battleCommandBox(viewport));
+      expect(view.compact).toBe(compact);
     }
   });
 });
@@ -143,13 +137,13 @@ describe('the selection', () => {
   it('is the one row at the cursor and no other', () => {
     const view = battleCommandView(inputOf({ selected: 3 }));
     expect(view.rows.map((row) => row.selected)).toEqual([false, false, false, true]);
-    expect(view.info?.selected).toBe(false);
   });
 
-  it('leaves the rows when the cursor sits on the INFO control', () => {
-    const view = battleCommandView(inputOf({ selected: 1, infoSelected: true }));
-    expect(view.rows.some((row) => row.selected)).toBe(false);
-    expect(view.info?.selected).toBe(true);
+  it('always selects a row: the cursor never leaves the grid', () => {
+    for (const selected of [0, 1, 2, 3]) {
+      const view = battleCommandView(inputOf({ selected }));
+      expect(view.rows.filter((row) => row.selected)).toHaveLength(1);
+    }
   });
 
   it('clamps an out-of-range index to the last row and NaN to the first', () => {
@@ -159,10 +153,9 @@ describe('the selection', () => {
     expect(broken.rows.map((row) => row.selected)).toEqual([true, false, false, false]);
   });
 
-  it('answers no INFO control and keeps the card for an empty list', () => {
+  it('keeps the card and answers no row for an empty list', () => {
     const view = battleCommandView(inputOf({ rows: [], selected: 2 }));
     expect(view.rows).toEqual([]);
-    expect(view.info).toBeNull();
     expect(view.card).toEqual(battleCommandBox(DESKTOP));
     expect(view.compact).toBe(false);
   });
@@ -183,7 +176,7 @@ describe('the flags the scene owns', () => {
   });
 
   it('is pure: the same input returns the same view', () => {
-    const input = inputOf({ selected: 2, infoSelected: false });
+    const input = inputOf({ selected: 2 });
     expect(battleCommandView(input)).toEqual(battleCommandView(input));
     expect(input.selected).toBe(2);
   });
