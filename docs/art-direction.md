@@ -361,6 +361,17 @@ not be redistributed.
   bottom, plays the direction's walk cycle while a step slides and stands on the
   resting frame when it stops; the run key scales the cycle's rate up (`D25`).
 - Sheets are loaded lazily per species so a route only pays for what it shows.
+- **A battle preloads both kinds, eagerly, for both whole parties.** `BattleScene`'s
+  `battleSheets` asks for the `front` **and** `back` sheet of every fighter in play —
+  the player's party and the enemy's, not only the two actives — plus both kinds of
+  any held-Mega forme and of the G-Max forme a species may take, keyed by
+  `textureKey` so a species both sides field loads once per kind. It is eager because
+  a **transform** (the Transform move, the Imposter ability) copies the foe's
+  `speciesId` **mid-battle** and the scene has no loading beat to fetch a sheet then:
+  a lazy sheet would draw blank for the frame the copy lands. A species the shipped
+  manifest does not name still resolves to no sheet (`pokemonSprite` answers `null`),
+  so `showMon` returns early and the placeholder texture `battle:mon` from
+  `BootScene` keeps drawing — that fallback is deliberate, not a bug.
 - Portraits: `public/anil/portraits.png` and `portraits-shiny.png` are 32-column
   grids of 64x64 cells, one per dex entry in dex order, packed from Pokémon
   Añil's `Icons` sheets by `scripts/anil/build-pokemon-sprites.mjs`

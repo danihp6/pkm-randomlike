@@ -9964,7 +9964,7 @@ carries.
 
 ### Batch 101 - Imposter draws what it copied
 
-- [ ] **[Task-230] Imposter copies the rival's sprite instead of leaving the placeholder.**
+- [x] **[Task-230] Imposter copies the rival's sprite instead of leaving the placeholder.**
       Reported on `2026-10-30`: «bug cuando un enemigo usa impostor debe copiar el sprite rival
       ahora sale placeholder». **Measured:** `transformInto` copies `speciesId` along with the
       shape (`src/engine/battle/fighter.ts` 758-784) and the Imposter handler calls it on

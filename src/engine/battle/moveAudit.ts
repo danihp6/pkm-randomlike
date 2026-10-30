@@ -1285,7 +1285,11 @@ export const MOVE_AUDIT_ROWS: readonly MoveAuditRow[] = [
   },
   {
     moveId: 'transform',
-    expected: { playerVolatiles: ['transformed'], playerAbility: 'Limber', events: ['move'] },
+    expected: {
+      playerVolatiles: ['transformed'],
+      playerAbility: 'Limber',
+      events: ['move', 'forme'],
+    },
   },
   {
     moveId: 'trick',

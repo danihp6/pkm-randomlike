@@ -514,6 +514,20 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   advances no other draw and a replay answers the same; `asDark` reads no RNG and is
   applied **after** the catch is adopted at the squad's level, so the level rebuild
   cannot drop the slots it writes.
+- **Transform** — the move and the **Imposter** ability — copies the foe's battle
+  shape into the user: species, name, types, stats (never HP), ability, gender, the
+  moves at 5 PP each and the stat stages, keeping the original shape so a
+  switch-out restores it (`transformInto` / `restoreOriginalForm`,
+  `src/engine/battle/fighter.ts`). The copied ability is never re-triggered, which
+  keeps a copied Imposter inert. A successful transform **reports itself** as a
+  `forme` event (`{ kind: 'forme', side, fighterId }`, §9's Mega precedent) pushed
+  straight after the `battle.log.move.transform` line, from both call sites — the
+  Imposter `onSwitchIn` handler and the Transform move's `onAfterMove` — and never
+  when `transformInto` answers `false`. The battle scene answers it by re-syncing
+  that side's mon sprites, which is what puts the copied species' own sheet on
+  screen; a switch-out needs no event of its own, because the switch frame already
+  re-syncs. The scene therefore preloads **both** sheet kinds for both whole
+  parties (`docs/art-direction.md` §Sprite contract).
 - **Evolution is manual and level-only.** Every evolution in the dex — level-up,
   stone, trade, friendship, move — is resolved to a level (`evolutionBranches`,
   `src/data/dex/evolutions.ts`): a canon level evolution keeps its level, the

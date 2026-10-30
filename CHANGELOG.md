@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Imposter copies the rival's sprite instead of leaving the placeholder.** `[Task-230]`,
+      Batch 101: reported as «bug cuando un enemigo usa impostor debe copiar el sprite rival ahora
+      sale placeholder». `transformInto` already copied `speciesId`, but the battle preloaded
+      **one kind per side** — `front` for the enemy party, `back` for the player's — so the copied
+      species had no sheet for the kind `showMon` asked for and the sprite kept `BootScene`'s
+      placeholder `battle:mon`. Two changes: `battleSheets` now loads **both** sheet kinds for
+      **both whole parties** (a shared species still collapses on its `textureKey`, and the held
+      Mega and G-Max formes are added under both kinds), and a successful transform pushes the
+      `{ kind: 'forme', side, fighterId }` event from both call sites — the Imposter `onSwitchIn`
+      handler and the Transform move — so the scene's existing `forme` case re-syncs that side's
+      sprites on the frame the transform lands; a switch-out needs no event, the switch frame
+      already re-syncs and `restoreOriginalForm` puts the shape back. The manifest's own gap stays
+      on purpose: a species the shipped pack does not name still draws `battle:mon`, and
+      `moveAudit`'s `transform` row now lists `['move', 'forme']`. `docs/battle-spec.md` §7 gains
+      the Transform bullet and `docs/art-direction.md` §Sprite contract the eager two-kind preload
+      and why it is not lazy. Gates: `npm test` 5252 passed / 69 skipped and `npm run build`
+      green. `[live]` measured over CDP at 1280×800 reading the live Phaser objects: a wild Ditto
+      that rolled **Imposter** against a Pidgey lead ended with `speciesId === 'pidgey'` and
+      `foeSprite.texture.key = 'front:PIDGEY.png'` (never `battle:mon`, visible), while a control
+      launch without Imposter drew `front:DITTO.png`; `loadedSheets` 2 → 4, animation frames
+      unchanged.
+
 - [x] **The INFO window goes, and the weather and the terrain live as icons at the stage's top
       right.** `[Task-229]`, Batch 100: reported as «apunta eliminar la parte de info, los
       estados del terreno deben aparecer arriba a la derecha como en el prototipo con su icono».

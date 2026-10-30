@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { monIdleFrames } from './BattleScene';
+import { pokemonSprite } from '../data/pokemonSprites';
 
 vi.mock('phaser', () => {
   class Scene {}
@@ -59,6 +60,90 @@ describe('returnToRoute', () => {
 
   it('keeps the fielded-id list beside the tallies, unchanged', () => {
     expect(SOURCE).toContain('used: [...this.state.usedFighterIds],');
+  });
+});
+
+/**
+ * The preload is scene wiring over the manifest accessor, so the seam is read from
+ * the source the same way: `pokemonSprite`'s own lookup is `src/data/pokemonSprites`'
+ * contract, and what this pins is which kinds and which fighters the scene asks for.
+ */
+describe('battleSheets', () => {
+  const body = (): string => {
+    const start = SOURCE.indexOf('  private battleSheets(): PokemonSpriteSheet[] {');
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('\n  }\n', start);
+    expect(end).toBeGreaterThan(start);
+    return SOURCE.slice(start, end);
+  };
+
+  it('loads both sheet kinds for every fighter of both whole parties', () => {
+    const source = body();
+    expect(source).toContain('for (const kind of MON_SPRITE_KINDS) {');
+    expect(source).toContain('add(fighter.speciesId, fighter.shiny, female, kind);');
+    expect(source).toContain('for (const fighter of this.playerFighters) addFighter(fighter);');
+    expect(source).toContain('for (const fighter of this.enemyFighters) addFighter(fighter);');
+    expect(source).not.toContain("addFighter(fighter, 'front')");
+    expect(source).not.toContain("addFighter(fighter, 'back')");
+  });
+
+  it('names both kinds in the one constant the loop walks', () => {
+    const kinds = SOURCE.match(/const MON_SPRITE_KINDS: readonly PokemonSpriteKind\[\] = \[([^\]]*)\];/);
+    expect(kinds).not.toBeNull();
+    expect(kinds?.[1].match(/'[a-z]+'/g)).toEqual(["'front'", "'back'"]);
+  });
+
+  it('keeps the Mega and G-Max forme sheets inside that same loop', () => {
+    const source = body();
+    expect(source).toContain('if (mega) add(mega.id, fighter.shiny, female, kind);');
+    expect(source).toContain('if (gmax) add(gmax.id, fighter.shiny, female, kind);');
+    expect(source.indexOf('if (mega) add(mega.id')).toBeGreaterThan(
+      source.indexOf('for (const kind of MON_SPRITE_KINDS) {'),
+    );
+    expect(source).toContain('megaFormForItem(fighter.heldItem)');
+    expect(source).toContain('gmaxFormForBase(fighter.speciesId)');
+  });
+
+  it('loads a species both sides field once per kind', () => {
+    const source = body();
+    expect(source).toContain('const sheets = new Map<string, PokemonSpriteSheet>();');
+    expect(source).toContain('sheets.set(sheet.textureKey, sheet);');
+    expect(source).toContain('return [...sheets.values()];');
+  });
+});
+
+/**
+ * The transform's own engine rule is `transformInto`'s, covered in
+ * `src/engine/battle/fighter.test.ts`; what the scene owes is the redraw of the
+ * copied species when the engine reports the `forme` event.
+ */
+describe('the transform redraw', () => {
+  it('re-syncs both mon sprites from the reported fighter', () => {
+    const start = SOURCE.indexOf("        case 'forme': {");
+    expect(start).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('        case ', start + 10);
+    const source = SOURCE.slice(start, end);
+    expect(source).toContain(
+      'const fighter = this.state.sides[event.side].party.find((p) => p.id === event.fighterId);',
+    );
+    expect(source).toContain(
+      'this.setDisplayFighter(event.side, this.fighterSlot(event.side, event.fighterId), fighter);',
+    );
+    expect(source).toContain('this.syncMonSprites();');
+  });
+});
+
+/**
+ * The placeholder is the documented fallback, not a bug: a species the shipped
+ * manifest does not name has no sheet to load, so the preloaded `battle:mon`
+ * texture keeps drawing and `showMon` returns before it touches the sprite.
+ */
+describe('a species the manifest does not name', () => {
+  it('keeps the placeholder and leaves showMon on its early return', () => {
+    expect(pokemonSprite('missingno', 'front')).toBeNull();
+    expect(pokemonSprite('missingno', 'back')).toBeNull();
+    expect(SOURCE).toContain('    if (!sheet) return;\n');
+    expect(SOURCE).toContain('    if (!this.textures.exists(sheet.textureKey)) return;\n');
   });
 });
 
