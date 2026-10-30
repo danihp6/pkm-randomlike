@@ -65,9 +65,9 @@ function clampIndex(value: number, count: number): number {
 }
 
 /**
- * The command window as plain data: the four cells `renderCommandMenu` lays out
- * inside the battle menu card. The four take the card's whole two-column width, so
- * the 62 px column the moves menu keeps for MEGA and G-MAX is the grid's own here.
+ * The command window as plain data: the four cells this panel lays out inside the
+ * battle menu card. The four take the card's whole two-column width, so the 62 px
+ * column the moves menu keeps for MEGA and G-MAX is the grid's own here.
  * Pure and total: out-of-range indices clamp, an empty list answers no row, and the
  * same input always yields deep-equal output.
  */

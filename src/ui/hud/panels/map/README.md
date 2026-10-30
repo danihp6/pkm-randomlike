@@ -3,9 +3,10 @@
 The floor minimap of `D49` (`docs/maps-spec.md` §8, `D32`): the shipped 216 × 250 header card as a
 Preact panel over the `#hud` layer, painting a `MapPanelView` the route scene builds from the pure
 `buildMapView` output. `src/ui/mapView.ts` stays the only owner of the reveal rules and of every
-position it emits; this folder only scales what it returns and paints it. The route scene keeps the
-panel record (so the saved layout and the collapse still work) and draws no Phaser object at all
-while the flag is on.
+position it emits; this folder only scales what it returns and paints it. The card **is** the panel
+and the canvas draws none of it; the route scene keeps the panel record (the saved layout and the
+collapse), and `src/main.ts` calls `mountHud` on every boot, `?hud=dom` being an inert alias kept
+only so old links still boot.
 
 ## Layout
 
