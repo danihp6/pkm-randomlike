@@ -97,6 +97,15 @@ message box 576×216 at (664,544); starter cards 260×320.
 which is the safe area, 47 top and 810 bottom, for the first time. Exceptions, both deliberate: the
 route window in `M 01b` is 358×240 at x=16, and the battle panels keep the desktop 1:1 clone.
 
+**A panel's rect answers the live viewport.** Every rule above is a function of the window the game
+has **now**, not of the one it booted in: a resize re-lays the HUD out with no reload and no re-mount,
+the battle's boxes taking `battleHpBox(viewport, …)` on each push and the route's cards rebuilding
+their view from `scale.width`. So a 1280×800 boot dragged to 390×844 paints the phone rects — the
+party card at `partyPanelBox({390, 844})` = `{38, 8, 250, 406}`, the player's HP box at
+`{16, 504, 358, 80}` inside `battleCommandBox`'s own card — where the desk rectangles used to stay
+put, and a collapsed card's chip rides its phone slot plus the saved offset as it does on a fresh
+boot at that size.
+
 **Chips.** A 26×26 badge at the panel's left edge, `#10161F` at 90 %, white 22 % border, radius 6,
 **the initial only** at 11 px Bold (`M`, `I`, `P`, `C`, `S`), cyan border when active.
 

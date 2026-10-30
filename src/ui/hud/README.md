@@ -32,3 +32,4 @@ spacing or type size is written, and every value comes from `design/tokens.json`
 1. The shell owns no Phaser object and reads no scene; the canvas is untouched by anything here.
 2. `mountHud` is the only place the flag is read and the root is created; a second call returns the same handle.
 3. A module that computes ships a co-located `*.test.ts`; a component is covered by the spec check, `node scripts/design/check.mjs`, never by jsdom.
+4. A mounted panel is laid out by the push, never by the mount: the scene hands the live viewport with every update (`mountBattleHp`'s `update(state, viewport, doubles)`), so a window resized mid-run re-lays the HUD out without a reload and without a re-mount — a re-mount would throw away each card's signal, drag offset, fill transition and the strip's paused flag.

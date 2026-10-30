@@ -1213,6 +1213,13 @@ export class RouteScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const panel of this.panels.all) panel.close?.(this.panelHost);
     });
+    // The window can change size while the run is on screen: the HUD re-measures and
+    // every card rebuilds its view from the live scale, so no card keeps the rects
+    // the boot happened to see. One registration, dropped with the scene.
+    this.scale.on('resize', this.onResize, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off('resize', this.onResize, this);
+    });
     // A battle pauses the route mid-walk; drop the pad's held direction so the
     // player does not keep stepping the moment the route comes back, and give up
     // an in-progress nickname edit rather than resuming into a focused field.
@@ -1319,6 +1326,16 @@ export class RouteScene extends Phaser.Scene {
     this.moveKeys = { up: bind('up'), down: bind('down'), left: bind('left'), right: bind('right') };
     this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
     this.resetKey = actionKeys(this, 'reset', this.settings.keybinds)[0] ?? null;
+  }
+
+  /**
+   * A window resize re-measures the HUD and repaints every card. Each panel's
+   * `refresh` rebuilds its view from the live `scale`, so no card needs a hook of
+   * its own and no card keeps the width the boot saw.
+   */
+  private onResize(): void {
+    this.hud = hudMetrics(this.scale.width);
+    this.refreshHud();
   }
 
   /**

@@ -12,13 +12,14 @@ HUD`'s 358×80 cards at (16,16)/(16,504) below a 600 px viewport.
 - `view.test.ts` — both columns' measured rects, the four-box draw order, the single battle's two boxes, the highlight, the snapshot fields, the ball row's geometry against both command cards and its wild/no-battle cases, the stage grid's boxes at both viewports with the chip cells, the tones and the signs, the layer the panel builds from the view, and purity, headless.
 - `battleHp.tsx` — the layer, one card per active (the highlight, the name-and-level line, the HP track and fill, the readout and the status mark), the foe's ball row under its box, drawn from the Añil item atlas at the row's own 16 px cell, and the player lead's stage chips grid, painted only when a stage is non-zero.
 - `battleHp.css` — the frames' measured geometry and paint, one scoped custom property per board value, the phone column, the stage chips' green and red, and the fill's transition (off under reduced motion).
-- `mount.tsx` — `mountBattleHp`: renders the layer into a host element and returns the controller the scene pushes snapshots through.
+- `mount.tsx` — `mountBattleHp`: renders the empty layer into a host element and returns the controller the scene pushes snapshots through; every push carries the viewport and the two double flags it must paint in, so nothing the mount saw outlives a resize.
+- `mount.test.ts` — the mount contract: one container and one empty paint at the mount, the rects and the sides' count coming from the push rather than the mount, a resize storm that cannot stack cards, the dispose, and the route's `hudMetrics` clamp the recompute reads, headless.
 - `index.ts` — the barrel the scene imports.
 - `README.md` — this map.
 
 ## Rules
 
-1. The view is data, never the battle: the scene pushes the snapshot, the panel paints it. Every rect it paints is a page coordinate: the board's column keeps the window's 64 px margin while its player lead ends on `battleStage(viewport)`'s bottom edge minus `DESKTOP_BOTTOM_MARGIN`, the one line the command card shares.
+1. The view is data, never the battle: the scene pushes the snapshot, the viewport and the double flags, and the panel paints them. The viewport is an argument of the push, never of the mount, so a window that changes size mid-battle re-lays the boxes out without a reload and without a second mount. Every rect it paints is a page coordinate: the board's column keeps the window's 64 px margin while its player lead ends on `battleStage(viewport)`'s bottom edge minus `DESKTOP_BOTTOM_MARGIN`, the one line the command card shares.
 2. The box is the kit's panel; only its fill (90 %/88 % against the kit's 72 %) and its highlight (14 %, drawn from the view, against the kit's 8 %) are overridden here.
 3. The layer and every card are `pointer-events: none`: the battle's keys, pad and canvas zones keep every press.
 4. A changed fraction transitions the fill over `HP_FILL_MS`; the first paint and a reduced-motion preference jump straight to it. The box reads the beat, never the finished turn: its HP, status and stage chips are the snapshot the scene pushed, so each change lands on the frame whose line the engine wrote.
