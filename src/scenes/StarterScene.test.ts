@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYBIND_LABEL_KEYS } from '../ui/settingsScreen';
 
 vi.mock('phaser', () => {
@@ -75,6 +75,13 @@ beforeEach(() => {
   mocks.randomSeed.mockClear();
   mocks.starterOffer.mockClear();
   mocks.randomSeed.mockReturnValue('fresh-seed');
+});
+
+afterEach(() => {
+  // A stub that outlives its test would let a fake `document` reach the next one
+  // and make `loadSettings` read the host's `navigator.language`.
+  vi.unstubAllGlobals();
+  setLocale('en');
 });
 
 /** A `#hud` host, so the scene's mount lands on it instead of bailing out. */

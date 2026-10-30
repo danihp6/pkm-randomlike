@@ -28,10 +28,16 @@ export type VolumeTarget = Readonly<{ setVolume(volume: number): unknown }>;
  * The browser's language tag, or `''` when there is none: no browser at all (a
  * headless test), no `navigator`, no tag, or a blocked read. `''` detects as the
  * source table, so a headless load reads English.
+ *
+ * A `document` is what tells a browser from a headless host: Node 21+ ships a
+ * `navigator` with the machine's locale on it, so a test that stubs a `window`
+ * but no DOM would otherwise read the developer's Spanish and make the suite
+ * pass on CI and fail on an `es-ES` laptop.
  */
 export function browserLanguageTag(): string {
   try {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') return '';
+    if (typeof window === 'undefined' || typeof document === 'undefined') return '';
+    if (typeof navigator === 'undefined') return '';
     return typeof navigator.language === 'string' ? navigator.language : '';
   } catch {
     return '';
