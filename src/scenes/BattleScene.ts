@@ -705,13 +705,16 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * Pushes the line the typewriter is revealing to the DOM message box. The box is
-   * open while no menu owns it, and the closed box carries no line.
+   * the battle menu's own card (`battleMovesBox`), so opening a menu swaps the lines
+   * for the rows without resizing or moving the window; the closed box carries no line.
    */
   private updateBattleLog(): void {
     const controller = this.logController;
     if (controller === null) return;
     const menuOpen = this.menuItems.length > 0;
-    controller.update(liveBattleLogView(!menuOpen, menuOpen ? null : visibleText(this.typing)));
+    const card = battleMovesBox({ width: this.scale.width, height: this.scale.height });
+    const box = card.w > 0 && card.h > 0 ? card : null;
+    controller.update(liveBattleLogView(!menuOpen, menuOpen ? null : visibleText(this.typing), box));
   }
 
   // --- scene construction -------------------------------------------------

@@ -1,11 +1,15 @@
 import type { CSSProperties, JSX } from 'preact';
 import { joinClasses } from '../../kit';
-import { battleLogBoard, type BattleLogView, type Rect } from './view';
+import { compactCard } from '../battle-moves/view';
+import { battleLogBoard, battleLogLayout, type BattleLogView, type Rect } from './view';
 import './battleLog.css';
 
 export type BattleLogProps = Readonly<{
   view: BattleLogView;
-  /** Under 600 px the panel draws the phone card (`m05b`) instead of the desktop box. */
+  /**
+   * The preview's board choice: under 600 px it draws the phone card (`m05b`) instead
+   * of the desktop box. A live view carries its card and reads the width class from it.
+   */
   narrow: boolean;
 }>;
 
@@ -39,14 +43,19 @@ function flag(value: boolean): string {
 
 /**
  * The battle's message box over the canvas (`D49`, frames `05b`/`m05b Battle · message`):
- * the card at the board's own box, its highlight, and up to two lines — the message in
+ * the card at the battle's menu box, its highlight, and up to two lines — the message in
  * primary ink and the effect line in the frame's red. Presentation only: no listener,
  * no clock, no battle state; the scene pushes the line the typewriter is revealing and
- * this paints it.
+ * this paints it. The live box is the menu card (`view.card`), so a menu opening swaps
+ * the lines for the rows without resizing or moving the window; without a card the
+ * fixture preview paints the measured board.
  */
 export function BattleLogPanel(props: BattleLogProps): JSX.Element {
   const { view } = props;
-  const board = battleLogBoard(props.narrow ? 'narrow' : 'desktop');
+  const card = view.card ?? null;
+  const narrow = card === null ? props.narrow : compactCard(card);
+  const board =
+    card === null ? battleLogBoard(narrow ? 'narrow' : 'desktop') : battleLogLayout(card, narrow);
   const highlight: Rect = {
     x: HIGHLIGHT_INSET,
     y: HIGHLIGHT_INSET,

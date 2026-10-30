@@ -1,9 +1,9 @@
 import { h, render } from 'preact';
-import { BATTLE_LOG_NARROW_QUERY, type BattleLogLineView, type BattleLogView } from './view';
+import { BATTLE_LOG_NARROW_QUERY, type BattleLogLineView, type BattleLogView, type Rect } from './view';
 import { BattleLogPanel } from './battleLogPanel';
 
 export type BattleLogHandle = Readonly<{
-  /** Repaints only when `visible` or a line's text/tone changed; one render per change. */
+  /** Repaints only when `visible`, the card rect or a line's text/tone changed. */
   update(view: BattleLogView): void;
   dispose(): void;
 }>;
@@ -22,12 +22,19 @@ function sameLines(a: readonly BattleLogLineView[], b: readonly BattleLogLineVie
   return true;
 }
 
+/** True when the push keeps the card at the rect already painted. */
+function sameCard(a: Rect | undefined, b: Rect | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+}
+
 /**
  * Mounts the battle's message box into `host` and returns the handle the scene pushes
  * through. The card is painted on mount, so `[data-hud-battle-log]` is there from the
  * moment the battle mounts; a push that repeats the line already on screen is dropped.
- * The board follows the viewport, so a push after a resize repaints even when the text
- * did not move.
+ * The card follows the battle's menu box, so a push that moves or resizes it repaints
+ * even when the text did not change.
  */
 export function mountBattleLog(host: Element, view: BattleLogView): BattleLogHandle {
   const container = document.createElement('div');
@@ -47,7 +54,8 @@ export function mountBattleLog(host: Element, view: BattleLogView): BattleLogHan
       if (
         nextNarrow === narrow &&
         next.visible === current.visible &&
-        sameLines(next.lines, current.lines)
+        sameLines(next.lines, current.lines) &&
+        sameCard(next.card, current.card)
       ) {
         return;
       }

@@ -150,7 +150,10 @@ can be drawn behind it. On a phone the card keeps its shipped full-width rect un
 x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG / SWITCH / RUN is painted at
 `battleMovesBox`'s rect (440 → 1004 at 1280×800, the 358×236 phone card at 390×844), so its four cells occupy
 the boxes the four move cells occupy — 219×72 in the desk's 2×2, 116×94 on the phone — and its fifth **INFO**
-control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. The category is drawn as the
+control takes the same 62 px column the moves menu keeps for MEGA and G-MAX. **The message box is that
+same window**: the feed paints the menu's live card (`battleMovesBox`'s rect) and its two lines on the
+frame's insets inside it, so a menu opening swaps the lines for the rows and never resizes or moves the
+window; the board's own 576×216 at (664,544) is the copy the live box replaces. The category is drawn as the
 atlas glyph in the box `[Task-203]`'s §5 blocks describe (`MOVE_ICON_BOX`), not as a right-aligned word, so a
 category cannot run under a button. No cell carries one: the card above the menu describes the cursor's own
 cell. The foe's box also carries the trainer's remaining team as a **ball row**: one 16 px

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { BATTLE_LOG_DWELL_MS, battleLogBoard, feedStep, liveBattleLogView } from './view';
+import { battleMovesBox, compactCard } from '../battle-moves/view';
+import {
+  BATTLE_LOG_DWELL_MS,
+  battleLogBoard,
+  battleLogLayout,
+  feedStep,
+  liveBattleLogView,
+} from './view';
 
 describe('feedStep', () => {
   it('holds at zero while the line is still typing', () => {
@@ -68,12 +75,73 @@ describe('liveBattleLogView', () => {
     expect(liveBattleLogView(true, null)).toStrictEqual({ visible: true, lines: [] });
   });
 
+  it('carries the live card the battle menu paints, and none without one', () => {
+    const card = { x: 440, y: 582, w: 564, h: 192 };
+    expect(liveBattleLogView(true, 'hit', card)).toStrictEqual({
+      visible: true,
+      lines: [{ text: 'hit', tone: 'primary' }],
+      card,
+    });
+    expect(liveBattleLogView(false, null, card)).toStrictEqual({
+      visible: false,
+      lines: [],
+      card,
+    });
+    expect(liveBattleLogView(true, 'hit')).toStrictEqual({
+      visible: true,
+      lines: [{ text: 'hit', tone: 'primary' }],
+    });
+  });
+
   it('keeps the flag off a closed box, line or not', () => {
     expect(liveBattleLogView(false, null)).toStrictEqual({ visible: false, lines: [] });
     expect(liveBattleLogView(false, 'VENUSAUR used SLUDGE BOMB!')).toStrictEqual({
       visible: false,
       lines: [],
     });
+  });
+});
+
+describe('battleLogLayout', () => {
+  it('takes the battle menu card at both widths, so a menu never resizes the box', () => {
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 390, height: 844 },
+    ]) {
+      const card = battleMovesBox(viewport);
+      const board = battleLogLayout(card, compactCard(card));
+      expect(board.box, `${viewport.width}x${viewport.height}`).toStrictEqual(card);
+      expect(board.box).not.toBe(card);
+    }
+  });
+
+  it('keeps the frame s insets and takes the card s whole content column', () => {
+    expect(battleLogLayout({ x: 440, y: 582, w: 564, h: 192 }, false)).toStrictEqual({
+      box: { x: 440, y: 582, w: 564, h: 192 },
+      line1: { x: 472, y: 618, w: 500, h: 20 },
+      line2: { x: 472, y: 650, w: 500, h: 15 },
+    });
+    expect(battleLogLayout({ x: 16, y: 592, w: 358, h: 236 }, true)).toStrictEqual({
+      box: { x: 16, y: 592, w: 358, h: 236 },
+      line1: { x: 32, y: 620, w: 326, h: 13 },
+      line2: { x: 32, y: 646, w: 326, h: 13 },
+    });
+  });
+
+  it('keeps both lines inside the card at both widths', () => {
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 390, height: 844 },
+    ]) {
+      const card = battleMovesBox(viewport);
+      const board = battleLogLayout(card, compactCard(card));
+      for (const line of [board.line1, board.line2]) {
+        expect(line.x).toBeGreaterThan(board.box.x);
+        expect(line.y).toBeGreaterThan(board.box.y);
+        expect(line.x + line.w).toBeLessThanOrEqual(board.box.x + board.box.w);
+        expect(line.y + line.h).toBeLessThanOrEqual(board.box.y + board.box.h);
+      }
+    }
   });
 });
 

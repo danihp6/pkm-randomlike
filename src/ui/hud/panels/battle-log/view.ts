@@ -47,13 +47,22 @@ const NARROW_LINE_2: Rect = { x: NARROW_LINE_X, y: 646, w: NARROW_LINE_W, h: 13 
 
 export type BattleLogTone = 'primary' | 'effect';
 export type BattleLogLineView = Readonly<{ text: string; tone: BattleLogTone }>;
-/** 0..2 lines. Live is at most one; the fixture carries the frame's two. */
-export type BattleLogView = Readonly<{ visible: boolean; lines: readonly BattleLogLineView[] }>;
+/**
+ * 0..2 lines. Live is at most one; the fixture carries the frame's two. `card` is the
+ * live box when the battle mounts the feed — it is the battle menu's own card, so a
+ * menu opening never resizes or moves the box — and absent in the fixture preview,
+ * which draws the measured board.
+ */
+export type BattleLogView = Readonly<{
+  visible: boolean;
+  lines: readonly BattleLogLineView[];
+  card?: Rect;
+}>;
 
 /**
- * The two boards' measured rects, exported for the fixture test and the diff. The
- * panel draws the desktop box at 1280×800 and the phone card under 600 px, so a
- * panel push never has to carry a viewport.
+ * The two boards' measured rects: the fixture preview's desktop box at 1280×800 and its
+ * phone card under 600 px, exported for the fixture test and the diff. The live panel is
+ * pushed its own card (`battleLogLayout`), so only the preview reads these.
  */
 export function battleLogBoard(viewport: 'desktop' | 'narrow'): Readonly<{
   box: Readonly<{ x: number; y: number; w: number; h: number }>;
@@ -66,10 +75,43 @@ export function battleLogBoard(viewport: 'desktop' | 'narrow'): Readonly<{
   return { box: { ...DESKTOP_BOX }, line1: { ...DESKTOP_LINE_1 }, line2: { ...DESKTOP_LINE_2 } };
 }
 
+/** The line insets a board draws, relative to its card: `x` on both sides, `y` per line. */
+type LineInset = Readonly<{ x: number; y1: number; y2: number; h1: number; h2: number }>;
+
+/** 05b · message line 1 / 2: 32 px in, 36 and 68 px down. */
+const DESKTOP_LINE_INSET: LineInset = { x: 32, y1: 36, y2: 68, h1: 20, h2: 15 };
+/** m05b · the phone's two lines: 16 px in, 28 and 54 px down. */
+const NARROW_LINE_INSET: LineInset = { x: 16, y1: 28, y2: 54, h1: 13, h2: 13 };
+
+/**
+ * The message box at the card the battle gives it: the feed shares the battle menu's
+ * own window, so the box that shows a line and the box that opens a menu are one rect
+ * and opening a menu can never resize or move it. The lines keep the frame's insets and
+ * take the card's whole content column, so a live line is never clipped to the copy's
+ * intrinsic width. Pure: the card is returned as a fresh rect.
+ */
+export function battleLogLayout(
+  card: Rect,
+  narrow: boolean,
+): Readonly<{ box: Rect; line1: Rect; line2: Rect }> {
+  const inset = narrow ? NARROW_LINE_INSET : DESKTOP_LINE_INSET;
+  const w = Math.max(0, card.w - inset.x * 2);
+  return {
+    box: { ...card },
+    line1: { x: card.x + inset.x, y: card.y + inset.y1, w, h: inset.h1 },
+    line2: { x: card.x + inset.x, y: card.y + inset.y2, w, h: inset.h2 },
+  };
+}
+
 /** The live line the scene is revealing (already localised). `null` = no line. */
-export function liveBattleLogView(visible: boolean, line: string | null): BattleLogView {
-  if (!visible || line === null) return { visible, lines: [] };
-  return { visible, lines: [{ text: line, tone: 'primary' }] };
+export function liveBattleLogView(
+  visible: boolean,
+  line: string | null,
+  card: Rect | null = null,
+): BattleLogView {
+  const lines: readonly BattleLogLineView[] =
+    visible && line !== null ? [{ text: line, tone: 'primary' }] : [];
+  return card === null ? { visible, lines } : { visible, lines, card };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
