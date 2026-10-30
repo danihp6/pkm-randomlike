@@ -159,10 +159,19 @@ read the rest of the spec is not a criterion.
           paints it at `battleHpBox({ width: 390, height: 844 }, 'player', 0)`
           (`{x 16, y 504, w 358, h 80}`), with no second container and exactly one
           `render(null, …)` (the mount's only render of the empty view) before them.
-    - [ ] `[unit]` **the sides' count is the push's**: a panel mounted and pushed
-          with `{ enemy: true, player: true }` paints two foe boxes and two player
-          boxes, then a push of the same state with `{ enemy: true, player: false }`
-          paints two foe boxes and **one** player box.
+    - [ ] `[unit]` **the boxes are the pushed state's**: the mount paints no box at
+          all (its one paint is the empty view); a push of a state that fields two
+          actives per side paints `enemy-0`, `enemy-1`, `player-0` and `player-1`;
+          a push of a state that fields one active on the player's side paints
+          `enemy-0` (plus `enemy-1` if that state fields it), `player-0` and no
+          `player-1`. *Amended by the Orchestrator after the Dev measured the
+          shipped `view.ts`: `boxes` come from `battle.sides[side].actives`
+          (`battleHpView`, `view.ts` 296-345) while `doubles` only selects the
+          second slot's **rects** (`battleHpLayout`, 197-208), so the earlier
+          wording — the same two-active state pushed with `player: false` painting
+          one player box — is unreachable without changing `view.ts`'s semantics,
+          which this task must not do. The invariant is unchanged: neither the box
+          count nor the rects come from the mount.*
     - [ ] `[unit]` **a resize storm cannot stack cards**: two consecutive pushes of
           the same state and the same viewport produce equal rects.
     - [ ] `[unit]` **the route's recompute keeps the clamp**: `hudMetrics(320).panelW`
