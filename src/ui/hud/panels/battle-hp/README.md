@@ -19,6 +19,6 @@ player, and `m 05 Battle HUD`'s 358×80 cards at (16,16)/(16,504) below a 600 px
 1. The view is data, never the battle: the scene pushes the snapshot, the panel paints it.
 2. The box is the kit's panel; only its fill (90 %/88 % against the kit's 72 %) and its highlight (14 %, drawn from the view, against the kit's 8 %) are overridden here.
 3. The layer and every card are `pointer-events: none`: the battle's keys, pad and canvas zones keep every press.
-4. A changed fraction transitions the fill over `HP_FILL_MS`; the first paint and a reduced-motion preference jump straight to it.
+4. A changed fraction transitions the fill over `HP_FILL_MS`; the first paint and a reduced-motion preference jump straight to it. The box reads the beat, never the finished turn: its HP, status and stage chips are the snapshot the scene pushed, so each change lands on the frame whose line the engine wrote.
 5. The foe's box carries the trainer's remaining team as one 16 px ball per fielded member, 8 px under that box and 4 px apart; a spent ball stays in place at 35 % opacity, so the row always reads the team's size. A wild battle draws no row.
 6. The player lead's non-zero stages are a grid of 34 px chips above its column: green for a raise, red for a drop, the sign (`+2`, `-1`) painted over the stat's abbreviation so colour is never the only carrier. Every stage at zero paints no grid, and the grid's box is the view's, never the component's arithmetic.

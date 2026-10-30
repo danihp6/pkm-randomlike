@@ -381,6 +381,12 @@ Full rules in `docs/battle-spec.md`. In short:
   selected stack's line and description card sit under and above the grid.
 - Every battle ends by itself: once the closing line has been read, a run, a
   catch, a win or a loss all return to the route with no confirm to press.
+- The HP boxes, the faints and the stat-stage chips paint **the beat the engine's
+  log writes**, never the finished turn: every drop, heal, status, faint and stage
+  change lands on the frame whose line the engine emitted, in the engine's own
+  resolution order — the faster side's line and drop precede the slower side's
+  reply — and a turn that changes no HP paints no change. A stage chip moves on its
+  own line and never before it.
 - On a wide screen the battle is a centred **square** (at most 900 px a side);
   a tall phone screen keeps the stacked, full-height layout, with both battlers
   drawn 25% smaller so they sit clear of the stacked panels.

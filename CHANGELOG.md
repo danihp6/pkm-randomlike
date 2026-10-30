@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle's HP, faint and stat-stage beat follows the turn's own order, never the whole
+      turn at the press.** `[Task-226]`, Batch 97: `src/ui/hud/state.ts` owns the snapshot the boxes
+      paint — `HudBattleDisplay`/`HudBattleSlotDisplay`, `battleDisplayOf(battle)` for the beat a
+      battle opens on, and the pure `advanceBattleDisplay(battle, display, events)` that applies one
+      frame's `damage`/`heal`/`status`/`cure`/`boost`/`faint`/`switch` in the engine's own resolution
+      order. The battle projection takes an optional `display`, so the active rows' hp,
+      `hpFraction`, status, label and stage chips come from the beat while species, level, moves,
+      `canSwitchTo` and every off-field party row still come from the live state; with no display the
+      projection is byte-identical to the old one. `BattleScene` replaces its per-slot
+      `displayHp`/`displayStatus` stores with that one beat: `showFrame` advances it before
+      `refreshHud`, `syncHud` passes it, so each bar drops on the line that reports its damage, each
+      faint lands alone and a `boost` raises its chip on its own frame. Sprite beats, tweens, cues and
+      the capture beat are untouched, and the box's README gains "the box reads the beat, never the
+      finished turn". `docs/design-spec.md` §4 records it. Gates: `npm test` 5136 passed / 69 skipped
+      and `npm run build` green at task QA and on the batch's combined tree (5179 passed / 69 skipped
+      there). The `[live]` evidence is a DOM measurement, not a screenshot: with `?hud=dom` at
+      1280×800 in a debug wild battle with the foe faster, a requestAnimationFrame sampler read both
+      `[data-hud-hp]` fills from just before the FIGHT press over CDP — before the first revealed line
+      both widths stayed at their pre-turn values (±1 px), each side then moved only after a line
+      reporting damage to that side, and each final width equalled fraction × track (±1 px); the
+      `[data-hud-stage]` chip count was unchanged at the press and gained its chip on the boost line's
+      frame.
+
 - [x] **The import also runs from the committed snapshot, so a rate-limited PAT blocks nothing.**
       `[Task-225]`, the whole of Batch 95: `node scripts/design/import.mjs` gains an **offline** mode,
       `--from <framesDir>`, that rebuilds the Figma REST payload from the committed

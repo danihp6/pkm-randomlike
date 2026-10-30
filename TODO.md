@@ -9735,7 +9735,7 @@ carries.
 
 ### Batch 97 - the bars follow the turn, a collapsed badge moves, and a press opens the data
 
-- [ ] **[Task-226] The battle's HP, faint and stat-stage beat follows the turn's own order, never
+- [x] **[Task-226] The battle's HP, faint and stat-stage beat follows the turn's own order, never
       the whole turn at the press.** Reported on `2026-10-30`: «la animacion de bajar barra salud
       morir en combate ocurre en ambos pokes nada mas le das al ataque, tiene que estar
       sincronizado con quien es más rápido y los mensajes que aparecen en el menu igual con los
