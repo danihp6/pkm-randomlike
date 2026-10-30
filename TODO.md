@@ -9853,7 +9853,7 @@ carries.
 
 ### Batch 98 - a multi-hit move drops in segments
 
-- [ ] **[Task-227] A multi-hit move drops the bar one segment per hit, on its own short beat.**
+- [x] **[Task-227] A multi-hit move drops the bar one segment per hit, on its own short beat.**
       Reported with the first: «los ataques que son varios golpes debe bajar en tramos
       correspondientes». **Measured:** the engine already logs one `damage` and one line **per
       hit** — `executeMove`'s hit loop, `src/engine/battle/turn.ts` 1338-1348 over

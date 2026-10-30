@@ -90,6 +90,16 @@ moves either.
   multiplies the stat (`stageMultiplier`, `accuracyStageMultiplier`); a surface
   that prints a stage — the HUD's chip grid — reads that stored value and never
   recomputes one of its own.
+- **A multi-hit move's own beat.** The engine logs one `damage` and one line per
+  landing hit, and the feed closes a frame at each line, so every hit of a sequence is
+  its own frame. A landing-hit frame holds `HIT_FRAME_MS` — the fill's `HP_FILL_MS`
+  plus one readable beat — while another hit of the same move follows it, and the
+  ordinary `BATTLE_LOG_DWELL_MS` on the last one, so the bar steps one segment per
+  hit. A residual or weather chip, a status line and a faint are never hit frames
+  (the engine's own `battle.log.hit*` key is what names a hit), a miss ends the
+  sequence with the segments already shown, and a one-hit move keeps the ordinary
+  dwell. The bar's transition stays at `HP_FILL_MS`, so a segment finishes before the
+  next one starts, and a held confirm still rushes the whole sequence.
 
 ### 3.1 The number the formula multiplies
 

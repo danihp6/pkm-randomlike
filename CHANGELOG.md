@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A multi-hit move drops the bar one segment per hit, on its own short beat.**
+      `[Task-227]`, Batch 98: every hit of a sequence was already its own feed frame, but
+      `showFrame` gave each one the ordinary 900 ms dwell, so a five-hit move spent five long
+      lines. The message box's value module now owns the rule — `HIT_FRAME_MS` (`HP_FILL_MS`
+      300 plus a 150 ms beat), `HIT_FRAME_KEYS` (the six `battle.log.hit*` keys), `hitFrameAt`
+      and `frameHoldMs` — and `BattleScene.showFrame` reads it instead of the constant. A key,
+      not a shape, is what names a hit, so a residual or weather chip (`[damage, text]` too)
+      keeps the ordinary dwell; the *next* frame decides whether the current one is the last,
+      so a miss mid-sequence ends the sequence with the segments already shown, a one-hit move
+      is unchanged and a held confirm still rushes the whole chain. `docs/battle-spec.md` §3
+      records it. Gates: `npm test` 5186 passed / 69 skipped and `npm run build` green at task
+      QA and on the batch's combined tree (5196 passed there). The `[live]` evidence is a
+      `requestAnimationFrame` sampler read over CDP at 1280×800, never a screenshot: two Double
+      Kicks on a level-50 Shuckle dropped the foe's fill in exactly two steps 937 ms and 950 ms
+      apart, each transition 299–303 ms (the panel's `HP_FILL_MS`), with the command card
+      closed before the second step and opened +4165 ms and +3972 ms after it.
+
 - [x] **A press on a member opens its data panel; only a drag moves it, in the party and in the PC.**
       `[Task-234]`, Batch 97: a party row's press re-led the squad and a PC cell's press withdrew the
       member. Now both cards send their `member` command and the scene opens that member's detail

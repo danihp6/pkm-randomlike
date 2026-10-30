@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import type { BattleEvent } from '../../../../engine/battle/state';
+import { scriptedBattle } from '../../../../engine/battle/harness';
+import { battleFrames, type FeedFrame } from '../../../feed';
+import { HP_FILL_MS } from '../battle-hp/view';
 import { battleMovesBox, compactCard } from '../battle-moves/view';
 import {
   BATTLE_LOG_DWELL_MS,
+  HIT_FRAME_MS,
   battleLogBoard,
   battleLogLayout,
   feedStep,
+  frameHoldMs,
+  hitFrameAt,
   liveBattleLogView,
 } from './view';
 
@@ -179,5 +186,154 @@ describe('battleLogBoard', () => {
     expect(first).toStrictEqual(second);
     expect(first).not.toBe(second);
     expect(first.box).not.toBe(second.box);
+  });
+});
+
+const HIT_DAMAGE: BattleEvent = {
+  kind: 'damage',
+  side: 'enemy',
+  amount: 20,
+  hp: 75,
+  maxHp: 95,
+  effectiveness: 1,
+  crit: false,
+};
+const HIT_LINE: BattleEvent = {
+  kind: 'text',
+  key: 'battle.log.hit',
+  params: { move: 'Double Kick', name: 'Shuckle' },
+};
+
+function frame(message: string | null, events: readonly BattleEvent[]): FeedFrame {
+  return { message, events };
+}
+
+/**
+ * The hit-loop frames of the player's own move. The foe answers on the same
+ * scripted turn and its reply is a hit frame of its own, so the count is taken on
+ * the hits the move under test lands.
+ */
+function playerHits(frames: readonly FeedFrame[]): number[] {
+  return frames.flatMap((each, index) =>
+    hitFrameAt(frames, index) &&
+    each.events.some((event) => event.kind === 'damage' && event.side === 'enemy')
+      ? [index]
+      : [],
+  );
+}
+
+const DOUBLE_KICK_FRAMES = battleFrames(
+  scriptedBattle({
+    player: [{ id: 'p', speciesId: 'hitmonlee', level: 50, moves: ['doublekick', 'splash'] }],
+    enemy: [{ id: 'e', speciesId: 'shuckle', level: 50 }],
+    seed: 2026,
+    turnCap: 1,
+  }).log,
+);
+
+const TACKLE_FRAMES = battleFrames(
+  scriptedBattle({
+    player: [{ id: 'p', speciesId: 'hitmonlee', level: 50, moves: ['tackle', 'splash'] }],
+    enemy: [{ id: 'e', speciesId: 'shuckle', level: 50 }],
+    seed: 2026,
+    turnCap: 1,
+  }).log,
+);
+
+const MISS_ON_THE_THIRD: readonly FeedFrame[] = [
+  frame('Hitmonlee used Double Kick!', [
+    { kind: 'move', side: 'player', moveId: 'doublekick' },
+    { kind: 'text', key: 'battle.log.used', params: { name: 'Hitmonlee', move: 'Double Kick' } },
+  ]),
+  frame('Double Kick hit Shuckle!', [HIT_DAMAGE, HIT_LINE]),
+  frame('Double Kick hit Shuckle!', [HIT_DAMAGE, HIT_LINE]),
+  frame("Hitmonlee's attack missed!", [
+    { kind: 'text', key: 'battle.log.missed', params: { name: 'Hitmonlee' } },
+  ]),
+];
+
+describe('HIT_FRAME_MS', () => {
+  it('HIT_FRAME_MS is the fill plus one beat', () => {
+    expect(HIT_FRAME_MS).toBe(HP_FILL_MS + 150);
+    expect(HIT_FRAME_MS).toBeGreaterThan(HP_FILL_MS);
+    expect(HIT_FRAME_MS).toBeLessThan(BATTLE_LOG_DWELL_MS);
+  });
+});
+
+describe('hitFrameAt', () => {
+  it('a two-hit move gets one frame per landing hit', () => {
+    const hits = playerHits(DOUBLE_KICK_FRAMES);
+    expect(hits).toHaveLength(2);
+    for (const index of hits) {
+      expect(hitFrameAt(DOUBLE_KICK_FRAMES, index), `frame ${index}`).toBe(true);
+      expect(
+        DOUBLE_KICK_FRAMES[index].events.filter((event) => event.kind === 'damage'),
+        `frame ${index}`,
+      ).toHaveLength(1);
+    }
+  });
+
+  it('only the last hit of a sequence keeps the ordinary dwell', () => {
+    const [iFirst, iSecond] = playerHits(DOUBLE_KICK_FRAMES);
+    expect(frameHoldMs(DOUBLE_KICK_FRAMES, iFirst, BATTLE_LOG_DWELL_MS)).toBe(HIT_FRAME_MS);
+    expect(frameHoldMs(DOUBLE_KICK_FRAMES, iSecond, BATTLE_LOG_DWELL_MS)).toBe(
+      BATTLE_LOG_DWELL_MS,
+    );
+  });
+
+  it('a miss on the third hit keeps the two segments already shown', () => {
+    expect(hitFrameAt(MISS_ON_THE_THIRD, 1)).toBe(true);
+    expect(hitFrameAt(MISS_ON_THE_THIRD, 2)).toBe(true);
+    expect(hitFrameAt(MISS_ON_THE_THIRD, 3)).toBe(false);
+    expect(frameHoldMs(MISS_ON_THE_THIRD, 1, BATTLE_LOG_DWELL_MS)).toBe(HIT_FRAME_MS);
+    expect(frameHoldMs(MISS_ON_THE_THIRD, 2, BATTLE_LOG_DWELL_MS)).toBe(BATTLE_LOG_DWELL_MS);
+    const hitFrames = MISS_ON_THE_THIRD.flatMap((_each, index) =>
+      hitFrameAt(MISS_ON_THE_THIRD, index) ? [index] : [],
+    );
+    expect(hitFrames).toStrictEqual([1, 2]);
+  });
+
+  it('a one-hit move keeps the ordinary dwell', () => {
+    const hits = playerHits(TACKLE_FRAMES);
+    expect(hits).toHaveLength(1);
+    expect(hitFrameAt(TACKLE_FRAMES, hits[0])).toBe(true);
+    expect(frameHoldMs(TACKLE_FRAMES, hits[0], BATTLE_LOG_DWELL_MS)).toBe(BATTLE_LOG_DWELL_MS);
+  });
+
+  it('a residual chip is not a hit frame', () => {
+    const residual: readonly FeedFrame[] = [
+      frame('Hitmonlee used Double Kick!', [
+        { kind: 'move', side: 'player', moveId: 'doublekick' },
+        { kind: 'text', key: 'battle.log.used', params: { name: 'Hitmonlee', move: 'Double Kick' } },
+      ]),
+      frame('Double Kick hit Shuckle!', [HIT_DAMAGE, HIT_LINE]),
+      frame('Shuckle is buffeted by the sandstorm!', [
+        HIT_DAMAGE,
+        { kind: 'text', key: 'battle.log.weather.buffeted.sand', params: { name: 'Shuckle' } },
+      ]),
+    ];
+    expect(hitFrameAt(residual, 2)).toBe(false);
+    expect(frameHoldMs(residual, 2, BATTLE_LOG_DWELL_MS)).toBe(BATTLE_LOG_DWELL_MS);
+    expect(frameHoldMs(residual, 1, BATTLE_LOG_DWELL_MS)).toBe(BATTLE_LOG_DWELL_MS);
+  });
+
+  it('the hit rule is total and pure', () => {
+    expect(hitFrameAt([], 0)).toBe(false);
+    expect(hitFrameAt([], -1)).toBe(false);
+    expect(hitFrameAt(MISS_ON_THE_THIRD, 999)).toBe(false);
+    expect(frameHoldMs(MISS_ON_THE_THIRD, 999, 900)).toBe(900);
+    const first = [
+      hitFrameAt(MISS_ON_THE_THIRD, 1),
+      hitFrameAt(DOUBLE_KICK_FRAMES, 0),
+      frameHoldMs(MISS_ON_THE_THIRD, 1, BATTLE_LOG_DWELL_MS),
+      frameHoldMs(DOUBLE_KICK_FRAMES, 999, 900),
+    ];
+    const again = [
+      hitFrameAt(MISS_ON_THE_THIRD, 1),
+      hitFrameAt(DOUBLE_KICK_FRAMES, 0),
+      frameHoldMs(MISS_ON_THE_THIRD, 1, BATTLE_LOG_DWELL_MS),
+      frameHoldMs(DOUBLE_KICK_FRAMES, 999, 900),
+    ];
+    expect(again).toStrictEqual(first);
   });
 });
