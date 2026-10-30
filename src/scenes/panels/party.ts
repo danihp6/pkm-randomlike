@@ -1,6 +1,6 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
-import { moveInParty, reorderParty } from '../../engine/run';
+import { reorderParty } from '../../engine/run';
 import type { HudCommand } from '../../ui/hud/commands';
 import {
   initialPartyPanelUi,
@@ -10,6 +10,7 @@ import {
   type PartyPanelView,
 } from '../../ui/hud/panels/party';
 import { projectHud } from '../../ui/hud/state';
+import { openMemberDetail } from './detail';
 import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -22,6 +23,10 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * `HudCommand`s, so the run is still only ever written here. `#hud` is a DOM layer
  * above the canvas, so while the route is paused under a battle or the Settings
  * screen the mount hides the card and brings it back as it was on `RESUME`.
+ *
+ * A press on a row opens that member's detail window and **nothing else**; a member
+ * only changes place when it is dragged, and the drag's own drop is
+ * `runPanelReorder` (or, across the two cards, the HUD gesture in `detail.ts`).
  */
 
 /**
@@ -81,18 +86,15 @@ function resumeDomPanel(): void {
 }
 
 /**
- * A press inside the DOM card. A row makes that member the lead (`moveInParty`), a
- * no-op for the member already there; the chip toggles the panel exactly as `P`.
- * A paused route takes neither, so a press can never toggle behind the screen on top.
+ * A press inside the DOM card. A row opens that member's **detail window** — the one
+ * press path, and no move: the squad only re-leads through the drag below — and the
+ * chip toggles the panel exactly as `P`. A paused route takes neither, so a press can
+ * never toggle behind the screen on top.
  */
-function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
+export function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
   if (routePaused) return;
   if (command.type === 'member') {
-    const run = host.run();
-    const index = run.party.findIndex((member) => member.fighter.id === command.memberId);
-    if (index <= 0) return;
-    const next = moveInParty(run, index, 0);
-    if (next !== run) host.commitRun(next);
+    openMemberDetail(host, command.memberId);
     return;
   }
   if (command.type === 'panel' && command.panel === 'party') toggleHudPanel(host, 'party');
@@ -104,7 +106,7 @@ function runPanelCommand(host: RoutePanelHost, command: HudCommand): void {
  * and the drop decides who opens the next battle. A paused route takes no drop,
  * for the same reason it takes no press.
  */
-function runPanelReorder(host: RoutePanelHost, from: number, to: number): void {
+export function runPanelReorder(host: RoutePanelHost, from: number, to: number): void {
   if (routePaused) return;
   const run = host.run();
   const next = reorderParty(run, from, to);

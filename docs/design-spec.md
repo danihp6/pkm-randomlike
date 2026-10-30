@@ -100,10 +100,16 @@ carries over.
 - Up to **6** Pokémon in the active party; extras go to the **PC box**.
 - The party and the PC box are managed outside battle from the route HUD:
   drag a member within the party or the box to reorder it, or
-  across the two panels to move it between them. Dropping a member **onto** a
-  member of the other panel **swaps** the two, so a boxed Pokémon can replace a
-  party member even when the party is full (the one it replaces takes the box
-  slot). On the route's DOM party card every row paints that member's own
+  across the two panels to move it between them. **A press never moves a member:
+  it opens that member's own data panel and nothing else** — on the party card and
+  on the PC box alike, so a press on a boxed member opens its data panel instead of
+  withdrawing it — and moving a member is the **drag and only the drag**. A drag
+  let go on the other panel — on its body or on one of its members — **withdraws**
+  a boxed member into the party or **deposits** a party member into the box, each
+  appended at that panel's end; a full party refuses the withdrawal and the last
+  member is never deposited (D7), so a boxed Pokémon joins a full squad only once a
+  place is freed; and a drag released on nothing changes nobody's place. On the
+  route's DOM party card every row paints that member's own
   **portrait cell** — the empty box is only the fallback for a species the atlas
   does not name — dragging one row **onto** another **swaps** the two, and since
   index 0 opens the next battle the drop decides who leads; an HP bar's fill
@@ -111,9 +117,9 @@ carries over.
   fractional one starts flush. Crossing between the two panels is allowed **only
   in the floor's entry room**, on every visit (`docs/routes-spec.md` §6):
   everywhere else both directions are refused and the boxed members read as
-  locked. A plain **click**
-  on a member
-  opens a **detail panel** (its own window) with three tabs, in this order:
+  locked — a locked cell still takes the press for its own data panel, and it is
+  only the drag it does not start. That **detail panel** (its own window) carries
+  three tabs, in this order:
   **STATS · EVOLUTION · MOVES**. **STATS** carries the HP, the five battle
   stats (the one a nature raises painted green, the one it lowers red), nature,
   ability and held item. **EVOLUTION** carries the member's **evolution graph**:

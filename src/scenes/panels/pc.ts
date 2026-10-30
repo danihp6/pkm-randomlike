@@ -1,5 +1,5 @@
 import { signal, type Signal } from '@preact/signals';
-import { pcMemberEditable, withdrawToParty, type RunState } from '../../engine/run';
+import { moveInBox, pcMemberEditable, type RunState } from '../../engine/run';
 import {
   BOX_PAGE_SIZE,
   boxPageCount,
@@ -17,6 +17,7 @@ import {
   type PcPanelView,
   type PcRow,
 } from '../../ui/hud/panels/pc';
+import { openMemberDetail } from './detail';
 import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -25,9 +26,9 @@ import type { RoutePanelDescriptor, RoutePanelHost } from './types';
  * tab that shows the fallen.
  *
  * The box is the Preact panel in `src/ui/hud/panels/pc/`: this module keeps the
- * shipped rules (the page follows the cursor, a press withdraws a box member through
- * `withdrawToParty`, the RIP list stays read-only) but draws no Phaser object at all,
- * and feeds the panel's view from its own state.
+ * shipped rules (the page follows the cursor, a press opens a box member's **detail
+ * window** and nothing else, a drag reorders the box, the RIP list stays read-only)
+ * but draws no Phaser object at all, and feeds the panel's view from its own state.
  */
 
 /** The page cap the card's own tab strip carries. */
@@ -139,11 +140,11 @@ function setHudBoxPane(host: RoutePanelHost, pane: 'box' | 'rip'): void {
 }
 
 /**
- * A press on a box cell: the cursor follows the press, and a box member the run's
- * rules allow is withdrawn into the party — the shipped rule (`withdrawToParty`),
- * never a copy of it. The RIP list stays read-only.
+ * A press on a box cell: the cursor follows the press and the member's **detail
+ * window** opens — a press moves nothing, so not even an editable cell is
+ * withdrawn here. The RIP list keeps the same press path.
  */
-function pressDomCell(host: RoutePanelHost, memberId: string): void {
+export function pressDomCell(host: RoutePanelHost, memberId: string): void {
   const run = host.run();
   const ui = host.ui();
   const pane: PcPane = ui.pane === 'rip' ? 'rip' : 'box';
@@ -151,19 +152,27 @@ function pressDomCell(host: RoutePanelHost, memberId: string): void {
   const index = rows.findIndex((row) => row.id === memberId);
   if (index < 0) return;
   if (ui.index !== index) host.setUi({ ...ui, index });
-  if (pane !== 'box' || !pcMemberEditable(run)) {
-    host.refreshHud();
-    return;
-  }
-  const next = withdrawToParty(run, index);
+  openMemberDetail(host, memberId);
+  host.refreshHud();
+}
+
+/**
+ * A drop inside the DOM card: the cell picked up and the cell it was released on.
+ * The box reorders (`moveInBox`), so the released cell is where the member lands;
+ * the RIP list takes no drop, and a paused route takes none either.
+ */
+export function runPanelReorderPc(host: RoutePanelHost, from: number, to: number): void {
+  if (pcPaused || host.ui().pane === 'rip') return;
+  const run = host.run();
+  const next = moveInBox(run, from, to);
   if (next !== run) host.commitRun(next);
-  else host.refreshHud();
 }
 
 /**
  * The DOM panel's command vocabulary, resolved here and nowhere else: the key chip
- * asks for the panel toggle, a cell for a member, the page tabs and the wheel for a
- * left/right page step, and the RIP tab for a confirm (it selects that list).
+ * asks for the panel toggle, a cell for a member (its detail window), the page tabs
+ * and the wheel for a left/right page step, and the RIP tab for a confirm (it
+ * selects that list).
  */
 function handleDomCommand(host: RoutePanelHost, command: HudCommand): void {
   // A paused route takes no command from the DOM: the root is hidden and its own
@@ -205,6 +214,7 @@ function buildDom(host: RoutePanelHost): void {
       layer,
       view,
       (command) => handleDomCommand(host, command),
+      (from, to) => runPanelReorderPc(host, from, to),
       panelFrameMount(host, 'box'),
     );
   subscribeScene(host);
