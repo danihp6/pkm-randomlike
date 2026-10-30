@@ -39,12 +39,17 @@ carries over.
   behind the title is a **live route** — a route generated from a fresh random seed on
   every boot (never the run's),
   drawn with the first map's biome tileset, with two or three Pokémon wandering it: each
-  one takes one tile's 24 px step in the route's own **200 ms**, the rest of its 600 ms
-  tick a stand, drawn as its committed overworld pair playing the `walk` strip at 5 fps
-  (the `idle` strip while it stands) at the species' own height inside its 24 px tile
-  (`overworldScale`, `src/data/overworldSize.ts`: the tallest fills the cell and the
-  smallest keeps headroom), and, where the pair's local art is absent, as its
-  portrait cell, so a walker's box is never empty — and
+  one walks a **stride** of two to four tiles along one heading in a single **600 ms**
+  tick, then stands a beat of 0.9–1.6 s drawn from its own stream while the panel slides
+  it one tile per **200 ms** along that stride, drawn as its committed overworld pair
+  playing the `walk` strip at 5 fps (holding the strip's last frame while it stands) at
+  the species' own height inside its 24 px tile (`overworldScale`,
+  `src/data/overworldSize.ts`: the tallest fills the cell and the smallest keeps
+  headroom), and, where the pair's local art is absent, as its portrait cell, so a
+  walker's box is never empty. The tile a walker stands on carries a **ground plate** —
+  the route's ground lifted toward the accent, or the board's tab plate behind a
+  portrait — and the tile it left keeps the same plate at half the alpha for **400 ms**,
+  so a walk leaves a short trail — and
   it is **decoration**: no encounters, no player, no input and no save write. On a phone
   the records footer under the menu wraps its figures into two rows, so the three blocks
   never collide on the narrow column, and the phone frames draw no version line.

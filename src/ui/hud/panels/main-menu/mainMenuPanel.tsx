@@ -1,3 +1,4 @@
+import { Fragment } from 'preact';
 import type { CSSProperties, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { getBiome } from '../../../../data/biomes';
@@ -14,6 +15,7 @@ import { portraitBackground, type PortraitCrop } from '../../portrait';
 import type { MainMenuIntent } from './mount';
 import {
   ROUTE_PREVIEW_STEP_MS,
+  TRAIL_MS,
   WALK_FRAME_MS,
   WALK_STEP_MS,
   previewRoomFor,
@@ -23,6 +25,7 @@ import {
   type PreviewTileset,
   type TileBackground,
   type WalkerPaint,
+  type WalkerPlate,
 } from './routeWindow';
 import {
   MAIN_MENU_BOARD,
@@ -145,6 +148,10 @@ function walkerStyle(walker: WalkerPaint): CSSProperties {
   };
 }
 
+function plateStyle(plate: WalkerPlate): CSSProperties {
+  return { ...boxPaint(plate.box), backgroundColor: plate.colour };
+}
+
 /** One repaint of the window: the walkers, who is in flight and where the walk clock stands. */
 type PreviewWalk = Readonly<{
   walkers: readonly PreviewWalker[];
@@ -154,11 +161,22 @@ type PreviewWalk = Readonly<{
   clock: number;
   /** True on a first paint and on a room change: the boxes are set, never slid into. */
   instant: boolean;
+  /** The slide the last tick bought, in ms: one `WALK_STEP_MS` per tile of the longest stride. */
+  strideMs: number;
+  /** When the trail goes, on the paint clock; `0` = no trail to clear. */
+  trailUntil: number;
 }>;
 
 /** A mount or a room change: every walker is born on its own tile. */
 function firstPaint(room: PreviewRoom): PreviewWalk {
-  return { walkers: previewWalkers(room), moving: [], clock: 0, instant: true };
+  return {
+    walkers: previewWalkers(room),
+    moving: [],
+    clock: 0,
+    instant: true,
+    strideMs: WALK_STEP_MS,
+    trailUntil: 0,
+  };
 }
 
 /** The paint clock: elapsed time, never a random draw (`D11`). */
@@ -272,23 +290,30 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
     const timer = setInterval(() => {
       step.current += 1;
       const tick = step.current;
-      const clock = nowMs();
       setWalk((current) => {
         const walkers = stepPreviewWalkers(room, current.walkers, tick);
-        return { walkers, moving: movedIds(current.walkers, walkers), clock, instant: false };
+        const clock = nowMs();
+        return {
+          walkers,
+          moving: movedIds(current.walkers, walkers),
+          clock,
+          instant: false,
+          strideMs: Math.max(1, ...walkers.map((walker) => walker.path.length)) * WALK_STEP_MS,
+          trailUntil: clock + TRAIL_MS,
+        };
       });
     }, ROUTE_PREVIEW_STEP_MS);
     return () => clearInterval(timer);
   }, [room]);
 
   // The walk's paint clock: one repaint per frame boundary while a walker is in
-  // flight, and the stand that ends `WALK_STEP_MS` after the tick. The frame strip
-  // runs on elapsed time at `FOLLOWER_FRAME_RATE`, so a 24 px slide spans a step.
+  // flight, and the stand that ends when its slide lands. The frame strip runs on
+  // elapsed time at `FOLLOWER_FRAME_RATE`, so one 24 px tile spans one frame step.
   useEffect(() => {
     if (walk.moving.length === 0) return undefined;
-    const rest = window.setTimeout(() => {
+    const landed = window.setTimeout(() => {
       setWalk((current) => (current.moving.length === 0 ? current : { ...current, moving: [] }));
-    }, WALK_STEP_MS);
+    }, walk.strideMs);
     let frame = 0;
     const atBoundary = (): void => {
       const now = nowMs();
@@ -303,10 +328,20 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
     };
     atBoundary();
     return () => {
-      window.clearTimeout(rest);
+      window.clearTimeout(landed);
       window.clearTimeout(frame);
     };
-  }, [walk.moving]);
+  }, [walk.moving, walk.strideMs]);
+
+  // The trail is `TRAIL_MS` of paint clock behind the walker: the tick arms it and
+  // this clears it, so a stride leaves a short tail and no longer.
+  useEffect(() => {
+    if (walk.trailUntil === 0) return undefined;
+    const timer = window.setTimeout(() => {
+      setWalk((current) => (current.trailUntil === 0 ? current : { ...current, trailUntil: 0 }));
+    }, TRAIL_MS);
+    return () => window.clearTimeout(timer);
+  }, [walk.trailUntil]);
 
   // A pair the manifest names but the browser cannot fetch (the PNGs are local-only)
   // keeps its portrait crop: the probe runs once per species and the failure repaints.
@@ -325,20 +360,29 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
     };
   }, [walk.walkers]);
 
-  const walkerPaintOf = (walker: PreviewWalker): WalkerPaint => {
+  const paints = walk.walkers.map((walker) => {
     const sheet = drawablePair(walker.speciesId);
-    return walkerPaint(
+    const paint = walkerPaint(
       routeWindow,
       room,
       walker,
       {
         moving: walk.moving.includes(walker.id),
+        resting: walker.rest > 0,
         frameStep: walkFrameStep(sheet, walk.clock),
         instant: walk.instant,
+        // Only the walkers that booked this tick's stride carry a trail: a resting tick
+        // re-arms `trailUntil`, and re-lighting the tail through the stand would leave
+        // the half-alpha plate flickering for the whole beat.
+        sinceStrideMs:
+          walk.trailUntil === 0 || !walk.moving.includes(walker.id)
+            ? Number.POSITIVE_INFINITY
+            : nowMs() - (walk.trailUntil - TRAIL_MS),
       },
       sheet,
     );
-  };
+    return { walker, paint };
+  });
 
   const press = (id: MainMenuRowId): void => {
     if (handler === undefined) return;
@@ -374,12 +418,28 @@ export function MainMenuPanel(props: MainMenuPanelProps): JSX.Element {
           <div class="main-menu__tiles" data-hud-main-menu-tiles>
             {tiles}
           </div>
-          {walk.walkers.map((walker) => (
+          {paints.map(({ walker, paint }) => (
+            <Fragment key={walker.id}>
+              {paint.trail === null ? null : (
+                <span
+                  class="main-menu__plate main-menu__plate--trail"
+                  data-hud-main-menu-trail={String(walker.id)}
+                  style={plateStyle(paint.trail)}
+                />
+              )}
+              <span
+                class="main-menu__plate"
+                data-hud-main-menu-plate={String(walker.id)}
+                style={plateStyle(paint.plate)}
+              />
+            </Fragment>
+          ))}
+          {paints.map(({ walker, paint }) => (
             <span
               key={walker.id}
               class="main-menu__walker"
               data-hud-main-menu-walker={String(walker.id)}
-              style={walkerStyle(walkerPaintOf(walker))}
+              style={walkerStyle(paint)}
             />
           ))}
         </div>
