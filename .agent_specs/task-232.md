@@ -124,8 +124,17 @@ as today (`Number.isFinite(step) ? Math.max(0, Math.trunc(step)) : 0`):
      `candidates` = `forward` if non-empty, else `fresh` if non-empty, else `all`.
      If `candidates` is empty the walker stays and makes no further draw: return
      `{ ...walker, tile: walker.tile, previous: walker.tile, path: [], rest: 0 }`;
-   - **draw 2:** `chosen = candidates[rng.int(0, candidates.length - 1)]`;
-     `facing = chosen.facing`.
+   - **draw 2:** `chosen = usable[rng.int(0, usable.length - 1)]` (one draw, same
+     order); `facing = chosen.facing`.
+   - **the usable pool** (no draw, computed before draw 2): for a candidate `c`, its run
+     is `run(c) = 1 +` the number of further tiles along `c.facing` from `c.tile` that
+     stay in bounds, are `isWalkable`, are not `sameTile` to `previous` and are not
+     already in the run (the same refusals step 3 applies). `usable = candidates` filtered
+     to `run(c) >= 2`, and `candidates` itself when that filter is empty. Without it the
+     facing is drawn among candidates whose straight line is blocked one tile on, which
+     is how a third of the strides came out one tile long in an open room (measured on
+     the branch: 30 of 96 over 12 seeds), and the report asked for a walk that moves
+     several tiles at a time.
 3. Walk the stride: `path = [chosen.tile]`; while `path.length < length`, the next tile
    is `last + FACING_VECTORS[facing]`, and it joins `path` only if it is inside the room
    (`0 ≤ x < route.cols`, `0 ≤ y < route.rows`), `isWalkable(route.tiles, next)`, **not**
@@ -294,10 +303,17 @@ assertion to a range where this spec pins an equality.
         `WALK_STEP_MS === 200`.
   - [ ] `[unit]` A stride is 2–4 tiles, straight, walkable and never back onto the tile
         it came from: over 12 fixed seeds × 8 strides on the `PHONE` window, every
-        booked `path` has length 2–4, each tile is the previous one plus
-        `FACING_VECTORS[facing]`, is in bounds, `isWalkable`, appears once, is not
-        `previous`; `tile` is the last path tile and `previous` is the tile the stride
-        started from.
+        booked `path` has length 2–4 **except** where the walker had no candidate whose
+        run reached 2 (assert that every 1-tile stride in the sweep is exactly a walker
+        whose `usable` pool was empty, and that no stride exceeds `STRIDE_MAX_TILES`),
+        each tile is the previous one plus `FACING_VECTORS[facing]`, is in bounds,
+        `isWalkable`, appears once, is not `previous`; `tile` is the last path tile and
+        `previous` is the tile the stride started from.
+  - [ ] `[unit]` The heading prefers a stridable one: a walker one tile from a wall with
+        another heading that reaches the room's edge in one step books a stride of ≥ 2
+        along the heading whose run is ≥ 2, and `path.length` is
+        `min(length, run(chosen))`; a walker in a 1-tile-wide corridor still answers a
+        1-tile stride (the empty-`usable` guard is what allows it).
   - [ ] `[unit]` A walker boxed in still answers a legal stride or stays: in a
         synthetic 1-tile-wide corridor every stride has `path.length ≥ 1` and every
         tile is on the corridor; in a single-cell room `path` is `[]` and `tile` does
