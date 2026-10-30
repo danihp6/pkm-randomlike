@@ -9658,7 +9658,7 @@ from its table.
 **Batch 96 — `[Task-224]` alone, waiting for the import.** It cannot be cut before Batch 95: the specs
 it reads are the artifacts `import.mjs` writes with the PAT, and the per-panel tasks cannot be written
 before its table says which boxes, strings and tokens are off — writing them now would ship a batch of
-guesses. No slot is filled because nothing else is open (`[Task-194]` is `[!]` and parked). **Batch 97
+guesses. No slot is filled because nothing else is open (`[Task-194]` is `[!]` and parked). **Batch 104
 onwards** holds the per-panel tasks, cut four per batch from 224's table, each with its own panel
 folder, its own spec row and its own mount check; the rename (`[Task-223]`) is their floor, so they
 are unscheduled until it merges.
@@ -9693,6 +9693,383 @@ are unscheduled until it merges.
       output of `node scripts/design/import.mjs` with `FIGMA_TOKEN`, a run the loop never gets — and
       `[Task-223]`, the rename that gives them their name, is itself `[!]` on the same run. The task
       moves to `[ ]` the day that commit lands; until then the cycle must skip it.
+
+---
+
+## Phase 20 - The battle's beats and the walkers
+
+The nine tasks of the thirty-fourth round are play readings of the **DOM HUD** (`D49`), of the
+battle and of the two places a party member is drawn out of battle — the follower and the main
+menu's walkers. Five of them are the **beats** of a turn (when a bar drops, when a chip appears,
+when the menu takes the space it left), two are the **route panels** (a collapsed panel's badge
+and a member's press), and two are the **scale and the stride** of an overworld walker. None adds
+a run field, moves an RNG draw or touches `src/engine/save.ts`, so the chain gains no step:
+`main` reads **26** (the plan's `25` predates `[Task-181]`'s 25 → 26) and stays there.
+
+**Seven batches, 97 to 103, one dev wave.** Six of the tasks claim
+`src/scenes/BattleScene.ts` and two claim the main menu's
+`src/ui/hud/panels/main-menu/routeWindow.ts`, so the antichain rule admits **one of those per
+batch** — but `[Task-233]`'s set (`src/ui/hud/panels/hud/**`, `src/data/hudLayout.ts` and the
+strip's one callback in `src/scenes/RouteScene.ts`) and `[Task-234]`'s
+(`src/ui/hud/panels/{party,pc}/**`, `src/scenes/panels/{party,pc,detail}.ts` and
+`src/ui/partyScreen.ts`) both miss every other task's, and miss each other's, so **Batch 97**
+takes three: **97** `[Task-226]` + `[Task-233]` + `[Task-234]` · **98** `[Task-227]` ·
+**99** `[Task-228]` · **100** `[Task-229]` · **101** `[Task-230]` · **102** `[Task-231]` ·
+**103** `[Task-232]`. The one empty slot of 97 and the three of each single-task batch name the
+scene as their blocker and the fill search has nothing else to pull: the remaining open items are
+`[Task-194]` (`[!]`, parked), `[Task-223]` and `[Task-224]` (`[!]` on the operator's import
+run) and Phase 19's per-panel wave, which is unscheduled until 224's table exists and therefore
+reads **Batch 104 onwards** from here. The only edge inside the phase is `[Task-227]`'s own
+criterion, which can only be measured once `[Task-226]` paints the beat at all; nothing else
+has a dependency, so the order is the scenes', not the graph's.
+
+`src/scenes/RouteScene.ts` gains one link at **Batch 102** (`[Task-231]`'s follower scale) beside
+`[Task-233]`'s strip callback in 97, so that scene's queue reads
+19 → 51 → 75 → 77 → 79 → 80 → 97 → 102 (the strip's callback is one line, not a panel claim),
+and the version chain is unchanged at **26**. Three tasks share `docs/design-spec.md` by section
+and no other file: 226 writes §4, 233 §2 and 234 §3, each its own block. No task of the phase
+claims `package.json`, `src/main.ts`, `vite.config.ts`, `src/data/dex/**` or a generated atlas;
+`[Task-229]` is the one that adds a packer (`scripts/ui/build-field-icons.mjs`) and
+`[Task-230]` the one that touches `src/engine/**` at all, pushing an event the log already
+carries.
+
+### Batch 97 - the bars follow the turn, a collapsed badge moves, and a press opens the data
+
+- [ ] **[Task-226] The battle's HP, faint and stat-stage beat follows the turn's own order, never
+      the whole turn at the press.** Reported on `2026-10-30`: «la animacion de bajar barra salud
+      morir en combate ocurre en ambos pokes nada mas le das al ataque, tiene que estar
+      sincronizado con quien es más rápido y los mensajes que aparecen en el menu igual con los
+      bufos debufos». **Measured:** `refreshHud` emits the boxes from the **live** battle —
+      `syncHud({ screen: 'battle', battle: this.state, canCapture })`
+      (`src/scenes/BattleScene.ts` 2453-2456) — and the projection reads the finished state:
+      `hudBattleFighter` takes `fighter.hp`/`maxHp` (`src/ui/hud/state.ts` 271-289) and
+      `hudStages` takes `fighter.boosts` (261-268). The **same refresh** is called while the feed
+      is still walking the turn, whose frames the scene applies itself in `applyEvents`
+      (`BattleScene` 1071-1146) over `displayHp`/`displayStatus` (1160-1176). So the moment the
+      command is submitted both bars read the turn's last HP, both faints drop together and the
+      chips are up before their lines; `boost` is declared as an event
+      (`src/engine/battle/state.ts` 139) and `applyEvents` has **no case for it at all**, so the
+      stage chips only ever move by reading live state.
+      **Fix shape:** the scene owns the snapshot the boxes paint — display HP per slot, display
+      status and a display **boost vector** — and `hudBattle` takes that snapshot in place of the
+      live `BattleState` sides; `applyEvents` gains `boost`, while `faint` already zeroes its slot
+      (1111-1118) and `switch` re-points it (1101-1109). Every change then lands on the frame
+      whose line the engine wrote, and `battleFrames`' one-frame-per-line split
+      (`src/ui/feed.ts` 44-56) is what makes the faster side's line and drop precede the slower
+      side's reply, because the log is written in `order.ts`'s resolution order. A slot whose HP
+      does not move on a frame paints nothing.
+      **Docs:** `docs/design-spec.md` §4 (the panels' paragraph gains the rule: the boxes read the
+      beat, never the finished turn) and `src/ui/hud/panels/battle-hp/README.md` rule 4.
+      **Tests:** `[unit]` a fixed-seed scripted battle whose faster foe hits first: the frames'
+      HP deltas equal the log's order and the first frame's snapshot still reads the pre-turn HP;
+      `[unit]` a boost line moves its chip on its own frame and never before it; `[unit]` a faint
+      frame zeroes its box while the other side keeps its HP; `[unit]` a turn that changes no HP
+      leaves both fills untouched.
+      `[live]` at 1280×800 with `?hud=dom`: pressing FIGHT keeps both cards' measured fill at
+      their pre-turn width during the "used" frame, and each later frame's fill equals that
+      line's HP.
+      Claims `src/scenes/BattleScene.ts`, `src/ui/hud/state.ts` + `state.test.ts`,
+      `docs/design-spec.md` §4 and `src/ui/hud/panels/battle-hp/README.md`.
+      *Dependencies:* none. *(Batch 97)*
+
+- [ ] **[Task-233] A collapsed panel's badge is draggable, on the desk and on the phone.** Asked on
+      `2026-10-30`: «los iconos de menu comprimidos deberian poder moverse». **Measured:** the drag
+      lives on the **card's own** frame chip (`src/ui/hud/panels/hud/panelFrame.tsx` 66-171), so it
+      exists only while the card is open; once it collapses, the strip paints the badge
+      (`strip.tsx` 21-40) and a press there can only `onCommand` — reopen it. On a wide window the
+      badge at least follows the panel's own docked slot (`view.ts` 105-110, `slot.x`/`slot.y`), so
+      it inherits the last drag; on the phone it is pinned to the board's three measured slots
+      (`STRIP_PHONE_SLOTS`, 45-55) and `hudLayout`'s `dx`/`dy` are **never read** there. A phone
+      player can therefore never move a collapsed icon, and a desk player can only move one by
+      reopening the panel first.
+      **Fix shape:** the gesture leaves the card and becomes the shell's — one shared drag hook
+      (`src/ui/hud/panels/hud/drag.ts`) over `clampPanelOffset` and the existing `DRAG_SLOP` rule,
+      used by the frame's chip **and** by the strip's badge; a badge drag commits the same
+      `hudLayout` entry the card writes, so the position survives a reload and the card, reopened,
+      inherits it. A press under the slop still toggles, so a badge never loses its reopen. The
+      phone's measured slots become the **base origin** the saved offset is added to
+      (`STRIP_PHONE_SLOTS[id]` + `{ dx, dy }`) and both layouts clamp to the viewport minus the
+      26 px badge, so a chip cannot leave the screen; two badges may overlap, the last drag
+      winning the draw order, exactly as two panels may — no snapping is added.
+      **Docs:** `docs/design-spec.md` §2 (the strip's badges are draggable), `docs/hud-fidelity.md`
+      (the phone slots become origins) and `docs/tech-decisions.md` (`D49`'s paragraph, the one
+      `[Task-208]` amended, gains the sentence).
+      **Tests:** `[unit]` a badge drag maps to a clamped offset and to that panel's `hudLayout`
+      entry; `[unit]` at 390×844 a badge follows the pointer from its phone slot and clamps inside
+      the viewport; `[unit]` a travel under `DRAG_SLOP` still toggles; `[unit]` a stored offset is
+      restored on mount and the open card inherits it; `[unit]` the desk's dock rule is unchanged
+      for an undragged panel.
+      `[live]` measured at 390×844 and 1280×800: a collapsed BAG badge drags to another corner,
+      stays there after a scene rebuild and after a reload, and a tap still opens the bag.
+      Claims `src/ui/hud/panels/hud/{strip.tsx,view.ts,panelFrame.tsx}` + their tests, the new
+      `drag.ts` + test, `strip.css`, `src/scenes/RouteScene.ts` (the strip's one callback),
+      `docs/design-spec.md` §2, `docs/hud-fidelity.md`, `docs/tech-decisions.md`,
+      `src/ui/hud/panels/hud/README.md` and `src/ui/hud/README.md`.
+      *Dependencies:* none. *(Batch 97)*
+
+- [ ] **[Task-234] A press on a member opens its data panel; only a drag moves it, in the party and
+      in the PC.** Asked on `2026-10-30`: «en party pc los pokes se mueven arrastrando el sprite no
+      pulsando, al pulsar deberia abrirse panel datos poke». **Measured:** a press on a party row
+      **moves** the member to the lead — `runPanelCommand`'s `member` branch calls
+      `moveInParty(run, index, 0)` (`src/scenes/panels/party.ts` 88-99) — and the data panel opens
+      **as well**, because a second listener on `#hud` opens `openMemberDetail` for any
+      `[data-hud-party-member]` row (`src/scenes/panels/detail.ts` 494-510). In the PC a press is
+      worse: `pressDomCell` sets the cursor and **withdraws the member into the party**
+      (`withdrawToParty`, `src/scenes/panels/pc.ts` 143-161), and nothing opens — the detail opener
+      watches only `[data-hud-party-member]`, never `[data-hud-pc-cell]`. The pointer drag exists in
+      the party card alone (`PartyRow` 93-108 → `onReorder` → `reorderParty`, party.ts 107-112), and
+      the PC grid has no pointer path at all (`pcPanel.tsx` 123-152). The pure model the pointer
+      *should* use already ships and nothing calls it: `grabAt` (216-222), `dragTo` (225-238),
+      `swapAcross` (246-272) and `dropGrabbed` (240-244) in `src/ui/partyScreen.ts`.
+      **Fix shape:** the press becomes one rule on both cards — a press on a member calls
+      `openMemberDetail(host, memberId)` (`detail.ts` 261-275) and nothing else, so a tap on the lead
+      no longer changes it; the layer-level opener in `detail.ts` loses its party-only selector and
+      the cards' own `member` command is the single path, which also makes a PC cell openable. Moving
+      is the **drag** and only the drag, through the shipped model: a party row onto another row
+      reorders (`reorderParty`), a box cell onto another box cell reorders (`moveInBox`), a box cell
+      dropped on the party card withdraws (`withdrawToParty`) and a party row dropped on the PC card
+      deposits (`depositToBox`) — all four already exported by `src/engine/run/state.ts` 454-504, so
+      no rule is written; a drag that ends on nothing leaves the member where it was
+      (`dropGrabbed`). A locked PC cell (`pcMemberEditable`) takes the press for its data panel and
+      never the drag. The keyboard's own bindings do not move: `partyInput`'s grab/drop keys keep
+      their behaviour.
+      **Docs:** `docs/design-spec.md` §3 (a row's press opens the detail window; a drag moves the
+      member, and the four drops are named), `src/ui/hud/panels/party/README.md`,
+      `src/ui/hud/panels/pc/README.md` and `src/scenes/panels/README.md` (the one command path).
+      **Tests:** `[unit]` a party row's press sends `member` and never a reorder, and the scene's
+      receiver opens the detail and leaves the run untouched; `[unit]` a PC cell's press opens the
+      detail and calls no `withdrawToParty`; `[unit]` a box cell dragged onto the party card
+      withdraws once, a party row dragged onto the PC card deposits once, and a drag released on
+      nothing changes no member's place; `[unit]` a locked cell opens the detail and starts no drag.
+      `[live]` measured at 390×844 and 1280×800: a tap on the third party row opens its data panel
+      and the lead is still the first member; a drag reorders two rows; a box cell dragged onto the
+      party card lands in the squad and the box shrinks by one.
+      Claims `src/ui/hud/panels/party/{partyPanel.tsx,partyPanel.test.ts,mount.tsx}`,
+      `src/ui/hud/panels/pc/{pcPanel.tsx,pcPanel.test.ts,mount.tsx}`,
+      `src/scenes/panels/{party,pc,detail}.ts`, `src/ui/partyScreen.ts` + its test (only if a drop
+      target needs one more function), `src/ui/hud/panels/{party,pc}/README.md`,
+      `src/scenes/panels/README.md` and `docs/design-spec.md` §3.
+      *Dependencies:* none. *(Batch 97)*
+
+### Batch 98 - a multi-hit move drops in segments
+
+- [ ] **[Task-227] A multi-hit move drops the bar one segment per hit, on its own short beat.**
+      Reported with the first: «los ataques que son varios golpes debe bajar en tramos
+      correspondientes». **Measured:** the engine already logs one `damage` and one line **per
+      hit** — `executeMove`'s hit loop, `src/engine/battle/turn.ts` 1338-1348 over
+      `damageMessage` — and `battleFrames` closes a frame at each line (`src/ui/feed.ts` 44-56),
+      so the frames are per hit already. What is not per hit is **time**: `showFrame` sets one
+      `BATTLE_LOG_DWELL_MS` for every frame (`BattleScene` 1019) and `feedStep` knows only
+      "typing done" and that one hold (`src/ui/hud/panels/battle-log/view.ts` 156-166), so five
+      hits would spend five full lines' dwell — and today they would paint one jump besides,
+      because of `[Task-226]`.
+      **Fix shape:** the frame builder tags a frame that carries a `damage` and none of `status`,
+      `boost`, `switch` or `faint` as a **hit** frame; its hold is the fill's own `HP_FILL_MS`
+      (`src/ui/hud/panels/battle-hp/view.ts` 74-76) plus one readable beat, frozen as a new
+      `HIT_FRAME_MS` in the log panel's view, and the **last** hit keeps the ordinary dwell. A
+      miss mid-sequence keeps the segments already shown, because the engine breaks the loop on a
+      miss (1223-1231). The bar's CSS transition stays at `HP_FILL_MS`, so a segment finishes
+      before the next one starts; the confirm hold still rushes the whole sequence.
+      **Docs:** `docs/battle-spec.md` §3 (the hit loop's presentation reads the frames, not the
+      state).
+      **Tests:** `[unit]` a 2-to-5-hit scripted battle yields one frame per landing hit, each with
+      exactly one `damage` event, `HIT_FRAME_MS` on all but the last and the ordinary dwell on it;
+      `[unit]` a miss on hit 3 yields two segments and no third; `[unit]` a one-hit move keeps the
+      ordinary dwell; `[unit]` a rained-on residual frame is **not** a hit frame.
+      `[live]` measured: a two-hit move at 1280×800 steps the foe's fill twice, `HP_FILL_MS`
+      apart, and the menu opens only after the second.
+      Claims `src/ui/hud/panels/battle-log/view.ts` + `view.test.ts` (written against the panel in
+      flight — its dwell constants are re-read at cut time), `src/scenes/BattleScene.ts`
+      (`showFrame`/`frameHoldMs`) and `docs/battle-spec.md` §3.
+      *Dependencies:* `[Task-226]` (its criterion is only measurable once the boxes paint the
+      beat). *(Batch 98)*
+
+### Batch 99 - the player's box and the menu share a bottom line
+
+- [ ] **[Task-228] The player's HP box and the battle menu end on the same line, inside the
+      stage.** Reported on `2026-10-30`: «el contenedor de salud del poke jugador y el menu deben
+      estar alineados la parte de bajo». **Measured at 1280×800:** the player's card is
+      `x 64..432, y 660..760` — `DESKTOP_X` 64, `DESKTOP_H` 100 and
+      `DESKTOP_PLAYER_FROM_BOTTOM` 140 in `src/ui/hud/panels/battle-hp/view.ts` 94-101, laid out
+      from the **window** viewport the scene hands at mount (`BattleScene` 617-620) — while the
+      command card is `x 440..1004, y 582..774`, placed in **stage** space with the camera's own
+      `offX`/`offY` (`battle-moves/view.ts` 38-43 and 151-169). Two coordinate spaces, one
+      result: the player's card ends 14 px above the menu's and its column starts 176 px left of
+      the stage's own left edge (240 at that size).
+      **Fix shape:** one `battleStage(viewport)` — the arithmetic `refreshHud` already runs
+      (`BattleScene` 2322-2339) — exported and read by both panels; the HP column becomes
+      stage-relative, and the player's leading card's `y + h` **equals** the command card's
+      `y + h` on the desk, which is the frame's own bottom margin (`stage bottom - 26`). The
+      phone keeps its measured 8 px gutter above the card (`PHONE_PLAYER_FROM_BOTTOM` 340 against
+      `stageH - 236 - 16`), and a partner stack keeps the same 8 px gutter above its lead.
+      **Docs:** `docs/design-spec.md` §4 (the panels' paragraph names the shared stage rect and
+      the one bottom line) and `src/ui/hud/panels/battle-hp/README.md` (rule 1 names the rect).
+      **Tests:** `[unit]` at 1280×800, 1440×900 and 900×900 the player's card bottom equals the
+      command card's bottom and both stay inside the stage; `[unit]` at 390×844 the 8 px gutter
+      holds and nothing overflows; `[unit]` the partner box's clearance is unchanged and the foe's
+      column still clears the card by `CARD_CLEARANCE`.
+      `[live]` measured with `?hud=dom`: the rects of `[data-hud-hp="player-0"]` and
+      `[data-hud-panel="battle-command"]` have equal bottoms and both sit inside the camera's
+      viewport.
+      Claims `src/ui/hud/panels/battle-hp/view.ts` + `view.test.ts`,
+      `src/ui/hud/panels/battle-moves/view.ts` (the exported stage), `src/scenes/BattleScene.ts`
+      (the one call site), `src/ui/hud/panels/battle-hp/README.md` and `docs/design-spec.md` §4.
+      *Dependencies:* none. *(Batch 99)*
+
+### Batch 100 - the INFO window goes and the field takes the corner
+
+- [ ] **[Task-229] The INFO window goes, and the weather and the terrain live as icons at the
+      stage's top right.** Reported on `2026-10-30`: «apunta eliminar la parte de info, los
+      estados del terreno deben aparecer arriba a la derecha como en el prototipo con su icono,
+      por ejemplo un sol o gotas si llueve etc». **Scope:** the fifth control and everything
+      behind it retire — `infoSelected`, `mode 'info'`, `openInfo` and the arrow that reaches it
+      (`BattleScene` 388-389, 824-876, 1766-1776, 2269-2270, 2549-2553), the INFO cell in
+      `battleCommandView` (`info`, `infoLabel`; the 62 px column itself stays, the moves window
+      still uses it for MEGA and G-MAX), `src/ui/battleInfo.ts` + `battleInfo.test.ts` and the
+      **36** `battle.info.*` keys (`src/i18n/en.ts` 388-424 and `es.ts`'s mirror — the nine that
+      name a weather or a terrain are reused as the chips' labels, the rest go).
+      **Fix shape:** a new panel folder `src/ui/hud/panels/battle-field/` (view + test, component,
+      css, mount, README, barrel) drawing **one icon per live weather** (sun, rain, sandstorm,
+      snow) and **one per live terrain** (electric, grassy, misty, psychic) at the stage's top
+      right — the corner the foe's box at the left leaves free — with the remaining turns as the
+      chip's small numeral and no text row; both at once is one row of two, neither draws nothing.
+      The icons are a new `src/data/fieldIcons.ts` map onto a **drawn** set: a new
+      `scripts/ui/build-field-icons.mjs` atlas under `src/assets/ui/` (the `build-chrome.mjs`
+      precedent, `npm run data:ui`) or eight inline SVG paths under `D49`'s escape hatch — never a
+      rip, no new dependency, and every icon keeps a colour-independent shape (a sun, a drop, a
+      swirl, a flake) so the chip is not colour-only.
+      **Decision recorded:** this **reverses** `docs/design-spec.md` §4's INFO bullet (366-374) —
+      the window's field, side and stage rows are not wanted anywhere — and the replacement keeps
+      only what the human named: the weather and the terrain.
+      **Board input:** `design/screens/05-battle-hud.json` + `design/exports/05-battle-hud.png`,
+      which arrive with the operator's import (`[Task-223]`); while it has not landed, the chip's
+      geometry is the entry's own (top-right of the stage, 16 px from each edge, one 32 px icon
+      per condition, 8 px apart) and the Architect re-measures it against the frame at cut time.
+      **Docs:** `docs/design-spec.md` §4 (the bullet is replaced by the chip's line),
+      `src/ui/README.md`, `src/ui/hud/panels/README.md` (the new folder) and `src/data/README.md`
+      (`fieldIcons.ts`).
+      **Tests:** `[unit]` the view draws one chip per live condition, none for a clear sky, the
+      numeral from `weatherTurns`/`terrainTurns`, and the two-chip row's boxes at 1280×800 and
+      390×844; `[unit]` every chip has a frame and a label, and no key outside the nine the chips
+      read survives; `[unit]` `battleCommandView` reserves no INFO cell and the four cells take
+      the width it held.
+      `[live]` measured with a scripted sandstorm: the chip draws at the stage's top right at both
+      viewports, and the command card and its arrow walk no longer reach an INFO cell.
+      Claims `src/scenes/BattleScene.ts`, `src/ui/battleInfo.ts` + `battleInfo.test.ts` (deleted),
+      `src/ui/hud/panels/battle-field/**` (new), `src/ui/hud/panels/battle-command/view.ts` +
+      `view.test.ts` + `battleCommandPanel.tsx`, `src/i18n/{en,es}.ts`, `src/data/fieldIcons.ts` +
+      test, `scripts/ui/build-field-icons.mjs` (if the icons are packed), `src/ui/README.md`,
+      `src/ui/hud/panels/README.md`, `src/data/README.md` and `docs/design-spec.md` §4.
+      *Dependencies:* none. *(Batch 100)*
+
+### Batch 101 - Imposter draws what it copied
+
+- [ ] **[Task-230] Imposter copies the rival's sprite instead of leaving the placeholder.**
+      Reported on `2026-10-30`: «bug cuando un enemigo usa impostor debe copiar el sprite rival
+      ahora sale placeholder». **Measured:** `transformInto` copies `speciesId` along with the
+      shape (`src/engine/battle/fighter.ts` 758-784) and the Imposter handler calls it on
+      switch-in (`effects/abilities.ts` 2118-2129), but the battle preloads **one kind per
+      side** — `front` for the enemy party and `back` for the player's, `battleSheets`
+      (`BattleScene` 1411-1431) — so the copied species has no sheet for the kind `showMon` asks
+      for; `showMon` returns on `!this.textures.exists(sheet.textureKey)` (1482-1488) and the
+      sprite keeps the placeholder texture `BootScene` gave it (293). The transform also pushes
+      no `forme`, so `applyEvents`' `forme` case (1131-1138) never runs and only the incidental
+      `refreshHud` → `syncMonSprites` touches the sprite at all.
+      **Fix shape:** (1) `battleSheets` loads **both** kinds for every species in play — the
+      party's and the foe's own species, `front` **and** `back`, keyed by texture so a shared
+      species loads once; a transform's target is always one of those two parties, so both sides
+      are covered. (2) The transform pushes `{ kind: 'forme', side, fighterId }` — the event
+      already exists (`src/engine/battle/state.ts` 146) — so the beat re-syncs the sprite the way
+      a Mega does. (3) `restoreOriginalForm` (fighter.ts 787-798) already puts the shape back and
+      the switch frame re-syncs, which becomes the pinned path. (4) A species with no art at all
+      (a Gen 9 id outside the 1-649 pack) keeps the placeholder **on purpose**: that fallback
+      stays and is named in the folder's map.
+      **Docs:** `docs/battle-spec.md` §7 (Transform copies the shape **and** what the screen
+      draws) and `docs/art-direction.md` (the two-kind preload and why it is not lazy).
+      **Tests:** `[unit]` a battle whose foe is Ditto with Imposter against a player Charmander
+      loads the Charmander **front** sheet and the enemy sprite's texture key is that sheet on
+      the frame after the switch-in; `[unit]` a fixed-seed `scriptedBattle` pins the `forme`
+      event immediately after the transform line; `[unit]` switch-out restores the original sheet
+      and the placeholder is drawn only for an id the manifest does not name.
+      `[live]` measured at 1280×800: the foe draws the player's species' front sheet and never
+      `placeholder-mon`.
+      Claims `src/scenes/BattleScene.ts` (`battleSheets`, `applyEvents`),
+      `src/engine/battle/effects/abilities.ts` + test, `docs/battle-spec.md` §7 and
+      `docs/art-direction.md`.
+      *Dependencies:* none. *(Batch 101)*
+
+### Batch 102 - a walker's own size
+
+- [ ] **[Task-231] A walker's size is the species' own, like Anil's, on the route and in the main
+      menu.** Reported on `2026-10-30`: «el tamaño de los sprites y animaciones de el poke que te
+      sigue y el de la pantalla menu principal no debe ser el mismo debe depender del poke, revisa
+      como se hace en poke añil y hacerlo igual». **Measured:** the follower is pinned to one tile
+      — `.setScale(TILE_SIZE / sheet.size)` (`src/scenes/RouteScene.ts` 1852) — and the main
+      menu's walker to a 24 px cell — `pairCellScale` = `PREVIEW_TILE / sheet.size`
+      (`routeWindow.ts` 150-153) — so a Wailord and a Diglett draw the same height in both
+      places, while the battle already scales by the species
+      (`battleSpriteHeight(heightOf(fighter.speciesId))`, `BattleScene` 1493, and
+      `src/data/spriteSize.ts` 24-28). Anil's own overworld does the same: one cell, the art's
+      proportion.
+      **Fix shape:** one pure `overworldScale(speciesId)` beside `battleSpriteHeight` — the same
+      power curve **compressed into the overworld's band** (a frozen `0.8..1.6` of the cell, so
+      a titan fills its tile and a small species keeps headroom) — read by `buildFollower` and
+      by `walkerPaint`, with the sprite anchored at the **feet** (bottom-centre of the tile) so a
+      larger species grows upward and never off its tile. The frame rate stays
+      `FOLLOWER_FRAME_RATE` for every species: the report's «animaciones» is read as cadence, not
+      as a per-species speed. The main menu's walker keeps its 24 px **box** and scales the sheet
+      inside it, so no card moves.
+      **Docs:** `docs/design-spec.md` §2 (the preview's walkers) and §5 (the follower's line).
+      **Tests:** `[unit]` `overworldScale` is monotonic, floored and capped, and two species 10×
+      apart in canonical height land inside the band and differ; `[unit]` the follower's scale and
+      its feet `y` come from the same call for two species; `[unit]` `walkerPaint`'s box stays
+      24×24 while `backgroundSize` grows with the species, and the sprite never paints outside
+      the box.
+      `[live]` measured at 1× zoom: a large species and a small one both stand on their tile's
+      bottom edge and their drawn heights differ by the band's ratio.
+      Claims `src/render/pokemonFollower.ts` + test,
+      `src/ui/hud/panels/main-menu/routeWindow.ts` + `routeWindow.test.ts`,
+      `src/scenes/RouteScene.ts` (the one scale call), a new `src/data/overworldSize.ts` + test
+      (or `src/data/spriteSize.ts` if the curve is shared there), `src/render/README.md`,
+      `src/ui/hud/panels/main-menu/README.md` and `docs/design-spec.md` §2/§5.
+      *Dependencies:* none. *(Batch 102)*
+
+### Batch 103 - a stride, a rest and a lit tile
+
+- [ ] **[Task-232] The main menu's walkers take a stride and rest, over a lit tile that leaves a
+      trail.** Reported with the size: «la animacion en el menu principal se mueve como poco
+      realista un tick una casilla, deberia ir moviendose varias casillas de golpe pararse un poco
+      algo realista y en la casilla en la que estan ahora como que tiene un poco de fondo y cambia
+      el color del tile de detras». **Measured:** `stepPreviewWalkers` books **one** cardinal tile
+      per tick (`src/engine/routes/preview.ts` 235-261) and the panel ticks it every
+      `ROUTE_PREVIEW_STEP_MS` 600 with a `WALK_STEP_MS` 200 slide (`routeWindow.ts` 17-23), so a
+      walker metronomes tile by tile; `walkerPaint` draws the sheet and nothing under it — the
+      tile it stands on is only `tileBackground`'s (99-124) and a walker never marks it.
+      **Fix shape:** the model gains a **stride**: a tick picks 2–4 tiles along one heading from
+      the walker's own stream (`…:preview:walker:<id>:<step>`), books them in that one tick — the
+      way stays walkable and stops at a wall or at the tile it came from — and then **rests** a
+      beat drawn from the same stream (`STRIDE_REST_MS`, 900-1600); the panel slides over the
+      whole stride at one tile per `WALK_STEP_MS` and holds the walk cycle's last frame while it
+      rests. Painting: the walker's own tile gains a **ground plate** (its ground lifted toward
+      the panel's accent at low alpha, or the board's `menu tab` plate when the species has no
+      sheet) and the tile it **left** keeps a short trail (the same plate at half the alpha,
+      fading over a frozen `TRAIL_MS`) — both from the pure paint, never from the component, so a
+      fixture can measure them.
+      **Docs:** `docs/design-spec.md` §2 (the preview's walk, its stride and its rest) and
+      `src/ui/hud/panels/main-menu/README.md`.
+      **Tests:** `[unit]` a stride is 2–4 tiles, straight, walkable and never back onto the tile
+      it came from, and a walker boxed in on one card still answers a legal stride or stays;
+      `[unit]` the tick after a stride books no move and reports the rest; `[unit]` the trail
+      names the left tile for `TRAIL_MS` and clears; `[unit]` two seeds yield different stride
+      lengths, because each walker reads its own stream.
+      `[live]` measured at 390×844: a walker crosses several tiles, stands still for its rest, and
+      its current tile and the one it left are measurably different from the field's own ground.
+      Claims `src/engine/routes/preview.ts` + `preview.test.ts`,
+      `src/ui/hud/panels/main-menu/routeWindow.ts` + `routeWindow.test.ts`, `main-menu.css`,
+      `main-menuPanel.tsx` (the tick), `src/ui/hud/panels/main-menu/README.md` and
+      `docs/design-spec.md` §2.
+      *Dependencies:* none — it sits one batch behind `[Task-231]` because both edit
+      `routeWindow.ts`'s paint, not because it needs its output. *(Batch 103)*
 
 ---
 
@@ -10180,6 +10557,68 @@ Task-176, 79's Task-180 and 80's Task-179, so the scene's queue reads
 19 → 51 → 75 → 77 → 79 → 80), `src/scenes/BattleScene.ts`, `src/engine/battle/turn.ts`,
 `src/scenes/panels/detail.ts` and `src/ui/partyDetail.ts` once per batch, and nothing re-plans
 `Task-38`–`Task-161`.
+
+A **thirty-fourth round** is **eight play reports from one sitting (`2026-10-30`)** — nine tasks
+from eight readings — and they are triaged in the same pass, so nothing waits here. What they
+share is a **seam**, not a rule: every one is read on the shipped `?hud=dom` battle, on the
+out-of-battle walkers or on the route panels, six of the tasks claim
+`src/scenes/BattleScene.ts` and two the main menu's `routeWindow.ts`, so they open **Phase 20**
+as seven batches, **97 to 103**, in ID order (Phase 19's per-panel wave, unscheduled until
+`[Task-224]`'s table exists, reads **Batch 104 onwards** from here). **The
+turn's beats (three).** «la animacion de bajar barra salud morir en combate ocurre en ambos pokes
+nada mas le das al ataque … sincronizado con quien es más rápido y los mensajes … con los bufos
+debufos» is `[Task-226]`: the DOM boxes are fed the **live** `BattleState` (`syncHud`,
+`BattleScene` 2453-2456, with `hudBattleFighter` reading `fighter.hp` and `hudStages` reading
+`fighter.boosts`, `src/ui/hud/state.ts` 271-289 and 261-268) while the frames are walked by the
+scene's own `displayHp`/`displayStatus` in `applyEvents` (1071-1146), and `boost` events
+(`state.ts` 139) have no case there at all — so both bars, both faints and every chip land at the
+press. «los ataques que son varios golpes debe bajar en tramos correspondientes» is `[Task-227]`:
+the engine already logs one `damage` and one line per hit (`turn.ts` 1338-1348) and
+`battleFrames` closes a frame at each line (`feed.ts` 44-56), so the frames are per hit and only
+the **dwell** is one size (`BATTLE_LOG_DWELL_MS`, `BattleScene` 1019) — the segments need their
+own short beat, measured through 226. «el contenedor de salud del poke jugador y el menu deben
+estar alineados la parte de bajo» is `[Task-228]`: the HP column is placed from the **window**
+(x 64, bottom 140, `battle-hp/view.ts` 94-134, handed the window viewport at mount, 617-620) and
+the command card from the **stage** (`battle-moves/view.ts` 151-169), so at 1280×800 the player's
+card ends 14 px above the menu's and the column starts 176 px left of the stage. **The field's
+chrome (one).** «eliminar la parte de info, los estados del terreno deben aparecer arriba a la
+derecha como en el prototipo con su icono» is `[Task-229]`: the INFO control and its state window
+(`battleInfo.ts`, `mode 'info'`, 36 `battle.info.*` keys) retire and the weather and the terrain
+become icons at the stage's top right — a **decision change** against `docs/design-spec.md` §4's
+INFO bullet (366-374), not a defect, and the only task of the round that adds a packer. **The
+render path (one).** «cuando un enemigo usa impostor … ahora sale placeholder» is `[Task-230]`:
+`transformInto` copies `speciesId` (`fighter.ts` 758-784) but the battle preloads one kind per
+side (`front` for the foe, `back` for the party, `battleSheets` 1411-1431), so the copied species
+has no sheet for the kind `showMon` asks for and it returns on `!textures.exists` (1482-1488);
+the transform also pushes no `forme`, so nothing re-syncs on the beat. **The walkers (two).**
+«el tamaño … del poke que te sigue y el de la pantalla menu principal no debe ser el mismo debe
+depender del poke, revisa como se hace en poke añil» is `[Task-231]`: the follower is pinned to one
+tile (`TILE_SIZE / sheet.size`, `RouteScene` 1852) and the menu's walker to a 24 px cell
+(`pairCellScale`, `routeWindow.ts` 150-153), where both should read the species' own size the way
+battle already does (`battleSpriteHeight`/`heightOf`, `spriteSize.ts` 24-28); and «la animacion en
+el menu principal se mueve como poco realista un tick una casilla … varias casillas de golpe
+pararse un poco … la casilla en la que estan ahora como que tiene un poco de fondo y cambia el
+color del tile de detras» is `[Task-232]`: `stepPreviewWalkers` books exactly one tile per tick
+(`preview.ts` 235-261) over a 600 ms timer with a 200 ms slide (`routeWindow.ts` 17-23), so the
+stride becomes several tiles, the rest a real pause, and the walker's cell gains a ground plate
+and a fading trail on the tile it left. **The shell (one).** «los iconos de menu comprimidos
+deberian poder moverse» is `[Task-233]`: the drag is the **card's** chip
+(`panelFrame.tsx` 66-171), so a collapsed badge — the strip's, `strip.tsx` 21-40 — can only
+reopen its panel; on the phone the badge is pinned to `STRIP_PHONE_SLOTS` (45-55) and
+`hudLayout`'s offsets are never read there. It rides in **Batch 97** beside 226 because its paths
+miss every other task's. **The route panels (one more).** «en party pc los pokes se mueven
+arrastrando el sprite no pulsando, al pulsar deberia abrirse panel datos poke» is `[Task-234]`: a
+party row's press calls `moveInParty(run, index, 0)` (`src/scenes/panels/party.ts` 88-99) while the
+detail window also opens through a second layer listener (`detail.ts` 494-510), and a PC cell's
+press **withdraws** the member (`withdrawToParty`, `src/scenes/panels/pc.ts` 143-161) and opens
+nothing — while the pointer model the drag should use already ships unused in
+`src/ui/partyScreen.ts` (`grabAt`, `dragTo`, `swapAcross`, `dropGrabbed`). It shares Batch 97's
+third slot because its paths miss 226's and 233's. **No run field, no `SAVE_VERSION` step and no
+draw moved by any of the nine** — 230 pushes an event the log already carries, 226-228 read state
+and 231-234 are art, motion and input — so the chain stays at **26** (the record's `25` predates
+`[Task-181]`), `src/scenes/RouteScene.ts` gains one link at **Batch 102**, and the open set is
+unchanged: `[Task-28]`, `[Task-194]`, `[Task-223]` and `[Task-224]` are still the
+unscheduled/blocked four.
 
 ---
 
