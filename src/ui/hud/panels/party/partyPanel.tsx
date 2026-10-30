@@ -1,5 +1,5 @@
 import type { CSSProperties, JSX } from 'preact';
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../../../../i18n';
 import type { HudCommand } from '../../commands';
 import { portraitBackground, type PortraitCrop } from '../../portrait';
@@ -90,7 +90,10 @@ const PartyRow = (props: PartyRowProps): JSX.Element => {
       data-dragging={drag.from === index ? 'true' : undefined}
       aria-label={label}
       style={boxStyle(row.row)}
-      onPointerDown={() => drag.setFrom(index)}
+      onPointerDown={() => {
+        drag.swallowed.current = false;
+        drag.setFrom(index);
+      }}
       onPointerUp={() => {
         const from = drag.from;
         drag.setFrom(null);
@@ -236,12 +239,23 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
 /**
  * The party card (`D49`). It paints the view and answers in `HudCommand`s; the
  * scene owns the run, the panel record and the toggle. The drag cell lives here,
- * one per mount, and a completed drag is reported through `onReorder`.
+ * one per mount, and a completed drag is reported through `onReorder`. A pointer
+ * released outside the card — the PC card, the map — drops the carried row, so a
+ * crossing drag never leaves a mark behind.
  */
 export function PartyPanel(props: PartyPanelProps): JSX.Element {
   const [from, setFrom] = useState<number | null>(null);
   const swallowed = useRef(false);
   const drag: PartyDrag = { from, swallowed, setFrom };
+  useEffect(() => {
+    const clear = (): void => setFrom(null);
+    document.addEventListener('pointerup', clear);
+    document.addEventListener('pointercancel', clear);
+    return () => {
+      document.removeEventListener('pointerup', clear);
+      document.removeEventListener('pointercancel', clear);
+    };
+  }, []);
   return (
     <PartyCard view={props.view} drag={drag} onCommand={props.onCommand} onReorder={props.onReorder} />
   );

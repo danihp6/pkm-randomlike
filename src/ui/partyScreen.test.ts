@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRunPokemon } from '../engine/run';
-import { createRun, type RunState } from '../engine/run/state';
+import { createRun, depositToBox, type RunState } from '../engine/run/state';
 import type { RunPokemon } from '../engine/run/progression';
 import { memberDetail, reorderMoves } from './partyDetail';
 import {
@@ -13,6 +13,7 @@ import {
   DARK_PORTRAIT_TINT,
   dragTo,
   dropGrabbed,
+  dropOnCard,
   grabAt,
   initialPartyUi,
   partyInput,
@@ -319,6 +320,55 @@ describe('pointer drag', () => {
     const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
     expect(swapAcross(grabbed.run, grabbed.ui, 9)).toEqual({ run, ui: grabbed.ui });
     expect(swapAcross(run, initialPartyUi(), 0)).toEqual({ run, ui: initialPartyUi() });
+  });
+});
+
+describe('a pointer drop on the other card', () => {
+  it('withdraws a box member let go on the party card, once and at the end', () => {
+    const run = runWith(['a'], ['x', 'y']);
+    const next = dropOnCard(run, { pane: 'box', index: 1 }, 'party');
+    expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'y']);
+    expect(next.box.map((m) => m.fighter.id)).toEqual(['x']);
+    expect(next.party).toHaveLength(run.party.length + 1);
+    expect(next.box).toHaveLength(run.box.length - 1);
+  });
+
+  it('deposits a party member let go on the PC card, once and at the end', () => {
+    const run = runWith(['a', 'b'], ['x']);
+    const next = dropOnCard(run, { pane: 'party', index: 1 }, 'box');
+    expect(next.party.map((m) => m.fighter.id)).toEqual(['a']);
+    expect(next.box.map((m) => m.fighter.id)).toEqual(['x', 'b']);
+    expect(next.party).toHaveLength(run.party.length - 1);
+    expect(next.box).toHaveLength(run.box.length + 1);
+  });
+
+  it('moves nobody for a drop on the member’s own card or on nothing', () => {
+    const run = runWith(['a', 'b'], ['x']);
+    expect(dropOnCard(run, { pane: 'box', index: 0 }, 'box')).toBe(run);
+    expect(dropOnCard(run, { pane: 'party', index: 1 }, 'party')).toBe(run);
+    expect(dropOnCard(run, { pane: 'box', index: 0 }, null)).toBe(run);
+    expect(dropOnCard(run, { pane: 'party', index: 0 }, null)).toBe(run);
+    expect(dropOnCard(run, null, 'party')).toBe(run);
+  });
+
+  it('moves nobody from the fallen’s pane', () => {
+    const run = runWith(['a'], ['x'], ['d']);
+    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'party')).toBe(run);
+    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'box')).toBe(run);
+  });
+
+  it('refuses both directions outside the floor’s entry room', () => {
+    const away = { ...runWith(['a'], ['x']), routeInMap: 3 };
+    expect(dropOnCard(away, { pane: 'box', index: 0 }, 'party')).toBe(away);
+    expect(dropOnCard(away, { pane: 'party', index: 0 }, 'box')).toBe(away);
+  });
+
+  it('refuses a withdrawal into a full party and a deposit of the last member', () => {
+    const full = runWith(['a', 'b', 'c', 'd', 'e', 'f'], ['x']);
+    expect(dropOnCard(full, { pane: 'box', index: 0 }, 'party')).toBe(full);
+    expect(dropOnCard(full, { pane: 'party', index: 2 }, 'box')).toEqual(depositToBox(full, 2));
+    const alone = runWith(['a'], ['x']);
+    expect(dropOnCard(alone, { pane: 'party', index: 0 }, 'box')).toBe(alone);
   });
 });
 

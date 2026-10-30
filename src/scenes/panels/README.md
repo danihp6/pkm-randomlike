@@ -24,16 +24,19 @@ scene.
   and the saved placement left with the canvas layer (`Task-208` owns their DOM parity).
 - `map.ts` — the route header, which is the floor minimap: its card in `#hud` and the open
   flag that hides it behind another screen.
-- `party.ts` — the party card: the six rows, the lead swap on a press and the row reorder on
-  a drop, all through `moveInParty` / `reorderParty`.
+- `party.ts` — the party card: the six rows, a press that opens the pressed member's detail
+  window and never moves it, and the row reorder on a drop through `reorderParty`.
 - `bag.ts` — the bag card: pocket tabs, filter field, item grid, money row and its
   description card; it owns the pocket, the cursor and the query.
 - `bag.test.ts` — the drawn card's body: the English name over the localised text, headless.
 - `pc.ts` — the PC BOX card: page tabs, avatar grid and the RIP tab, with the page following
-  the cursor and a press withdrawing through the engine's own rule.
+  the cursor, a press opening the member's detail window and a cell drop reordering the box
+  through `moveInBox`.
 - `detail.ts` — the member detail card: STATS, MOVES, evolutions, nickname and the learnset
   pool. It also builds the level-up/evolution popup, the folder's one canvas residue — see
-  below.
+  below — and owns the HUD's single member gesture: the press-then-release on `#hud` that
+  opens no card but withdraws a box cell let go on the party card and deposits a party row
+  let go on the PC card.
 - `notices.ts` — the notice strip, the area banner and the mission line as the DOM card's
   three lines, with their own hold timers on the scene's clock.
 - `rewards.ts` — the mini-boss reward card: the rows, the two-press arm/commit and the level-up
@@ -53,10 +56,10 @@ builds them in Phaser exactly as it did before `D49` was amended, and their DOM 
 their retirement — is follow-up `Task-208`, not assumed here:
 
 - **The level-up / evolution popup, complete.** `buildLearnPopup`
-  (`detail.ts:351-382`) runs unconditionally from `buildDom` (`detail.ts:683`): its
-  full-screen scrim (`:358`), its FRLG nine-slice window (`:359`), its three bitmap texts —
-  title, body and press-any-key hint — (`:360`, `:364`, `:369`), the whole-screen press zone
-  that dismisses it (`:374`) and the container around them (`:377`).
+  (`detail.ts:354-385`) runs unconditionally from `buildDom` (`detail.ts:754`): its
+  full-screen scrim (`:361`), its FRLG nine-slice window (`:362`), its three bitmap texts —
+  title, body and press-any-key hint — (`:363`, `:367`, `:372`), the whole-screen press zone
+  that dismisses it (`:377`) and the container around them (`:380`).
 - **The hold-to-reset feedback.** The scrim (`pause.ts:120`) and the ring that fills while
   the key is held (`pause.ts:125`).
 

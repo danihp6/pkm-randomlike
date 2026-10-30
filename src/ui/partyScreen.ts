@@ -242,6 +242,27 @@ export function dropGrabbed(ui: PartyUiState): PartyUiState {
   return ui.grabbed ? { ...ui, grabbed: null } : ui;
 }
 
+/** The member a pointer drag carries: the pane it was picked up in and its slot. */
+export type DragPick = Readonly<{ pane: PaneId; index: number }>;
+
+/**
+ * A pointer drag released over a card, `null` meaning released on nothing. Only
+ * the crossing moves: a box member let go on the party card is **withdrawn** and a
+ * party member let go on the PC card is **deposited**, each appended to the end of
+ * its new pane, through the shipped `withdrawToParty` / `depositToBox`. A drop on
+ * the member's own card, on the fallen's pane, on nothing, or anywhere outside the
+ * floor's entry room (`pcMemberEditable`) moves nothing.
+ */
+export function dropOnCard(
+  run: RunState,
+  drag: DragPick | null,
+  card: 'party' | 'box' | null,
+): RunState {
+  if (drag === null || card === null || drag.pane === card) return run;
+  if (drag.pane === 'rip' || !pcMemberEditable(run)) return run;
+  return drag.pane === 'box' ? withdrawToParty(run, drag.index) : depositToBox(run, drag.index);
+}
+
 /**
  * A pointer drop of the grabbed member onto the member at `index` of the other
  * pane: the two trade places, so a boxed member can replace a party member even

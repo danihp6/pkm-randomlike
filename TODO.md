@@ -9807,7 +9807,7 @@ carries.
       `src/ui/hud/panels/hud/README.md` and `src/ui/hud/README.md`.
       *Dependencies:* none. *(Batch 97)*
 
-- [ ] **[Task-234] A press on a member opens its data panel; only a drag moves it, in the party and
+- [x] **[Task-234] A press on a member opens its data panel; only a drag moves it, in the party and
       in the PC.** Asked on `2026-10-30`: «en party pc los pokes se mueven arrastrando el sprite no
       pulsando, al pulsar deberia abrirse panel datos poke». **Measured:** a press on a party row
       **moves** the member to the lead — `runPanelCommand`'s `member` branch calls

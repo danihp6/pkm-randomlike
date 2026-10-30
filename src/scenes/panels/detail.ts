@@ -31,6 +31,7 @@ import {
   type DetailState,
   type MemberDetail,
 } from '../../ui/partyDetail';
+import { dropOnCard, grabAt, type DragPick, type PaneId } from '../../ui/partyScreen';
 import { maxScrollTop, scrollByRows } from '../../ui/scroll';
 import type { LevelUpBeat } from '../../ui/beats';
 import type Phaser from 'phaser';
@@ -90,8 +91,10 @@ const SCENE_RESUME = 'resume';
 /** The mounted DOM card: the view it paints and the mount's disposer. */
 let domView: Signal<DetailPanelView> | null = null;
 let domDispose: (() => void) | null = null;
-/** The delegated party-row press that opens the card, and its remover. */
-let domOpener: (() => void) | null = null;
+/** The `#hud` member drag the card's layer owns, and its remover. */
+let domDrag: (() => void) | null = null;
+/** The member a pointer drag carries, or null when no drag is in flight. */
+let hudDrag: DragPick | null = null;
 /** The scene's pause/resume subscription, dropped when the route goes away. */
 let domUnsubscribeScene: (() => void) | null = null;
 /** True while the route is paused under another screen: the card hides then. */
@@ -260,7 +263,10 @@ export function typeInDetailSearch(host: RoutePanelHost, event: KeyboardEvent): 
 
 /**
  * Opens the detail panel on `memberId`, keeping the tab the panel already stands on
- * (STATS when it was closed), and paints it.
+ * (STATS when it was closed), and paints it. The card is shown as well: its `open`
+ * flag is the HUD's collapsed record and the detail window has no edge chip of its
+ * own, so a press that opened a member and left the card collapsed would show
+ * nothing.
  */
 export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
   hudDetailState = openDetail(memberId, carriedDetailTab(hudDetailState));
@@ -271,6 +277,7 @@ export function openMemberDetail(host: RoutePanelHost, memberId: string): void {
   hudDetailCursor = -1;
   hudPoolCursor = -1;
   cancelNicknameEdit(host);
+  if (!host.hudCardOpen('detail')) host.setHudCardOpen('detail', true);
   refreshDetail(host);
 }
 
@@ -486,36 +493,105 @@ function subscribeScene(host: RoutePanelHost): void {
   };
 }
 
-/**
- * The opener. The party rows are DOM buttons that answer `party.ts`, so one
- * delegated press on the `#hud` layer opens the member whose row was pressed, and
- * nothing else.
- */
-function installPartyOpener(host: RoutePanelHost, layer: Element): () => void {
-  const onClick = (event: Event): void => {
-    if (domPaused) return;
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    const row = target.closest('[data-hud-party-member]');
-    if (row === null) return;
-    const memberId = row.getAttribute('data-hud-party-member');
-    if (memberId === null || memberId.length === 0) return;
-    const run = host.run();
-    const known = [...run.party, ...run.box, ...run.rip].some((entry) => entry.fighter.id === memberId);
-    if (!known) return;
-    openMemberDetail(host, memberId);
-  };
-  layer.addEventListener('click', onClick);
-  return () => layer.removeEventListener('click', onClick);
+/** The HUD card a member is drawn on, by its root's own marker. */
+const CARD_ATTR = 'data-hud-panel';
+/** A party row's member id. */
+const PARTY_MEMBER_ATTR = 'data-hud-party-member';
+/** A PC/RIP cell's flat slot in the list its card shows. */
+const PC_CELL_ATTR = 'data-hud-pc-cell';
+
+/** The card a dropped pointer is over, or null when it let go on nothing. */
+function cardUnder(event: Event): 'party' | 'box' | null {
+  const point = event as Partial<PointerEvent>;
+  const at =
+    typeof point.clientX === 'number' && typeof point.clientY === 'number'
+      ? (document.elementFromPoint?.(point.clientX, point.clientY) ?? null)
+      : null;
+  const under = at ?? (event.target instanceof Element ? event.target : null);
+  const name = under?.closest(`[${CARD_ATTR}]`)?.getAttribute(CARD_ATTR) ?? null;
+  return name === 'party' ? 'party' : name === 'box' ? 'box' : null;
 }
 
-function removePartyOpener(): void {
-  domOpener?.();
-  domOpener = null;
+/**
+ * The member a pointer went down on: a party row by its id, a PC/RIP cell by the
+ * slot its card prints. Anything else — a chip, a tab, the wall — carries no member.
+ */
+function dragPick(host: RoutePanelHost, target: Element): DragPick | null {
+  const row = target.closest(`[${PARTY_MEMBER_ATTR}]`);
+  if (row !== null) {
+    const memberId = row.getAttribute(PARTY_MEMBER_ATTR);
+    const index = host.run().party.findIndex((member) => member.fighter.id === memberId);
+    return index < 0 ? null : { pane: 'party', index };
+  }
+  const cell = target.closest(`[${PC_CELL_ATTR}]`);
+  const slot = cell?.getAttribute(PC_CELL_ATTR) ?? null;
+  const index = slot === null ? Number.NaN : Number.parseInt(slot, 10);
+  if (!Number.isInteger(index) || index < 0) return null;
+  const pane: PaneId =
+    cell?.closest(`[${CARD_ATTR}]`)?.getAttribute('data-pane') === 'rip' ? 'rip' : 'box';
+  return { pane, index };
+}
+
+/**
+ * A press on a member starts a drag; the pure `grabAt` decides whether there is one
+ * to start, so a locked cell, an empty slot and the fallen's pane begin none.
+ */
+function startDrag(host: RoutePanelHost, event: Event): void {
+  hudDrag = null;
+  if (domPaused) return;
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const pick = dragPick(host, target);
+  if (pick === null) return;
+  const grabbed = grabAt(host.run(), host.ui(), pick.pane, pick.index).ui.grabbed;
+  hudDrag = grabbed === null ? null : { pane: grabbed.pane, index: grabbed.origin };
+}
+
+/**
+ * The pointer let go: the drag lands on one of the two cards, or on nothing and
+ * moves no member. A drop on the member's own card is the card's own gesture, so
+ * this leaves it alone; only the crossing is committed here (`dropOnCard`).
+ */
+function endDrag(host: RoutePanelHost, event: Event): void {
+  const drag = hudDrag;
+  hudDrag = null;
+  if (drag === null || domPaused) return;
+  const run = host.run();
+  const next = dropOnCard(run, drag, cardUnder(event));
+  if (next !== run) host.commitRun(next);
+}
+
+/**
+ * The card's member gesture, one delegated pair on `#hud`: the press starts the drag
+ * and the release — wherever it lands, the layer or the canvas — resolves the two
+ * cards through the pure drop. A press on a member itself opens the member's detail
+ * window from the card's own `member` command, so this is the **only** place the
+ * pointer moves a member. Returns the disposer both listeners need.
+ */
+export function installMemberDrag(host: RoutePanelHost, layer: Element): () => void {
+  const onDown = (event: Event): void => startDrag(host, event);
+  const onUp = (event: Event): void => endDrag(host, event);
+  const onCancel = (): void => {
+    hudDrag = null;
+  };
+  layer.addEventListener('pointerdown', onDown);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onCancel);
+  return () => {
+    hudDrag = null;
+    layer.removeEventListener('pointerdown', onDown);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onCancel);
+  };
+}
+
+function removeMemberDrag(): void {
+  domDrag?.();
+  domDrag = null;
 }
 
 function disposeDomPanel(): void {
-  removePartyOpener();
+  removeMemberDrag();
   if (domDispose === null) return;
   domDispose();
   domDispose = null;
@@ -677,7 +753,8 @@ function runDetailIntent(host: RoutePanelHost, intent: DetailIntent): void {
 
 /**
  * The card's build: the level-up popup (the beat `RouteScene` raises, which the
- * board has no card for) and the `#hud` mount of the detail card itself.
+ * board has no card for), the `#hud` mount of the detail card itself and the
+ * member drag the two panels share.
  */
 function buildDom(host: RoutePanelHost): void {
   buildLearnPopup(host);
@@ -692,7 +769,7 @@ function buildDom(host: RoutePanelHost): void {
       (intent) => runDetailIntent(host, intent),
       panelFrameMount(host, 'detail'),
     );
-    domOpener = installPartyOpener(host, layer);
+    domDrag = installMemberDrag(host, layer);
   }
   subscribeScene(host);
   pushDomView(host);

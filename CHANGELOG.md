@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A press on a member opens its data panel; only a drag moves it, in the party and in the PC.**
+      `[Task-234]`, Batch 97: a party row's press re-led the squad and a PC cell's press withdrew the
+      member. Now both cards send their `member` command and the scene opens that member's detail
+      window — shown, because the card's open flag is the HUD's collapsed record and the detail has no
+      edge chip of its own — and a press moves nobody. Moving is the drag alone: a party row onto
+      another row still swaps through `reorderParty`, a box cell onto another cell now reorders through
+      `moveInBox`, and the crossing between the two cards is one delegated gesture on `#hud` that
+      hit-tests the card under the pointer on release and commits through the new pure `dropOnCard` in
+      `src/ui/partyScreen.ts` (`withdrawToParty` / `depositToBox`, entry room only), so a release on
+      nothing moves nobody. A locked cell and the RIP pane start no drag and keep the press for their
+      detail; the keyboard's grab/drop is unchanged. `docs/design-spec.md` §3 and the three folder
+      READMEs record it. Gates: `npm test` 5150 passed / 69 skipped and `npm run build` green at task
+      QA and on the batch's combined tree (5179 passed there). The `[live]` evidence is DOM attributes,
+      rects and `elementFromPoint` over CDP with real dispatched pointer events, never a screenshot:
+      at 1280×800 with three in the party and one boxed, a click on the third row opened
+      `[data-hud-panel="detail"]` with the first row's `data-hud-party-member` unchanged; dragging row
+      1 onto row 3 swapped those two ids and let the drag set the lead; dragging the box cell onto the
+      party card moved its id into the party and left the cell empty; at 390×844 the same taps opened
+      each detail with the lead and the party size unchanged.
+
 - [x] **A collapsed panel's badge is draggable, on the desk and on the phone.** `[Task-233]`, Batch 97:
       the drag that moved a route panel lived only on the open card's own frame chip, so a collapsed
       panel's badge could not be moved — on the phone the strip pinned it to the measured slots and

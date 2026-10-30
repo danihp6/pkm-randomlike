@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../../../scenes/panels/detail', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../scenes/panels/detail')>();
+  return { ...actual, openMemberDetail: vi.fn(actual.openMemberDetail) };
+});
+
 import { PORTRAIT_COLS } from '../../../../data/portraits';
+import { createRunPokemon } from '../../../../engine/run';
+import { createRun, type RunState } from '../../../../engine/run/state';
+import type { RunPokemon } from '../../../../engine/run/progression';
+import { runPanelCommand, runPanelReorder } from '../../../../scenes/panels/party';
+import type { RoutePanelHost } from '../../../../scenes/panels/types';
 import { t } from '../../../../i18n';
 import type { HudCommand } from '../../commands';
 import type { HudPartyRow, HudRoute, HudState } from '../../state';
@@ -354,5 +365,95 @@ describe('the card’s press path', () => {
     const [row] = rowNodes(paint({ view, drag: dragCell() }));
     expect(row!.props['aria-label']).toBe(t('party.rowLabel', { name: 'A', level: 12, status: '' }));
     expect(row!.props.type).toBe('button');
+  });
+});
+
+describe('the scene’s press receiver (the command path)', () => {
+  const starter = createRunPokemon({
+    id: 'starter',
+    speciesId: 'charmander',
+    level: 5,
+    moves: ['scratch'],
+  });
+
+  function leader(id: string): RunPokemon {
+    return { ...starter, fighter: { ...starter.fighter, id } };
+  }
+
+  function runOf(ids: readonly string[]): RunState {
+    return {
+      ...createRun({ seed: 'run-a', starter }),
+      party: ids.map((id) => leader(id)),
+    };
+  }
+
+  type FakeHost = Readonly<{
+    host: RoutePanelHost;
+    commits: readonly RunState[];
+    toggles: () => number;
+  }>;
+
+  function fakeHost(run: RunState): FakeHost {
+    let current = run;
+    const commits: RunState[] = [];
+    let toggled = 0;
+    const host = {
+      run: () => current,
+      ui: () => ({ pane: 'party', index: 0, grabbed: null }),
+      setUi: () => undefined,
+      commitRun: (next: RunState) => {
+        current = next;
+        commits.push(next);
+      },
+      refreshHud: () => undefined,
+      setHudCardOpen: () => {
+        toggled += 1;
+      },
+      hudCardOpen: () => true,
+      scene: { scale: DESKTOP, events: { on: () => undefined, off: () => undefined } },
+    } as unknown as RoutePanelHost;
+    return { host, commits, toggles: () => toggled };
+  }
+
+  it('opens the pressed member’s detail once and leaves the party exactly as it was', async () => {
+    const detail = await import('../../../../scenes/panels/detail');
+    const open = vi.mocked(detail.openMemberDetail);
+    open.mockClear();
+
+    const run = runOf(['a', 'b', 'c']);
+    const { host, commits } = fakeHost(run);
+    runPanelCommand(host, { type: 'member', memberId: 'c' });
+
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(open).toHaveBeenCalledWith(host, 'c');
+    expect(commits).toHaveLength(0);
+    expect(host.run().party.map((entry) => entry.fighter.id)).toEqual(['a', 'b', 'c']);
+    expect(host.run().party[0]!.fighter.id).toBe('a');
+  });
+
+  it('opens the lead’s own detail too, with no reorder to "swap" it with itself', async () => {
+    const detail = await import('../../../../scenes/panels/detail');
+    const open = vi.mocked(detail.openMemberDetail);
+    open.mockClear();
+
+    const { host, commits } = fakeHost(runOf(['a', 'b']));
+    runPanelCommand(host, { type: 'member', memberId: 'a' });
+
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(commits).toHaveLength(0);
+  });
+
+  it('swaps the two members through reorderParty for a drop on the other row', () => {
+    const { host, commits } = fakeHost(runOf(['a', 'b', 'c']));
+    runPanelReorder(host, 2, 0);
+
+    expect(commits).toHaveLength(1);
+    expect(host.run().party.map((entry) => entry.fighter.id)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('commits nothing for a drop on the row the member already sits in', () => {
+    const { host, commits } = fakeHost(runOf(['a', 'b']));
+    runPanelReorder(host, 1, 1);
+    expect(commits).toHaveLength(0);
   });
 });
