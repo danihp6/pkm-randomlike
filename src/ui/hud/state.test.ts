@@ -9,7 +9,9 @@ import {
   type BattleFighter,
   type BoostId,
 } from '../../engine/battle/fighter';
-import { createBattle, type BattleState } from '../../engine/battle/state';
+import { scriptedBattle } from '../../engine/battle/harness';
+import { createBattle, type BattleEvent, type BattleState } from '../../engine/battle/state';
+import { performSwitch } from '../../engine/battle/turn';
 import { biomeForMap } from '../../engine/maps/plan';
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
 import { missionMet } from '../../engine/run/missions';
@@ -17,9 +19,18 @@ import { experienceFraction } from '../../engine/run/progression';
 import { createRun, squadLevel, type RunState } from '../../engine/run/state';
 import { Rng } from '../../engine/rng';
 import { setLocale, t } from '../../i18n';
-import { hpFraction } from '../metrics';
+import { battleFrames } from '../feed';
+import { hpFraction, statusAbbreviation } from '../metrics';
 import { partyRow } from '../partyScreen';
-import { projectHud, syncHud, type HudBattleBagRow, type HudState } from './state';
+import {
+  advanceBattleDisplay,
+  battleDisplayOf,
+  projectHud,
+  syncHud,
+  type HudBattleBagRow,
+  type HudBattleDisplay,
+  type HudState,
+} from './state';
 
 const starter = {
   fighter: snapshotFighter(
@@ -98,6 +109,53 @@ function stagedBattle(
   Object.assign(battle.sides.player.party[0].boosts, boosts);
   if (options.foe !== undefined) Object.assign(battle.sides.enemy.party[0].boosts, options.foe);
   return battle;
+}
+
+/** Every stat at stage 0: the vector a battle's beat opens on. */
+const NO_BOOSTS = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 } as const;
+
+/** The damage events of a log, in the order the engine wrote them. */
+function damageEvents(log: readonly BattleEvent[]): Extract<BattleEvent, { kind: 'damage' }>[] {
+  return log.filter(
+    (event): event is Extract<BattleEvent, { kind: 'damage' }> => event.kind === 'damage',
+  );
+}
+
+/**
+ * One fixed-seed scripted turn whose foe is the faster side: the enemy Rattata
+ * strikes before the player's Charmander can reply, so the log's first damage is
+ * the player's and the reply's is the foe's.
+ */
+function fasterFoeTurn(moves: Readonly<{ player: string; enemy: string }>): Readonly<{
+  battle: BattleState;
+  opening: HudBattleDisplay;
+}> {
+  const openings: (HudBattleDisplay | undefined)[] = [];
+  const battle = scriptedBattle({
+    player: [{ id: 'player-1', speciesId: 'charmander', level: 5, moves: [moves.player] }],
+    enemy: [{ id: 'enemy-1', speciesId: 'rattata', level: 5, moves: [moves.enemy] }],
+    seed: 2026,
+    turnCap: 1,
+    playerCommand: (state) => {
+      openings.push(battleDisplayOf(state));
+      return { type: 'fight', moveIndex: 0 };
+    },
+    enemyCommand: () => ({ type: 'fight', moveIndex: 0 }),
+  });
+  const opening = openings[0];
+  if (opening === undefined) throw new Error('the scripted turn never opened');
+  return { battle, opening };
+}
+
+/** Walks a battle's log one frame at a time, returning the beat after each frame. */
+function walkFrames(battle: BattleState, opening: HudBattleDisplay): HudBattleDisplay[] {
+  const seen: HudBattleDisplay[] = [];
+  let display = opening;
+  for (const frame of battleFrames(battle.log)) {
+    display = advanceBattleDisplay(battle, display, frame.events);
+    seen.push(display);
+  }
+  return seen;
 }
 
 describe('projectHud on the route', () => {
@@ -472,5 +530,300 @@ describe('projectHud stat stages', () => {
     expect(second).toStrictEqual(first);
     expect(second).not.toBe(first);
     expect(battle.sides.player.party[0].boosts.atk).toBe(2);
+  });
+});
+
+describe('battleDisplayOf', () => {
+  it("opens on each live slot's hp, maxHp, status and a zeroed boost vector", () => {
+    const battle = battleWith({
+      player: [
+        fighter('player-1', 'charmander', ['ember']),
+        fighter('player-2', 'squirtle', ['watergun']),
+      ],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle']), fighter('enemy-2', 'geodude', ['tackle'])],
+      isWild: false,
+      double: true,
+    });
+    const partner = battle.sides.player.party[1];
+    partner.status = 'brn';
+    partner.boosts.spe = -2;
+    const display = battleDisplayOf(battle);
+    const lead = battle.sides.player.party[0];
+
+    expect(display.player[0]).toStrictEqual({
+      hp: lead.hp,
+      maxHp: lead.maxHp,
+      status: null,
+      boosts: NO_BOOSTS,
+    });
+    expect(display.player[1]).toStrictEqual({
+      hp: partner.hp,
+      maxHp: partner.maxHp,
+      status: 'brn',
+      boosts: { ...NO_BOOSTS, spe: -2 },
+    });
+    expect(display.enemy[0]?.status).toBe(battle.sides.enemy.party[0].status);
+    expect(display.enemy[1]?.hp).toBe(battle.sides.enemy.party[1].hp);
+    expect(JSON.parse(JSON.stringify(display))).toStrictEqual(display);
+    expect(display.player[1]?.boosts).not.toBe(partner.boosts);
+  });
+
+  it('leaves the second slot empty in a single battle', () => {
+    const display = battleDisplayOf(singleBattle());
+
+    expect(display.player).toHaveLength(2);
+    expect(display.enemy).toHaveLength(2);
+    expect(display.player[1]).toBeNull();
+    expect(display.enemy[1]).toBeNull();
+    expect(display.player[0]?.hp).toBe(display.player[0]?.maxHp);
+  });
+
+  it('hands out copies, never the fighter itself', () => {
+    const battle = singleBattle();
+    const display = battleDisplayOf(battle);
+    const lead = battle.sides.player.party[0];
+
+    expect(display.player[0]?.boosts).not.toBe(lead.boosts);
+    expect(display.player[0]?.boosts).toStrictEqual(lead.boosts);
+    lead.boosts.atk = 3;
+    lead.hp = 1;
+
+    expect(display.player[0]?.boosts.atk).toBe(0);
+    expect(display.player[0]?.hp).toBe(lead.maxHp);
+  });
+});
+
+describe('advanceBattleDisplay', () => {
+  it("lands each side's HP on the line that reports it, in the engine's own order", () => {
+    const { battle, opening } = fasterFoeTurn({ player: 'scratch', enemy: 'tackle' });
+    const damages = damageEvents(battle.log);
+
+    expect(damages).toHaveLength(2);
+    expect(damages[0].side).toBe('player');
+    expect(damages[1].side).toBe('enemy');
+    expect(opening.player[0]?.hp).toBe(opening.player[0]?.maxHp);
+
+    const seen = walkFrames(battle, opening);
+    const foeHitFrame = battleFrames(battle.log).findIndex((frame) => frame.events.includes(damages[0]));
+    const replyFrame = battleFrames(battle.log).findIndex((frame) => frame.events.includes(damages[1]));
+
+    expect(foeHitFrame).toBeGreaterThan(0);
+    expect(replyFrame).toBeGreaterThan(foeHitFrame);
+    expect(seen[foeHitFrame - 1].player[0]?.hp).toBe(opening.player[0]?.hp);
+    expect(seen[foeHitFrame].player[0]?.hp).toBe(damages[0].hp);
+    expect(seen[foeHitFrame].enemy[0]?.hp).toBe(opening.enemy[0]?.hp);
+    expect(seen[replyFrame].enemy[0]?.hp).toBe(damages[1].hp);
+    expect(seen[replyFrame].player[0]?.hp).toBe(damages[0].hp);
+    expect(seen[replyFrame].enemy[0]?.hp).not.toBe(opening.enemy[0]?.hp);
+  });
+
+  it("moves a stage to the event's absolute value on its own frame and no earlier one", () => {
+    const { battle, opening } = fasterFoeTurn({ player: 'growl', enemy: 'tackle' });
+    const boosts = battle.log.filter(
+      (event): event is Extract<BattleEvent, { kind: 'boost' }> => event.kind === 'boost',
+    );
+
+    expect(boosts).toHaveLength(1);
+    const seen = walkFrames(battle, opening);
+    const boostFrame = battleFrames(battle.log).findIndex((frame) => frame.events.includes(boosts[0]));
+
+    expect(boostFrame).toBeGreaterThan(0);
+    for (let index = 0; index < boostFrame; index++) {
+      expect(seen[index].enemy[0]?.boosts.atk).toBe(0);
+    }
+    expect(seen[boostFrame].enemy[0]?.boosts[boosts[0].stat]).toBe(boosts[0].stages);
+    expect(seen[boostFrame].enemy[0]?.boosts[boosts[0].stat]).toBe(
+      battle.sides.enemy.party[0].boosts[boosts[0].stat],
+    );
+  });
+
+  it('faints one slot and leaves the other side where it was', () => {
+    const battle = battleWith({
+      player: [
+        fighter('player-1', 'charmander', ['ember']),
+        fighter('player-2', 'squirtle', ['watergun']),
+      ],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle'])],
+      isWild: true,
+    });
+    const opening = battleDisplayOf(battle);
+    const lead = battle.sides.enemy.party[0];
+    const maxHp = lead.maxHp;
+    const playerHp = opening.player[0]?.hp;
+    lead.hp = 0;
+
+    const fainted = advanceBattleDisplay(battle, opening, [
+      { kind: 'damage', side: 'enemy', amount: maxHp, hp: 0, maxHp, effectiveness: 1, crit: false },
+      { kind: 'faint', side: 'enemy', fighterId: lead.id },
+    ]);
+
+    expect(fainted.enemy[0]).toStrictEqual({ hp: 0, maxHp, status: null, boosts: NO_BOOSTS });
+    expect(fainted.enemy[1]).toBeNull();
+    expect(fainted.player[0]?.hp).toBe(playerHp);
+  });
+
+  it('repoints a slot to the incoming fighter on its switch event', () => {
+    const battle = battleWith({
+      player: [
+        fighter('player-1', 'charmander', ['ember']),
+        fighter('player-2', 'squirtle', ['watergun']),
+      ],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle'])],
+      isWild: true,
+    });
+    const opening = battleDisplayOf(battle);
+    const incoming = battle.sides.player.party[1];
+    incoming.hp = incoming.maxHp - 3;
+    incoming.status = 'psn';
+    incoming.boosts.atk = 2;
+    const from = battle.log.length;
+    performSwitch(battle, 'player', 1);
+    const events = battle.log.slice(from);
+
+    expect(events.some((event) => event.kind === 'switch')).toBe(true);
+    const after = advanceBattleDisplay(battle, opening, events);
+
+    expect(after.player[0]).toStrictEqual({
+      hp: incoming.hp,
+      maxHp: incoming.maxHp,
+      status: 'psn',
+      boosts: { ...NO_BOOSTS, atk: 2 },
+    });
+    expect(after.player[1]).toBeNull();
+    expect(after.enemy[0]?.hp).toBe(opening.enemy[0]?.hp);
+  });
+
+  it('hands back the same beat when a frame changes no HP, status or stage', () => {
+    const battle = singleBattle();
+    battle.sides.player.party[0].hp = 12;
+    const display = battleDisplayOf(battle);
+
+    const same = advanceBattleDisplay(battle, display, [
+      { kind: 'turn', turn: 2 },
+      { kind: 'move', side: 'player', moveId: 'ember' },
+      { kind: 'text', key: 'battle.log.used' },
+      { kind: 'run', side: 'player', success: false },
+    ]);
+
+    expect(same).toStrictEqual(display);
+    expect(same).toBe(display);
+  });
+
+  it('never mutates the beat it is handed', () => {
+    const battle = battleWith({
+      player: [fighter('player-1', 'charmander', ['ember'])],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle'])],
+      isWild: true,
+    });
+    const opening = battleDisplayOf(battle);
+    const before = JSON.parse(JSON.stringify(opening));
+    battle.sides.enemy.party[0].hp = 4;
+    battle.sides.enemy.party[0].boosts.def = -1;
+
+    advanceBattleDisplay(battle, opening, [
+      { kind: 'damage', side: 'enemy', amount: 3, hp: 4, maxHp: 19, effectiveness: 1, crit: false },
+      { kind: 'boost', side: 'enemy', stat: 'def', stages: -1 },
+    ]);
+
+    expect(JSON.parse(JSON.stringify(opening))).toStrictEqual(before);
+  });
+});
+
+describe('projectHud with a beat', () => {
+  it('paints the actives from the beat and keeps the live species, level and party rows', () => {
+    const battle = battleWith({
+      player: [
+        fighter('player-1', 'charmander', ['ember', 'scratch']),
+        fighter('player-2', 'squirtle', ['watergun']),
+      ],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle'])],
+      isWild: true,
+    });
+    const display = battleDisplayOf(battle);
+    const lead = display.player[0];
+    if (lead === null || lead === undefined) throw new Error('the lead is on the field');
+    const beaten: HudBattleDisplay = {
+      ...display,
+      player: [
+        { ...lead, hp: 7, status: 'brn', boosts: { ...lead.boosts, atk: 2 } },
+        display.player[1] ?? null,
+      ],
+    };
+
+    const state = projectHud({ screen: 'battle', battle, canCapture: true, display: beaten });
+    const active = state.battle!.sides.player.actives[0]!;
+    const live = battle.sides.player.party[0];
+
+    expect(active.hp).toBe(7);
+    expect(active.maxHp).toBe(live.maxHp);
+    expect(active.hpFraction).toBe(hpFraction(7, live.maxHp));
+    expect(active.status).toBe('brn');
+    expect(active.statusLabel).toBe(statusAbbreviation('brn'));
+    expect(active.stages).toStrictEqual([{ stat: 'atk', label: 'ATK', stage: 2 }]);
+    expect(active.speciesId).toBe(live.speciesId);
+    expect(active.level).toBe(live.level);
+    expect(active.name).toBe(live.name);
+    expect(active.moves).toHaveLength(2);
+    expect(active.canSwitchTo).toBe(false);
+    expect(state.battle!.sides.player.party[0]!.hp).toBe(live.hp);
+    expect(state.battle!.sides.player.party[0]!.hpFraction).toBe(hpFraction(live.hp, live.maxHp));
+    expect(state.battle!.sides.player.party[1]!.canSwitchTo).toBe(true);
+  });
+
+  it('equals the live projection when it is given no beat', () => {
+    const battle = singleBattle();
+    battle.sides.player.party[0].hp = 9;
+
+    expect(projectHud({ screen: 'battle', battle, canCapture: true })).toStrictEqual(
+      projectHud({ screen: 'battle', battle, canCapture: true, display: battleDisplayOf(battle) }),
+    );
+  });
+
+  it('also emits through syncHud with a beat', () => {
+    const battle = singleBattle();
+    const display = battleDisplayOf(battle);
+    const seen: HudState[] = [];
+
+    const emitted = syncHud({ screen: 'battle', battle, canCapture: true, display }, (next) => {
+      seen.push(next);
+    });
+
+    expect(seen).toStrictEqual([emitted]);
+    expect(emitted.battle!.sides.player.actives[0]!.hp).toBe(display.player[0]?.hp);
+  });
+});
+
+describe('advanceBattleDisplay in a double battle', () => {
+  it('picks the slot whose displayed HP moves by the event amount', () => {
+    const battle = battleWith({
+      player: [
+        createFighter({ id: 'player-1', speciesId: 'charmander', level: 5, moves: ['ember'] }),
+        createFighter({ id: 'player-2', speciesId: 'squirtle', level: 9, moves: ['watergun'] }),
+      ],
+      enemy: [fighter('enemy-1', 'bulbasaur', ['tackle']), fighter('enemy-2', 'geodude', ['tackle'])],
+      isWild: false,
+      double: true,
+    });
+    const display = battleDisplayOf(battle);
+    const partnerMax = display.player[1]!.maxHp;
+    const leadHp = display.player[0]!.hp;
+    expect(partnerMax).not.toBe(display.player[0]!.maxHp);
+    battle.sides.player.party[1].hp = 5;
+
+    const after = advanceBattleDisplay(battle, display, [
+      {
+        kind: 'damage',
+        side: 'player',
+        amount: partnerMax - 5,
+        hp: 5,
+        maxHp: partnerMax,
+        effectiveness: 1,
+        crit: false,
+      },
+    ]);
+
+    expect(after.player[0]?.hp).toBe(leadHp);
+    expect(after.player[1]?.hp).toBe(5);
+    expect(after.enemy[0]?.hp).toBe(display.enemy[0]?.hp);
   });
 });

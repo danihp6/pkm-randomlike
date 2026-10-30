@@ -148,7 +148,13 @@ import {
   mountBattleLog,
   type BattleLogHandle,
 } from '../ui/hud/panels/battle-log';
-import { syncHud } from '../ui/hud/state';
+import {
+  syncHud,
+  advanceBattleDisplay,
+  battleDisplayOf,
+  type HudBattleDisplay,
+  type HudBattleSlotDisplay,
+} from '../ui/hud/state';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { playCry, playCue, playMoveSound, playMusic } from '../audio/audio';
 import { battleInfoLines, battleInfoRows } from '../ui/battleInfo';
@@ -310,16 +316,18 @@ export class BattleScene extends Phaser.Scene {
   private gmaxIntent = false;
 
   private displayActive!: Record<SideId, BattleFighter>;
-  private displayHp!: Record<SideId, number>;
-  private displayStatus!: Record<SideId, StatusId | null>;
   /**
-   * Slot 1's display snapshots, read per side: `null` in a single battle or on a
-   * side with an empty second slot. `displayActive`/`displayHp`/`displayStatus`
-   * keep meaning slot 0, so every shipped single-battle path reads what it did.
+   * The beat the HP boxes, the faints and the stage chips paint: each slot's HP,
+   * status and stages as far as the feed has revealed them. The engine's log owns
+   * when each change lands (`advanceBattleDisplay`), never the finished turn.
+   */
+  private display: HudBattleDisplay = { player: [null, null], enemy: [null, null] };
+  /**
+   * Slot 1's active, read per side: `null` in a single battle or on a side with
+   * an empty second slot. `displayActive` keeps meaning slot 0, so every shipped
+   * single-battle path reads what it did.
    */
   private displayActive2: Record<SideId, BattleFighter | null> = { player: null, enemy: null };
-  private displayHp2: Record<SideId, number | null> = { player: null, enemy: null };
-  private displayStatus2: Record<SideId, StatusId | null> = { player: null, enemy: null };
   /** True once this battle's launch asked for a double battle (`BattleLaunch.double`). */
   private double = false;
   /** The slot whose command the open menu is collecting (0 outside a double battle). */
@@ -462,8 +470,6 @@ export class BattleScene extends Phaser.Scene {
     this.gmaxIntent = false;
     this.double = data?.double === true;
     this.displayActive2 = { player: null, enemy: null };
-    this.displayHp2 = { player: null, enemy: null };
-    this.displayStatus2 = { player: null, enemy: null };
     this.commandSlot = 0;
     this.partnerCommand = null;
     this.targetSlot = null;
@@ -535,24 +541,12 @@ export class BattleScene extends Phaser.Scene {
       player: activeFighter(this.state, 'player'),
       enemy: activeFighter(this.state, 'enemy'),
     };
-    this.displayHp = { player: this.displayActive.player.hp, enemy: this.displayActive.enemy.hp };
-    this.displayStatus = {
-      player: this.displayActive.player.status,
-      enemy: this.displayActive.enemy.status,
-    };
+    this.display = battleDisplayOf(this.state);
     // Slot 1 exists only while the engine fields it: a one-member party on a
     // double launch answers `secondActiveIndex === -1` and the scene draws one panel.
     this.displayActive2 = {
       player: this.slotFighter('player', 1),
       enemy: this.slotFighter('enemy', 1),
-    };
-    this.displayHp2 = {
-      player: this.displayActive2.player?.hp ?? null,
-      enemy: this.displayActive2.enemy?.hp ?? null,
-    };
-    this.displayStatus2 = {
-      player: this.displayActive2.player?.status ?? null,
-      enemy: this.displayActive2.enemy?.status ?? null,
     };
     this.typing = beginTypewriter('');
     const settings = loadSettings();
@@ -1016,6 +1010,9 @@ export class BattleScene extends Phaser.Scene {
     this.frameHoldMs = BATTLE_LOG_DWELL_MS;
     const capturing = frame.events.some((event) => event.kind === 'capture');
     this.applyEvents(frame.events, capturing ? (frame.message ?? '') : null);
+    // The snapshot moves on this frame's own line, before the boxes paint it: the
+    // sprite beats above read the beat the frame opened at, as they always have.
+    this.display = advanceBattleDisplay(this.state, this.display, frame.events);
     if (frame.message !== null && !capturing) this.typeMessage(frame.message);
     this.refreshHud();
   }
@@ -1070,21 +1067,6 @@ export class BattleScene extends Phaser.Scene {
     let faintPlayed = false;
     for (const event of events) {
       switch (event.kind) {
-        case 'damage':
-        case 'heal': {
-          // The event names no slot: the HP arithmetic against what each slot
-          // already shows is what tells the two apart, since the engine's `amount`
-          // is exactly the HP the slot lost or regained.
-          const slot = this.hpEventSlot(
-            event.side,
-            event.amount,
-            event.hp,
-            event.maxHp,
-            event.kind === 'heal',
-          );
-          this.setDisplayHp(event.side, slot, event.hp);
-          break;
-        }
         case 'status':
           this.setDisplayStatus(
             event.side,
@@ -1149,51 +1131,54 @@ export class BattleScene extends Phaser.Scene {
     return index >= 0 && index === battleSide.secondActiveIndex ? 1 : 0;
   }
 
-  /** The HP a slot is showing, or null when the side does not field it. */
+  /** The HP a slot's box is painting, or null when the side does not field it. */
   private displayHpAt(side: SideId, slot: Slot): number | null {
-    return slot === 0 ? this.displayHp[side] : this.displayHp2[side];
+    return this.display[side][slot]?.hp ?? null;
+  }
+
+  /** A copy of the beat with one slot replaced, so no paint ever mutates the last one. */
+  private withDisplaySlot(
+    side: SideId,
+    slot: Slot,
+    next: HudBattleSlotDisplay | null,
+  ): HudBattleDisplay {
+    const slots: (HudBattleSlotDisplay | null)[] = [
+      this.display[side][0] ?? null,
+      this.display[side][1] ?? null,
+    ];
+    slots[slot] = next;
+    if (side === 'player') return { player: slots, enemy: this.display.enemy };
+    return { player: this.display.player, enemy: slots };
   }
 
   private setDisplayHp(side: SideId, slot: Slot, hp: number): void {
-    if (slot === 0) this.displayHp[side] = hp;
-    else this.displayHp2[side] = hp;
+    const shown = this.display[side][slot];
+    if (!shown) return;
+    this.display = this.withDisplaySlot(side, slot, { ...shown, hp });
   }
 
   private setDisplayStatus(side: SideId, slot: Slot, status: StatusId | null): void {
-    if (slot === 0) this.displayStatus[side] = status;
-    else this.displayStatus2[side] = status;
+    const shown = this.display[side][slot];
+    if (!shown) return;
+    this.display = this.withDisplaySlot(side, slot, { ...shown, status });
   }
 
   /** Points a slot at a fighter and refreshes what it shows (a switch-in). */
   private setDisplayActive(side: SideId, slot: Slot, fighter: BattleFighter): void {
     if (slot === 0) this.displayActive[side] = fighter;
     else this.displayActive2[side] = fighter;
-    this.setDisplayHp(side, slot, fighter.hp);
-    this.setDisplayStatus(side, slot, fighter.status);
+    this.display = this.withDisplaySlot(side, slot, {
+      hp: fighter.hp,
+      maxHp: fighter.maxHp,
+      status: fighter.status,
+      boosts: { ...fighter.boosts },
+    });
   }
 
   /** Points a slot at a fighter without touching its HP or status (a forme change). */
   private setDisplayFighter(side: SideId, slot: Slot, fighter: BattleFighter): void {
     if (slot === 0) this.displayActive[side] = fighter;
     else this.displayActive2[side] = fighter;
-  }
-
-  /**
-   * Which slot a damage/heal event belongs to. It carries no slot, so the slot
-   * whose displayed HP moves by exactly `amount` onto `hp` is the one; when both
-   * read alike, the event's `maxHp` separates them, and slot 0 wins the leftover
-   * ambiguity, as it does in every single battle.
-   */
-  private hpEventSlot(side: SideId, amount: number, hp: number, maxHp: number, healed: boolean): Slot {
-    const shown = this.displayHp2[side];
-    if (shown === null) return 0;
-    const delta = healed ? amount : -amount;
-    const firstMatch = this.displayHp[side] + delta === hp;
-    const secondMatch = shown + delta === hp;
-    if (firstMatch !== secondMatch) return secondMatch ? 1 : 0;
-    const active2 = this.displayActive2[side];
-    if (active2 && active2.maxHp === maxHp && this.displayActive[side].maxHp !== maxHp) return 1;
-    return 0;
   }
 
   /**
@@ -1204,10 +1189,11 @@ export class BattleScene extends Phaser.Scene {
   private statusEventSlot(side: SideId, status: StatusId, cured: boolean): Slot {
     const fighter2 = this.slotFighter(side, 1);
     if (!fighter2) return 0;
-    const shown2 = this.displayStatus2[side];
+    const shown2 = this.display[side][1]?.status;
+    const shown = this.display[side][0]?.status;
     const atSlot2 = cured
       ? shown2 === status && fighter2.status !== status
-      : this.displayStatus[side] !== status && fighter2.status === status;
+      : shown !== status && fighter2.status === status;
     return atSlot2 ? 1 : 0;
   }
 
@@ -2037,10 +2023,9 @@ export class BattleScene extends Phaser.Scene {
       this.submitDouble(command);
       return;
     }
-    this.displayHp = {
-      player: activeFighter(this.state, 'player').hp,
-      enemy: activeFighter(this.state, 'enemy').hp,
-    };
+    // The turn opens on the HP both sides show before it: the beat the boxes paint
+    // starts level with the live state, and every frame moves it by its own line.
+    this.display = battleDisplayOf(this.state);
     takeTurn(
       this.state,
       command,
@@ -2073,15 +2058,10 @@ export class BattleScene extends Phaser.Scene {
 
   /** Runs one double turn: both player commands and one AI command per live foe slot. */
   private resolveDoubleTurn(commands: SlotCommands): void {
-    this.displayHp = {
-      player: activeFighter(this.state, 'player').hp,
-      enemy: activeFighter(this.state, 'enemy').hp,
-    };
+    this.display = battleDisplayOf(this.state);
     const player2 = this.slotFighter('player', 1);
     const enemy2 = this.slotFighter('enemy', 1);
     this.displayActive2 = { player: player2, enemy: enemy2 };
-    this.displayHp2 = { player: player2?.hp ?? null, enemy: enemy2?.hp ?? null };
-    this.displayStatus2 = { player: player2?.status ?? null, enemy: enemy2?.status ?? null };
     const flags = this.aiFlags();
     const enemyLead = activeFighter(this.state, 'enemy');
     const enemyCommands: { 0?: Command; 1?: Command } = {};
@@ -2429,26 +2409,34 @@ export class BattleScene extends Phaser.Scene {
     this.playerPlatform
       .setScale(platformScale(this.monDrawHeight.player))
       .setPosition(playerX, playerPlatformY);
-    this.foeSprite.setVisible(
-      (this.displayHp.enemy > 0 && !this.captured) || this.beat.enemy === 'faint',
-    );
-    this.playerSprite.setVisible(this.displayHp.player > 0 || this.beat.player === 'faint');
+    const enemyHp = this.displayHpAt('enemy', 0);
+    const playerHp = this.displayHpAt('player', 0);
+    const enemy2Hp = this.displayHpAt('enemy', 1);
+    const player2Hp = this.displayHpAt('player', 1);
+    this.foeSprite.setVisible(((enemyHp ?? 0) > 0 && !this.captured) || this.beat.enemy === 'faint');
+    this.playerSprite.setVisible((playerHp ?? 0) > 0 || this.beat.player === 'faint');
     this.foeSprite2.setVisible(
       this.displayActive2.enemy !== null &&
-        this.displayHp2.enemy !== null &&
-        (this.displayHp2.enemy > 0 || this.beat2.enemy === 'faint'),
+        enemy2Hp !== null &&
+        (enemy2Hp > 0 || this.beat2.enemy === 'faint'),
     );
     this.playerSprite2.setVisible(
       this.displayActive2.player !== null &&
-        this.displayHp2.player !== null &&
-        (this.displayHp2.player > 0 || this.beat2.player === 'faint'),
+        player2Hp !== null &&
+        (player2Hp > 0 || this.beat2.player === 'faint'),
     );
 
-    // The one emit point (`D49`): the DOM boxes paint the snapshot while the canvas
-    // keeps the arena. It runs after the whole layout, because the combatants' caps
-    // and positions above are read by the arena, not by the boxes.
+    // The one emit point (`D49`): the DOM boxes paint the beat the feed has
+    // revealed while the canvas keeps the arena. It runs after the whole layout,
+    // because the combatants' caps and positions above are read by the arena, not
+    // by the boxes.
     syncHud(
-      { screen: 'battle', battle: this.state, canCapture: this.launch?.canCapture === true },
+      {
+        screen: 'battle',
+        battle: this.state,
+        display: this.display,
+        canCapture: this.launch?.canCapture === true,
+      },
       (next) => this.hpController?.update(next),
     );
     this.movesController?.update(this.battleMovesInput(menu));
