@@ -19,13 +19,13 @@ vi.mock('../../../../scenes/BootScene', () => ({ PANEL_ICON_SIZE: 24 }));
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
 
-/** The shipped layout: PARTY open, the other four collapsed at their docks. */
+/** The shipped layout: PARTY open, the other four collapsed at their docks, nothing dragged. */
 const DEFAULT_SLOTS: readonly StripSlot[] = [
-  { id: 'header', x: 8, y: 8, collapsed: true },
-  { id: 'party', x: 38, y: 8, collapsed: false },
-  { id: 'bag', x: 38, y: 422, collapsed: true },
-  { id: 'box', x: 576, y: 72, collapsed: true },
-  { id: 'detail', x: 8, y: 8, collapsed: true },
+  { id: 'header', x: 8, y: 8, dx: 0, dy: 0, collapsed: true },
+  { id: 'party', x: 38, y: 8, dx: 0, dy: 0, collapsed: false },
+  { id: 'bag', x: 38, y: 422, dx: 0, dy: 0, collapsed: true },
+  { id: 'box', x: 576, y: 72, dx: 0, dy: 0, collapsed: true },
+  { id: 'detail', x: 8, y: 8, dx: 0, dy: 0, collapsed: true },
 ];
 
 function input(overrides: Partial<StripInput> = {}): StripInput {
@@ -89,6 +89,45 @@ describe('stripView', () => {
     const slots = DEFAULT_SLOTS.map((slot) => (slot.id === 'box' ? { ...slot, x: 640, y: 96 } : slot));
     const view = stripView(input({ slots }), DESKTOP);
     expect(view.chips.find((chip) => chip.id === 'box')?.box).toEqual({ x: 640, y: 96, w: 26, h: 26 });
+  });
+
+  it('adds a phone badge’s saved offset to the board’s slot, which is its origin', () => {
+    const slots = DEFAULT_SLOTS.map((slot) => (slot.id === 'bag' ? { ...slot, dx: 40, dy: -40 } : slot));
+    const view = stripView(input({ slots }), PHONE);
+    const bag = view.chips.find((chip) => chip.id === 'bag')!;
+    expect(bag.box).toEqual({
+      x: STRIP_PHONE_SLOTS.bag.x + 40,
+      y: STRIP_PHONE_SLOTS.bag.y - 40,
+      w: STRIP_CHIP_SIZE,
+      h: STRIP_CHIP_SIZE,
+    });
+    expect({ dx: bag.dx, dy: bag.dy }).toEqual({ dx: 40, dy: -40 });
+    expect(view.chips.find((chip) => chip.id === 'header')?.box).toEqual({
+      x: STRIP_PHONE_SLOTS.header.x,
+      y: STRIP_PHONE_SLOTS.header.y,
+      w: STRIP_CHIP_SIZE,
+      h: STRIP_CHIP_SIZE,
+    });
+  });
+
+  it('restores a stored offset on a reload, because the offset a drag commits is the one it reads', () => {
+    const committed = { ...DEFAULT_SLOTS.find((slot) => slot.id === 'bag')!, dx: 40, dy: -40 };
+    const reloaded = stripView(input({ slots: [committed] }), PHONE).chips[0];
+    expect(reloaded.box).toEqual({ x: 78, y: 511, w: 26, h: 26 });
+  });
+
+  it('keeps the dock an undragged panel had on a desk, whatever the phone would draw', () => {
+    const view = stripView(input(), DESKTOP);
+    for (const chip of view.chips) {
+      const slot = DEFAULT_SLOTS.find((entry) => entry.id === chip.id)!;
+      expect(chip.box).toEqual({ x: slot.x, y: slot.y, w: STRIP_CHIP_SIZE, h: STRIP_CHIP_SIZE });
+      expect({ dx: chip.dx, dy: chip.dy }).toEqual({ dx: 0, dy: 0 });
+    }
+  });
+
+  it('carries the slot’s own collapsed flag, which a badge drag commits untouched', () => {
+    const view = stripView(input({ slots: ALL_COLLAPSED }), PHONE);
+    expect(view.chips.every((chip) => chip.collapsed)).toBe(true);
   });
 
   it('gives no chip while the route is paused', () => {

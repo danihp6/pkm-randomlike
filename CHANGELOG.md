@@ -8,6 +8,27 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A collapsed panel's badge is draggable, on the desk and on the phone.** `[Task-233]`, Batch 97:
+      the drag that moved a route panel lived only on the open card's own frame chip, so a collapsed
+      panel's badge could not be moved — on the phone the strip pinned it to the measured slots and
+      `hudLayout`'s `dx`/`dy` were never read, on the desk it only inherited the card's last drag.
+      `src/ui/hud/panels/hud/drag.ts` is now the one rule: `DRAG_SLOP`, `badgeDrag` (a press under the
+      slop stays a press; the travel is added to the saved offset and clamped inside the window less
+      the 26 px badge) and `badgeLayout` (the record a drag commits, the `collapsed` flag untouched).
+      `stripView` takes each panel's saved `dx`/`dy`, so a phone slot is the origin the offset is added
+      to and a wide window keeps the dock that already carries it; `HudStrip` drags a badge through
+      `badgeDrag`, still toggles on a press, commits through the new `onLayout` and swallows the click
+      that follows, exactly as the card's chip does. The scene commits through the card's own frame
+      host, so the layout keeps a single writer and a reopened card inherits the badge's placement.
+      `docs/design-spec.md` §2, `D49` and `docs/hud-fidelity.md` record the rule. Gates: `npm test`
+      5139 passed / 69 skipped and `npm run build` green at task QA and on the batch's combined tree
+      (5179 passed there). The `[live]` evidence is rects read over CDP, never a screenshot: at
+      390×844 a badge drag of (+40,−40) moved the BAG chip from `{38,551}` to `{78,511}` — exactly
+      slot + offset, ±1 px — committed `{"dx":40,"dy":-40,"collapsed":true}` to the saved
+      `hudLayout`, opened no panel, and the same position came back after a reload; the same delta on
+      the 1280×800 dock moved the chip from `{928,42}` to `{968,2}`; a tap with no travel still opened
+      the card with `dx`/`dy` intact.
+
 - [x] **The battle's HP, faint and stat-stage beat follows the turn's own order, never the whole
       turn at the press.** `[Task-226]`, Batch 97: `src/ui/hud/state.ts` owns the snapshot the boxes
       paint — `HudBattleDisplay`/`HudBattleSlotDisplay`, `battleDisplayOf(battle)` for the beat a

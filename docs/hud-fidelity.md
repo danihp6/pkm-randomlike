@@ -115,6 +115,16 @@ same object twice. The offset (`dx`, `dy`) and the collapsed flag are the panel'
 record (`D22`), which is what a reload restores; the board draws no chip for the member detail
 window, so that card keeps its own way back and takes only the saved offset.
 
+**A collapsed panel's badge is the same gesture.** The strip's edge chip is dragged by the same
+rule the card's chip is — one `DRAG_SLOP` and one clamp (`panels/hud/drag.ts`), never a second
+port — and its commit writes the same `{ dx, dy }` of the same `hudLayout` record, so the reopened
+card inherits the offset and a reload restores it. A press that travels under the slop is still the
+toggle on both. On a phone the frame's measured slots are the **origins** the saved offset is added
+to, never a position an offset replaces: the badge sits at `slot + {dx, dy}`, while a wider window
+keeps the dock the panel's own dock rule gives it. Both drags are clamped so the badge stays inside
+the window less its 26 px, and two badges may overlap — the last drag wins the draw order, with no
+snapping.
+
 **The detail card's three-tab row.** The member detail card carries three tabs, `STATS · EVOLUTION ·
 MOVES`, on one row: three boxes **26 px** tall at `y = 72` in the card's own coordinates, with a
 **4 px** gap between two of them and the card's own lateral padding at both ends — **20 px** on the

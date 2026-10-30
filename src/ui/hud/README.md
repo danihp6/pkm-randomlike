@@ -23,6 +23,7 @@ spacing or type size is written, and every value comes from `design/tokens.json`
 - `portrait.test.ts` — the cell arithmetic from the atlas manifest, the shiny sheet, the null cases and the scaled style bag, headless.
 - `styles/root.css` — the two Silkscreen `@font-face` blocks, the `:root` tokens taken from `design/tokens.json` (panel, row, accent, the six text tones, panel width 374, gutter 8) and the ten board type sizes with their px line heights.
 - `panels/` — the board's twenty-one panel migrations, one folder per screen (see `panels/README.md`).
+- `panels/hud/drag.ts` — the route HUD's one drag rule: the slop and the clamp a card's chip and a collapsed panel's badge both use, thin enough that a press or a drag means the same thing on either. Pure and headless.
 - `kit/` — the shared DOM primitives (panel, row, chip, bar, sheet, button, meta, type badge), their class helpers and the one kit stylesheet every panel composes.
 - `fixtures/` — the `design/fixtures/<slug>.json` payloads `?hudFixture=<slug>` feeds the store.
 

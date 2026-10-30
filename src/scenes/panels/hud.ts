@@ -21,7 +21,9 @@ import type { HudMetrics, RoutePanelDescriptor, RoutePanelHost } from './types';
  *
  * The drag, its clamp and the saved placement are the cards' own frame
  * (`panels/hud/panelFrame`): this module only hands a card its record and receives
- * the offset the frame clamped, which is persisted by the scene's settings.
+ * the offset the frame clamped, which is persisted by the scene's settings. A
+ * collapsed badge drags through the same frame host, so the strip is a second
+ * gesture over one writer, never a second writer of the layout.
  */
 
 /** The panel widths the metrics clamp: the fixed design sizes. */
@@ -190,11 +192,12 @@ let stripScene: Phaser.Scene | null = null;
  */
 let routePaused = false;
 
-/** The chip slots: every HUD card that is currently collapsed, at its dragged dock. */
+/** The chip slots: every HUD card at its dragged dock, with the offset the badge drag commits. */
 function panelsAsSlots(host: RoutePanelHost): readonly StripSlot[] {
   return (['header', 'party', 'bag', 'box', 'detail'] as const).map((id) => {
     const dock = draggedDock(host, id);
-    return { id, x: dock.x, y: dock.y, collapsed: !host.hudCardOpen(id) };
+    const { dx, dy } = host.hudLayout()[id];
+    return { id, x: dock.x, y: dock.y, dx, dy, collapsed: !host.hudCardOpen(id) };
   });
 }
 
@@ -229,8 +232,9 @@ function resumeStrip(): void {
 
 /**
  * A chip press is its panel's quick key and nothing else: the same `toggleHudPanel`
- * an `M` / `O` / `P` / `I` press runs. A press while paused never reaches a panel
- * behind the screen that covers the route.
+ * an `M` / `O` / `P` / `I` press runs. A chip **drag** never arrives here — it goes
+ * through the same frame host a card's chip writes, so the layout has one writer. A
+ * press while paused never reaches a panel behind the screen that covers the route.
  */
 function handleStripCommand(host: RoutePanelHost, command: HudCommand): void {
   if (routePaused || command.type !== 'panel') return;
@@ -265,7 +269,12 @@ function mountStrip(host: RoutePanelHost): void {
   stripHost = host;
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (layer !== null) {
-    stripDispose = mountHudStrip(layer, view, (command) => handleStripCommand(host, command));
+    stripDispose = mountHudStrip(layer, view, {
+      onCommand: (command) => handleStripCommand(host, command),
+      // One writer for the whole layout: a badge drag commits through the card's own
+      // frame host, so the two gestures cannot drift apart.
+      onLayout: (id, next) => panelFrameHost(host, id).onLayout(next),
+    });
   }
   scene.events.on(SCENE_PAUSE, pauseStrip);
   scene.events.on(SCENE_RESUME, resumeStrip);

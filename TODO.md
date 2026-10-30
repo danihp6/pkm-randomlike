@@ -9772,7 +9772,7 @@ carries.
       `docs/design-spec.md` §4 and `src/ui/hud/panels/battle-hp/README.md`.
       *Dependencies:* none. *(Batch 97)*
 
-- [ ] **[Task-233] A collapsed panel's badge is draggable, on the desk and on the phone.** Asked on
+- [x] **[Task-233] A collapsed panel's badge is draggable, on the desk and on the phone.** Asked on
       `2026-10-30`: «los iconos de menu comprimidos deberian poder moverse». **Measured:** the drag
       lives on the **card's own** frame chip (`src/ui/hud/panels/hud/panelFrame.tsx` 66-171), so it
       exists only while the card is open; once it collapses, the strip paints the badge

@@ -1151,6 +1151,14 @@ half-way**.
 pattern — it ships as the board's own SVG or as a nine-slice asset, the `addFrlgWindow` precedent.
 Identity by construction beats identity by tuning.
 
+**One gesture for the chip.** A panel's chip and a collapsed panel's badge are the same drag, not
+two ports: `src/ui/hud/panels/hud/drag.ts` holds the slop and the clamp, a badge commits the same
+`hudLayout` offset through the same writer the open card's frame host uses, and a press under the
+slop is the toggle on both. So the reopened card inherits the badge's offset, a reload restores it,
+either drag stops at the window less the 26 px badge, and on a phone the frame's measured slots are
+the **origin** the saved offset is added to. There is one writer of the layout, and it is the same
+global setting the cards have always written.
+
 **Animation.** The battle's pacing already lives in `battleFrames()` and `entryBeat()` frames, not in
 the boxes: each frame carries the events applied as its message appears. The bridge keeps that shape
 — the scene awaits `hud.play(action)` and the DOM answers when its transition ends, so a "Critical

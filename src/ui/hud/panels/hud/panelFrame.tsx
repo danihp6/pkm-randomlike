@@ -1,6 +1,7 @@
 import type { ComponentChildren, JSX } from 'preact';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { HudPanelId, HudPanelLayout } from '../../../../data/hudLayout';
+import { DRAG_SLOP } from './drag';
 import { clampPanelOffset, type FrameVec } from './panelFrameView';
 import { STRIP_CHIP_LETTERS, STRIP_CHIP_SIZE, type Rect, type Viewport } from './view';
 import './panelFrame.css';
@@ -63,9 +64,7 @@ export function panelFrameProps(
   };
 }
 
-/** A press that travels less than this many pixels is a click, not a drag. */
-const DRAG_SLOP = 3;
-
+/** The frame's resting offset: no drag, and the card at its own default box. */
 const ZERO: FrameVec = { dx: 0, dy: 0 };
 
 /** The card's default rect: the frame's first element child, without the applied offset. */
