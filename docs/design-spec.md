@@ -94,6 +94,14 @@ carries over.
   **every** member that earned a KO or damage, the **fallen included**: the RIP keeps
   their counters, so a lost run's table names its dead instead of staying empty. A
   run that reaches the end seam twice records nothing more.
+- The route HUD's **layout** is a global preference, not run state: the 26 × 26
+  badge is both a panel's collapse button and its drag handle, so a **collapsed
+  panel's badge drags exactly as an open card's chip does** — one gesture and one
+  `hudLayout` offset, which the reopened card inherits and a reload restores. A
+  press that travels under the 3 px slop is still the toggle, both drags are
+  clamped to the window less the badge so a chip never leaves the screen, and on a
+  phone the board's measured slots are the **origin** the saved offset is added to.
+  Two badges may overlap; the last drag wins the draw order.
 
 ## 3. The party
 

@@ -53,11 +53,17 @@ export const STRIP_PHONE_SLOTS: Readonly<Record<StripChipId, Readonly<{ x: numbe
   bag: { x: 38, y: 551 },
 };
 
-/** One panel record as the scene knows it: its dock after the saved drag offset. */
+/**
+ * One panel record as the scene knows it: its dock after the saved drag offset, and
+ * the offset itself, because a phone slot is an origin the offset is added to and a
+ * badge drag needs the two apart to commit the same record the card writes.
+ */
 export type StripSlot = Readonly<{
   id: HudPanelId;
   x: number;
   y: number;
+  dx: number;
+  dy: number;
   collapsed: boolean;
 }>;
 
@@ -74,6 +80,11 @@ export type StripChip = Readonly<{
   letter: string;
   label: string;
   box: Rect;
+  /** The saved offset the badge drag starts from and paints against. */
+  dx: number;
+  dy: number;
+  /** The flag a drag commits untouched: a badge exists only while its panel is collapsed. */
+  collapsed: boolean;
 }>;
 
 export type StripView = Readonly<{
@@ -93,10 +104,13 @@ export function chipLabel(action: KeybindAction, keybinds: Keybinds): string {
 
 /**
  * The strip as data: one chip per collapsed panel, in rail order. A phone has no
- * room for a docked rail, so it takes the board's own slots; a wider window puts
- * each chip exactly where the panel's Phaser collapse icon was, so the rail follows
- * the drag for free. A panel absent from `slots` gets no chip, and an open panel is
- * drawn by its card's own chip rather than twice.
+ * room for a docked rail, so the board's own slots are the **origin** the saved
+ * offset is added to, which is what lets a badge drag survive a reload; a wider
+ * window puts each chip at the panel's own dock, which already carries the offset,
+ * so the rail follows the card's drag for free. The badge's box here is the
+ * unclamped paint: clamping the gesture is the drag's job, never the view's. A panel
+ * absent from `slots` gets no chip, and an open panel is drawn by its card's own
+ * chip rather than twice.
  */
 export function stripView(input: StripInput, viewport: Viewport): StripView {
   if (!input.open) return { open: false, viewport, chips: [] };
@@ -106,12 +120,17 @@ export function stripView(input: StripInput, viewport: Viewport): StripView {
     const slot = input.slots.find((entry) => entry.id === id);
     if (slot === undefined || !slot.collapsed) continue;
     const action = STRIP_CHIP_ACTIONS[id];
-    const origin = narrow ? STRIP_PHONE_SLOTS[id] : { x: slot.x, y: slot.y };
+    const origin = narrow
+      ? { x: STRIP_PHONE_SLOTS[id].x + slot.dx, y: STRIP_PHONE_SLOTS[id].y + slot.dy }
+      : { x: slot.x, y: slot.y };
     chips.push({
       id,
       letter: STRIP_CHIP_LETTERS[id],
       label: chipLabel(action, input.keybinds),
       box: { x: origin.x, y: origin.y, w: STRIP_CHIP_SIZE, h: STRIP_CHIP_SIZE },
+      dx: slot.dx,
+      dy: slot.dy,
+      collapsed: slot.collapsed,
     });
   }
   return { open: true, viewport, chips };

@@ -31,11 +31,11 @@ function findNode(nodes: readonly FrameNode[], name: string): FrameNode | undefi
 
 /** The shipped docks, which is what the scene hands the view on a fresh save. */
 const DEFAULT_SLOTS: readonly StripSlot[] = [
-  { id: 'header', x: 8, y: 8, collapsed: true },
-  { id: 'party', x: 38, y: 8, collapsed: false },
-  { id: 'bag', x: 38, y: 422, collapsed: true },
-  { id: 'box', x: 576, y: 72, collapsed: true },
-  { id: 'detail', x: 8, y: 8, collapsed: true },
+  { id: 'header', x: 8, y: 8, dx: 0, dy: 0, collapsed: true },
+  { id: 'party', x: 38, y: 8, dx: 0, dy: 0, collapsed: false },
+  { id: 'bag', x: 38, y: 422, dx: 0, dy: 0, collapsed: true },
+  { id: 'box', x: 576, y: 72, dx: 0, dy: 0, collapsed: true },
+  { id: 'detail', x: 8, y: 8, dx: 0, dy: 0, collapsed: true },
 ];
 
 const DEFAULT_INPUT: StripInput = {

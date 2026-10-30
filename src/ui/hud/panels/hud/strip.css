@@ -3,7 +3,8 @@
  * keyed panels, at the board's own phone slots or at each panel's dock. The fill,
  * the hairline inside the box and the radius are the frame's `m chip` nodes; the
  * letter is the board's 11 / 15 px bold ink. No shadow and no transition: the
- * strip is chrome and never animates.
+ * strip is chrome and never animates. The badge is a drag handle like the open
+ * card's chip, so it takes no scroll and shows the grab cursor.
  */
 .hud-strip-mount {
   position: absolute;
@@ -49,8 +50,14 @@
   line-height: var(--hud-type-chip-line);
   font-weight: 700;
   pointer-events: auto;
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
+  /* The badge is a drag handle, so the pointer never scrolls or selects under it. */
+  touch-action: none;
+}
+
+.hud-strip__chip:active {
+  cursor: grabbing;
 }
 
 /* A thumb needs more than 26 px, so the hit area grows without moving the paint. */
