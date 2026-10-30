@@ -27,6 +27,10 @@ Nothing outside this list may be created or modified.
 - `src/engine/battle/effects/abilities.test.ts`
 - `src/engine/battle/effects/moves.ts`
 - `src/engine/battle/effects/moves.test.ts`
+- `src/engine/battle/moveAudit.ts` — **the `transform` row only**: the coverage table
+  pins the events each audited move emits, so that one row's `events` list gains
+  `'forme'` when the Transform handler starts emitting it. No other row, no other
+  edit in that file.
 - `docs/battle-spec.md` (**§7 only** — the file's other sections are not yours)
 - `docs/art-direction.md` (**§Sprite contract only**)
 
@@ -136,9 +140,13 @@ None. The only new facts are the two docs paragraphs named under **Docs** below.
         `battle.log.move.transform` text entry, with no event between them.
   - [ ] `[unit]` **The manifest gap is named, not fixed.** A species id the shipped
         manifest does not name still resolves to no sheet (`pokemonSprite(...) ===
-        undefined` in the existing API contract), so `showMon` keeps its early return
+        null` in the existing API contract), so `showMon` keeps its early return
         and `battle:mon` stays drawn for it. Pin that in one assertion (it is the
         documented fallback, not a bug).
+  - [ ] `[unit]` **The coverage ledger follows the event.**
+        `src/engine/battle/moveAudit.ts`'s `transform` row lists
+        `events: ['move', 'forme']` and no other row moved; `npm test`'s
+        `moveAudit.test.ts` is green with it.
   - [ ] `[live]` **The foe draws the copied species' front sheet.** Measured at
         1280×800 over CDP against `npm run dev` (dev mode, `IS_DEVELOP` true), reading
         the live Phaser objects — **not** a screenshot and **not** a pixel diff:
