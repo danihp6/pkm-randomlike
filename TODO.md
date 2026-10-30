@@ -10073,6 +10073,193 @@ carries.
 
 ---
 
+## Phase 21 - The HUD's own size
+
+The thirty-fifth round is **two open issues of one audit**, read against `main` @ `e9ccae6` and
+measured here rather than taken on trust: the phase exists because a gap is worth a task only once
+the file and the line that carry it are written down. `[Task-235]` is issue #79 — the mounted DOM
+HUD keeps the layout of the viewport it was mounted with, so turning a phone or dragging a window
+narrow leaves the cards where they were — and `[Task-236]` is issue #81, four folder READMEs that
+still describe the canvas path `?hud=dom` was retired from. Neither adds a run field, moves an RNG
+draw nor touches `src/engine/save.ts`, so the chain gains no step: `save.ts:83` reads **26** and
+Phase 21 leaves it **26**.
+
+**One batch, 104, two tasks.** `[Task-235]` is the phase's only code task and its only hot-file
+holder: it claims `src/scenes/BattleScene.ts`, `src/scenes/RouteScene.ts`, the battle HP panel's
+`mount.tsx`, a new `mount.test.ts` and its `README.md`, `src/ui/hud/README.md` and
+`docs/hud-fidelity.md` §5. `[Task-236]` claims prose alone — the four panel READMEs its measure
+names and one comment line of `src/ui/hud/panels/battle-command/view.ts` that names the retired
+canvas function the same paragraph names. The two sets are disjoint file for file (none of 236's
+four READMEs is 235's, and `src/ui/hud/README.md` is neither), so Batch 104 is an antichain and
+runs as one dev wave and one QA wave. No task of the phase claims `package.json`, `src/main.ts`,
+`vite.config.ts`, `src/data/dex/**` or any generated data file: the phase writes no art, packs no
+atlas and regenerates no dex row, so `npm run data:ui` and `npm run data:dex` are never rerun.
+**No dependency edge** runs inside the phase or out of it — both entries read
+`*Dependencies:* none` and neither needs a file the other produces — and `docs/hud-fidelity.md` is
+the phase's only `docs/*.md` claim, held by one task, so no section of a spec is shared. Phase 19's
+unscheduled per-panel wave, which that phase's own paragraph labels "Batch 104 onwards", now reads
+**105 onwards** behind this batch: nothing there is cut before `[Task-224]`'s table exists.
+
+**The fill search leaves two slots, and each names its blocker (measured `2026-10-30` on this
+tree, never on the audit's own).** The backlog's remaining open items are `[Task-223]` and
+`[Task-224]` (`[!]`: the operator's Figma import has not landed — `design/screens/*.json` is 0 of
+33 and `design/exports/` does not exist, issues #83 and #86) and `[Task-194]` (`[!]`, parked on a
+decision). The audit's open issues that are not tasks are #80, #89, #90, #91 and #92 — the older
+review issues (#17–#67) are the ones Phase 17 left open for a human's eye, and are not tasks
+either — and each of the five waits on a human or on the operator's asset tree: #80 turns on
+whether hover-following is still wanted **and** on `src/scenes/BattleScene.ts`, which
+`[Task-235]` holds here; #90 on the PMDCollab overworld pack at `$ASSETS_ROOT/pokemons`, which no
+store the loop can reach carries; #91 on filling or accepting the 370 missing canonical heights in
+`scripts/data/heights.json`, a content decision that owns `src/data/dex/**`; #92 on where the
+battle HUD is anchored, the window or the battle square; #89 on the board's answer for a detail
+card that has no way back. Nothing else is cuttable today, so the two slots stay empty by decision
+and not by search.
+
+**Issues #75, #76, #77 and #78 are not tasks.** They shipped as `[Task-215]`, `[Task-216]`,
+`[Task-217]` and `[Task-218]` of Batch 92, are ticked in Phase 17 and archived in `CHANGELOG.md`,
+and the tree was re-read before this cut: the desk CONTINUE row elides its label in
+`src/ui/hud/panels/main-menu/view.ts`, a phone move cell paints its name in
+`src/ui/hud/panels/battle-moves/`, a fainted member's tallies reach the record in
+`src/engine/run/history.ts`, and the run-over README's rule 6 no longer claims the board has no
+figures. They are verified, not pending.
+
+`src/scenes/RouteScene.ts` gains its first scale listener at **Batch 104**, so that scene's queue
+reads 19 → 51 → 75 → 77 → 79 → 80 → 97 (the strip's one callback) → 102 → **104**, and
+`src/scenes/BattleScene.ts`'s queue extends **230 → 235** behind `[Task-230]`, its Phase 20 last
+holder.
+
+### Batch 104 - a resize re-lays out the HUD, and four READMEs lose a dead path
+
+- [ ] **[Task-235] A viewport change re-lays out the mounted DOM HUD: the battle's HP boxes and
+      every route card.** Issue #79, measured by two independent Task QAs during Batch 88 on the
+      merged tree (`?hud=dom` at 1280×800 resized to 390×844 without a reload: the party card kept
+      its 250 px column at its desk `x`, and an open battle's HP boxes kept their desk inline
+      rects while the command card reflowed), and re-measured here on `main` @ `e9ccae6`.
+      **Measured:** the issue names `src/ui/hud/mount.ts`, and that file is innocent — `mountHud`
+      (24-44) takes the search string, creates `#hud`, renders the shell and preloads two faces,
+      and reads no width at all, while `hudRequested` (9-11) discards its argument; the layer is a
+      full-viewport CSS box (`styles/root.css`), so nothing in it ever needed a number. The
+      snapshot carries no viewport either — `HudState` is party, bag, money, route, battle and
+      notice (`src/ui/hud/state.ts` 159-167) and `syncHud` (654-658) hands its sink a value and
+      nothing else — so a panel can only learn the window from its own mount or from a rect the
+      scene already measured. **In the battle exactly one panel bakes it:** `mountBattleHp(host,
+      doubles, viewport)` closes over both (`battle-hp/mount.tsx` 18-22) and every `update` paints
+      `battleHpView(state, viewport, doubles)` (41) through that closure, while `mountHpPanel`
+      passes `{ width: this.scale.width, height: this.scale.height }` once (`BattleScene`
+      616-619). Every other battle card is handed a fresh rect on every push — the command card
+      2453, the moves card 2525, the bag 2602, the switch grid 2683, the field chips 2588, the log
+      card 729 — all read from the live `this.scale` inside `refreshHud` (2272-2413), so
+      `onResize` (598-600) already moves everything but the HP boxes: that is the asymmetry the
+      issue measured. The same mount freezes a **second** fact, the sides' count: `doublesInPlay()`
+      (603-608) is read at mount (616) and again live on every field push (2589), and
+      `displayActive2` is reassigned per double turn (2060). **The route has no hook at all:**
+      `grep -n resize src/scenes/RouteScene.ts` prints nothing, the HUD metrics are computed once
+      in `create` (`this.hud = hudMetrics(this.scale.width)`, 1197) and `refreshHud` (1329-1333)
+      only runs on gameplay events — `update` (3823) never calls it. Each card's view does read the
+      live scale when it is refreshed (`party.ts` 61-68), so the missing listener, not the view, is
+      the defect: after a resize to 390×844 the party card keeps its desk box `{x 928, y 8, w 250,
+      h 406}` (`partyPanelBox`, `party/view.ts` 200-208) where a fresh boot at that size draws
+      `{x 38, …}`, and the strip's chips keep their desk docks because `repaintStrip`
+      (`src/scenes/panels/hud.ts` 215-219) is only reached from a refresh. The frozen metrics bite
+      only below 360 px — `hudMetrics` clamps `panelW` to `width − 16` (69-83) and its one reader
+      is `hudColumnLeft` (86-88). The precedent for a panel that does reflow is a breakpoint hook
+      inside the component (`useCompactViewport`, `starter/starterPanel.tsx` 24-37 and
+      `main-menu/mainMenuPanel.tsx` 67-80, copied in `stats` and `options`), which answers a
+      crossing and not a rect: no route or battle card has one.
+      **Fix shape:** one rule, two scenes — **the viewport is an argument of the push, never of the
+      mount**. (a) `mountBattleHp(host)` drops its geometry arguments and its controller gains
+      `layout(viewport, doubles)`, or, preferably, `update(state, viewport, doubles)`; `refreshHud`
+      passes what every other card already gets (`{ width: this.scale.width, height: this.scale.height }`,
+      the same inputs `battleStage` reads at 2277) plus `this.doublesInPlay()`, so the boxes repaint
+      at the new rects on the resize frame and nowhere else. (b) `RouteScene` registers
+      `this.scale.on('resize', this.onResize, this)` and drops it on `SHUTDOWN`, exactly as
+      `BattleScene` does (568-570), and the handler recomputes `this.hud = hudMetrics(this.scale.width)`
+      and then calls the existing `refreshHud()`: every card rebuilds its view from the live scale,
+      the strip repaints through its own `refresh` (`src/scenes/panels/hud.ts` 284-292), and no card
+      needs a new hook. **Rejected:** a `window.resize` / `ResizeObserver` listener inside
+      `src/ui/hud/mount.ts` that re-mounts the panels — it measures `window.innerWidth` while the
+      scenes lay out from `scale.width`, two sources for one number and this bug's own family, and
+      a re-mount throws away each card's signal, its drag offset, its fill transition and the
+      strip's `routePaused` flag (`party.ts` 52, `hud.ts` 193), none of which the layer owns. The
+      per-scene listener is one line where the number already lives.
+      **Docs:** `docs/hud-fidelity.md` §5 (the panel-geometry rules gain one: one viewport per
+      mount, and it arrives on every push — a resize re-lays out the mounted HUD and never
+      re-mounts it), `src/ui/hud/README.md` (a fourth rule: the layer reads no number, so a panel's
+      viewport is the push's) and `src/ui/hud/panels/battle-hp/README.md` (rule 1 gains the same
+      clause, and the Layout list gains the new `mount.test.ts`).
+      **Tests:** `[unit]` the HP controller paints from the push, not the mount: mounted once, a
+      push at 1280×800 paints the player's lead card (its props, captured through the mocked `h`)
+      at `battleHpBox(DESK, 'player', 0)`, and a push at 390×844 paints that card at
+      `battleHpBox(PHONE, 'player', 0)`, with no second mount and no new container; `[unit]` the
+      sides' count is the push's: a panel mounted with both sides
+      double that is then pushed `{ player: false, enemy: true }` paints one player box and two foe
+      boxes; `[unit]` a push that repeats the same viewport and state paints equal rects, so a
+      resize storm cannot stack cards; `[unit]` `hudMetrics(320)` clamps `panelW` to 304 where
+      `hudMetrics(1280)` gives 344, so the recompute the route's handler runs keeps the clamp rule
+      — all four headless, in `src/ui/hud/panels/battle-hp/mount.test.ts` and the panel's own test,
+      and `npm test` green.
+      `[live]` measured over CDP with rect reads and no screenshot: `?hud=dom` at 1280×800 with a
+      battle open, then `setViewportSize(390, 844)` without a reload — `[data-hud-hp="player-0"]`'s
+      `getBoundingClientRect()` equals `battleHpBox({ width: 390, height: 844 }, 'player', 0)` on
+      the frame after the resize, and the command card still equals `battleCommandBox` at the same
+      size; and `[live]` a fresh route load at 1280×800 with PARTY open, resized to 390×844 the
+      same way, leaves the party card's rect equal to the rect a fresh boot at 390×844 draws
+      (`38, 8, 250, 406`), with the collapsed chips at `STRIP_PHONE_SLOTS` plus their saved offset.
+      Claims `src/ui/hud/panels/battle-hp/mount.tsx`, the new
+      `src/ui/hud/panels/battle-hp/mount.test.ts`, `src/ui/hud/panels/battle-hp/README.md` (rule 1
+      and the one Layout line for the new test), `src/scenes/BattleScene.ts` (`mountHpPanel`'s call
+      and the HP push in `refreshHud`), `src/scenes/RouteScene.ts` (the listener, its teardown and
+      the metrics), `src/ui/hud/README.md` and `docs/hud-fidelity.md` §5.
+      *Dependencies:* none. *(Batch 104)*
+
+- [ ] **[Task-236] The four folder READMEs that still describe the retired `?hud=dom` canvas path
+      stop describing it.** Issue #81, found by Batch 90's closing Task QA while it audited
+      `[Task-200]`'s own folder map and left outside that task's paths; re-measured on `main` @
+      `e9ccae6`, where the sentences survive and a fourth file the issue never saw carries one.
+      **Measured:** there is no flag to be off. `hudRequested` is `(…) => true` for every query
+      (`src/ui/hud/mount.ts` 9-11), `mountHud` (24-44) mounts on every boot, `src/main.ts` calls it
+      unconditionally at 42 under the comment "`?hud=dom` is only an alias" (41), and
+      `grep -rn DOM_HUD src` prints nothing — so a sentence conditioned on "the flag off"
+      describes no path that exists. The three the issue names are still there, at today's lines:
+      `src/ui/hud/panels/party/README.md:6`, "…draws no Phaser object at all while the flag is on";
+      `src/ui/hud/panels/battle-log/README.md:8`, "…with the flag off nothing here mounts and the
+      canvas draws it exactly as before" (the issue's `:6` has drifted two lines since
+      `[Task-226]`); and `src/ui/hud/panels/battle-command/README.md:7`, the same clause. A
+      **fourth** carries the party's sentence verbatim, which #81 missed because its own grep ran
+      over `src/scenes`, `mount.ts`, `shell.tsx`, `fixtures` and `main.ts` and never over the
+      panels' READMEs: `src/ui/hud/panels/map/README.md:7-8`. Two of the paragraphs also name
+      canvas code the tree no longer holds — `renderCommandMenu`
+      (`battle-command/README.md:5`, and rule 2 at :34, and the panel's own `view.ts:68` comment)
+      and `messagePanel`/`messageText` (`battle-log/README.md:8`) — with
+      `src/scenes/BattleScene.test.ts:108` already asserting the scene's source contains no
+      `renderCommandMenu` and `grep -rn messageText src` matching that README alone. Nothing else
+      in the four files is stale: each rule list's other sentences name shipped files and pinned
+      constants, and `src/scenes/panels/pc.ts:29` — the issue's only grep hit — is still true
+      (`pc.ts` imports no Phaser, uses no `.add(`, and `pcDrawnObjectCount()` is 0).
+      **Fix shape:** a prose rewrite of one paragraph per file, and nothing else: the DOM card
+      **is** the panel and the canvas draws none of it; `?hud=dom` is an inert alias kept so old
+      links still boot; the dead canvas names become the code that ships now — `battleCommandView`'s
+      grid with `confirmMenu`'s cursor for the command card, `battleLogLayout`'s rect for the
+      message box. Each rule list keeps its numbering, its other sentences and its measured
+      constants, and the paragraphs get **shorter**: the clause that conditions on a path which does
+      not exist is deleted, never annotated. The one comment line in
+      `src/ui/hud/panels/battle-command/view.ts:68` names the same dead function and is corrected
+      in place, with no code change beside it.
+      **Docs:** the four READMEs are the docs, and each is its own folder's map (AGENTS.md's
+      README rule): `party`, `map`, `battle-log` and `battle-command`.
+      **Tests:** `[unit]` the two gates print nothing — `grep -rn "with the flag off\|while the flag
+      is on" src` and `grep -rn "renderCommandMenu\|messageText" src/ui/hud` — and `npm test` plus
+      `npm run build` stay green, since the diff is prose and one comment.
+      `[live]` measured over CDP at 1280×800: `/?hud=dom` and `/?hud=phaser` boot the same page —
+      `[data-hud-panel="party"]` exists on both with the same rect, and opening FIGHT draws the same
+      `[data-hud-panel="battle-command"]` — which is the fact the rewritten sentences now state.
+      Claims `src/ui/hud/panels/party/README.md`, `src/ui/hud/panels/map/README.md`,
+      `src/ui/hud/panels/battle-log/README.md`, `src/ui/hud/panels/battle-command/README.md` and
+      `src/ui/hud/panels/battle-command/view.ts` (its header comment only).
+      *Dependencies:* none. *(Batch 104)*
+
+---
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the

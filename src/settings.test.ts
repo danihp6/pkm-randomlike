@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRun, createRunPokemon } from './engine/run';
 import { defaultSettings, SAVE_KEY, type StorageLike } from './engine/save';
 import { getLocale, setLocale } from './i18n';
 import { applyVolume, browserLanguageTag, loadSettings, saveSettings } from './settings';
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   setLocale('en');
 });
 
@@ -61,6 +62,22 @@ describe('loadSettings', () => {
 describe('browserLanguageTag', () => {
   it('reads no tag without a browser', () => {
     expect(browserLanguageTag()).toBe('');
+  });
+
+  it('reads no tag from a stubbed window with no DOM, whatever navigator says', () => {
+    // Node 21+ has a navigator whose language is the machine's, so a headless
+    // host on an es-ES laptop must not be mistaken for a Spanish browser.
+    vi.stubGlobal('window', { location: { search: '' } });
+    vi.stubGlobal('navigator', { language: 'es-ES' });
+    expect(browserLanguageTag()).toBe('');
+    expect(loadSettings(new MemoryStorage()).language).toBe('en');
+  });
+
+  it('reads the tag of a real browser', () => {
+    vi.stubGlobal('window', { location: { search: '' } });
+    vi.stubGlobal('document', { documentElement: {} });
+    vi.stubGlobal('navigator', { language: 'es-ES' });
+    expect(browserLanguageTag()).toBe('es-ES');
   });
 });
 
