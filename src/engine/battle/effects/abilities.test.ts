@@ -39,6 +39,8 @@ import {
 import { applyBoostEffect, applyStatusEffect } from './apply';
 import { abilityEffects } from './abilities';
 import { performSwitch, takeTurn, useMove } from '../turn';
+import { scriptedBattle } from '../harness';
+import { chooseAiCommand } from '../ai';
 import { canRun, rollRun } from '../runAway';
 import { hitChance } from '../modifiers';
 import { protectBlocks } from './moves';
@@ -2454,6 +2456,72 @@ describe('transform and illusion abilities (batch 13)', () => {
     });
     runAfterMove(ctx, tackle);
     expect(zoroark.volatiles.illusion).toBeNull();
+  });
+});
+
+describe('the transform reports itself as a forme event', () => {
+  it('Imposter pushes one forme event for the holder on the enemy side', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      fighter('wild', 'ditto', 'Imposter'),
+    );
+    const ditto = activeFighter(state, 'enemy');
+    expect(ditto.speciesId).toBe('charmander');
+    expect(ditto.volatiles.transformed).toBe(true);
+    const formes = state.log.filter((event) => event.kind === 'forme');
+    expect(formes).toEqual([{ kind: 'forme', side: 'enemy', fighterId: 'wild' }]);
+  });
+
+  it('pushes none for an ability that transforms nothing', () => {
+    const state = makeBattle(
+      fighter('player', 'charmander', 'Blaze'),
+      fighter('wild', 'ditto', 'Limber'),
+    );
+    expect(activeFighter(state, 'enemy').speciesId).toBe('ditto');
+    expect(state.log.filter((event) => event.kind === 'forme')).toEqual([]);
+  });
+
+  it('pushes none when the foe has already fainted', () => {
+    const state = createBattle({
+      player: [fighter('player', 'charmander', 'Blaze')],
+      enemy: [fighter('lead', 'rattata', 'Run Away'), fighter('wild', 'ditto', 'Imposter')],
+      rng: new Rng(1234),
+      isWild: true,
+    });
+    activeFighter(state, 'player').hp = 0;
+    performSwitch(state, 'enemy', 1);
+    expect(activeFighter(state, 'enemy').id).toBe('wild');
+    expect(activeFighter(state, 'enemy').speciesId).toBe('ditto');
+    expect(state.log.filter((event) => event.kind === 'forme')).toEqual([]);
+  });
+
+  it('answers a fixed-seed scripted battle right after the transform line', () => {
+    // The harness builds every fighter from the dex, so it grants no ability: the
+    // switch is scripted and the Imposter is handed to the incoming fighter at the
+    // one seam that sees the state before its switch-in reads it.
+    const state = scriptedBattle({
+      player: [{ id: 'hero', speciesId: 'charmander', level: 20 }],
+      enemy: [
+        { id: 'lead', speciesId: 'rattata', level: 20 },
+        { id: 'wild', speciesId: 'ditto', level: 20 },
+      ],
+      seed: 2026,
+      isWild: true,
+      enemyCommand: (current, turn) => {
+        if (turn === 1) {
+          current.sides.enemy.party[1].ability = 'Imposter';
+          return { type: 'switch', partyIndex: 1 };
+        }
+        return chooseAiCommand(current, 'enemy');
+      },
+    });
+    const line = state.log.findIndex(
+      (event) => event.kind === 'text' && event.key === 'battle.log.move.transform',
+    );
+    expect(line).toBeGreaterThan(-1);
+    expect(state.log[line + 1]).toEqual({ kind: 'forme', side: 'enemy', fighterId: 'wild' });
+    expect(state.log.filter((event) => event.kind === 'forme')).toHaveLength(1);
+    expect(state.sides.enemy.party.find((entry) => entry.id === 'wild')?.speciesId).toBe('charmander');
   });
 });
 

@@ -230,6 +230,8 @@ function moveIndexIn(value: number, count: number): number | null {
 }
 /** Frames per second for the idle loop; Anil animates at roughly 30ms a frame. */
 const MON_ANIM_FPS = 30;
+/** The sheet kinds a battle preloads per fighter: both, so a transform can draw either. */
+const MON_SPRITE_KINDS: readonly PokemonSpriteKind[] = ['front', 'back'];
 /**
  * The frame indices one sheet's idle loop draws: the manifest row's frames,
  * clamped to the frames the loaded texture actually has. `0` available frames is
@@ -485,7 +487,7 @@ export class BattleScene extends Phaser.Scene {
     const launch = this.launch;
     if (!launch) return;
     // The fighters are built here rather than in `create` so `preload` can load
-    // exactly the sheets the battle draws: the foe's front, the party's back.
+    // exactly the sheets the battle draws: both kinds for both whole parties.
     this.playerFighters = launch.player.map(restoreFighter);
     const trigger = launch.trigger;
     this.enemyFighters =
@@ -1408,19 +1410,26 @@ export class BattleScene extends Phaser.Scene {
       const sheet = pokemonSprite(speciesId, kind, { shiny, female });
       if (sheet) sheets.set(sheet.textureKey, sheet);
     };
-    const addFighter = (fighter: BattleFighter, kind: PokemonSpriteKind): void => {
+    // Both kinds of every fighter in play, not only the actives' own kind: a
+    // transform (Imposter, Transform) copies the foe's species mid-battle and the
+    // scene has no loading beat then, so the copied species must already be in
+    // the cache for the frame the transform lands. A species both sides field
+    // collapses on `textureKey` in the map above.
+    const addFighter = (fighter: BattleFighter): void => {
       const female = fighter.gender === 'female';
-      add(fighter.speciesId, fighter.shiny, female, kind);
-      // A held Mega Stone needs its forme sheet loaded up front, or the swap
-      // mid-battle has no texture to draw (D34).
       const mega = fighter.heldItem ? megaFormForItem(fighter.heldItem) : undefined;
-      if (mega) add(mega.id, fighter.shiny, female, kind);
-      // A G-Max forme the species may take needs its sheet up front the same way.
       const gmax = gmaxFormForBase(fighter.speciesId);
-      if (gmax) add(gmax.id, fighter.shiny, female, kind);
+      for (const kind of MON_SPRITE_KINDS) {
+        add(fighter.speciesId, fighter.shiny, female, kind);
+        // A held Mega Stone needs its forme sheet loaded up front, or the swap
+        // mid-battle has no texture to draw (D34).
+        if (mega) add(mega.id, fighter.shiny, female, kind);
+        // A G-Max forme the species may take needs its sheet up front the same way.
+        if (gmax) add(gmax.id, fighter.shiny, female, kind);
+      }
     };
-    for (const fighter of this.playerFighters) addFighter(fighter, 'back');
-    for (const fighter of this.enemyFighters) addFighter(fighter, 'front');
+    for (const fighter of this.playerFighters) addFighter(fighter);
+    for (const fighter of this.enemyFighters) addFighter(fighter);
     return [...sheets.values()];
   }
 

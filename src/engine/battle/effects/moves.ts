@@ -233,6 +233,7 @@ function transformEffect(): EffectHandlers {
       const targetName = ctx.target.name;
       if (transformInto(ctx.owner, ctx.target)) {
         pushText(ctx.state, 'battle.log.move.transform', { name: userName, target: targetName });
+        pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
       } else {
         pushText(ctx.state, 'battle.log.fail');
       }

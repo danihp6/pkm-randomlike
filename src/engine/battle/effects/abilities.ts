@@ -2126,6 +2126,7 @@ function imposter(): EffectHandlers {
       const foeName = foe.name;
       if (transformInto(ctx.owner, foe)) {
         pushText(ctx.state, 'battle.log.move.transform', { name: userName, target: foeName });
+        pushEvent(ctx.state, { kind: 'forme', side: ctx.side, fighterId: ctx.owner.id });
       }
     },
   };

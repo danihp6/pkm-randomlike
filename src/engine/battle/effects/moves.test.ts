@@ -6,7 +6,7 @@ import { createFighter, isGrounded, type BattleFighter } from '../fighter';
 import { activeFighter, createBattle, type BattleState } from '../state';
 import { autoReplace, needsReplacement, performSwitch, takeTurn, useMove } from '../turn';
 import { movePreview } from '../preview';
-import { getEffect } from './registry';
+import { getEffect, makeContext, runAfterMove } from './registry';
 import { isProtectMove, moveEffects, protectBlocks } from './moves';
 import { setTerrain } from './terrain';
 import { setWeather } from './weather';
@@ -324,6 +324,47 @@ describe('transform', () => {
     expect(ditto.speciesId).toBe('ditto');
     expect(ditto.transformBackup).toBeNull();
     expect(ditto.volatiles.transformed).toBe(false);
+  });
+
+  it('reports the transform once as a forme event on the user side', () => {
+    const state = createBattle({
+      player: [fighter('player', 'ditto', ['transform'])],
+      enemy: [fighter('enemy', 'charizard', ['splash'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    useMove(state, 'player', { type: 'fight', moveIndex: 0 });
+
+    const formes = state.log.filter((event) => event.kind === 'forme');
+    expect(formes).toEqual([{ kind: 'forme', side: 'player', fighterId: 'player' }]);
+    const line = state.log.findIndex(
+      (event) => event.kind === 'text' && event.key === 'battle.log.move.transform',
+    );
+    expect(line).toBeGreaterThan(-1);
+    expect(state.log[line + 1]).toEqual({ kind: 'forme', side: 'player', fighterId: 'player' });
+  });
+
+  it('reports nothing when the transform fails on a fainted target', () => {
+    const state = createBattle({
+      player: [fighter('player', 'ditto', ['transform'])],
+      enemy: [fighter('enemy', 'charizard', ['splash'])],
+      rng: new Rng(11),
+      isWild: true,
+    });
+    const user = activeFighter(state, 'player');
+    const foe = activeFighter(state, 'enemy');
+    foe.hp = 0;
+    const ctx = makeContext(state, 'player', {
+      source: user,
+      target: foe,
+      move: getMove('transform')!,
+    });
+    runAfterMove(ctx, getMove('transform')!);
+    expect(user.speciesId).toBe('ditto');
+    expect(state.log.filter((event) => event.kind === 'forme')).toEqual([]);
+    expect(state.log.some((event) => event.kind === 'text' && event.key === 'battle.log.fail')).toBe(
+      true,
+    );
   });
 });
 
