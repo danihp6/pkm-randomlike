@@ -77,6 +77,31 @@ export type HpStageChipView = Readonly<{
 export const HP_FILL_MS = 300;
 /** 600: below it the phone column's boxes are used (`m05`). */
 export const BATTLE_HP_BREAKPOINT = 600;
+/** The cap on the battle square's side. */
+export const BATTLE_STAGE_MAX = 900;
+/** The desk card's own bottom margin inside the stage: the one line it shares with
+ * the command / moves card. `stage.y + stage.h - 26`. */
+export const DESKTOP_BOTTOM_MARGIN = 26;
+
+export type StageRect = Readonly<{ x: number; y: number; w: number; h: number }>;
+
+/**
+ * The battle's centred square, in page coordinates: a wide screen gets the smaller
+ * side capped at `BATTLE_STAGE_MAX`, a tall one keeps its full portrait stage. This
+ * is exactly the rect the scene's camera viewport is set to, and the rect the desk
+ * player card's bottom line is measured from.
+ */
+export function battleStage(viewport: Viewport): StageRect {
+  const wide = viewport.width > viewport.height;
+  const w = wide ? Math.min(viewport.height, BATTLE_STAGE_MAX) : viewport.width;
+  const h = wide ? w : viewport.height;
+  return {
+    x: Math.round((viewport.width - w) / 2),
+    y: Math.round((viewport.height - h) / 2),
+    w,
+    h,
+  };
+}
 
 /** The board's ball cell and the row's own spacing, in px. */
 export const BATTLE_BALL_SIZE = 16;
@@ -91,19 +116,19 @@ const HIGHLIGHT_INSET = 12;
 const HIGHLIGHT_H = 1;
 
 /**
- * The board's desktop column (`05`): a 368×100 card 64 px in, 48 from the top, and
- * 140 from the bottom edge to the player card's top (40 px of margin under it).
+ * The board's desktop column (`05`): a 368×100 card at the window's own 64 px margin,
+ * 48 from the top; the player's card ends on the shared bottom line,
+ * `DESKTOP_BOTTOM_MARGIN` above the stage square's bottom edge.
  */
 const DESKTOP_X = 64;
 const DESKTOP_W = 368;
 const DESKTOP_H = 100;
 const DESKTOP_FOE_Y = 48;
-const DESKTOP_PLAYER_FROM_BOTTOM = 140;
 
 /**
  * The board's phone column (`m05`): the same card 16 px in, 80 tall, the player's
- * 340 from the bottom edge — the 16 px margin, the 236 px menu panel and the 8 px
- * gutter that separates them on the frame.
+ * 340 from the viewport's bottom edge — the 16 px margin, the 236 px menu panel and
+ * the 8 px gutter that separates them on the frame.
  */
 const PHONE_X = 16;
 const PHONE_H = 80;
@@ -127,10 +152,14 @@ function leadBox(viewport: Viewport, side: HpSide): Rect {
         : Math.max(PHONE_FOE_Y + PHONE_H + GUTTER, viewport.height - PHONE_PLAYER_FROM_BOTTOM);
     return { x: PHONE_X, y, w, h: PHONE_H };
   }
+  const stage = battleStage(viewport);
   const y =
     side === 'enemy'
       ? DESKTOP_FOE_Y
-      : Math.max(DESKTOP_FOE_Y + DESKTOP_H + GUTTER, viewport.height - DESKTOP_PLAYER_FROM_BOTTOM);
+      : Math.max(
+          DESKTOP_FOE_Y + DESKTOP_H + GUTTER,
+          stage.y + stage.h - DESKTOP_BOTTOM_MARGIN - DESKTOP_H,
+        );
   return { x: DESKTOP_X, y, w: DESKTOP_W, h: DESKTOP_H };
 }
 

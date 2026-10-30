@@ -403,9 +403,14 @@ Full rules in `docs/battle-spec.md`. In short:
   resolution order — the faster side's line and drop precede the slower side's
   reply — and a turn that changes no HP paints no change. A stage chip moves on its
   own line and never before it.
-- On a wide screen the battle is a centred **square** (at most 900 px a side);
-  a tall phone screen keeps the stacked, full-height layout, with both battlers
-  drawn 25% smaller so they sit clear of the stacked panels.
+- On a wide screen the battle is a centred **square** (at most 900 px a side) —
+  `battleStage(viewport)`, the rect the camera viewport is set to; a tall phone
+  screen keeps the stacked, full-height layout, with both battlers drawn 25%
+  smaller so they sit clear of the stacked panels. The HUD is window-anchored, as
+  frame `05` draws it: the HP column keeps its 64 px margin, the command / moves card
+  keeps its 36 px margin inside the square, and the player's lead card and that card
+  end on **one bottom line**, 26 px above the square's bottom edge (on the phone the
+  card keeps the measured 8 px gutter above the player's box).
 - The battle's windows are the drawn chrome: the **message box** behind the
   message text is the shipped `textbox` card (the one stage that draws it), and
   every other window — the HP panels, the **command window** (the FIGHT / BAG /

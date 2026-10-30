@@ -131,6 +131,7 @@ import {
   type BattleMovesInput,
   type BattleMovesIntent,
 } from '../ui/hud/panels/battle-moves';
+import { battleStage } from '../ui/hud/panels/battle-moves/view';
 import {
   battleSwitchBox,
   installBattleSwitchPreview,
@@ -174,8 +175,6 @@ const PLAYER_PANEL_W = 320;
 const PLAYER_PANEL_H = 150;
 const FOE_PANEL = { w: PANEL_W, h: 150 } as const;
 const FOE_PLATFORM_SPREAD = 96;
-/** The battle plays inside a centred square, at most this many pixels a side. */
-const MAX_BATTLE_SIZE = 900;
 /** Below this square side the stacked, full-width phone layout is used. */
 const COMPACT_SIZE = 700;
 /** The bag grid: five fixed columns over two rows of square icon cells. */
@@ -2300,22 +2299,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private refreshHud(): void {
-    // The battle lives in a centred square (at most `MAX_BATTLE_SIZE`), so it
-    // reads the same on a wide desktop and a phone. Everything below is laid out
-    // in that square's own coordinates; the camera viewport places and clips it.
-    const { width: canvasW, height: canvasH } = this.scale;
-    // A wide screen gets a centred **square** stage capped at `MAX_BATTLE_SIZE`,
-    // so the battle never stretches across a widescreen. A tall screen keeps its
-    // full portrait stage: the stacked phone layout needs the height.
-    const wide = canvasW > canvasH;
-    const width = wide ? Math.min(canvasH, MAX_BATTLE_SIZE) : canvasW;
-    const height = wide ? width : canvasH;
-    this.cameras.main.setViewport(
-      Math.round((canvasW - width) / 2),
-      Math.round((canvasH - height) / 2),
-      width,
-      height,
-    );
+    // The battle lives in a centred square `battleStage` owns, so it reads the same on
+    // a wide desktop and a phone. Everything below is laid out in that square's own
+    // coordinates; the camera viewport places and clips it, and every HUD panel places
+    // itself inside the same rect.
+    const stage = battleStage({ width: this.scale.width, height: this.scale.height });
+    this.cameras.main.setViewport(stage.x, stage.y, stage.w, stage.h);
+    const width = stage.w;
+    const height = stage.h;
     this.bgTop.setPosition(0, 0).setSize(width, height * 0.52);
     this.bgBottom.setPosition(0, height * 0.52).setSize(width, height * 0.48);
     const trainer = this.foeTrainer.visible;

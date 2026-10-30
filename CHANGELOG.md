@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The player's HP box and the battle menu end on the same bottom line.** `[Task-228]`,
+      Batch 99: reported as the player's health container and the menu not being aligned at the
+      bottom. One exported `battleStage(viewport)` (new in `src/ui/hud/panels/battle-hp/view.ts`,
+      re-exported by `battle-moves/view.ts`, re-exported through the same barrel) now owns the
+      battle's centred square and `BattleScene.refreshHud` reads it for the camera instead of
+      re-deriving `offX`/`offY`; the player's lead card ends on
+      `stage.y + stage.h - DESKTOP_BOTTOM_MARGIN` (26 px), the line the command / moves card ends
+      on — 774 at 1280×800 and 874 at 1440×900 and 900×900 — while the phone keeps its measured
+      8 px gutter and the partner, ball-row and clearance rules are unchanged. **Amended at cut
+      time:** the first cut moved the HP column to `stage.x + 64`, which narrowed the desk menu
+      from 564 px to 324 px, cut every move name to four glyphs (`PUNI…`, `GRAV…`), collapsed the
+      power column to `--` and pushed the cells 18 px past the card — measured in the running
+      game, so the column keeps the board frame `05`'s own window anchor (`x 64`) and the menu
+      keeps its rect. `docs/design-spec.md` §4 and `src/ui/hud/panels/battle-hp/README.md` record
+      it. Gates: `npm test` 5205 passed / 69 skipped and `npm run build` green at task QA, 5219 /
+      69 on the batch's combined tree. `[live]` measured over CDP at 1280×800, 1440×900, 900×900
+      and 390×844: equal bottoms 774/874/874, the camera's `240,0,800,800` / `270,0,900,900` /
+      `0,0,900,900`, the phone's 8 px gutter and the four desk move names painted whole.
+
 - [x] **A walker's size is the species' own, like Anil's, on the route and in the main menu.**
       `[Task-231]`, Batch 98: the follower was pinned to one tile (`TILE_SIZE / sheet.size`) and
       the main menu's walker to a 24 px cell, so a Wailord and a Diglett drew the same height in

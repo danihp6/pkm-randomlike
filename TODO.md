@@ -9886,7 +9886,7 @@ carries.
 
 ### Batch 99 - the player's box and the menu share a bottom line
 
-- [ ] **[Task-228] The player's HP box and the battle menu end on the same line, inside the
+- [x] **[Task-228] The player's HP box and the battle menu end on the same line, inside the
       stage.** Reported on `2026-10-30`: «el contenedor de salud del poke jugador y el menu deben
       estar alineados la parte de bajo». **Measured at 1280×800:** the player's card is
       `x 64..432, y 660..760` — `DESKTOP_X` 64, `DESKTOP_H` 100 and
