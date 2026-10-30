@@ -1,8 +1,9 @@
 # `src/ui/hud/panels/battle-hp/` — the battle HP boxes (`05`)
 
 The battle's four name-and-HP boxes as Preact over the `#hud` layer, at the board's own
-two columns: `05 Battle HUD`'s 368×100 cards at (64,48) over the foe and (64,660) under the
-player, and `m 05 Battle HUD`'s 358×80 cards at (16,16)/(16,504) below a 600 px viewport.
+two columns: `05 Battle HUD`'s 368×100 cards at (64,48) over the foe and (64,674) under the
+player **inside `battleStage(viewport)`**, and `m 05 Battle HUD`'s 358×80 cards at
+(16,16)/(16,504) below a 600 px viewport.
 
 ## Layout
 
@@ -16,7 +17,7 @@ player, and `m 05 Battle HUD`'s 358×80 cards at (16,16)/(16,504) below a 600 px
 
 ## Rules
 
-1. The view is data, never the battle: the scene pushes the snapshot, the panel paints it.
+1. The view is data, never the battle: the scene pushes the snapshot, the panel paints it. Every rect it paints is a page coordinate: the board's column offset from the stage square `battleStage(viewport)` (`battle-moves/view.ts`), whose bottom edge the player's lead card and the command card both end on, `DESKTOP_BOTTOM_MARGIN` (26 px) above it.
 2. The box is the kit's panel; only its fill (90 %/88 % against the kit's 72 %) and its highlight (14 %, drawn from the view, against the kit's 8 %) are overridden here.
 3. The layer and every card are `pointer-events: none`: the battle's keys, pad and canvas zones keep every press.
 4. A changed fraction transitions the fill over `HP_FILL_MS`; the first paint and a reduced-motion preference jump straight to it. The box reads the beat, never the finished turn: its HP, status and stage chips are the snapshot the scene pushed, so each change lands on the frame whose line the engine wrote.

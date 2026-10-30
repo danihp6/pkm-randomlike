@@ -9,7 +9,16 @@ import {
   type MoveGridSlot,
 } from '../../../moveGrid';
 import { MOVE_ICON_BOX } from '../../kit/moveIcons';
-import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox } from '../battle-hp/view';
+import {
+  STAGE_CHIP,
+  STAGE_CLEARANCE,
+  STAGE_COLS,
+  STAGE_GAP,
+  battleHpBox,
+  battleStage,
+} from '../battle-hp/view';
+
+export { BATTLE_STAGE_MAX, battleStage } from '../battle-hp/view';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type Viewport = Readonly<{ width: number; height: number }>;
@@ -110,8 +119,6 @@ export function elideToWidth(text: string, width: number): string {
 
 /** Below this square side the stacked, full-width phone card is used. */
 export const BATTLE_COMPACT = 700;
-/** The battle plays inside a centred square, at most this many pixels a side. */
-export const BATTLE_STAGE_MAX = 900;
 /** Width reserved at the left of the grid for the ◀ control. */
 export const MOVE_BACK_COL = 64;
 /** Width reserved at the right of the grid for the Mega control (D34). */
@@ -141,30 +148,26 @@ export const COMPACT_CARD_RAIL_W =
   STAGE_CHIP * STAGE_COLS + STAGE_GAP * (STAGE_COLS - 1) + STAGE_CLEARANCE;
 
 /**
- * The page-space card the scene's own `menu` rect becomes: the battle square's
- * menu box moved by the camera viewport's origin, exactly the arithmetic
- * `refreshHud` lays the canvas out with. On the wide layout its left edge starts
- * where the HP column ends — the foe's column right edge plus a gutter — so the
- * card never covers an HP box; the phone card already sits below both of them and
- * keeps its shipped rect.
+ * The page-space card the scene's own `menu` rect becomes: the battle square's menu
+ * box placed inside `battleStage`, the rect the camera viewport is set to. On the wide
+ * layout its left edge starts where the HP column ends — the foe's column right edge
+ * plus a gutter — so the card never covers an HP box, and its bottom edge is the
+ * player's HP card's own line, `CARD_FROM_BOTTOM` under the square's bottom edge; the
+ * phone card already sits below both of them and keeps its shipped rect.
  */
 export function battleMovesBox(viewport: Viewport): Rect {
-  const wide = viewport.width > viewport.height;
-  const stageW = wide ? Math.min(viewport.height, BATTLE_STAGE_MAX) : viewport.width;
-  const stageH = wide ? stageW : viewport.height;
-  const offX = Math.round((viewport.width - stageW) / 2);
-  const offY = Math.round((viewport.height - stageH) / 2);
-  const compact = stageW < BATTLE_COMPACT;
+  const stage = battleStage(viewport);
+  const compact = stage.w < BATTLE_COMPACT;
   if (compact) {
-    const menu = { x: 16, y: stageH - 236 - 16, w: stageW - 32, h: 236 };
-    return { x: offX + menu.x, y: offY + menu.y, w: menu.w, h: menu.h };
+    const menu = { x: 16, y: stage.h - 236 - 16, w: stage.w - 32, h: 236 };
+    return { x: stage.x + menu.x, y: stage.y + menu.y, w: menu.w, h: menu.h };
   }
   const enemy = battleHpBox(viewport, 'enemy', 0);
-  const left = Math.max(offX + CARD_MARGIN, enemy.x + enemy.w + CARD_CLEARANCE);
-  const right = offX + stageW - CARD_MARGIN;
+  const left = Math.max(stage.x + CARD_MARGIN, enemy.x + enemy.w + CARD_CLEARANCE);
+  const right = stage.x + stage.w - CARD_MARGIN;
   return {
     x: left,
-    y: offY + stageH - CARD_FROM_BOTTOM,
+    y: stage.y + stage.h - CARD_FROM_BOTTOM,
     w: Math.max(CARD_MIN_W, right - left),
     h: CARD_H,
   };

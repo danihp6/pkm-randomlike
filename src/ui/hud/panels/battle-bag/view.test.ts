@@ -67,7 +67,7 @@ function inputOf(overrides: Overrides = {}): BattleBagInput {
 describe('battleBagBox', () => {
   it('is the shipped battle menu box, not a copy of its arithmetic', () => {
     expect(battleBagBox).toBe(battleMovesBox);
-    expect(battleBagBox(DESKTOP)).toStrictEqual({ x: 440, y: 582, w: 564, h: 192 });
+    expect(battleBagBox(DESKTOP)).toStrictEqual({ x: 680, y: 582, w: 324, h: 192 });
     expect(battleBagBox(PHONE)).toStrictEqual({ x: 16, y: 592, w: 358, h: 236 });
   });
 });
