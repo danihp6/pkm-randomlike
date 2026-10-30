@@ -148,6 +148,7 @@ import {
   mountBattleLog,
   type BattleLogHandle,
 } from '../ui/hud/panels/battle-log';
+import { frameHoldMs } from '../ui/hud/panels/battle-log/view';
 import {
   syncHud,
   advanceBattleDisplay,
@@ -1010,7 +1011,7 @@ export class BattleScene extends Phaser.Scene {
 
   private showFrame(): void {
     const frame = this.frames[this.frameIndex];
-    this.frameHoldMs = BATTLE_LOG_DWELL_MS;
+    this.frameHoldMs = frameHoldMs(this.frames, this.frameIndex, BATTLE_LOG_DWELL_MS);
     const capturing = frame.events.some((event) => event.kind === 'capture');
     this.applyEvents(frame.events, capturing ? (frame.message ?? '') : null);
     // The snapshot moves on this frame's own line, before the boxes paint it: the

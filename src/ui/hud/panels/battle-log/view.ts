@@ -2,8 +2,13 @@
  * The battle message box's value model (`05b`/`m05b`): the board's measured box and
  * its two line rects, the live line the scene is revealing, the fixture parser and
  * the frame-step rule. Pure and total — the panel paints, the scene pushes, and the
- * only clock in the panel's world is `BATTLE_LOG_DWELL_MS`.
+ * only clock in the panel's world is `BATTLE_LOG_DWELL_MS` (and a hit frame's
+ * shorter `HIT_FRAME_MS`).
  */
+
+import type { BattleEvent } from '../../../../engine/battle/state';
+import type { FeedFrame } from '../../../feed';
+import { HP_FILL_MS } from '../battle-hp/view';
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
@@ -163,4 +168,71 @@ export function feedStep(
   if (!typingDone) return { elapsedMs: 0, advance: false };
   const elapsedMsNext = elapsedMs + deltaMs;
   return { elapsedMs: elapsedMsNext, advance: elapsedMsNext >= (rush ? RUSH_HOLD_MS : holdMs) };
+}
+
+/**
+ * The hold a landing-hit frame gets while another hit of the same move follows:
+ * the fill's own `HP_FILL_MS` (300) plus one readable 150 ms beat — above the fill,
+ * so a segment always finishes before the next one starts, and well under the
+ * ordinary `BATTLE_LOG_DWELL_MS` (900).
+ */
+export const HIT_FRAME_MS: number = HP_FILL_MS + 150;
+
+/** The six log keys a landing hit prints — the whole `battle.log.hit*` family. */
+export const HIT_FRAME_KEYS: readonly string[] = [
+  'battle.log.hit',
+  'battle.log.hitCrit',
+  'battle.log.hitSuper',
+  'battle.log.hitCritSuper',
+  'battle.log.hitWeak',
+  'battle.log.hitCritWeak',
+];
+
+/**
+ * The event kinds a hit frame never carries: each one means the frame is a state
+ * change of its own (a faint, a status, a switch...) and not a plain landing hit.
+ */
+const NON_HIT_KINDS: readonly BattleEvent['kind'][] = [
+  'status',
+  'cure',
+  'boost',
+  'switch',
+  'faint',
+  'heal',
+  'mega',
+  'gmax',
+  'forme',
+  'item',
+  'capture',
+  'run',
+  'end',
+];
+
+/**
+ * True when `frames[index]` is a landing hit of a move's hit loop: the frame
+ * carries at least one `damage` event, carries none of `status`, `cure`, `boost`,
+ * `switch`, `faint`, `heal`, `mega`, `gmax`, `forme`, `item`, `capture`, `run`,
+ * `end`, and carries a `text` event whose `key` is one of `HIT_FRAME_KEYS`.
+ * Total: an out-of-range index, a missing frame, a frame with no events → `false`.
+ */
+export function hitFrameAt(frames: readonly FeedFrame[], index: number): boolean {
+  if (!Number.isInteger(index) || index < 0) return false;
+  const frame = frames[index];
+  if (frame === undefined) return false;
+  let damaged = false;
+  let hitLine = false;
+  for (const event of frame.events) {
+    if (event.kind === 'damage') damaged = true;
+    else if (NON_HIT_KINDS.includes(event.kind)) return false;
+    else if (event.kind === 'text' && HIT_FRAME_KEYS.includes(event.key)) hitLine = true;
+  }
+  return damaged && hitLine;
+}
+
+/**
+ * The hold the frame at `index` gets: `HIT_FRAME_MS` while it is a hit frame **and**
+ * `frames[index + 1]` is also a hit frame; `dwellMs` otherwise. Pure and total.
+ */
+export function frameHoldMs(frames: readonly FeedFrame[], index: number, dwellMs: number): number {
+  return hitFrameAt(frames, index) && hitFrameAt(frames, index + 1) ? HIT_FRAME_MS : dwellMs;
 }
