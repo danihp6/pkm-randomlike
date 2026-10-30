@@ -101,13 +101,22 @@
 .main-menu__walker {
   background-color: rgb(255 255 255 / 4%);
   /*
-   * A walker steps one tile at a time: only the box slides, over the route's own
-   * `WALK_STEP_MS` (inline, from `walkerPaint`) and linear. A duration on every
-   * property would smear the frame cut, so the sprite's `background-position` is
-   * outside the transition and changes instantly.
+   * A tick books a whole stride: only the box slides, one tile per `WALK_STEP_MS`
+   * (inline, from `walkerPaint`) and linear. A duration on every property would
+   * smear the frame cut, so the sprite's `background-position` is outside the
+   * transition and changes instantly.
    */
   transition-property: left, top;
   transition-timing-function: linear;
+}
+
+/*
+ * 01 · the ground plate under a walker: one 24 px span on the model tile it stands
+ * on, plus the half-alpha one the tile it left keeps for `TRAIL_MS`. Both boxes and
+ * colours are inline (from `walkerPaint`), so the paint, not this file, owns them.
+ */
+.main-menu__plate {
+  position: absolute;
 }
 
 /* 01 · title */

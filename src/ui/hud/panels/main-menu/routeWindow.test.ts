@@ -10,12 +10,23 @@ import type { TileMap } from '../../../../engine/map';
 import type { PokemonOverworldSheet } from '../../../../data/pokemonOverworld';
 import { overworldCellHeight, overworldScale } from '../../../../data/overworldSize';
 import { PORTRAIT_ATLAS_URL } from '../../../../data/portraits';
-import { previewRoute, previewWalkers, type PreviewRoom } from '../../../../engine/routes/preview';
+import {
+  PREVIEW_TICK_MS,
+  previewRoute,
+  previewWalkers,
+  type PreviewRoom,
+  type PreviewWalker,
+} from '../../../../engine/routes/preview';
 import { resolveGroundFrame } from '../../../../engine/tileFrames';
 import type { TilesetConfig } from '../../../../engine/tileset';
-import { FOLLOWER_FRAME_RATE, followerFit } from '../../../../render/pokemonFollower';
+import { FOLLOWER_FRAME_RATE, followerFit, followerFrame } from '../../../../render/pokemonFollower';
 import {
+  PLATE_COLOUR,
+  PLATE_TAB_COLOUR,
   ROUTE_PREVIEW_STEP_MS,
+  TRAIL_COLOUR,
+  TRAIL_MS,
+  TRAIL_TAB_COLOUR,
   WALK_FRAME_MS,
   WALK_STEP_MS,
   previewOrigin,
@@ -25,6 +36,7 @@ import {
   tileBackground,
   walkerPaint,
   type PreviewTileset,
+  type WalkerPaintState,
 } from './routeWindow';
 
 const DESK = { x: 96, y: 150, w: 560, h: 380 } as const;
@@ -64,8 +76,16 @@ function positionOf(frame: number, cols: number): string {
 }
 
 describe('ROUTE_PREVIEW_STEP_MS', () => {
-  it('is the panel’s one timer step', () => {
+  it('is the panel’s one timer step, the engine’s own tick', () => {
     expect(ROUTE_PREVIEW_STEP_MS).toBe(600);
+    expect(ROUTE_PREVIEW_STEP_MS).toBe(PREVIEW_TICK_MS);
+  });
+});
+
+describe('TRAIL_MS', () => {
+  it('is shorter than a tick, so a stride leaves a short tail', () => {
+    expect(TRAIL_MS).toBe(400);
+    expect(TRAIL_MS).toBeLessThan(ROUTE_PREVIEW_STEP_MS);
   });
 });
 
@@ -208,10 +228,42 @@ const SHEET: PokemonOverworldSheet = {
   },
 };
 
-const WALKER = { id: 0, speciesId: 'pikachu', tile: { x: 2, y: 3 }, facing: 'S' } as const;
+const WALKER: PreviewWalker = {
+  id: 0,
+  speciesId: 'pikachu',
+  tile: { x: 2, y: 3 },
+  facing: 'S',
+  path: [],
+  rest: 0,
+};
 
-const STILL = { moving: false, frameStep: 0, instant: false } as const;
-const STEPPING = { moving: true, frameStep: 1, instant: false } as const;
+/** The same walker on a `tiles`-long stride south, started from `{ x: 2, y: 2 }`. */
+function striding(tiles: number): PreviewWalker {
+  const path = Array.from({ length: tiles }, (_, index) => ({ x: 2, y: 3 + index }));
+  return { ...WALKER, tile: path[path.length - 1]!, previous: { x: 2, y: 2 }, path, rest: 2 };
+}
+
+const STILL: WalkerPaintState = {
+  moving: false,
+  resting: false,
+  frameStep: 0,
+  instant: false,
+  sinceStrideMs: Number.POSITIVE_INFINITY,
+};
+const STEPPING: WalkerPaintState = {
+  moving: true,
+  resting: false,
+  frameStep: 1,
+  instant: false,
+  sinceStrideMs: Number.POSITIVE_INFINITY,
+};
+const RESTING: WalkerPaintState = { ...STILL, resting: true };
+
+/** The alpha an `rgba(…)` string carries. */
+function alphaOf(colour: string): number {
+  const match = /rgba\([^)]*,\s*([0-9.]+)\)/.exec(colour);
+  return match === null ? Number.NaN : Number(match[1]);
+}
 
 describe('walkerPaint', () => {
   it('walks on the pair’s own strip, one species cell of the sheet', () => {
@@ -254,6 +306,78 @@ describe('walkerPaint', () => {
 
     expect(walkerPaint(DESK, room, WALKER, { ...STEPPING, instant: true }, SHEET).transitionMs).toBe(0);
     expect(walkerPaint(DESK, room, WALKER, STEPPING, SHEET).transitionMs).toBe(WALK_STEP_MS);
+  });
+
+  it('slides the whole stride, one WALK_STEP_MS per tile', () => {
+    const room = previewRoomFor('walker-paint-stride', DESK);
+
+    for (const tiles of [2, 3, 4]) {
+      const walker = striding(tiles);
+      const paint = walkerPaint(DESK, room, walker, STEPPING, SHEET);
+
+      expect(paint.transitionMs).toBe(tiles * WALK_STEP_MS);
+      expect(paint.transitionMs).toBe(walker.path.length * WALK_STEP_MS);
+      expect(paint.box).toEqual(previewTileBox(DESK, room, walker.tile));
+      expect(paint.box).toEqual({ x: 52, y: 82 + (tiles - 1) * 24, w: 24, h: 24 });
+      expect(walkerPaint(DESK, room, walker, { ...STEPPING, instant: true }, SHEET).transitionMs).toBe(
+        0,
+      );
+    }
+  });
+
+  it('plates the tile it stands on, always', () => {
+    const room = previewRoomFor('walker-plate', DESK);
+    const walker = striding(3);
+    const pair = walkerPaint(DESK, room, walker, STEPPING, SHEET);
+    const portrait = walkerPaint(DESK, room, walker, STEPPING, null);
+
+    expect(pair.plate.box).toEqual(previewTileBox(DESK, room, walker.tile));
+    expect(pair.plate.box).toEqual(previewWalkerBox(DESK, room, walker));
+    expect(pair.plate.box).toEqual({ x: 52, y: 130, w: 24, h: 24 });
+    expect(pair.plate.colour).toBe(PLATE_COLOUR);
+    expect(portrait.plate.colour).toBe(PLATE_TAB_COLOUR);
+    expect(alphaOf(PLATE_COLOUR)).toBe(0.22);
+    expect(alphaOf(PLATE_TAB_COLOUR)).toBe(0.72);
+    expect(pair.plate).toEqual(walkerPaint(DESK, room, walker, STEPPING, SHEET).plate);
+  });
+
+  it('names the tile it left for TRAIL_MS, then drops it', () => {
+    const room = previewRoomFor('walker-trail', DESK);
+    const walker = striding(3);
+    const box = previewTileBox(DESK, room, walker.previous!);
+
+    const fresh = walkerPaint(DESK, room, walker, { ...STEPPING, sinceStrideMs: 0 }, SHEET);
+    expect(fresh.trail).not.toBeNull();
+    expect(fresh.trail!.box).toEqual(box);
+    expect(fresh.trail!.box).toEqual({ x: 52, y: 58, w: 24, h: 24 });
+    expect(fresh.trail!.colour).toBe(TRAIL_COLOUR);
+    expect(alphaOf(TRAIL_COLOUR)).toBe(alphaOf(PLATE_COLOUR) / 2);
+    expect(alphaOf(TRAIL_TAB_COLOUR)).toBe(alphaOf(PLATE_TAB_COLOUR) / 2);
+
+    const held = walkerPaint(DESK, room, walker, { ...STEPPING, sinceStrideMs: TRAIL_MS - 1 }, SHEET);
+    expect(held.trail).toEqual(fresh.trail);
+
+    for (const sinceStrideMs of [TRAIL_MS, Number.POSITIVE_INFINITY]) {
+      expect(walkerPaint(DESK, room, walker, { ...STEPPING, sinceStrideMs }, SHEET).trail).toBeNull();
+    }
+
+    const portrait = walkerPaint(DESK, room, walker, { ...STEPPING, sinceStrideMs: 0 }, null);
+    expect(portrait.trail!.colour).toBe(TRAIL_TAB_COLOUR);
+    expect(alphaOf(TRAIL_TAB_COLOUR)).toBe(0.36);
+
+    expect(walkerPaint(DESK, room, WALKER, { ...STEPPING, sinceStrideMs: 0 }, SHEET).trail).toBeNull();
+  });
+
+  it('holds the walk strip’s last frame while it stands', () => {
+    const room = previewRoomFor('walker-paint-rest', DESK);
+    const resting = walkerPaint(DESK, room, WALKER, RESTING, SHEET);
+    const idle = walkerPaint(DESK, room, WALKER, STILL, SHEET);
+
+    expect(resting.frame).toBe(followerFrame(SHEET, 'down', 'walk', SHEET.anims.walk.count - 1));
+    expect(resting.frame).toBe(8);
+    expect(idle.frame).toBe(0);
+    expect(resting.frame).not.toBe(idle.frame);
+    expect(walkerPaint(DESK, room, WALKER, { ...RESTING, frameStep: 5 }, SHEET)).toEqual(resting);
   });
 
   it('falls back to the species’ portrait when the pair is absent', () => {
@@ -314,12 +438,23 @@ describe('walkerPaint', () => {
   it('walkerPaint still answers with no RNG and no clock', () => {
     const room = previewRoomFor('walker-paint-pure', DESK);
     const sheet = { ...SHEET, speciesId: 'diglett' };
+    const walker = striding(2);
+    const state = { ...STEPPING, sinceStrideMs: 0, resting: true };
 
     const firstPaint = walkerPaint(DESK, room, WALKER, STEPPING, sheet);
     const secondPaint = walkerPaint(DESK, room, WALKER, STEPPING, sheet);
     expect(secondPaint).toEqual(firstPaint);
     expect(walkerPaint(DESK, room, WALKER, STEPPING, null)).toEqual(
       walkerPaint(DESK, room, WALKER, STEPPING, null),
+    );
+    expect(walkerPaint(DESK, room, walker, state, sheet)).toEqual(
+      walkerPaint(DESK, room, walker, state, sheet),
+    );
+    expect(walkerPaint(DESK, room, walker, state, sheet).plate).toEqual(
+      walkerPaint(DESK, room, walker, state, sheet).plate,
+    );
+    expect(walkerPaint(DESK, room, walker, state, sheet).trail).toEqual(
+      walkerPaint(DESK, room, walker, state, sheet).trail,
     );
     const firstFit = followerFit(sheet);
     expect(followerFit(sheet)).toEqual(firstFit);

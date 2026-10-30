@@ -10036,7 +10036,7 @@ carries.
 
 ### Batch 103 - a stride, a rest and a lit tile
 
-- [ ] **[Task-232] The main menu's walkers take a stride and rest, over a lit tile that leaves a
+- [x] **[Task-232] The main menu's walkers take a stride and rest, over a lit tile that leaves a
       trail.** Reported with the size: «la animacion en el menu principal se mueve como poco
       realista un tick una casilla, deberia ir moviendose varias casillas de golpe pararse un poco
       algo realista y en la casilla en la que estan ahora como que tiene un poco de fondo y cambia

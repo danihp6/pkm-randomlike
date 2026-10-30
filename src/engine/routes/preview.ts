@@ -10,6 +10,15 @@ export const PREVIEW_TILE = 24;
 /** The biome the window always previews (the first map’s, `biomeForRoute(1)`). */
 export const PREVIEW_BIOME_ID = 'forest';
 
+/** The panel’s tick: one model step, in ms. The window’s only timer. */
+export const PREVIEW_TICK_MS = 600;
+/** The tiles one stride books: at least, and at most. */
+export const STRIDE_MIN_TILES = 2;
+export const STRIDE_MAX_TILES = 4;
+/** The beat a walker stands after a stride, in ms, drawn from its own stream. */
+export const STRIDE_REST_MIN_MS = 900;
+export const STRIDE_REST_MAX_MS = 1600;
+
 export type PreviewRect = Readonly<{ x: number; y: number; w: number; h: number }>;
 
 export type PreviewRoom = Readonly<{
@@ -33,15 +42,18 @@ export type PreviewWalker = Readonly<{
   id: number;
   /** A species `playableSpecies()` names, so the panel can draw its portrait cell. */
   speciesId: string;
-  /** The walker’s tile inside the room (`0 … cols-1`, `0 … rows-1`). */
+  /** The tile it now stands on: the last tile of `path`, or the one it never left. */
   tile: Tile;
+  /** The heading of the last stride; unchanged on a resting tick. */
   facing: Facing;
-  /**
-   * The tile it stepped off last tick; absent at the start of a walk. A walker
-   * never walks straight back onto it while another walkable card is open, so the
-   * window’s walk cannot metronome between two tiles.
-   */
+  /** The tile the last stride started from. Absent until the first stride. */
   previous?: Tile;
+  /** The tiles this tick’s stride booked, in walk order; `[]` on a resting tick. */
+  path: readonly Tile[];
+  /** Ticks still to stand before the next stride; `0` = the next tick strides. */
+  rest: number;
+  /** The beat drawn for the rest that follows the last stride, in ms; absent before it. */
+  restMs?: number;
 }>;
 
 function countFor(span: number): number {
@@ -219,18 +231,55 @@ export function previewWalkers(route: PreviewRoom): readonly PreviewWalker[] {
       speciesId,
       tile: { x: tile.x, y: tile.y },
       facing: FACINGS[rng.int(0, FACINGS.length - 1)],
+      path: [],
+      rest: 0,
     });
   }
   return walkers;
 }
 
 /**
- * One timer tick of the walkers: each one takes a walkable cardinal neighbour of
- * its current tile, never the tile it just came from while another way is open,
- * and prefers a step that cannot force it back on the next tick. A walker boxed
- * in on a single card reverses (or stays put with no card at all). Every walker
- * reads its own `walker:<id>:<step>` stream, so a tick never depends on the order
- * the list is drawn in and a fold replays exactly.
+ * The tiles a straight stride walks from `from` along `facing`, in walk order and
+ * starting with `from` itself, refused exactly as the stride refuses them: out of the
+ * room, not walkable, the tile the last stride started from, or one already walked.
+ */
+function straightRun(
+  route: PreviewRoom,
+  from: Tile,
+  facing: Facing,
+  cap: number,
+  previous: Tile | undefined,
+): Tile[] {
+  const vector = FACING_VECTORS[facing];
+  const run: Tile[] = [from];
+  while (run.length < cap) {
+    const last = run[run.length - 1]!;
+    const next = { x: last.x + vector.x, y: last.y + vector.y };
+    if (next.x < 0 || next.x >= route.cols || next.y < 0 || next.y >= route.rows) break;
+    if (!isWalkable(route.tiles, next)) break;
+    if (previous !== undefined && sameTile(next, previous)) break;
+    if (run.some((tile) => sameTile(tile, next))) break;
+    run.push(next);
+  }
+  return run;
+}
+
+/** How many tiles the stride would book if it went `step`'s way: never fewer than one. */
+function runLength(route: PreviewRoom, step: Step, previous: Tile | undefined): number {
+  return straightRun(route, step.tile, step.facing, Math.max(route.cols, route.rows), previous).length;
+}
+
+/**
+ * One timer tick of the walkers. A walker that is resting books no move at all and
+ * only spends a tick of its beat; otherwise the tick books a **stride**: two to four
+ * tiles along one heading, walkable, in bounds, never doubling back onto the tile the
+ * last stride started from, and drawn from the walker’s own `walker:<id>:<step>`
+ * stream in exactly three draws (the stride’s length, the heading, the beat that
+ * follows). The heading is drawn among the candidates whose straight line can book at
+ * least two tiles, falling back to every candidate only when none can, so an open room
+ * moves several tiles at once and a boxed-in walker still answers the longest legal
+ * stride (or stays put). A tick never depends on the order the list is drawn in, and a
+ * fold replays exactly.
  */
 export function stepPreviewWalkers(
   route: PreviewRoom,
@@ -239,8 +288,11 @@ export function stepPreviewWalkers(
 ): readonly PreviewWalker[] {
   const at = Number.isFinite(step) ? Math.max(0, Math.trunc(step)) : 0;
   return walkers.map((walker) => {
+    if (walker.rest > 0) {
+      return { ...walker, path: [], rest: walker.rest - 1 };
+    }
     const rng = rngFromSeed(`${route.seed}:preview:walker:${walker.id}:${at}`);
-    const leaving = { x: walker.tile.x, y: walker.tile.y };
+    const length = rng.int(STRIDE_MIN_TILES, STRIDE_MAX_TILES);
     const previous = walker.previous;
     const all = stepsFrom(route, walker.tile);
     const fresh =
@@ -248,15 +300,25 @@ export function stepPreviewWalkers(
     const forward = fresh.filter((candidate) => keepsGoing(route, candidate, walker.tile));
     const candidates = forward.length > 0 ? forward : fresh.length > 0 ? fresh : all;
     if (candidates.length === 0) {
-      return { ...walker, tile: { ...leaving }, previous: { ...leaving } };
+      return { ...walker, tile: walker.tile, previous: walker.tile, path: [], rest: 0 };
     }
-    const chosen = candidates[rng.int(0, candidates.length - 1)];
+    const usable = candidates.filter(
+      (candidate) => runLength(route, candidate, previous) >= STRIDE_MIN_TILES,
+    );
+    const pool = usable.length > 0 ? usable : candidates;
+    const chosen = pool[rng.int(0, pool.length - 1)];
+    const facing = chosen.facing;
+    const path = straightRun(route, chosen.tile, facing, length, previous);
+    const restMs = STRIDE_REST_MIN_MS + 100 * rng.int(0, 7);
     return {
       id: walker.id,
       speciesId: walker.speciesId,
-      tile: chosen.tile,
-      facing: chosen.facing,
-      previous: leaving,
+      tile: path[path.length - 1]!,
+      facing,
+      previous: walker.tile,
+      path,
+      rest: Math.max(1, Math.round(restMs / PREVIEW_TICK_MS)),
+      restMs,
     };
   });
 }

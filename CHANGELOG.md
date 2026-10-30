@@ -8,6 +8,26 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The main menu's walkers take a stride and rest, over a lit tile that leaves a trail.**
+      `[Task-232]`, Batch 103: the decorative route behind the menu metronomed one cardinal tile
+      per 600 ms tick. `stepPreviewWalkers` now books a **stride** of 2–4 tiles along one heading
+      drawn from the walker's own `…:preview:walker:<id>:<step>` stream — exactly three draws, the
+      length, the heading and the beat — then stands a **rest** of 900–1600 ms (2–3 ticks that
+      book no move); the panel slides the whole stride at one tile per `WALK_STEP_MS` and holds
+      the walk strip's last frame while it rests. `walkerPaint` gained the ground **plate** under
+      the walker and the same plate at half alpha on the tile it left for `TRAIL_MS` (400 ms),
+      both pure paint so a fixture measures them. **Amended at cut time:** the first cut drew the
+      heading among all candidates, so a third of the strides were one tile long in an open room
+      (30 of 96 over 12 seeds, measured); the heading is now drawn from a `usable` pool whose
+      straight run reaches two tiles (`candidates` when that pool is empty), which leaves 4 of 96
+      one-tile strides, every one of them a walker boxed into a corner. `docs/design-spec.md` §2
+      and `src/ui/hud/panels/main-menu/README.md` record it. Gates: `npm test` 5210 passed /
+      69 skipped and `npm run build` green at task QA, 5219 / 69 on the batch's combined tree.
+      `[live]` measured over CDP at 390×844: seven strides of 2/2/2/4/4/4/4 tiles, straight and
+      on the 24 px grid, a 2349 ms stand, the plate a 24 × 24 rect under the walker's own tile
+      (`rgba(16, 22, 31, 0.72)`, the portrait branch — this clone has no packed pair art) and the
+      trail on the tile the stride left at exactly half that alpha, gone 439–440 ms later.
+
 - [x] **The player's HP box and the battle menu end on the same bottom line.** `[Task-228]`,
       Batch 99: reported as the player's health container and the menu not being aligned at the
       bottom. One exported `battleStage(viewport)` (new in `src/ui/hud/panels/battle-hp/view.ts`,
