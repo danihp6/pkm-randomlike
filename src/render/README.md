@@ -19,7 +19,9 @@ wrong art.
 - `pokemonFollower.ts` — the party follower's animation registry: a Pokémon overworld
   pair's manifest (`src/data/pokemonOverworld.ts`) becomes one looping idle and walk
   strip per facing the route draws, keyed for Phaser's animation manager. Running is
-  the walk strip played with the player's own time scale (`D24`).
+  the walk strip played with the player's own time scale (`D24`). The follower's own
+  fit is `followerFit`: the pair drawn at `TILE_SIZE × overworldScale(speciesId)` with
+  its feet on the tile's bottom edge.
 - `spriteBounds.ts` — measures how much of a battle sheet is actually drawn and where its
   feet are, so a sprite can be zoomed and anchored by its feet; reads the pixels through a
   canvas and caches the result per texture key.

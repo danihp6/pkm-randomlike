@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { hasArt } from '../assets/art';
+import { OVERWORLD_SCALE_MAX, OVERWORLD_SCALE_MIN } from '../data/overworldSize';
 import { OVERWORLD_FACINGS } from '../data/overworldSprites';
 import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokemonOverworld';
+import { TILE_SIZE } from '../engine/tileset';
 import {
   FOLLOWER_ANIMS,
   FOLLOWER_FRAME_RATE,
@@ -9,11 +11,59 @@ import {
   followerAnims,
   followerDirRow,
   followerDirRowName,
+  followerFit,
   followerFrame,
   followerIdleFrame,
 } from './pokemonFollower';
 
 const sheet = pokemonOverworldSheet('bulbasaur')!;
+
+/** A committed pair's shape (32 px cell, five rows, 28 columns) with no art behind it. */
+const PAIR: PokemonOverworldSheet = {
+  speciesId: 'pikachu',
+  fileId: 25,
+  textureKey: 'pokemon:25',
+  url: 'pairs/25.png',
+  size: 32,
+  rows: 5,
+  cols: 28,
+  dirRows: ['down', 'downright', 'up', 'upright', 'left'],
+  anims: {
+    idle: { start: 0, count: 3, durationsMs: [1333, 200, 200] },
+    walk: { start: 3, count: 6, durationsMs: [133, 133, 133, 133, 133, 133] },
+    attack: { start: 9, count: 11, durationsMs: [] },
+    special: { start: 20, count: 6, durationsMs: [] },
+    hurt: { start: 26, count: 2, durationsMs: [] },
+  },
+};
+
+describe('followerFit', () => {
+  it("followerFit's scale and feet come from one call", () => {
+    const diglett = followerFit({ ...PAIR, speciesId: 'diglett' });
+    const eternatus = followerFit({ ...PAIR, speciesId: 'eternatus' });
+
+    expect(diglett.scale).toBeCloseTo(0.6, 10);
+    expect(diglett.feetOffset).toBe(12);
+    expect(eternatus.scale).toBeCloseTo(1.2, 10);
+    expect(eternatus.feetOffset).toBe(12);
+    expect(diglett.scale * PAIR.size).toBeCloseTo(19.2, 10);
+    expect(eternatus.scale * PAIR.size).toBeCloseTo(38.4, 10);
+    for (const fit of [diglett, eternatus]) {
+      const drawn = fit.scale * PAIR.size;
+      expect(drawn).toBeGreaterThanOrEqual(TILE_SIZE * OVERWORLD_SCALE_MIN);
+      expect(drawn).toBeLessThanOrEqual(TILE_SIZE * OVERWORLD_SCALE_MAX);
+    }
+  });
+
+  it("followerFit keeps the follower's feet on the tile's bottom edge", () => {
+    for (const speciesId of ['diglett', 'eternatus']) {
+      expect(followerFit({ ...PAIR, speciesId }).feetOffset).toBe(TILE_SIZE / 2);
+    }
+    for (const size of [16, 24, 32, 64]) {
+      expect(followerFit({ ...PAIR, size }).feetOffset).toBe(TILE_SIZE / 2);
+    }
+  });
+});
 
 describe.skipIf(!hasArt('pokemon/1.png'))('follower direction rows', () => {
   it('draws down, up and left, in the sheet order the route walks', () => {

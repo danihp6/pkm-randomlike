@@ -8,11 +8,12 @@ vi.mock('../../../../engine/routes/preview', async (importOriginal) => {
 import { CARPET, EXIT, FLOOR, WALL } from '../../../../engine/map';
 import type { TileMap } from '../../../../engine/map';
 import type { PokemonOverworldSheet } from '../../../../data/pokemonOverworld';
+import { overworldCellHeight, overworldScale } from '../../../../data/overworldSize';
 import { PORTRAIT_ATLAS_URL } from '../../../../data/portraits';
 import { previewRoute, previewWalkers, type PreviewRoom } from '../../../../engine/routes/preview';
 import { resolveGroundFrame } from '../../../../engine/tileFrames';
 import type { TilesetConfig } from '../../../../engine/tileset';
-import { FOLLOWER_FRAME_RATE } from '../../../../render/pokemonFollower';
+import { FOLLOWER_FRAME_RATE, followerFit } from '../../../../render/pokemonFollower';
 import {
   ROUTE_PREVIEW_STEP_MS,
   WALK_FRAME_MS,
@@ -213,7 +214,7 @@ const STILL = { moving: false, frameStep: 0, instant: false } as const;
 const STEPPING = { moving: true, frameStep: 1, instant: false } as const;
 
 describe('walkerPaint', () => {
-  it('walks on the pair’s own strip, one 24 px cell of the sheet', () => {
+  it('walks on the pair’s own strip, one species cell of the sheet', () => {
     const room = previewRoomFor('walker-paint-south', DESK);
     const paint = walkerPaint(DESK, room, WALKER, STEPPING, SHEET);
 
@@ -221,8 +222,8 @@ describe('walkerPaint', () => {
     expect(paint.box).toEqual({ x: 52, y: 82, w: 24, h: 24 });
     expect(paint.frame).toBe(4);
     expect(paint.backgroundImage).toBe('url("pairs/25.png")');
-    expect(paint.backgroundPosition).toBe('-96px 0px');
-    expect(paint.backgroundSize).toBe('672px 120px');
+    expect(paint.backgroundPosition).toBe('-42px 12px');
+    expect(paint.backgroundSize).toBe('336px 60px');
     expect(paint.transform).toBe('none');
     expect(paint.transitionMs).toBe(WALK_STEP_MS);
   });
@@ -232,7 +233,7 @@ describe('walkerPaint', () => {
     const paint = walkerPaint(DESK, room, WALKER, { ...STILL, frameStep: 4 }, SHEET);
 
     expect(paint.frame).toBe(0);
-    expect(paint.backgroundPosition).toBe('0px 0px');
+    expect(paint.backgroundPosition).toBe('6px 12px');
   });
 
   it('draws the side row flat for E and mirrored for W', () => {
@@ -241,10 +242,10 @@ describe('walkerPaint', () => {
     const west = walkerPaint(DESK, room, { ...WALKER, facing: 'W' }, STEPPING, SHEET);
 
     expect(east.frame).toBe(116);
-    expect(east.backgroundPosition).toBe('-96px -96px');
+    expect(east.backgroundPosition).toBe('-42px -36px');
     expect(east.transform).toBe('none');
     expect(west.frame).toBe(116);
-    expect(west.backgroundPosition).toBe('-96px -96px');
+    expect(west.backgroundPosition).toBe('-42px -36px');
     expect(west.transform).toBe('scaleX(-1)');
   });
 
@@ -264,5 +265,65 @@ describe('walkerPaint', () => {
     expect(paint.backgroundImage).not.toContain('pairs/25.png');
     expect(paint.backgroundSize).toContain('px');
     expect(paint.box).toEqual({ x: 52, y: 82, w: 24, h: 24 });
+  });
+
+  it('a walker keeps its 24 px box and draws the species inside it', () => {
+    const room = previewRoomFor('walker-paint-species', DESK);
+    const diglett = { ...SHEET, speciesId: 'diglett' };
+    const eternatus = { ...SHEET, speciesId: 'eternatus' };
+    const paints = [
+      walkerPaint(DESK, room, WALKER, STEPPING, diglett),
+      walkerPaint(DESK, room, WALKER, STEPPING, eternatus),
+    ];
+
+    for (const paint of paints) {
+      expect(paint.box).toEqual(previewWalkerBox(DESK, room, WALKER));
+      expect(paint.box).toEqual({ x: 52, y: 82, w: 24, h: 24 });
+    }
+    expect(paints[0]!.backgroundSize).toBe('336px 60px');
+    expect(paints[1]!.backgroundSize).toBe('672px 120px');
+    for (const [index, speciesId] of ['diglett', 'eternatus'].entries()) {
+      const cell = overworldCellHeight(speciesId, 24);
+      const dx = Math.floor((24 - cell) / 2);
+      const dy = 24 - cell;
+      expect(paints[index]!.frame).toBe(4);
+      expect(dx).toBeGreaterThanOrEqual(0);
+      expect(dx + cell).toBeLessThanOrEqual(24);
+      expect(dy).toBeGreaterThanOrEqual(0);
+      expect(dy + cell).toBeLessThanOrEqual(24);
+    }
+  });
+
+  it('a taller pair draws a bigger cell in the same box', () => {
+    const room = previewRoomFor('walker-paint-taller', DESK);
+    const diglettCell = overworldCellHeight('diglett', 24);
+    const eternatusCell = overworldCellHeight('eternatus', 24);
+
+    expect(diglettCell).toBe(12);
+    expect(eternatusCell).toBe(24);
+    expect(eternatusCell).toBeGreaterThan(diglettCell);
+    const diglett = walkerPaint(DESK, room, WALKER, STEPPING, { ...SHEET, speciesId: 'diglett' });
+    const eternatus = walkerPaint(DESK, room, WALKER, STEPPING, { ...SHEET, speciesId: 'eternatus' });
+    expect(eternatus.box).toEqual(diglett.box);
+    expect(diglett.backgroundPosition).toBe('-42px 12px');
+    expect(eternatus.backgroundPosition).toBe('-96px 0px');
+    expect(diglett.frame).toBe(eternatus.frame);
+    expect(overworldScale('eternatus')).toBeGreaterThan(overworldScale('diglett'));
+  });
+
+  it('walkerPaint still answers with no RNG and no clock', () => {
+    const room = previewRoomFor('walker-paint-pure', DESK);
+    const sheet = { ...SHEET, speciesId: 'diglett' };
+
+    const firstPaint = walkerPaint(DESK, room, WALKER, STEPPING, sheet);
+    const secondPaint = walkerPaint(DESK, room, WALKER, STEPPING, sheet);
+    expect(secondPaint).toEqual(firstPaint);
+    expect(walkerPaint(DESK, room, WALKER, STEPPING, null)).toEqual(
+      walkerPaint(DESK, room, WALKER, STEPPING, null),
+    );
+    const firstFit = followerFit(sheet);
+    expect(followerFit(sheet)).toEqual(firstFit);
+    expect(overworldScale('diglett')).toBe(overworldScale('diglett'));
+    expect(overworldCellHeight('diglett', 24)).toBe(overworldCellHeight('diglett', 24));
   });
 });

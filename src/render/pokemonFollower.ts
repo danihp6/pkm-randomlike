@@ -1,3 +1,4 @@
+import { overworldDrawHeight } from '../data/overworldSize';
 import { OVERWORLD_FACINGS, type OverworldFacing } from '../data/overworldSprites';
 import {
   pokemonOverworldFrame,
@@ -5,6 +6,7 @@ import {
   type PokemonOverworldDirRow,
   type PokemonOverworldSheet,
 } from '../data/pokemonOverworld';
+import { TILE_SIZE } from '../engine/tileset';
 
 /**
  * The party follower's animation registry. The route resolves the lead's pair
@@ -21,6 +23,29 @@ export const FOLLOWER_FRAME_RATE = 5;
 
 /** The two animations the follower plays, in registration order. */
 export const FOLLOWER_ANIMS: readonly PokemonOverworldAnimId[] = ['idle', 'walk'];
+
+/**
+ * The route follower's own geometry for a lead's pair: the species' cell drawn at
+ * `TILE_SIZE × overworldScale`, its feet on the tile's bottom edge.
+ */
+export type FollowerFit = Readonly<{
+  /** The sprite scale that draws `sheet.size` px of art as `TILE_SIZE × overworldScale`. */
+  scale: number;
+  /** Distance from the tile's centre to its bottom edge, where the sprite's feet sit. */
+  feetOffset: number;
+}>;
+
+/**
+ * The fit a follower draws with: `scale = overworldDrawHeight(sheet.speciesId,
+ * TILE_SIZE) / sheet.size` and `feetOffset = TILE_SIZE / 2`. Pure and total; reads
+ * no RNG, no clock, no locale, no save.
+ */
+export function followerFit(sheet: PokemonOverworldSheet): FollowerFit {
+  return {
+    scale: overworldDrawHeight(sheet.speciesId, TILE_SIZE) / sheet.size,
+    feetOffset: TILE_SIZE / 2,
+  };
+}
 
 const DIR_ROW_NAME: Readonly<Record<FollowerFacing, PokemonOverworldDirRow>> = {
   down: 'down',

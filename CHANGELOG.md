@@ -8,6 +8,30 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A walker's size is the species' own, like Anil's, on the route and in the main menu.**
+      `[Task-231]`, Batch 98: the follower was pinned to one tile (`TILE_SIZE / sheet.size`) and
+      the main menu's walker to a 24 px cell, so a Wailord and a Diglett drew the same height in
+      both places while the battle already scaled by species. `overworldScale`
+      (`src/data/overworldSize.ts`) turns a species' canonical height into a scale inside a
+      frozen `0.8..1.6` band through the battle sprite's own `sqrt` curve, with
+      `overworldDrawHeight` and `overworldCellHeight` beside it; `followerFit` in
+      `src/render/pokemonFollower.ts` gives the route's scale and its feet offset from that one
+      call, `buildFollower` anchors the sprite on the tile's bottom edge, and `walkerPaint` keeps
+      the main menu's 24 × 24 box while drawing the pair's own cell inside it. Cadence does not
+      change (`FOLLOWER_FRAME_RATE`), no measured rect moves, no RNG draw and no run field.
+      `docs/design-spec.md` §2/§5 and three folder READMEs record it. Gates: `npm test` 5189
+      passed / 69 skipped and `npm run build` green at task QA and on the batch's combined tree
+      (5196 passed there). The `[live]` criterion is **not run**, not failed: `npm run
+      assets:pack` reports `overworld pokemon pairs: skipped (the store has no pokemons)`, so no
+      `src/assets/pokemon/*.png` exists in this checkout and `pokemonOverworldSheet()` answers
+      `null` for every species in the live page — the spec's own precondition. The `[unit]` half
+      is fully measured: the band's ends are exact (`diglett` 0.8, `eternatus` 1.6), the curve's
+      ratio is `sqrt(3)` to 9 decimals, and the walker's box stays `{52,82,24,24}` with
+      `336px 60px` / `672px 120px` background sizes. One data gap the task surfaced:
+      `scripts/data/heights.json` has no entry for **370** of the 1281 species (`wailord` and
+      `onix` among them), so `heightOf` falls back to 1 and those species all draw at scale 1
+      until a content task fills the table.
+
 - [x] **A multi-hit move drops the bar one segment per hit, on its own short beat.**
       `[Task-227]`, Batch 98: every hit of a sequence was already its own feed frame, but
       `showFrame` gave each one the ordinary 900 ms dwell, so a five-hit move spent five long

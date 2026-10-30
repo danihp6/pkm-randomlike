@@ -10000,7 +10000,7 @@ carries.
 
 ### Batch 102 - a walker's own size
 
-- [ ] **[Task-231] A walker's size is the species' own, like Anil's, on the route and in the main
+- [x] **[Task-231] A walker's size is the species' own, like Anil's, on the route and in the main
       menu.** Reported on `2026-10-30`: «el tamaño de los sprites y animaciones de el poke que te
       sigue y el de la pantalla menu principal no debe ser el mismo debe depender del poke, revisa
       como se hace en poke añil y hacerlo igual». **Measured:** the follower is pinned to one tile
