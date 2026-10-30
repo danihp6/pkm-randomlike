@@ -4,10 +4,11 @@ The battle feed's card as Preact over the `#hud` layer (`D49`): the glass box at
 battle menu's own card, its 1 px highlight, the message line in ink and the effect line
 in the frame's red. The box **is** the menu window: the scene pushes the live
 `battleMovesBox` rect and the panel paints the lines inside it, so opening a menu swaps
-the lines for the rows without resizing or moving the card. Under `?hud=dom` the canvas
-hides `messagePanel`/`messageText`, so this card is the message box; with the flag off
-nothing here mounts and the canvas draws it exactly as before. The fixture preview
-pushes no card and paints the measured `05b`/`m05b` board.
+the lines for the rows without resizing or moving the card. This card **is** the message box and
+the canvas draws none of it: `battleLogLayout` puts its two lines on the frame's insets inside the
+menu card. `src/main.ts` calls `mountHud` on every boot, `?hud=dom` being an inert alias kept only
+so old links still boot. The fixture preview pushes no card and paints the measured `05b`/`m05b`
+board.
 
 ## Layout
 

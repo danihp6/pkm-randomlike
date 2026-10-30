@@ -1,10 +1,10 @@
 # `src/ui/hud/panels/battle-command/` — the battle's command window (`05`)
 
 The battle's **FIGHT / BAG / SWITCH / RUN** window as Preact over the `#hud` layer (`D49`):
-the battle menu card the moves window shares and one row per command on the canvas grid's own
-cells. Under `?hud=dom` the scene's `renderCommandMenu` returns on its first statement and
-hides its chrome, so this card **is** the command window; with the flag off nothing here
-mounts and the canvas draws it exactly as before.
+the battle menu card the moves window shares and one row per command on `battleCommandView`'s
+2×2 grid, with `confirmMenu`'s cursor over it. This card **is** the command window and the canvas
+draws none of it; `src/main.ts` calls `mountHud` on every boot, `?hud=dom` being an inert alias
+kept only so old links still boot.
 
 ## Layout
 
@@ -31,11 +31,11 @@ mounts and the canvas draws it exactly as before.
    `menuItems` and `menuIndex`, and the labels arrive already localised. The panel reads no
    `HudState`, no i18n, no engine, no `Rng` and no clock.
 2. **The card is the moves card.** `battleCommandBox` is `battleMovesBox`, and the grid
-   arithmetic mirrors `BattleScene.renderCommandMenu` cell for cell — 2 columns, an 8 px gap,
-   the window padding plus the grid inset — so the DOM card and the keyboard cursor can never
-   disagree. The four cells take the card's whole two-column width, the 62 px column the moves
-   menu keeps for MEGA and G-MAX being the grid's own here: **250×72** on the desk and
-   **147×94** on the phone, a two-command partner list being one full-height row (152 / 196).
+   arithmetic **is** `battleCommandView`'s — 2 columns, an 8 px gap, the window padding plus the
+   grid inset — so the DOM card and the keyboard cursor can never disagree. The four cells take
+   the card's whole two-column width, the 62 px column the moves menu keeps for MEGA and G-MAX
+   being the grid's own here: **250×72** on the desk and **147×94** on the phone, a two-command
+   partner list being one full-height row (152 / 196).
 3. `BattleCommandIntent` is this panel's own channel: `src/ui/hud/commands.ts` has no
    battle-menu variant. Hover is `onMenuHover`'s rule (including clearing the MEGA / G-MAX
    selections) and press is the canvas row's `confirmMenu` — no new engine call, no new

@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The four folder READMEs that still described the retired `?hud=dom` canvas path stop
+      describing it.** `[Task-236]`, Batch 104: issue #81, re-measured on `main` @ `e9ccae6`,
+      where the sentences survived and a fourth file the issue never saw carried one. There was no
+      flag to be off — `hudRequested` is `(…) => true`, `mountHud` mounts on every boot and
+      `src/main.ts` calls it unconditionally — so a sentence conditioned on "the flag off"
+      described no path that existed. One paragraph per file in the `party`, `map`, `battle-log`
+      and `battle-command` maps now states the shipped fact: the DOM card **is** the panel and the
+      canvas draws none of it, `?hud=dom` is an inert alias kept so old links still boot, and the
+      dead canvas names become the code that ships now — `battleCommandView`'s grid with
+      `confirmMenu`'s cursor, `battleLogLayout`'s rect — plus the one comment line in
+      `battle-command/view.ts` that named `renderCommandMenu`. The paragraphs got shorter, never
+      annotated; every rule number, every `## Layout` entry and every measured constant (250×72 /
+      147×94, the 8 px gap, 152 / 196, `--hud-row-radius`'s 8 px, the 90 % glass, the 0.4 dim)
+      survived, and no code, type or export moved. Gates: `npm test` 5240 passed / 69 skipped and
+      `npm run build` green; `grep -rn "with the flag off\|while the flag is on" src` and
+      `grep -rn "renderCommandMenu\|messageText" src/ui/hud` both print nothing. `[live]` measured
+      over CDP at 1280×800 reading `getBoundingClientRect` with no screenshot: `/?hud=dom` and
+      `/?hud=phaser` boot the same rects, each pair equal within 0 px — main-menu `0,0,1280,800`,
+      party `928,8,250,406`, battle-command `440,582,564,192` and battle-moves `440,582,564,192`
+      on both, one element each, from a real run (starter pick, then a debug wild battle and a
+      press on the FIGHT row).
+
 - [x] **Imposter copies the rival's sprite instead of leaving the placeholder.** `[Task-230]`,
       Batch 101: reported as «bug cuando un enemigo usa impostor debe copiar el sprite rival ahora
       sale placeholder». `transformInto` already copied `speciesId`, but the battle preloaded

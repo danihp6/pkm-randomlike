@@ -2,8 +2,10 @@
 
 The party window of `D49`: the shipped 250 × 406 card of the right-hand HUD column as a Preact
 panel over the `#hud` layer, painting a `PartyPanelView` the route scene builds from `HudState` and
-answering in `HudCommand`s. The route scene keeps the panel record (so the quick key, the saved
-layout and the collapse still work) and draws no Phaser object at all while the flag is on.
+answering in `HudCommand`s. The card **is** the panel and the canvas draws none of it; the route
+scene keeps the panel record (so the quick key, the saved layout and the collapse still work), and
+`src/main.ts` calls `mountHud` on every boot, `?hud=dom` being an inert alias kept only so old links
+still boot.
 
 ## Layout
 

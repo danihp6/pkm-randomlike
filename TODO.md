@@ -10212,7 +10212,7 @@ holder.
       the metrics), `src/ui/hud/README.md` and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 104)*
 
-- [ ] **[Task-236] The four folder READMEs that still describe the retired `?hud=dom` canvas path
+- [x] **[Task-236] The four folder READMEs that still describe the retired `?hud=dom` canvas path
       stop describing it.** Issue #81, found by Batch 90's closing Task QA while it audited
       `[Task-200]`'s own folder map and left outside that task's paths; re-measured on `main` @
       `e9ccae6`, where the sentences survive and a fourth file the issue never saw carries one.
