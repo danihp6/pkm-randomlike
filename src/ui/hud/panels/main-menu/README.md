@@ -42,8 +42,11 @@ every navigation, and this panel paints the view it is handed.
    clock is the single `ROUTE_PREVIEW_STEP_MS` timer (600 ms, the engine's own `PREVIEW_TICK_MS`)
    that calls `stepPreviewWalkers` once and that unmount clears: a tick books a **stride** of two
    to four tiles along one heading, drawn from the walker's own stream together with the beat it
-   then stands, and the `rest` ticks that follow book no move at all; a tile is still a function of
-   the tick count alone, so every per-walker stream and every fixed-seed fold replays exactly. The
+   then stands, and the `rest` ticks that follow book no move at all; the heading is itself drawn
+   among the candidate headings whose straight line can book at least two tiles — every candidate
+   only when none can, so a boxed-in walker still answers the longest legal stride — which is what
+   keeps an open room from metronoming one tile at a time; a tile is still a function of the tick
+   count alone, so every per-walker stream and every fixed-seed fold replays exactly. The
    **paint** clock is `WALK_STEP_MS` (200 ms, the route scene's own step) and `WALK_FRAME_MS` (the
    pair strip's frame at `FOLLOWER_FRAME_RATE`): a stride slides the box one 24 px cell per
    `WALK_STEP_MS` for as many tiles as it booked, and the walker plays the pair's `walk` strip

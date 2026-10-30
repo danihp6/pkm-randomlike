@@ -3,6 +3,7 @@ import { biomeForRoute } from '../../data/biomes';
 import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch, type TileMap } from '../map';
 import { FACINGS, FACING_VECTORS, tileKey } from './routeMap';
+import type { Facing } from './routeMap';
 import {
   PREVIEW_BIOME_ID,
   PREVIEW_TICK_MS,
@@ -135,6 +136,76 @@ function describeFrame(frame: readonly PreviewWalker[]): string {
           .join('>')}:${walker.rest}`,
     )
     .join(' | ');
+}
+
+type TestStep = Readonly<{ tile: Tile; facing: Facing }>;
+
+function sameTile(a: Tile, b: Tile): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+/** The walkable cardinals of `tile`, in `FACINGS` order. */
+function stepsFrom(room: PreviewRoom, tile: Tile): TestStep[] {
+  const steps: TestStep[] = [];
+  for (const facing of FACINGS) {
+    const vector = FACING_VECTORS[facing];
+    const next = { x: tile.x + vector.x, y: tile.y + vector.y };
+    if (next.x < 0 || next.x >= room.cols || next.y < 0 || next.y >= room.rows) continue;
+    if (!isWalkable(room.tiles, next)) continue;
+    steps.push({ tile: next, facing });
+  }
+  return steps;
+}
+
+/** The stride's own refusal rule, mirrored so the sweep can name the run of a heading. */
+function straightRun(
+  room: PreviewRoom,
+  from: Tile,
+  facing: Facing,
+  cap: number,
+  previous?: Tile,
+): Tile[] {
+  const vector = FACING_VECTORS[facing];
+  const run: Tile[] = [from];
+  while (run.length < cap) {
+    const last = run[run.length - 1]!;
+    const next = { x: last.x + vector.x, y: last.y + vector.y };
+    if (next.x < 0 || next.x >= room.cols || next.y < 0 || next.y >= room.rows) break;
+    if (!isWalkable(room.tiles, next)) break;
+    if (previous !== undefined && sameTile(next, previous)) break;
+    if (run.some((tile) => sameTile(tile, next))) break;
+    run.push(next);
+  }
+  return run;
+}
+
+/** The tiles a stride would book along `step`'s heading, never fewer than one. */
+function runOf(room: PreviewRoom, step: TestStep, previous?: Tile): number {
+  return straightRun(room, step.tile, step.facing, Math.max(room.cols, room.rows), previous).length;
+}
+
+/** The candidates of a walker's tick: the forward pool, then the fresh one, then all. */
+function candidatesOf(room: PreviewRoom, walker: PreviewWalker): TestStep[] {
+  const all = stepsFrom(room, walker.tile);
+  const fresh =
+    walker.previous === undefined
+      ? all
+      : all.filter((candidate) => !sameTile(candidate.tile, walker.previous!));
+  const forward = fresh.filter((candidate) =>
+    stepsFrom(room, candidate.tile).some((next) => !sameTile(next.tile, walker.tile)),
+  );
+  return forward.length > 0 ? forward : fresh.length > 0 ? fresh : all;
+}
+
+/**
+ * The pool a tick draws its heading from: the candidates whose run reaches
+ * `STRIDE_MIN_TILES`, or every candidate when none can (the boxed-in guard).
+ */
+function stridePool(room: PreviewRoom, walker: PreviewWalker): TestStep[] {
+  const usable = candidatesOf(room, walker).filter(
+    (candidate) => runOf(room, candidate, walker.previous) >= STRIDE_MIN_TILES,
+  );
+  return usable.length > 0 ? usable : candidatesOf(room, walker);
 }
 
 describe('the stride constants', () => {
@@ -289,9 +360,9 @@ describe('stepPreviewWalkers', () => {
       'buneary@0,8:W:3,8>2,8>1,8>0,8:3 | barraskewda@14,7:W:16,7>15,7>14,7:2',
       'buneary@0,8:W::2 | barraskewda@14,7:W::1',
       'buneary@0,8:W::1 | barraskewda@14,7:W::0',
-      'buneary@0,8:W::0 | barraskewda@14,8:S:14,8:2',
-      'buneary@0,6:N:0,7>0,6:3 | barraskewda@14,8:S::1',
-      'buneary@0,6:N::2 | barraskewda@14,8:S::0',
+      'buneary@0,8:W::0 | barraskewda@10,7:W:13,7>12,7>11,7>10,7:2',
+      'buneary@0,6:N:0,7>0,6:3 | barraskewda@10,7:W::1',
+      'buneary@0,6:N::2 | barraskewda@10,7:W::0',
     ]);
   });
 
@@ -314,6 +385,7 @@ const STRIDE_TICKS = 40;
 describe('the stride', () => {
   it('books straight, walkable tiles that never double back, over 12 seeds × 8 strides', () => {
     let measured = 0;
+    let boxedIn = 0;
     for (const seed of STRIDE_SEEDS) {
       const room = previewRoute(seed, PHONE);
       const strides = stridesOf(room, previewWalkers(room), STRIDE_TICKS);
@@ -343,9 +415,70 @@ describe('the stride', () => {
         }
         expect(after.tile, where).toEqual(after.path[after.path.length - 1]!);
         expect(after.previous, where).toEqual(before.tile);
+
+        const pool = stridePool(room, before);
+        expect(pool.length, where).toBeGreaterThan(0);
+        expect(
+          pool.map((candidate) => candidate.facing),
+          where,
+        ).toContain(after.facing);
+        if (after.path.length < STRIDE_MIN_TILES) {
+          boxedIn += 1;
+          expect(
+            pool.every((candidate) => runOf(room, candidate, before.previous) < STRIDE_MIN_TILES),
+            `${where} short stride with a stridable heading in the pool`,
+          ).toBe(true);
+        }
       }
     }
     expect(measured).toBeGreaterThanOrEqual(STRIDE_SEEDS.length * 8);
+    expect(boxedIn).toBeLessThanOrEqual(measured * 0.1);
+  });
+
+  it('prefers a heading that can stride', () => {
+    // Standing one tile under a nook: N, S and W all run into a wall on their second
+    // tile, so only E — whose run reaches two — may be drawn, and it books both tiles.
+    const room = roomFromSketch(['######', '#...##', '#....#', '#....#', '######']);
+    const walker = walkerAt({ x: 2, y: 2 });
+    const candidates = candidatesOf(room, walker);
+
+    expect(candidates.map((candidate) => candidate.facing)).toEqual(['N', 'E', 'S', 'W']);
+    for (const facing of ['N', 'S', 'W'] as const) {
+      const step = candidates.find((candidate) => candidate.facing === facing)!;
+      expect(runOf(room, step, undefined), facing).toBe(1);
+    }
+    expect(stridePool(room, walker).map((candidate) => candidate.facing)).toEqual(['E']);
+
+    const run = runOf(room, stridePool(room, walker)[0]!, undefined);
+    expect(run).toBe(2);
+    for (let tick = 0; tick < 4; tick++) {
+      const [strode] = stepPreviewWalkers(room, [walker], tick);
+
+      expect(strode!.facing).toBe('E');
+      expect(strode!.path.length).toBe(Math.min(STRIDE_MAX_TILES, run));
+      expect(strode!.path.length).toBeGreaterThanOrEqual(Math.min(STRIDE_MIN_TILES, run));
+      expect(strode!.path).toEqual([
+        { x: 3, y: 2 },
+        { x: 4, y: 2 },
+      ]);
+    }
+  });
+
+  it('still answers a one-tile stride in a corridor that offers nothing longer', () => {
+    const room = roomFromSketch(['####', '#..#', '####']);
+    const walker = walkerAt({ x: 1, y: 1 });
+
+    expect(
+      stridePool(room, walker).every(
+        (candidate) => runOf(room, candidate, undefined) < STRIDE_MIN_TILES,
+      ),
+    ).toBe(true);
+
+    const [strode] = stepPreviewWalkers(room, [walker], 0);
+
+    expect(strode!.facing).toBe('E');
+    expect(strode!.path).toEqual([{ x: 2, y: 1 }]);
+    expect(strode!.tile).toEqual({ x: 2, y: 1 });
   });
 
   it('ends a stride early only where the room refuses the next tile', () => {
@@ -445,8 +578,8 @@ describe('the stride', () => {
         .map(({ after }) => after.path.length);
     };
 
-    expect(lengths('pkm-232-a')).toEqual([1, 2, 3, 2, 1, 4]);
-    expect(lengths('pkm-232-b')).toEqual([3, 3, 2, 1, 3, 1]);
+    expect(lengths('pkm-232-a')).toEqual([4, 3, 2, 2, 4, 2]);
+    expect(lengths('pkm-232-b')).toEqual([3, 3, 2, 2, 4, 2]);
     expect(lengths('pkm-232-a')).not.toEqual(lengths('pkm-232-b'));
   });
 });

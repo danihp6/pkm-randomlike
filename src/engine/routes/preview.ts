@@ -239,14 +239,47 @@ export function previewWalkers(route: PreviewRoom): readonly PreviewWalker[] {
 }
 
 /**
+ * The tiles a straight stride walks from `from` along `facing`, in walk order and
+ * starting with `from` itself, refused exactly as the stride refuses them: out of the
+ * room, not walkable, the tile the last stride started from, or one already walked.
+ */
+function straightRun(
+  route: PreviewRoom,
+  from: Tile,
+  facing: Facing,
+  cap: number,
+  previous: Tile | undefined,
+): Tile[] {
+  const vector = FACING_VECTORS[facing];
+  const run: Tile[] = [from];
+  while (run.length < cap) {
+    const last = run[run.length - 1]!;
+    const next = { x: last.x + vector.x, y: last.y + vector.y };
+    if (next.x < 0 || next.x >= route.cols || next.y < 0 || next.y >= route.rows) break;
+    if (!isWalkable(route.tiles, next)) break;
+    if (previous !== undefined && sameTile(next, previous)) break;
+    if (run.some((tile) => sameTile(tile, next))) break;
+    run.push(next);
+  }
+  return run;
+}
+
+/** How many tiles the stride would book if it went `step`'s way: never fewer than one. */
+function runLength(route: PreviewRoom, step: Step, previous: Tile | undefined): number {
+  return straightRun(route, step.tile, step.facing, Math.max(route.cols, route.rows), previous).length;
+}
+
+/**
  * One timer tick of the walkers. A walker that is resting books no move at all and
  * only spends a tick of its beat; otherwise the tick books a **stride**: two to four
  * tiles along one heading, walkable, in bounds, never doubling back onto the tile the
  * last stride started from, and drawn from the walker’s own `walker:<id>:<step>`
  * stream in exactly three draws (the stride’s length, the heading, the beat that
- * follows). The stride ends at the first tile the room refuses, so a boxed-in walker
- * answers the longest legal stride — or stays put. A tick never depends on the order
- * the list is drawn in, and a fold replays exactly.
+ * follows). The heading is drawn among the candidates whose straight line can book at
+ * least two tiles, falling back to every candidate only when none can, so an open room
+ * moves several tiles at once and a boxed-in walker still answers the longest legal
+ * stride (or stays put). A tick never depends on the order the list is drawn in, and a
+ * fold replays exactly.
  */
 export function stepPreviewWalkers(
   route: PreviewRoom,
@@ -269,19 +302,13 @@ export function stepPreviewWalkers(
     if (candidates.length === 0) {
       return { ...walker, tile: walker.tile, previous: walker.tile, path: [], rest: 0 };
     }
-    const chosen = candidates[rng.int(0, candidates.length - 1)];
+    const usable = candidates.filter(
+      (candidate) => runLength(route, candidate, previous) >= STRIDE_MIN_TILES,
+    );
+    const pool = usable.length > 0 ? usable : candidates;
+    const chosen = pool[rng.int(0, pool.length - 1)];
     const facing = chosen.facing;
-    const vector = FACING_VECTORS[facing];
-    const path: Tile[] = [chosen.tile];
-    while (path.length < length) {
-      const last = path[path.length - 1]!;
-      const next = { x: last.x + vector.x, y: last.y + vector.y };
-      if (next.x < 0 || next.x >= route.cols || next.y < 0 || next.y >= route.rows) break;
-      if (!isWalkable(route.tiles, next)) break;
-      if (previous !== undefined && sameTile(next, previous)) break;
-      if (path.some((tile) => sameTile(tile, next))) break;
-      path.push(next);
-    }
+    const path = straightRun(route, chosen.tile, facing, length, previous);
     const restMs = STRIDE_REST_MIN_MS + 100 * rng.int(0, 7);
     return {
       id: walker.id,
