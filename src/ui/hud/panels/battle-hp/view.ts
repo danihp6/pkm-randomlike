@@ -88,8 +88,8 @@ export type StageRect = Readonly<{ x: number; y: number; w: number; h: number }>
 /**
  * The battle's centred square, in page coordinates: a wide screen gets the smaller
  * side capped at `BATTLE_STAGE_MAX`, a tall one keeps its full portrait stage. This
- * is exactly the rect the scene's camera viewport is set to, and the origin every
- * HUD panel places itself inside.
+ * is exactly the rect the scene's camera viewport is set to, and the rect the desk
+ * player card's bottom line is measured from.
  */
 export function battleStage(viewport: Viewport): StageRect {
   const wide = viewport.width > viewport.height;
@@ -116,9 +116,9 @@ const HIGHLIGHT_INSET = 12;
 const HIGHLIGHT_H = 1;
 
 /**
- * The board's desktop column (`05`): a 368×100 card 64 px inside the stage square's
- * left edge, 48 under its top edge, its lead card ending `DESKTOP_BOTTOM_MARGIN` above
- * the square's bottom edge — the same line the command / moves card ends on.
+ * The board's desktop column (`05`): a 368×100 card at the window's own 64 px margin,
+ * 48 from the top; the player's card ends on the shared bottom line,
+ * `DESKTOP_BOTTOM_MARGIN` above the stage square's bottom edge.
  */
 const DESKTOP_X = 64;
 const DESKTOP_W = 368;
@@ -126,8 +126,8 @@ const DESKTOP_H = 100;
 const DESKTOP_FOE_Y = 48;
 
 /**
- * The board's phone column (`m05`): the same card 16 px inside the square, 80 tall,
- * the player's 340 from its bottom edge — the 16 px margin, the 236 px menu panel and
+ * The board's phone column (`m05`): the same card 16 px in, 80 tall, the player's
+ * 340 from the viewport's bottom edge — the 16 px margin, the 236 px menu panel and
  * the 8 px gutter that separates them on the frame.
  */
 const PHONE_X = 16;
@@ -144,26 +144,23 @@ function narrowColumn(viewport: Viewport): boolean {
 
 /** The lead box of one side: the card the board draws, at this viewport's column. */
 function leadBox(viewport: Viewport, side: HpSide): Rect {
-  const stage = battleStage(viewport);
   if (narrowColumn(viewport)) {
-    const w = Math.max(0, stage.w - PHONE_X * 2);
+    const w = Math.max(0, viewport.width - PHONE_X * 2);
     const y =
       side === 'enemy'
-        ? stage.y + PHONE_FOE_Y
-        : Math.max(
-            stage.y + PHONE_FOE_Y + PHONE_H + GUTTER,
-            stage.y + stage.h - PHONE_PLAYER_FROM_BOTTOM,
-          );
-    return { x: stage.x + PHONE_X, y, w, h: PHONE_H };
+        ? PHONE_FOE_Y
+        : Math.max(PHONE_FOE_Y + PHONE_H + GUTTER, viewport.height - PHONE_PLAYER_FROM_BOTTOM);
+    return { x: PHONE_X, y, w, h: PHONE_H };
   }
+  const stage = battleStage(viewport);
   const y =
     side === 'enemy'
-      ? stage.y + DESKTOP_FOE_Y
+      ? DESKTOP_FOE_Y
       : Math.max(
-          stage.y + DESKTOP_FOE_Y + DESKTOP_H + GUTTER,
+          DESKTOP_FOE_Y + DESKTOP_H + GUTTER,
           stage.y + stage.h - DESKTOP_BOTTOM_MARGIN - DESKTOP_H,
         );
-  return { x: stage.x + DESKTOP_X, y, w: DESKTOP_W, h: DESKTOP_H };
+  return { x: DESKTOP_X, y, w: DESKTOP_W, h: DESKTOP_H };
 }
 
 /**
@@ -250,11 +247,11 @@ export function foeBallRow(
 }
 
 /**
- * The player's lead's stage chips and their grid box. The board pins its own origin
- * `(448, 673)`, which the shipped menu card no longer clears once the HP column starts
- * on the stage square, so the grid is right-aligned to the player's HP column instead:
- * 8 px above the topmost player box, ending on that column's own right edge, three
- * chips a row. Zero stages and a missing battle paint nothing.
+ * The player's lead's stage chips and their grid box. The board's own origin
+ * `(448, 673)` sits inside the shipped menu card, which starts at 440 here, so the
+ * grid is right-aligned to the player's HP column instead: 8 px above the topmost
+ * player box, ending on that column's own right edge, three chips a row. Zero
+ * stages and a missing battle paint nothing.
  */
 export function battleHpStages(
   state: HudState,

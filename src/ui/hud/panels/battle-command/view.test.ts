@@ -47,7 +47,7 @@ function overlaps(a: Rect, b: Rect): boolean {
 
 describe('battleCommandBox', () => {
   it('is the card the move menu uses at 1280x800', () => {
-    expect(battleCommandBox(DESKTOP)).toEqual({ x: 680, y: 582, w: 324, h: 192 });
+    expect(battleCommandBox(DESKTOP)).toEqual({ x: 440, y: 582, w: 564, h: 192 });
   });
 
   it('is the shipped phone card at 390x844', () => {
@@ -60,10 +60,10 @@ describe('the four command cells', () => {
     const view = battleCommandView(inputOf());
     expect(view.compact).toBe(false);
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 708, y: 606, w: 99, h: 72 },
-      { x: 815, y: 606, w: 99, h: 72 },
-      { x: 708, y: 686, w: 99, h: 72 },
-      { x: 815, y: 686, w: 99, h: 72 },
+      { x: 468, y: 606, w: 219, h: 72 },
+      { x: 695, y: 606, w: 219, h: 72 },
+      { x: 468, y: 686, w: 219, h: 72 },
+      { x: 695, y: 686, w: 219, h: 72 },
     ]);
     expect(view.info?.box).toEqual({ x: 914, y: 606, w: 62, h: 152 });
   });
@@ -113,8 +113,8 @@ describe('the partner window', () => {
   it('is one full-height row of two cells at 1280x800', () => {
     const view = battleCommandView(inputOf({ card: battleCommandBox(DESKTOP), rows: PARTNER }));
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 708, y: 606, w: 99, h: 152 },
-      { x: 815, y: 606, w: 99, h: 152 },
+      { x: 468, y: 606, w: 219, h: 152 },
+      { x: 695, y: 606, w: 219, h: 152 },
     ]);
     expect(overlaps(view.rows[0].box, view.info!.box)).toBe(false);
     expect(overlaps(view.rows[1].box, view.info!.box)).toBe(false);
