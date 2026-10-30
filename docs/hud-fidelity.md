@@ -159,8 +159,9 @@ right edge plus the 8 px gutter) and keeps the shipped right edge, 1004: 564 wid
 can be drawn behind it. On a phone the card keeps its shipped full-width rect under both boxes (390×844 →
 x 16, 358×236 at y 592). **The command window is that same card**: FIGHT / BAG / SWITCH / RUN is painted
 at `battleMovesBox`'s own rect, and its four cells take the card's whole two-column width —
-**250×72** in the desk's 2×2 and **147×94** on the phone — with no fifth control in the moves menu's MEGA
-column. The **field chips** are one 32 px cell per live weather and terrain, 8 px apart, the row's right edge
+**250×72** in the desk's 2×2 and **147×94** on the phone — with no fifth control in the moves menu's own
+**62 px** MEGA / G-MAX column.
+The **field chips** are one 32 px cell per live weather and terrain, 8 px apart, the row's right edge
 16 px inside `battleStage`'s right edge and its top 16 px inside the square's top edge (1280×800 → the corner
 cell at (992,16), the terrain at (952,16)); a viewport under 600 px keeps that right edge and drops the row
 under the foe's lowest HP box, 8 px below it (390×844 → (342,104) and (302,104)). **The message box is that

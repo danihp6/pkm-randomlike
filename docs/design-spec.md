@@ -358,7 +358,10 @@ Full rules in `docs/battle-spec.md`. In short:
   width — the column the moves menu keeps for **MEGA** and **G-MAX** is the
   grid's own here — and so is the **moves** menu
   (all four moves show at once, with no scrolling), which always reserves its full
-  2x2 so a shorter list keeps one cell size and draws its spare slots as empty containers,
+  2x2 and its own 62 px MEGA / G-MAX column (each of those two controls draws the
+  shipped Mega Evolution glyph, the Hard Stone icon every Mega Stone borrows, never a
+  word; an armed one reads as the accent fill plus the accent outline), so a shorter
+  list keeps one cell size and draws its spare slots as empty containers,
   which take no press and float no **ⓘ**: each move cell is a glass row that shows
   its name, the FRLG **type badge**, the official category
   **badge** (physical / special / status), its PP, its **effective power** (base
