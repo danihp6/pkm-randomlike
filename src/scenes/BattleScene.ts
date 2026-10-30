@@ -123,7 +123,11 @@ import {
   type BattleCommandIntent,
   type BattleCommandRowId,
 } from '../ui/hud/panels/battle-command';
-import { mountBattleHp, type BattleHpController } from '../ui/hud/panels/battle-hp';
+import {
+  mountBattleHp,
+  type BattleHpController,
+  type BattleHpDoubles,
+} from '../ui/hud/panels/battle-hp';
 import {
   mountBattleField,
   type BattleFieldController,
@@ -602,7 +606,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** Which sides field a second active right now — the same fields the second window reads. */
-  private doublesInPlay(): Readonly<{ enemy: boolean; player: boolean }> {
+  private doublesInPlay(): BattleHpDoubles {
     return {
       enemy: this.displayActive2.enemy !== null,
       player: this.displayActive2.player !== null,
@@ -615,10 +619,7 @@ export class BattleScene extends Phaser.Scene {
     const host = document.getElementById('hud');
     if (host === null) return;
     this.disposeHpPanel();
-    this.hpController = mountBattleHp(host, this.doublesInPlay(), {
-      width: this.scale.width,
-      height: this.scale.height,
-    });
+    this.hpController = mountBattleHp(host);
   }
 
   private disposeHpPanel(): void {
@@ -2404,7 +2405,8 @@ export class BattleScene extends Phaser.Scene {
     // The one emit point (`D49`): the DOM boxes paint the beat the feed has
     // revealed while the canvas keeps the arena. It runs after the whole layout,
     // because the combatants' caps and positions above are read by the arena, not
-    // by the boxes.
+    // by the boxes. The viewport is read here, per push, so a window resized
+    // mid-battle re-lays the boxes out instead of keeping the mount's geometry.
     syncHud(
       {
         screen: 'battle',
@@ -2412,7 +2414,12 @@ export class BattleScene extends Phaser.Scene {
         display: this.display,
         canCapture: this.launch?.canCapture === true,
       },
-      (next) => this.hpController?.update(next),
+      (next) =>
+        this.hpController?.update(
+          next,
+          { width: this.scale.width, height: this.scale.height },
+          this.doublesInPlay(),
+        ),
     );
     this.movesController?.update(this.battleMovesInput(menu));
     this.commandController?.update(this.battleCommandInput(menu));

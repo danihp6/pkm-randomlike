@@ -8,6 +8,40 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A viewport change re-lays out the mounted DOM HUD: the battle's HP boxes and every route
+      card.** `[Task-235]`, Batch 104: issue #79, measured by two Task QAs during Batch 88 and
+      re-measured here on `main` @ `e9ccae6` — `?hud=dom` at 1280×800 resized to 390×844 without a
+      reload kept the party card at its desk `{928, 8, 250, 406}` where a fresh boot at that size
+      draws `{38, …}`, and an open battle's HP boxes kept their desk rects while the command card
+      reflowed. One rule fixes both: **the viewport is an argument of the push, never of the
+      mount.** `mountBattleHp(host)` lost its geometry and its controller's
+      `update(state, viewport, doubles)` recomputes `battleHpView` per push, so `refreshHud`'s
+      `syncHud` sink hands it `{ width: this.scale.width, height: this.scale.height }` and
+      `doublesInPlay()` — the same inputs `battleStage` and the command card already read; and
+      `RouteScene` now registers `scale.on('resize')` (dropped on `SHUTDOWN`) and its handler
+      recomputes `hudMetrics(this.scale.width)` and calls the existing `refreshHud()`, so every
+      card rebuilds its view from the live scale and the strip repaints through its own `refresh`.
+      The rejected reading is recorded: a `window.resize`/`ResizeObserver` inside
+      `src/ui/hud/mount.ts` would measure `window.innerWidth` while the scenes lay out from
+      `scale.width` (two sources for one number) and a re-mount would throw each card's signal, its
+      drag offset, its fill transition and the strip's `paused` flag away. No rect constant moved:
+      `battleHpBox`, `battleCommandBox`, `partyPanelBox`, `hudMetrics` and `stripView` are the same
+      numbers, now read against the live viewport; `SAVE_VERSION` stays **26** and `src/engine/`
+      is untouched. Gates on the merged tree: `npm test` 281 files / 5258 passed / 69 skipped and
+      `npm run build` green, with six new headless tests in
+      `src/ui/hud/panels/battle-hp/mount.test.ts` (the push and not the mount decides the rects, a
+      second push at 390×844 moves the lead box, repeated pushes paint equal rects, the box count
+      is the pushed state's, and `hudMetrics(320).panelW` still clamps to 304 against 344).
+      `[live]` read over CDP as `getBoundingClientRect()` at 1280×800 → 390×844 with **no reload**
+      and no screenshot: `[data-hud-hp="player-0"]` `{64, 674, 368, 100}` → `{16, 504, 358, 80}` =
+      `battleHpBox({390, 844}, 'player', 0)` and back on the way up, the command card
+      `{16, 592, 358, 236}` = `battleCommandBox(390)`, the party card `{928, 8, 250, 406}` →
+      `{38, 8, 250, 406}` = `partyPanelBox(390)` against a fresh 390×844 boot, the collapsed chips
+      at `STRIP_PHONE_SLOTS` (`header 8,55`, `box 8,119`, `bag 38,551`), and one mount per panel
+      throughout. The task's own box-count criterion was re-stated at QA time: `view.ts` derives
+      the boxes from `battle.sides[side].actives` while `doubles` selects the second slot's rects,
+      so the same two-active state could never paint one box.
+
 - [x] **The four folder READMEs that still described the retired `?hud=dom` canvas path stop
       describing it.** `[Task-236]`, Batch 104: issue #81, re-measured on `main` @ `e9ccae6`,
       where the sentences survived and a fourth file the issue never saw carried one. There was no

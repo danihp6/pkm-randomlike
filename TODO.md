@@ -10130,7 +10130,7 @@ holder.
 
 ### Batch 104 - a resize re-lays out the HUD, and four READMEs lose a dead path
 
-- [ ] **[Task-235] A viewport change re-lays out the mounted DOM HUD: the battle's HP boxes and
+- [x] **[Task-235] A viewport change re-lays out the mounted DOM HUD: the battle's HP boxes and
       every route card.** Issue #79, measured by two independent Task QAs during Batch 88 on the
       merged tree (`?hud=dom` at 1280×800 resized to 390×844 without a reload: the party card kept
       its 250 px column at its desk `x`, and an open battle's HP boxes kept their desk inline
