@@ -97,21 +97,6 @@ export function BattleCommandPanel(props: BattleCommandPanelProps): JSX.Element 
       {view.rows.map((row, index) => (
         <BattleCommandRow key={row.id} row={row} index={index} card={card} onIntent={props.onIntent} />
       ))}
-      {view.info === null ? null : (
-        <button
-          type="button"
-          class={joinClasses(
-            'battle-command__info',
-            view.info.selected && 'battle-command__info--selected',
-          )}
-          data-hud-command-info
-          aria-pressed={view.info.selected}
-          style={insetStyle(view.info.box, card)}
-          onClick={() => props.onIntent?.({ type: 'info' })}
-        >
-          <span class="battle-command__label">{view.info.label}</span>
-        </button>
-      )}
     </div>
   );
 }

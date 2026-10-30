@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The INFO window goes, and the weather and the terrain live as icons at the stage's top
+      right.** `[Task-229]`, Batch 100: reported as «apunta eliminar la parte de info, los
+      estados del terreno deben aparecer arriba a la derecha como en el prototipo con su icono».
+      The battle's fifth command control retires whole — `mode 'info'`, `infoSelected`,
+      `openInfo`, the arrow that reached it, `src/ui/battleInfo.ts` + its test and the 29
+      `battle.info.*` / `battle.infoControl` keys per locale — and the four FIGHT / BAG / SWITCH
+      / RUN cells take the 62 px column it held (250×72 on the desk, 147×94 on the phone). What
+      the window used to list that the human wants is now a DOM panel of its own,
+      `src/ui/hud/panels/battle-field/`: one 32 px chip per live **weather** (sun, rain,
+      sandstorm, snow) and per live **terrain** (electric, grassy, misty, psychic), each an
+      inline SVG glyph from `src/data/fieldIcons.ts` (`D49`'s escape hatch — no atlas, no
+      packer, no dependency) with its remaining turns as the chip's own numeral and no text row,
+      8 px apart, the weather holding the stage's top-right corner and the terrain one gap to
+      its left. The eight chip labels are the nine `battle.info.*` names the entry kept, less
+      the two headings. `docs/design-spec.md` §4's INFO bullet is replaced by the chip's line —
+      the window's field, side and stage rows are not wanted anywhere — and
+      `docs/hud-fidelity.md` records the new card and chip rects. Gates: `npm test` 5238 passed
+      / 69 skipped and `npm run build` green. `[live]` measured over CDP at 1280×800 and
+      390×844: `sand` at (992,16,32,32) and `grassy` at (952,16), the phone at (342,104) and
+      (302,104), no chip intersecting any `[data-hud-hp]` box or the command card,
+      `[data-hud-command-info]` null and the four cells at 250 / 147 px.
+
 - [x] **The main menu's walkers take a stride and rest, over a lit tile that leaves a trail.**
       `[Task-232]`, Batch 103: the decorative route behind the menu metronomed one cardinal tile
       per 600 ms tick. `stepPreviewWalkers` now books a **stride** of 2–4 tiles along one heading

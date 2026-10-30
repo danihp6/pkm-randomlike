@@ -4,9 +4,7 @@ import { battleCommandView, type BattleCommandInput, type BattleCommandView } fr
 
 /** The panel's own command channel: plain data, never a battle state. */
 export type BattleCommandIntent =
-  | Readonly<{ type: 'hover'; index: number }>
-  | Readonly<{ type: 'press'; index: number }>
-  | Readonly<{ type: 'info' }>;
+  Readonly<{ type: 'hover'; index: number }> | Readonly<{ type: 'press'; index: number }>;
 
 export type BattleCommandController = Readonly<{
   /** Pushes the window's state; a closed window hides the card but keeps it mounted. */
@@ -20,8 +18,6 @@ const CLOSED: BattleCommandInput = {
   card: { x: 0, y: 0, w: 0, h: 0 },
   rows: [],
   selected: 0,
-  infoSelected: false,
-  infoLabel: '',
 };
 
 /**

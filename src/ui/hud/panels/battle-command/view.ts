@@ -1,7 +1,6 @@
 import { FRLG_WINDOW_PADDING } from '../../../frlg';
 import {
   MOVE_GRID_INSET,
-  MOVE_MEGA_COL,
   battleMovesBox,
   compactCard,
   type Rect,
@@ -30,10 +29,6 @@ export type BattleCommandInput = Readonly<{
   rows: readonly BattleCommandRow[];
   /** `menuIndex`, clamped by the view. */
   selected: number;
-  /** True while the keyboard cursor sits on the INFO control. */
-  infoSelected: boolean;
-  /** `t('battle.infoControl')`. */
-  infoLabel: string;
 }>;
 
 export type BattleCommandRowView = Readonly<{
@@ -51,8 +46,6 @@ export type BattleCommandView = Readonly<{
   compact: boolean;
   card: Rect;
   rows: readonly BattleCommandRowView[];
-  /** The fifth control in the right column; null only when there are no rows. */
-  info: Readonly<{ label: string; selected: boolean; box: Rect }> | null;
 }>;
 
 /** The command window's own column count, `MENU_GRID_COLS` in the scene. */
@@ -73,9 +66,10 @@ function clampIndex(value: number, count: number): number {
 
 /**
  * The command window as plain data: the four cells `renderCommandMenu` lays out
- * inside the battle menu card, plus the fifth INFO control in the right column.
- * Pure and total: out-of-range indices clamp, an empty list answers no INFO, and
- * the same input always yields deep-equal output.
+ * inside the battle menu card. The four take the card's whole two-column width, so
+ * the 62 px column the moves menu keeps for MEGA and G-MAX is the grid's own here.
+ * Pure and total: out-of-range indices clamp, an empty list answers no row, and the
+ * same input always yields deep-equal output.
  */
 export function battleCommandView(input: BattleCommandInput): BattleCommandView {
   const card = input.card;
@@ -83,7 +77,7 @@ export function battleCommandView(input: BattleCommandInput): BattleCommandView 
   const count = input.rows.length;
   const rows = Math.max(1, Math.ceil(count / GRID_COLS));
   const left = card.x + pad.x + MOVE_GRID_INSET;
-  const right = card.x + card.w - pad.x - MOVE_GRID_INSET - MOVE_MEGA_COL;
+  const right = card.x + card.w - pad.x - MOVE_GRID_INSET;
   const top = card.y + pad.top + MOVE_GRID_INSET;
   const bottom = card.y + card.h - pad.bottom - MOVE_GRID_INSET;
   const cellW = (right - left - (GRID_COLS - 1) * GRID_GAP) / GRID_COLS;
@@ -93,7 +87,7 @@ export function battleCommandView(input: BattleCommandInput): BattleCommandView 
     id: row.id,
     label: row.label,
     enabled: row.enabled,
-    selected: !input.infoSelected && index === selected,
+    selected: index === selected,
     box: {
       x: left + (index % GRID_COLS) * (cellW + GRID_GAP),
       y: top + Math.floor(index / GRID_COLS) * (cellH + GRID_GAP),
@@ -106,18 +100,5 @@ export function battleCommandView(input: BattleCommandInput): BattleCommandView 
     compact: compactCard(card),
     card,
     rows: views,
-    info:
-      count === 0
-        ? null
-        : {
-            label: input.infoLabel,
-            selected: input.infoSelected,
-            box: {
-              x: card.x + card.w - pad.x - MOVE_GRID_INSET - MOVE_MEGA_COL,
-              y: top,
-              w: MOVE_MEGA_COL,
-              h: bottom - top,
-            },
-          },
   };
 }

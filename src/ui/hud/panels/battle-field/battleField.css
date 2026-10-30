@@ -1,0 +1,64 @@
+/*
+ * The battle's field chips (`D49`, frame `05 Battle HUD`'s `weather chip`). Every
+ * tone the board carries and `styles/root.css` does not is declared once here, next
+ * to the frame node it comes from; the rest come from the `--hud-*` tokens. The chip
+ * reuses the frame's amber pair at the frame's own 6 px radius, and the glyph is a
+ * filled SVG path in the chip's ink, so the silhouette names the condition at 32 px.
+ */
+.battle-field {
+  /* 05 Battle HUD · weather chip fill */
+  --battle-field-chip-fill: rgb(251 191 36 / 14%);
+  /* 05 Battle HUD · weather chip stroke */
+  --battle-field-chip-border: rgb(251 191 36 / 70%);
+  /* 05 Battle HUD · weather chip text */
+  --battle-field-chip-ink: var(--hud-text-warning);
+  /* the numeral's plate: the glass the battle cards paint, so it reads on any field */
+  --battle-field-turn-plate: rgb(16 22 31 / 90%);
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+}
+
+.battle-field,
+.battle-field * {
+  box-sizing: border-box;
+}
+
+.battle-field__chip {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: var(--battle-field-chip-fill);
+  box-shadow: inset 0 0 0 1px var(--battle-field-chip-border);
+  color: var(--battle-field-chip-ink);
+  pointer-events: none;
+}
+
+.battle-field__icon {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.battle-field__turn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 12px;
+  height: 10px;
+  transform: translateZ(0);
+  border-radius: 3px;
+  background: var(--battle-field-turn-plate);
+  color: var(--battle-field-chip-ink);
+  font-size: var(--hud-type-tag-size);
+  font-weight: 700;
+  line-height: var(--hud-type-tag-line);
+  text-align: center;
+}

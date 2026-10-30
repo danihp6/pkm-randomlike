@@ -9918,7 +9918,7 @@ carries.
 
 ### Batch 100 - the INFO window goes and the field takes the corner
 
-- [ ] **[Task-229] The INFO window goes, and the weather and the terrain live as icons at the
+- [x] **[Task-229] The INFO window goes, and the weather and the terrain live as icons at the
       stage's top right.** Reported on `2026-10-30`: «apunta eliminar la parte de info, los
       estados del terreno deben aparecer arriba a la derecha como en el prototipo con su icono,
       por ejemplo un sol o gotas si llueve etc». **Scope:** the fifth control and everything
