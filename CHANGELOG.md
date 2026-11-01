@@ -8,6 +8,70 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The desk battle HUD is anchored to the window, as frame `05 Battle HUD` draws it.** `[Task-239]`,
+      Batch 105: issue #92, whose open question was whether the battle HUD follows the 800 px art square
+      or the window the board draws. The frame wins in **x** and `[Task-228]` keeps **y**:
+      `battleMovesBox` now takes its right edge from `viewport.width - CARD_WINDOW_MARGIN` (40 px) and is
+      held at `CARD_W` = **564**, so every desk cell is back to the frame's **222 px** (at 1280×800 the card
+      is `{676, 582, 564, 192}`, right edge 1240, where it used to start at 440 and end at 1004), while its
+      bottom stays on the shared line 26 px above the square's bottom edge. The command, bag and switch
+      cards alias the same box, so all four moved together, and the field chip row right-aligns to the
+      window too (one chip at `{1232, 16, 32, 32}`). The phone is byte-identical: compact card
+      `{16, 592, 358, 236}`, player box `{16, 504, 358, 80}`, the 8 px gutter between them. One
+      arbitration was recorded rather than hidden: where the `CARD_MIN_W` floor would cross the HP column
+      the card gives back its **right margin** instead of covering a box (the 700 px desk lands 440..680,
+      not the spec's 420..660, which overlapped the player's card by 12 px). No i18n, no state, no engine,
+      no `SAVE_VERSION` step; gates on the combined tree: `npm test` 290 files / 5358 passed and
+      `npm run build` green.
+
+- [x] **The member detail card has a way back on its own corner.** `[Task-238]`, Batch 105: the member
+      detail window was the one route card with no exit — no strip badge (`chipLetter('detail') === ''`)
+      and no key, because `Esc` is the `cancel` alias and the route reads it first, opening the pause menu.
+      The 26 px chip slot the card already reserved and painted empty (`detailPanel.tsx` 334-339) is now
+      a real `button` (`data-hud-detail-close`, glyph `×`, accessible name `t('keybind.cancel')`) that sends
+      `{ type: 'close' }` to `closeMemberDetail`, and the mount registers **one** `keydown` on `document`
+      in the **capture** phase — the rewards card's precedent — so `Escape` closes the card before the
+      route's keybinds see it and `stopPropagation` keeps the pause menu shut; while the nickname field or
+      the learnset search holds focus, `Escape` stays that edit's own cancel (`detailCloseKey` is the pure
+      rule). No new i18n key, no state, no `SAVE_VERSION` step; gates green (the folder's 62 tests
+      included).
+
+- [x] **Every base species carries its canonical height, and the '370 draw at scale 1' report is
+      closed.** `[Task-237]`, Batch 105: issue #91. The table had gone stale, not the fetcher:
+      `node scripts/fetch-heights.mjs` re-run against today's `species.json` writes **1281** rows
+      (1131 exact, 150 by base species) where the committed table had **911**, so 370 species entered the
+      dex as `heightm = 1` — `wailord` at 1 m instead of 14.5, `onix` 8.8, `caterpie` 0.3. `build-dex`
+      now also gives a forme its base species' height (`heights[id] ?? heights[normalizeId(baseSpecies)] ?? 1`)
+      instead of answering the default, the dex is regenerated (**341** `heightm` values move; `meta.json`'s
+      counts are unchanged), and `species.test.ts` guards the contract: it prints the ids of every base
+      species the table misses and pins them to `KNOWN_MISSING`, which is empty. The downstream effect is
+      the one the issue wanted: `overworldScale` and `battleSpriteHeight` now size Onix, Wailord and every
+      other Gen 1-2 species from their own height (Wailord and Onix clamp to the 1.6 band's top, Diglett
+      sits on the 0.8 floor). One drift was found and left for its own task: `meta.json`'s hand-added
+      `customAbilities` count is not emitted by the generator, so the counts file is restored rather than
+      regenerated. `[live]` was **not run** — this checkout has no packed overworld pair — and the
+      `[unit]` values stand as its measurement. `docs/data-spec.md` §1 records the coverage.
+
+- [x] **The floor's mission is a panel like the others, and the run keeps the floors it met.**
+      `[Task-194]`, Batch 105 — unblocked after the human's `2026-11-01` decision, with its parked answer
+      (b) superseded by `[Task-200]`: the mission is a **DOM card**, not a canvas pane. It took the slot the
+      old line hung in: `src/ui/hud/panels/missions/` (view, component, stylesheet, mount, barrel, README),
+      the scene module `src/scenes/panels/missions.ts` (order 65, between notices and rewards), `missions`
+      in `HUD_PANEL_IDS` with its own saved slot (collapsed by default, and a document that predates it
+      parses to the same default), and the mission line left `notices` with its box, its `hud.mission` key
+      and its tests. The list is the run's history: `RunState.completedMissions` is a
+      `readonly { id, mapIndex }[]` appended in `advanceMap` where `missionsCompleted` steps (the floor
+      being left, oldest first), **`SAVE_VERSION` 26 → 27** with a migration that seeds `[]` and never
+      reconstructs a pre-v27 run's floors, and a decoder that drops a row it cannot trust rather than
+      repairing it; `missionsCompleted` stays as the number the NPC gate reads, and the list's length is
+      that same number for every run started after the step. The card prints the floor's row with
+      `HP lost {hp}` first and the met floors newest first, capped at six, under three new keys
+      (`hud.missions`, `hud.missionsMap`, `hud.missionProgress`, `hud.missionsEmpty`). One consequence is a
+      shipped rule change: the strip badges four panels and the mission is not one of them, so
+      `PanelFrame` gained `chipWhenCollapsed` — the missions card keeps its chip (and the measured box
+      behind it, so the clamp still holds) while collapsed, and every other card keeps the rule that a
+      collapsed card paints nothing. `D58` records all of it.
+
 - [x] **A viewport change re-lays out the mounted DOM HUD: the battle's HP boxes and every route
       card.** `[Task-235]`, Batch 104: issue #79, measured by two Task QAs during Batch 88 and
       re-measured here on `main` @ `e9ccae6` — `?hud=dom` at 1280×800 resized to 390×844 without a

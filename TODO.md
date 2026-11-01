@@ -8883,7 +8883,7 @@ without moving either batch.
       `src/ui/hud/panels/battle-hp/**` + tests and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 85)*
 
-- [ ] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
+- [x] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
       **Parked by the human on `2026-10-27`, freed on `2026-11-01`:** registered here, cut as Batch 105
       in Phase 22. Decided in conversation
       rather than by a report: the mission is the one HUD readout that is **not** a panel. It is a single
@@ -10349,9 +10349,9 @@ after 104; 104 keeps its two merged tasks untouched, and Phase 19's unscheduled 
 Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/RouteScene.ts`'s queue extends
 `… → 97 → 102 → 104 → **194**` and `src/scenes/BattleScene.ts`'s reads `230 → 235 → **239**`.
 
-### Batch 105 - the mission card, the heights table, the way back and the window's anchor
+### Batch 105 - the mission card, the heights table, the way back and the window's anchor **(shipped, archived)**
 
-- [ ] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
+- [x] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
       Unblocked by the human on `2026-11-01` after being parked on `2026-10-27`; its parked answer (b),
       a canvas pane, is superseded by `[Task-200]`.
       **Measured:** the readout is a single passive line and not a card: `missionsPanelView`'s
@@ -10424,7 +10424,7 @@ Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/Route
       §2, `docs/hud-fidelity.md` §5, `docs/routes-spec.md` §2 and `docs/tech-decisions.md`.
       *Dependencies:* none. *(Batch 105)*
 
-- [ ] **[Task-237] Every base species carries its canonical height, and the generated dex says so.**
+- [x] **[Task-237] Every base species carries its canonical height, and the generated dex says so.**
       Issue #91, decided by the human on `2026-11-01`: **fill** the table from PokeAPI's own CSV rather
       than accept the fallback.
       **Measured:** `src/data/dex/meta.json` counts **1281** species, and the archived `[Task-231]` entry
@@ -10473,7 +10473,7 @@ Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/Route
       read **once, at dev time**; no runtime fetch, no new dependency, no committed script.
       *Dependencies:* none. *(Batch 105)*
 
-- [ ] **[Task-238] The member detail card has a way back on its own corner, and Esc does the same.**
+- [x] **[Task-238] The member detail card has a way back on its own corner, and Esc does the same.**
       Issue #89's third finding, decided by the human on `2026-11-01`.
       **Measured:** the frame draws **no chip at all** for the detail card, by two guards rather than
       one — `chipLetter('detail')` returns `''` (`src/ui/hud/panels/hud/panelFrame.tsx` 47-49) and
@@ -10531,7 +10531,7 @@ Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/Route
       and `src/scenes/panels/detail.ts` (the intent's handler, which is the card's own scene module).
       *Dependencies:* none. *(Batch 105)*
 
-- [ ] **[Task-239] The desk battle HUD is anchored to the window, exactly as frame 05 draws it.**
+- [x] **[Task-239] The desk battle HUD is anchored to the window, exactly as frame 05 draws it.**
       Issue #92 with decision (a) amended by the human on `2026-11-01`; `[Task-228]`'s bottom line is
       **not** re-opened.
       **Measured:** frame `05 Battle HUD` draws `player panel` at `(64, 660, 368×100)` and `battle menu`
