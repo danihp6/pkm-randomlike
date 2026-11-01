@@ -10596,6 +10596,135 @@ Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/Route
 
 ---
 
+
+---
+
+## Phase 23 - Every panel against its own row
+
+The thirty-seventh round is the **closing pass**: the human asked for every remaining decision to be
+taken on `2026-11-01` so another session can pick the work up without re-deciding anything. There are
+no open defects behind it — `[Task-223]` and `[Task-224]` shipped the board's names and the spec-gap
+table — so what is left is a **wave of cuttable work** and a handful of issue dispositions.
+
+**The wave: one panel per task, four per batch, `[Task-240]` onwards.** The table in
+`docs/hud-fidelity.md` ("The spec gap, measured (`D57`)") carries 33 rows; one is `wired` (`03k`) and
+32 are `pending`. Each `pending` row becomes **one task** that: adds
+`src/ui/hud/specGap.views/<panel>.ts` (a `slug` and a `buildView(spec)`, per that folder's README),
+builds the panel's view from its own `design/fixtures/<slug>.json` block at 1280×800, and closes every
+gap `gapFor` reports — a `missing` box, a box more than **1 px** off, a string the board does not carry,
+a colour outside the spec's palette. The shape is what makes the wave parallel: **the adapter is the
+task's own new file**, the walker discovers it by glob, so four panel tasks a batch touch no shared
+path. Two edits stay with the Orchestrator at merge, like the `TODO` tick: the panel's line in the
+walker's `PENDING` map and its row in the table flip to `wired` in the same push — one file each, and
+four tasks cannot share it.
+
+The order is **by traffic**, not by the table's order: the screens a player sees most come first, and
+within a screen the panel that carries the most boxes. Batches 107 to 115, four panels each except the
+last, whose single row is `01b`:
+
+| batch | panels |
+| --- | --- |
+| **107** | `01-main-menu` · `03-route-hud` · `03m-panels-pokemon-moves` · `05-battle-hud` |
+| 108 | `03b-panels-row-view` · `03c-panels-compress` · `03o-panels-map-routes` · `03p-panels-pc-rip` |
+| 109 | `03d-route-shop-buy` · `03e-route-shop-sell` · `03f-panels-reward-item` · `03g-panels-reward-pokemon` |
+| 110 | `03i-panels-trade-pick` · `03j-panels-trade-result` · `03h-panels-rocket-slots` · `03n-panels-pause-menu` |
+| 111 | `04-starter-pick` · `02-options` · `03l-panels-notice-level-up` · `05b-battle-message` |
+| 112 | `05c-battle-bag` · `05d-battle-pokemon` · `05e-battle-stats` · `06-run-over-defeat` |
+| 113 | `07-run-over-victory` · `07b-run-over-victory-pokemon` · `08-stats-totals` · `08b-stats-runs` |
+| 114 | `08c-stats-pokemon` · `09-ranking` · `09b-ranking-pokemon` |
+| 115 | `01b-main-menu-no-save` |
+
+`[Task-240]` to `[Task-243]` are cut below. The other 29 take the next free ID at **their** cut, in
+this table's order, so no ID is bound to a task that has no entry yet -- the round-20 precedent. No
+task in the wave adds a run field, moves an RNG draw or touches `src/engine/save.ts`: the chain stays
+**14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23**, and none changes a rule or the game's
+behaviour, so a batch is four tasks and one QA wave with no design review.
+
+**The issue dispositions, and none of them is a task.**
+
+- **#89, finding 2** -- the fixture contract's `HudFixture.screen` field keeps its name. It names the
+  screen a fixture mounts, no consumer outside `src/ui/hud/fixtures/` reads it, and renaming it would
+  churn 32 payloads to rename one word. It gains the clarifying line in `design/README.md`'s
+  `fixtures/` row, which is where a fixture's contract is already written.
+- **#89, finding 3** is shipped: `[Task-238]` gave the detail card its chip and its `Escape`.
+- **#89, finding 1** is plan wording and is adopted: a spec names `src/scenes/panels/hud.ts` when the
+  strip's slot builder is what it means, never `RouteScene.ts`.
+- **#90** is an **accepted residue**, not work: the follower's `[live]` criterion needs a packed
+  `pokemons/` tree no store this loop can reach carries, so the `[unit]` values (Wailord at the 1.6
+  band's top, Diglett on the 0.8 floor) are the measurement until an operator brings the tree. It is
+  recorded here, and `[Task-231]`'s archived entry already says so.
+- **#93** closes as decided: the "paragraphs get shorter" clause lived in the Architect's prompt, not
+  in a repo file, and the round-36 entry already replaced it with "the paragraphs state the shipped
+  facts and keep no dead clause".
+- **#94, #95 and #96** are the autopilot's "nothing left to take" reports from before this round; they
+  are stale and close with a pointer to this phase.
+
+**Hot files.** None of the nine batches claims `package.json`, `src/main.ts`, `vite.config.ts`,
+`src/data/dex/**`, `design/screens/**` or `design/exports/**`: a panel task reads its spec and writes
+only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table and
+`src/ui/hud/specGap.walk.test.ts`'s `PENDING` map are the Orchestrator's at merge, one slug per push.
+
+### Batch 107 - the four screens a player meets first **(cut, open)**
+
+- [ ] **[Task-240] The title screen is wired to its spec.** The main menu is the first screen and the
+      only one with two frames (`01 Main menu` and `01b Main menu · no save`), of which this task owns
+      **`01-main-menu`** and leaves `01b` to Batch 115. **Measured:** the spec carries **16 boxes, 16
+      strings and 13 colours** (`design/screens/01-main-menu.json`), the DOM panel's view is
+      `mainMenuView` (`src/ui/hud/panels/main-menu/view.ts`) and its fixture block already lives at
+      `design/fixtures/01-main-menu.json`. **Fix shape:** add
+      `src/ui/hud/specGap.views/main-menu.ts` exporting `slug = '01-main-menu'` and
+      `buildView(spec)`, which builds the view from the fixture at 1280×800 and maps its buttons, run
+      row, portraits and footer to the frame's box names; close every gap `gapFor` reports, smallest
+      change first, and record in the adapter's comment any box the board draws that the panel paints
+      from CSS (a highlight, a hairline) with the reason it is not in the view. **Docs:**
+      `src/ui/hud/panels/main-menu/README.md` (the boxes the comparison measures). **Tests:** `[unit]`
+      the walker reports no gap for this slug; `[unit]` `npm test` and `npm run build` green. `[live]`
+      the main menu at 1280×800 renders the rows the adapter measured (one screenshot-free rect read on
+      `data-hud-main-menu`). Claims `src/ui/hud/specGap.views/main-menu.ts` and
+      `src/ui/hud/panels/main-menu/**`. *Dependencies:* none. *(Batch 107)*
+
+- [ ] **[Task-241] The route strip is wired to its spec.** The strip is the screen a player looks at
+      for the whole run: biome, level cap, money, the shared XP bar and the Pokevial meter.
+      **Measured:** `design/screens/03-route-hud.json` is the frame `03 Route HUD`
+      (`design/board.json`), whose panel is `hud` (`src/ui/hud/panels/hud/`). **Fix shape:** add
+      `src/ui/hud/specGap.views/hud.ts` (`slug = '03-route-hud'`) building the strip's `PanelView` from
+      the hud fixture at 1280×800 -- the four readouts and the two bars the panel paints -- then close
+      the gaps; the strip's chips are the card's own control and are **not** part of the comparison
+      (they are the frame's, `D49`). **Docs:** `src/ui/hud/panels/hud/README.md`. **Tests:** `[unit]`
+      the walker reports no gap for this slug and the suite is green. `[live]` at 1280×800 the strip's
+      readouts sit at the adapter's rects (one rect read, no screenshot). Claims
+      `src/ui/hud/specGap.views/hud.ts` and `src/ui/hud/panels/hud/**`. *Dependencies:* none.
+      *(Batch 107)*
+
+- [ ] **[Task-242] The member detail card is wired to its spec.** The card a player opens on every
+      member: three tabs, six stats, the move grid and the learnset band. **Measured:**
+      `design/screens/03m-panels-pokemon-moves.json` against `detailPanelView`
+      (`src/ui/hud/panels/detail/view.ts`), with the fixture at
+      `design/fixtures/03m-panels-pokemon-moves.json` already mirroring the frame's header, four move
+      cards and learnset band. **Fix shape:** add `src/ui/hud/specGap.views/detail.ts`
+      (`slug = '03m-panels-pokemon-moves'`) that projects the fixture's member through
+      `detailPanelView` on the STATS tab at 1280×800 and maps the boxes the frame names (the card, the
+      tab row, the six stat rows, the move cells); close the gaps. **Docs:**
+      `src/ui/hud/panels/detail/README.md`. **Tests:** `[unit]` the walker reports no gap and the suite
+      is green. `[live]` the card's rect read equals the adapter's box on a four-member run. Claims
+      `src/ui/hud/specGap.views/detail.ts` and `src/ui/hud/panels/detail/**`. *Dependencies:* none.
+      *(Batch 107)*
+
+- [ ] **[Task-243] The battle HP boxes are wired to their spec.** The two plates, the bar and the status
+      chip -- the panel `[Task-228]` and `[Task-235]` already moved to the window's anchor.
+      **Measured:** `design/screens/05-battle-hud.json` carries the frame's `player panel`
+      `(64, 660, 368×100)` and `battle menu` `(664, 544, 576×216)`; the shipped boxes are `battleHpBox`
+      (`src/ui/hud/panels/battle-hp/view.ts`) and `battleMovesBox` (`.../battle-moves/view.ts`), which
+      `[Task-239]` landed at the window's own anchors. **Fix shape:** add
+      `src/ui/hud/specGap.views/battle-hp.ts` (`slug = '05-battle-hud'`) and compare the two plates at
+      1280×800; the **menu card is not this adapter's** -- it belongs to the battle-command row -- so
+      the comparison claims the HP boxes and records the frame's menu box as a deliberate non-gap with
+      its reason. **Docs:** `src/ui/hud/panels/battle-hp/README.md`. **Tests:** `[unit]` the walker
+      reports no gap for the HP boxes and the suite is green. `[live]` `[data-hud-hp="player-0"]`'s
+      rect equals `battleHpBox({1280, 800}, 'player', 0)` with a battle open. Claims
+      `src/ui/hud/specGap.views/battle-hp.ts` and `src/ui/hud/panels/battle-hp/**`.
+      *Dependencies:* none. *(Batch 107)*
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the

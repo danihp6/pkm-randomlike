@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import tokens from '../../../design/tokens.json';
-import noticeFixture from '../../../design/fixtures/03k-panels-notice-item.json';
-import { noticesPanelView } from './panels/notices';
 import { gapFor, gapIsEmpty, type PanelView, type ScreenSpec } from './specGap';
 
 /**
@@ -9,54 +7,42 @@ import { gapFor, gapIsEmpty, type PanelView, type ScreenSpec } from './specGap';
  * panel whose view model is wired is compared against its own spec. A frame that arrives
  * with no mapping and no reason fails this test, so the board can never grow a screen the
  * table does not account for.
+ *
+ * **One adapter per panel**, in `./specGap.views/`: each module exports the `slug` it
+ * answers for and a `buildView(spec)` that returns the panel's three facts. That shape is
+ * what lets a per-panel task own one file and nothing else, so four of them can ride a
+ * batch without touching a shared registry.
  */
 
 type Spec = ScreenSpec &
   Readonly<{ caption: string; snapshot: Readonly<{ file: string; sha256: string }> }>;
+
+type Adapter = Readonly<{ slug: string; buildView: (spec: Spec) => PanelView }>;
 
 const MODULES = import.meta.glob('../../../design/screens/*.json', {
   eager: true,
   import: 'default',
 }) as Readonly<Record<string, Spec>>;
 
+const ADAPTERS = import.meta.glob('./specGap.views/*.ts', {
+  eager: true,
+}) as Readonly<Record<string, Adapter>>;
+
 const SLUGS = Object.keys(MODULES)
   .map((path) => path.slice(path.lastIndexOf('/') + 1, path.length - '.json'.length))
   .sort();
 
-const DESKTOP = { width: 1280, height: 800 };
+const specOf = (slug: string): Spec => MODULES[`../../../design/screens/${slug}.json`]!;
 
-/**
- * The panels whose view model is wired to this comparison, keyed by screen slug. Each one
- * builds its view exactly as the running panel does, and hands the three facts over.
- */
-const MAPPED: Readonly<Record<string, (spec: Spec) => PanelView>> = {
-  '03k-panels-notice-item': (spec) => {
-    const view = noticesPanelView(
-      { notice: noticeFixture.notice.text, area: noticeFixture.area },
-      DESKTOP,
-    );
-    const strip = spec.boxes.some((entry) => entry.name === 'notice strip');
-    return {
-      boxes: strip
-        ? [
-            {
-              name: 'notice strip',
-              x: view.notice?.box.x ?? 0,
-              y: view.notice?.box.y ?? 0,
-              w: view.notice?.box.w ?? 0,
-              h: view.notice?.box.h ?? 0,
-            },
-          ]
-        : [],
-      strings: [view.notice?.text ?? ''].filter((line) => line !== ''),
-      colours: [],
-    };
-  },
-};
+/** Every adapter, keyed by the slug it answers for. */
+const MAPPED: ReadonlyMap<string, Adapter> = new Map(
+  Object.values(ADAPTERS).map((adapter) => [adapter.slug, adapter]),
+);
 
 /**
  * The frames no view model is wired to yet, each with the reason. The per-panel tasks are
- * cut from `docs/hud-fidelity.md`'s table, which is this list plus the measurements.
+ * cut from `docs/hud-fidelity.md`'s table, which is this list plus the measurements; a task
+ * that wires a panel deletes its line here and adds an adapter in `./specGap.views/`.
  */
 const PENDING: Readonly<Record<string, string>> = {
   '01-main-menu': 'the title screen paints its own scene; no view builder is wired',
@@ -104,18 +90,27 @@ describe('the spec gap, walked', () => {
 
   it('accounts for every screen: mapped, or a named reason', () => {
     const unaccounted = SLUGS.filter(
-      (slug) => MAPPED[slug] === undefined && PENDING[slug] === undefined,
+      (slug) => MAPPED.get(slug) === undefined && PENDING[slug] === undefined,
     );
     expect(unaccounted, `screens with no mapping and no reason: ${unaccounted.join(', ')}`).toEqual(
       [],
     );
-    const both = SLUGS.filter((slug) => MAPPED[slug] !== undefined && PENDING[slug] !== undefined);
+    const both = SLUGS.filter(
+      (slug) => MAPPED.get(slug) !== undefined && PENDING[slug] !== undefined,
+    );
     expect(both, `screens both mapped and pending: ${both.join(', ')}`).toEqual([]);
+  });
+
+  it('keys every adapter to a spec that exists', () => {
+    for (const [slug, adapter] of MAPPED) {
+      expect(SLUGS, slug).toContain(slug);
+      expect(adapter.slug, slug).toBe(slug);
+    }
   });
 
   it('measures every spec the same way: boxes, strings, colours and its snapshot', () => {
     for (const slug of SLUGS) {
-      const spec = MODULES[`../../../design/screens/${slug}.json`]!;
+      const spec = specOf(slug);
       expect(spec.slug, slug).toBe(slug);
       expect(spec.caption.length, slug).toBeGreaterThan(0);
       expect(spec.boxes.length, slug).toBeGreaterThan(0);
@@ -129,9 +124,8 @@ describe('the spec gap, walked', () => {
   });
 
   it('reports no gap between a wired panel and its own spec', () => {
-    for (const [slug, build] of Object.entries(MAPPED)) {
-      const spec = MODULES[`../../../design/screens/${slug}.json`]!;
-      expect(gapIsEmpty(gapFor(build(spec), spec)), slug).toBe(true);
+    for (const [slug, adapter] of MAPPED) {
+      expect(gapIsEmpty(gapFor(adapter.buildView(specOf(slug)), specOf(slug))), slug).toBe(true);
     }
   });
 });

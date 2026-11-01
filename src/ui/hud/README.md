@@ -25,6 +25,7 @@ spacing or type size is written, and every value comes from `design/tokens.json`
 - `specGap.ts` — the fidelity comparison (`D57`): `gapFor(view, spec)` reports a panel's view against `design/screens/<slug>.json` as four lists (boxes missing, boxes moved by more than 1 px, strings the board does not carry, colours outside the spec's palette), and `gapIsEmpty` is the one verdict.
 - `specGap.test.ts` — the four lists on hand-built views: the pixel tolerance, a resized box, an unknown box, an extra string, a colour folded from its alpha suffix, and the empty view.
 - `specGap.walk.test.ts` — the same comparison walked over all 33 specs: every screen is mapped or names its reason, every spec's boxes, strings, colours and snapshot are measured, every colour is a token, and the one wired panel (the notice stack) reports no gap.
+- `specGap.views/` — one adapter per panel (`slug` + `buildView(spec)`), globbed by the walker so a per-panel task owns one new file and four of them can ride one batch (see its `README.md`).
 - `panels/` - the board's twenty-one panel migrations, one folder per screen (see `panels/README.md`).
 - `panels/hud/drag.ts` — the route HUD's one drag rule: the slop and the clamp a card's chip and a collapsed panel's badge both use, thin enough that a press or a drag means the same thing on either. Pure and headless.
 - `kit/` — the shared DOM primitives (panel, row, chip, bar, sheet, button, meta, type badge), their class helpers and the one kit stylesheet every panel composes.
