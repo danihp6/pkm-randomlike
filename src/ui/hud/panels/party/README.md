@@ -13,6 +13,7 @@ still boot.
 - `view.test.ts` — the two docked rects, the header and row geometry, the XP/HP fill arithmetic, the row cap and the cursor clamp, the pinned constant values and the per-member portrait source, headless.
 - `partyPanel.tsx` — the card itself: the highlight, the key chip, the level line, the XP bar and the Pokevial meter, then one pressable, draggable row per member; the drag cell lives in `PartyPanel` (which also drops a carried row on any release outside the card) and the paint in `PartyCard`.
 - `partyPanel.test.ts` — the card walked as Preact props: the pointer drag's one `onReorder`, the click it swallows, the press that only asks for the member's detail, the scene's own press and reorder receivers, the portrait style and the flush HP fill, plus the retired CSS inset tokens.
+- `specGap.test.ts` — frame `03c Panels · compress` measured headless: the strip's four letters, the five board chips a badge cannot claim at the panel docks, and the party chip's 312 px gap to the board's corner.
 - `party.css` — the board's party paint — radius 11, hairline, the 1 px highlight, the 26×26 chip, the accent selected row — over the `styles/root.css` tokens.
 - `mount.tsx` — `mountPartyPanel`: renders the card into a host element behind a view signal, beside the command and reorder callbacks, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.

@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The compressed HUD is measured against frame `03c`.** `[Task-245]`, Batch 108:
+      `src/ui/hud/specGap.views/compress.ts` builds `stripView` with **every card collapsed** at
+      1280×800 and claims the four letters the strip prints, `M C P I`, with no box and no colour. The
+      frame draws five chips 12 px inside the `03 Route HUD` cards' corners, at 24 / 26 / 29.18 px; the
+      strip draws four 26 px badges flush at `(8, 8)`, `(928, 8)`, `(928, 42)` and `(928, 76)`, and the
+      frame's fifth (`key stats`) is the detail card's, which has no badge by design — so the deltas
+      (dx +892, dy −312 and the rest) are recorded and pinned by six tests, not forced. `[live]` from a
+      clean profile: the first route draws three badges, `P` brings up the fourth at `928, 8`, all
+      26 × 26, none reading `S`.
+
 - [x] **The bag's row view is measured against frame `03b`.** `[Task-244]`, Batch 108:
       `src/ui/hud/specGap.views/bag.ts` builds `bagPanelView` from the fixture at 1280×800 and claims
       nothing: the frame draws the bag as a **one-row list** at `(24, 24, 304, 130)` — eight 64 × 60

@@ -10830,7 +10830,7 @@ becomes a claim, not a silent pass.
       13 tests. `[live]` at 1280×800: `[data-hud-panel="bag"]` reads `928, 422, 344, 308` and every
       drawn `[data-hud-bag-tile]` is 56 × 56.
 
-- [ ] **[Task-245] The compressed HUD is wired to its spec.** The state every route card falls back
+- [x] **[Task-245] The compressed HUD is wired to its spec.** The state every route card falls back
       to: the chip a collapsed card leaves behind, which is the strip's badge and never the card's
       own (`docs/hud-fidelity.md` §5).
       **Measured:** `design/screens/03c-panels-compress.json` is the frame `03c Panels · compress`
@@ -10860,6 +10860,14 @@ becomes a claim, not a silent pass.
       letter reads `S`. Claims `src/ui/hud/specGap.views/compress.ts`,
       `src/ui/hud/panels/party/specGap.test.ts` and `src/ui/hud/panels/party/README.md`.
       *Dependencies:* none. *(Batch 108)*
+      **SHIPPED** in Batch 108 (`2026-11-01`): `src/ui/hud/specGap.views/compress.ts` builds
+      `stripView` with every card collapsed at 1280×800, on `defaultHudDock`'s arithmetic, and claims
+      the four letters the strip prints (`M C P I`) with no box and no colour: the frame's five chips
+      sit 12 px inside the `03 Route HUD` cards' corners at 24/26/29.18 px, the strip's four are 26 px
+      flush at `(8, 8)`/`(928, 8)`/`(928, 42)`/`(928, 76)`, and the frame's fifth chip (`key stats`) is
+      the detail card's, which has no strip badge. Its six tests pin the premise, so a badge that moves
+      onto a board rect becomes a claim. `[live]` from a clean profile: the first route draws three
+      badges and `P` brings up the fourth at `928, 8`, all 26 × 26, none reading `S`.
 
 - [ ] **[Task-246] The floor map is wired to its spec.** The route header card: the floor minimap
       of `docs/maps-spec.md` §8 and `D32`.

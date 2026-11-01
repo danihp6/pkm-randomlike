@@ -584,7 +584,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | options | 02 Options | `02-options` | 33 | 35 | 16 | pending |
 | hud | 03 Route HUD | `03-route-hud` | 201 | 63 | 36 | wired |
 | bag | 03b Panels · row view | `03b-panels-row-view` | 136 | 15 | 25 | wired |
-| party | 03c Panels · compress | `03c-panels-compress` | 6 | 5 | 5 | pending |
+| party | 03c Panels · compress | `03c-panels-compress` | 6 | 5 | 5 | wired |
 | shop | 03d Route · shop · buy | `03d-route-shop-buy` | 51 | 25 | 19 | pending |
 | shop | 03e Route · shop · sell | `03e-route-shop-sell` | 51 | 25 | 19 | pending |
 | rewards | 03f Panels · reward item | `03f-panels-reward-item` | 10 | 9 | 10 | pending |
