@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The mini-boss reward's item rows are measured against frame `03f`.** `[Task-250]`, Batch 109:
+      `src/ui/hud/specGap.views/rewards-item.ts` builds `rewardsPanelView` from the frame's own item
+      choice at 1280×800 and claims **five boxes** — the card `360, 196, 560, 342`, its highlight
+      `372, 208, 536, 1` and the three 520 × 76 rows at an 84 px pitch — with a **zero delta**, the
+      first fully-claiming row of the wave, plus **nine strings**: the title, the choose line, the ✕ and
+      the three items' names and descriptions. The three that look like boxes are the frame's **text
+      nodes** (`close` `876, 206, 24, 24`, `panel title` `380, 212, 460, 30`, `choose line`
+      `380, 240, 400, 20`) and `gapFor` compares boxes to boxes, so they are claimed as the strings
+      they are; `item icon 1…3` stays unclaimed because `row.icon` is an atlas cell, not a rect.
+      Fourteen tests pin the premise and the copy. `[live]` at 1280×800 with the reward open:
+      `[data-hud-panel="rewards"]` read `360, 196, 560, 342` and the first row `380, 274, 520, 76`.
+
 - [x] **The Mart's SELL tab is measured against frame `03e`.** `[Task-249]`, Batch 109:
       `src/ui/hud/specGap.views/shop-sell.ts` builds `shopPanelView` from the frame's priced bag at
       1280×800 and claims the same two labels, `BUY` and `SELL`, with no box and no colour. The frame

@@ -11065,7 +11065,7 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
       `src/ui/hud/specGap.views/shop-sell.ts` and
       `src/ui/hud/panels/shop/specGap.sell.test.ts`. *Dependencies:* none. *(Batch 109)*
 
-- [ ] **[Task-250] The mini-boss reward's item rows are wired to its spec.** The card a beaten
+- [x] **[Task-250] The mini-boss reward's item rows are wired to its spec.** The card a beaten
       mini-boss opens: its three item offers, the ✕ and the choose line.
       **Measured:** `design/screens/03f-panels-reward-item.json` is the frame `03f Panels ·
       reward item` (`design/board.json`, node `6:1447`), **10 boxes, 9 strings, 10 colours**, and
