@@ -10766,7 +10766,20 @@ behind, and it is not cut yet.
       `[data-hud-hp]` rects equal `battleHpBox`, enemy `64, 48, 368, 100` and player `64, 674, 368,
       100`, with the command card's bottom on the same 774 line.
 
-### Batch 108 - the four windows a player opens mid-run **(cut, open)**
+### Batch 108 - the four windows a player opens mid-run **(shipped, 2026-11-01)**
+
+**The batch shipped its four rows, so the table now reads nine `wired` and 24 `pending`.** The
+adapters are `specGap.views/bag.ts`, `compress.ts`, `map.ts` and `pc.ts`; each `PENDING` line and its
+table row flipped in its own merge push. Three of the four claim **no box** and one (`03p`) claims
+seven strings, `03c` four letters — that is the honest measurement, not a shortfall: `03b` draws a
+one-row bag, `03o` a region map the game does not have, `03p` a six-row RIP list, and `03c` five
+inset chips, while the shipped panels are the grid, the minimap, the 4 × 4 RIP grid and four flush
+badges. Every empty claim is guarded by a premise test, so a panel that moves onto the board's rect
+becomes a claim instead of a silent pass. Two errata are recorded here: the `03o` frame carries
+**27** `Vector` shapes, not the 32 the spec said, and `design/fixtures/03c-panels-compress.json` does
+not exist because the compressed state is the saved layout, not a `HudState` — the adapter builds
+from `stripView` instead.
+
 
 **The wave is full and it is the maximum.** Four rows, four devs, one QA wave: `03b` (the bag),
 `03c` (the compressed cards), `03o` (the floor map) and `03p` (the PC box and its RIP list), bound
