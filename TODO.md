@@ -10664,7 +10664,18 @@ behaviour, so a batch is four tasks and one QA wave with no design review.
 only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table and
 `src/ui/hud/specGap.walk.test.ts`'s `PENDING` map are the Orchestrator's at merge, one slug per push.
 
-### Batch 107 - the four screens a player meets first **(cut, open)**
+### Batch 107 - the four screens a player meets first **(shipped, 2026-11-01)**
+
+**The batch shipped its four rows, so the table now reads five `wired` and 28 `pending`.** The four
+adapters are `specGap.views/main-menu.ts`, `hud.ts`, `detail.ts` and `battle-hp.ts`; each panel's
+`PENDING` line and its table row flipped in its own merge push, so the walker was green at every step
+from 240 to 243. Three measurements the batch records instead of forcing are the shape the next
+batches should expect: `01`'s `version` line is a text node (not a box), `03`'s strip draws nothing
+with the cards open (the frame's boxes are the five cards' and their chips are `D49`'s control), and
+`03m`/`05` sit where `[Task-239]` anchored them rather than where the older frames drew them. The
+one-space copy delta `Lv{n}` vs `LV {n}` in `src/i18n/en.ts` is the only real fix the batch left
+behind, and it is not cut yet.
+
 
 - [x] **[Task-240] The title screen is wired to its spec.** The main menu is the first screen and the
       only one with two frames (`01 Main menu` and `01b Main menu · no save`), of which this task owns
