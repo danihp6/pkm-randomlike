@@ -1,4 +1,4 @@
-# `src/ui/hud/specGap.views/` — one adapter per panel
+# `src/ui/hud/specGap.views/` — one adapter per screen
 
 The bridge between a panel's view model and its imported screen spec (`D57`). Each module
 here answers for **one** screen slug and exports two things:
@@ -15,9 +15,11 @@ and the colours it paints.
 
 `src/ui/hud/specGap.walk.test.ts` globs this folder, so **adding an adapter is the whole
 task**: it keys itself by its `slug`, the walker discovers it, and it fails if the panel still
-names a reason in `PENDING`. That is why one file per panel exists instead of one registry:
-a per-panel task owns its own file, and four of them can ride the same batch without a shared
-path.
+names a reason in `PENDING`. That is why one file per screen exists instead of one registry:
+a per-screen task owns its own file, and four of them can ride the same batch without a shared
+path. A panel the board draws in **two** states gets **two** adapters, one per slug — `03d`
+and `03e` are both the Mart, `03f` and `03g` both the reward card — each claiming what its own
+frame draws.
 
 ## Rules
 

@@ -10951,7 +10951,21 @@ becomes a claim, not a silent pass.
       1280×800: `[data-hud-panel="box"]` reads `576, 72, 344, 378` and the RIP tab `868, 88, 32, 26`
       with `data-locked="true"`.
 
-### Batch 109 - the shop counter and the mini-boss reward
+### Batch 109 - the shop counter and the mini-boss reward **(shipped, 2026-11-01)**
+
+**The batch shipped its four rows, so the table now reads thirteen `wired` and 20 `pending`.** The
+adapters are `specGap.views/shop-buy.ts`, `shop-sell.ts`, `rewards-item.ts` and `rewards-pokemon.ts`;
+each `PENDING` line and its table row flipped in its own merge push, and the walker that reported the
+four `screens both mapped and pending` slugs on the combined tree reports none on `main`. Two of the
+four are the wave's **first fully-claiming rows**: `03f` and `03g` land on the shipped reward card to
+the pixel — five boxes each at a zero delta — and the three rects they cannot claim are the ones the
+board draws as **text nodes** (the ✕, the title, the choose line), which `gapFor` compares as boxes and
+which the adapters therefore claim as the strings they are. The shop half is the opposite: `03d` and
+`03e` draw a Mart the game does not have — a 704 × 336 shell with a sixteen-tile grid, a search field
+and three filter chips — so both claim **no box** and only the tab labels `BUY` and `SELL`, and every
+delta is recorded instead of forced. One erratum of the spec's own is worth keeping: `03e` publishes
+its list window under the **bag's** names (`bag panel`, `bag panel group`, `bag grid viewport`) and
+draws no `shop panel` box at all, so a candidate copied from `03d` would have been a `missing` gap.
 
 **The wave is full and it is the maximum.** Four rows, four devs, one QA wave: `03d` (the Mart's
 BUY tab), `03e` (the Mart's SELL tab), `03f` (the mini-boss reward's three items) and `03g` (the
