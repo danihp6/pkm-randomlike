@@ -8,6 +8,39 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The spec gap is measured: every screen against its spec, and the per-panel tasks cut from the
+      table.** `[Task-224]`, Batch 106: `src/ui/hud/specGap.ts` is the comparison `D57` asked for —
+      `gapFor(view, spec)` reports the boxes a panel's view does not draw, the boxes it draws more than
+      **1 px** away (with the delta), the strings the board does not carry (folded to caps, because the
+      board draws its labels in caps) and the colours outside the spec's palette (alpha suffix folded
+      away) — and `gapIsEmpty` is the one verdict. `src/ui/hud/specGap.walk.test.ts` walks the **33**
+      specs: every screen is mapped to a view or names its reason, every spec's boxes, strings, colours
+      and snapshot hash are measured, every colour is a token, and the one wired panel (`03k`, the
+      notice stack) reports no gap. The result is `docs/hud-fidelity.md`'s **"The spec gap, measured
+      (`D57`)"**, one row per screen with its panel, its caption, its box / string / colour counts and
+      a `wired` or `pending` verdict; 32 rows are `pending` and each is the evidence its per-panel task
+      is cut from.
+
+- [x] **The board's files take their codebox names, and the specs land — the "waiting for the operator"
+      blocker was stale.** `[Task-223]`, Batch 106: issue #83's block read that the 33 specs and 66
+      PNGs only exist after `FIGMA_TOKEN … node scripts/design/import.mjs`, but `[Task-225]` had already
+      given the command an **offline** mode (`--from <dir>`, no variable and no request) and the 66
+      geometry dumps plus 132 rasters were committed. Measured on `main` before the work:
+      `node scripts/design/import.mjs --from design/source --check` named every artifact it could
+      rebuild, and `check.mjs` printed `0 screens (run the import)` only because nothing had run. The
+      rename landed as: the 33 projected specs in `design/screens/<slug>.json`, the 66 PNG and 66 SVG
+      rasters in `design/exports/`, and the exporter's dumps in `design/source/` — they could not be
+      deleted, because they are the only input the offline import has, so they moved instead. The old
+      exporter retired (`export.mjs`, `frames.mjs`, `tokens.mjs` and the `design:export` /
+      `design:tokens` scripts) and `design:import` / `design:check` took their place; `import.mjs` now
+      reads each raster from `design/exports`, and the fixture tests read `design/source`. The board is
+      fully measured for the first time: `colour_outside_tokens: 33 screens, 0 violations`,
+      `frame_without_component: 33 entries, 0 violations`, `snapshot_hash_mismatch: 0 mismatched, 0
+      pending the import`, `variant_missing: 0 unresolved`. The import also repaired one stale row:
+      `board.json`'s `03h` still pointed at the deleted `src/scenes/rooms/casino.ts` while
+      `import.json` already said `src/ui/rocketPanel.ts`, and the projection now agrees with the map.
+      `scripts/design`'s 41 tests, the full suite and `npm run build` are green on the combined tree.
+
 - [x] **The desk battle HUD is anchored to the window, as frame `05 Battle HUD` draws it.** `[Task-239]`,
       Batch 105: issue #92, whose open question was whether the battle HUD follows the 800 px art square
       or the window the board draws. The frame wins in **x** and `[Task-228]` keeps **y**:

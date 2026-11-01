@@ -9621,7 +9621,7 @@ produced without a request. `[Task-223]` and `[Task-224]` stay `[!]` behind it.
       from the template lists both files as read-only (the orchestrator's own next spec is the check).
       Claims `AGENTS.md` and `docs/agent-spec-template.md`. *Dependencies:* none.
 
-- [!] **[Task-223] The board's files take their codebox names: `screens/<slug>.json`, `exports/<slug>.png`.**
+- [x] **[Task-223] The board's files take their codebox names: `screens/<slug>.json`, `exports/<slug>.png`.**
       Blocked on the operator's run, not on code: `[Task-220]` writes the new names, but the 66 PNGs and
       33 specs only exist after `node scripts/design/import.mjs` runs with the PAT, so this task cannot
       start until that commit lands. **Fix shape:** move `design/frames/<slug>.json` →
@@ -9636,15 +9636,16 @@ produced without a request. `[Task-223]` and `[Task-224]` stay `[!]` behind it.
       Claims `design/frames/**`, `design/screens/**`, `design/exports/**`, `scripts/design/**`,
       `src/ui/hud/**/fixture.test.ts`, `design/README.md`, `docs/**` and `TODO.md`.
       *Dependencies:* `[Task-220]` and `[Task-221]`, plus the operator's import run committed.
-      *Unscheduled until then.*
-      **BLOCKED:** the operator's Figma REST run has not landed: on `main` @ `df2a6f7`
-      `design/screens/*.json` is **0 of 33** and `design/exports/` does not exist
-      (`node scripts/design/check.mjs` prints `colour_outside_tokens: 0 screens (run the
-      import)` and `snapshot_hash_mismatch: 0 mismatched, 33 pending the import`), and
-      `FIGMA_TOKEN`/`FIGMA_FILE_KEY` are unset in the runner, so no cycle can import the
-      board and the rename has nothing to move. Free this row once
-      `FIGMA_TOKEN=… node scripts/design/import.mjs` has committed the four artifact
-      families (issue #83).
+      **SHIPPED** in Batch 106 (`2026-11-01`) after the blocker was re-measured and found stale:
+      `[Task-225]` gave `import.mjs` an offline mode (`--from <dir>`, no token, no request), and the
+      66 dumps and 132 rasters were already committed at `df2a6f7`. `node scripts/design/import.mjs
+      --from design/source` writes the 33 specs, the tokens, the board and the 33 desktop exports;
+      `check.mjs` now reads `33 screens, 0 violations` and `0 pending`, which is the measurement this
+      row was waiting for. The rename landed as: specs in `design/screens/`, rasters in
+      `design/exports/`, the exporter's dumps in `design/source/` (the offline input the fixtures
+      read), and `export.mjs`/`frames.mjs`/`tokens.mjs` retired with their two package scripts.
+      One arbitration is recorded: the dumps could not simply be deleted, because they are the only
+      input the offline import has, so they moved to `design/source/` instead of disappearing.
 
 ## Phase 19 - Every screen against its spec
 
@@ -9654,15 +9655,16 @@ boxes, strings and tokens — plus a mount that names the panel. This phase turn
 report that measures every screen against `design/screens/<slug>.json`, and one task per panel cut
 from its table.
 
-**Batch 96 — `[Task-224]` alone, waiting for the import.** It cannot be cut before Batch 95: the specs
-it reads are the artifacts `import.mjs` writes with the PAT, and the per-panel tasks cannot be written
-before its table says which boxes, strings and tokens are off — writing them now would ship a batch of
-guesses. No slot is filled because nothing else is open (`[Task-194]` is `[!]` and parked). **Batch 104
-onwards** holds the per-panel tasks, cut four per batch from 224's table, each with its own panel
-folder, its own spec row and its own mount check; the rename (`[Task-223]`) is their floor, so they
-are unscheduled until it merges.
+**Batch 106 shipped the phase's two floor tasks, and the table is the work left.** `[Task-223]`
+moved the board into its codebox names and `[Task-224]` measured every screen against its spec: the
+offline import (`[Task-225]`) made both doable with no token, and the "waiting for the operator" note
+this section used to carry was re-measured and found stale. `docs/hud-fidelity.md`'s **"The spec gap,
+measured (`D57`)"** now carries one row per screen with its box, string and colour counts and a
+`wired` or `pending` verdict; the 32 `pending` rows are the per-panel tasks' evidence, cut from that
+table four per batch, each with its own panel folder, its own spec row and its own mount check. The
+queue that used to read "Batch 104 onwards" reads **Batch 107 onwards**.
 
-- [!] **[Task-224] The fidelity report: every screen measured against its spec, and the per-panel tasks
+- [x] **[Task-224] The fidelity report: every screen measured against its spec, and the per-panel tasks
       cut from it.** Asked by the human on `2026-10-29` ("hay tareas para revisar cada pantalla del
       prototipo que sea fiel ya?"). There are none: Phase 17 fixed nineteen reported defects and the
       measured table still has **28 FAIL rows** (fourteen frames, most of them dominated by the board's
@@ -9686,12 +9688,15 @@ are unscheduled until it merges.
       `?hudFixture=<slug>` and its measured `[data-hud-panel]` rect equals the view's box (the mount
       check `[Task-221]` leaves in place).
       Claims `src/ui/hud/specGap.ts` + test, the Vitest that walks the specs, `docs/hud-fidelity.md`,
-      `src/ui/hud/README.md` and `src/ui/README.md`. *Dependencies:* `[Task-220]` (the importer and its
-      four checks), `[Task-223]` (the `screens/` names) and the operator's import run committed.
-      **BLOCKED:** the `design/screens/<slug>.json` artifacts do not exist on `main` yet — they are the
-      output of `node scripts/design/import.mjs` with `FIGMA_TOKEN`, a run the loop never gets — and
-      `[Task-223]`, the rename that gives them their name, is itself `[!]` on the same run. The task
-      moves to `[ ]` the day that commit lands; until then the cycle must skip it.
+      **SHIPPED** in Batch 106, one batch behind `[Task-223]`: `src/ui/hud/specGap.ts` compares a
+      panel's view model against `design/screens/<slug>.json` (`missing`, `moved` past 1 px with the
+      delta, `strings` folded to caps, `colours` outside the palette), and
+      `src/ui/hud/specGap.walk.test.ts` walks the 33 specs: every screen is mapped or names its
+      reason, every spec's boxes, strings, colours and snapshot are measured, every colour is a
+      token, and the one wired panel (`03k`, the notice stack) reports no gap. The table —
+      **"The spec gap, measured (`D57`)"** in `docs/hud-fidelity.md`, one row per screen with its
+      box / string / colour counts and a `wired` or `pending` verdict — is the per-panel tasks'
+      evidence: 32 rows are `pending`, and each one is cut from its own line.
 
 ---
 
