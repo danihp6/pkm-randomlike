@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The bag's row view is measured against frame `03b`.** `[Task-244]`, Batch 108:
+      `src/ui/hud/specGap.views/bag.ts` builds `bagPanelView` from the fixture at 1280×800 and claims
+      nothing: the frame draws the bag as a **one-row list** at `(24, 24, 304, 130)` — eight 64 × 60
+      tiles at a 72 px pitch, `key bag`, a search field and `$ 2,480` — while the shipped card is the
+      `5 × 3` grid of 56 px cells at `(928, 422, 344, 308)` with five pocket tabs. The adapter records
+      the four deltas (dx +904, dy +398, dw +40, dh +178) and the three copy differences (`×3` vs `x3`,
+      `$ 2,480` vs `MONEY` + `2480`, `SEARCH ITEM` vs `search items...`); its 13 tests pin the
+      premise, so a card that moves onto the board's rect becomes a claim. `[live]` at 1280×800 read
+      `[data-hud-panel="bag"]` at `928, 422, 344, 308` and every drawn tile at 56 × 56.
+
 - [x] **The battle HP boxes are measured against frame `05`.** `[Task-243]`, Batch 107:
       `src/ui/hud/specGap.views/battle-hp.ts` claims the foe plate — `64, 48, 368, 100`, exactly the
       frame's `foe panel` — and writes the rest of the frame down instead of forcing it: the player

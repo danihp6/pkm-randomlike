@@ -10634,7 +10634,7 @@ last, whose single row is `01b`:
 | 114 | `08c-stats-pokemon` · `09-ranking` · `09b-ranking-pokemon` |
 | 115 | `01b-main-menu-no-save` |
 
-`[Task-240]` to `[Task-243]` are cut below. The other 29 take the next free ID at **their** cut, in
+`[Task-240]` to `[Task-247]` are cut below. The other 25 take the next free ID at **their** cut, in
 this table's order, so no ID is bound to a task that has no entry yet -- the round-20 precedent. No
 task in the wave adds a run field, moves an RNG draw or touches `src/engine/save.ts`: the chain stays
 **14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23**, and none changes a rule or the game's
@@ -10766,12 +10766,175 @@ behind, and it is not cut yet.
       `[data-hud-hp]` rects equal `battleHpBox`, enemy `64, 48, 368, 100` and player `64, 674, 368,
       100`, with the command card's bottom on the same 774 line.
 
+### Batch 108 - the four windows a player opens mid-run **(cut, open)**
+
+**The wave is full and it is the maximum.** Four rows, four devs, one QA wave: `03b` (the bag),
+`03c` (the compressed cards), `03o` (the floor map) and `03p` (the PC box and its RIP list), bound
+to `[Task-244]` to `[Task-247]`. **Batch filling found nothing to pull forward, and this is the
+record of it:** Batches 109 to 115 are rows in this phase's table with **no task entry and no ID
+bound** — the phase binds an ID only at that batch's own cut, in that table's order — so there is
+no later item a filler could adopt; a task with no entry, no spec and no ID is not launchable, and
+inventing one here would bind an ID the phase deliberately keeps free. The constraint that leaves
+each later slot empty is therefore the same one for all of them: **no cut, no entry, no ID**. Every
+slot this batch could fill is filled.
+
+**Hot files.** None of the four claims `package.json`, `src/main.ts`, `vite.config.ts`, each
+`src/scenes/*.ts`, `src/data/dex/**`, `design/screens/**`, `design/exports/**`,
+`design/fixtures/**` or any generated data file: each task writes **one new adapter** in
+`src/ui/hud/specGap.views/` (the walker globs the folder, so no registry is shared), one new
+`specGap.test.ts` inside its own panel folder and **one new line** in that folder's `README.md`.
+`docs/hud-fidelity.md`'s table row and `src/ui/hud/specGap.walk.test.ts`'s `PENDING` line are the
+**Orchestrator's at merge**, one slug per push — the walker's `screens both mapped and pending:
+<slug>` red is the expected state of every branch in this batch.
+
+**What these four frames are.** Older and narrower than the shipped panels, so each adapter
+**measures the delta and records it** rather than forcing the panel to the board — the Batch 107
+precedent (`03m`'s card at `108, 72, 460, 560` against the board's `448, 88, 360, 508`, and `05`'s
+plate on the shared 774 line). `03b` draws the bag as a one-row scrolling list, `03c` draws five
+compressed chips 12 px inside the `03 Route HUD` cards' corners, `03o` draws a region map where the
+game draws a floor minimap, and `03p` draws a six-row RIP list where the card paints a 4 × 4 grid.
+Three of the four therefore claim **no box at all**; `03p` claims seven strings and `03c` four
+letters. Every empty claim is guarded by a premise test so a panel that moves onto the board's rect
+becomes a claim, not a silent pass.
+
+- [x] **[Task-244] The bag's row view is wired to its spec.** The route bag window — the card, its
+      pocket tabs, the stack grid, the money footer and the floating description card.
+      **Measured:** `design/screens/03b-panels-row-view.json` is the frame `03b Panels · row view`
+      (`design/board.json`, node `2:6`), **136 boxes, 15 strings, 25 colours**, and the panel is
+      **`bag`** (`src/ui/hud/panels/bag/`, the assignment `design/import.json` and `board.json` both
+      carry — the caption says "row view", but the card the frame draws is the bag's). The frame's
+      `bag panel` box is `(24, 24, 304, 130)`, a one-row list: `bag row viewport` `(36, 72, 280, 60)` with
+      eight `bag tile 1…8` of 64 × 60 at a 72 px pitch inside it, `bag qty 1…8` (`×3`, `×1`, `×2`,
+      `×1`, `×5`, `×2`, `×4`, `×1`), `key bag` `(36, 36, 24, 24)`, `bag view toggle`
+      `(292, 36, 24, 24)`, `bag search field` `(140, 36, 142, 24)` and `money` `$ 2,480`. The
+      shipped card is `bagPanelBox({1280, 800})` = `{928, 422, 344, 308}` — dx +904, dy +398,
+      dw +40, dh +178 — a 5 × 3 grid of 56 px cells with five pocket tabs, which the fixture fills
+      with the **six consumable stacks** of `ui.pocket: 'consumable'`. **Fix shape:** add
+      `src/ui/hud/specGap.views/bag.ts` exporting `slug = '03b-panels-row-view'` and
+      `buildView(spec)`, which builds `bagPanelView(fixture.state, fixture.ui, {1280, 800}, () =>
+      null)` and claims a box **only** when its shipped rect is within 1 px of the frame's box of
+      that name (`bag panel`, `bag panel highlight`, `key bag`, `bag search field`, `bag tile n`) and
+      a string **only** when the board carries it — at these rects that is `[]`/`[]`/`[]`, and the
+      adapter's comment records why with the numbers (`×3` vs `x3`, `$ 2,480` vs `MONEY` + `2480`,
+      `SEARCH ITEM` vs `search items...`). **Docs:** `src/ui/hud/panels/bag/README.md` (one new
+      line). **Tests:** `[unit]` the walker reports no gap for this slug and `npm test` +
+      `npm run build` are green; `[live]` at 1280×800 on a fresh route, press `I`:
+      `[data-hud-panel="bag"]` reads `928, 422, 344, 308`. Claims
+      `src/ui/hud/specGap.views/bag.ts`, `src/ui/hud/panels/bag/specGap.test.ts` and
+      `src/ui/hud/panels/bag/README.md`. *Dependencies:* none. *(Batch 108)*
+      **SHIPPED** in Batch 108 (`2026-11-01`): `src/ui/hud/specGap.views/bag.ts` builds
+      `bagPanelView` from the fixture at 1280×800 and claims nothing, because the frame draws the bag
+      as a one-row list at `(24, 24, 304, 130)` and the shipped card is the `5 × 3` grid at
+      `(928, 422, 344, 308)` — the deltas and the three copy differences (`×3` vs `x3`, `$ 2,480` vs
+      `MONEY` + `2480`, `SEARCH ITEM` vs `search items...`) are in the adapter's comment and pinned by
+      13 tests. `[live]` at 1280×800: `[data-hud-panel="bag"]` reads `928, 422, 344, 308` and every
+      drawn `[data-hud-bag-tile]` is 56 × 56.
+
+- [ ] **[Task-245] The compressed HUD is wired to its spec.** The state every route card falls back
+      to: the chip a collapsed card leaves behind, which is the strip's badge and never the card's
+      own (`docs/hud-fidelity.md` §5).
+      **Measured:** `design/screens/03c-panels-compress.json` is the frame `03c Panels · compress`
+      (`design/board.json`, node `2:466`), **6 boxes, 5 strings, 5 colours**, and the panel is
+      **`party`** (`src/ui/hud/panels/party/`, the map's assignment). The frame draws `route
+      screenshot` and **five chips and nothing else**: `key bag` `(36, 36, 24, 24)`, `key map`
+      `(942.59, 36, 29.18, 24)`, `key party` `(940, 320, 26, 26)`, `key pc` `(36, 360, 24, 24)`,
+      `key stats` `(460, 100, 24, 24)` — each **12 px inside** the `03 Route HUD` cards' own corners
+      — with the letters `I`, `M`, `P`, `C`, `S`. The shipped compressed form is the strip's 26 × 26
+      badge (`STRIP_CHIP_SIZE`), one per **collapsed** card in `STRIP_CHIP_ORDER` — four ids,
+      `header`/`box`/`party`/`bag`, so there is **no chip for `key stats`** (that is the detail
+      card's, and the shipped card draws none, `03m`'s record) — at `defaultHudDock`, which at
+      1280×800 is `header (8, 8)`, `party (928, 8)`, `bag (928, 42)`, `box (928, 76)`. There is
+      **no fixture**: `docs/hud-fidelity.md`'s measured table records `03c` as `not framed`,
+      "the compressed state lives in the saved layout, not in a HudState". **Fix shape:** add
+      `src/ui/hud/specGap.views/compress.ts` exporting `slug = '03c-panels-compress'` and
+      `buildView(spec)`, which builds `stripView({ open: true, slots: <the four docks, all
+      collapsed, no offset>, keybinds: DEFAULT_KEYBINDS }, {1280, 800})`, claims a chip box **only**
+      when its rect equals the frame's chip of the same card within 1 px (it is `[]`: 26 px against
+      the board's 24 / 29.18 / 26 / 24, at docks the board does not use) and claims the **four
+      letters** `M`, `C`, `P`, `I` as strings, which the board carries; `S` is not claimed because no
+      shipped chip prints it. **Docs:** `src/ui/hud/panels/party/README.md` (one new line).
+      **Tests:** `[unit]` the walker reports no gap for this slug and the suite is green; `[live]`
+      at 1280×800 on a fresh route (only PARTY starts open) the strip already draws `header` at
+      `8, 8`, `bag` at `928, 42` and `box` at `928, 76`, and after `P` it draws four:
+      `document.querySelectorAll('[data-hud-strip-chip]').length === 4`, each 26 × 26, and no chip
+      letter reads `S`. Claims `src/ui/hud/specGap.views/compress.ts`,
+      `src/ui/hud/panels/party/specGap.test.ts` and `src/ui/hud/panels/party/README.md`.
+      *Dependencies:* none. *(Batch 108)*
+
+- [ ] **[Task-246] The floor map is wired to its spec.** The route header card: the floor minimap
+      of `docs/maps-spec.md` §8 and `D32`.
+      **Measured:** `design/screens/03o-panels-map-routes.json` is the frame `03o Panels · map
+      routes` (`design/board.json`, node `6:2250`), **35 boxes, 4 strings, 18 colours**, and the
+      panel is **`map`** (`src/ui/hud/panels/map/`). The frame's card is `map routes panel`
+      `(928, 24, 304, 198)` with `map routes highlight` `(942.59, 36, 280, 1)`, `key map`
+      `(942.59, 36, 29.18, 24)`, the two toggles `view route` `(1096, 36, 54, 20)` and `view map`
+      `(1156, 36, 44, 20)`, and a `viridian all routes` frame `(942, 64, 276, 146)` holding 32 route
+      shapes: it is a **region** map. The shipped card is `mapPanelBox({1280, 800})` =
+      `{8, 8, 216, 250}` — dx −920, dy −16, dw −88, dh +52 — and draws the **floor** minimap only
+      (no toggle, no region frame), its title from the fixture as `Map 1 · Viridian Forest` where the
+      board draws `VIRIDIAN FOREST`. **Fix shape:** add `src/ui/hud/specGap.views/map.ts` exporting
+      `slug = '03o-panels-map-routes'` and `buildView(spec)`, which builds
+      `mapPanelView(fixture.map.view, fixture.map.title, {1280, 800})` and returns `boxes: []`,
+      `strings: []`, `colours: []` — the card, the highlight and the title all miss by more than the
+      1 px tolerance and the two toggles have no view field — with the deltas and the
+      region-vs-floor reason in the doc comment, and a premise test that pins the frame's five named
+      boxes, its four strings and the fixture's 15 × 11 one-room floor. **Docs:**
+      `src/ui/hud/panels/map/README.md` (one new line). **Tests:** `[unit]` the walker reports no gap
+      for this slug and `npm test` + `npm run build` are green; `[live]` at 1280×800 on a fresh
+      route, press `M`: `[data-hud-panel="header"]` reads `8, 8, 216, 250` and
+      `[data-hud-map="title"]`'s text is the run's own floor title. Claims
+      `src/ui/hud/specGap.views/map.ts`, `src/ui/hud/panels/map/specGap.test.ts` and
+      `src/ui/hud/panels/map/README.md`. *Dependencies:* none. *(Batch 108)*
+
+- [ ] **[Task-247] The PC box and its RIP list are wired to its spec.** The route's PC window on its
+      RIP tab — the list of the dead.
+      **Measured:** `design/screens/03p-panels-pc-rip.json` is the frame `03p Panels · pc rip`
+      (`design/board.json`, node `6:2525`), **33 boxes, 20 strings, 19 colours**, and the panel is
+      **`pc`** (`src/ui/hud/panels/pc/`). The frame's card is `pc panel` `(24, 348, 304, 243)` with
+      `pc panel highlight` `(36, 360, 280, 1)`, `key pc` `(36, 360, 24, 24)`, `rip viewport`
+      `(36, 396, 280, 183)` and **six `rip row 0…5`** of 280 × 38 at a 44 px pitch, each with
+      `rip icon n`, `rip name n`, `rip meta n` (`LV 30 · ROUTE 3`) and `rip tag n` (`RIP`). The
+      shipped card is `pcPanelBox({1280, 800})` = `{576, 72, 344, 378}` — dx +552, dy −276, dw +40,
+      dh +135 — and paints **one 4 × 4 grid of 76 px cells for both panes**: `rip` is a tab flag
+      (`PcPanelView.rip` is `{active, locked, box}`), there is no per-row box at all.
+      `design/fixtures/03p-panels-pc-rip.json` carries the frame's own six dead rows, so the six
+      names **are** claimable; the frame's `rip meta` is a single `LV 30 · ROUTE 3` where the card
+      types `Lv30` and `0/92` on two lines (the `common.level` one-space defect, registered under
+      **Bugs**). **Fix shape:** add `src/ui/hud/specGap.views/pc.ts` exporting
+      `slug = '03p-panels-pc-rip'` and `buildView(spec)`, which builds
+      `pcPanelView(fixture.pc.rows, fixture.ui, fixture.pc.pageCount, {1280, 800})` in the RIP pane,
+      claims `boxes: []` and `colours: []`, and claims exactly `['RIP', 'PSYDUCK', 'MACHOP',
+      'RATICATE', 'GLOOM', 'ZUBAT', 'DODUO']` — the card's tab label and its six cells' names —
+      recording the grid-vs-list delta and the level line it may not claim. **Docs:**
+      `src/ui/hud/panels/pc/README.md` (one new line). **Tests:** `[unit]` the walker reports no gap
+      for this slug and the suite is green; `[live]` at 1280×800 on a fresh route, press `O` then
+      click `[data-hud-pc="rip"]`: `[data-hud-panel="box"]` reads `576, 72, 344, 378` and the RIP tab
+      reads `868, 88, 32, 26` with `data-locked="true"`. Claims
+      `src/ui/hud/specGap.views/pc.ts`, `src/ui/hud/panels/pc/specGap.test.ts` and
+      `src/ui/hud/panels/pc/README.md`. *Dependencies:* none. *(Batch 108)*
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
 finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
 the combined tree.
+
+**A one-space copy defect, found by Batch 107's adapter (`2026-11-01`), registered without an ID.**
+`src/i18n/en.ts` line 857 is `'common.level': 'Lv{level}'`, so the member detail card types `Lv36`
+where the board draws `LV 36` (`design/screens/03m-panels-pokemon-moves.json`, the `detail lv` text
+node, `"characters": "LV 36"`). The measurement that fails is `03m`'s string claim:
+`src/ui/hud/specGap.views/detail.ts` emits **18** strings where the card's copy is **19**, and
+`gapFor`'s caps fold cannot reach the difference because it is a space and not a case
+(`src/ui/hud/panels/detail/specGap.test.ts` pins the fact in two tests so it cannot rot). The twin
+key on line 166, `'hud.level': 'Lv{level}'`, prints the same shape in the party header
+(`party level label`, `LV 36`, frame `03b`) and in every PC cell (`Lv30` against `03p`'s
+`LV 30 · ROUTE 3`), so the minimal fix is **one string shape in those two keys**: `'LV {level}'`,
+`src/i18n/en.ts` only — `src/i18n/es.ts` keeps its own `Nv{level}` for both (`D43`: a locale
+overlays the key, it does not mirror the English). Nothing else moves: `t` returns the string, no
+rect is measured from it, and no test asserts the old shape. No Task ID binds it — an ID is bound
+only at a cut — so the next cut takes it, and its acceptance is `03m`'s adapter claiming **19**
+strings (the level line joining the other 18) with `gapFor` still empty.
 
 **A doubles round (`2026-10-25`), from a boss fight.** Three reports and one question, parked
 here because a batch was in flight when they arrived:

@@ -10,6 +10,7 @@ one, mirrored from `src/scenes/panels/bag.ts`; the paint is the board's bag grou
 
 - `view.ts` — the panel's value model and its mirror constants: `bagPanelBox`, `bagPanelView` (pocket and query filtering, the grid layout, the money row and the card's rect and selected stack's text) and the initial cursor state.
 - `view.test.ts` — the shipped rects and internals at both QA viewports, the tile icons, the pocket and query filters, the 15-stack cap, the description card's body and its 13 px growth per wrapped line, and the mirrored constant block, headless.
+- `specGap.test.ts` — the card's row-view copy and geometry measured against the imported `03b` screen spec through `specGap.views/bag.ts`: the empty box, string and colour claims, the 344 × 308 grid card against the board's 304 × 130 row, and the three lines `gapFor`'s fold cannot reach (`x3` / `×3`, `MONEY` + `2480` / `$ 2,480`, `search items...` / `SEARCH ITEM`).
 - `bagPanel.tsx` — the panel itself: the card, the highlight, the key chip, the tabs, the search input, the tiles with their icon and count, the footer and the description card.
 - `bag.css` — the board's bag paint (radius 11, the hairline, the 14 % highlight, the key chip, the search field, the 8/4 % tile and the 9 px count) scoped to `.bag`.
 - `mount.tsx` — `mountBagPanel`: renders the panel into a host element from a signals view, inside the panel frame that carries its chip and drag, and returns its disposer.
