@@ -1,0 +1,1076 @@
+{
+  "slug": "08b-stats-runs",
+  "caption": "08b Stats · runs",
+  "nodeId": "7:2750",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m08b-stats-runs",
+    "nodeId": "8:3259"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "7:2751",
+      "name": "run over panel",
+      "type": "RECTANGLE",
+      "x": 80,
+      "y": 60,
+      "width": 1120,
+      "height": 680,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "7:2752",
+      "name": "run over panel highlight",
+      "type": "RECTANGLE",
+      "x": 92,
+      "y": 72,
+      "width": 1092,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "7:2753",
+      "name": "run over accent",
+      "type": "RECTANGLE",
+      "x": 616,
+      "y": 66,
+      "width": 48,
+      "height": 2,
+      "radius": 0,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "7:2755",
+      "name": "continue button",
+      "type": "RECTANGLE",
+      "x": 540,
+      "y": 650,
+      "width": 200,
+      "height": 40,
+      "radius": 8,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2762",
+      "name": "tab totals",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 166,
+      "width": 120,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "7:2763",
+      "name": "tab pokemon",
+      "type": "RECTANGLE",
+      "x": 252,
+      "y": 166,
+      "width": 110,
+      "height": 24,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2766",
+      "name": "tab pokemon3",
+      "type": "RECTANGLE",
+      "x": 374,
+      "y": 166,
+      "width": 130,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "7:2807",
+      "name": "run row 1",
+      "type": "GROUP",
+      "x": 120,
+      "y": 230,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2801",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 230,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2802",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 248,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2808",
+      "name": "run row 2",
+      "type": "GROUP",
+      "x": 120,
+      "y": 292,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2809",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 292,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2810",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 310,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#f87171@0.1599999964237213",
+      "stroke": "#f87171@1"
+    },
+    {
+      "id": "7:2815",
+      "name": "run row 3",
+      "type": "GROUP",
+      "x": 120,
+      "y": 354,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2816",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 354,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2817",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 372,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2822",
+      "name": "run row 4",
+      "type": "GROUP",
+      "x": 120,
+      "y": 416,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2823",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 416,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2824",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 434,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#f87171@0.1599999964237213",
+      "stroke": "#f87171@1"
+    },
+    {
+      "id": "7:2829",
+      "name": "run row 5",
+      "type": "GROUP",
+      "x": 120,
+      "y": 478,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2830",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 478,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2831",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 496,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2836",
+      "name": "run row 6",
+      "type": "GROUP",
+      "x": 120,
+      "y": 540,
+      "width": 1040,
+      "height": 54,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2837",
+      "name": "row bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 540,
+      "width": 1040,
+      "height": 54,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:2838",
+      "name": "row badge",
+      "type": "RECTANGLE",
+      "x": 134,
+      "y": 558,
+      "width": 56,
+      "height": 18,
+      "radius": 6,
+      "fill": "#f87171@0.1599999964237213",
+      "stroke": "#f87171@1"
+    },
+    {
+      "id": "7:2843",
+      "name": "row portrait 0",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 246,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2844",
+      "name": "row portrait 3",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 246,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2845",
+      "name": "row portrait 1",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 246,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2846",
+      "name": "row portrait 2",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 246,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2847",
+      "name": "row portrait 4",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 308,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2848",
+      "name": "rip icon 1",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 308,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2849",
+      "name": "rip icon 2",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 308,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2850",
+      "name": "rip icon 3",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 308,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2851",
+      "name": "row portrait 0",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 370,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2852",
+      "name": "row portrait 1",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 370,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2853",
+      "name": "row portrait 3",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 370,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2854",
+      "name": "row portrait 4",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 370,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2855",
+      "name": "rip icon 4",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 432,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2856",
+      "name": "rip icon 5",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 432,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2857",
+      "name": "row portrait 2",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 432,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2858",
+      "name": "row portrait 1",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 432,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2859",
+      "name": "row portrait 0",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 494,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2860",
+      "name": "row portrait 3",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 494,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2861",
+      "name": "rip icon 3",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 494,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2862",
+      "name": "rip icon 1",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 494,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2863",
+      "name": "row portrait 4",
+      "type": "RECTANGLE",
+      "x": 1046,
+      "y": 556,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2864",
+      "name": "rip icon 2",
+      "type": "RECTANGLE",
+      "x": 1074,
+      "y": 556,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2865",
+      "name": "rip icon 4",
+      "type": "RECTANGLE",
+      "x": 1102,
+      "y": 556,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:2866",
+      "name": "rip icon 5",
+      "type": "RECTANGLE",
+      "x": 1130,
+      "y": 556,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    }
+  ],
+  "text": [
+    {
+      "id": "7:2756",
+      "name": "run over title",
+      "characters": "GLOBAL STATS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 32,
+      "x": 160,
+      "y": 86,
+      "width": 960,
+      "height": 36,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2757",
+      "name": "run over blurb",
+      "characters": "EVERY RUN, NEWEST FIRST.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 15,
+      "x": 160,
+      "y": 126,
+      "width": 960,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2761",
+      "name": "button label continue",
+      "characters": "BACK",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 540,
+      "y": 664,
+      "width": 200,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2764",
+      "name": "tab totals label",
+      "characters": "TOTALS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 120,
+      "y": 170,
+      "width": 120,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2765",
+      "name": "tab pokemon label",
+      "characters": "RUNS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 252,
+      "y": 170,
+      "width": 110,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2767",
+      "name": "tab pokemon3 label",
+      "characters": "POKEMON",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 374,
+      "y": 170,
+      "width": 130,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2803",
+      "name": "row badge label",
+      "characters": "WIN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 251,
+      "width": 56,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2804",
+      "name": "row seed",
+      "characters": "PKRL-1-F-7F3A-2C",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 240,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2805",
+      "name": "row meta",
+      "characters": "8 ROUTES · 37 KO · 2 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 260,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2806",
+      "name": "row date",
+      "characters": "OCT 18",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 250,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2811",
+      "name": "row badge label",
+      "characters": "LOSS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 313,
+      "width": 56,
+      "height": 16,
+      "fill": "#fca5a5@1"
+    },
+    {
+      "id": "7:2812",
+      "name": "row seed",
+      "characters": "PKRL-1-F-91C4-8B",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 302,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2813",
+      "name": "row meta",
+      "characters": "3 ROUTES · 11 KO · 6 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 322,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2814",
+      "name": "row date",
+      "characters": "OCT 17",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 312,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2818",
+      "name": "row badge label",
+      "characters": "WIN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 375,
+      "width": 56,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2819",
+      "name": "row seed",
+      "characters": "PKRL-1-F-4D21-9E",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 364,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2820",
+      "name": "row meta",
+      "characters": "8 ROUTES · 29 KO · 3 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 384,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2821",
+      "name": "row date",
+      "characters": "OCT 15",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 374,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2825",
+      "name": "row badge label",
+      "characters": "LOSS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 437,
+      "width": 56,
+      "height": 16,
+      "fill": "#fca5a5@1"
+    },
+    {
+      "id": "7:2826",
+      "name": "row seed",
+      "characters": "PKRL-1-F-2A88-1B",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 426,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2827",
+      "name": "row meta",
+      "characters": "5 ROUTES · 16 KO · 6 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 446,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2828",
+      "name": "row date",
+      "characters": "OCT 14",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 436,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2832",
+      "name": "row badge label",
+      "characters": "WIN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 499,
+      "width": 56,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:2833",
+      "name": "row seed",
+      "characters": "PKRL-1-F-6C03-77",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 488,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2834",
+      "name": "row meta",
+      "characters": "8 ROUTES · 41 KO · 1 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 508,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2835",
+      "name": "row date",
+      "characters": "OCT 11",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 498,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2839",
+      "name": "row badge label",
+      "characters": "LOSS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 134,
+      "y": 561,
+      "width": 56,
+      "height": 16,
+      "fill": "#fca5a5@1"
+    },
+    {
+      "id": "7:2840",
+      "name": "row seed",
+      "characters": "PKRL-1-F-0B5E-3A",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 202,
+      "y": 550,
+      "width": 420,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:2841",
+      "name": "row meta",
+      "characters": "2 ROUTES · 7 KO · 6 LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 202,
+      "y": 570,
+      "width": 420,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:2842",
+      "name": "row date",
+      "characters": "OCT 09",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 940,
+      "y": 560,
+      "width": 80,
+      "height": 13,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.7200000286102295",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f87171@0.1599999964237213",
+    "#f87171@1",
+    "#f8fafc@1",
+    "#fca5a5@1",
+    "#ffffff@0",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/08b-stats-runs.png",
+    "sha256": "19aa36835f3ecddbf00b9b36b7df6eb015f58b37a28acfdcb1d42cec8c4c4af1",
+    "bytes": 84162
+  }
+}

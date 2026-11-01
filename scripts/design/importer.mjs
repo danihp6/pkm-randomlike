@@ -380,7 +380,7 @@ const bySlug = (a, b) => {
  * Rebuilds the REST file payload from the exporter's committed dumps, so the same
  * `projectBoard` projection runs with no request and no token.
  *
- * @param {object[]} frames  parsed `design/frames/*.json` dumps
+ * @param {object[]} frames  parsed `design/source/*.json` dumps
  *        (`{ slug, nodeId, exportedAt, geometry: [root], text: [root] }`)
  * @param {{ page?: string, name?: string }} [options]
  * @returns {{

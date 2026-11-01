@@ -1,0 +1,467 @@
+{
+  "slug": "07-run-over-victory",
+  "caption": "07 Run over · victory",
+  "nodeId": "6:2172",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m07-run-over-victory",
+    "nodeId": "8:4447"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "7:2746",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2747",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.800000011920929",
+      "stroke": null
+    },
+    {
+      "id": "6:2180",
+      "name": "run over panel",
+      "type": "RECTANGLE",
+      "x": 280,
+      "y": 170,
+      "width": 720,
+      "height": 480,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:2181",
+      "name": "run over panel highlight",
+      "type": "RECTANGLE",
+      "x": 292,
+      "y": 182,
+      "width": 692,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:2182",
+      "name": "run over accent",
+      "type": "RECTANGLE",
+      "x": 616,
+      "y": 186,
+      "width": 48,
+      "height": 2,
+      "radius": 0,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "6:2183",
+      "name": "run over rule 0",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 386,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2184",
+      "name": "run over rule 1",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 432,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2185",
+      "name": "run over rule 2",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 478,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2186",
+      "name": "run over rule 3",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 524,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2188",
+      "name": "end run button",
+      "type": "RECTANGLE",
+      "x": 428,
+      "y": 590,
+      "width": 200,
+      "height": 40,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:2189",
+      "name": "continue button",
+      "type": "RECTANGLE",
+      "x": 652,
+      "y": 590,
+      "width": 200,
+      "height": 40,
+      "radius": 8,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2292",
+      "name": "win party 0",
+      "type": "RECTANGLE",
+      "x": 542,
+      "y": 262,
+      "width": 40,
+      "height": 40,
+      "radius": 8,
+      "fill": null,
+      "stroke": "#ffffff@0.14000000059604645"
+    },
+    {
+      "id": "6:2293",
+      "name": "win party 1",
+      "type": "RECTANGLE",
+      "x": 594,
+      "y": 262,
+      "width": 40,
+      "height": 40,
+      "radius": 8,
+      "fill": null,
+      "stroke": "#ffffff@0.14000000059604645"
+    },
+    {
+      "id": "6:2294",
+      "name": "win party 2",
+      "type": "RECTANGLE",
+      "x": 646,
+      "y": 262,
+      "width": 40,
+      "height": 40,
+      "radius": 8,
+      "fill": null,
+      "stroke": "#ffffff@0.14000000059604645"
+    },
+    {
+      "id": "6:2295",
+      "name": "win party 3",
+      "type": "RECTANGLE",
+      "x": 698,
+      "y": 262,
+      "width": 40,
+      "height": 40,
+      "radius": 8,
+      "fill": null,
+      "stroke": "#ffffff@0.14000000059604645"
+    },
+    {
+      "id": "6:2432",
+      "name": "tab totals",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 312,
+      "width": 90,
+      "height": 24,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2433",
+      "name": "tab pokemon",
+      "type": "RECTANGLE",
+      "x": 432,
+      "y": 312,
+      "width": 100,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    }
+  ],
+  "text": [
+    {
+      "id": "6:2202",
+      "name": "run over title",
+      "characters": "THE FINAL ROUTE FALLS.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 28,
+      "x": 320,
+      "y": 196,
+      "width": 640,
+      "height": 36,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2203",
+      "name": "run over blurb",
+      "characters": "EVERY ROUTE CLEARED · THE CHAIN ENDS HERE.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 320,
+      "y": 236,
+      "width": 640,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2204",
+      "name": "run stat label 0",
+      "characters": "ROUTES CLEARED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 360,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2205",
+      "name": "run stat value 0",
+      "characters": "08",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 358,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2206",
+      "name": "run stat label 1",
+      "characters": "POKEMON CAUGHT",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 406,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2207",
+      "name": "run stat value 1",
+      "characters": "17",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 404,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2208",
+      "name": "run stat label 2",
+      "characters": "POKEMON LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 452,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2209",
+      "name": "run stat value 2",
+      "characters": "04",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 450,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2210",
+      "name": "run stat label 3",
+      "characters": "ENEMIES FAINTED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 498,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2211",
+      "name": "run stat value 3",
+      "characters": "37",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 496,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2212",
+      "name": "run share",
+      "characters": "SHARE: PKRL-1-f-7F3A-2C",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 336,
+      "y": 544,
+      "width": 608,
+      "height": 12,
+      "fill": "#64748c@1"
+    },
+    {
+      "id": "6:2213",
+      "name": "button label end run",
+      "characters": "END RUN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 428,
+      "y": 604,
+      "width": 200,
+      "height": 16,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "6:2214",
+      "name": "button label continue",
+      "characters": "CONTINUE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 652,
+      "y": 604,
+      "width": 200,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2434",
+      "name": "tab totals label",
+      "characters": "TOTALS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 336,
+      "y": 316,
+      "width": 90,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2435",
+      "name": "tab pokemon label",
+      "characters": "POKEMON",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 432,
+      "y": 316,
+      "width": 100,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#03050a@0.800000011920929",
+    "#10161f@0.7200000286102295",
+    "#64748c@1",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#cbd5e1@1",
+    "#f8fafc@1",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.07999999821186066",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/07-run-over-victory.png",
+    "sha256": "deea9c20b671cd9ddf0038aaa2e9179962fb6c211708b8e101a1bd37c9166e00",
+    "bytes": 190242
+  }
+}

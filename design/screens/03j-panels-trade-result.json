@@ -1,0 +1,191 @@
+{
+  "slug": "03j-panels-trade-result",
+  "caption": "03j Panels · trade result",
+  "nodeId": "6:1559",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03j-panels-trade-result",
+    "nodeId": "8:3247"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1560",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1561",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.7400000095367432",
+      "stroke": null
+    },
+    {
+      "id": "6:1562",
+      "name": "result panel",
+      "type": "RECTANGLE",
+      "x": 360,
+      "y": 190,
+      "width": 560,
+      "height": 420,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1563",
+      "name": "panel highlight",
+      "type": "RECTANGLE",
+      "x": 372,
+      "y": 202,
+      "width": 536,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1564",
+      "name": "header divider",
+      "type": "RECTANGLE",
+      "x": 384,
+      "y": 240,
+      "width": 512,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.10000000149011612",
+      "stroke": null
+    },
+    {
+      "id": "6:1565",
+      "name": "received portrait",
+      "type": "RECTANGLE",
+      "x": 576,
+      "y": 278,
+      "width": 128,
+      "height": 128,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1566",
+      "name": "type WATER",
+      "type": "RECTANGLE",
+      "x": 628,
+      "y": 486,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1567",
+      "name": "result title",
+      "characters": "TRADE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 384,
+      "y": 210,
+      "width": 300,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1568",
+      "name": "meta",
+      "characters": "TRADE COMPLETE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 700,
+      "y": 216,
+      "width": 196,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1569",
+      "name": "kicker",
+      "characters": "RECEIVED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 384,
+      "y": 252,
+      "width": 512,
+      "height": 14,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1570",
+      "name": "received name",
+      "characters": "SHELLDER",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 384,
+      "y": 422,
+      "width": 512,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1571",
+      "name": "level line",
+      "characters": "ADDED TO YOUR PARTY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 384,
+      "y": 458,
+      "width": 512,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#03050a@0.7400000095367432",
+    "#10161f@0.7200000286102295",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03j-panels-trade-result.png",
+    "sha256": "352cd111322630ebf896d8361433a5f412dca4910a8a6a9672318e960dbb9aba",
+    "bytes": 161250
+  }
+}

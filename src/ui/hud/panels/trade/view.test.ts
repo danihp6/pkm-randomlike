@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import framePick from '../../../../../design/frames/03i-panels-trade-pick.json';
-import frameResult from '../../../../../design/frames/03j-panels-trade-result.json';
-import framePickMobile from '../../../../../design/frames/m03i-panels-trade-pick.json';
-import frameResultMobile from '../../../../../design/frames/m03j-panels-trade-result.json';
+import framePick from '../../../../../design/source/03i-panels-trade-pick.json';
+import frameResult from '../../../../../design/source/03j-panels-trade-result.json';
+import framePickMobile from '../../../../../design/source/m03i-panels-trade-pick.json';
+import frameResultMobile from '../../../../../design/source/m03j-panels-trade-result.json';
 import { t } from '../../../../i18n';
 import {
   tradePanelBox,

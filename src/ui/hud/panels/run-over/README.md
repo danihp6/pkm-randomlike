@@ -25,7 +25,7 @@ this panel paints the view it is handed.
 - `preview.ts` — `runOverPreviewRequested` and `installRunOverPreview`: the frame's panel behind
   `?hud=dom&hudFixture=<slug>`, one payload per slug.
 - `preview.test.ts` — `runOverPreviewRequested`'s truth table, headless.
-- `fixture.test.ts` — the three fixtures against `design/frames/06`, `07`, `07b`, `m06`, `m07` and
+- `fixture.test.ts` — the three fixtures against `design/source/06`, `07`, `07b`, `m06`, `m07` and
   `m07b`: the copy, the figures, the rows, the party strip, the boards and the payload guards.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
@@ -50,7 +50,7 @@ this panel paints the view it is handed.
    from `rows`: the frame, not the payload, decides whether a strip is drawn — and a lost run has
    no party left, so `06` and `m06` draw none.
 5. Both phone boards use the `m07` geometry: a lost card keeps the TOTALS / POKéMON tab strip and
-   the same height as a won one. `design/frames/m06-*` still draws a 560 px, tab-less defeat card
+   the same height as a won one. `design/source/m06-*` still draws a 560 px, tab-less defeat card
    and stays the frozen design source the live screen now deliberately diverges from; `won` still
    separates the two boards' copy and accent only.
 6. `07b`'s filter row (MOST KOs / MOST DAMAGE / MOST TANKED) is not drawn;

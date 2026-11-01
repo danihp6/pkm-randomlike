@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import defeatFrame from '../../../../../design/frames/06-run-over-defeat.json';
-import pokemonFrame from '../../../../../design/frames/07b-run-over-victory-pokemon.json';
-import victoryFrame from '../../../../../design/frames/07-run-over-victory.json';
-import phoneDefeatFrame from '../../../../../design/frames/m06-run-over-defeat.json';
-import phonePokemonFrame from '../../../../../design/frames/m07b-run-over-victory-pokemon.json';
-import phoneVictoryFrame from '../../../../../design/frames/m07-run-over-victory.json';
+import defeatFrame from '../../../../../design/source/06-run-over-defeat.json';
+import pokemonFrame from '../../../../../design/source/07b-run-over-victory-pokemon.json';
+import victoryFrame from '../../../../../design/source/07-run-over-victory.json';
+import phoneDefeatFrame from '../../../../../design/source/m06-run-over-defeat.json';
+import phonePokemonFrame from '../../../../../design/source/m07b-run-over-victory-pokemon.json';
+import phoneVictoryFrame from '../../../../../design/source/m07-run-over-victory.json';
 import defeatFixture from '../../../../../design/fixtures/06-run-over-defeat.json';
 import pokemonFixture from '../../../../../design/fixtures/07b-run-over-victory-pokemon.json';
 import victoryFixture from '../../../../../design/fixtures/07-run-over-victory.json';

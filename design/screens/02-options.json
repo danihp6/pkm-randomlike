@@ -1,0 +1,962 @@
+{
+  "slug": "02-options",
+  "caption": "02 Options",
+  "nodeId": "1:1557",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m02-options",
+    "nodeId": "8:3231"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "1:1616",
+      "name": "reset button",
+      "type": "RECTANGLE",
+      "x": 992,
+      "y": 88,
+      "width": 192,
+      "height": 40,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "1:1618",
+      "name": "card gameplay",
+      "type": "RECTANGLE",
+      "x": 96,
+      "y": 200,
+      "width": 640,
+      "height": 470,
+      "radius": 11,
+      "fill": "#10161f@0.8600000143051147",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "1:1619",
+      "name": "card keybinds",
+      "type": "RECTANGLE",
+      "x": 760,
+      "y": 200,
+      "width": 424,
+      "height": 470,
+      "radius": 11,
+      "fill": "#10161f@0.8600000143051147",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "1:1620",
+      "name": "gameplay highlight",
+      "type": "RECTANGLE",
+      "x": 108,
+      "y": 212,
+      "width": 616,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "1:1621",
+      "name": "keybinds highlight",
+      "type": "RECTANGLE",
+      "x": 772,
+      "y": 212,
+      "width": 400,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "1:1624",
+      "name": "row selected",
+      "type": "RECTANGLE",
+      "x": 112,
+      "y": 262,
+      "width": 608,
+      "height": 48,
+      "radius": 8,
+      "fill": "#7dd3fc@0.11999999731779099",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1625",
+      "name": "row selected bar",
+      "type": "RECTANGLE",
+      "x": 112,
+      "y": 270,
+      "width": 3,
+      "height": 32,
+      "radius": 2,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "1:1630",
+      "name": "sep 1",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 310,
+      "width": 592,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1633",
+      "name": "sep 2",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 366,
+      "width": 592,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1636",
+      "name": "sep 3",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 422,
+      "width": 592,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1639",
+      "name": "sep 4",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 478,
+      "width": 592,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1648",
+      "name": "slider track",
+      "type": "RECTANGLE",
+      "x": 552,
+      "y": 334,
+      "width": 148,
+      "height": 6,
+      "radius": 3,
+      "fill": "#ffffff@0.11999999731779099",
+      "stroke": null
+    },
+    {
+      "id": "1:1649",
+      "name": "slider fill",
+      "type": "RECTANGLE",
+      "x": 552,
+      "y": 334,
+      "width": 104,
+      "height": 6,
+      "radius": 3,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "1:1650",
+      "name": "slider knob",
+      "type": "ELLIPSE",
+      "x": 646,
+      "y": 328,
+      "width": 18,
+      "height": 18,
+      "radius": 0,
+      "fill": "#f8fafc@1",
+      "stroke": null
+    },
+    {
+      "id": "1:1651",
+      "name": "toggle track 2",
+      "type": "RECTANGLE",
+      "x": 632,
+      "y": 385,
+      "width": 56,
+      "height": 24,
+      "radius": 12,
+      "fill": "#ffffff@0.10000000149011612",
+      "stroke": "#ffffff@0.17000000178813934"
+    },
+    {
+      "id": "1:1652",
+      "name": "toggle knob 2",
+      "type": "ELLIPSE",
+      "x": 635,
+      "y": 388,
+      "width": 18,
+      "height": 18,
+      "radius": 0,
+      "fill": "#94a3b8@1",
+      "stroke": null
+    },
+    {
+      "id": "1:1662",
+      "name": "keycap CONFIRM",
+      "type": "RECTANGLE",
+      "x": 1084,
+      "y": 268,
+      "width": 52,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1665",
+      "name": "keycap CANCEL",
+      "type": "RECTANGLE",
+      "x": 1084,
+      "y": 324,
+      "width": 52,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1667",
+      "name": "bind sep 1",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 310,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1669",
+      "name": "keycap RUN",
+      "type": "RECTANGLE",
+      "x": 1068,
+      "y": 380,
+      "width": 68,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1671",
+      "name": "bind sep 2",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 366,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1673",
+      "name": "keycap PARTY",
+      "type": "RECTANGLE",
+      "x": 1084,
+      "y": 436,
+      "width": 52,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1675",
+      "name": "bind sep 3",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 422,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1677",
+      "name": "keycap BAG",
+      "type": "RECTANGLE",
+      "x": 1084,
+      "y": 492,
+      "width": 52,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1679",
+      "name": "bind sep 4",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 478,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1681",
+      "name": "keycap MAP",
+      "type": "RECTANGLE",
+      "x": 1084,
+      "y": 548,
+      "width": 52,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1683",
+      "name": "bind sep 5",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 534,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "1:1685",
+      "name": "keycap OPTIONS",
+      "type": "RECTANGLE",
+      "x": 1076,
+      "y": 604,
+      "width": 60,
+      "height": 28,
+      "radius": 6,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": "#ffffff@0.18000000715255737"
+    },
+    {
+      "id": "1:1687",
+      "name": "bind sep 6",
+      "type": "RECTANGLE",
+      "x": 784,
+      "y": 590,
+      "width": 376,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07000000029802322",
+      "stroke": null
+    },
+    {
+      "id": "5:1111",
+      "name": "opacity track",
+      "type": "RECTANGLE",
+      "x": 552,
+      "y": 446,
+      "width": 148,
+      "height": 6,
+      "radius": 3,
+      "fill": "#ffffff@0.11999999731779099",
+      "stroke": null
+    },
+    {
+      "id": "5:1112",
+      "name": "opacity fill",
+      "type": "RECTANGLE",
+      "x": 552,
+      "y": 446,
+      "width": 118,
+      "height": 6,
+      "radius": 3,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "5:1113",
+      "name": "opacity knob",
+      "type": "ELLIPSE",
+      "x": 661,
+      "y": 440,
+      "width": 18,
+      "height": 18,
+      "radius": 0,
+      "fill": "#f8fafc@1",
+      "stroke": null
+    },
+    {
+      "id": "9:4763",
+      "name": "back button",
+      "type": "RECTANGLE",
+      "x": 836,
+      "y": 88,
+      "width": 140,
+      "height": 40,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.1599999964237213"
+    }
+  ],
+  "text": [
+    {
+      "id": "1:1614",
+      "name": "title",
+      "characters": "SETTINGS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 40,
+      "x": 94,
+      "y": 84,
+      "width": 255,
+      "height": 51,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1615",
+      "name": "subtitle",
+      "characters": "Changes apply immediately and save to this browser.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 96,
+      "y": 140,
+      "width": 487,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1617",
+      "name": "reset label",
+      "characters": "RESET DEFAULTS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 1025,
+      "y": 101,
+      "width": 126,
+      "height": 15,
+      "fill": "#fca5a5@1"
+    },
+    {
+      "id": "1:1622",
+      "name": "gameplay header",
+      "characters": "GAMEPLAY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 120,
+      "y": 232,
+      "width": 93,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1623",
+      "name": "keybinds header",
+      "characters": "KEYBINDS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 784,
+      "y": 232,
+      "width": 90,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1626",
+      "name": "row label TEXT SPEED",
+      "characters": "TEXT SPEED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 144,
+      "y": 272,
+      "width": 108,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1627",
+      "name": "row value TEXT SPEED",
+      "characters": "NORMAL",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 500,
+      "y": 273,
+      "width": 65,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1628",
+      "name": "row label VOLUME",
+      "characters": "VOLUME",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 144,
+      "y": 328,
+      "width": 72,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1629",
+      "name": "row value VOLUME",
+      "characters": "70%",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 500,
+      "y": 329,
+      "width": 34,
+      "height": 18,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "1:1631",
+      "name": "row label ALWAYS RUN",
+      "characters": "ALWAYS RUN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 144,
+      "y": 384,
+      "width": 120,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1632",
+      "name": "row value ALWAYS RUN",
+      "characters": "OFF",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 500,
+      "y": 385,
+      "width": 28,
+      "height": 18,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "1:1634",
+      "name": "row label MENU OPACITY",
+      "characters": "MENU OPACITY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 144,
+      "y": 440,
+      "width": 136,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1635",
+      "name": "row value MENU OPACITY",
+      "characters": "80%",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 500,
+      "y": 441,
+      "width": 34,
+      "height": 18,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "1:1643",
+      "name": "row label LANGUAGE",
+      "characters": "LANGUAGE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 144,
+      "y": 494,
+      "width": 94,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1644",
+      "name": "row value LANGUAGE",
+      "characters": "ENGLISH",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 500,
+      "y": 495,
+      "width": 67,
+      "height": 18,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "1:1646",
+      "name": "step left 0",
+      "characters": "<",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 648,
+      "y": 272,
+      "width": 10,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1647",
+      "name": "step right 0",
+      "characters": ">",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 684,
+      "y": 272,
+      "width": 10,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1659",
+      "name": "step left 6",
+      "characters": "<",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 648,
+      "y": 494,
+      "width": 10,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1660",
+      "name": "step right 6",
+      "characters": ">",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 684,
+      "y": 494,
+      "width": 10,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "1:1661",
+      "name": "bind label CONFIRM",
+      "characters": "CONFIRM",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 272,
+      "width": 80,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1663",
+      "name": "key CONFIRM",
+      "characters": "A",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1104,
+      "y": 273,
+      "width": 13,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1664",
+      "name": "bind label CANCEL",
+      "characters": "CANCEL",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 328,
+      "width": 70,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1666",
+      "name": "key CANCEL",
+      "characters": "B",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1104,
+      "y": 329,
+      "width": 13,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1668",
+      "name": "bind label RUN",
+      "characters": "RUN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 384,
+      "width": 38,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1670",
+      "name": "key RUN",
+      "characters": "SHIFT",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1073,
+      "y": 385,
+      "width": 53,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1672",
+      "name": "bind label PARTY",
+      "characters": "PARTY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 440,
+      "width": 60,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1674",
+      "name": "key PARTY",
+      "characters": "P",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1104,
+      "y": 441,
+      "width": 13,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1676",
+      "name": "bind label BAG",
+      "characters": "BAG",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 496,
+      "width": 36,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1678",
+      "name": "key BAG",
+      "characters": "I",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1104,
+      "y": 497,
+      "width": 7,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1680",
+      "name": "bind label MAP",
+      "characters": "MAP",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 552,
+      "width": 38,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1682",
+      "name": "key MAP",
+      "characters": "M",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1104,
+      "y": 553,
+      "width": 14,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1684",
+      "name": "bind label OPTIONS",
+      "characters": "OPTIONS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 784,
+      "y": 608,
+      "width": 78,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "1:1686",
+      "name": "key OPTIONS",
+      "characters": "ESC",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 1088,
+      "y": 609,
+      "width": 35,
+      "height": 18,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "1:1689",
+      "name": "hint note",
+      "characters": "Keybinds are shared with the route and battle screens.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 96,
+      "y": 716,
+      "width": 435,
+      "height": 15,
+      "fill": "#64748b@1"
+    },
+    {
+      "id": "9:4764",
+      "name": "reset label",
+      "characters": "BACK",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 886,
+      "y": 101,
+      "width": 39,
+      "height": 15,
+      "fill": "#fca5a5@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.8600000143051147",
+    "#64748b@1",
+    "#7dd3fc@0.11999999731779099",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#cbd5e1@1",
+    "#f8fafc@1",
+    "#fca5a5@1",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.07000000029802322",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.11999999731779099",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213",
+    "#ffffff@0.17000000178813934",
+    "#ffffff@0.18000000715255737"
+  ],
+  "snapshot": {
+    "file": "design/exports/02-options.png",
+    "sha256": "4add489a05d1bbfb8ecfe20b1e80a97a3fd67cf4ae534935188ad1ac7306fb1c",
+    "bytes": 41385
+  }
+}

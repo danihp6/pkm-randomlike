@@ -1,0 +1,290 @@
+{
+  "slug": "03f-panels-reward-item",
+  "caption": "03f Panels · reward item",
+  "nodeId": "6:1447",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03f-panels-reward-item",
+    "nodeId": "8:3449"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1448",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1449",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.7400000095367432",
+      "stroke": null
+    },
+    {
+      "id": "6:1450",
+      "name": "reward panel",
+      "type": "RECTANGLE",
+      "x": 360,
+      "y": 196,
+      "width": 560,
+      "height": 342,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1451",
+      "name": "panel highlight",
+      "type": "RECTANGLE",
+      "x": 372,
+      "y": 208,
+      "width": 536,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1452",
+      "name": "row 1",
+      "type": "RECTANGLE",
+      "x": 380,
+      "y": 274,
+      "width": 520,
+      "height": 76,
+      "radius": 8,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:1453",
+      "name": "row 2",
+      "type": "RECTANGLE",
+      "x": 380,
+      "y": 358,
+      "width": 520,
+      "height": 76,
+      "radius": 8,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1454",
+      "name": "row 3",
+      "type": "RECTANGLE",
+      "x": 380,
+      "y": 442,
+      "width": 520,
+      "height": 76,
+      "radius": 8,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1461",
+      "name": "item icon 1",
+      "type": "RECTANGLE",
+      "x": 394,
+      "y": 288,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1464",
+      "name": "item icon 2",
+      "type": "RECTANGLE",
+      "x": 394,
+      "y": 372,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1467",
+      "name": "item icon 3",
+      "type": "RECTANGLE",
+      "x": 394,
+      "y": 456,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1455",
+      "name": "panel title",
+      "characters": "MINI-BOSS REWARD",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 380,
+      "y": 212,
+      "width": 460,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1456",
+      "name": "close",
+      "characters": "×",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 876,
+      "y": 206,
+      "width": 24,
+      "height": 24,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1457",
+      "name": "choose line",
+      "characters": "Choose one.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 380,
+      "y": 240,
+      "width": 400,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1459",
+      "name": "item name 1",
+      "characters": "Charcoal",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 436,
+      "y": 282,
+      "width": 420,
+      "height": 22,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1460",
+      "name": "item desc 1",
+      "characters": "Powers up Fire-type moves.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 436,
+      "y": 312,
+      "width": 440,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1462",
+      "name": "item name 2",
+      "characters": "Hard Stone",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 436,
+      "y": 366,
+      "width": 420,
+      "height": 22,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1463",
+      "name": "item desc 2",
+      "characters": "Powers up Rock-type moves.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 436,
+      "y": 396,
+      "width": 440,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1465",
+      "name": "item name 3",
+      "characters": "Miracle Seed",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 436,
+      "y": 450,
+      "width": 420,
+      "height": 22,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1466",
+      "name": "item desc 3",
+      "characters": "Powers up Grass-type moves.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 436,
+      "y": 480,
+      "width": 440,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#03050a@0.7400000095367432",
+    "#10161f@0.7200000286102295",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0.05999999865889549",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03f-panels-reward-item.png",
+    "sha256": "865c96d0fe42218bfa9518c15118f56e0384596e32fd86d98b69ffa3e34a4f5c",
+    "bytes": 167847
+  }
+}

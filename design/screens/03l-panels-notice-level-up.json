@@ -1,0 +1,166 @@
+{
+  "slug": "03l-panels-notice-level-up",
+  "caption": "03l Panels · notice level up",
+  "nodeId": "6:1579",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03l-panels-notice-level-up",
+    "nodeId": "8:3249"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1580",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1581",
+      "name": "level up strip",
+      "type": "RECTANGLE",
+      "x": 280,
+      "y": 24,
+      "width": 720,
+      "height": 132,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1582",
+      "name": "level up strip highlight",
+      "type": "RECTANGLE",
+      "x": 292,
+      "y": 36,
+      "width": 696,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1587",
+      "name": "move type 1",
+      "type": "RECTANGLE",
+      "x": 304,
+      "y": 92,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1589",
+      "name": "move type 2",
+      "type": "RECTANGLE",
+      "x": 304,
+      "y": 118,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1583",
+      "name": "level line",
+      "characters": "BULBASAUR GREW TO LV 18!",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 304,
+      "y": 44,
+      "width": 430,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1584",
+      "name": "level meta",
+      "characters": "LEVEL UP",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 700,
+      "y": 46,
+      "width": 276,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "6:1585",
+      "name": "learned kicker",
+      "characters": "LEARNED MOVES",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 10,
+      "x": 304,
+      "y": 74,
+      "width": 220,
+      "height": 12,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1586",
+      "name": "move name 1",
+      "characters": "RAZOR LEAF",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 336,
+      "y": 95,
+      "width": 300,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1588",
+      "name": "move name 2",
+      "characters": "LEECH SEED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 14,
+      "x": 336,
+      "y": 121,
+      "width": 300,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.7200000286102295",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03l-panels-notice-level-up.png",
+    "sha256": "800383d3bf24d998b93aa358b40eee4a330234497240679ec53177c19e69c8c7",
+    "bytes": 163909
+  }
+}

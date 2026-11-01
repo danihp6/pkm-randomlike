@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import frame from '../../../../../design/frames/04-starter-pick.json';
-import phoneFrame from '../../../../../design/frames/m04-starter-pick.json';
+import frame from '../../../../../design/source/04-starter-pick.json';
+import phoneFrame from '../../../../../design/source/m04-starter-pick.json';
 import fixture from '../../../../../design/fixtures/04-starter-pick.json';
 import { getSpecies } from '../../../../data/dex';
 import { isHudState } from '../../fixtures';

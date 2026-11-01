@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fixture from '../../../../../design/fixtures/05b-battle-message.json';
-import mobileFrame from '../../../../../design/frames/m05b-battle-message.json';
-import desktopFrame from '../../../../../design/frames/05b-battle-message.json';
+import mobileFrame from '../../../../../design/source/m05b-battle-message.json';
+import desktopFrame from '../../../../../design/source/05b-battle-message.json';
 import { isHudState } from '../../fixtures';
 import { BATTLE_LOG_SLUG, BATTLE_LOG_SLUGS, battleLogBoard, fixtureBattleLogView } from './view';
 

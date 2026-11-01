@@ -18,11 +18,10 @@ artifact families → the code, one direction only.
 | `tokens.json`          | panel/row fills and radii, the type scale with its boxes, panel width and gutter with their variants, panel bounds, grid, `safeArea`, the complete palette, `source`, `warnings`   | `import.mjs`                |
 | `board.json`           | page and slug → `name`, `panel`, `scene`, the desktop and mobile node ids and the exports index — node ids only, no task, no files, no timestamp                                   | `import.mjs`                |
 | `screens/<slug>.json`  | the screen spec: node id, viewport, mobile twin, states, every box and every string in document order, the colours, the snapshot hash                                              | `import.mjs`                |
-| `exports/<slug>.png`   | the board's own `@2x` raster, 66 of them (desktop and mobile); an offline run writes the 33 desktop pairs and leaves the mobile copy to the REST run                               | `import.mjs`                |
+| `exports/<slug>.png`   | the board's own `@2x` raster, 66 of them (desktop and mobile): the source of an offline run's desktop exports                                                                   | `import.mjs`                |
 | `fixtures/<slug>.json` | the panel's copy for `?hudFixture=<slug>`: `slug`, `screen`, the six-key `state` and the panel's own block. **Not the spec** and not a source: it is what the running panel is fed | a migration task, by hand   |
-| `frames/<slug>.json`   | the old exporter's geometry-and-text dump: the panels' fixtures were cut from it and it is the payload of an offline `--from design/frames` run                                    | `scripts/design/export.mjs` |
-| `screens/<slug>.svg`   | the old exporter's 1:1 vector, diffable, no `<text>`                                                                                                                               | `scripts/design/export.mjs` |
-| `screens/<slug>.png`   | the old exporter's raster, and the source of an offline run's desktop exports; `Task-223` moves these to `exports/`                                                                | `scripts/design/export.mjs` |
+| `source/<slug>.json`   | the committed geometry-and-text dump of one frame, 66 of them: the payload of an offline `--from design/source` run, and the tree the panels' fixture tests read                | the board's exporter, once |
+| `exports/<slug>.svg`   | the same frame as a 1:1 vector, diffable, no `<text>` (66)                                                                                                                     | the board's exporter, once |
 
 `<slug>` is the frame name in lower-kebab; the mobile twin is `m` + the desktop slug (`03 Route HUD`
 → `03-route-hud` / `m03-route-hud`). 33 frames, 66 viewports.
@@ -66,8 +65,8 @@ FIGMA_TOKEN=… FIGMA_FILE_KEY=nfyJ8Yerc6lL1BouvCAfd3 node scripts/design/import
 FIGMA_TOKEN=… FIGMA_FILE_KEY=nfyJ8Yerc6lL1BouvCAfd3 node scripts/design/import.mjs --check
 
 # Offline: the committed snapshot, no token and no request
-node scripts/design/import.mjs --from design/frames
-node scripts/design/import.mjs --from design/frames --check
+node scripts/design/import.mjs --from design/source
+node scripts/design/import.mjs --from design/source --check
 ```
 
 **REST mode** (the default) reads the map, fetches the index (`?depth=3`), the mapped subtrees
@@ -76,9 +75,10 @@ writes four artifact families in this order: `tokens.json`, `board.json`, `scree
 (33), `exports/<slug>.png` (66). There is no timestamp in any of them, so the same Figma revision
 always produces the same bytes.
 
-**Offline mode** (`--from <framesDir>`) reads **no environment variable** and makes **no request**: it
-rebuilds the REST payload from the committed `frames/<slug>.json` dumps (`buildFileFromFrames`) and
-takes each screen's raster from `<framesDir>/../screens/<slug>.png`, hashing the bytes it writes. A
+**Offline mode** (`--from <sourceDir>`, `design/source` by default) reads **no environment variable** and
+makes **no request**: it rebuilds the REST payload from the committed `source/<slug>.json` dumps
+(`buildFileFromFrames`) and takes each screen's raster from `design/exports/<slug>.png`, hashing the
+bytes it writes. A
 caption no dump carries (`frame_missing`), a missing mobile twin (`mobile_missing`) and two dumps
 sharing a caption (`frame_duplicated`) are fatal and named, and nothing is written. It writes the
 same `tokens.json`, `board.json` and 33 `screens/<slug>.json`, plus the **33 desktop** exports — the
@@ -90,7 +90,7 @@ the 66-export set. A rate-limited PAT (`figma 429`, `Retry-After` in the days) t
 artifact with what is on disk and reports every path that is different or missing. Exit codes: `0`
 clean, `1` drift (or a frame the map maps but the board no longer draws, or a duplicated caption), `2`
 a missing variable, an unreadable map or a missing raster. Both `--root` and `--from` resolve against
-the current working directory, so `--from design/frames` reads the repo's dumps even when `--root`
+the current working directory, so `--from design/source` reads the repo's dumps even when `--root`
 points at a temp copy. The command is invoked by path, not through a `package.json` alias.
 
 ## The four checks
@@ -105,9 +105,8 @@ prints exactly four lines, one per check, in this order.
 | `snapshot_hash_mismatch`  | fatal for pairs that exist | a screen spec and its PNG agree on the sha256 and on the file name; a pair that is not there yet is _pending_, not broken                                   |
 | `variant_missing`         | report-only                | every declared state and every mobile twin resolves to a frame in `board.json`                                                                              |
 
-`snapshot_hash_mismatch` is fatal only for pairs that exist because the 33 specs and 66 PNGs land
-after the operator's run: before it the line reads `0 mismatched, 33 pending the import`, after it a
-moved byte is a failure. `variant_missing` never changes the exit code — a variant the board has not
+`snapshot_hash_mismatch` is fatal for every pair: the 33 specs and the 33 desktop PNGs are committed,
+so the line reads `0 mismatched, 0 pending the import` and a moved byte is a failure. `variant_missing` never changes the exit code — a variant the board has not
 drawn yet is a report, not a broken screen.
 
 ## The operator's run
@@ -118,7 +117,7 @@ job, no dev task and no QA task holds `FIGMA_TOKEN` or calls Figma, and no one h
 `screens/<slug>.json`, `exports/**`, `board.json` or `tokens.json`.
 
 What the loop **can** do without a token is prove the board it commits: copy `design/` and `src/`
-into a temp root and run `node scripts/design/import.mjs --root "$TMP" --from design/frames`, then
+into a temp root and run `node scripts/design/import.mjs --root "$TMP" --from design/source`, then
 `node scripts/design/check.mjs --root "$TMP"`. That never rewrites the worktree's `design/`, and it
 is the offline mode above — the reason a 429 on the API is not a blocker for a screen task.
 

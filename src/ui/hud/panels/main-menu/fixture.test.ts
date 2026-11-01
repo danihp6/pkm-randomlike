@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import frame from '../../../../../design/frames/01-main-menu.json';
-import noSaveFrame from '../../../../../design/frames/01b-main-menu-no-save.json';
-import phoneFrame from '../../../../../design/frames/m01-main-menu.json';
-import phoneNoSaveFrame from '../../../../../design/frames/m01b-main-menu-no-save.json';
+import frame from '../../../../../design/source/01-main-menu.json';
+import noSaveFrame from '../../../../../design/source/01b-main-menu-no-save.json';
+import phoneFrame from '../../../../../design/source/m01-main-menu.json';
+import phoneNoSaveFrame from '../../../../../design/source/m01b-main-menu-no-save.json';
 import noSaveFixture from '../../../../../design/fixtures/01b-main-menu-no-save.json';
 import fixture from '../../../../../design/fixtures/01-main-menu.json';
 import { isHudState } from '../../fixtures';

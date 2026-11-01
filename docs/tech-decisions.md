@@ -1249,7 +1249,7 @@ the Figma file, never packed, served or imported.
 **The escape hatch, so this stays one decision and not a habit.** `design/screens/**` is a single
 directory and `node scripts/design/check.mjs` reads it through one path, so if the repo ever has to be
 free of it the move is a `.gitignore` line plus a checkout under `ASSETS_ROOT` (the same shape the
-packers already take), not a rewrite. The frames themselves — `design/frames/*.json`, the text and
+packers already take), not a rewrite. The frames themselves — `design/source/*.json`, the text and
 geometry — carry no image bytes and are unaffected either way.
 
 ## D51 - One compiler: the ESLint half is dropped, and the lint gate is Prettier under `tsc` *(decided)*
@@ -1491,8 +1491,10 @@ patched by hand and not silenced: the next import rewrites the specs from the bo
 lies has two honest outcomes — corrected on the board, or removed from it and from the map.
 
 `[Task-220]` ships the map, the extractor, the command, the checks and this decision. `[Task-223]`
-moves the old exporter's `design/frames/<slug>.json` and its rasters to the import's destinations
-and retires that exporter, so the folder has one pipeline and one shape per file.
+moves the old exporter's dumps to `design/source/` and its rasters to `design/exports/`, writes the
+33 `design/screens/<slug>.json` specs from them and retires that exporter, so the folder has one
+pipeline and one shape per file — and the offline import, which reads `design/source/`, still proves
+the committed board with no token at all.
 
 
 ## D58 — The floor's mission is a HUD card, and the run keeps the floors it met

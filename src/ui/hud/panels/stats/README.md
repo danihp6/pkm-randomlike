@@ -40,7 +40,7 @@ handed.
 - `preview.ts` — `statsPreviewRequested` and `installStatsPreview`: the frame's panel
   behind `?hud=dom&hudFixture=<slug>`, one payload per slug.
 - `preview.test.ts` — `statsPreviewRequested`'s truth table, headless.
-- `fixture.test.ts` — the five fixtures against `design/frames/08`, `08b`, `08c`, `09`,
+- `fixture.test.ts` — the five fixtures against `design/source/08`, `08b`, `08c`, `09`,
   `09b` and the `m…` twins: the copy, the figures, the rows, the boards, the figure rule
   and the payload guards.
 - `index.ts` — the barrel the scene and the preview import.

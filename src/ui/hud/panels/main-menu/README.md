@@ -19,7 +19,7 @@ every navigation, and this panel paints the view it is handed.
 - `mount.tsx` — `mountMainMenu`: renders the panel into a host element, repaints it on `update`, and returns the handle the scene disposes.
 - `preview.ts` — `mainMenuPreviewRequested` and `installMainMenuPreview`: the frame's panel behind `?hud=dom&hudFixture=<slug>`, one payload per slug.
 - `preview.test.ts` — `mainMenuPreviewRequested`'s truth table, headless.
-- `fixture.test.ts` — both fixtures against `design/frames/01`, `01b`, `m01` and `m01b`: the states, the rows, the selected row, the portraits and their atlas cells, the figures, the boards, the preview seed's slug fallback and the payload guards.
+- `fixture.test.ts` — both fixtures against `design/source/01`, `01b`, `m01` and `m01b`: the states, the rows, the selected row, the portraits and their atlas cells, the figures, the boards, the preview seed's slug fallback and the payload guards.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 

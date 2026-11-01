@@ -4,7 +4,7 @@ The route's bag window as Preact over the `#hud` layer (`D49`): the card, the fi
 tabs, the filter field, the five-column stack grid, the money footer and the floating
 description card the scene module used to draw in Phaser. The layout is the **shipped**
 one, mirrored from `src/scenes/panels/bag.ts`; the paint is the board's bag group
-(`design/frames/03b-panels-row-view.json`).
+(`design/source/03b-panels-row-view.json`).
 
 ## Layout
 

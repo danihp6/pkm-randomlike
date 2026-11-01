@@ -12,7 +12,7 @@ centred 560 × 420 card with the portrait, the type chip, the received name and 
 ## Layout
 
 - `view.ts` — the panel's value model and the frames' own numbers: `tradePanelBox`, `tradePanelView`, the mirrored constant block (`TRADE_CARD_W`, `TRADE_PARTY_TILE_W`, `TRADE_PC_CELL`, `TRADE_GIVE_W`, …) and the `TradeInput` it reads.
-- `view.test.ts` — every rect read out of `design/frames/03i` / `m03i` / `03j` / `m03j` and compared with the view, both QA viewports, the selection and affordability clamps and the purity check, headless.
+- `view.test.ts` — every rect read out of `design/source/03i` / `m03i` / `03j` / `m03j` and compared with the view, both QA viewports, the selection and affordability clamps and the purity check, headless.
 - `fixture.test.ts` — `design/fixtures/03i-panels-trade-pick.json` and `03j-panels-trade-result.json`: the six tiles in party order, the selected index, the meta line, the box count, the spent room's disabled press and the result card's strings.
 - `tradePanel.tsx` — the card itself: the scrim, the highlight, the header, the party and PC grids with their placeholder portraits, the footer button, the dismiss ✕ and the result card.
 - `trade.css` — the board's paint for both states: the 74 % scrim, radius 11 (12 on the narrow frame), the 16 % hairline, the 14 % highlight, the 4 % tile pair with the accent selected edge and the one filled action.

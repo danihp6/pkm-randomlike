@@ -1,732 +1,500 @@
 {
   "page": "Page 1",
-  "generatedAt": "2026-10-23T11:28:29.187Z",
   "frames": {
-    "02-options": {
-      "name": "02 Options",
-      "task": 127,
-      "panel": "options",
-      "scene": "src/scenes/SettingsScene.ts",
-      "exports": {
-        "02-options": {
-          "nodeId": "1:1557",
-          "files": {
-            "json": 62691
-          }
-        },
-        "m02-options": {
-          "nodeId": "8:3231",
-          "files": {
-            "json": 21761
-          }
-        }
-      },
-      "desktop": "1:1557",
-      "mobile": "8:3231"
-    },
     "01-main-menu": {
       "name": "01 Main menu",
-      "task": 145,
       "panel": "main-menu",
       "scene": "src/scenes/MainMenuScene.ts",
+      "desktop": "1:1556",
+      "mobile": "8:3230",
       "exports": {
         "01-main-menu": {
-          "nodeId": "1:1556",
-          "files": {
-            "json": 32951
-          }
+          "nodeId": "1:1556"
         },
         "m01-main-menu": {
-          "nodeId": "8:3230",
-          "files": {
-            "json": 29307
-          }
+          "nodeId": "8:3230"
         }
-      },
-      "desktop": "1:1556",
-      "mobile": "8:3230"
+      }
     },
     "01b-main-menu-no-save": {
       "name": "01b Main menu · no save",
-      "task": 145,
       "panel": "main-menu",
       "scene": "src/scenes/MainMenuScene.ts",
+      "desktop": "4:1057",
+      "mobile": "8:3239",
       "exports": {
         "01b-main-menu-no-save": {
-          "nodeId": "4:1057",
-          "files": {
-            "json": 25225
-          }
+          "nodeId": "4:1057"
         },
         "m01b-main-menu-no-save": {
-          "nodeId": "8:3239",
-          "files": {
-            "json": 22768
-          }
+          "nodeId": "8:3239"
         }
-      },
-      "desktop": "4:1057",
-      "mobile": "8:3239"
+      }
+    },
+    "02-options": {
+      "name": "02 Options",
+      "panel": "options",
+      "scene": "src/scenes/SettingsScene.ts",
+      "desktop": "1:1557",
+      "mobile": "8:3231",
+      "exports": {
+        "02-options": {
+          "nodeId": "1:1557"
+        },
+        "m02-options": {
+          "nodeId": "8:3231"
+        }
+      }
     },
     "03-route-hud": {
       "name": "03 Route HUD",
-      "task": 139,
       "panel": "hud",
       "scene": "src/scenes/panels/hud.ts",
+      "desktop": "1:1558",
+      "mobile": "8:3232",
       "exports": {
         "03-route-hud": {
-          "nodeId": "1:1558",
-          "files": {
-            "json": 259064
-          }
+          "nodeId": "1:1558"
         },
         "m03-route-hud": {
-          "nodeId": "8:3232",
-          "files": {
-            "json": 58682
-          }
+          "nodeId": "8:3232"
         }
-      },
-      "desktop": "1:1558",
-      "mobile": "8:3232"
+      }
     },
     "03b-panels-row-view": {
       "name": "03b Panels · row view",
-      "task": 129,
       "panel": "bag",
       "scene": "src/scenes/panels/bag.ts",
+      "desktop": "2:6",
+      "mobile": "8:3862",
       "exports": {
         "03b-panels-row-view": {
-          "nodeId": "2:6",
-          "files": {
-            "json": 140470
-          }
+          "nodeId": "2:6"
         },
         "m03b-panels-row-view": {
-          "nodeId": "8:3862",
-          "files": {
-            "json": 145988
-          }
+          "nodeId": "8:3862"
         }
-      },
-      "desktop": "2:6",
-      "mobile": "8:3862"
+      }
     },
     "03c-panels-compress": {
       "name": "03c Panels · compress",
-      "task": 131,
       "panel": "party",
       "scene": "src/scenes/panels/party.ts",
+      "desktop": "2:466",
+      "mobile": "8:3810",
       "exports": {
         "03c-panels-compress": {
-          "nodeId": "2:466",
-          "files": {
-            "json": 11857
-          }
+          "nodeId": "2:466"
         },
         "m03c-panels-compress": {
-          "nodeId": "8:3810",
-          "files": {
-            "json": 16968
-          }
+          "nodeId": "8:3810"
         }
-      },
-      "desktop": "2:466",
-      "mobile": "8:3810"
+      }
     },
     "03d-route-shop-buy": {
       "name": "03d Route · shop · buy",
-      "task": 134,
       "panel": "shop",
       "scene": "src/scenes/panels/shop.ts",
+      "desktop": "5:1114",
+      "mobile": "8:3240",
       "exports": {
         "03d-route-shop-buy": {
-          "nodeId": "5:1114",
-          "files": {
-            "json": 79889
-          }
+          "nodeId": "5:1114"
         },
         "m03d-route-shop-buy": {
-          "nodeId": "8:3240",
-          "files": {
-            "json": 75254
-          }
+          "nodeId": "8:3240"
         }
-      },
-      "desktop": "5:1114",
-      "mobile": "8:3240"
+      }
     },
     "03e-route-shop-sell": {
       "name": "03e Route · shop · sell",
-      "task": 134,
       "panel": "shop",
       "scene": "src/scenes/panels/shop.ts",
+      "desktop": "5:1276",
+      "mobile": "11:5062",
       "exports": {
         "03e-route-shop-sell": {
-          "nodeId": "5:1276",
-          "files": {
-            "json": 79975
-          }
+          "nodeId": "5:1276"
         },
         "m03e-route-shop-sell": {
-          "nodeId": "11:5062",
-          "files": {
-            "json": 74077
-          }
+          "nodeId": "11:5062"
         }
-      },
-      "desktop": "5:1276",
-      "mobile": "11:5062"
+      }
     },
     "03f-panels-reward-item": {
       "name": "03f Panels · reward item",
-      "task": 136,
       "panel": "rewards",
       "scene": "src/scenes/panels/rewards.ts",
+      "desktop": "6:1447",
+      "mobile": "8:3449",
       "exports": {
         "03f-panels-reward-item": {
-          "nodeId": "6:1447",
-          "files": {
-            "json": 19424
-          }
+          "nodeId": "6:1447"
         },
         "m03f-panels-reward-item": {
-          "nodeId": "8:3449",
-          "files": {
-            "json": 23085
-          }
+          "nodeId": "8:3449"
         }
-      },
-      "desktop": "6:1447",
-      "mobile": "8:3449"
+      }
     },
     "03g-panels-reward-pokemon": {
       "name": "03g Panels · reward pokemon",
-      "task": 136,
       "panel": "rewards",
       "scene": "src/scenes/panels/rewards.ts",
+      "desktop": "6:1468",
+      "mobile": "8:3517",
       "exports": {
         "03g-panels-reward-pokemon": {
-          "nodeId": "6:1468",
-          "files": {
-            "json": 13229
-          }
+          "nodeId": "6:1468"
         },
         "m03g-panels-reward-pokemon": {
-          "nodeId": "8:3517",
-          "files": {
-            "json": 16227
-          }
+          "nodeId": "8:3517"
         }
-      },
-      "desktop": "6:1468",
-      "mobile": "8:3517"
+      }
     },
     "03h-panels-rocket-slots": {
       "name": "03h Panels · rocket slots",
-      "task": null,
       "panel": "rocket",
-      "scene": "src/scenes/rooms/casino.ts",
+      "scene": "src/ui/rocketPanel.ts",
+      "desktop": "6:1485",
+      "mobile": "8:3245",
       "exports": {
         "03h-panels-rocket-slots": {
-          "nodeId": "6:1485",
-          "files": {
-            "json": 16848
-          }
+          "nodeId": "6:1485"
         },
         "m03h-panels-rocket-slots": {
-          "nodeId": "8:3245",
-          "files": {
-            "json": 17540
-          }
+          "nodeId": "8:3245"
         }
-      },
-      "desktop": "6:1485",
-      "mobile": "8:3245"
+      }
     },
     "03i-panels-trade-pick": {
       "name": "03i Panels · trade pick",
-      "task": 135,
       "panel": "trade",
       "scene": "src/scenes/panels/trade.ts",
+      "desktop": "6:1505",
+      "mobile": "8:3246",
       "exports": {
         "03i-panels-trade-pick": {
-          "nodeId": "6:1505",
-          "files": {
-            "json": 39465
-          }
+          "nodeId": "6:1505"
         },
         "m03i-panels-trade-pick": {
-          "nodeId": "8:3246",
-          "files": {
-            "json": 37139
-          }
+          "nodeId": "8:3246"
         }
-      },
-      "desktop": "6:1505",
-      "mobile": "8:3246"
+      }
     },
     "03j-panels-trade-result": {
       "name": "03j Panels · trade result",
-      "task": 135,
       "panel": "trade",
       "scene": "src/scenes/panels/trade.ts",
+      "desktop": "6:1559",
+      "mobile": "8:3247",
       "exports": {
         "03j-panels-trade-result": {
-          "nodeId": "6:1559",
-          "files": {
-            "json": 11967
-          }
+          "nodeId": "6:1559"
         },
         "m03j-panels-trade-result": {
-          "nodeId": "8:3247",
-          "files": {
-            "json": 14885
-          }
+          "nodeId": "8:3247"
         }
-      },
-      "desktop": "6:1559",
-      "mobile": "8:3247"
+      }
     },
     "03k-panels-notice-item": {
       "name": "03k Panels · notice item",
-      "task": 137,
       "panel": "notices",
       "scene": "src/scenes/panels/notices.ts",
+      "desktop": "6:1573",
+      "mobile": "8:3248",
       "exports": {
         "03k-panels-notice-item": {
-          "nodeId": "6:1573",
-          "files": {
-            "json": 5332
-          }
+          "nodeId": "6:1573"
         },
         "m03k-panels-notice-item": {
-          "nodeId": "8:3248",
-          "files": {
-            "json": 5941
-          }
+          "nodeId": "8:3248"
         }
-      },
-      "desktop": "6:1573",
-      "mobile": "8:3248"
+      }
     },
     "03l-panels-notice-level-up": {
       "name": "03l Panels · notice level up",
-      "task": 137,
       "panel": "notices",
       "scene": "src/scenes/panels/notices.ts",
+      "desktop": "6:1579",
+      "mobile": "8:3249",
       "exports": {
         "03l-panels-notice-level-up": {
-          "nodeId": "6:1579",
-          "files": {
-            "json": 10891
-          }
+          "nodeId": "6:1579"
         },
         "m03l-panels-notice-level-up": {
-          "nodeId": "8:3249",
-          "files": {
-            "json": 13783
-          }
+          "nodeId": "8:3249"
         }
-      },
-      "desktop": "6:1579",
-      "mobile": "8:3249"
+      }
     },
     "03m-panels-pokemon-moves": {
       "name": "03m Panels · pokemon moves",
-      "task": 132,
       "panel": "detail",
       "scene": "src/scenes/panels/detail.ts",
+      "desktop": "6:1596",
+      "mobile": "8:3250",
       "exports": {
         "03m-panels-pokemon-moves": {
-          "nodeId": "6:1596",
-          "files": {
-            "json": 84268
-          }
+          "nodeId": "6:1596"
         },
         "m03m-panels-pokemon-moves": {
-          "nodeId": "8:3250",
-          "files": {
-            "json": 62176
-          }
+          "nodeId": "8:3250"
         }
-      },
-      "desktop": "6:1596",
-      "mobile": "8:3250"
+      }
     },
     "03n-panels-pause-menu": {
       "name": "03n Panels · pause menu",
-      "task": 138,
       "panel": "pause",
       "scene": "src/scenes/panels/pause.ts",
+      "desktop": "6:2217",
+      "mobile": "8:3571",
       "exports": {
         "03n-panels-pause-menu": {
-          "nodeId": "6:2217",
-          "files": {
-            "json": 13378
-          }
+          "nodeId": "6:2217"
         },
         "m03n-panels-pause-menu": {
-          "nodeId": "8:3571",
-          "files": {
-            "json": 16998
-          }
+          "nodeId": "8:3571"
         }
-      },
-      "desktop": "6:2217",
-      "mobile": "8:3571"
+      }
     },
     "03o-panels-map-routes": {
       "name": "03o Panels · map routes",
-      "task": 133,
       "panel": "map",
       "scene": "src/scenes/panels/map.ts",
+      "desktop": "6:2250",
+      "mobile": "8:3255",
       "exports": {
         "03o-panels-map-routes": {
-          "nodeId": "6:2250",
-          "files": {
-            "json": 35098
-          }
+          "nodeId": "6:2250"
         },
         "m03o-panels-map-routes": {
-          "nodeId": "8:3255",
-          "files": {
-            "json": 42698
-          }
+          "nodeId": "8:3255"
         }
-      },
-      "desktop": "6:2250",
-      "mobile": "8:3255"
+      }
     },
     "03p-panels-pc-rip": {
       "name": "03p Panels · pc rip",
-      "task": 130,
       "panel": "pc",
       "scene": "src/scenes/panels/pc.ts",
+      "desktop": "6:2525",
+      "mobile": "8:3625",
       "exports": {
         "03p-panels-pc-rip": {
-          "nodeId": "6:2525",
-          "files": {
-            "json": 55575
-          }
+          "nodeId": "6:2525"
         },
         "m03p-panels-pc-rip": {
-          "nodeId": "8:3625",
-          "files": {
-            "json": 55657
-          }
+          "nodeId": "8:3625"
         }
-      },
-      "desktop": "6:2525",
-      "mobile": "8:3625"
+      }
     },
     "04-starter-pick": {
       "name": "04 Starter pick",
-      "task": 147,
       "panel": "starter",
       "scene": "src/scenes/StarterScene.ts",
+      "desktop": "6:1416",
+      "mobile": "8:3242",
       "exports": {
         "04-starter-pick": {
-          "nodeId": "6:1416",
-          "files": {
-            "json": 18363
-          }
+          "nodeId": "6:1416"
         },
         "m04-starter-pick": {
-          "nodeId": "8:3242",
-          "files": {
-            "json": 22511
-          }
+          "nodeId": "8:3242"
         }
-      },
-      "desktop": "6:1416",
-      "mobile": "8:3242"
+      }
     },
     "05-battle-hud": {
       "name": "05 Battle HUD",
-      "task": 140,
       "panel": "battle-hp",
       "scene": "src/scenes/BattleScene.ts",
+      "desktop": "1:1560",
+      "mobile": "8:3233",
       "exports": {
         "05-battle-hud": {
-          "nodeId": "1:1560",
-          "files": {
-            "json": 128282
-          }
+          "nodeId": "1:1560"
         },
         "m05-battle-hud": {
-          "nodeId": "8:3233",
-          "files": {
-            "json": 93006
-          }
+          "nodeId": "8:3233"
         }
-      },
-      "desktop": "1:1560",
-      "mobile": "8:3233"
+      }
     },
     "05b-battle-message": {
       "name": "05b Battle · message",
-      "task": 144,
       "panel": "battle-log",
       "scene": "src/scenes/BattleScene.ts",
+      "desktop": "2:569",
+      "mobile": "8:4036",
       "exports": {
         "05b-battle-message": {
-          "nodeId": "2:569",
-          "files": {
-            "json": 58420
-          }
+          "nodeId": "2:569"
         },
         "m05b-battle-message": {
-          "nodeId": "8:4036",
-          "files": {
-            "json": 59672
-          }
+          "nodeId": "8:4036"
         }
-      },
-      "desktop": "2:569",
-      "mobile": "8:4036"
+      }
     },
     "05c-battle-bag": {
       "name": "05c Battle · bag",
-      "task": 142,
       "panel": "battle-bag",
       "scene": "src/scenes/BattleScene.ts",
+      "desktop": "2:702",
+      "mobile": "8:4119",
       "exports": {
         "05c-battle-bag": {
-          "nodeId": "2:702",
-          "files": {
-            "json": 101345
-          }
+          "nodeId": "2:702"
         },
         "m05c-battle-bag": {
-          "nodeId": "8:4119",
-          "files": {
-            "json": 90093
-          }
+          "nodeId": "8:4119"
         }
-      },
-      "desktop": "2:702",
-      "mobile": "8:4119"
+      }
     },
     "05d-battle-pokemon": {
       "name": "05d Battle · pokemon",
-      "task": 143,
       "panel": "battle-switch",
       "scene": "src/scenes/BattleScene.ts",
+      "desktop": "4:855",
+      "mobile": "8:4221",
       "exports": {
         "05d-battle-pokemon": {
-          "nodeId": "4:855",
-          "files": {
-            "json": 131351
-          }
+          "nodeId": "4:855"
         },
         "m05d-battle-pokemon": {
-          "nodeId": "8:4221",
-          "files": {
-            "json": 85294
-          }
+          "nodeId": "8:4221"
         }
-      },
-      "desktop": "4:855",
-      "mobile": "8:4221"
+      }
     },
     "05e-battle-stats": {
       "name": "05e Battle · stats",
-      "task": 143,
       "panel": "battle-switch",
       "scene": "src/scenes/BattleScene.ts",
+      "desktop": "6:1879",
+      "mobile": "8:4304",
       "exports": {
         "05e-battle-stats": {
-          "nodeId": "6:1879",
-          "files": {
-            "json": 120399
-          }
+          "nodeId": "6:1879"
         },
         "m05e-battle-stats": {
-          "nodeId": "8:4304",
-          "files": {
-            "json": 79462
-          }
+          "nodeId": "8:4304"
         }
-      },
-      "desktop": "6:1879",
-      "mobile": "8:4304"
+      }
     },
     "06-run-over-defeat": {
       "name": "06 Run over · defeat",
-      "task": 148,
       "panel": "run-over",
       "scene": "src/scenes/RunOverScene.ts",
+      "desktop": "6:2171",
+      "mobile": "8:3252",
       "exports": {
         "06-run-over-defeat": {
-          "nodeId": "6:2171",
-          "files": {
-            "json": 25339
-          }
+          "nodeId": "6:2171"
         },
         "m06-run-over-defeat": {
-          "nodeId": "8:3252",
-          "files": {
-            "json": 25172
-          }
+          "nodeId": "8:3252"
         }
-      },
-      "desktop": "6:2171",
-      "mobile": "8:3252"
+      }
     },
     "07-run-over-victory": {
       "name": "07 Run over · victory",
-      "task": 148,
       "panel": "run-over",
       "scene": "src/scenes/RunOverScene.ts",
+      "desktop": "6:2172",
+      "mobile": "8:4447",
       "exports": {
         "07-run-over-victory": {
-          "nodeId": "6:2172",
-          "files": {
-            "json": 32018
-          }
+          "nodeId": "6:2172"
         },
         "m07-run-over-victory": {
-          "nodeId": "8:4447",
-          "files": {
-            "json": 35792
-          }
+          "nodeId": "8:4447"
         }
-      },
-      "desktop": "6:2172",
-      "mobile": "8:4447"
+      }
     },
     "07b-run-over-victory-pokemon": {
       "name": "07b Run over · victory · pokemon",
-      "task": 148,
       "panel": "run-over",
       "scene": "src/scenes/RunOverScene.ts",
+      "desktop": "6:2440",
+      "mobile": "8:4674",
       "exports": {
         "07b-run-over-victory-pokemon": {
-          "nodeId": "6:2440",
-          "files": {
-            "json": 69084
-          }
+          "nodeId": "6:2440"
         },
         "m07b-run-over-victory-pokemon": {
-          "nodeId": "8:4674",
-          "files": {
-            "json": 67336
-          }
+          "nodeId": "8:4674"
         }
-      },
-      "desktop": "6:2440",
-      "mobile": "8:4674"
+      }
     },
     "08-stats-totals": {
       "name": "08 Stats · totals",
-      "task": 146,
       "panel": "stats",
       "scene": "src/ui/hud/panels/stats",
+      "desktop": "7:2663",
+      "mobile": "8:3258",
       "exports": {
         "08-stats-totals": {
-          "nodeId": "7:2663",
-          "files": {
-            "json": 48539
-          }
+          "nodeId": "7:2663"
         },
         "m08-stats-totals": {
-          "nodeId": "8:3258",
-          "files": {
-            "json": 53560
-          }
+          "nodeId": "8:3258"
         }
-      },
-      "desktop": "7:2663",
-      "mobile": "8:3258"
+      }
     },
     "08b-stats-runs": {
       "name": "08b Stats · runs",
-      "task": 146,
       "panel": "stats",
       "scene": "src/ui/hud/panels/stats",
+      "desktop": "7:2750",
+      "mobile": "8:3259",
       "exports": {
         "08b-stats-runs": {
-          "nodeId": "7:2750",
-          "files": {
-            "json": 82378
-          }
+          "nodeId": "7:2750"
         },
         "m08b-stats-runs": {
-          "nodeId": "8:3259",
-          "files": {
-            "json": 49275
-          }
+          "nodeId": "8:3259"
         }
-      },
-      "desktop": "7:2750",
-      "mobile": "8:3259"
+      }
     },
     "08c-stats-pokemon": {
       "name": "08c Stats · pokemon",
-      "task": 146,
       "panel": "stats",
       "scene": "src/ui/hud/panels/stats",
+      "desktop": "7:2867",
+      "mobile": "11:5218",
       "exports": {
         "08c-stats-pokemon": {
-          "nodeId": "7:2867",
-          "files": {
-            "json": 78746
-          }
+          "nodeId": "7:2867"
         },
         "m08c-stats-pokemon": {
-          "nodeId": "11:5218",
-          "files": {
-            "json": 44282
-          }
+          "nodeId": "11:5218"
         }
-      },
-      "desktop": "7:2867",
-      "mobile": "11:5218"
+      }
     },
     "09-ranking": {
       "name": "09 Ranking",
-      "task": 146,
       "panel": "stats",
       "scene": "src/ui/hud/panels/stats",
+      "desktop": "7:2985",
+      "mobile": "8:3261",
       "exports": {
         "09-ranking": {
-          "nodeId": "7:2985",
-          "files": {
-            "json": 94274
-          }
+          "nodeId": "7:2985"
         },
         "m09-ranking": {
-          "nodeId": "8:3261",
-          "files": {
-            "json": 79033
-          }
+          "nodeId": "8:3261"
         }
-      },
-      "desktop": "7:2985",
-      "mobile": "8:3261"
+      }
     },
     "09b-ranking-pokemon": {
       "name": "09b Ranking · pokemon",
-      "task": 146,
       "panel": "stats",
       "scene": "src/ui/hud/panels/stats",
+      "desktop": "7:3095",
+      "mobile": "11:5286",
       "exports": {
         "09b-ranking-pokemon": {
-          "nodeId": "7:3095",
-          "files": {
-            "json": 92534
-          }
+          "nodeId": "7:3095"
         },
         "m09b-ranking-pokemon": {
-          "nodeId": "11:5286",
-          "files": {
-            "json": 39765
-          }
+          "nodeId": "11:5286"
         }
-      },
-      "desktop": "7:3095",
-      "mobile": "11:5286"
+      }
     }
   }
 }

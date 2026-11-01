@@ -1,0 +1,219 @@
+{
+  "slug": "03n-panels-pause-menu",
+  "caption": "03n Panels · pause menu",
+  "nodeId": "6:2217",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03n-panels-pause-menu",
+    "nodeId": "8:3571"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:2218",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:2219",
+      "name": "pause scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#05070c@0.550000011920929",
+      "stroke": null
+    },
+    {
+      "id": "6:2220",
+      "name": "pause panel",
+      "type": "RECTANGLE",
+      "x": 460,
+      "y": 244,
+      "width": 360,
+      "height": 312,
+      "radius": 11,
+      "fill": "#10161f@0.9200000166893005",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:2221",
+      "name": "pause panel highlight",
+      "type": "RECTANGLE",
+      "x": 472,
+      "y": 256,
+      "width": 336,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:2222",
+      "name": "pause divider",
+      "type": "RECTANGLE",
+      "x": 484,
+      "y": 304,
+      "width": 312,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2223",
+      "name": "pause row 0",
+      "type": "RECTANGLE",
+      "x": 484,
+      "y": 320,
+      "width": 312,
+      "height": 48,
+      "radius": 8,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2224",
+      "name": "pause row 1",
+      "type": "RECTANGLE",
+      "x": 484,
+      "y": 376,
+      "width": 312,
+      "height": 48,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:2225",
+      "name": "pause row 2",
+      "type": "RECTANGLE",
+      "x": 484,
+      "y": 432,
+      "width": 312,
+      "height": 48,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:2226",
+      "name": "pause row 3",
+      "type": "RECTANGLE",
+      "x": 484,
+      "y": 488,
+      "width": 312,
+      "height": 48,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    }
+  ],
+  "text": [
+    {
+      "id": "6:2227",
+      "name": "pause title",
+      "characters": "MENU",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 484,
+      "y": 264,
+      "width": 200,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2228",
+      "name": "pause label 0",
+      "characters": "CONTINUE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 504,
+      "y": 337,
+      "width": 272,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2229",
+      "name": "pause label 1",
+      "characters": "OPTIONS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 504,
+      "y": 393,
+      "width": 272,
+      "height": 16,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "6:2230",
+      "name": "pause label 2",
+      "characters": "NEW RUN",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 504,
+      "y": 449,
+      "width": 272,
+      "height": 16,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "6:2231",
+      "name": "pause label 3",
+      "characters": "EXIT",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 504,
+      "y": 505,
+      "width": 272,
+      "height": 16,
+      "fill": "#cbd5e1@1"
+    }
+  ],
+  "colours": [
+    "#05070c@0.550000011920929",
+    "#10161f@0.9200000166893005",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#cbd5e1@1",
+    "#f8fafc@1",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.07999999821186066",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03n-panels-pause-menu.png",
+    "sha256": "03ab31edb44545c8cd8d04265ffe3e59794c7188da9b858b504974a1b23f0fc2",
+    "bytes": 160573
+  }
+}

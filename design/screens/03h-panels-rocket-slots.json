@@ -1,0 +1,264 @@
+{
+  "slug": "03h-panels-rocket-slots",
+  "caption": "03h Panels · rocket slots",
+  "nodeId": "6:1485",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03h-panels-rocket-slots",
+    "nodeId": "8:3245"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1486",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1487",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.7400000095367432",
+      "stroke": null
+    },
+    {
+      "id": "6:1488",
+      "name": "casino card",
+      "type": "RECTANGLE",
+      "x": 410,
+      "y": 228,
+      "width": 460,
+      "height": 344,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1489",
+      "name": "card highlight",
+      "type": "RECTANGLE",
+      "x": 422,
+      "y": 240,
+      "width": 436,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1490",
+      "name": "reel field",
+      "type": "RECTANGLE",
+      "x": 548,
+      "y": 336,
+      "width": 184,
+      "height": 64,
+      "radius": 8,
+      "fill": "#ffffff@0.11999999731779099",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1491",
+      "name": "reel 1",
+      "type": "RECTANGLE",
+      "x": 556,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1492",
+      "name": "reel 2",
+      "type": "RECTANGLE",
+      "x": 616,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1493",
+      "name": "reel 3",
+      "type": "RECTANGLE",
+      "x": 676,
+      "y": 344,
+      "width": 48,
+      "height": 48,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1494",
+      "name": "reel face 1 potion",
+      "type": "RECTANGLE",
+      "x": 568,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1495",
+      "name": "reel face 2 poke_ball",
+      "type": "RECTANGLE",
+      "x": 628,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1496",
+      "name": "reel face 3 oran_berry",
+      "type": "RECTANGLE",
+      "x": 688,
+      "y": 356,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1497",
+      "name": "row 1",
+      "type": "RECTANGLE",
+      "x": 434,
+      "y": 410,
+      "width": 412,
+      "height": 38,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:1498",
+      "name": "row 2",
+      "type": "RECTANGLE",
+      "x": 434,
+      "y": 454,
+      "width": 412,
+      "height": 38,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:1593",
+      "name": "rocket emblem",
+      "type": "RECTANGLE",
+      "x": 624,
+      "y": 276,
+      "width": 32,
+      "height": 48,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1499",
+      "name": "card title",
+      "characters": "SLOT MACHINE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 434,
+      "y": 244,
+      "width": 300,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1500",
+      "name": "money",
+      "characters": "MONEY  $ 2,480",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 650,
+      "y": 248,
+      "width": 196,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:1501",
+      "name": "row label 1",
+      "characters": "SPIN  $ 300",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 450,
+      "y": 420,
+      "width": 300,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1502",
+      "name": "row label 2",
+      "characters": "LEAVE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 450,
+      "y": 464,
+      "width": 300,
+      "height": 18,
+      "fill": "#f8fafc@1"
+    }
+  ],
+  "colours": [
+    "#03050a@0.7400000095367432",
+    "#10161f@0.7200000286102295",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0.05999999865889549",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.11999999731779099",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03h-panels-rocket-slots.png",
+    "sha256": "d554a5dcea0e0784281255084fab5fc5292885dbcc2450e44b4ce3c686398515",
+    "bytes": 163386
+  }
+}

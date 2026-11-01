@@ -14,7 +14,7 @@ it starts, and this panel paints the view it is handed.
 - `mount.tsx` — `mountStarter`: renders the panel into a host element, repaints it on `update`, and returns the handle the scene disposes; the `StarterIntent` union its gestures emit.
 - `preview.ts` — `starterPreviewRequested` and `installStarterPreview`: the frame's panel behind `?hud=dom&hudFixture=<slug>`.
 - `preview.test.ts` — `starterPreviewRequested`'s truth table, headless.
-- `fixture.test.ts` — `design/fixtures/04-starter-pick.json` against `design/frames/04` and `m04`: the state, the copy, the dex agreement, both boards' rects and the payload guards.
+- `fixture.test.ts` — `design/fixtures/04-starter-pick.json` against `design/source/04` and `m04`: the state, the copy, the dex agreement, both boards' rects and the payload guards.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 
