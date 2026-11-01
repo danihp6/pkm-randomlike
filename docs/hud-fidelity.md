@@ -579,7 +579,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 
 | panel | frame | slug | boxes | strings | colours | view |
 | --- | --- | --- | ---: | ---: | ---: | --- |
-| main-menu | 01 Main menu | `01-main-menu` | 16 | 16 | 13 | pending |
+| main-menu | 01 Main menu | `01-main-menu` | 16 | 16 | 13 | wired |
 | main-menu | 01b Main menu · no save | `01b-main-menu-no-save` | 11 | 14 | 13 | pending |
 | options | 02 Options | `02-options` | 33 | 35 | 16 | pending |
 | hud | 03 Route HUD | `03-route-hud` | 201 | 63 | 36 | pending |
@@ -613,8 +613,9 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | stats | 09 Ranking | `09-ranking` | 53 | 40 | 11 | pending |
 | stats | 09b Ranking · pokemon | `09b-ranking-pokemon` | 29 | 57 | 10 | pending |
 
-**The one wired row** is the notice stack (`03k`): its view builds the strip's box from the same
-arithmetic the panel paints, and `gapFor` reports nothing — the strip is the board's 720 × 56 at
-(280, 24), its one string is the frame's own, and the card paints no colour of its own (the glass is
-the stylesheet's tokens, which `check.mjs` covers). The remaining rows are the work: `Task-224` ships
-this table, and the per-panel tasks are cut from its `pending` lines.
+**A wired row** is one an adapter answers for, in `src/ui/hud/specGap.views/`, with `gapFor` reporting
+nothing: the notice stack (`03k`) is the first, its view building the strip's box from the same
+arithmetic the panel paints — the strip is the board's 720 × 56 at (280, 24), its one string is the
+frame's own, and the card paints no colour of its own (the glass is the stylesheet's tokens, which
+`check.mjs` covers) — and each panel Batch 107 measured joins it as it lands. The remaining rows are
+the work: `Task-224` ships this table, and the per-panel tasks are cut from its `pending` lines.

@@ -10666,7 +10666,7 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
 
 ### Batch 107 - the four screens a player meets first **(cut, open)**
 
-- [ ] **[Task-240] The title screen is wired to its spec.** The main menu is the first screen and the
+- [x] **[Task-240] The title screen is wired to its spec.** The main menu is the first screen and the
       only one with two frames (`01 Main menu` and `01b Main menu · no save`), of which this task owns
       **`01-main-menu`** and leaves `01b` to Batch 115. **Measured:** the spec carries **16 boxes, 16
       strings and 13 colours** (`design/screens/01-main-menu.json`), the DOM panel's view is
@@ -10682,6 +10682,13 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       the main menu at 1280×800 renders the rows the adapter measured (one screenshot-free rect read on
       `data-hud-main-menu`). Claims `src/ui/hud/specGap.views/main-menu.ts` and
       `src/ui/hud/panels/main-menu/**`. *Dependencies:* none. *(Batch 107)*
+      **SHIPPED** in Batch 107 (`2026-11-01`): `src/ui/hud/specGap.views/main-menu.ts` builds
+      `fixtureMainMenuView`'s view from the fixture at 1280×800 and claims the eight boxes the frame
+      names (the window, the card and its rows, the accent rule and the glow) and the strings it
+      prints. Frame `01`'s `version` line is a **text node**, not a box, so it is claimed as a string
+      with its rect recorded instead of inventing a box `gapFor` would report missing. `[live]` at
+      1280×800 measured `[data-hud-main-menu-window]` `96, 150, 560, 380` and the card `724, 236,
+      460, 372` — the card's 10 px height delta is recorded, not forced.
 
 - [ ] **[Task-241] The route strip is wired to its spec.** The strip is the screen a player looks at
       for the whole run: biome, level cap, money, the shared XP bar and the Pokevial meter.

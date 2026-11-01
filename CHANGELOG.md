@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The title screen is measured against frame `01`.** `[Task-240]`, Batch 107: the main menu's
+      first adapter, `src/ui/hud/specGap.views/main-menu.ts`, builds `fixtureMainMenuView`'s view from
+      `design/fixtures/01-main-menu.json` at 1280×800 and claims the **eight** boxes the frame names —
+      the window (`96, 150, 560, 380`), the card and its rows, the accent rule and the glow — plus the
+      strings it prints. The frame's `version` line is a text node, not a box, so it is claimed as a
+      string with its rect (`1065, 750, 122, 15`) recorded; claiming it as a box would have made
+      `gapFor` report a gap no panel could close. The card is `460×372` against the board's 362 tall:
+      a 10 px delta recorded in the adapter, not forced. `[live]` at 1280×800 measured the window, the
+      `stats` row (`744, 486, 420, 54`) and the card with one screenshot-free rect read each.
+
 - [x] **The spec gap is measured: every screen against its spec, and the per-panel tasks cut from the
       table.** `[Task-224]`, Batch 106: `src/ui/hud/specGap.ts` is the comparison `D57` asked for —
       `gapFor(view, spec)` reports the boxes a panel's view does not draw, the boxes it draws more than

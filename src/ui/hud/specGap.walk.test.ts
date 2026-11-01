@@ -45,7 +45,6 @@ const MAPPED: ReadonlyMap<string, Adapter> = new Map(
  * that wires a panel deletes its line here and adds an adapter in `./specGap.views/`.
  */
 const PENDING: Readonly<Record<string, string>> = {
-  '01-main-menu': 'the title screen paints its own scene; no view builder is wired',
   '01b-main-menu-no-save': 'the same screen with no save; no view builder is wired',
   '02-options': 'every options row is data, and no view builder is wired',
   '03-route-hud': 'the strip is the HUD shell, not a panel; measured from the frames',

@@ -20,6 +20,7 @@ every navigation, and this panel paints the view it is handed.
 - `preview.ts` — `mainMenuPreviewRequested` and `installMainMenuPreview`: the frame's panel behind `?hud=dom&hudFixture=<slug>`, one payload per slug.
 - `preview.test.ts` — `mainMenuPreviewRequested`'s truth table, headless.
 - `fixture.test.ts` — both fixtures against `design/source/01`, `01b`, `m01` and `m01b`: the states, the rows, the selected row, the portraits and their atlas cells, the figures, the boards, the preview seed's slug fallback and the payload guards.
+- `specGap.test.ts` — the panel's view against frame `01 Main menu`'s imported spec: the boxes it claims and their rects, the pinned copy list, the version line's text node, the spec read only as a structural selector and `gapFor`'s empty gap, headless.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 
