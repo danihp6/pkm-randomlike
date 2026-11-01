@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle HP boxes are measured against frame `05`.** `[Task-243]`, Batch 107:
+      `src/ui/hud/specGap.views/battle-hp.ts` claims the foe plate — `64, 48, 368, 100`, exactly the
+      frame's `foe panel` — and writes the rest of the frame down instead of forcing it: the player
+      plate sits at `674` against the board's `660` because `[Task-239]` put both plates on the shared
+      `774` bottom line, the ball row runs at a 16 px size on a 20 px pitch against the board's 24/28,
+      and the stage grid is at `(318, 592)` against `(448, 673)`. The frame's menu card belongs to the
+      battle-command row, and `design/fixtures/05-battle-hud.json` carries `battle: null`, so those 44
+      strings wait on a fixture task. `[live]` with a battle open read both `[data-hud-hp]` rects equal
+      to `battleHpBox({1280,800})` — enemy `64, 48, 368, 100`, player `64, 674, 368, 100` — with the
+      command card's bottom on the same `774` line.
+
 - [x] **The member detail card is measured against frame `03m`.** `[Task-242]`, Batch 107:
       `src/ui/hud/specGap.views/detail.ts` projects `detailPanelView` over the fixture's member on the
       MOVES tab at 1280×800. It claims **no box**, because the shipped card and the frame disagree:

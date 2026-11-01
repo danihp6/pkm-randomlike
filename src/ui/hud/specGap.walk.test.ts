@@ -61,7 +61,6 @@ const PENDING: Readonly<Record<string, string>> = {
   '03o-panels-map-routes': 'the floor map; no view builder is wired',
   '03p-panels-pc-rip': 'the PC box and its RIP tab; no view builder is wired',
   '04-starter-pick': 'the starter cards; no view builder is wired',
-  '05-battle-hud': 'the battle HP boxes; no view builder is wired',
   '05b-battle-message': 'the battle message box; no view builder is wired',
   '05c-battle-bag': 'the battle bag; no view builder is wired',
   '05d-battle-pokemon': 'the SWITCH window; no view builder is wired',

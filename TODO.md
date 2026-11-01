@@ -10731,7 +10731,7 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       cannot rot. `[live]` at 1280×800 measured the card at `108, 72, 460, 560`, three tabs and four
       move cells inside it.
 
-- [ ] **[Task-243] The battle HP boxes are wired to their spec.** The two plates, the bar and the status
+- [x] **[Task-243] The battle HP boxes are wired to their spec.** The two plates, the bar and the status
       chip -- the panel `[Task-228]` and `[Task-235]` already moved to the window's anchor.
       **Measured:** `design/screens/05-battle-hud.json` carries the frame's `player panel`
       `(64, 660, 368×100)` and `battle menu` `(664, 544, 576×216)`; the shipped boxes are `battleHpBox`
@@ -10745,6 +10745,15 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       rect equals `battleHpBox({1280, 800}, 'player', 0)` with a battle open. Claims
       `src/ui/hud/specGap.views/battle-hp.ts` and `src/ui/hud/panels/battle-hp/**`.
       *Dependencies:* none. *(Batch 107)*
+      **SHIPPED** in Batch 107 (`2026-11-01`): `src/ui/hud/specGap.views/battle-hp.ts` claims the foe
+      plate (`64, 48, 368, 100`) and records what it cannot: the player plate sits at `674` against the
+      frame's `660` (the shared 774 bottom line `[Task-239]` anchored), the ball row runs at a 16 px
+      size and 20 px pitch against the board's 24/28, and the stage grid is at `(318, 592)` against
+      `(448, 673)`. The frame's menu card is the battle-command row's, not this adapter's, and
+      `design/fixtures/05-battle-hud.json` carries `battle: null`, so the frame's 44 strings stay
+      unmeasured until a fixture task gives them a battle. `[live]` with a battle open: both
+      `[data-hud-hp]` rects equal `battleHpBox`, enemy `64, 48, 368, 100` and player `64, 674, 368,
+      100`, with the command card's bottom on the same 774 line.
 
 ## Bugs
 
