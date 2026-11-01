@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Mart's SELL tab is measured against frame `03e`.** `[Task-249]`, Batch 109:
+      `src/ui/hud/specGap.views/shop-sell.ts` builds `shopPanelView` from the frame's priced bag at
+      1280×800 and claims the same two labels, `BUY` and `SELL`, with no box and no colour. The frame
+      republishes `03d`'s shell under the **bag's** names — `shop shell` `(288, 232, 704, 336)` and
+      `bag panel` / `bag panel group` / `bag grid viewport` `(312, 364, 656, 164)`, drawing no
+      `shop panel` box at all — against the unchanged 640 × 540 window at `(320, 130)`, so the five
+      candidates are each outside `GAP_TOLERANCE` and the eight-row fixture fills seven 44 px rows. The
+      compound board line `×3 · $150` is recorded against the card's two fields `¥150` and `x3`, with
+      `MART`/`SHOP` and `MONEY  ¥2480`/`$ 2,480` as before. Eighteen tests pin it. `[live]` at
+      1280×800 on the SELL tab: `[data-hud-panel="shop"]` read `320, 130, 640, 540`, the active tab
+      `454, 200, 108, 30` and its first row `346, 248, 588, 40`.
+
 - [x] **The Mart's BUY tab is measured against frame `03d`.** `[Task-248]`, Batch 109:
       `src/ui/hud/specGap.views/shop-buy.ts` builds `shopPanelView` from the frame's own shelf at
       1280×800 and claims the **two tab labels** `BUY` and `SELL`, with no box and no colour. The

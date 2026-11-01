@@ -586,7 +586,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | bag | 03b Panels · row view | `03b-panels-row-view` | 136 | 15 | 25 | wired |
 | party | 03c Panels · compress | `03c-panels-compress` | 6 | 5 | 5 | wired |
 | shop | 03d Route · shop · buy | `03d-route-shop-buy` | 51 | 25 | 19 | wired |
-| shop | 03e Route · shop · sell | `03e-route-shop-sell` | 51 | 25 | 19 | pending |
+| shop | 03e Route · shop · sell | `03e-route-shop-sell` | 51 | 25 | 19 | wired |
 | rewards | 03f Panels · reward item | `03f-panels-reward-item` | 10 | 9 | 10 | pending |
 | rewards | 03g Panels · reward pokemon | `03g-panels-reward-pokemon` | 7 | 6 | 10 | pending |
 | rocket | 03h Panels · rocket slots | `03h-panels-rocket-slots` | 14 | 4 | 11 | pending |

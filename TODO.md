@@ -11039,7 +11039,7 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
       `src/ui/hud/specGap.views/shop-buy.ts`, `src/ui/hud/panels/shop/specGap.buy.test.ts` and
       `src/ui/hud/panels/shop/README.md`. *Dependencies:* none. *(Batch 109)*
 
-- [ ] **[Task-249] The Mart's SELL tab is wired to its spec.** The same card on its other state —
+- [x] **[Task-249] The Mart's SELL tab is wired to its spec.** The same card on its other state —
       the tab a player presses to sell what the bag holds.
       **Measured:** `design/screens/03e-route-shop-sell.json` is the frame `03e Route · shop ·
       sell` (`design/board.json`, node `5:1276`), **51 boxes, 25 strings, 19 colours**, and the
