@@ -10709,7 +10709,7 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       card open. `[live]` at 1280×800 the strip draws no chip, and at 390×844 the collapsed bag chip
       measures `38, 551, 26, 26`, the fixture's own rect.
 
-- [ ] **[Task-242] The member detail card is wired to its spec.** The card a player opens on every
+- [x] **[Task-242] The member detail card is wired to its spec.** The card a player opens on every
       member: three tabs, six stats, the move grid and the learnset band. **Measured:**
       `design/screens/03m-panels-pokemon-moves.json` against `detailPanelView`
       (`src/ui/hud/panels/detail/view.ts`), with the fixture at
@@ -10722,6 +10722,14 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       is green. `[live]` the card's rect read equals the adapter's box on a four-member run. Claims
       `src/ui/hud/specGap.views/detail.ts` and `src/ui/hud/panels/detail/**`. *Dependencies:* none.
       *(Batch 107)*
+      **SHIPPED** in Batch 107 (`2026-11-01`): `src/ui/hud/specGap.views/detail.ts` projects
+      `detailPanelView` over the fixture's member on the MOVES tab at 1280×800, claims no box — the
+      shipped card is `460×560` at `(108, 72)` and the frame draws `360×508` at `(448, 88)`, a delta the
+      adapter records instead of forcing — and emits the 18 strings the card prints. The level line is
+      the 19th and is left out on purpose: the card prints `Lv36` against the board's `LV 36`, a
+      one-space copy delta in `common.level` that belongs to another task; two tests pin the fact so it
+      cannot rot. `[live]` at 1280×800 measured the card at `108, 72, 460, 560`, three tabs and four
+      move cells inside it.
 
 - [ ] **[Task-243] The battle HP boxes are wired to their spec.** The two plates, the bar and the status
       chip -- the panel `[Task-228]` and `[Task-235]` already moved to the window's anchor.

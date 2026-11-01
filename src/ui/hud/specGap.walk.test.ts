@@ -57,7 +57,6 @@ const PENDING: Readonly<Record<string, string>> = {
   '03i-panels-trade-pick': 'trade, the pick step; no view builder is wired',
   '03j-panels-trade-result': 'trade, the result step; no view builder is wired',
   '03l-panels-notice-level-up': 'the level-up notice; no view builder is wired',
-  '03m-panels-pokemon-moves': 'the member detail card; no view builder is wired',
   '03n-panels-pause-menu': 'the pause menu; no view builder is wired',
   '03o-panels-map-routes': 'the floor map; no view builder is wired',
   '03p-panels-pc-rip': 'the PC box and its RIP tab; no view builder is wired',

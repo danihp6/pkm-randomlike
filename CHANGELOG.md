@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The member detail card is measured against frame `03m`.** `[Task-242]`, Batch 107:
+      `src/ui/hud/specGap.views/detail.ts` projects `detailPanelView` over the fixture's member on the
+      MOVES tab at 1280×800. It claims **no box**, because the shipped card and the frame disagree:
+      the card is `460×560` at `(108, 72)`, the frame draws `360×508` at `(448, 88)` with `70/76` wide
+      tabs; the adapter records the deltas rather than moving a card `[Task-239]` anchored. It emits the
+      **18** strings the card prints; the 19th, the level line, is left out because the card prints
+      `Lv36` while the board draws `LV 36` — `gapFor` folds only case, so the one-space copy delta in
+      `common.level` is a one-line task of its own, not a claim this adapter can make honestly. Two
+      tests pin the fact. `[live]` at 1280×800 measured the card (`108, 72, 460, 560`), its three tabs
+      and four move cells inside it.
+
 - [x] **The route strip is measured against frame `03`.** `[Task-241]`, Batch 107:
       `src/ui/hud/specGap.views/hud.ts` projects the strip at 1280×800 — `stripView` over the
       fixture's four panel slots, the frame's own card corners, `DEFAULT_KEYBINDS` and no saved

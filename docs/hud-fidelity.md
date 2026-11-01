@@ -594,7 +594,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | trade | 03j Panels · trade result | `03j-panels-trade-result` | 7 | 5 | 7 | pending |
 | notices | 03k Panels · notice item | `03k-panels-notice-item` | 4 | 1 | 4 | wired |
 | notices | 03l Panels · notice level up | `03l-panels-notice-level-up` | 5 | 5 | 6 | pending |
-| detail | 03m Panels · pokemon moves | `03m-panels-pokemon-moves` | 47 | 31 | 16 | pending |
+| detail | 03m Panels · pokemon moves | `03m-panels-pokemon-moves` | 47 | 31 | 16 | wired |
 | pause | 03n Panels · pause menu | `03n-panels-pause-menu` | 9 | 5 | 11 | pending |
 | map | 03o Panels · map routes | `03o-panels-map-routes` | 35 | 4 | 18 | pending |
 | pc | 03p Panels · pc rip | `03p-panels-pc-rip` | 33 | 20 | 19 | pending |
