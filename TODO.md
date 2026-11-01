@@ -10690,7 +10690,7 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       1280×800 measured `[data-hud-main-menu-window]` `96, 150, 560, 380` and the card `724, 236,
       460, 372` — the card's 10 px height delta is recorded, not forced.
 
-- [ ] **[Task-241] The route strip is wired to its spec.** The strip is the screen a player looks at
+- [x] **[Task-241] The route strip is wired to its spec.** The strip is the screen a player looks at
       for the whole run: biome, level cap, money, the shared XP bar and the Pokevial meter.
       **Measured:** `design/screens/03-route-hud.json` is the frame `03 Route HUD`
       (`design/board.json`), whose panel is `hud` (`src/ui/hud/panels/hud/`). **Fix shape:** add
@@ -10702,6 +10702,12 @@ only its own adapter and its own panel folder. `docs/hud-fidelity.md`'s table an
       readouts sit at the adapter's rects (one rect read, no screenshot). Claims
       `src/ui/hud/specGap.views/hud.ts` and `src/ui/hud/panels/hud/**`. *Dependencies:* none.
       *(Batch 107)*
+      **SHIPPED** in Batch 107 (`2026-11-01`): `src/ui/hud/specGap.views/hud.ts` projects `stripView`
+      over the fixture's four open cards at 1280×800 and returns an empty claim, guarded by a test on
+      the premise: the frame's boxes belong to the five cards, its `key map`/`bag`/`party`/`pc`/`stats`
+      chips are the cards' own control (`D49`, row `03c`) and `strip.wide.chips` is `[]` with every
+      card open. `[live]` at 1280×800 the strip draws no chip, and at 390×844 the collapsed bag chip
+      measures `38, 551, 26, 26`, the fixture's own rect.
 
 - [ ] **[Task-242] The member detail card is wired to its spec.** The card a player opens on every
       member: three tabs, six stats, the move grid and the learnset band. **Measured:**

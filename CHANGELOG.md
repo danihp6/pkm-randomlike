@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The route strip is measured against frame `03`.** `[Task-241]`, Batch 107:
+      `src/ui/hud/specGap.views/hud.ts` projects the strip at 1280×800 — `stripView` over the
+      fixture's four panel slots, the frame's own card corners, `DEFAULT_KEYBINDS` and no saved
+      offset — and returns an **empty claim**, which is the measurement: with all four cards open the
+      strip draws no badge (`strip.wide.chips` is `[]`), and the frame's 201 boxes belong to the five
+      cards, its `key map`/`bag`/`party`/`pc`/`stats` boxes being each card's own chip (`D49`, row
+      `03c`). A test pins that premise — a future frame that gains a strip badge turns it red — and
+      one more pins the five `key *` rects. `[live]` at 1280×800 confirmed zero strip chips, and at
+      390×844 the collapsed bag chip reads `38, 551, 26, 26`, its fixture rect.
+
 - [x] **The title screen is measured against frame `01`.** `[Task-240]`, Batch 107: the main menu's
       first adapter, `src/ui/hud/specGap.views/main-menu.ts`, builds `fixtureMainMenuView`'s view from
       `design/fixtures/01-main-menu.json` at 1280×800 and claims the **eight** boxes the frame names —
