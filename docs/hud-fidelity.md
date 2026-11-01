@@ -557,3 +557,64 @@ layout, not a stale frame, so one fixture file carries both shapes — the desk 
 read by the panel at its own breakpoint (`02-options`'s `mobile`, through
 `fixtureOptionsView(payload, true)`). The board wins: a phone row that disagrees with `m<slug>.png` is a
 panel to fix, never a twin to drop.
+
+## The spec gap, measured (`D57`)
+
+The board enters the repo as an imported spec, so fidelity is a **view-model** question: a panel's
+own view against `design/screens/<slug>.json`, never a pixel diff. `src/ui/hud/specGap.ts` is the
+comparison — `gapFor(view, spec)` answers four questions and nothing else: which boxes the view does
+not draw (`missing`), which it draws more than **1 px** away (`moved`, with the delta), which of its
+strings the board does not carry (`strings`, folded to caps because the board draws its labels in
+caps), and which of its colours are outside the spec's palette (`colours`, alpha suffix folded away).
+`src/ui/hud/specGap.walk.test.ts` walks every spec, measures it the same way and fails when a frame
+arrives with no mapping and no reason, so the board can never grow a screen this table does not
+account for.
+
+The table below is that walk's output, one row per screen: the panel the map assigns it, the frame's
+own caption, how many boxes, strings and colours its spec carries, and whether a view model is wired
+to the comparison yet. **A `pending` row is the per-panel task's evidence, not a failure**: the
+module ships the measurement and the seam, and each `pending` row is cut from here with its own three
+facts. Every colour in every spec is already inside `design/tokens.json` — `check.mjs` proves it on
+each run — so the `colours` column is the count a per-panel comparison has to match, not a verdict.
+
+| panel | frame | slug | boxes | strings | colours | view |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| main-menu | 01 Main menu | `01-main-menu` | 16 | 16 | 13 | pending |
+| main-menu | 01b Main menu · no save | `01b-main-menu-no-save` | 11 | 14 | 13 | pending |
+| options | 02 Options | `02-options` | 33 | 35 | 16 | pending |
+| hud | 03 Route HUD | `03-route-hud` | 201 | 63 | 36 | pending |
+| bag | 03b Panels · row view | `03b-panels-row-view` | 136 | 15 | 25 | pending |
+| party | 03c Panels · compress | `03c-panels-compress` | 6 | 5 | 5 | pending |
+| shop | 03d Route · shop · buy | `03d-route-shop-buy` | 51 | 25 | 19 | pending |
+| shop | 03e Route · shop · sell | `03e-route-shop-sell` | 51 | 25 | 19 | pending |
+| rewards | 03f Panels · reward item | `03f-panels-reward-item` | 10 | 9 | 10 | pending |
+| rewards | 03g Panels · reward pokemon | `03g-panels-reward-pokemon` | 7 | 6 | 10 | pending |
+| rocket | 03h Panels · rocket slots | `03h-panels-rocket-slots` | 14 | 4 | 11 | pending |
+| trade | 03i Panels · trade pick | `03i-panels-trade-pick` | 39 | 6 | 11 | pending |
+| trade | 03j Panels · trade result | `03j-panels-trade-result` | 7 | 5 | 7 | pending |
+| notices | 03k Panels · notice item | `03k-panels-notice-item` | 4 | 1 | 4 | wired |
+| notices | 03l Panels · notice level up | `03l-panels-notice-level-up` | 5 | 5 | 6 | pending |
+| detail | 03m Panels · pokemon moves | `03m-panels-pokemon-moves` | 47 | 31 | 16 | pending |
+| pause | 03n Panels · pause menu | `03n-panels-pause-menu` | 9 | 5 | 11 | pending |
+| map | 03o Panels · map routes | `03o-panels-map-routes` | 35 | 4 | 18 | pending |
+| pc | 03p Panels · pc rip | `03p-panels-pc-rip` | 33 | 20 | 19 | pending |
+| starter | 04 Starter pick | `04-starter-pick` | 13 | 6 | 7 | pending |
+| battle-hp | 05 Battle HUD | `05-battle-hud` | 99 | 44 | 33 | pending |
+| battle-log | 05b Battle · message | `05b-battle-message` | 71 | 9 | 22 | pending |
+| battle-bag | 05c Battle · bag | `05c-battle-bag` | 98 | 26 | 29 | pending |
+| battle-switch | 05d Battle · pokemon | `05d-battle-pokemon` | 116 | 36 | 28 | pending |
+| battle-switch | 05e Battle · stats | `05e-battle-stats` | 111 | 33 | 28 | pending |
+| run-over | 06 Run over · defeat | `06-run-over-defeat` | 12 | 14 | 14 | pending |
+| run-over | 07 Run over · victory | `07-run-over-victory` | 17 | 15 | 13 | pending |
+| run-over | 07b Run over · victory · pokemon | `07b-run-over-victory-pokemon` | 28 | 38 | 15 | pending |
+| stats | 08 Stats · totals | `08-stats-totals` | 19 | 31 | 11 | pending |
+| stats | 08b Stats · runs | `08b-stats-runs` | 49 | 30 | 13 | pending |
+| stats | 08c Stats · pokemon | `08c-stats-pokemon` | 26 | 48 | 11 | pending |
+| stats | 09 Ranking | `09-ranking` | 53 | 40 | 11 | pending |
+| stats | 09b Ranking · pokemon | `09b-ranking-pokemon` | 29 | 57 | 10 | pending |
+
+**The one wired row** is the notice stack (`03k`): its view builds the strip's box from the same
+arithmetic the panel paints, and `gapFor` reports nothing — the strip is the board's 720 × 56 at
+(280, 24), its one string is the frame's own, and the card paints no colour of its own (the glass is
+the stylesheet's tokens, which `check.mjs` covers). The remaining rows are the work: `Task-224` ships
+this table, and the per-panel tasks are cut from its `pending` lines.
