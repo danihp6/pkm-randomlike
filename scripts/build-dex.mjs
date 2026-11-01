@@ -193,14 +193,17 @@ const main = async () => {
   // sizes a sprite from this so big Pokémon read big (see `src/data/spriteSize.ts`).
   const heights = JSON.parse(await readFile(HEIGHTS_PATH, 'utf8'));
 
+  // A form whose own identifier has no row inherits its base species' height
+  // rather than answering the 1 m default, so a dex row never guesses while the
+  // table carries the species it came from.
+  const normalizeId = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
   const species = Dex.species.all().filter(isPlayable).map((entry) => ({
     ...withFormBoost(entry),
     catchRate: catchRateOf(entry.num),
-    heightm: heights[entry.id] ?? 1,
+    heightm: heights[entry.id] ?? heights[normalizeId(entry.baseSpecies)] ?? 1,
     evolutions: evolutionOf(entry),
   }));
-
-  const normalizeId = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   // Every Mega whose base species is in the playable set, each tied to its base
   // and its stone. A Mega whose base the run cannot own has no holder, so it is

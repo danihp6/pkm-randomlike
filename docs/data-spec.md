@@ -12,7 +12,16 @@ rate, the generator merges one in from the committed PokeAPI table
 (`scripts/data/catch-rates.json`); capture balances against `catchRate`. It also
 merges a canonical `heightm` from `scripts/data/heights.json` (PokeAPI, via
 `scripts/fetch-heights.mjs`), which sizes the battle sprite
-(`src/data/spriteSize.ts`).
+(`src/data/spriteSize.ts`). **Every base species carries its own row** (1281 of
+1281 today, 1131 matched by their own identifier and 150 by their default form);
+a forme with no row of its own inherits its base species' height, and only a
+species the CSV does not carry falls back to 1 m. `species.test.ts` guards that
+contract: it prints the ids of every base species the table misses and pins the
+list to `KNOWN_MISSING`, which is empty — an entry may only be added with its
+reason here. `heightOf` therefore feeds `overworldScale`
+(`src/data/overworldSize.ts`), and a species that used to draw at scale 1 now
+draws at its own: `wailord` (14.5 m) and `onix` (8.8 m) clamp to the 1.6 band's
+top, `diglett` (0.2 m) sits on the 0.8 floor.
 
 `megas.json` is generated beside `species.json`: every Mega forme whose base
 species is in the playable set, each with its `baseSpeciesId`, `stoneId` and
@@ -166,4 +175,7 @@ asserts counts against `meta.json` so a bad regeneration fails loudly.
 - Adding content = adding a file or a row, plus (for a chalk-equivalent, i.e. a
   new mechanic) a section in the matching spec under `docs/`.
 - Regenerating the dex is a deliberate act: `npm run data:dex`, then `npm test`,
-  then update `meta.json` counts if they changed.
+  then update `meta.json` counts if they changed. The heights table has one
+  deliberate re-run of its own, `node scripts/fetch-heights.mjs`, and that is the
+  **only** moment this table touches the network; the output is committed, so
+  regenerating the dex never fetches.
