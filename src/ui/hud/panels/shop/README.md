@@ -13,6 +13,8 @@ a different design and not this migration: the shipped card is the one that ship
 - `view.ts` — the panel's value model and its mirror constants: `shopPanelBox`, `shopContentRect`, `shopPanelView` (the scroll and selection clamps, the seven visible rows, the tabs, the money, the message and the empty label) and the `ShopInput` it reads.
 - `view.test.ts` — the shipped rects at both QA viewports, the row window and its numbering, the scroll and selection clamps, the empty label, the affordability rule and the mirrored constant block, headless.
 - `fixture.test.ts` — `design/fixtures/03d-route-shop-buy.json`: the snapshot state and the buy/sell blocks reproduced through the model.
+- `specGap.buy.test.ts` — the `03d Route · shop · buy` frame measured through `specGap.views/shop-buy.ts`: the empty box claim and its numbers (the 640 × 540 card against the board's 704 × 336 shell), the two tab labels it claims and the copy it cannot, headless.
+- `specGap.sell.test.ts` — the `03e Route · shop · sell` frame measured through `specGap.views/shop-sell.ts`: the same card against the board's own bag-named shell, the list band and the two tab labels, headless.
 - `shopPanel.tsx` — the panel itself: the card, the header title, the drawn ✕, the money line, the tabs, the rows with their icon and counts, the message, the hint and the empty label.
 - `shop.css` — the board's card and row paint, one scoped custom property per board value.
 - `mount.tsx` — `mountShopPanel`: renders the panel into a host element from a signals view and returns its disposer, plus the card's `ShopIntent` channel.

@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Mart's BUY tab is measured against frame `03d`.** `[Task-248]`, Batch 109:
+      `src/ui/hud/specGap.views/shop-buy.ts` builds `shopPanelView` from the frame's own shelf at
+      1280×800 and claims the **two tab labels** `BUY` and `SELL`, with no box and no colour. The
+      frame draws the other Mart — a 704 × 336 shell at `(288, 232)` with a 656 × 164 grid of sixteen
+      64 × 60 tiles, a `SHOP` title, a `$ 2,480` line, a `SEARCH ITEMS` field and three filter chips —
+      while the card is the 640 × 540 window at `(320, 130)` (`+32, −102, −64, +204`) with a seven-row
+      44 px list, no search, no filter and no grid, so every delta is recorded instead of forced. The
+      copy the adapter cannot claim is pinned too: `MART` against `SHOP`, `MONEY  ¥2480` against
+      `$ 2,480`, `¥300` against `$300` and the ASCII `x` against `×`. Sixteen tests pin the premise,
+      the four candidates and the copy. `[live]` at 1280×800 with the Mart open:
+      `[data-hud-panel="shop"]` read `320, 130, 640, 540`, its first row `346, 248, 588, 40`.
+
 - [x] **The PC box and its RIP list are measured against frame `03p`.** `[Task-247]`, Batch 108:
       `src/ui/hud/specGap.views/pc.ts` builds `pcPanelView` on the RIP tab at 1280×800 and claims the
       **seven strings** the card and the frame agree on — the tab's label and the six dead members'

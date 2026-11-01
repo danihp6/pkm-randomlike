@@ -10634,7 +10634,7 @@ last, whose single row is `01b`:
 | 114 | `08c-stats-pokemon` · `09-ranking` · `09b-ranking-pokemon` |
 | 115 | `01b-main-menu-no-save` |
 
-`[Task-240]` to `[Task-247]` are cut below. The other 25 take the next free ID at **their** cut, in
+`[Task-240]` to `[Task-251]` are cut below. The other 20 take the next free ID at **their** cut, in
 this table's order, so no ID is bound to a task that has no entry yet -- the round-20 precedent. No
 task in the wave adds a run field, moves an RNG draw or touches `src/engine/save.ts`: the chain stays
 **14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23**, and none changes a rule or the game's
@@ -10951,6 +10951,172 @@ becomes a claim, not a silent pass.
       1280×800: `[data-hud-panel="box"]` reads `576, 72, 344, 378` and the RIP tab `868, 88, 32, 26`
       with `data-locked="true"`.
 
+### Batch 109 - the shop counter and the mini-boss reward
+
+**The wave is full and it is the maximum.** Four rows, four devs, one QA wave: `03d` (the Mart's
+BUY tab), `03e` (the Mart's SELL tab), `03f` (the mini-boss reward's three items) and `03g` (the
+same card's three unidentified Pokémon), bound to `[Task-248]` to `[Task-251]`. **Batch filling
+found nothing to pull forward, and this is the record of it:** Batches 110 to 115 are rows in
+this phase's table with **no task entry and no ID bound** — the phase binds an ID only at that
+batch's own cut, in that table's order — so there is no later item a filler could adopt; a task
+with no entry, no spec and no ID is not launchable, and inventing one here would bind an ID the
+phase deliberately keeps free. The one open item in `TODO.md` that carries its own acceptance is
+the one-space copy defect under **Bugs** (`common.level` / `hud.level`, `Lv36` → `LV 36`), and it
+is **not** launchable beside this cut either: it rewrites the `hud.level` line that Task-251's
+adapter prints through `pcPanelView` and that the merged
+`src/ui/hud/panels/pc/specGap.test.ts` pins as `Lv30`, so it writes a file a batch-mate reads —
+the antichain rule, not a missing slot, is what keeps it out, and the next cut whose tasks do not
+touch the level line may take it. Four rows, four slots, no fifth.
+
+**Hot files.** None of the four claims `package.json`, `src/main.ts`, `vite.config.ts`, each
+`src/scenes/*.ts`, `src/data/dex/**`, `design/screens/**`, `design/exports/**`,
+`design/fixtures/**` or any generated data file: each task writes **one new adapter** in
+`src/ui/hud/specGap.views/` (the walker globs the folder, so no registry is shared) and one new
+test inside its own panel folder. `docs/hud-fidelity.md`'s table row and
+`src/ui/hud/specGap.walk.test.ts`'s `PENDING` line are the **Orchestrator's at merge**, one slug
+per push — the walker's `screens both mapped and pending: <slug>` red is the expected state of
+every branch in this batch.
+
+**The one collision this batch has, and how it is resolved.** Two rows hang on one shipped panel:
+`03d` and `03e` are both `src/ui/hud/panels/shop/`, and `03f` and `03g` are both
+`src/ui/hud/panels/rewards/`. The batch cannot give both tasks `panels/<panel>/specGap.test.ts`
+**and** that folder's `README.md`, so: the test file is **named for the frame**
+(`specGap.buy.test.ts` / `specGap.sell.test.ts`, `specGap.item.test.ts` /
+`specGap.pokemon.test.ts`) and each folder's `README.md` belongs to the **lower ID** of its pair —
+`[Task-248]` for `shop`, `[Task-250]` for `rewards` — which adds **both** map lines in one edit,
+verbatim from its spec; the higher ID touches no README, and its Task QA checks the file is
+byte-identical to `main`. The four path sets are then disjoint and provable:
+`specGap.views/shop-buy.ts` + `panels/shop/specGap.buy.test.ts` + `panels/shop/README.md` (248),
+`specGap.views/shop-sell.ts` + `panels/shop/specGap.sell.test.ts` (249),
+`specGap.views/rewards-item.ts` + `panels/rewards/specGap.item.test.ts` + `panels/rewards/README.md`
+(250), `specGap.views/rewards-pokemon.ts` + `panels/rewards/specGap.pokemon.test.ts` (251).
+`src/ui/hud/specGap.views/README.md` says "one adapter per panel"; this batch ships two adapters
+per panel, each answering its own slug (that file's rule 1), and the prose is reworded by the
+Orchestrator or a later doc pass, not by a task here.
+
+**What these four frames are.** Two of them are the shipped design and two are not. `03f` and
+`03g` draw the mini-boss reward exactly as `rewardsPanelView` paints it — the 560 × 342 card at
+`(360, 196)`, the 1 px highlight 12 px inside the top edge, three 520 × 76 rows at an 84 px pitch
+— so those two rows **claim** their card, their highlight and their three rows with a **zero
+delta**, the first fully-claiming rows of the wave, and the only rects they cannot claim are the
+three the board draws as **text nodes** (the ✕, the title, the choose line: they land on them to
+the pixel and `gapFor` compares boxes to boxes). `03d` and `03e` draw the **other** Mart: a
+704 × 336 shell with a 656 × 164 grid viewport holding sixteen 64 × 60 tiles, a `SHOP` title, a
+`$ 2,480` money line, a `SEARCH ITEMS` field and three filter chips, where the shipped card is the
+640 × 540 floating window with a seven-row 44 px list and no search, no filter and no grid — so
+both shop rows claim **no box** and only the two tab labels `BUY` and `SELL`, and every delta is
+recorded instead of forced (the Batch 107/108 precedent). One frame detail matters to anyone
+copying a candidate: `03d` names the list window `shop panel` and `03e` names the same rect
+`bag panel`, and a candidate named after the wrong frame is a `missing` gap, not a claim.
+
+- [x] **[Task-248] The Mart's BUY tab is wired to its spec.** The floor merchant's card on its
+      BUY tab — the shell, the stock list, the two mode tabs, the money line and the drawn ✕.
+      **Measured:** `design/screens/03d-route-shop-buy.json` is the frame `03d Route · shop · buy`
+      (`design/board.json`, node `5:1114`), **51 boxes, 25 strings, 19 colours**, and the panel is
+      **`shop`** (`design/import.json`'s `panel` column). The frame draws a **704 × 336** shell at
+      `(288, 232)` — `shop shell` — holding a `656 × 164` list window at `(312, 364)` (one rect
+      under three names: `shop panel`, `shop panel group`, `shop grid viewport`) with **sixteen
+      64 × 60 tiles** on two rows at an 81 px / 72 px pitch (`bag tile 1…16` at local `(12, 16)`,
+      an icon at `tile + 20, 18`), the two mode chips `tab buy` `(312, 294, 66, 24)` and `tab sell`
+      `(378, 294, 66, 24)`, a `cursor ring` `(322, 378, 68, 64)`, the `SHOP` title, `$ 2,480`, a
+      `SEARCH ITEMS` field at `(744, 294, 224, 24)` and three filter chips. The shipped card is
+      that design's replacement: `shopPanelBox({1280, 800})` = `{320, 130, 640, 540}` — dx +32,
+      dy −102, dw −64, dh +204 — a 44 px header, a seven-row 44 px list at `(340, 242, 600, 320)`
+      and two 108 × 30 tabs at `(340, 200)` / `(454, 200)`, with no search field, no filter chip
+      and no grid. `design/fixtures/03d-route-shop-buy.json` carries the frame's `buy` block (two
+      rows: `10x Poké Ball` `¥300`, `Potion` `¥700`; money `2480`) beside a `sell` block this row
+      does not read, and its `state` is the empty six-key `HudState`. **Fix shape:** add
+      `src/ui/hud/specGap.views/shop-buy.ts` exporting `slug = '03d-route-shop-buy'` and
+      `buildView(spec)`, which builds `shopPanelView(inputFrom(FIXTURE.buy, 'buy'), {1280, 800},
+      () => null)`, claims **no box** — the five absolute candidates (`shop shell`, `shop panel`,
+      `shop panel highlight`, `tab buy`, `tab sell`) all miss by more than 1 px — and claims
+      exactly the two strings the two agree on, `BUY` and `SELL`, recording the copy it cannot
+      (`MART` vs `SHOP`, `MONEY  ¥2480` vs `$ 2,480`, `¥300` vs `$300`) in the adapter's comment
+      and in a test. **Docs:** `src/ui/hud/panels/shop/README.md` (the two new map lines, shared
+      with `[Task-249]`). **Tests:** `[unit]` the walker reports no gap for this slug and
+      `npm test` + `npm run build` are green; `[live]` at 1280×800 with the Mart open:
+      `[data-hud-panel="shop"]` reads `320, 130, 640, 540`. Claims
+      `src/ui/hud/specGap.views/shop-buy.ts`, `src/ui/hud/panels/shop/specGap.buy.test.ts` and
+      `src/ui/hud/panels/shop/README.md`. *Dependencies:* none. *(Batch 109)*
+
+- [ ] **[Task-249] The Mart's SELL tab is wired to its spec.** The same card on its other state —
+      the tab a player presses to sell what the bag holds.
+      **Measured:** `design/screens/03e-route-shop-sell.json` is the frame `03e Route · shop ·
+      sell` (`design/board.json`, node `5:1276`), **51 boxes, 25 strings, 19 colours**, and the
+      panel is **`shop`**. The shell is `03d`'s rect republished under the **bag's** names:
+      `shop shell` `(288, 232, 704, 336)`, `bag panel` / `bag panel group` / `bag grid viewport`
+      at `(312, 364, 656, 164)` — **this frame draws no `shop panel` box at all** —
+      `bag panel highlight` `(324, 372, 632, 1)`, the same sixteen tiles at local `(12, 16)` and
+      the same two chips, with **SELL** the active one. The shipped card is unchanged by the mode:
+      `shopPanelBox({1280, 800})` = `{320, 130, 640, 540}` — dx +32, dy −102, dw −64, dh +204 —
+      its list at `(340, 242, 600, 320)`, its tabs at `(340, 200)` / `(454, 200)`.
+      `design/fixtures/03e-route-shop-sell.json` carries the frame's priced bag in a single
+      `sell` block (**eight** rows from `Potion` `¥150` ×3 to `Ultra Ball` `¥600`), of which the
+      seven-row window draws the first seven, plus the empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/shop-sell.ts` exporting `slug =
+      '03e-route-shop-sell'` and `buildView(spec)`, which builds `shopPanelView(
+      inputFrom(FIXTURE.sell, 'sell'), {1280, 800}, () => null)`, claims **no box** with this
+      frame's own names (`shop shell`, `bag panel`, `bag panel highlight`, `tab buy`, `tab sell`)
+      and exactly `['BUY', 'SELL']`, and records the compound board line `×3 · $150` against the
+      card's two fields `¥150` and `x3`. **Docs:** none — the Mart's README belongs to
+      `[Task-248]`. **Tests:** `[unit]` the walker reports no gap for this slug and the suite is
+      green; `[live]` at 1280×800 on the SELL tab: `[data-hud-panel="shop"]` reads
+      `320, 130, 640, 540` and `[data-hud-shop-tab="sell"]` `454, 200, 108, 30`. Claims
+      `src/ui/hud/specGap.views/shop-sell.ts` and
+      `src/ui/hud/panels/shop/specGap.sell.test.ts`. *Dependencies:* none. *(Batch 109)*
+
+- [ ] **[Task-250] The mini-boss reward's item rows are wired to its spec.** The card a beaten
+      mini-boss opens: its three item offers, the ✕ and the choose line.
+      **Measured:** `design/screens/03f-panels-reward-item.json` is the frame `03f Panels ·
+      reward item` (`design/board.json`, node `6:1447`), **10 boxes, 9 strings, 10 colours**, and
+      the panel is **`rewards`**. The frame draws the card the panel already paints: `reward
+      panel` `(360, 196, 560, 342)`, `panel highlight` `(372, 208, 536, 1)`, `row 1…3` of
+      520 × 76 at `274 / 358 / 442` (an 84 px pitch) and three `item icon n` of 24 × 24 at
+      `(394, 288 / 372 / 456)`. `rewardsPanelBox({1280, 800})` is `{360, 196, 560, 342}` — **dx 0,
+      dy 0, dw 0, dh 0** — `view.highlight` lands on `372, 208, 536, 1` and the row boxes on
+      `380, 274 / 358 / 442, 520, 76`, so **five boxes are claimable with a zero delta**; the
+      board's `close`, `panel title` and `choose line` are **text nodes** the card lands on to the
+      pixel (`876, 206, 24, 24`, `380, 212, 460, 30`, `380, 240, 400, 20`) and `gapFor` compares
+      boxes to boxes, so they enter as strings. `design/fixtures/03f-panels-reward-item.json`
+      carries the frame's three items (`Charcoal`, `Hard Stone`, `Miracle Seed` with their
+      `Powers up …-type moves.` lines) and the empty six-key `state`. **Fix shape:** add
+      `src/ui/hud/specGap.views/rewards-item.ts` exporting `slug = '03f-panels-reward-item'` and
+      `buildView(spec)`, which builds `rewardsPanelView(inputFrom(FIXTURE.item), {1280, 800})`
+      with `icon: null` (an atlas cell is a runtime concern and no box depends on it), claims the
+      five boxes and the nine strings (`MINI-BOSS REWARD`, `Choose one.`, `×`, then each row's
+      label and description), and records `item icon n` as the one box it cannot name.
+      **Docs:** `src/ui/hud/panels/rewards/README.md` (the two new map lines, shared with
+      `[Task-251]`). **Tests:** `[unit]` the walker reports no gap for this slug and
+      `npm test` + `npm run build` are green; `[live]` on a mini-boss win:
+      `[data-hud-panel="rewards"]` reads `360, 196, 560, 342` and `[data-hud-reward-row="0"]`
+      `380, 274, 520, 76`. Claims `src/ui/hud/specGap.views/rewards-item.ts`,
+      `src/ui/hud/panels/rewards/specGap.item.test.ts` and
+      `src/ui/hud/panels/rewards/README.md`. *Dependencies:* none. *(Batch 109)*
+
+- [ ] **[Task-251] The mini-boss reward's Pokémon rows are wired to its spec.** The same card on
+      its three unidentified offers — the `STAT · Nature` label and nothing else.
+      **Measured:** `design/screens/03g-panels-reward-pokemon.json` is the frame `03g Panels ·
+      reward pokemon` (`design/board.json`, node `6:1468`), **7 boxes, 6 strings, 10 colours**,
+      and the panel is **`rewards`**. The card is `03f`'s to the pixel — `reward panel`
+      `(360, 196, 560, 342)`, `panel highlight` `(372, 208, 536, 1)`, `row 1…3` at
+      `380, 274 / 358 / 442` — and this frame draws **no icon box at all**, because an
+      unidentified offer may leak nothing but its label. Its six lines are `panel title`
+      `MINI-BOSS REWARD`, `close` `×`, `choose line` `Choose one.` and `option label 1…3` —
+      `ATTACK · Adamant`, `SP. ATK · Modest`, `SPEED · Jolly`.
+      `design/fixtures/03g-panels-reward-pokemon.json` carries those three labels (with their
+      `topStat` / `nature`) and the empty six-key `state`. **Fix shape:** add
+      `src/ui/hud/specGap.views/rewards-pokemon.ts` exporting `slug = '03g-panels-reward-pokemon'`
+      and `buildView(spec)`, which builds `rewardsPanelView(inputFrom(FIXTURE.pokemon), {1280,
+      800})` — `description: ''` and `icon: null`, the label-only rule — claims the five boxes at
+      a zero delta and exactly the six strings, and records that the three landed text-node rects
+      are strings, not boxes (`gapFor` compares boxes to boxes).
+      **Docs:** none — the rewards README belongs to `[Task-250]`. **Tests:** `[unit]` the walker
+      reports no gap for this slug and the suite is green; `[live]` on a mini-boss win: the card
+      reads `360, 196, 560, 342` and its three `data-kind="pokemon"` rows carry a `STAT · Nature`
+      label with no icon and no description. Claims
+      `src/ui/hud/specGap.views/rewards-pokemon.ts` and
+      `src/ui/hud/panels/rewards/specGap.pokemon.test.ts`. *Dependencies:* none. *(Batch 109)*
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
@@ -10970,7 +11136,9 @@ key on line 166, `'hud.level': 'Lv{level}'`, prints the same shape in the party 
 `LV 30 · ROUTE 3`), so the minimal fix is **one string shape in those two keys**: `'LV {level}'`,
 `src/i18n/en.ts` only — `src/i18n/es.ts` keeps its own `Nv{level}` for both (`D43`: a locale
 overlays the key, it does not mirror the English). Nothing else moves: `t` returns the string, no
-rect is measured from it, and no test asserts the old shape. No Task ID binds it — an ID is bound
+rect is measured from it — but one merged test does assert the old shape,
+`src/ui/hud/panels/pc/specGap.test.ts` line 218 (shipped with `[Task-247]` on `2026-11-01`), so
+the fix's diff updates that line too. No Task ID binds it — an ID is bound
 only at a cut — so the next cut takes it, and its acceptance is `03m`'s adapter claiming **19**
 strings (the level line joining the other 18) with `gapFor` still empty.
 
