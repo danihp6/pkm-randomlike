@@ -1,0 +1,76 @@
+/*
+ * The floor-mission card (`D58`): the route HUD's other cards' glass, one head row and
+ * one row per floor the run met. Every number the card places is the view model's; the
+ * stylesheet only paints, so a measured rect can never drift from a rule here.
+ */
+.missions {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--hud-panel-border);
+  border-radius: var(--hud-panel-radius);
+  background: var(--hud-panel-fill);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font);
+  overflow: hidden;
+}
+
+/* The title clears the frame's 26 px chip at the card's corner. */
+.missions__title {
+  position: absolute;
+  left: 30px;
+  top: 4px;
+  font-size: var(--hud-type-chip-size);
+  line-height: var(--hud-type-chip-line);
+  letter-spacing: 0.04em;
+  color: var(--hud-text-secondary);
+}
+
+.missions__row {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: var(--hud-row-radius);
+  font-size: var(--hud-type-body-size);
+  line-height: var(--hud-type-body-line);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.missions__row[data-completed='true'] {
+  color: var(--hud-text-secondary);
+}
+
+.missions__name {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.missions__map {
+  flex: 0 0 auto;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.missions__progress {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--hud-text-warning);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+}
+
+.missions__empty {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 32px;
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  color: var(--hud-text-muted);
+}

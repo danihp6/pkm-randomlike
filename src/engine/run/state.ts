@@ -148,6 +148,12 @@ export type RunState = Readonly<{
   mission: MissionProgress | null;
   /** How many missions this run has completed. Run-long: `advanceMap` never clears it. */
   missionsCompleted: number;
+  /**
+   * The floors whose mission this run met, in the order it met them (oldest first).
+   * Run-long: `advanceRoute` and `advanceMap` never clear it; only a fresh run starts it
+   * empty, and it is appended where `missionsCompleted` steps so the two never disagree.
+   */
+  completedMissions: readonly CompletedMission[];
   /** HP the party lost on `mapIndex` — the `flawless` mission's progress. Resets per floor. */
   hpLost: number;
   /** `stats.casualties` when `mapIndex` was entered, so a death on this floor is visible. Resets per floor. */
@@ -166,6 +172,9 @@ export type RunState = Readonly<{
    */
   startedAt: string;
 }>;
+
+/** One floor whose mission the run met: the row's id and the floor it was drawn on. */
+export type CompletedMission = Readonly<{ id: string; mapIndex: number }>;
 
 export type RunInit = Readonly<{
   seed: string;
@@ -207,6 +216,7 @@ export function createRun(init: RunInit): RunState {
     capturedRooms: [],
     mission: missionForMap(init.seed, FIRST_MAP),
     missionsCompleted: 0,
+    completedMissions: [],
     hpLost: 0,
     floorCasualties: 0,
     modifiers: emptyModifiers(),
@@ -276,6 +286,10 @@ export function advanceMap(run: RunState): RunState {
     capturedRooms: [],
     mission: missionForMap(run.seed, mapIndex),
     missionsCompleted: run.missionsCompleted + (met ? 1 : 0),
+    completedMissions:
+      met && run.mission !== null
+        ? [...run.completedMissions, { id: run.mission.id, mapIndex: run.mapIndex }]
+        : run.completedMissions,
     hpLost: 0,
     floorCasualties: run.stats.casualties,
     modifiers: decayModifiers(run.modifiers),

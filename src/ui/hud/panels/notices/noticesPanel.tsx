@@ -12,11 +12,10 @@ function lineBox(line: NoticesLine | null): CSSProperties {
 }
 
 /**
- * The route's three passive cards (`03k` / `m03k`): the notice strip, the mission
- * line and the area-entry banner. Nothing here answers: the cards are
- * `pointer-events: none` and hold no handler, so the route keeps walking under them.
- * A card stays in the tree while it is down, hidden, so its rect is zero rather than
- * absent.
+ * The route's two passive cards (`03k` / `m03k`): the notice strip and the area-entry
+ * banner. Nothing here answers: the cards are `pointer-events: none` and hold no
+ * handler, so the route keeps walking under them. A card stays in the tree while it is
+ * down, hidden, so its rect is zero rather than absent.
  */
 export function NoticesPanel(props: NoticesPanelProps): JSX.Element {
   const { view } = props;
@@ -29,14 +28,6 @@ export function NoticesPanel(props: NoticesPanelProps): JSX.Element {
         style={lineBox(view.notice)}
       >
         <span class="notices__line">{view.notice?.text}</span>
-      </div>
-      <div
-        class="notices__card notices__card--mission"
-        data-hud-mission
-        hidden={view.mission === null}
-        style={lineBox(view.mission)}
-      >
-        <span class="notices__line">{view.mission?.text}</span>
       </div>
       <div
         class="notices__card notices__card--area"

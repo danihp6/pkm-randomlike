@@ -5,7 +5,6 @@ export {
   SAFE_AREA_BOTTOM,
   SAFE_AREA_TOP,
   areaBox,
-  missionBox,
   noticeBox,
   noticesPanelView,
 } from './view';

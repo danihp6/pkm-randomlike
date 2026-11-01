@@ -1,9 +1,10 @@
 /**
  * The route's passive cards as data (`D49`, frames `03k` / `m03k`): the transient
- * notice strip, the floor's mission line and the area-entry banner, each one line
- * of text in a card at the top of the screen. The model measures the three rects
- * from the viewport and the board's safe area and copies the callers' strings; it
- * reads no run, no scene and no i18n, so the fixture and the panel cannot drift.
+ * notice strip and the area-entry banner, each one line of text in a card at the top
+ * of the screen. The model measures the two rects from the viewport and the board's
+ * safe area and copies the caller's strings; it reads no run, no scene and no i18n,
+ * so the fixture and the panel cannot drift. The floor's mission is a card of its own
+ * (`D58`, `../missions/`), which is why the stack is two rows here.
  */
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
@@ -17,14 +18,11 @@ export type NoticesInput = Readonly<{
   notice: string | null;
   /** The area-entry banner's line, or null. */
   area: string | null;
-  /** The floor's mission line, or null when the run carries no mission. */
-  mission: string | null;
 }>;
 
 export type NoticesPanelView = Readonly<{
   notice: NoticesLine | null;
   area: NoticesLine | null;
-  mission: NoticesLine | null;
 }>;
 
 /**
@@ -45,9 +43,6 @@ const NOTICE_W = 720;
 const NOTICE_H = 56;
 /** The board's phone card (`m03k`): 374 px wide at the 8 px gutter. */
 const PHONE_CARD_W = 374;
-/** The mission line, under the strip. */
-const MISSION_W = 360;
-const MISSION_H = 32;
 /** The area-entry banner: the tallest card, boxed in the accent. */
 const AREA_W = 360;
 const AREA_H = 64;
@@ -105,19 +100,11 @@ export function noticeBox(viewport: Viewport): Rect {
   return { x: cardLeft(viewport, w), y: cardTop(viewport, stackTop(viewport), h), w, h };
 }
 
-/** The floor's mission line: one slim card under the strip, 360 wide unless the phone widens it. */
-export function missionBox(viewport: Viewport): Rect {
-  const w = cardWidth(viewport, isPhone(viewport) ? PHONE_CARD_W : MISSION_W);
-  const h = MISSION_H;
-  const top = noticeBox(viewport).y + NOTICE_H + CARD_GAP;
-  return { x: cardLeft(viewport, w), y: cardTop(viewport, top, h), w, h };
-}
-
-/** The area-entry banner: the boxed accent card, one gap under the mission line. */
+/** The area-entry banner: the boxed accent card, one gap under the notice strip. */
 export function areaBox(viewport: Viewport): Rect {
   const w = cardWidth(viewport, isPhone(viewport) ? PHONE_CARD_W : AREA_W);
   const h = AREA_H;
-  const top = missionBox(viewport).y + MISSION_H + CARD_GAP;
+  const top = noticeBox(viewport).y + NOTICE_H + CARD_GAP;
   return { x: cardLeft(viewport, w), y: cardTop(viewport, top, h), w, h };
 }
 
@@ -130,6 +117,5 @@ export function noticesPanelView(input: NoticesInput, viewport: Viewport): Notic
   return {
     notice: line(input.notice, noticeBox(viewport)),
     area: line(input.area, areaBox(viewport)),
-    mission: line(input.mission, missionBox(viewport)),
   };
 }

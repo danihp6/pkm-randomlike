@@ -174,6 +174,10 @@ export const en = {
   'hud.evolveTitle': 'EVOLUTION',
   'hud.pressAnyKey': 'press any key',
   'hud.mission': 'Mission: {mission}',
+  'hud.missions': 'MISSIONS',
+  'hud.missionsEmpty': 'No floor mission completed yet.',
+  'hud.missionsMap': 'Map {map}',
+  'hud.missionProgress': 'HP lost {hp}',
   'hud.searchItems': 'search items...',
   'hud.candyKnown': 'This run: {stat} {delta}',
 

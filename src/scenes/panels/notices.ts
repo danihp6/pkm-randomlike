@@ -1,8 +1,6 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import { getBiome } from '../../data/biomes';
-import { getMission } from '../../data/missions';
-import { t } from '../../i18n';
 import {
   mountNoticesPanel,
   noticesPanelView,
@@ -13,12 +11,12 @@ import { areaEntryNotice, type Notice } from '../../ui/notice';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
- * The route's transient cards: the notice strip, the area-entry banner and the
- * floor's mission line. All three are screen-space, take no key and block nothing,
- * so the route keeps walking under them.
+ * The route's transient cards: the notice strip and the area-entry banner. Both are
+ * screen-space, take no key and block nothing, so the route keeps walking under them.
  *
- * The three are the board's cards in the `#hud` layer — `src/ui/hud/panels/notices/`
- * — and this module builds no Phaser object: it owns the lines and their holds.
+ * The two are the board's cards in the `#hud` layer, and this module builds no Phaser
+ * object: it owns the lines and their holds. The floor's mission left this stack in
+ * `Task-194`: it is a card of its own (`src/scenes/panels/missions.ts`).
  */
 
 /**
@@ -38,7 +36,6 @@ let domSceneEvents: Phaser.Events.EventEmitter | null = null;
 /** The three lines this module handed the card, kept while the route is paused. */
 let domNotice: string | null = null;
 let domArea: string | null = null;
-let domMission: string | null = null;
 /** True while a battle or the Settings screen covers the route. */
 let domPaused = false;
 /** The card's own holds: the shipped `holdMs`, on the scene's clock like the strip's. */
@@ -55,7 +52,6 @@ function domInput(): NoticesInput {
   return {
     notice: domPaused ? null : domNotice,
     area: domPaused ? null : domArea,
-    mission: domPaused ? null : domMission,
   };
 }
 
@@ -117,7 +113,6 @@ function disposeDomNotices(): void {
   domHost = null;
   domNotice = null;
   domArea = null;
-  domMission = null;
   domPaused = false;
 }
 
@@ -164,14 +159,8 @@ export function showAreaPanel(host: RoutePanelHost): void {
   domAreaTimer = host.scene.time.delayedCall(notice.holdMs, () => hideDomArea());
 }
 
-/**
- * The floor's own objective: one line under the notice strip, and nothing at
- * all when the run carries no mission row (an old save's `null`).
- */
-function refreshNotices(host: RoutePanelHost): void {
-  const run = host.run();
-  const mission = run.mission ? getMission(run.mission.id) : undefined;
-  domMission = mission === undefined ? null : t('hud.mission', { mission: t(mission.nameKey) });
+/** Repaints the stack: the mission is another card, so nothing here reads the run. */
+function refreshNotices(): void {
   paintDomNotices();
 }
 

@@ -1,5 +1,6 @@
 import type { HudPanelId } from '../../../../data/hudLayout';
 import type { Keybinds } from '../../../../data/keybinds';
+import { t } from '../../../../i18n';
 import { STRIP_CHIP_ACTIONS, chipLabel, type Rect, type Viewport } from './view';
 
 /**
@@ -37,5 +38,6 @@ export function clampPanelOffset(offset: FrameVec, box: Rect, viewport: Viewport
  */
 export function frameLabel(id: HudPanelId, keybinds: Keybinds): string | null {
   if (id === 'detail') return null;
+  if (id === 'missions') return t('hud.missions');
   return chipLabel(STRIP_CHIP_ACTIONS[id], keybinds);
 }

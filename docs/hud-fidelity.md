@@ -122,7 +122,12 @@ takes **no** offset on that axis rather than hanging off it. A **collapsed** car
 its own, chip included — the strip's edge chip is its compressed form, and two layers never draw the
 same object twice. The offset (`dx`, `dy`) and the collapsed flag are the panel's own `hudLayout`
 record (`D22`), which is what a reload restores; the board draws no chip for the member detail
-window, so that card keeps its own way back and takes only the saved offset.
+window, so that card keeps its own way back and takes only the saved offset. **The one
+exception is the MISSIONS card** (`D58`): the board draws no missions card at all, and the
+strip has no badge for it either — the panel took the slot the old mission line hung in — so
+its frame keeps the chip on screen while the card is collapsed (the card behind it is
+`visibility: hidden`, its box measured, so the same drag and clamp still apply). It is the
+only card whose collapsed form is its own chip.
 
 **A collapsed panel's badge is the same gesture.** The strip's edge chip is dragged by the same
 rule the card's chip is — one `DRAG_SLOP` and one clamp (`panels/hud/drag.ts`), never a second
