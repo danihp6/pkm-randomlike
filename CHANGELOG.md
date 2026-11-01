@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The mini-boss reward's Pokémon rows are measured against frame `03g`.** `[Task-251]`, Batch 109:
+      `src/ui/hud/specGap.views/rewards-pokemon.ts` builds the same card from the frame's own three
+      unidentified offers at 1280×800, claims the same **five boxes** with a zero delta (card
+      `360, 196, 560, 342`, highlight `372, 208, 536, 1`, rows `380, 274 / 358 / 442, 520, 76`) and
+      **six strings** — the title, the choose line, the ✕ and the three `ATTACK · Adamant`,
+      `SP. ATK · Modest`, `SPEED · Jolly` labels. Each row carries an empty description and no icon by
+      design, so a Pokémon's stats are its one line. Fourteen tests pin the premise, the label-only rule
+      and the copy. `[live]` at 1280×800 with the reward open: the card read `360, 196, 560, 342` and
+      the three labels printed as the frame prints them.
+
 - [x] **The mini-boss reward's item rows are measured against frame `03f`.** `[Task-250]`, Batch 109:
       `src/ui/hud/specGap.views/rewards-item.ts` builds `rewardsPanelView` from the frame's own item
       choice at 1280×800 and claims **five boxes** — the card `360, 196, 560, 342`, its highlight

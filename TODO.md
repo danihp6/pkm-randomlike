@@ -11093,7 +11093,7 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
       `src/ui/hud/panels/rewards/specGap.item.test.ts` and
       `src/ui/hud/panels/rewards/README.md`. *Dependencies:* none. *(Batch 109)*
 
-- [ ] **[Task-251] The mini-boss reward's Pokémon rows are wired to its spec.** The same card on
+- [x] **[Task-251] The mini-boss reward's Pokémon rows are wired to its spec.** The same card on
       its three unidentified offers — the `STAT · Nature` label and nothing else.
       **Measured:** `design/screens/03g-panels-reward-pokemon.json` is the frame `03g Panels ·
       reward pokemon` (`design/board.json`, node `6:1468`), **7 boxes, 6 strings, 10 colours**,
