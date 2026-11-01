@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The PC box and its RIP list are measured against frame `03p`.** `[Task-247]`, Batch 108:
+      `src/ui/hud/specGap.views/pc.ts` builds `pcPanelView` on the RIP tab at 1280×800 and claims the
+      **seven strings** the card and the frame agree on — the tab's label and the six dead members'
+      names — with no box and no colour. The frame draws a `304 × 243` card at `(24, 348)` with six
+      280 × 38 rows; the card is `344 × 378` at `(576, 72)` with a `4 × 4` grid of 76 px cells, so the
+      deltas are recorded, and the tab's `Lv30` against the board's `LV 30 · ROUTE 3` is one more copy
+      difference the adapter cannot claim. Fifteen tests pin the premise, the six rows and the names.
+      `[live]` at 1280×800: `[data-hud-panel="box"]` read `576, 72, 344, 378` and the RIP tab
+      `868, 88, 32, 26` with `data-locked="true"`.
+
 - [x] **The floor map is measured against frame `03o`.** `[Task-246]`, Batch 108:
       `src/ui/hud/specGap.views/map.ts` builds `mapPanelView` from the fixture at 1280×800 and claims
       nothing, because the frame draws a **region** map — `(928, 24, 304, 198)`, 27 route vectors, a

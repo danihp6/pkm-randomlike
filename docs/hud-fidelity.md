@@ -597,7 +597,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | detail | 03m Panels · pokemon moves | `03m-panels-pokemon-moves` | 47 | 31 | 16 | wired |
 | pause | 03n Panels · pause menu | `03n-panels-pause-menu` | 9 | 5 | 11 | pending |
 | map | 03o Panels · map routes | `03o-panels-map-routes` | 35 | 4 | 18 | wired |
-| pc | 03p Panels · pc rip | `03p-panels-pc-rip` | 33 | 20 | 19 | pending |
+| pc | 03p Panels · pc rip | `03p-panels-pc-rip` | 33 | 20 | 19 | wired |
 | starter | 04 Starter pick | `04-starter-pick` | 13 | 6 | 7 | pending |
 | battle-hp | 05 Battle HUD | `05-battle-hud` | 99 | 44 | 33 | wired |
 | battle-log | 05b Battle · message | `05b-battle-message` | 71 | 9 | 22 | pending |

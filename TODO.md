@@ -10903,7 +10903,7 @@ becomes a claim, not a silent pass.
       adapter pins no vector count. `[live]` at 1280×800: `[data-hud-panel="header"]` reads
       `8, 8, 216, 250` and the title is the floor's own, not `VIRIDIAN FOREST`.
 
-- [ ] **[Task-247] The PC box and its RIP list are wired to its spec.** The route's PC window on its
+- [x] **[Task-247] The PC box and its RIP list are wired to its spec.** The route's PC window on its
       RIP tab — the list of the dead.
       **Measured:** `design/screens/03p-panels-pc-rip.json` is the frame `03p Panels · pc rip`
       (`design/board.json`, node `6:2525`), **33 boxes, 20 strings, 19 colours**, and the panel is
@@ -10929,6 +10929,14 @@ becomes a claim, not a silent pass.
       reads `868, 88, 32, 26` with `data-locked="true"`. Claims
       `src/ui/hud/specGap.views/pc.ts`, `src/ui/hud/panels/pc/specGap.test.ts` and
       `src/ui/hud/panels/pc/README.md`. *Dependencies:* none. *(Batch 108)*
+      **SHIPPED** in Batch 108 (`2026-11-01`): `src/ui/hud/specGap.views/pc.ts` builds
+      `pcPanelView` on the RIP tab at 1280×800 and claims the **seven** strings the card and the frame
+      agree on — the tab's label and the six dead members' names — with no box and no colour: the frame
+      draws a `304 × 243` card at `(24, 348)` with six 280 × 38 rows, the card is `344 × 378` at
+      `(576, 72)` with a 4 × 4 grid of 76 px cells, and the tab's `Lv30` and `LV 30 · ROUTE 3` differ
+      after the fold. Its fifteen tests pin the premise and the copy the card cannot claim. `[live]` at
+      1280×800: `[data-hud-panel="box"]` reads `576, 72, 344, 378` and the RIP tab `868, 88, 32, 26`
+      with `data-locked="true"`.
 
 ## Bugs
 
