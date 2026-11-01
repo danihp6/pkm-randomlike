@@ -8883,8 +8883,9 @@ without moving either batch.
       `src/ui/hud/panels/battle-hp/**` + tests and `docs/hud-fidelity.md` §5.
       *Dependencies:* none. *(Batch 85)*
 
-- [!] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
-      **Parked by the human (`2026-10-27`): registered, not to be run yet.** Decided in conversation
+- [ ] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
+      **Parked by the human on `2026-10-27`, freed on `2026-11-01`:** registered here, cut as Batch 105
+      in Phase 22. Decided in conversation
       rather than by a report: the mission is the one HUD readout that is **not** a panel. It is a single
       passive line — `missionBox` (`src/ui/hud/panels/notices/view.ts`, 360×32, `MISSION_W`/`MISSION_H`)
       painted by `noticesPanel.tsx` as `data-hud-mission` with `pointer-events: none` and no handler —
@@ -8894,14 +8895,12 @@ without moving either batch.
       counter and nothing else — `missionsCompleted` is a number, and `MISSION_TABLE`
       (`src/data/missions.ts`) ships one row today. **Fix shape (the human's two answers, frozen).**
       (a) *What the list is:* the floor's mission with its progress, and under it the run's completed
-      missions. (b) *Where it lives:* a **canvas pane**, so it inherits the chip, the drag and the clamp
-      the other panes already have, with the DOM twin drawing the same list. `RunState.completedMissions:
-      readonly { id: string; mapIndex: number }[]` is appended in `advanceMap` (`src/engine/run/state.ts`
-      255-280) where `missionsCompleted` steps; `SAVE_VERSION` **26 → 27** with a migration that seeds
-      `[]`; `missions` joins `HudPanelId` and `RoutePanelId` (default collapsed — `parseHudLayout`
-      already defaults a panel the document omits, so settings need no migration);
-      `src/scenes/panels/missions.ts` is the pane, `src/ui/hud/panels/missions/**` its DOM twin, and the
-      mission line leaves `notices` with its box. **Docs:** `docs/design-spec.md` §2,
+      missions. (b) *Where it lives:* **superseded on `2026-11-01`** — the parked answer was a
+      **canvas pane**, and `[Task-200]` retired that layer, so the mission is a **DOM panel** with the
+      chip, the drag and the saved slot the other cards have. The frozen shape, its numbers and its
+      claims are the Batch 105 entry in Phase 22; this paragraph stays as the registration, and the
+      parked body it replaces (a canvas pane, a DOM twin, a `src/scenes/panels/missions.ts` pane) is history.
+      **Docs:** `docs/design-spec.md` §2,
       `docs/hud-fidelity.md` (the chip's geometry), `docs/routes-spec.md` §2 (the run keeps the missions
       it met) and `docs/tech-decisions.md` (the history record, and why the counter stays).
       **Tests:** `[unit]` `advanceMap` appends one record per met floor and none on a missed one, and the
@@ -8913,9 +8912,9 @@ without moving either batch.
       `src/engine/save.ts` + test, `src/data/hudLayout.ts` + test, `src/scenes/panels/{missions,types,
       registry}.ts` + tests, `src/ui/hud/panels/{missions,notices}/**`, `src/scenes/RouteScene.ts`,
       `src/i18n/{en,es}.ts` and the four docs.
-      *Dependencies:* none technical. Unscheduled: it takes the **i18n pair** and `SAVE_VERSION`, so it
-      opens a batch of its own when the human frees it. Its answer (b) — a canvas pane — is superseded by
-      `[Task-200]`: once the canvas panel layer retires, the mission is a DOM panel and its chip comes from
+      *Dependencies:* none — **cut as `[Task-194]` in Batch 105** (Phase 22), which carries the frozen
+      shape, the measurements and the claims. Its answer (b) — a canvas pane — is superseded by
+      `[Task-200]`: the canvas panel layer retired, so the mission is a DOM panel and its chip comes from
       the inventory 200 closes with.
 
 - [x] **[Task-195] A special NPC stands against a wall, with its back to it.** Asked by the human on
@@ -10260,6 +10259,338 @@ holder.
 
 ---
 
+## Phase 22 - The window's anchor, and the way back
+
+The thirty-sixth round is **five decisions the human took on `2026-11-01`**, not five reports: four of
+them free a parked task or create one and the fifth closes an issue as not wanted. Every number below
+was re-read on this tree rather than taken from an issue, and the two that surprised the cut are said
+where they bite.
+
+`[Task-194]` was parked on `2026-10-27` with two frozen answers, and the second one is **dead**: the
+mission was to live in a *canvas pane*, and `[Task-200]` retired the canvas panel layer, so the mission
+is a **DOM panel** with the same chip, drag and saved slot as PARTY and the detail card. The run
+records the floors it met (`RunState.completedMissions: readonly { id: string; mapIndex: number }[]`,
+appended in `advanceMap` where `missionsCompleted` steps), `missions` joins `HUD_PANEL_IDS` /
+`HudPanelId` at **default collapsed** (`parseHudLayout` already defaults a panel a document omits, so
+no settings migration is owed), the mission line **leaves `notices` with its box** (`missionBox`,
+`MISSION_W`/`MISSION_H`, the `mission` field of `NoticesView` and `data-hud-mission`), and
+`SAVE_VERSION` steps **26 → 27** with a migration that seeds `[]`. That is the round's **only** schema
+step: 238 takes no state, 239 no state and no engine, and 237 writes a generated table no save reads.
+
+`[Task-237]` is issue #91 and its own measure is worse than the issue says: the fill is not a
+content negotiation but a **rerun of a tool that already ships**. `scripts/fetch-heights.mjs` (1-59)
+already reads exactly the CSV the decision names, already treats its `height` column as decimetres
+(32-36), already normalises an identifier the way the table's own keys are spelled (21:
+`pikachuoriginal`, `pikachuhoenn`), already converts to one decimal of metres (52) and already commits
+the table so `npm run data:dex` never touches the network (1-3). What the round adds is the part the
+tool cannot do alone: `scripts/build-dex.mjs` gives `species.json` its `heightm` as
+`heights[entry.id] ?? 1` (199) with **no base-species fallback**, while only the Mega, hand-Mega and
+G-Max passes fall back to `heights[base.id]` (226, 250, 290) — so the honesty fix is one line in the
+reader, and the guarantee is a guard test that reports the count instead of passing quietly.
+
+`[Task-238]` is issue #89's third finding, and it measures as **three** facts rather than one. The frame
+draws no chip for the detail card because `chipLetter('detail')` is `''`
+(`src/ui/hud/panels/hud/panelFrame.tsx` 47-49) **and** because `frameLabel('detail', …)` returns `null`
+(`panelFrameView.ts` 38-41), with the button itself gated on `label !== null` (192) — so the frame
+renders no button at all, not an empty one. The **card** then paints the slot itself and paints it
+empty: a decorative `<span class="detail__chip" data-hud-detail="chip" aria-hidden="true">` at
+`{0, 0, 26, 26}` (`detailPanel.tsx` 334-339, `detail.css` 59-64) with the frame's border, radius and
+fill and neither a glyph nor a handler. And nothing else closes it: `DetailIntent` (`mount.tsx` 15-32)
+carries no close, `closeMemberDetail` (`src/scenes/panels/detail.ts` 285-292) is the only closer and no
+key reaches it, `Esc` is the `cancel` **alias** (`src/data/keybinds.ts` 80-84) and `cancel` opens the
+pause menu (`src/scenes/RouteScene.ts` 1288-1290). The empty span becomes the exit and the key joins it,
+inside the card's own folder and its own scene module, on the precedent the rewards card already sets (a
+document-capture `keydown` no route path under it sees, `src/ui/hud/panels/rewards/mount.tsx` 47-74, and
+the ✕ at `rewards/view.ts` 82) — which is also why **`src/scenes/RouteScene.ts` is 194's in this batch
+and not 238's**: that scene is a hot file with one owner, and the capture phase needs none of it.
+
+`[Task-239]` is issue #92 with decision (a) amended: frame `05 Battle HUD` draws both cards at the
+**window** — `player panel` `(64, 660, 368×100)` and `battle menu` `(664, 544, 576×216)` on 1280×800 —
+while the shipped arithmetic anchors the menu to the art square's own 36 px margin
+(`battle-moves/view.ts` 158-174), which is `x 440..1004` at that size. **x comes from the window** (the
+menu's right edge at 1240, the HP column's 64) and **y keeps 228's one bottom line** (26 px above the
+square's bottom edge); the phone keeps its 8 px gutter and its boxes. The frozen cell width is what
+fixes the card's own width at 564 and not the frame's 576 — 576 would make every cell 228 — so the new
+rect is `{676, 582, 564, 192}` at 1280×800 with 222 px cells, unchanged in height.
+
+**Two plan-wording items close without a task, and neither is a file this round cut.** Issue #80 (a
+move cell's hover does not move the info card) is **closed as not wanted**: `D57` makes fidelity a
+view-model question and hover is not a board gesture, so the card follows the keys and the press — no
+ID is registered and no entry is added anywhere. Issue #93 (the spec pattern's "paragraphs get shorter"
+clause fighting its three mandated facts) is a **plan-wording fix the Orchestrator applies** to
+`docs/agent-spec-template.md`; that file is not any task's path in this batch and no dev touches it.
+
+**One batch, 105, four tasks, and it is an antichain.** Each of the four is here for the same reason
+and a different resource: 194 is the batch's cause — the task the round freed — and it takes the
+**i18n pair** and the **save step** that no other task may hold; 237 is the only holder of
+`src/data/dex/**` and rewrites nothing a scene reads; 238 is one panel folder and the detail card's own
+scene module, with no state and no key of anyone else's; 239 is the second scene of the batch and six
+README folders' worth of one anchor rule. `[Task-194]` holds `src/i18n/{en,es}.ts`,
+`src/engine/save.ts`, `src/scenes/RouteScene.ts`, `src/data/hudLayout.ts`, `src/ui/hud/README.md` and
+`docs/hud-fidelity.md`; `[Task-237]` holds `src/data/dex/**`, `scripts/data/heights.json` and
+`scripts/build-dex.mjs`; `[Task-238]` holds `src/ui/hud/panels/detail/**` and the detail card's scene
+module; `[Task-239]` holds `src/scenes/BattleScene.ts` and the six `battle-*` panel folders — six, not
+five, because `battle-bag` and `battle-switch` alias `battleMovesBox` and still pin the old rect in a
+test and a README each. No two
+claims intersect file for file, and `docs/design-spec.md` is the one document two tasks share **by
+section** — 194 §2, 239 §4 — while `docs/tech-decisions.md`, `docs/routes-spec.md` §2,
+`docs/data-spec.md`, `docs/hud-fidelity.md` §5 and every folder README have exactly one owner each (named
+in the entries). All four dependencies read `none`, and no task needs a file a batch-mate produces, so
+the batch runs as one dev wave and one QA wave. One recorded follow-up, because a folder map has one
+owner: `src/ui/hud/panels/README.md` is 194's, and its `battle-field/` line still reads "at the stage's
+top right" after 239 moves that row; the next docs pass corrects that one clause — no task in this batch
+touches it, and QA must not "fix" it inside a task's diff.
+
+**No slot stays empty, and no already-cut batch gains a member.** Phase 21's own paragraph recorded two
+empty slots on `2026-10-30` because the backlog held nothing cuttable — `[Task-223]` and `[Task-224]`
+still wait on the operator's Figma import and `[Task-194]` was parked. This round's four decisions are
+four **new** or freed tasks, so the cut fills all four dev slots and Batch 105 is the next cuttable batch
+after 104; 104 keeps its two merged tasks untouched, and Phase 19's unscheduled per-panel wave, which
+Phase 21 re-labelled "105 onwards", now reads **106 onwards**. `src/scenes/RouteScene.ts`'s queue extends
+`… → 97 → 102 → 104 → **194**` and `src/scenes/BattleScene.ts`'s reads `230 → 235 → **239**`.
+
+### Batch 105 - the mission card, the heights table, the way back and the window's anchor
+
+- [ ] **[Task-194] The floor's mission is a panel like the others: a chip, a drag, and the run's list.**
+      Unblocked by the human on `2026-11-01` after being parked on `2026-10-27`; its parked answer (b),
+      a canvas pane, is superseded by `[Task-200]`.
+      **Measured:** the readout is a single passive line and not a card: `missionsPanelView`'s
+      `mission` field (`src/ui/hud/panels/notices/view.ts` 21, 27, 133) is boxed by `missionBox`
+      (109-114) out of `MISSION_W`/`MISSION_H` 360×32 (49-50), painted as `data-hud-mission` with
+      `pointer-events: none` and no handler (`noticesPanel.tsx` 33-40), and its copy is built in the
+      scene module — `t('hud.mission', { mission: t(mission.nameKey) })`
+      (`src/scenes/panels/notices.ts` 174). On 1280×800 that box is `{460, 88, 360, 32}` (`cardLeft`
+      centres it, 81-84; `cardTop` puts it one 8 px gap under the 720×56 strip, 102-114) and on
+      390×844 `{8, 111, 374, 32}`. **The list does not exist:** `missionsCompleted`
+      (`src/engine/run/state.ts` 150) is a number, and `mission` (147-148) is overwritten wholesale by
+      `missionForMap` (277), so the floor that met a row is forgotten the moment `advanceMap`
+      (259-284, the bump at 278) crosses the portal. `SAVE_VERSION` is `26`
+      (`src/engine/save.ts` 83), the last step is `25` (357-363), and the decoder reads the counter at
+      1013-1014 and the row at 1048. The panel seam exists and is generic: `HUD_PANEL_IDS` carries five
+      ids (`src/data/hudLayout.ts` 10), `defaultHudLayout` (22-30), `parseHudLayout` (49-56) defaults a
+      panel the document omits, `RoutePanelId` and `PANEL_IDS` are frozen unions
+      (`src/scenes/panels/types.ts` 25-26, `registry.ts` 23-35) and `registry.test.ts` pins the shipped
+      eleven ids and their orders (31-46), so a twelfth panel is one descriptor plus those two lists.
+      The i18n pair carries the line's two keys and nothing to name a card: `hud.mission`
+      (`src/i18n/en.ts` 176, `es.ts` 179) and `mission.flawless` (181 / 184).
+      **Fix shape (the human's frozen answer):** the mission becomes a **DOM card in the same frame as
+      the others** — chip, drag with clamp, saved slot, **default collapsed** — at the slot the line
+      leaves, and the run gets the list. (a) `RunState.completedMissions: readonly { id: string;
+      mapIndex: number }[]`, appended in `advanceMap` with `{ id: run.mission.id, mapIndex: run.mapIndex }`
+      on the floor being left, only when its mission was met, and never cleared by `advanceRoute`;
+      `missionsCompleted` stays exactly as it is (the special-NPC gate and the trainer rows read it).
+      (b) `missions` joins `HUD_PANEL_IDS` / `HudPanelId` (collapsed) and `RoutePanelId` / `PANEL_IDS`
+      (descriptor order **65**, between `notices` 60 and `rewards` 70), with the new
+      `src/scenes/panels/missions.ts` and `src/ui/hud/panels/missions/**`. (c) `SAVE_VERSION` **26 → 27**
+      with a migration that seeds `completedMissions: []` and a decoder that drops a malformed row the
+      way `parseHistory` does. (d) the card's model: `MISSIONS_W` 360, the head row 32 for the floor's
+      mission with its progress, one 22 px row per completed mission **newest first**, a
+      `MISSIONS_MAX_ROWS` cap of 6, and `hud.missionsEmpty` when the list is empty. (e) the mission line
+      leaves `notices` whole: field, box, constants, `data-hud-mission`, its CSS block and the
+      fixture test's clause.
+      **Rejected:** the parked answer (b), a canvas pane — `[Task-200]` retired the layer, so a pane
+      would be a second HUD with no owner; and a second home for the list in the run-over screen or the
+      pause menu, which would make the mission a report of a finished run instead of a live floor.
+      **Docs:** `docs/design-spec.md` §2 (the mission is a card with a chip and a run-long list, and the
+      counter stays for the rooms that gate on it), `docs/hud-fidelity.md` §5 (the chip block names the
+      new card and its slot), `docs/routes-spec.md` §2 (a run keeps the missions it met, floor by floor),
+      `docs/tech-decisions.md` (**D58**: the run records the missions it met; the counter is derived
+      data's sibling, never replaced), `src/ui/hud/README.md` (the panel count line), the new
+      `src/ui/hud/panels/missions/README.md`, `src/ui/hud/panels/notices/README.md` (three cards become
+      two), `src/ui/hud/panels/README.md` (the `missions/` entry) and `src/scenes/panels/README.md`
+      (the twelfth descriptor).
+      **Tests:** `[unit]` `advanceMap` appends one record per met floor and none on a missed one, and
+      `advanceRoute` never clears the list; `[unit]` the `26 → 27` migration seeds `[]` and a document
+      whose `completedMissions` holds a junk row decodes without it; `[unit]` `parseHudLayout` defaults
+      `missions` collapsed on a document that predates it and `defaultHudLayout().missions.collapsed` is
+      `true`; `[unit]` `missionsPanelView` puts the floor's row first, the completed ones newest first,
+      caps the list at 6 and prints the empty state; `[unit]` `noticesPanelView` no longer carries a
+      mission line and `npm test` stays green after the field is gone.
+      `[live]` measured over CDP at 1280×800 with `?hud=dom`: after a met floor, `[data-hud-panel="missions"]`
+      is mounted and `[data-hud-missions-row]` reads the met row's name with `Map 1`, a second met floor
+      puts its row above the first (newest first), the chip at `[data-hud-frame-chip="missions"]`
+      collapses the card to nothing and the strip's badge list is unchanged at four, a drag of the header
+      keeps the card inside the window (its `getBoundingClientRect()` never crosses `0..1280`), and a
+      reload restores both the flag and the offset.
+      Claims `src/engine/run/state.ts` + test, `src/engine/run/missions.ts` + test (only if the append
+      needs a pure helper), `src/engine/save.ts` + test, `src/data/hudLayout.ts` + test,
+      `src/scenes/panels/missions.ts` (new), `src/scenes/panels/{types,registry}.ts` + `registry.test.ts`,
+      `src/ui/hud/panels/missions/**` (new), `src/ui/hud/panels/notices/**`,
+      `src/ui/hud/panels/README.md`, `src/ui/hud/panels/hud/panelFrame.tsx` and
+      `hud/panelFrameView.ts` + `panelFrameView.test.ts` (the chip's letter and label for the new
+      id), `src/ui/hud/README.md`, `src/scenes/panels/notices.ts`,
+      `src/scenes/panels/README.md`, `src/scenes/RouteScene.ts` (reserved: the panel needs no line of it
+      today, and the task must not touch it speculatively), `src/i18n/{en,es}.ts`, `docs/design-spec.md`
+      §2, `docs/hud-fidelity.md` §5, `docs/routes-spec.md` §2 and `docs/tech-decisions.md`.
+      *Dependencies:* none. *(Batch 105)*
+
+- [ ] **[Task-237] Every base species carries its canonical height, and the generated dex says so.**
+      Issue #91, decided by the human on `2026-11-01`: **fill** the table from PokeAPI's own CSV rather
+      than accept the fallback.
+      **Measured:** `src/data/dex/meta.json` counts **1281** species, and the archived `[Task-231]` entry
+      records the gap the issue opened: `scripts/data/heights.json` has no entry for **370** of them
+      (`CHANGELOG.md` 169-172, `wailord` and `onix` named). The consequence is silent because the accessor
+      is total: `heightOf` answers `getSpecies(id)?.heightm ?? 1` (`src/data/dex/species.ts` 94-95), so
+      every missing species draws at the 1 m reference — a Wailord (14.5 m) and an Onix (8.8 m) at 1 m
+      (`src/data/overworldSize.ts` 31-35 and `src/data/spriteSize.ts` 24-25 read the same number).
+      **The tool the decision describes already ships:** `scripts/fetch-heights.mjs` (1-59) fetches
+      `https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon.csv` (15-16), reads
+      its `height` column as decimetres with `species_id` and `is_default` beside it (30-39), normalises
+      an identifier by lowercasing and dropping every non-alphanumeric (21) — the shape the table's keys
+      already use (`pikachuoriginal`, `pikachuhoenn`, `taurospaldeacombat`) — converts to metres at one
+      decimal (52) and writes `scripts/data/heights.json` so `npm run data:dex` never touches the network
+      (1-3, 55-56). What it cannot do is guard the result, and the reader is where `heightm` stops being
+      honest: `species.json` rows take `heights[entry.id] ?? 1` (`scripts/build-dex.mjs` 196-201, the
+      fallback at **199**) with **no base-species fallback**, while only the Mega, hand-Mega and G-Max
+      passes answer `heights[row.id] ?? heights[base.id] ?? 1` (226, 250, 290).
+      **Fix shape:** rerun the fetcher against the current 1281-row species list and commit the merged
+      table; make line 199 fall back to the base species the way 226 does (`heights[entry.id] ??
+      heights[normalizeId(entry.baseSpecies)] ?? 1`, with `normalizeId` moved above `main`'s species map
+      at 203 or inlined); regenerate with `npm run data:dex` and confirm `meta.json`'s counts against the
+      new `species.json`; and add a guard test whose job is to **report, never to pass quietly**: every
+      base species of the generated `species.json` has a row of its own and `heightm` equals it, every
+      forme reads its own row or its base's, and the count of exceptions is printed and asserted at 0.
+      The `heightm === 1` check alone is not the guard — `ivysaur` and `venusaur` are genuinely 1 m and
+      2 m, and `ditto` is 0.3 — so the test keys on the **table**, not on the value.
+      **Rejected:** accepting the 1 m fallback (a 14.5 m whale drawn as a Pikachu is a defect, not a
+      default); hand-authoring 370 heights from a wiki (the same data, with a transcription in between);
+      and deriving the height from `weightkg`, which is a second fact pretending to be the first.
+      **Docs:** `docs/data-spec.md` §1 (the heights paragraph at 10-15 records the fill rule, the reader's
+      base-species fallback and the guard, and re-pins `[Task-231]`'s `[live]` example with the real
+      numbers — `wailord` 14.5 m against `diglett` 0.2 m — since that spec's own copy died with its
+      run; the archived `CHANGELOG.md` entry stays exactly as history wrote it).
+      **Tests:** `[unit]` the guard test: no base species of `species.json` lacks its own row, the
+      exception count prints and is 0, `heightOf('wailord')` is 14.5, `heightOf('onix')` is 8.8 and
+      `heightOf('diglett')` is 0.2; `[unit]` every forme row reads its base's height when the CSV has no
+      row of its own (`charizardmegax` 1.7, `venusaurgmax` 2); `[unit]` `npm test` and `npm run build`
+      stay green with `meta.json`'s counts unchanged.
+      `[live]` measured over CDP at 1280×800 on the route with a packed overworld pair: the follower's
+      drawn height for `wailord` is `24 * OVERWORLD_SCALE_MAX` = 38.4 px and for `diglett` is `24 *
+      OVERWORLD_SCALE_MIN` = 19.2 px, read from the sprite's `displayHeight`, so the two species differ
+      by the band's own ratio 2.
+      Claims `scripts/data/heights.json`, `scripts/build-dex.mjs` (the reader at 196-203 only),
+      `src/data/dex/**` (every regenerated file and its tests) and `docs/data-spec.md` §1. The network is
+      read **once, at dev time**; no runtime fetch, no new dependency, no committed script.
+      *Dependencies:* none. *(Batch 105)*
+
+- [ ] **[Task-238] The member detail card has a way back on its own corner, and Esc does the same.**
+      Issue #89's third finding, decided by the human on `2026-11-01`.
+      **Measured:** the frame draws **no chip at all** for the detail card, by two guards rather than
+      one — `chipLetter('detail')` returns `''` (`src/ui/hud/panels/hud/panelFrame.tsx` 47-49) and
+      `frameLabel('detail', …)` returns `null` (`panelFrameView.ts` 38-41), and the button itself is
+      gated on `open && label !== null` (`panelFrame.tsx` 192), so the card mounts with `label: null`
+      (`detail/mount.tsx` 39-45, whose comment states the consequence: "the card's own chip stays the way
+      back"). Nothing else closes it: `DetailIntent` (`detail/mount.tsx` 15-32) has no close variant,
+      `closeMemberDetail` (`src/scenes/panels/detail.ts` 285-292) is the only closer and no key reaches
+      it, and `Esc` is the `cancel` **alias** (`src/data/keybinds.ts` 80-84) whose route path opens the
+      pause menu (`src/scenes/RouteScene.ts` 1288-1290) on top of the card instead of closing it.
+      **The slot itself already ships and draws nothing:** the card paints a decorative
+      `<span class="detail__chip" data-hud-detail="chip" aria-hidden="true">` at `{0, 0, 26, 26}`
+      (`detailPanel.tsx` 334-339, `CHIP = 26` at 34) and `detail.css` 59-64 gives it the border, radius
+      and fill of the frame's badge — an empty, inert chip. The prose already promises what the code does
+      not draw: `docs/hud-fidelity.md` 124-125 says the card "keeps its own way back", and
+      `detail/README.md` 18 repeats it. The precedent for both halves ships: the rewards card draws a
+      `'×'` (`src/ui/hud/panels/rewards/view.ts` 82, a 24 px button at 80) from a
+      `close: { label, box }` in its view (51, 220-223) and takes `Escape` on a **document capture-phase**
+      listener that no scene path under it sees (`rewards/mount.tsx` 47-74).
+      **Fix shape:** the empty span becomes the card's exit — a `<button type="button">` in the same
+      slot and box (`DETAIL_CLOSE_SIZE` 26), the same `'×'` glyph the rewards card draws, **no new i18n
+      string** (its accessible name is the existing `t('keybind.cancel')`, `src/i18n/en.ts` 150 /
+      `es.ts` 153), emitting a new `{ type: 'close' }` intent that `src/scenes/panels/detail.ts` answers
+      with `closeMemberDetail`; and `Escape` closes the card through the same intent, taken in the card's
+      own document capture-phase `keydown` (the rewards shape) while `view.open` is true and no text
+      field owns the keyboard, with `preventDefault` and `stopPropagation` so the route's pause path
+      never sees it. The card stays where it is in the layout model: `detail` remains in
+      `HUD_PANEL_IDS` (`src/data/hudLayout.ts` 10) — it already is, and it carries the saved offset —
+      and stays out of `STRIP_CHIP_ORDER` (`hud/view.ts` 20), which is the four quick-key panels; the
+      card draws its own control and no second badge is invented.
+      **Rejected:** giving `frameLabel` a label so the frame's chip appears — that chip's press calls
+      `onToggle` → `setHudCardOpen('detail', false)`, which hides the frame (`panelFrameProps` ANDs the
+      flag) without ever closing the member, and the strip has no badge for `detail`, so the way back
+      would be lost for good; a `keydown-ESC` listener on the scene's keyboard, which registers **after**
+      `subscribeKeybinds` (`RouteScene` 1154) and `handleAction`'s `cancel` (1288-1290) and therefore
+      opens the pause menu first; and closing on any `cancel` press, which would take `Q` away from the
+      pause menu everywhere else.
+      **Docs:** `src/ui/hud/panels/detail/README.md` (a rule for the control, the glyph, the key, and
+      the chip line's role). `docs/hud-fidelity.md` §5 is **not** this task's file this batch: its last
+      sentence already describes what this task ships, and 194 holds the document; do not edit it.
+      **Tests:** `[unit]` `detailPanelView` carries `close` as a 26×26 box at the card's own corner with
+      the `'×'` glyph and the `keybind.cancel` name, on the open and the closed view alike; `[unit]`
+      `detailCloseKey(open, key, inTextField)` is true only for `open && key === 'Escape' &&
+      !inTextField`; `[unit]` a press on the control sends `{ type: 'close' }` and nothing else, and the
+      mount's disposer drops its capture listener; `[unit]` `git diff main...task-238 -- src/i18n` is
+      empty, which is the no-new-string criterion; `[unit]` `npm test` and `npm run build` stay green.
+      `[live]` measured over CDP at 1280×800 with `?hud=dom`, a four-member run, its first party row
+      pressed so `[data-hud-panel="detail"]` is visible: a click on `[data-hud-detail-close]` hides that
+      panel within one frame at its 26×26 corner rect, `[data-hud-panel="pause"]` stays hidden and the
+      party's `data-hud-party-member` ids are unchanged; one `Escape` on a freshly opened card does the
+      same and still opens no pause menu; and with the nickname field focused, `Escape` keeps the card
+      open and only cancels the edit.
+      Claims `src/ui/hud/panels/detail/view.ts` + `view.test.ts`, `detail/detailPanel.tsx`,
+      `detail/detail.css`, `detail/mount.tsx` (the intent union and the key router), `detail/README.md`
+      and `src/scenes/panels/detail.ts` (the intent's handler, which is the card's own scene module).
+      *Dependencies:* none. *(Batch 105)*
+
+- [ ] **[Task-239] The desk battle HUD is anchored to the window, exactly as frame 05 draws it.**
+      Issue #92 with decision (a) amended by the human on `2026-11-01`; `[Task-228]`'s bottom line is
+      **not** re-opened.
+      **Measured:** frame `05 Battle HUD` draws `player panel` at `(64, 660, 368×100)` and `battle menu`
+      at `(664, 544, 576×216)` on its 1280×800 page (`design/frames/05-battle-hud.json` 1594-1600 and
+      2108-2114), i.e. the menu's right edge lands at **1240**, 40 px from the window's edge, while the
+      shipped arithmetic anchors it to the art square: `battleMovesBox` takes
+      `right = stage.x + stage.w - CARD_MARGIN` (`src/ui/hud/panels/battle-moves/view.ts` 167, with
+      `CARD_MARGIN` 36 at 47) so at 1280×800 — stage `{240, 0, 800, 800}` (`battle-hp/view.ts` 94-104) —
+      the card is `{440, 582, 564, 192}` (`battle-moves/view.test.ts` 207-208) with its right edge at
+      **1004** and its cells 222 px. The HP column is **already** window-anchored (`DESKTOP_X` 64,
+      `battle-hp/view.ts` 123-126, `leadBox` 146-164) and already ends on the shared line
+      (`DESKTOP_BOTTOM_MARGIN` 26, 82-84, used at 161), so 228 is untouched. `battleCommandBox` is
+      `battleMovesBox` (`battle-command/view.ts` 57-58), `battleBagBox` and `battleSwitchBox` are the same
+      alias (`battle-bag/view.ts` 12, `battle-switch/view.ts` 13), and the field row is stage-anchored at
+      its right edge (`right = stage.x + stage.w - FIELD_CHIP_INSET`, `battle-field/view.ts` 65-66) — 1024
+      at that size. The old numbers are pinned by tests in five folders (`battle-command/view.test.ts` 48,
+      `battle-bag/view.test.ts` 70, `battle-switch/view.test.ts` 97, `battle-moves/view.test.ts` 207-208,
+      279, 284, `battle-hp/view.test.ts` 47, 248) and the scene reads the boxes at `BattleScene` 732,
+      2469, 2541, 2618 and 2699, with a comment at 2467-2468 that names the old reading.
+      **Fix shape:** one rule on the desk branch — **x from the window, y from 228**. The menu card's
+      right edge becomes `viewport.width - CARD_WINDOW_MARGIN` (a new `40`, the frame's own margin), its
+      width `min(CARD_W 564, the room left)` — 564 because that is what keeps every cell at the frozen
+      **222 px**; 576 would make them 228 — and its left floor stays the foe column plus
+      `CARD_CLEARANCE`, so on a narrow desk it still cannot cover an HP box. At 1280×800 that is
+      `{676, 582, 564, 192}` (right 1240, bottom 774, cells 222); at 1440×900 `{836, 682, 564, 192}`; at
+      900×900 `{440, 682, 420, 192}`. The field chip row's right edge becomes
+      `viewport.width - FIELD_CHIP_INSET` (1264 at 1280×800), its top unchanged. The phone branch
+      (`stage.w < BATTLE_COMPACT`, 160-163) and every phone box are untouched.
+      **Rejected:** taking the frame's **576** px width, which costs the frozen 222 px cells (228) and the
+      whole move name column; and taking the frame's `y 544` / `h 216`, which breaks the one bottom line
+      228 shipped and that the desktop and the phone both read.
+      **Docs:** `docs/design-spec.md` §4 (the paragraph at 416-423: the card's margin inside the square
+      becomes the window's own right margin, the bottom line stays 26 px), `src/ui/hud/panels/`'s six
+      READMEs — `battle-hp`, `battle-command`, `battle-moves`, `battle-bag`, `battle-switch`,
+      `battle-field` — each recording its own desk rect and phone rect after the rule.
+      **Tests:** `[unit]` `battleMovesBox({1280, 800})` is `{676, 582, 564, 192}` with
+      `x + w === 1240` and its first cell 222 wide; the same at 1440×900 (`{836, 682, 564, 192}`) and
+      900×900 (`{440, 682, 420, 192}`, never crossing the foe column's edge); `[unit]` every desk card's
+      bottom still equals `battleStage(viewport).y + h - 26` and the player card's bottom equals the
+      menu card's at those three sizes; `[unit]` `battleCommandBox`, `battleBagBox` and `battleSwitchBox`
+      all report the new rect, being the same function; `[unit]` `fieldChipRow` right-aligns to
+      `viewport.width - 16`; `[unit]` every phone box is byte-identical to today's
+      (`battleMovesBox({390, 844})` `{16, 592, 358, 236}`, the player card `{16, 504, 358, 80}`).
+      `[live]` measured over CDP at 1280×800 with `?hud=dom` and FIGHT open: `[data-hud-panel="battle-moves"]`'s
+      rect is `676, 582, 564, 192`, its right edge 1240, and `[data-hud-hp="player-0"]`'s bottom is 774
+      against that card's own 774; a move cell's width reads 222; and at 390×844 the phone rects are
+      unchanged at `16, 592, 358, 236` and `16, 504, 358, 80` with the 8 px gutter between them.
+      Claims `src/ui/hud/panels/battle-moves/view.ts` + `view.test.ts` + `README.md`,
+      `src/ui/hud/panels/battle-hp/view.ts` (the anchor comment) + `view.test.ts` + `README.md`,
+      `src/ui/hud/panels/battle-command/view.ts` + `view.test.ts` + `README.md`,
+      `src/ui/hud/panels/battle-bag/view.test.ts` + `README.md`,
+      `src/ui/hud/panels/battle-switch/view.test.ts` + `README.md`,
+      `src/ui/hud/panels/battle-field/view.ts` + `view.test.ts` + `README.md`,
+      `src/scenes/BattleScene.ts` (the box call sites' comment) and `docs/design-spec.md` §4.
+      *Dependencies:* none — it keeps `[Task-228]`'s rule and needs no file 228 produced beyond what is
+      merged. *(Batch 105)*
+
+---
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
@@ -10805,7 +11136,8 @@ draw moved by any of the nine** — 230 pushes an event the log already carries,
 and 231-234 are art, motion and input — so the chain stays at **26** (the record's `25` predates
 `[Task-181]`), `src/scenes/RouteScene.ts` gains one link at **Batch 102**, and the open set is
 unchanged: `[Task-28]`, `[Task-194]`, `[Task-223]` and `[Task-224]` are still the
-unscheduled/blocked four.
+unscheduled/blocked four. *(On `2026-11-01` the thirty-sixth round cut `[Task-194]` into **Batch 105**
+— Phase 22 — so from there the set is three.)*
 
 ---
 
