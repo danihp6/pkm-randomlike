@@ -1,7 +1,7 @@
 # `src/ui/hud/panels/battle-field/` — the battle's field chips (`05`)
 
 The weather and the terrain a battle is under, as Preact over the `#hud` layer (`D49`): one
-32 px chip per live condition at the battle stage's top right, each a drawn SVG glyph with its
+32 px chip per live condition at the battle window's top right, each a drawn SVG glyph with its
 remaining turns on the chip's own corner plate and no text row. The panel is the battle's only
 readout: it takes no press, reads no `HudState` and calls no i18n from its component — the view
 resolves the label. Under `?hud=dom` nothing here changes on the canvas, which draws no field
@@ -32,8 +32,10 @@ state at all.
 ## Rules
 
 1. The view is data, never the battle: the scene pushes `BattleFieldInput` on every
-   `refreshHud` and the panel paints it. Every rect is a page coordinate measured from
-   `battleStage(viewport)`, the rect the camera viewport is set to.
+   `refreshHud` and the panel paints it. Every rect is a page coordinate: the row's top is
+   measured from `battleStage(viewport)` — the rect the camera viewport is set to — and its
+   right edge is the **window's** `FIELD_CHIP_INSET` (16 px), the corner frame `05 Battle
+   HUD` draws the condition in.
 2. **The weather holds the corner.** The chips run left to right with the terrain first and the
    weather last, so a weather — by far the commoner condition — never moves when a terrain
    appears; with one condition up that chip takes the corner cell.

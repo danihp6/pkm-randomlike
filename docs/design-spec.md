@@ -418,7 +418,9 @@ Full rules in `docs/battle-spec.md`. In short:
   screen keeps the stacked, full-height layout, with both battlers drawn 25%
   smaller so they sit clear of the stacked panels. The HUD is window-anchored, as
   frame `05` draws it: the HP column keeps its 64 px margin, the command / moves card
-  keeps its 36 px margin inside the square, and the player's lead card and that card
+  keeps the frame's own 40 px margin from the **window's** right edge, with its cells at
+  222 px (on a desk narrower than the card's minimum the margin gives way before the card
+  covers a box), and the player's lead card and that card
   end on **one bottom line**, 26 px above the square's bottom edge (on the phone the
   card keeps the measured 8 px gutter above the player's box).
 - The battle's windows are the drawn chrome: the **message box** behind the

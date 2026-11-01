@@ -17,15 +17,16 @@ describe('design/fixtures/05-battle-hud.json', () => {
     });
   });
 
-  it('pins the frame s card: the same right edge and height as battleMovesBox', () => {
+  it('pins the frame s card: the frame s right edge, its height, and the shipped state beyond it', () => {
     const derived = battleMovesBox({ width: 1280, height: 800 });
-    // The frame predates the HP column s clearance: the menu keeps its right edge and
-    // its height, and the shipped card only starts further right, clear of the boxes.
+    // `fixture.moves.card` is the captured *state* of the shipped HUD (its menu ended at
+    // 1004); the frame itself draws that menu out to 1240, on the window's 40 px margin,
+    // which is where `battleMovesBox` now lands. Height and bottom line are the same.
     expect(fixture.moves.card.y).toBe(derived.y);
     expect(fixture.moves.card.h).toBe(derived.h);
-    expect(fixture.moves.card.x + fixture.moves.card.w).toBe(derived.x + derived.w);
-    expect(derived.x).toBeGreaterThanOrEqual(fixture.moves.card.x);
-    expect(derived.w).toBeLessThanOrEqual(fixture.moves.card.w);
+    expect(derived.x + derived.w).toBe(1240);
+    expect(derived.x).toBeGreaterThan(fixture.moves.card.x);
+    expect(derived.w).toBeLessThan(fixture.moves.card.w);
   });
 
   it('paints the frame s four cells in order', () => {

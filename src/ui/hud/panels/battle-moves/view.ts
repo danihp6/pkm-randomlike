@@ -50,6 +50,10 @@ const CARD_H = 192;
 /** The clearance the wide card keeps from the HP column's right edge, and its narrowest width. */
 const CARD_CLEARANCE = 8;
 const CARD_MIN_W = 240;
+/** The desk card's distance from the window's right edge: frame `05 Battle HUD`'s own 40 px. */
+export const CARD_WINDOW_MARGIN = 40;
+/** The desk card's width: what keeps every move cell at the frozen 222 px. */
+export const CARD_W = 564;
 
 /** The gap the category column keeps from its cell's neighbour box, in the panel's own arithmetic. */
 export const MOVE_CATEGORY_GAP = 8;
@@ -151,9 +155,10 @@ export const COMPACT_CARD_RAIL_W =
  * The page-space card the scene's own `menu` rect becomes: the battle square's menu
  * box placed inside `battleStage`, the rect the camera viewport is set to. On the wide
  * layout its left edge starts where the HP column ends — the foe's column right edge
- * plus a gutter — so the card never covers an HP box, and its bottom edge is the
- * player's HP card's own line, `CARD_FROM_BOTTOM` under the square's bottom edge; the
- * phone card already sits below both of them and keeps its shipped rect.
+ * plus a gutter — so the card never covers an HP box, and its right edge is the
+ * **window's** own margin, exactly as frame `05 Battle HUD` draws the menu; its bottom
+ * edge is the player's HP card's own line, `CARD_FROM_BOTTOM` under the square's bottom
+ * edge; the phone card already sits below both of them and keeps its shipped rect.
  */
 export function battleMovesBox(viewport: Viewport): Rect {
   const stage = battleStage(viewport);
@@ -164,11 +169,14 @@ export function battleMovesBox(viewport: Viewport): Rect {
   }
   const enemy = battleHpBox(viewport, 'enemy', 0);
   const left = Math.max(stage.x + CARD_MARGIN, enemy.x + enemy.w + CARD_CLEARANCE);
-  const right = stage.x + stage.w - CARD_MARGIN;
+  const right = viewport.width - CARD_WINDOW_MARGIN;
+  const w = Math.min(CARD_W, Math.max(CARD_MIN_W, right - left));
+  // The `CARD_MIN_W` floor wins over the window margin on a very narrow desk: a card
+  // that would cross `left` gives back its right margin instead of covering an HP box.
   return {
-    x: left,
+    x: Math.max(left, right - w),
     y: stage.y + stage.h - CARD_FROM_BOTTOM,
-    w: Math.max(CARD_MIN_W, right - left),
+    w,
     h: CARD_H,
   };
 }

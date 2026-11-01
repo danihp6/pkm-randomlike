@@ -240,12 +240,12 @@ describe('the one bottom line', () => {
     for (const viewport of ONE_LINE) {
       const card = battleMovesBox(viewport);
       const foe = battleHpBox(viewport, 'enemy', 0);
-      expect(card.x).toBe(foe.x + foe.w + 8);
+      expect(card.x).toBeGreaterThanOrEqual(foe.x + foe.w + 8);
       for (const slot of [0, 1] as const) {
         expect(overlaps(card, battleHpBox(viewport, 'player', slot))).toBe(false);
       }
     }
-    expect(ONE_LINE.map((viewport) => battleMovesBox(viewport).x)).toStrictEqual([440, 440, 440, 440]);
+    expect(ONE_LINE.map((viewport) => battleMovesBox(viewport).x)).toStrictEqual([676, 836, 440, 836]);
   });
 
   it('keeps the phone 8 px gutter and its shipped rects', () => {

@@ -61,8 +61,8 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
   variant stays for the scene's canvas handler, and this panel never emits it).
 - `fixture.test.ts` — `design/fixtures/05-battle-hud.json` is the frame's own copy: its
   four moves, their printed lines, the selected first cell, the MEGA column and the 160 px
-  card its `attack detail` measures; its card is the frame's measurement, pinned against the
-  shipped card's right edge and height.
+  card its `attack detail` measures; its card is the captured state's measurement, pinned
+  against the frame's right edge (1240) and the shipped card's height.
 - `index.ts` — the barrel the scene imports: the card and its mount, `battleMovesBox`,
   `battleMovesView`, `cellTextBoxes`, `compactCard`, `fitsInside`, `CATEGORY_LABELS`, the prompt
   row's two numbers, `INFO_CARD_H` / `COMPACT_CARD_CLEARANCE` / `COMPACT_CARD_RAIL_W`, and the
@@ -85,7 +85,11 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
    press.
 5. The card starts where the HP column ends (`battleHpBox`), so the FIGHT window never
    covers an HP box, and each slot's `categoryBox` — the glyph's own 24 px square — ends on
-   the cell's own right padding edge, with nothing reserved for a button.
+   the cell's own right padding edge, with nothing reserved for a button. Its right edge is
+   the **window's** 40 px margin (`CARD_WINDOW_MARGIN`) exactly as frame `05 Battle HUD`
+   draws it, held at `CARD_W` (564) so every desk cell stays 222 px; when the
+   `CARD_MIN_W` floor would cross the HP column the card gives back its right margin
+   instead of covering a box.
 6. **Every label is painted at its own model box.** `cellTextBoxes` lays a cell out by its
    width class and the stylesheet only paints: the cell keeps no grid, so nothing can reflow a
    label out of the rect a test measured. The wide class is the shipped three-line cell (the
@@ -121,10 +125,11 @@ none`), the target step's prompt (one line, body type, centred in the card's 22 
     cursor's slot is filled; `BattleMovesInput.info` is still accepted, because the scene's
     canvas ⓘ still feeds it, and this panel never reads it. The card is 160 px tall (the
     board's `attack detail`) and 20 px in from the menu's left edge: anchored to the menu's top
-    edge minus its 8 px gap at 1280×800 — `{460,414,524,160}`, its bottom 8 px above the menu
+    edge minus its 8 px gap at 1280×800 — `{696,414,524,160}`, its bottom 8 px above the menu
     — and to the phone's own HP box at 390×844 — `{36,336,216,160}`, its bottom 8 px above
-    the player's box at 504. `05`'s own card sits at (664,372) because its menu starts at 664;
-    this menu starts at 440, which is why the wide anchor is the menu's top edge. The card
+    the player's box at 504. `05`'s own card sits at (664,372), 12 px left of this menu's
+    676 because the frame's menu is 576 wide and this one holds 564 for its 222 px cells;
+    both anchor the card to the menu's top edge. The card
     takes no pointer event, and its description scrolls inside the 160 px instead of growing
     the box.
 11. **The phone card cedes its right rail to the stage grid.** Its width is

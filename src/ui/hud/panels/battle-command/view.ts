@@ -53,7 +53,8 @@ const GRID_COLS = 2;
 /** `MENU_GRID_GAP`: the one gutter between two cells and between two rows. */
 const GRID_GAP = 8;
 
-/** The page rect of the card the command window shares with the move menu. */
+/** The page rect of the card the command window shares with the move menu: window-anchored
+ * in x (frame `05`'s 40 px margin) and stage-anchored in y (the shared bottom line). */
 export function battleCommandBox(viewport: Viewport): Rect {
   return battleMovesBox(viewport);
 }

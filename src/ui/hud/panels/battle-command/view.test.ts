@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { battleHpBox } from '../battle-hp/view';
-import { fitsInside } from '../battle-moves/view';
+import { fitsInside, battleMovesBox } from '../battle-moves/view';
 import {
   battleCommandBox,
   battleCommandView,
@@ -45,11 +45,21 @@ function overlaps(a: Rect, b: Rect): boolean {
 
 describe('battleCommandBox', () => {
   it('is the card the move menu uses at 1280x800', () => {
-    expect(battleCommandBox(DESKTOP)).toEqual({ x: 440, y: 582, w: 564, h: 192 });
+    expect(battleCommandBox(DESKTOP)).toEqual({ x: 676, y: 582, w: 564, h: 192 });
   });
 
   it('is the shipped phone card at 390x844', () => {
     expect(battleCommandBox(PHONE)).toEqual({ x: 16, y: 592, w: 358, h: 236 });
+  });
+
+  it('keeps the four battle cards equal to the moves card on the desk', () => {
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 1440, height: 900 },
+      { width: 900, height: 900 },
+    ]) {
+      expect(battleCommandBox(viewport)).toStrictEqual(battleMovesBox(viewport));
+    }
   });
 });
 
@@ -58,10 +68,10 @@ describe('the four command cells', () => {
     const view = battleCommandView(inputOf());
     expect(view.compact).toBe(false);
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 468, y: 606, w: 250, h: 72 },
-      { x: 726, y: 606, w: 250, h: 72 },
-      { x: 468, y: 686, w: 250, h: 72 },
-      { x: 726, y: 686, w: 250, h: 72 },
+      { x: 704, y: 606, w: 250, h: 72 },
+      { x: 962, y: 606, w: 250, h: 72 },
+      { x: 704, y: 686, w: 250, h: 72 },
+      { x: 962, y: 686, w: 250, h: 72 },
     ]);
   });
 
@@ -107,8 +117,8 @@ describe('the partner window', () => {
   it('is one full-height row of two cells at 1280x800', () => {
     const view = battleCommandView(inputOf({ card: battleCommandBox(DESKTOP), rows: PARTNER }));
     expect(view.rows.map((row) => row.box)).toEqual([
-      { x: 468, y: 606, w: 250, h: 152 },
-      { x: 726, y: 606, w: 250, h: 152 },
+      { x: 704, y: 606, w: 250, h: 152 },
+      { x: 962, y: 606, w: 250, h: 152 },
     ]);
   });
 
