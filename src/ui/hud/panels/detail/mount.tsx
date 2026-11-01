@@ -3,7 +3,14 @@ import type { Signal } from '@preact/signals';
 import type { DetailTab } from '../../../partyDetail';
 import { PanelFrame, panelFrameProps, type PanelFrameMount } from '../hud';
 import { DetailPanel } from './detailPanel';
-import type { DetailPanelView } from './view';
+import { detailCloseKey, type DetailPanelView } from './view';
+
+/** True when the key press lands in a text field, whose Escape belongs to that edit. */
+function isTextField(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+  );
+}
 
 /**
  * The panel's own command channel: plain data, never a run, never a Phaser object.
@@ -13,6 +20,7 @@ import type { DetailPanelView } from './view';
  * writer of the run.
  */
 export type DetailIntent =
+  | Readonly<{ type: 'close' }>
   | Readonly<{ type: 'tab'; tab: DetailTab }>
   | Readonly<{ type: 'cursor'; index: number }>
   | Readonly<{ type: 'poolCursor'; index: number }>
@@ -59,7 +67,19 @@ export function mountDetailPanel(
   paint();
   const stop = view.subscribe(paint);
 
+  // The card's Escape, in the document's capture phase: it runs before the route's
+  // keybinds, so the press that closes the card never opens the pause menu.
+  const keydown = (event: KeyboardEvent): void => {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!detailCloseKey(view.value.open, event.key, isTextField(event.target))) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onIntent?.({ type: 'close' });
+  };
+  document.addEventListener('keydown', keydown, true);
+
   return () => {
+    document.removeEventListener('keydown', keydown, true);
     stop();
     render(null, container);
     container.remove();
