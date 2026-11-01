@@ -10634,8 +10634,9 @@ last, whose single row is `01b`:
 | 114 | `08c-stats-pokemon` · `09-ranking` · `09b-ranking-pokemon` |
 | 115 | `01b-main-menu-no-save` |
 
-`[Task-240]` to `[Task-251]` are cut below. The other 20 take the next free ID at **their** cut, in
-this table's order, so no ID is bound to a task that has no entry yet -- the round-20 precedent. No
+`[Task-240]` to `[Task-263]` are cut below (`252`-`263` are **entries only** — their own cycle writes
+their specs). The other 8 take the next free ID at **their** cut, in this table's order, so no ID is
+bound to a task that has no entry yet -- the round-20 precedent. No
 task in the wave adds a run field, moves an RNG draw or touches `src/engine/save.ts`: the chain stays
 **14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23**, and none changes a rule or the game's
 behaviour, so a batch is four tasks and one QA wave with no design review.
@@ -11130,6 +11131,456 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
       label with no icon and no description. Claims
       `src/ui/hud/specGap.views/rewards-pokemon.ts` and
       `src/ui/hud/panels/rewards/specGap.pokemon.test.ts`. *Dependencies:* none. *(Batch 109)*
+
+### Batch 110 - the trade counter, the slot machine and the pause menu
+
+**The batch ships four rows, so the table will read seventeen `wired` and 16 `pending` when they
+land.** The adapters are `specGap.views/trade-pick.ts`, `trade-result.ts`, `rocket.ts` and
+`pause.ts`; each `PENDING` line and its table row flip in its own merge push. Two of the four are
+**fully-claiming** rows: `03i` claims thirteen boxes and `03j` four, every delta `0`, because the
+trade panel's `view.ts` was itself rebuilt from these two frames — a different case from Batch 109's,
+where `03f`/`03g` claimed five boxes of a card the panel had been given. The other two are the wave's
+sharpest contrast: `03h` is the only **Phaser** panel in the thirty-two rows (no `PanelView`
+producer, no panel folder) and `03n` is the *same* 360 px card with **four** rows where the game
+ships two, so only the scrim — the viewport's rect, not the card's — survives.
+
+**The wave is full and it is the maximum.** Four rows, four devs, one QA wave: `03i` (the trade pick
+sheet), `03j` (the trade result card), `03h` (the slot machine) and `03n` (the pause menu), bound to
+`[Task-252]` to `[Task-255]` in the table's order — so the trade pair takes the batch's two lower
+IDs, which is also why its folder README has one owner. **Batch filling had no slot to fill, and
+this is the record of it:** the batch takes its four, and the only later items are Batches 111 and
+112, which this same cut gives entries and IDs but **no specs** — a cut writes the next batch's
+specs only, so neither is launchable beside this wave — and Batches 113 to 115, which are still rows
+with no entry and no ID. The one open item under **Bugs** (the one-space `common.level` /
+`hud.level` defect, `Lv36` → `LV 36`) is not a fifth row either: its diff rewrites
+`src/i18n/en.ts` **and** the merged `src/ui/hud/panels/pc/specGap.test.ts` that pins `Lv30`, and
+this batch is four of four. Four rows, four slots, no fifth.
+
+**Hot files.** None of the four claims `package.json`, `src/main.ts`, `vite.config.ts`, each
+`src/scenes/*.ts`, `src/data/dex/**`, `design/screens/**`, `design/exports/**`,
+`design/fixtures/**` or any generated data file: each writes **one new adapter** in
+`src/ui/hud/specGap.views/` (the walker globs the folder, so no registry is shared), one new test
+for its own frame and, for three of the four, one new line in a folder README.
+`docs/hud-fidelity.md`'s table row and `src/ui/hud/specGap.walk.test.ts`'s `PENDING` line are the
+**Orchestrator's at merge**, one slug per push — the walker's
+`screens both mapped and pending: <slug>` red is the expected state of every branch in this batch.
+
+**One task's files are not where a panel task's files usually live.** `03h`'s panel is
+`src/ui/rocketPanel.ts` — the `src/ui/<panel>Panel.ts` half of `design/README.md`'s
+`frame_without_component` check — so its test is `src/ui/rocketPanel.specGap.test.ts` and its map
+line goes in `src/ui/README.md`, which **`[Task-254]` holds alone** in this batch. No
+`src/ui/hud/panels/rocket/` is created: the card is Phaser (it imports `phaser` and draws a
+`Container`), so an adapter cannot build a `PanelView` from it; it builds one from the machine's
+**pure** half, `src/ui/casinoReels.ts`, and restates three private layout numbers with their lines
+named. That is the wave's precedent for any panel with no view model.
+
+**The one collision this batch has, and how it is resolved.** `03i` and `03j` are both
+`src/ui/hud/panels/trade/`. The batch cannot give both tasks `panels/trade/specGap.test.ts` **and**
+that folder's `README.md`, so: the test file is **named for the frame**
+(`specGap.pick.test.ts` / `specGap.result.test.ts`) and the folder's `README.md` belongs to the
+**lower ID**, `[Task-252]`, which adds **both** map lines in one edit, verbatim from its spec; the
+higher ID touches no README, and its Task QA checks the file is byte-identical to `main`. The four
+path sets are then disjoint and provable: `specGap.views/trade-pick.ts` + `panels/trade/specGap.pick.test.ts`
++ `panels/trade/README.md` (252), `specGap.views/trade-result.ts` +
+`panels/trade/specGap.result.test.ts` (253), `specGap.views/rocket.ts` +
+`src/ui/rocketPanel.specGap.test.ts` + `src/ui/README.md` (254), `specGap.views/pause.ts` +
+`panels/pause/specGap.test.ts` + `panels/pause/README.md` (255).
+
+**What these four frames are.** Two are the shipped design to the pixel and two are not. `03i`
+draws the pick sheet `tradePanelView` paints — the 760 × 560 card at `(260, 120)`, its 1 px
+highlight, six 158 × 104 party rows at a 170 / 116 pitch, sixteen 76 px PC slots at an 88 px pitch
+and the 340 × 44 give-away button — so it claims the card, the highlight, its six rows, **five** of
+the sixteen slots (the fixture holds five members; the card paints no empty cell) and the button:
+thirteen boxes, zero delta, five strings, and the `meta` line's middle dot recorded against the
+board's three spaces. `03j` draws the result card the same panel centres inside that box — the
+560 × 420 card at `(360, 190)`, its highlight, the 128 px portrait and the 24 px `type WATER` chip
+all at a zero delta — four boxes and its five lines. `03h` draws a **taller** cabinet: 460 × 344 at
+`(410, 228)` against the shipped 460 × 300 at `(410, 250)`, with a Rocket emblem, three 24 px reel
+faces and a `MONEY  $ 2,480` / `SPIN  $ 300` money pair where the card prints `¥2480` and `¥300` —
+no box, two strings (`SLOT MACHINE`, `LEAVE`). `03n` draws the board's four-row pause card, 360 ×
+312 at `(460, 244)` against the game's 360 × 200 at `(460, 300)` — one box (`pause scrim`, the
+viewport's own rect) and one string (`MENU`), with the card, its highlight, its divider and its
+rows all `+56` away and the board's last two rows unshipable. Every empty claim is guarded by a
+premise test, so a panel that moves onto the board's rect becomes a claim instead of a silent pass.
+
+- [ ] **[Task-252] The trade counter's pick sheet is wired to its spec.** The counter a player
+      opens on the trade room's NPC: the 760 × 560 card, its six party rows, the PC column and the
+      `GIVE AWAY` button.
+      **Measured:** `design/screens/03i-panels-trade-pick.json` is the frame `03i Panels · trade
+      pick` (`design/board.json`, node `6:1505`), **39 boxes, 6 strings, 11 colours**, and the panel
+      is **`trade`** (`design/import.json`'s `panel` column). The frame draws `trade panel`
+      `(260, 120, 760, 560)`, `panel highlight` `(272, 132, 736, 1)`, `party row 1…6` of
+      `158 × 104` at `284 / 454` and `236 / 352 / 468`, sixteen `pc slot 1…16` of `76 × 76` at a
+      656 / 744 / 832 / 920 × 236 / 324 / 412 / 500 grid, `give away button` `(470, 612, 340, 44)`,
+      a `header divider` `(284, 204, 712, 1)`, six 64 px `party icon` and five 32 px `pc icon`
+      rects. The shipped card is `tradePanelBox({1280, 800})` = `{260, 120, 760, 560}` — **dx 0,
+      dy 0, dw 0, dh 0** — with `view.highlight` at `272, 132, 736, 1`, the tiles at the frame's own
+      grid, and `view.give.box` at `470, 612, 340, 44`. `design/fixtures/03i-panels-trade-pick.json`
+      carries a `pick` block (six party tiles `Bulbasaur` … `Gastly`, five PC cells, `selected 0`,
+      `canTrade true`, the frame's greeting) beside a `result` block this row does not read, and
+      the empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/trade-pick.ts` exporting
+      `slug = '03i-panels-trade-pick'` and `buildView(spec)`, which builds
+      `tradePanelView(inputFrom(FIXTURE.pick), {1280, 800})` — `inputFrom` the mapping
+      `panels/trade/fixture.test.ts` already uses — claims the thirteen boxes at a zero delta
+      (`trade panel`, `panel highlight`, `party row 1…6`, `pc slot 1…5`, `give away button`) and the
+      five strings `TRADE`, `Pick the Pokémon you will give away.`, `PARTY`, `PC`, `GIVE AWAY`,
+      recording `meta` (`PARTY 6/6   PC 5/16` vs `PARTY 6/6 · PC 5/16`), the eleven empty slots the
+      card does not paint, the icons the stylesheet sizes and the `✕` the frame does not draw.
+      **Docs:** `src/ui/hud/panels/trade/README.md` (the two new map lines, shared with
+      `[Task-253]`). **Tests:** `[unit]` the walker reports no gap for this slug and `npm test` +
+      `npm run build` are green; `[live]` at 1280×800 in a trade room on map 3 or later:
+      `[data-hud-panel="trade"]` reads `260, 120, 760, 560`, six tiles and five cells, and
+      `[data-hud-trade="give"]` reads `470, 612, 340, 44`. Claims
+      `src/ui/hud/specGap.views/trade-pick.ts`, `src/ui/hud/panels/trade/specGap.pick.test.ts` and
+      `src/ui/hud/panels/trade/README.md`. *Dependencies:* none. *(Batch 110)*
+
+- [ ] **[Task-253] The trade counter's result card is wired to its spec.** The same panel on its
+      other state: the card a landed trade shows — the portrait, the type chip and the received
+      name.
+      **Measured:** `design/screens/03j-panels-trade-result.json` is the frame `03j Panels · trade
+      result` (`design/board.json`, node `6:1559`), **7 boxes, 5 strings, 7 colours**, and the panel
+      is **`trade`**. The frame draws `result panel` `(360, 190, 560, 420)`, `panel highlight`
+      `(372, 202, 536, 1)`, `received portrait` `(576, 278, 128, 128)`, `type WATER`
+      `(628, 486, 24, 24)` and a `header divider` `(384, 240, 512, 1)`; its **five text nodes** are
+      `result title` `TRADE`, `meta` `TRADE COMPLETE`, `kicker` `RECEIVED`, `received name`
+      `SHELLDER` and `level line` `ADDED TO YOUR PARTY`. The shipped view centres
+      `resultRects`' card inside `tradePanelBox({1280, 800})`: `result.card` is `100, 70, 560, 420`
+      panel-relative → `360, 190, 560, 420` — **dx 0, dy 0, dw 0, dh 0** — and every rect inside it
+      is **card-relative**, so `highlight` lands on `372, 202, 536, 1`, `portrait` on
+      `576, 278, 128, 128` and `type.box` on `628, 486, 24, 24`.
+      `design/fixtures/03j-panels-trade-result.json` carries the pair's `result` block
+      (`received: SHELLDER`, level 18, `water`, frame 90) beside a spent `pick` block this row does
+      not read, and the empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/trade-result.ts` exporting
+      `slug = '03j-panels-trade-result'` and `buildView(spec)`, which builds
+      `tradePanelView(inputFrom(FIXTURE.result), {1280, 800})`, claims the **four** boxes with the
+      frame's own names — the chip's is `type ${type.id.toUpperCase()}` — and its **five** lines,
+      and records the `CLOSE` button the card draws at `470, 542, 340, 44` (the frame draws no
+      button on this card) and the `header divider` the stylesheet paints.
+      **Docs:** none — the trade README belongs to `[Task-252]`. **Tests:** `[unit]` the walker
+      reports no gap for this slug and the suite is green; `[live]` on a landed trade:
+      `[data-hud-trade="result"]` reads `360, 190, 560, 420` and
+      `[data-hud-trade-type="water"]` `628, 486, 24, 24`. Claims
+      `src/ui/hud/specGap.views/trade-result.ts` and
+      `src/ui/hud/panels/trade/specGap.result.test.ts`. *Dependencies:* none. *(Batch 110)*
+
+- [ ] **[Task-254] The slot machine is wired to its spec.** The Team Rocket NPC's cabinet — the
+      only frame in the wave whose panel is **Phaser**, not Preact.
+      **Measured:** `design/screens/03h-panels-rocket-slots.json` is the frame `03h Panels · rocket
+      slots` (`design/board.json`, node `6:1485`), **14 boxes, 4 strings, 11 colours**, and the
+      panel is **`rocket`** — `src/ui/rocketPanel.ts`, the `src/ui/<panel>Panel.ts` half of
+      `design/README.md`'s component check, with **no** `src/ui/hud/panels/rocket/` folder. The
+      frame draws `casino card` `(410, 228, 460, 344)`, `card highlight` `(422, 240, 436, 1)`,
+      `reel field` `(548, 336, 184, 64)`, `reel 1…3` of `48 × 48` at a 60 px pitch, three 24 px
+      `reel face` rects, `row 1`/`row 2` `(434, 410 / 454, 412, 38)` and `rocket emblem`
+      `(624, 276, 32, 48)`. The panel builds its card at `cardX = (1280 − CASINO_CARD_W) / 2`,
+      `cardY = (800 − CASINO_CARD_H) / 2` with `CASINO_CARD_W` 460 and `CASINO_CARD_H` **300**
+      (`src/ui/casinoReels.ts`), so the shipped cabinet is `410, 250, 460, 300` — **dy +22,
+      dh −44** — the field is `548, 314, 184, 64` and the reels `556 / 616 / 676, 322` (**22 px**
+      high), and the two rows are `434, 386 / 430, 412, 38` (**24 px** high): every candidate is
+      outside the 1 px tolerance. `design/fixtures/03h-panels-rocket-slots.json` carries the
+      `rocket` block (`SLOT MACHINE`, money 2480, a message and two rows, `SPIN` 300 / `LEAVE`).
+      **Fix shape:** add `src/ui/hud/specGap.views/rocket.ts` exporting
+      `slug = '03h-panels-rocket-slots'` and `buildView(spec)`, which imports **`casinoReels.ts`
+      and not the panel** (the panel imports `phaser`), rebuilds the card, the field, `reelRects`
+      and the two rows, claims `boxes: []` and `colours: []` on seven declared candidates, and
+      claims exactly `['SLOT MACHINE', 'LEAVE']` — recording `MONEY  ¥2480` against the board's
+      `MONEY  $ 2,480`, `SPIN  ¥300` against `SPIN  $ 300`, and the three private layout numbers it
+      restates with their lines in `rocketPanel.ts`.
+      **Docs:** `src/ui/README.md` (one new map line — this batch's one owner of that file).
+      **Tests:** `[unit]` the walker reports no gap for this slug and `npm test` +
+      `npm run build` are green; `[live]` on a floor that holds the grunt, the machine takes the
+      keyboard (`P` does not open the party card) and `ESC` gives it back — the card's rects are
+      `[unit]`-only because `D57` forbids a pixel criterion. Claims
+      `src/ui/hud/specGap.views/rocket.ts`, `src/ui/rocketPanel.specGap.test.ts` and
+      `src/ui/README.md`. *Dependencies:* none. *(Batch 110)*
+
+- [ ] **[Task-255] The pause menu is wired to its spec.** The card `ESC` opens on the route: the
+      game's **two** rows on the board's **four**-row card.
+      **Measured:** `design/screens/03n-panels-pause-menu.json` is the frame `03n Panels · pause
+      menu` (`design/board.json`, node `6:2217`), **9 boxes, 5 strings, 11 colours**, and the panel
+      is **`pause`**. The frame draws `pause scrim` `(0, 0, 1280, 800)`, `pause panel`
+      `(460, 244, 360, 312)`, `pause panel highlight` `(472, 256, 336, 1)`, `pause divider`
+      `(484, 304, 312, 1)` and four `pause row n` of `312 × 48` at a 56 px pitch from `y 320`, with
+      `pause title` `MENU` and the four labels `CONTINUE` / `OPTIONS` / `NEW RUN` / `EXIT`. The
+      shipped card is `pausePanelBox({1280, 800})` = `{460, 300, 360, 200}` — the board's
+      `88 + 56 × rows` formula at **two** rows: **dy +56, dh −112** — its highlight at
+      `472, 312, 336, 1`, its divider at `484, 360, 312, 1` and its two rows at `484, 376 / 432,
+      312, 48`. Its `view.scrim` is the frame's own `0, 0, 1280, 800`, and its title prints
+      `t('hud.menu')` = `MENU`. `design/fixtures/03n-panels-pause-menu.json` carries the `menu`
+      block (`MENU`, `selected 0`, not armed, `Settings` / `Reset run`) and the empty six-key
+      `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/pause.ts` exporting
+      `slug = '03n-panels-pause-menu'` and `buildView(spec)`, which builds
+      `fixturePausePanelView(FIXTURE, {1280, 800})`, claims the **one** box (`pause scrim`, delta 0)
+      and the **one** string (`MENU`), declares the other five candidates and claims none — each is
+      `+56` away — and records that the shipped second row lands on the frame's `pause row 2` rect
+      by the pitch, not by the row.
+      **Docs:** `src/ui/hud/panels/pause/README.md` (one new line). **Tests:** `[unit]` the walker
+      reports no gap for this slug and the suite is green; `[live]` at 1280×800 on the first route,
+      press `ESC`: `[data-hud-pause="scrim"]` reads `0, 0, 1280, 800`,
+      `[data-hud-panel="pause"]` `460, 300, 360, 200` and two `[data-hud-pause-row]` at
+      `484, 376` / `484, 432`. Claims `src/ui/hud/specGap.views/pause.ts`,
+      `src/ui/hud/panels/pause/specGap.test.ts` and `src/ui/hud/panels/pause/README.md`.
+      *Dependencies:* none. *(Batch 110)*
+
+### Batch 111 - the starter, the options, the level-up and the battle message
+
+**Four rows are queued and cut, their specs are written by their own cycle** — this block is the cut,
+not the plan: `[Task-256]` to `[Task-259]`, in the table's order. All four are entries only; a spec
+for unattempted work rots, and Batch 110 is the batch in flight.
+
+**The exclusive paths are one adapter, one test and at most one README line each**, and no two of
+them meet: `specGap.views/starter.ts` + `panels/starter/specGap.test.ts` +
+`panels/starter/README.md` (256); `specGap.views/options.ts` + `panels/options/specGap.test.ts` +
+`panels/options/README.md` (257); `specGap.views/notice-level-up.ts` +
+`panels/notices/specGap.levelUp.test.ts` + `panels/notices/README.md` (258);
+`specGap.views/battle-log.ts` + `panels/battle-log/specGap.test.ts` + `panels/battle-log/README.md`
+(259). **There is no two-frames-one-panel collision in this batch** — each of the four frames hangs
+on its own panel — so each task owns its folder's README outright. `03l`'s test is named for the
+frame anyway, because `panels/notices/` already carries a **wired** frame (`03k`) and the folder
+must stay free for a third: `03k`'s adapter has no `specGap.test.ts` there today, and `03l` must not
+take the name that a future item-frame test would want. `src/ui/hud/specGap.walk.test.ts`'s
+`PENDING` line and `docs/hud-fidelity.md`'s row stay the **Orchestrator's at merge**, one slug per
+push, exactly as in Batches 107-110.
+
+- [ ] **[Task-256] The starter screen is wired to its spec.** The three cards a new run opens on —
+      the only screen in the wave whose panel draws page-space rects rather than a card.
+      **Measured:** `design/screens/04-starter-pick.json` is the frame `04 Starter pick`
+      (`design/board.json`, node `6:1416`), **13 boxes, 6 strings, 7 colours**, and the panel is
+      **`starter`** (`src/ui/hud/panels/starter/`). The frame draws `card 1…3` of `260 × 320` at
+      `218 / 510 / 802, 176` (a **292 px** pitch), three `card n highlight` `(x + 12, 188, 236,
+      1)`, three 128 px `portrait n` and four 24 px badges — `type GRASS` `(318, 422)`,
+      `type POISON` `(354, 422)`, `type FIRE` `(628, 422)`, `type WATER` `(920, 422)`. The shipped
+      desk board `STARTER_BOARD` (`panels/starter/view.ts`) is the frame's own arithmetic —
+      `title 240, 26, 800, 40`, `card` at `218, 176, 260, 320` with a 292 pitch, `name` at
+      `card + 20, 199, 220, 30`, `share 240, 688, 800, 18`, `hint 480, 716, 320, 12` — and its
+      badges are the row centred on the card (`dx 100` for two, `118` for one), which reproduces
+      all four of the frame's badge rects. `design/fixtures/04-starter-pick.json` carries the three
+      species and the frame's copy; the strings are `CHOOSE YOUR STARTER`, the three names, the
+      share line and the `HOLD R FOR NEW SEED` hint.
+      **Fix shape:** add `src/ui/hud/specGap.views/starter.ts` exporting `slug = '04-starter-pick'`
+      and `buildView(spec)`, which builds the view from the fixture at 1280×800
+      (`fixtureStarterView`), claims the boxes its board lands on (the title, the three cards, the
+      four badges) and the strings the board carries, and records the two it cannot: the card's
+      `card n highlight` (`starter.css`'s border) and `portrait n` (a CSS portrait cell). **Docs:**
+      `src/ui/hud/panels/starter/README.md` (one new line). **Tests:** `[unit]` the walker reports
+      no gap for this slug and `npm test` + `npm run build` are green; `[live]` at 1280×800 on
+      `NEW RUN`: `[data-hud-starter]` is on screen and its three
+      `[data-hud-starter-card]` elements read `218 / 510 / 802, 176, 260, 320`.
+      This state needs no run and no floor: the screen is the first thing a new run shows. Claims
+      `src/ui/hud/specGap.views/starter.ts`, `src/ui/hud/panels/starter/specGap.test.ts` and
+      `src/ui/hud/panels/starter/README.md`. *Dependencies:* none. *(Batch 111)*
+
+- [ ] **[Task-257] The options screen is wired to its spec.** The two-card settings screen — the
+      wave's first row whose view model carries **no rect at all**.
+      **Measured:** `design/screens/02-options.json` is the frame `02 Options`
+      (`design/board.json`, node `1:1557`), **33 boxes, 35 strings, 16 colours**, and the panel is
+      **`options`** (`src/ui/hud/panels/options/`). The frame draws `card gameplay`
+      `(96, 200, 640, 470)` and `card keybinds` `(760, 200, 424, 470)`, their two 1 px highlights,
+      a `reset button` and a `back button`, the slider / toggle / opacity glyphs, the keycaps with
+      their separators and the row labels and values (`TEXT SPEED`, `VOLUME`, `ALWAYS RUN`,
+      `MENU OPACITY`, …). The shipped model
+      `OptionsView` (`panels/options/view.ts`) is **strings and row kinds only** — `title`,
+      `subtitle`, `footer`, `back`, `reset`, `selected`, and two groups of `{ id, kind, label,
+      value, fraction, on }` — because `options.css` owns the geometry: it draws no box, so the
+      comparison can claim no box and must record that as *no view field*, not as a moved box. Its
+      copy is `settingsRows(touch)` + `settingValue`, localised, which is the frame's own labels
+      (`TEXT SPEED`, `VOLUME`, `ALWAYS RUN`, …) and values (`NORMAL`, `70%`, `OFF`, …).
+      `design/fixtures/02-options.json` carries the frame's settings and the frame's rows.
+      **Fix shape:** add `src/ui/hud/specGap.views/options.ts` exporting `slug = '02-options'` and
+      `buildView(spec)`, which builds `fixtureOptionsView(FIXTURE)` at 1280×800, claims `boxes: []`
+      and `colours: []`, and claims the strings the board carries, with a premise test that pins
+      the frame's two cards and its 33 boxes against a model that has none. **Docs:**
+      `src/ui/hud/panels/options/README.md` (one new line). **Tests:** `[unit]` the walker reports
+      no gap for this slug and the suite is green; `[live]` at 1280×800 from the main menu's
+      `OPTIONS` row: `[data-hud-panel="options"]` is on screen and its two cards read
+      `96, 200, 640, 470` and `760, 200, 424, 470`. No run needed: the screen is the main menu's.
+      Claims `src/ui/hud/specGap.views/options.ts`, `src/ui/hud/panels/options/specGap.test.ts` and
+      `src/ui/hud/panels/options/README.md`. *Dependencies:* none. *(Batch 111)*
+
+- [ ] **[Task-258] The level-up notice is wired to its spec.** The `03l` frame — and the one row in
+      this batch whose frame draws a card the panel **cannot** build.
+      **Measured:** `design/screens/03l-panels-notice-level-up.json` is the frame `03l Panels ·
+      notice level up` (`design/board.json`, node `6:1579`), **5 boxes, 5 strings, 6 colours**, and
+      the panel is **`notices`** (`src/ui/hud/panels/notices/`). The frame draws `level up strip`
+      `(280, 24, 720, 132)` with a 1 px highlight `(292, 36, 696, 1)` and two 24 px `move type`
+      rects at `(304, 92)` / `(304, 118)`, and its five lines are `BULBASAUR GREW TO LV 18!`,
+      `LEVEL UP`, `LEARNED MOVES`, `RAZOR LEAF` and `LEECH SEED`. The shipped strip is
+      `noticeBox({1280, 800})` = **720 × 56 at `(280, 24)`** — the frame's top edge and width to the
+      pixel, **76 px shorter** — and it prints **one** line per notice; no `notice.*` key in
+      `src/i18n/en.ts` prints `LEVEL UP`, a `GREW TO` line or a learn list. The level-up itself is
+      not a notice at all in the shipped game: `showLearnPopup` (`src/scenes/panels/detail.ts`
+      L338-355) is a **centred 560 × 220 Phaser card** printing `hud.learnTitle` and `route.learned`
+      lines, so this frame's learn card has no DOM counterpart on this panel.
+      `design/fixtures/03l-panels-notice-level-up.json` carries the frame's five lines and the
+      empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/notice-level-up.ts` exporting
+      `slug = '03l-panels-notice-level-up'` and `buildView(spec)`, which builds the notices strip
+      from the fixture at 1280×800, claims `boxes: []` (the strip's `y` and `w` match and its `h`
+      does not, and the two `move type` rects have no field), claims only the strings the strip
+      actually prints that the board carries, and records in the doc comment that the frame's card
+      is three times the strip's height, has no field on the view and is drawn by the Phaser popup.
+      **Docs:** `src/ui/hud/panels/notices/README.md` (one new line). **Tests:** `[unit]` the
+      walker reports no gap for this slug and the suite is green; `[live]` at 1280×800 after a
+      battle that levels a member: `[data-hud-notice]` reads `280, 24, 720, 56` and its
+      `.notices__line` carries one line, and the learn popup is the centred Phaser card, not this
+      one. No level-up within two runs' first two
+      battles is reported as not-run with the battles tried. Claims
+      `src/ui/hud/specGap.views/notice-level-up.ts`,
+      `src/ui/hud/panels/notices/specGap.levelUp.test.ts` and
+      `src/ui/hud/panels/notices/README.md`. *Dependencies:* none. *(Batch 111)*
+
+- [ ] **[Task-259] The battle message box is wired to its spec.** The textbox every battle line is
+      typed into.
+      **Measured:** `design/screens/05b-battle-message.json` is the frame `05b Battle · message`
+      (`design/board.json`, node `2:569`), **71 boxes, 9 strings, 22 colours**, and the panel is
+      **`battle-log`** (`src/ui/hud/panels/battle-log/`). Most of the frame's boxes are the
+      **painted battle** — the `Vector` field, the two HP plates, the ball rows, the sprites and the
+      four menu tabs — and only **two** belong to the message: `message box`
+      `(664, 544, 576, 216)` and `message box highlight` `(676, 556, 552, 1)`. Its two message
+      lines are **text nodes** — `message line 1` `VENUSAUR used SLUDGE BOMB!` and `message line 2`
+      `CHARIZARD lost 38 HP and is poisoned.` The shipped board `battleLogBoard('desktop')` is
+      that box to the pixel — `DESKTOP_BOX { 664, 544, 576, 216 }` — and the two line rects
+      `696, 580, 292, 20` / `696, 612, 294, 15`; `BattleLogView` carries `visible`, up to two
+      `{ text, tone }` lines and an optional `card`, so the **box** is the one claim and the two
+      lines are strings. `design/fixtures/05b-battle-message.json` carries the frame's two lines
+      and its empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/battle-log.ts` exporting
+      `slug = '05b-battle-message'` and `buildView(spec)`, which builds
+      `fixtureBattleLogView(FIXTURE)` at 1280×800, claims `message box` at a zero delta, claims the
+      two lines as strings, and records the rest of the frame (its HP plates and menu tabs are
+      `battle-hp`'s and `battle-moves`' rows, already measured by
+      `[Task-243]`). **Docs:** `src/ui/hud/panels/battle-log/README.md` (one new line).
+      **Tests:** `[unit]` the walker reports no gap for this slug and the suite is green; `[live]`
+      at 1280×800 with a battle open: `[data-hud-battle-log]` has `data-visible="true"`, one or two
+      `.battle-log__line` nodes carry text, and its rect equals the battle menu card's own rect on
+      the same layout (the log mounts **the battle menu's card**, `panels/battle-log/view.ts`
+      L55-60, so the two read the same box). A battle opens on the first route (a trainer's sight or
+      a grass step), so no run count is needed. Claims `src/ui/hud/specGap.views/battle-log.ts`,
+      `src/ui/hud/panels/battle-log/specGap.test.ts` and `src/ui/hud/panels/battle-log/README.md`.
+      *Dependencies:* none. *(Batch 111)*
+
+### Batch 112 - the battle's bag, its two switch states and the defeat card
+
+**Four rows are queued and cut, their specs are written by their own cycle:** `[Task-260]` to
+`[Task-263]`, in the table's order — `05c` (the battle bag), `05d` (the SWITCH window),
+`05e` (the same window's stats) and `06` (the defeat card).
+
+**The exclusive paths:** `specGap.views/battle-bag.ts` + `panels/battle-bag/specGap.test.ts` +
+`panels/battle-bag/README.md` (260); `specGap.views/battle-pokemon.ts` +
+`panels/battle-switch/specGap.pokemon.test.ts` + `panels/battle-switch/README.md` (261);
+`specGap.views/battle-stats.ts` + `panels/battle-switch/specGap.stats.test.ts` (262);
+`specGap.views/run-over-defeat.ts` + `panels/run-over/specGap.defeat.test.ts` +
+`panels/run-over/README.md` (263). **One collision: `05d` and `05e` are both
+`src/ui/hud/panels/battle-switch/`**, so the test file is named for the frame
+(`specGap.pokemon.test.ts` / `specGap.stats.test.ts`) and that folder's `README.md` belongs to the
+**lower ID**, `[Task-261]`, which writes both map lines verbatim from its spec; `[Task-262]` touches
+no README and its Task QA checks the file is byte-identical to `main`. `06` is also named for its
+frame (`specGap.defeat.test.ts`) because `run-over` carries three frames in the phase — `06`, `07`
+and `07b` — and the name `specGap.test.ts` must stay free for the batch after this one. The walker's
+`PENDING` line and `docs/hud-fidelity.md`'s row stay the **Orchestrator's at merge**.
+
+- [ ] **[Task-260] The battle bag is wired to its spec.** The battle's four-tab `BAG` card — the
+      frame that draws a *bigger* bag than the route's.
+      **Measured:** `design/screens/05c-battle-bag.json` is the frame `05c Battle · bag`
+      (`design/board.json`, node `2:702`), **98 boxes, 26 strings, 29 colours**, and the panel is
+      **`battle-bag`** (`src/ui/hud/panels/battle-bag/`). The frame draws the battle itself (the
+      painted field, the two HP plates, the ball rows, the sprites) and then a bag inside
+      `battle menu` `(664, 544, 576, 216)`: four `menu tab n` of `128 × 30` at `684 / 820 / 956 /
+      1092, 564`, an `attack detail` card with its highlight and a 24 px `item icon`, a `bag
+      search` field, eight `item tile n` with eight `item icon n`, three filter chips and the
+      `foe name` / `foe lv` / `player name` texts. The shipped `battleBagView(input)` takes `card`
+      from the scene (`battleMovesBox(viewport)`, the battle square's menu box at `[Task-239]`'s
+      anchors) and paints four tabs, a search field, a two-row grid of cells and a 320 px info
+      card; the delta between the frame's 8-tile grid, its detail card and its filter chips and
+      that view is measured at the cut, not here.
+      **Fix shape:** add `src/ui/hud/specGap.views/battle-bag.ts` exporting
+      `slug = '05c-battle-bag'` and `buildView(spec)`, which builds `battleBagView` from the
+      fixture's own block at 1280×800, claims the boxes that land and the strings the board
+      carries, and records the rest. **Docs:** `src/ui/hud/panels/battle-bag/README.md` (one new
+      line). **Tests:** `[unit]` the walker reports no gap for this slug and the suite is green;
+      `[live]` at 1280×800 with a battle open, pick the `BAG` row in the battle command menu (the
+      battle has no `I` shortcut: `openBag` is the menu plan's `onSelect`, `BattleScene.ts`
+      L1706-1895): `[data-hud-panel="battle-bag"]`'s rect is the shipped menu card's and the four
+      tabs read `128 × 30`. A battle opens on the first route,
+      so no run count is needed. Claims `src/ui/hud/specGap.views/battle-bag.ts`,
+      `src/ui/hud/panels/battle-bag/specGap.test.ts` and
+      `src/ui/hud/panels/battle-bag/README.md`. *Dependencies:* none. *(Batch 112)*
+
+- [ ] **[Task-261] The battle's SWITCH window is wired to its spec.** The party grid a player
+      opens to change the lead — `05d`.
+      **Measured:** `design/screens/05d-battle-pokemon.json` is the frame `05d Battle · pokemon`
+      (`design/board.json`, node `4:855`), **116 boxes, 36 strings, 28 colours**, and the panel is
+      **`battle-switch`** (`src/ui/hud/panels/battle-switch/`). Behind the window the frame draws
+      the whole battle; the window itself is `party grid group` `(684, 600, 536, 148)` — two
+      columns of `264 × 70` tiles at a 8 px gap (`slot tile 4` at `956, 678`) — plus `party sel`
+      and `party sel bar`, and its texts are the six members' names, levels, HP lines and status
+      marks. The shipped window is `partyGrid`'s fixed-size row list (`src/ui/partyGrid.ts`) with
+      `battleSwitchView`'s portraits, labels, HP tracks and status chips, mounted inside the
+      battle menu's card; `fixtureSwitchInput` (view.ts L277) is the fixture → input seam.
+      **Fix shape:** add `src/ui/hud/specGap.views/battle-pokemon.ts` exporting
+      `slug = '05d-battle-pokemon'` and `buildView(spec)`, which builds `battleSwitchView` from
+      `fixtureSwitchInput` at 1280×800, claims the boxes that land and the strings the board
+      carries, and records the two-column tile grid against the shipped row list. **Docs:**
+      `src/ui/hud/panels/battle-switch/README.md` (the two new map lines, shared with
+      `[Task-262]`). **Tests:** `[unit]` the walker reports no gap for this slug and the suite is
+      green; `[live]` at 1280×800 with a battle open, pick the `POKEMON` row in the battle command
+      menu: `[data-hud-panel="battle-switch"]`
+      is on screen with one row per party member. A battle opens on the first route, so no run
+      count is needed. Claims `src/ui/hud/specGap.views/battle-pokemon.ts`,
+      `src/ui/hud/panels/battle-switch/specGap.pokemon.test.ts` and
+      `src/ui/hud/panels/battle-switch/README.md`. *Dependencies:* none. *(Batch 112)*
+
+- [ ] **[Task-262] The SWITCH window's stats state is wired to its spec.** The same window on its
+      other state — `05e`, the member's stats read inside it.
+      **Measured:** `design/screens/05e-battle-stats.json` is the frame `05e Battle · stats`
+      (`design/board.json`, node `6:1879`), **111 boxes, 33 strings, 28 colours**, and the panel is
+      **`battle-switch`** — the pair's second frame on one panel, which is why this batch names the
+      tests for their frames. Its boxes are the battle behind the window plus the same window's
+      stat block (the six-stat rows and their labels), and its 33 strings are the member's name,
+      level, types, the six stat names and values and the ability line; the shipped view's stats
+      half is `battleSwitchView`'s own state. The delta is measured at the cut.
+      **Fix shape:** add `src/ui/hud/specGap.views/battle-stats.ts` exporting
+      `slug = '05e-battle-stats'` and `buildView(spec)`, which builds the same view from the
+      `05e` fixture's block, claims what lands and records what does not. **Docs:** none — the
+      switch README belongs to `[Task-261]`. **Tests:** `[unit]` the walker reports no gap for this
+      slug and the suite is green; `[live]` at 1280×800 in a battle, open the switch window and its
+      stats state: the six stat rows read their shipped rects. No run count needed. Claims
+      `src/ui/hud/specGap.views/battle-stats.ts` and
+      `src/ui/hud/panels/battle-switch/specGap.stats.test.ts`. *Dependencies:* none.
+      *(Batch 112)*
+
+- [ ] **[Task-263] The defeat card is wired to its spec.** The screen a wiped run shows — the
+      wave's last fully-claiming candidate.
+      **Measured:** `design/screens/06-run-over-defeat.json` is the frame `06 Run over · defeat`
+      (`design/board.json`, node `6:2171`), **12 boxes, 14 strings, 14 colours**, and the panel is
+      **`run-over`** (`src/ui/hud/panels/run-over/`). The frame draws `run over panel`
+      `(280, 170, 720, 480)`, `run over panel highlight` `(292, 182, 692, 1)`, `run over accent`,
+      four `run over rule n`, `main menu button`, `tab totals` / `tab pokemon`, and its texts are
+      `YOU HAVE NO MORE POKEMON!`, `THE RUN IS OVER · NOTHING CARRIES OVER.`, four stat
+      label/value pairs, `run share`, `MAIN MENU`, `TOTALS` and `POKEMON`. The shipped desk board
+      `runOverBoard('desktop')` (`panels/run-over/view.ts` L126-139) is the frame's own numbers —
+      `panel 280, 170, 720, 480`, `title 320, 196, 640, 36`, `blurb 320, 236, 640, 20`,
+      `tabs 336 / 432, 312`, `statLabel 336, 360 + 46i`, `statValue 764, 358 + 46i`,
+      `share 336, 544, 608, 12`, `button 540, 590, 200, 40` — so the card is a **zero-delta**
+      claim like `03j`'s. `design/fixtures/06-run-over-defeat.json` carries the frame's four stats,
+      the blurb and the share line over the empty six-key `state`.
+      **Fix shape:** add `src/ui/hud/specGap.views/run-over-defeat.ts` exporting
+      `slug = '06-run-over-defeat'` and `buildView(spec)`, which builds
+      `fixtureRunOverView(FIXTURE)` at 1280×800, claims the card, its title/blurb boxes, the tab
+      pair, the four stat rows and the button, claims the strings the board carries, and records
+      the accent and the four rules the stylesheet paints. **Docs:**
+      `src/ui/hud/panels/run-over/README.md` (one new line). **Tests:** `[unit]` the walker reports
+      no gap for this slug and the suite is green; `[live]` at 1280×800 on a run whose party is
+      wiped: `[data-hud-run-over]` is on screen with `data-won="false"` and
+      `[data-hud-run-over-panel]` reads `280, 170, 720, 480`. This state costs a **whole run**
+      (the party must faint); if no defeat arrives within three runs, the criterion is reported as
+      not-run with the runs tried and the card's rects stand on the `[unit]` premise. Claims
+      `src/ui/hud/specGap.views/run-over-defeat.ts`,
+      `src/ui/hud/panels/run-over/specGap.defeat.test.ts` and
+      `src/ui/hud/panels/run-over/README.md`. *Dependencies:* none. *(Batch 112)*
 
 ## Bugs
 
