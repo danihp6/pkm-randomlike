@@ -12,7 +12,7 @@ hold-to-reset overlay, which stays in Phaser on both paths.
 
 - `view.ts` — the panel's value model: `pausePanelBox`, `pausePanelView` from the scene's own open/cursor/arm, `fixturePausePanelView` from `design/fixtures/03n-panels-pause-menu.json`'s `menu` block, and the mirror block of every board rect (`PAUSE_CARD_W`, `PAUSE_ROW_PITCH`, `PAUSE_TITLE`, …).
 - `view.test.ts` — the two QA viewports' card rects, the measured table node by node, the cursor and arm clamps, the closed card's unchanged geometry, the scene module's frozen descriptor and its row paths headless, and the `pauseDrawnObjectCount` flag contract.
-- `fixture.test.ts` — `design/fixtures/03n-panels-pause-menu.json` against `design/frames/03n-panels-pause-menu.json`, node by node card-relative, plus the structural guards that answer `null` instead of throwing.
+- `fixture.test.ts` — `design/fixtures/03n-panels-pause-menu.json` against `design/source/03n-panels-pause-menu.json`, node by node card-relative, plus the structural guards that answer `null` instead of throwing.
 - `pausePanel.tsx` — the card itself: the scrim sibling, the highlight, the title, the divider and one hand-rolled button per row.
 - `pause.css` — the board's paint as scoped custom properties (the card's 92 % fill, 16 % edge, 14 % highlight, 8 % divider, the 4 %/16 % rows) over the `styles/root.css` type tokens.
 - `mount.tsx` — `mountPausePanel`: renders the card into a host element behind a view signal, paints once before subscribing, takes no key listener, and returns an idempotent disposer; plus the card's `PausePanelIntent` channel.

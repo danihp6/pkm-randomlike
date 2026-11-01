@@ -63,9 +63,9 @@ async function deliver({ root, artifacts, check, problems }) {
 }
 
 /**
- * Offline mode: rebuilds the REST payload from the exporter's dumps and the committed desktop
- * rasters. Reads no environment variable and makes no request, so a rate-limited PAT cannot block
- * the repo from proving its committed board.
+ * Offline mode: rebuilds the REST payload from the committed dumps (`design/source/<slug>.json`)
+ * and the committed rasters (`design/exports/<slug>.png`). Reads no environment variable and makes
+ * no request, so a rate-limited PAT cannot block the repo from proving its committed board.
  */
 async function importFromFrames({ root, from, check }) {
   const { map, error } = await readMap(root);
@@ -100,7 +100,7 @@ async function importFromFrames({ root, from, check }) {
 
   const rasters = new Map();
   for (const screen of screens) {
-    const source = path.join(from, '..', 'screens', `${screen.slug}.png`);
+    const source = path.join(root, 'design', 'exports', `${screen.slug}.png`);
     let bytes;
     try {
       bytes = await readFile(source);

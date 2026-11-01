@@ -1,0 +1,393 @@
+{
+  "slug": "06-run-over-defeat",
+  "caption": "06 Run over · defeat",
+  "nodeId": "6:2171",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m06-run-over-defeat",
+    "nodeId": "8:3252"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "7:2744",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:2745",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.800000011920929",
+      "stroke": null
+    },
+    {
+      "id": "6:2173",
+      "name": "run over panel",
+      "type": "RECTANGLE",
+      "x": 280,
+      "y": 170,
+      "width": 720,
+      "height": 480,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:2174",
+      "name": "run over panel highlight",
+      "type": "RECTANGLE",
+      "x": 292,
+      "y": 182,
+      "width": 692,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:2175",
+      "name": "run over accent",
+      "type": "RECTANGLE",
+      "x": 616,
+      "y": 186,
+      "width": 48,
+      "height": 2,
+      "radius": 0,
+      "fill": "#fca5a5@1",
+      "stroke": null
+    },
+    {
+      "id": "6:2176",
+      "name": "run over rule 0",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 386,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2177",
+      "name": "run over rule 1",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 432,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2178",
+      "name": "run over rule 2",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 478,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2179",
+      "name": "run over rule 3",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 524,
+      "width": 608,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.07999999821186066",
+      "stroke": null
+    },
+    {
+      "id": "6:2187",
+      "name": "main menu button",
+      "type": "RECTANGLE",
+      "x": 540,
+      "y": 590,
+      "width": 200,
+      "height": 40,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "6:2436",
+      "name": "tab totals",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 312,
+      "width": 90,
+      "height": 24,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2437",
+      "name": "tab pokemon",
+      "type": "RECTANGLE",
+      "x": 432,
+      "y": 312,
+      "width": 100,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    }
+  ],
+  "text": [
+    {
+      "id": "6:2190",
+      "name": "run over title",
+      "characters": "YOU HAVE NO MORE POKEMON!",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 28,
+      "x": 320,
+      "y": 196,
+      "width": 640,
+      "height": 36,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2191",
+      "name": "run over blurb",
+      "characters": "THE RUN IS OVER · NOTHING CARRIES OVER.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 14,
+      "x": 320,
+      "y": 236,
+      "width": 640,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2192",
+      "name": "run stat label 0",
+      "characters": "ROUTES CLEARED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 360,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2193",
+      "name": "run stat value 0",
+      "characters": "05",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 358,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2194",
+      "name": "run stat label 1",
+      "characters": "POKEMON CAUGHT",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 406,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2195",
+      "name": "run stat value 1",
+      "characters": "09",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 404,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2196",
+      "name": "run stat label 2",
+      "characters": "POKEMON LOST",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 452,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2197",
+      "name": "run stat value 2",
+      "characters": "06",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 450,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2198",
+      "name": "run stat label 3",
+      "characters": "ENEMIES FAINTED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 336,
+      "y": 498,
+      "width": 300,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2199",
+      "name": "run stat value 3",
+      "characters": "23",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 16,
+      "x": 764,
+      "y": 496,
+      "width": 180,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:2200",
+      "name": "run share",
+      "characters": "SHARE: PKRL-1-f-91C4-8B",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 9,
+      "x": 336,
+      "y": 544,
+      "width": 608,
+      "height": 12,
+      "fill": "#64748c@1"
+    },
+    {
+      "id": "6:2201",
+      "name": "button label main menu",
+      "characters": "MAIN MENU",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 540,
+      "y": 604,
+      "width": 200,
+      "height": 16,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "6:2438",
+      "name": "tab totals label",
+      "characters": "TOTALS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 336,
+      "y": 316,
+      "width": 90,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "6:2439",
+      "name": "tab pokemon label",
+      "characters": "POKEMON",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 432,
+      "y": 316,
+      "width": 100,
+      "height": 16,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#03050a@0.800000011920929",
+    "#10161f@0.7200000286102295",
+    "#64748c@1",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#cbd5e1@1",
+    "#f8fafc@1",
+    "#fca5a5@1",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.07999999821186066",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/06-run-over-defeat.png",
+    "sha256": "afff26782497fe0ea281fa3075ae3280f2d037657bf8c1b575236a0aac8f77e0",
+    "bytes": 172769
+  }
+}

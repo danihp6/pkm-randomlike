@@ -86,7 +86,7 @@
     "notice": null
   },
   "strip": {
-    "frame": "design/frames/m03-route-hud.json",
+    "frame": "design/source/m03-route-hud.json",
     "nodes": { "header": "m chip MAP", "box": "m chip BOX", "bag": "m chip BAG" },
     "narrow": {
       "viewport": { "width": 390, "height": 844 },

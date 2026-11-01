@@ -1,0 +1,1238 @@
+{
+  "slug": "09b-ranking-pokemon",
+  "caption": "09b Ranking · pokemon",
+  "nodeId": "7:3095",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m09b-ranking-pokemon",
+    "nodeId": "11:5286"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "7:3096",
+      "name": "run over panel",
+      "type": "RECTANGLE",
+      "x": 80,
+      "y": 60,
+      "width": 1120,
+      "height": 680,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "7:3097",
+      "name": "run over panel highlight",
+      "type": "RECTANGLE",
+      "x": 92,
+      "y": 72,
+      "width": 1092,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "7:3098",
+      "name": "run over accent",
+      "type": "RECTANGLE",
+      "x": 616,
+      "y": 66,
+      "width": 48,
+      "height": 2,
+      "radius": 0,
+      "fill": "#7dd3fc@1",
+      "stroke": null
+    },
+    {
+      "id": "7:3099",
+      "name": "continue button",
+      "type": "RECTANGLE",
+      "x": 540,
+      "y": 650,
+      "width": 200,
+      "height": 40,
+      "radius": 8,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "7:3109",
+      "name": "month chip",
+      "type": "RECTANGLE",
+      "x": 1000,
+      "y": 170,
+      "width": 160,
+      "height": 30,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "7:3114",
+      "name": "rank row 1",
+      "type": "GROUP",
+      "x": 120,
+      "y": 231,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3115",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 231,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3120",
+      "name": "rank row 2",
+      "type": "GROUP",
+      "x": 120,
+      "y": 277,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3121",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 277,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3126",
+      "name": "rank row 3",
+      "type": "GROUP",
+      "x": 120,
+      "y": 323,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3127",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 323,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3132",
+      "name": "rank row 4",
+      "type": "GROUP",
+      "x": 120,
+      "y": 369,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3133",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 369,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3138",
+      "name": "rank row 5",
+      "type": "GROUP",
+      "x": 120,
+      "y": 415,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3139",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 415,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3144",
+      "name": "rank row 6",
+      "type": "GROUP",
+      "x": 120,
+      "y": 461,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3145",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 461,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3150",
+      "name": "rank row 7",
+      "type": "GROUP",
+      "x": 120,
+      "y": 507,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3151",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 507,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3156",
+      "name": "rank row 8",
+      "type": "GROUP",
+      "x": 120,
+      "y": 553,
+      "width": 1040,
+      "height": 40,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "7:3157",
+      "name": "rank bg",
+      "type": "RECTANGLE",
+      "x": 120,
+      "y": 553,
+      "width": 1040,
+      "height": 40,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": null
+    },
+    {
+      "id": "7:3162",
+      "name": "row portrait 0",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 240,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3163",
+      "name": "row portrait 3",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 286,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3164",
+      "name": "row portrait 1",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 332,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3165",
+      "name": "row portrait 2",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 378,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3166",
+      "name": "row portrait 4",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 424,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3167",
+      "name": "win party 3",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 470,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3168",
+      "name": "rip icon 1",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 516,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    },
+    {
+      "id": "7:3169",
+      "name": "rip icon 2",
+      "type": "RECTANGLE",
+      "x": 160,
+      "y": 562,
+      "width": 22,
+      "height": 22,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#ffffff@0"
+    }
+  ],
+  "text": [
+    {
+      "id": "7:3100",
+      "name": "run over title",
+      "characters": "RANKING",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 32,
+      "x": 160,
+      "y": 86,
+      "width": 960,
+      "height": 36,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3101",
+      "name": "run over blurb",
+      "characters": "POKEMON RANKING · ALL RUNS.",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 15,
+      "x": 160,
+      "y": 126,
+      "width": 960,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3102",
+      "name": "button label continue",
+      "characters": "BACK",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 540,
+      "y": 664,
+      "width": 200,
+      "height": 16,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:3110",
+      "name": "month label",
+      "characters": "ALL RUNS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 9,
+      "x": 1000,
+      "y": 180,
+      "width": 160,
+      "height": 14,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3111",
+      "name": "rank header player",
+      "characters": "POKEMON",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 180,
+      "y": 208,
+      "width": 300,
+      "height": 12,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3112",
+      "name": "rank header wins",
+      "characters": "RUNS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 760,
+      "y": 208,
+      "width": 60,
+      "height": 12,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "7:3113",
+      "name": "rank header strike",
+      "characters": "KOs",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 850,
+      "y": 208,
+      "width": 60,
+      "height": 12,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3116",
+      "name": "rank pos",
+      "characters": "1",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 244,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3117",
+      "name": "rank name",
+      "characters": "CHARIZARD",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 244,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3118",
+      "name": "rank wins",
+      "characters": "12",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 244,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3119",
+      "name": "rank strike",
+      "characters": "8",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 244,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3181",
+      "name": "rank dealt 1",
+      "characters": "4,120",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 244,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3182",
+      "name": "rank tanked 1",
+      "characters": "2,140",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 244,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3122",
+      "name": "rank pos",
+      "characters": "2",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 290,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3123",
+      "name": "rank name",
+      "characters": "PIKACHU",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 290,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3124",
+      "name": "rank wins",
+      "characters": "11",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 290,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3125",
+      "name": "rank strike",
+      "characters": "4",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 290,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3183",
+      "name": "rank dealt 2",
+      "characters": "2,300",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 290,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3184",
+      "name": "rank tanked 2",
+      "characters": "1,100",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 290,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3128",
+      "name": "rank pos",
+      "characters": "3",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 336,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3129",
+      "name": "rank name",
+      "characters": "BULBASAUR",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 336,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3130",
+      "name": "rank wins",
+      "characters": "9",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 336,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3131",
+      "name": "rank strike",
+      "characters": "6",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 336,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3185",
+      "name": "rank dealt 3",
+      "characters": "2,980",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 336,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3186",
+      "name": "rank tanked 3",
+      "characters": "1,650",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 336,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3134",
+      "name": "rank pos",
+      "characters": "4",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 382,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3135",
+      "name": "rank name",
+      "characters": "ABRA",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 382,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3136",
+      "name": "rank wins",
+      "characters": "7",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 382,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3137",
+      "name": "rank strike",
+      "characters": "5",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 382,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3187",
+      "name": "rank dealt 4",
+      "characters": "1,860",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 382,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3188",
+      "name": "rank tanked 4",
+      "characters": "780",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 382,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3140",
+      "name": "rank pos",
+      "characters": "5",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 428,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3141",
+      "name": "rank name",
+      "characters": "PSYDUCK",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 428,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3142",
+      "name": "rank wins",
+      "characters": "5",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 428,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3143",
+      "name": "rank strike",
+      "characters": "4",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 428,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3189",
+      "name": "rank dealt 5",
+      "characters": "1,520",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 428,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3190",
+      "name": "rank tanked 5",
+      "characters": "1,480",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 428,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3146",
+      "name": "rank pos",
+      "characters": "6",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 474,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3147",
+      "name": "rank name",
+      "characters": "GASTLY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 474,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3148",
+      "name": "rank wins",
+      "characters": "3",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 474,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3149",
+      "name": "rank strike",
+      "characters": "2",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 474,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3191",
+      "name": "rank dealt 6",
+      "characters": "640",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 474,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3192",
+      "name": "rank tanked 6",
+      "characters": "390",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 474,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3152",
+      "name": "rank pos",
+      "characters": "7",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 520,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3153",
+      "name": "rank name",
+      "characters": "MACHOP",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 520,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3154",
+      "name": "rank wins",
+      "characters": "3",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 520,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3155",
+      "name": "rank strike",
+      "characters": "2",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 520,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3193",
+      "name": "rank dealt 7",
+      "characters": "780",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 520,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3194",
+      "name": "rank tanked 7",
+      "characters": "520",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 520,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3158",
+      "name": "rank pos",
+      "characters": "8",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 124,
+      "y": 566,
+      "width": 32,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "7:3159",
+      "name": "rank name",
+      "characters": "RATICATE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 196,
+      "y": 566,
+      "width": 300,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3160",
+      "name": "rank wins",
+      "characters": "2",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 760,
+      "y": 566,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "7:3161",
+      "name": "rank strike",
+      "characters": "1",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 850,
+      "y": 566,
+      "width": 60,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3195",
+      "name": "rank dealt 8",
+      "characters": "410",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 940,
+      "y": 566,
+      "width": 120,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3196",
+      "name": "rank tanked 8",
+      "characters": "300",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 1060,
+      "y": 566,
+      "width": 100,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "8:3179",
+      "name": "rank header dealt",
+      "characters": "DMG DEALT",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 940,
+      "y": 208,
+      "width": 120,
+      "height": 12,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "8:3180",
+      "name": "rank header tanked",
+      "characters": "DMG TANKED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 8,
+      "x": 1060,
+      "y": 208,
+      "width": 100,
+      "height": 12,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.7200000286102295",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/09b-ranking-pokemon.png",
+    "sha256": "00c5515e9c67781b575f6304bf118d654d9fa48dba1a8e0dd7d9231097875775",
+    "bytes": 45061
+  }
+}

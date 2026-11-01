@@ -32,7 +32,7 @@ board.
 - `preview.test.ts` — `battleLogPreviewRequested`'s truth table.
 - `index.ts` — the barrel the scene imports.
 - `fixture.test.ts` — `design/fixtures/05b-battle-message.json` is the frame's own copy, and
-  both boards are checked against the exported `design/frames/*.json`.
+  both boards are checked against the exported `design/source/*.json`.
 - `README.md` — this map.
 
 ## Rules

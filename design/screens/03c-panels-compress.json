@@ -1,0 +1,177 @@
+{
+  "slug": "03c-panels-compress",
+  "caption": "03c Panels · compress",
+  "nodeId": "2:466",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03c-panels-compress",
+    "nodeId": "8:3810"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "1:2898",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "2:499",
+      "name": "key bag",
+      "type": "RECTANGLE",
+      "x": 36,
+      "y": 36,
+      "width": 24,
+      "height": 24,
+      "radius": 6,
+      "fill": "#0b1017@0.5",
+      "stroke": "#7dd3fc@0.550000011920929"
+    },
+    {
+      "id": "2:501",
+      "name": "key map",
+      "type": "RECTANGLE",
+      "x": 942.59,
+      "y": 36,
+      "width": 29.18,
+      "height": 24,
+      "radius": 6,
+      "fill": "#0b1017@0.5",
+      "stroke": "#7dd3fc@0.550000011920929"
+    },
+    {
+      "id": "2:503",
+      "name": "key party",
+      "type": "RECTANGLE",
+      "x": 940,
+      "y": 320,
+      "width": 26,
+      "height": 26,
+      "radius": 6,
+      "fill": "#0b1017@0.5",
+      "stroke": "#7dd3fc@0.550000011920929"
+    },
+    {
+      "id": "2:505",
+      "name": "key pc",
+      "type": "RECTANGLE",
+      "x": 36,
+      "y": 360,
+      "width": 24,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "2:507",
+      "name": "key stats",
+      "type": "RECTANGLE",
+      "x": 460,
+      "y": 100,
+      "width": 24,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.05999999865889549",
+      "stroke": "#ffffff@0.1599999964237213"
+    }
+  ],
+  "text": [
+    {
+      "id": "2:500",
+      "name": "key letter bag",
+      "characters": "I",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 44,
+      "y": 42,
+      "width": 6,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "2:502",
+      "name": "key letter map",
+      "characters": "M",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 952.32,
+      "y": 42,
+      "width": 14.59,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "2:504",
+      "name": "key letter party",
+      "characters": "P",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 948,
+      "y": 327,
+      "width": 11,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "2:506",
+      "name": "key letter pc",
+      "characters": "C",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 44,
+      "y": 366,
+      "width": 11,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "2:508",
+      "name": "key letter stats",
+      "characters": "S",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 468,
+      "y": 106,
+      "width": 11,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    }
+  ],
+  "colours": [
+    "#0b1017@0.5",
+    "#7dd3fc@0.550000011920929",
+    "#7dd3fc@1",
+    "#ffffff@0.05999999865889549",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03c-panels-compress.png",
+    "sha256": "8af4b4119227f98257ad87ad8747bd6b5198e1a14709427bbe7c54951710d3bd",
+    "bytes": 153618
+  }
+}

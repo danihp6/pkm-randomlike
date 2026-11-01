@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import desktopFrame from '../../../../../design/frames/03k-panels-notice-item.json';
-import phoneFrame from '../../../../../design/frames/m03k-panels-notice-item.json';
+import desktopFrame from '../../../../../design/source/03k-panels-notice-item.json';
+import phoneFrame from '../../../../../design/source/m03k-panels-notice-item.json';
 import tokens from '../../../../../design/tokens.json';
 import {
   SAFE_AREA_BOTTOM,

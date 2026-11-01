@@ -1,0 +1,92 @@
+{
+  "slug": "03k-panels-notice-item",
+  "caption": "03k Panels · notice item",
+  "nodeId": "6:1573",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03k-panels-notice-item",
+    "nodeId": "8:3248"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1574",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1575",
+      "name": "notice strip",
+      "type": "RECTANGLE",
+      "x": 280,
+      "y": 24,
+      "width": 720,
+      "height": 56,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1576",
+      "name": "notice strip highlight",
+      "type": "RECTANGLE",
+      "x": 292,
+      "y": 36,
+      "width": 696,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1578",
+      "name": "notice icon",
+      "type": "RECTANGLE",
+      "x": 515,
+      "y": 40,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1577",
+      "name": "notice text",
+      "characters": "OBTAINED POTION!",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 16,
+      "x": 551,
+      "y": 42,
+      "width": 240,
+      "height": 20,
+      "fill": "#f8fafc@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.7200000286102295",
+    "#f8fafc@1",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03k-panels-notice-item.png",
+    "sha256": "c53a4655451bd7ca3f646940057fff8e41d248ccdbfe162d7b28c7ba39dee4d0",
+    "bytes": 155868
+  }
+}

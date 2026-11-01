@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixture from '../../../../../design/fixtures/03n-panels-pause-menu.json';
-import frame from '../../../../../design/frames/03n-panels-pause-menu.json';
+import frame from '../../../../../design/source/03n-panels-pause-menu.json';
 import { t } from '../../../../i18n';
 import { isHudState } from '../../fixtures';
 import { PAUSE_CARD_H, PAUSE_ROW_PITCH, PAUSE_SLUG, fixturePausePanelView, type Rect } from './index';

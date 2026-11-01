@@ -1,0 +1,1031 @@
+{
+  "slug": "03e-route-shop-sell",
+  "caption": "03e Route · shop · sell",
+  "nodeId": "5:1276",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m03e-route-shop-sell",
+    "nodeId": "11:5062"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "5:1277",
+      "name": "route screenshot",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1278",
+      "name": "scrim",
+      "type": "RECTANGLE",
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800,
+      "radius": 0,
+      "fill": "#03050a@0.7400000095367432",
+      "stroke": null
+    },
+    {
+      "id": "5:1279",
+      "name": "shop shell",
+      "type": "RECTANGLE",
+      "x": 288,
+      "y": 232,
+      "width": 704,
+      "height": 336,
+      "radius": 11,
+      "fill": "#10161f@0.9200000166893005",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "5:1280",
+      "name": "bag panel group",
+      "type": "GROUP",
+      "x": 312,
+      "y": 364,
+      "width": 656,
+      "height": 164,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1281",
+      "name": "bag panel",
+      "type": "RECTANGLE",
+      "x": 312,
+      "y": 364,
+      "width": 656,
+      "height": 164,
+      "radius": 8,
+      "fill": "#0b1017@0.699999988079071",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1282",
+      "name": "bag panel highlight",
+      "type": "RECTANGLE",
+      "x": 324,
+      "y": 372,
+      "width": 632,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "5:1284",
+      "name": "bag grid viewport",
+      "type": "FRAME",
+      "x": 312,
+      "y": 364,
+      "width": 656,
+      "height": 164,
+      "radius": 0,
+      "fill": "#ffffff@0",
+      "stroke": null
+    },
+    {
+      "id": "5:1285",
+      "name": "bag tile 1",
+      "type": "RECTANGLE",
+      "x": 12,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1286",
+      "name": "bag icon potion",
+      "type": "RECTANGLE",
+      "x": 32,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1288",
+      "name": "bag tile 2",
+      "type": "RECTANGLE",
+      "x": 93,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1289",
+      "name": "bag icon large_potion",
+      "type": "RECTANGLE",
+      "x": 113,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1291",
+      "name": "bag tile 3",
+      "type": "RECTANGLE",
+      "x": 174,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1292",
+      "name": "bag icon full_heal",
+      "type": "RECTANGLE",
+      "x": 194,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1294",
+      "name": "bag tile 4",
+      "type": "RECTANGLE",
+      "x": 255,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1295",
+      "name": "bag icon antidote",
+      "type": "RECTANGLE",
+      "x": 275,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1297",
+      "name": "bag tile 5",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1298",
+      "name": "bag icon poke_ball",
+      "type": "RECTANGLE",
+      "x": 356,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1300",
+      "name": "bag tile 6",
+      "type": "RECTANGLE",
+      "x": 417,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1301",
+      "name": "bag icon great_ball",
+      "type": "RECTANGLE",
+      "x": 437,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1303",
+      "name": "bag tile 7",
+      "type": "RECTANGLE",
+      "x": 498,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1304",
+      "name": "bag icon oran_berry",
+      "type": "RECTANGLE",
+      "x": 518,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1306",
+      "name": "bag tile 8",
+      "type": "RECTANGLE",
+      "x": 579,
+      "y": 16,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1307",
+      "name": "bag icon leftovers",
+      "type": "RECTANGLE",
+      "x": 599,
+      "y": 34,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1309",
+      "name": "bag tile 9",
+      "type": "RECTANGLE",
+      "x": 12,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1310",
+      "name": "bag icon sitrus_berry",
+      "type": "RECTANGLE",
+      "x": 32,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1312",
+      "name": "bag tile 10",
+      "type": "RECTANGLE",
+      "x": 93,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1313",
+      "name": "bag icon lum_berry",
+      "type": "RECTANGLE",
+      "x": 113,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1315",
+      "name": "bag tile 11",
+      "type": "RECTANGLE",
+      "x": 174,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1316",
+      "name": "bag icon status_heal",
+      "type": "RECTANGLE",
+      "x": 194,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1318",
+      "name": "bag tile 12",
+      "type": "RECTANGLE",
+      "x": 255,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1319",
+      "name": "bag icon ultra_ball",
+      "type": "RECTANGLE",
+      "x": 275,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1321",
+      "name": "bag tile 13",
+      "type": "RECTANGLE",
+      "x": 336,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1322",
+      "name": "bag icon master_ball",
+      "type": "RECTANGLE",
+      "x": 356,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1324",
+      "name": "bag tile 14",
+      "type": "RECTANGLE",
+      "x": 417,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1325",
+      "name": "bag icon charcoal",
+      "type": "RECTANGLE",
+      "x": 437,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1327",
+      "name": "bag tile 15",
+      "type": "RECTANGLE",
+      "x": 498,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1328",
+      "name": "bag icon hard_stone",
+      "type": "RECTANGLE",
+      "x": 518,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1330",
+      "name": "bag tile 16",
+      "type": "RECTANGLE",
+      "x": 579,
+      "y": 88,
+      "width": 64,
+      "height": 60,
+      "radius": 8,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1331",
+      "name": "bag icon miracle_seed",
+      "type": "RECTANGLE",
+      "x": 599,
+      "y": 106,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1392",
+      "name": "bag search field",
+      "type": "RECTANGLE",
+      "x": 744,
+      "y": 294,
+      "width": 224,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.029999999329447746",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "5:1393",
+      "name": "bag search icon",
+      "type": "FRAME",
+      "x": 754,
+      "y": 301,
+      "width": 10,
+      "height": 10,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "5:1394",
+      "name": "Vector",
+      "type": "VECTOR",
+      "x": 1,
+      "y": 1,
+      "width": 6,
+      "height": 6,
+      "radius": 0,
+      "fill": null,
+      "stroke": "#94a3b8@1"
+    },
+    {
+      "id": "5:1395",
+      "name": "Vector",
+      "type": "VECTOR",
+      "x": 6.3,
+      "y": 6.3,
+      "width": 2.9,
+      "height": 2.9,
+      "radius": 0,
+      "fill": "#000000@1",
+      "stroke": "#94a3b8@1"
+    },
+    {
+      "id": "5:1397",
+      "name": "tab buy",
+      "type": "RECTANGLE",
+      "x": 312,
+      "y": 294,
+      "width": 66,
+      "height": 24,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.10000000149011612"
+    },
+    {
+      "id": "5:1398",
+      "name": "tab sell",
+      "type": "RECTANGLE",
+      "x": 378,
+      "y": 294,
+      "width": 66,
+      "height": 24,
+      "radius": 6,
+      "fill": "#7dd3fc@0.1599999964237213",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "5:1401",
+      "name": "shell highlight",
+      "type": "RECTANGLE",
+      "x": 300,
+      "y": 244,
+      "width": 680,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "5:1402",
+      "name": "header divider",
+      "type": "RECTANGLE",
+      "x": 312,
+      "y": 280,
+      "width": 656,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.10000000149011612",
+      "stroke": null
+    },
+    {
+      "id": "5:1405",
+      "name": "filter consumables",
+      "type": "RECTANGLE",
+      "x": 312,
+      "y": 330,
+      "width": 116,
+      "height": 20,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1407",
+      "name": "filter pokeballs",
+      "type": "RECTANGLE",
+      "x": 436,
+      "y": 330,
+      "width": 108,
+      "height": 20,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1409",
+      "name": "filter held",
+      "type": "RECTANGLE",
+      "x": 552,
+      "y": 330,
+      "width": 60,
+      "height": 20,
+      "radius": 6,
+      "fill": "#ffffff@0.03999999910593033",
+      "stroke": "#ffffff@0.07999999821186066"
+    },
+    {
+      "id": "5:1413",
+      "name": "cursor ring",
+      "type": "RECTANGLE",
+      "x": 322,
+      "y": 378,
+      "width": 68,
+      "height": 64,
+      "radius": 9,
+      "fill": "#7dd3fc@0.05999999865889549",
+      "stroke": "#7dd3fc@0.8999999761581421"
+    }
+  ],
+  "text": [
+    {
+      "id": "5:1287",
+      "name": "bag qty 1",
+      "characters": "×3 · $150",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 22,
+      "y": 60,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1290",
+      "name": "bag qty 2",
+      "characters": "×1 · $350",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 103,
+      "y": 60,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1293",
+      "name": "bag qty 3",
+      "characters": "×2 · $1250",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 181,
+      "y": 60,
+      "width": 51,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1296",
+      "name": "bag qty 4",
+      "characters": "×1 · $50",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 268,
+      "y": 60,
+      "width": 39,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1299",
+      "name": "bag qty 5",
+      "characters": "×5 · $100",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 346,
+      "y": 60,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1302",
+      "name": "bag qty 6",
+      "characters": "×2 · $300",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 426,
+      "y": 60,
+      "width": 46,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1305",
+      "name": "bag qty 7",
+      "characters": "×4 · $50",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 510,
+      "y": 60,
+      "width": 40,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1308",
+      "name": "bag qty 8",
+      "characters": "×1 · $2000",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 586,
+      "y": 60,
+      "width": 51,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1311",
+      "name": "bag qty 9",
+      "characters": "×2 · $100",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 22,
+      "y": 132,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1314",
+      "name": "bag qty 10",
+      "characters": "×1 · $100",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 103,
+      "y": 132,
+      "width": 44,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1317",
+      "name": "bag qty 11",
+      "characters": "×3 · $150",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 184,
+      "y": 132,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1320",
+      "name": "bag qty 12",
+      "characters": "×4 · $600",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 264,
+      "y": 132,
+      "width": 46,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1323",
+      "name": "bag qty 13",
+      "characters": "×1 · --",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 353,
+      "y": 132,
+      "width": 31,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1326",
+      "name": "bag qty 14",
+      "characters": "×1 · $500",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 427,
+      "y": 132,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1329",
+      "name": "bag qty 15",
+      "characters": "×1 · $750",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 508,
+      "y": 132,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1332",
+      "name": "bag qty 16",
+      "characters": "×1 · $600",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 589,
+      "y": 132,
+      "width": 45,
+      "height": 10,
+      "fill": "#cbd5e1@1"
+    },
+    {
+      "id": "5:1389",
+      "name": "money",
+      "characters": "$ 2,480",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 902,
+      "y": 258,
+      "width": 66,
+      "height": 15,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "5:1390",
+      "name": "shop title",
+      "characters": "SHOP",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 24,
+      "x": 312,
+      "y": 244,
+      "width": 84,
+      "height": 31,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "5:1396",
+      "name": "bag search placeholder",
+      "characters": "SEARCH ITEMS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 770,
+      "y": 300,
+      "width": 65,
+      "height": 10,
+      "fill": "#64748b@1"
+    },
+    {
+      "id": "5:1399",
+      "name": "tab label buy",
+      "characters": "BUY",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 328,
+      "y": 298,
+      "width": 33,
+      "height": 15,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "5:1400",
+      "name": "tab label sell",
+      "characters": "SELL",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 12,
+      "x": 392,
+      "y": 298,
+      "width": 38,
+      "height": 15,
+      "fill": "#7dd3fc@1"
+    },
+    {
+      "id": "5:1406",
+      "name": "filter label consumables",
+      "characters": "CONSUMIBLES",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 312,
+      "y": 330,
+      "width": 116,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "5:1408",
+      "name": "filter label pokeballs",
+      "characters": "POKEBALLS",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 436,
+      "y": 330,
+      "width": 108,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "5:1410",
+      "name": "filter label held",
+      "characters": "HELD",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 552,
+      "y": 330,
+      "width": 60,
+      "height": 20,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "5:1283",
+      "name": "bag slots",
+      "characters": "16/20",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 8,
+      "x": 940,
+      "y": 540,
+      "width": 28,
+      "height": 10,
+      "fill": "#94a3b8@1"
+    }
+  ],
+  "colours": [
+    "#000000@1",
+    "#03050a@0.7400000095367432",
+    "#0b1017@0.699999988079071",
+    "#10161f@0.9200000166893005",
+    "#64748b@1",
+    "#7dd3fc@0.05999999865889549",
+    "#7dd3fc@0.1599999964237213",
+    "#7dd3fc@0.8999999761581421",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#cbd5e1@1",
+    "#f8fafc@1",
+    "#ffffff@0",
+    "#ffffff@0.029999999329447746",
+    "#ffffff@0.03999999910593033",
+    "#ffffff@0.07999999821186066",
+    "#ffffff@0.10000000149011612",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/03e-route-shop-sell.png",
+    "sha256": "660e751ad328ed82bdb0da6f6ca6dff873d0020303a8f5d061e8f745747367fb",
+    "bytes": 235938
+  }
+}

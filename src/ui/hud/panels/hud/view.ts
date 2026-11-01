@@ -42,7 +42,7 @@ export const STRIP_CHIP_ACTIONS: Readonly<Record<StripChipId, KeybindAction>> = 
 };
 
 /**
- * The phone slots, top-left corner per chip, measured from `design/frames/m03-route-hud.json`:
+ * The phone slots, top-left corner per chip, measured from `design/source/m03-route-hud.json`:
  * `m chip MAP` (8,55), `m chip BOX` (8,119), `m chip BAG` (38,551). `party` has no collapsed
  * form on the board and takes the bag's column x at the first rail row: (38,55).
  */

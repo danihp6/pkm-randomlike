@@ -1,0 +1,278 @@
+{
+  "slug": "04-starter-pick",
+  "caption": "04 Starter pick",
+  "nodeId": "6:1416",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "mobile": {
+    "slug": "m04-starter-pick",
+    "nodeId": "8:3242"
+  },
+  "states": [],
+  "boxes": [
+    {
+      "id": "6:1417",
+      "name": "card 1",
+      "type": "RECTANGLE",
+      "x": 218,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#7dd3fc@1"
+    },
+    {
+      "id": "6:1418",
+      "name": "card 1 highlight",
+      "type": "RECTANGLE",
+      "x": 230,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1419",
+      "name": "portrait 1",
+      "type": "RECTANGLE",
+      "x": 284,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1420",
+      "name": "card 2",
+      "type": "RECTANGLE",
+      "x": 510,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1421",
+      "name": "card 2 highlight",
+      "type": "RECTANGLE",
+      "x": 522,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1422",
+      "name": "portrait 2",
+      "type": "RECTANGLE",
+      "x": 576,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1423",
+      "name": "card 3",
+      "type": "RECTANGLE",
+      "x": 802,
+      "y": 176,
+      "width": 260,
+      "height": 320,
+      "radius": 11,
+      "fill": "#10161f@0.7200000286102295",
+      "stroke": "#ffffff@0.1599999964237213"
+    },
+    {
+      "id": "6:1424",
+      "name": "card 3 highlight",
+      "type": "RECTANGLE",
+      "x": 814,
+      "y": 188,
+      "width": 236,
+      "height": 1,
+      "radius": 0,
+      "fill": "#ffffff@0.14000000059604645",
+      "stroke": null
+    },
+    {
+      "id": "6:1425",
+      "name": "portrait 3",
+      "type": "RECTANGLE",
+      "x": 868,
+      "y": 222,
+      "width": 128,
+      "height": 128,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1443",
+      "name": "type GRASS",
+      "type": "RECTANGLE",
+      "x": 318,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1444",
+      "name": "type POISON",
+      "type": "RECTANGLE",
+      "x": 354,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1445",
+      "name": "type FIRE",
+      "type": "RECTANGLE",
+      "x": 628,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    },
+    {
+      "id": "6:1446",
+      "name": "type WATER",
+      "type": "RECTANGLE",
+      "x": 920,
+      "y": 422,
+      "width": 24,
+      "height": 24,
+      "radius": 0,
+      "fill": null,
+      "stroke": null
+    }
+  ],
+  "text": [
+    {
+      "id": "6:1426",
+      "name": "starter title",
+      "characters": "CHOOSE YOUR STARTER",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 32,
+      "x": 240,
+      "y": 26,
+      "width": 800,
+      "height": 40,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1428",
+      "name": "name 1",
+      "characters": "BULBASAUR",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 238,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1429",
+      "name": "name 2",
+      "characters": "CHARMANDER",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 530,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1430",
+      "name": "name 3",
+      "characters": "SQUIRTLE",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Bold"
+      },
+      "fontSize": 20,
+      "x": 822,
+      "y": 375,
+      "width": 220,
+      "height": 30,
+      "fill": "#f8fafc@1"
+    },
+    {
+      "id": "6:1431",
+      "name": "share line",
+      "characters": "SHARE: PKRL-1-f-1a2b3c",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 12,
+      "x": 240,
+      "y": 688,
+      "width": 800,
+      "height": 18,
+      "fill": "#94a3b8@1"
+    },
+    {
+      "id": "6:2233",
+      "name": "seed reroll hint",
+      "characters": "HOLD R FOR NEW SEED",
+      "fontName": {
+        "family": "Silkscreen",
+        "style": "Regular"
+      },
+      "fontSize": 10,
+      "x": 480,
+      "y": 716,
+      "width": 320,
+      "height": 12,
+      "fill": "#64748c@1"
+    }
+  ],
+  "colours": [
+    "#10161f@0.7200000286102295",
+    "#64748c@1",
+    "#7dd3fc@1",
+    "#94a3b8@1",
+    "#f8fafc@1",
+    "#ffffff@0.14000000059604645",
+    "#ffffff@0.1599999964237213"
+  ],
+  "snapshot": {
+    "file": "design/exports/04-starter-pick.png",
+    "sha256": "0d8b119f04e54376e46ad8d5876d348370c501431b85b07e64058db5fa5ee716",
+    "bytes": 29157
+  }
+}

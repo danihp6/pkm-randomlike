@@ -15,14 +15,14 @@ const copy = (from, to) => copyFileSync(from, to);
 
 function fixtureRoot() {
   const dir = mkdtempSync(path.join(tmpdir(), 'design-import-'));
-  mkdirSync(path.join(dir, 'design', 'frames'), { recursive: true });
-  mkdirSync(path.join(dir, 'design', 'screens'), { recursive: true });
+  mkdirSync(path.join(dir, 'design', 'source'), { recursive: true });
+  mkdirSync(path.join(dir, 'design', 'exports'), { recursive: true });
   copy(path.join(FIXTURES, 'map.json'), path.join(dir, 'design', 'import.json'));
   for (const slug of ['02-options', 'm02-options']) {
-    copy(path.join(FIXTURES, 'frames', `${slug}.json`), path.join(dir, 'design', 'frames', `${slug}.json`));
-    copy(path.join(FIXTURES, 'screens', `${slug}.png`), path.join(dir, 'design', 'screens', `${slug}.png`));
+    copy(path.join(FIXTURES, 'source', `${slug}.json`), path.join(dir, 'design', 'source', `${slug}.json`));
+    copy(path.join(FIXTURES, 'exports', `${slug}.png`), path.join(dir, 'design', 'exports', `${slug}.png`));
   }
-  return { dir, from: path.join(dir, 'design', 'frames') };
+  return { dir, from: path.join(dir, 'design', 'source') };
 }
 
 let stderr;
@@ -72,11 +72,11 @@ describe('runImport from the committed snapshot', () => {
     expect(existsSync(path.join(dir, 'design', 'tokens.json'))).toBe(true);
     expect(existsSync(path.join(dir, 'design', 'board.json'))).toBe(true);
     expect(readFileSync(path.join(dir, 'design', 'exports', '02-options.png'))).toEqual(
-      readFileSync(path.join(FIXTURES, 'screens', '02-options.png')),
+      readFileSync(path.join(FIXTURES, 'exports', '02-options.png')),
     );
 
     const spec = readJson(path.join(dir, 'design', 'screens', '02-options.json'));
-    const raster = readFileSync(path.join(FIXTURES, 'screens', '02-options.png'));
+    const raster = readFileSync(path.join(FIXTURES, 'exports', '02-options.png'));
     expect(spec.snapshot.file).toBe('design/exports/02-options.png');
     expect(spec.snapshot.sha256).toBe(createHash('sha256').update(raster).digest('hex'));
     expect(spec.snapshot.bytes).toBe(raster.length);
@@ -115,14 +115,14 @@ describe('runImport from the committed snapshot', () => {
     expect(existsSync(path.join(dir, 'design', 'tokens.json'))).toBe(false);
     expect(existsSync(path.join(dir, 'design', 'board.json'))).toBe(false);
     expect(existsSync(path.join(dir, 'design', 'screens', '02-options.json'))).toBe(false);
-    expect(existsSync(path.join(dir, 'design', 'exports'))).toBe(false);
+    expect(readdirSync(path.join(dir, 'design', 'exports'))).toEqual(['02-options.png', 'm02-options.png']);
   });
 
   it('is fatal and names a duplicated caption, writing nothing', async () => {
     const { dir, from } = fixtureRoot();
-    const duplicate = readJson(path.join(dir, 'design', 'frames', '02-options.json'));
+    const duplicate = readJson(path.join(dir, 'design', 'source', '02-options.json'));
     writeFileSync(
-      path.join(dir, 'design', 'frames', '02b-options-duplicate.json'),
+      path.join(dir, 'design', 'source', '02b-options-duplicate.json'),
       `${JSON.stringify({ ...duplicate, slug: '02b-options-duplicate' }, null, 2)}\n`,
     );
 
@@ -132,18 +132,18 @@ describe('runImport from the committed snapshot', () => {
     expect(result.wrote).toEqual([]);
     expect(stderr.join('')).toContain('frame_duplicated 02b-options-duplicate: 02 Options');
     expect(existsSync(path.join(dir, 'design', 'tokens.json'))).toBe(false);
-    expect(existsSync(path.join(dir, 'design', 'exports'))).toBe(false);
+    expect(readdirSync(path.join(dir, 'design', 'exports'))).toEqual(['02-options.png', 'm02-options.png']);
   });
 
   it('fails with code 2 and names a raster the snapshot does not carry', async () => {
     const { dir, from } = fixtureRoot();
-    rmSync(path.join(dir, 'design', 'screens', '02-options.png'));
+    rmSync(path.join(dir, 'design', 'exports', '02-options.png'));
 
     const result = await runImport({ root: dir, from, env: {} });
 
     expect(result.code).toBe(2);
     expect(result.wrote).toEqual([]);
-    expect(stderr.join('')).toContain(path.join('screens', '02-options.png'));
+    expect(stderr.join('')).toContain(path.join('exports', '02-options.png'));
   });
 
   it('checks without writing, and reports the one byte that moves', async () => {
@@ -179,13 +179,14 @@ describe('runImport from the committed snapshot', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'design-import-'));
     const design = path.join(dir, 'design');
     mkdirSync(path.join(design, 'screens'), { recursive: true });
+    mkdirSync(path.join(design, 'exports'), { recursive: true });
     copy(path.join(ROOT, 'design', 'import.json'), path.join(design, 'import.json'));
     const map = readJson(path.join(ROOT, 'design', 'import.json'));
     for (const entry of map.screens) {
-      copy(path.join(ROOT, 'design', 'screens', `${entry.slug}.png`), path.join(design, 'screens', `${entry.slug}.png`));
+      copy(path.join(ROOT, 'design', 'exports', `${entry.slug}.png`), path.join(design, 'exports', `${entry.slug}.png`));
     }
 
-    const from = path.join(ROOT, 'design', 'frames');
+    const from = path.join(ROOT, 'design', 'source');
     const result = await runImport({ root: dir, from, env: {} });
 
     expect(result.code).toBe(0);
@@ -195,7 +196,7 @@ describe('runImport from the committed snapshot', () => {
     expect(result.wrote.filter((relative) => relative.endsWith('.json') && relative.startsWith('design/screens/'))).toHaveLength(33);
     expect(result.wrote.filter((relative) => relative.endsWith('.png'))).toHaveLength(33);
     expect(readFileSync(path.join(design, 'exports', '02-options.png'))).toEqual(
-      readFileSync(path.join(ROOT, 'design', 'screens', '02-options.png')),
+      readFileSync(path.join(ROOT, 'design', 'exports', '02-options.png')),
     );
   });
 

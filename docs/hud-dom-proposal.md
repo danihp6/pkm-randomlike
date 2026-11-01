@@ -234,10 +234,8 @@ and the adaptation rules already agreed: panel 374 at `x=8` centred vertically, 
 letter badges, safe area 47/810, pad 156 at (103,741) with A (334,767) r35 and B (235,788) r35.
 
 **Done and in the repo:** the whole board is imported (33 frames, 66 viewports: ≈3.7 MB of JSON,
-3.9 MB of SVG, 10.1 MB of PNG) by `scripts/design/export.mjs`; `scripts/design/tokens.mjs` generates
-`design/tokens.json` from it and `node scripts/design/check.mjs` is the check (`D57`). The frame →
-scene map lives in `design/README.md`, and `scripts/design/frames.mjs` is the one table the exporter
-reads.
+3.9 MB of SVG, 10.1 MB of PNG) by the board's exporter, which `[Task-223]` retired: `scripts/design/import.mjs` now writes the four artifact families and `node scripts/design/check.mjs` is the check (`D57`). The frame →
+scene map lives in `design/README.md`, and `design/import.json` is the one table the import reads.
 
 The check for every migrated screen (`D57`): `node scripts/design/check.mjs` reads the frame's own
 `design/screens/<slug>.json` and compares the panel against it, with `?hudFixture=<slug>` feeding the

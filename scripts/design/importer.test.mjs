@@ -9,7 +9,7 @@ const readJson = (relative) => JSON.parse(readFileSync(`${ROOT}/${relative}`, 'u
 const FIXTURE_FILE = 'scripts/design/fixtures/file.json';
 const FIXTURE_NODES = 'scripts/design/fixtures/nodes.json';
 const FIXTURE_MAP = 'scripts/design/fixtures/map.json';
-const FIXTURE_DUMPS = 'scripts/design/fixtures/frames';
+const FIXTURE_DUMPS = 'scripts/design/fixtures/source';
 
 const fixtureDumps = () => [readJson(`${FIXTURE_DUMPS}/02-options.json`), readJson(`${FIXTURE_DUMPS}/m02-options.json`)];
 
@@ -75,10 +75,10 @@ describe('shipped map', () => {
     }
   });
 
-  it('corrects the rocket row the stale index still points at the casino', () => {
+  it('projects the rocket row the map corrected, so the index no longer names the casino', () => {
     const rocket = map.screens.find((screen) => screen.slug === '03h-panels-rocket-slots');
     expect(rocket.scene).toBe('src/ui/rocketPanel.ts');
-    expect(board.frames['03h-panels-rocket-slots'].scene).toBe('src/scenes/rooms/casino.ts');
+    expect(board.frames['03h-panels-rocket-slots'].scene).toBe('src/ui/rocketPanel.ts');
   });
 });
 

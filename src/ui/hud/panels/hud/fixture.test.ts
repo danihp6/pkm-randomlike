@@ -15,7 +15,7 @@ type FrameNode = Readonly<{
 
 const FRAME = JSON.parse(
   readFileSync(
-    fileURLToPath(new URL('../../../../../design/frames/m03-route-hud.json', import.meta.url)),
+    fileURLToPath(new URL('../../../../../design/source/m03-route-hud.json', import.meta.url)),
     'utf8',
   ),
 ) as Readonly<{ slug: string; geometry: readonly FrameNode[] }>;
@@ -47,7 +47,7 @@ const DEFAULT_INPUT: StripInput = {
 describe('design/fixtures/03-route-hud.json', () => {
   it('is the route HUD frame and carries a HudState the store accepts unchanged', () => {
     expect(fixture.slug).toBe('03-route-hud');
-    expect(fixture.strip.frame).toBe('design/frames/m03-route-hud.json');
+    expect(fixture.strip.frame).toBe('design/source/m03-route-hud.json');
     expect(isHudState(fixture.state)).toBe(true);
   });
 

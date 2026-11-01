@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import itemFrame from '../../../../../design/frames/03f-panels-reward-item.json';
-import pokemonFrame from '../../../../../design/frames/03g-panels-reward-pokemon.json';
-import itemMobileFrame from '../../../../../design/frames/m03f-panels-reward-item.json';
-import pokemonMobileFrame from '../../../../../design/frames/m03g-panels-reward-pokemon.json';
+import itemFrame from '../../../../../design/source/03f-panels-reward-item.json';
+import pokemonFrame from '../../../../../design/source/03g-panels-reward-pokemon.json';
+import itemMobileFrame from '../../../../../design/source/m03f-panels-reward-item.json';
+import pokemonMobileFrame from '../../../../../design/source/m03g-panels-reward-pokemon.json';
 import itemFixture from '../../../../../design/fixtures/03f-panels-reward-item.json';
 import pokemonFixture from '../../../../../design/fixtures/03g-panels-reward-pokemon.json';
 import itemIcons from '../../../../data/anil/item-icons.json';

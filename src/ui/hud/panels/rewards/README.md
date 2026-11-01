@@ -13,7 +13,7 @@ streams, the arm and the `commitRun`.
 
 - `view.ts` — the panel's value model: `rewardsPanelBox`, `rewardsPanelView`, `rewardsPress` (the two-step arm/commit reducer), `rewardsRowBand` and the mirror block of every board rect and type size (`REWARDS_PANEL_W`, `REWARDS_ROW_H`, `REWARDS_SHEET_ROW_TOP`, …).
 - `view.test.ts` — both QA viewports' card rects, the row pitch and arm clamp, the label-only Pokémon row, the reducer's arm/commit split (with a spy on the commit path), the pinned constants and the `rewardsDrawnObjectCount` flag contract, headless.
-- `fixture.test.ts` — `design/fixtures/03f-panels-reward-item.json` and `03g-panels-reward-pokemon.json`, each compared box by box with its own `design/frames/` frame (card, highlight, title, choose line, three rows, close), the item icons' atlas frames and the model's `STAT · Nature` labels.
+- `fixture.test.ts` — `design/fixtures/03f-panels-reward-item.json` and `03g-panels-reward-pokemon.json`, each compared box by box with its own `design/source/` frame (card, highlight, title, choose line, three rows, close), the item icons' atlas frames and the model's `STAT · Nature` labels.
 - `rewardsPanel.tsx` — the card itself: the sheet's handle, the highlight, the title, the choose line, the ✕ and the row band with one button per offer.
 - `rewards.css` — the board's paint and the two layouts' type sizes over the `styles/root.css` tokens, one scoped rule block per layout.
 - `mount.tsx` — `mountRewardsPanel`: renders the card into a host element behind a view signal, routes the four pick keys to the same intents a press sends, and returns its disposer, plus the card's `RewardsIntent` channel.

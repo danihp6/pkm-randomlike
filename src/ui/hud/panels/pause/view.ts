@@ -61,7 +61,7 @@ export type PauseInput = Readonly<{
 export const PAUSE_SLUG = '03n-panels-pause-menu';
 export const PAUSE_ROW_IDS: readonly PauseRowId[] = ['settings', 'reset'];
 
-/* The board's measured desktop card at 1280 × 800 (`design/frames/03n-panels-pause-menu.json`). */
+/* The board's measured desktop card at 1280 × 800 (`design/source/03n-panels-pause-menu.json`). */
 export const PAUSE_CARD_W = 360;
 export const PAUSE_CARD_H = 200; // 88 + PAUSE_ROW_PITCH × 2, the frame's own formula
 export const PAUSE_CARD_RADIUS = 11;
