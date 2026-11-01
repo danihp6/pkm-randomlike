@@ -131,8 +131,20 @@ export type DetailEvolutionView = Readonly<{
   edges: readonly Readonly<{ fromRow: number; toRow: number; d: string }>[];
 }>;
 
+/** The card's way back: the glyph it paints, the name it announces and its box. */
+export type DetailCloseView = Readonly<{
+  /** The painted glyph: `'×'` (U+00D7), the one the rewards card draws. */
+  label: string;
+  /** The accessible name: `t('keybind.cancel')`, the key the card's Esc is an alias of. */
+  name: string;
+  /** Panel-relative, the card's own top-left corner, on every view and viewport. */
+  box: Rect;
+}>;
+
 export type DetailPanelView = Readonly<{
   open: boolean;
+  /** The chip slot the card reserves for its own way back. */
+  close: DetailCloseView;
   /** Viewport coordinates. */
   box: Rect;
   /** Panel-relative: every other rect in this view is measured from `box.x`/`box.y`. */
@@ -166,6 +178,8 @@ export type DetailPanelView = Readonly<{
 }>;
 
 export const DETAIL_PANEL_W = 460; // HUD_DETAIL_W
+/** The corner control's side: the frame's own chip size, `STRIP_CHIP_SIZE` in `../hud/view.ts`. */
+export const DETAIL_CLOSE_SIZE = 26;
 export const DETAIL_PANEL_H = 560; // HUD_DETAIL_H
 export const DETAIL_TABS_TOP = 72; // HUD_DETAIL_TABS_TOP
 export const DETAIL_TAB_H = 26; // HUD_DETAIL_TAB_H
@@ -335,9 +349,30 @@ export function initialDetailPanelUi(): DetailPanelUi {
   };
 }
 
+/**
+ * The card's way back, in the chip slot it already reserved: one object for every
+ * member, tab and viewport, so the control never moves with the card's content.
+ */
+function closeView(): DetailCloseView {
+  return {
+    label: '×',
+    name: t('keybind.cancel'),
+    box: { x: 0, y: 0, w: DETAIL_CLOSE_SIZE, h: DETAIL_CLOSE_SIZE },
+  };
+}
+
+/**
+ * True when this key press closes the card: an open card, `Escape`, and no text field
+ * holding the press (the nickname field and the learnset search keep their own Esc).
+ */
+export function detailCloseKey(open: boolean, key: string, inTextField: boolean): boolean {
+  return open && !inTextField && key === 'Escape';
+}
+
 function emptyView(box: Rect): DetailPanelView {
   return {
     open: false,
+    close: closeView(),
     box,
     highlight: {
       x: DETAIL_HIGHLIGHT_INSET,
@@ -524,6 +559,7 @@ export function detailPanelView(
 
   return {
     open: true,
+    close: closeView(),
     box,
     highlight: {
       x: DETAIL_HIGHLIGHT_INSET,

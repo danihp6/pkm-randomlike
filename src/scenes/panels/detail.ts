@@ -632,6 +632,9 @@ function runDetailIntent(host: RoutePanelHost, intent: DetailIntent): void {
   if (domPaused) return;
   const memberId = hudDetailState.memberId;
   switch (intent.type) {
+    case 'close':
+      closeMemberDetail(host);
+      return;
     case 'tab':
       hudDetailState = setDetailTab(hudDetailState, intent.tab);
       hudDetailCursor = -1;

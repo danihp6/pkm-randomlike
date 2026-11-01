@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { MemberDetail } from '../../../partyDetail';
+import { t } from '../../../../i18n';
+import { STRIP_CHIP_SIZE } from '../hud/view';
 import {
+  DETAIL_CLOSE_SIZE,
   DETAIL_CONTENT_LEFT,
   DETAIL_CONTENT_TOP,
   DETAIL_EVO_TITLE_TOP,
@@ -19,6 +22,7 @@ import {
   DETAIL_TABS_TOP,
   detailPanelBox,
   detailPanelView,
+  detailCloseKey,
   detailPadX,
   initialDetailPanelUi,
   type DetailMoveSlotView,
@@ -583,5 +587,41 @@ describe('detailPanelView', () => {
     expect(view.moves[0].selected).toBe(true);
     expect(view.pool).toHaveLength(3);
     expect(view.pool[0].selected).toBe(true);
+  });
+});
+
+describe('the card s way back', () => {
+  it('carries one close control, on the card s own corner', () => {
+    const view = detailPanelView(detailOf(), poolOf(2), uiOf(), DESKTOP);
+    expect(view.close).toEqual({
+      label: '×',
+      name: t('keybind.cancel'),
+      box: { x: 0, y: 0, w: DETAIL_CLOSE_SIZE, h: DETAIL_CLOSE_SIZE },
+    });
+  });
+
+  it('never moves it with the member, the tab or the viewport', () => {
+    const stats = detailPanelView(detailOf(), poolOf(2), uiOf(), DESKTOP).close;
+    for (const tab of ['moves', 'evolution'] as const) {
+      expect(detailPanelView(detailOf(), poolOf(6), uiOf({ tab }), DESKTOP).close).toEqual(stats);
+    }
+    expect(detailPanelView(detailOf(), poolOf(6), uiOf({ tab: 'moves' }), PHONE).close).toEqual(stats);
+    expect(detailPanelView(null, [], uiOf(), DESKTOP).close).toEqual(stats);
+  });
+
+  it('sizes the control to the frame s chip', () => {
+    expect(DETAIL_CLOSE_SIZE).toBe(26);
+    expect(DETAIL_CLOSE_SIZE).toBe(STRIP_CHIP_SIZE);
+  });
+});
+
+describe('detailCloseKey', () => {
+  it('closes an open card on Escape and nothing else', () => {
+    expect(detailCloseKey(true, 'Escape', false)).toBe(true);
+    expect(detailCloseKey(false, 'Escape', false)).toBe(false);
+    expect(detailCloseKey(true, 'Enter', false)).toBe(false);
+    expect(detailCloseKey(true, 'Esc', false)).toBe(false);
+    expect(detailCloseKey(true, 'ArrowLeft', false)).toBe(false);
+    expect(detailCloseKey(true, 'Escape', true)).toBe(false);
   });
 });

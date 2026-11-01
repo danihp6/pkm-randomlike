@@ -11,6 +11,7 @@ export {
   evolutionView,
 } from './evolution';
 export {
+  DETAIL_CLOSE_SIZE,
   DETAIL_CONTENT_TOP,
   DETAIL_INFO_ROW,
   DETAIL_MOVE_GRID_H,
@@ -23,9 +24,11 @@ export {
   DETAIL_TABS_TOP,
   detailPanelBox,
   detailPanelView,
+  detailCloseKey,
   initialDetailPanelUi,
 } from './view';
 export type {
+  DetailCloseView,
   DetailEvolutionRowView,
   DetailEvolutionView,
   DetailMoveSlotView,

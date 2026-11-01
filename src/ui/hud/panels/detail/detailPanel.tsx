@@ -31,7 +31,6 @@ export type DetailPanelProps = Readonly<{
 }>;
 
 /** The board's 26 px badge at the card's top-left corner, and the level column's inset. */
-const CHIP = 26;
 const LEVEL_W = 72;
 /** The card's own left inset for its texts: past the chip. */
 const HINT_TOP = DETAIL_TYPE_TOP + 24;
@@ -331,12 +330,19 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
     >
       <div class="detail__body">
         <span class="detail__highlight" data-hud-detail="highlight" style={box(view.highlight)} />
-        <span
+        <button
+          type="button"
           class="detail__chip"
           data-hud-detail="chip"
-          aria-hidden="true"
-          style={box({ x: 0, y: 0, w: CHIP, h: CHIP })}
-        />
+          data-hud-detail-close
+          aria-label={view.close.name}
+          style={box(view.close.box)}
+          onClick={() => send({ type: 'close' })}
+        >
+          <span class="detail__chip-glyph" aria-hidden="true">
+            {view.close.label}
+          </span>
+        </button>
 
         <div
           class="detail__header"
