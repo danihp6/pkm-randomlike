@@ -37,8 +37,10 @@ scene.
   below — and owns the HUD's single member gesture: the press-then-release on `#hud` that
   opens no card but withdraws a box cell let go on the party card and deposits a party row
   let go on the PC card.
-- `notices.ts` — the notice strip, the area banner and the mission line as the DOM card's
-  three lines, with their own hold timers on the scene's clock.
+- `notices.ts` — the notice strip and the area banner as the DOM card's two lines, with
+  their own hold timers on the scene's clock.
+- `missions.ts` — the floor's mission card: the current floor's row and the met floors
+  (newest first) in the shared panel frame, with the run read and no write at all.
 - `rewards.ts` — the mini-boss reward card: the rows, the two-press arm/commit and the level-up
   callback, painted by the mount.
 - `pause.ts` — the pause menu card (the cursor, the two-press Reset and the keys) plus the

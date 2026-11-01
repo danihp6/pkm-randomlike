@@ -287,10 +287,10 @@ carries over.
   its ends are known. The current room, the boss, the open portal and any special
   room carry their own mark; a room stays hidden until it is entered
   (`docs/maps-spec.md` §8).
-- Entering a **room** raises an **area banner**: a boxed card under the mission
-  line that names the biome the run has walked into (`Deep Forest`), holding 3 s
+- Entering a **room** raises an **area banner**: a boxed card under the notice strip
+  that names the biome the run has walked into (`Deep Forest`), holding 3 s
   before it dismisses itself. It takes no key, blocks no movement and leaves the
-  notice strip and the mission line where they are; it is raised on **every** room
+  notice strip where it is; it is raised on **every** room
   entry (not only when the floor changes), and the boss room's rebuild as its
   portal opens is not a room entry and raises none. The name is the biome's own,
   so it reads the same in every locale (`D43`).
@@ -571,7 +571,10 @@ leaves with only their own content (`docs/maps-spec.md` §7):
   `ninja` 0.1, `impostor` 0.08 and `secret` 0.2: 18 % of trainer rooms field one
   before the run's first met mission, 38 % afterwards.
 
-Every floor is also given one **mission**, shown in one line of the HUD. The one
+Every floor is also given one **mission**, shown in the HUD's **MISSIONS card** — a
+panel like the party's, with its own chip, its drag and its saved slot (`D58`): the
+floor's row with its progress on top, then every floor the run already met, newest
+first. The one
 kind that ships is `flawless`: leave the floor having lost **no HP** and without a
 casualty. Meeting it bumps a **run-long counter**, and its reward is a **special
 room** — a reward row the room tasks hang off a completed mission — so a floor the

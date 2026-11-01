@@ -15,7 +15,8 @@ its Phaser counterpart in the same task (`D49`).
 - `shop/` — the Mart: stock, prices and the sell list.
 - `trade/` — the trade screen: both sides' offers and the confirm step.
 - `rewards/` — the win card: the item and anonymous-Pokémon choices.
-- `notices/` — the transient notices: one at a time, with no input taken.
+- `notices/` - the transient notices: one at a time, with no input taken.
+- `missions/` - the floor's mission card: the current row and the met floors, in the shared panel frame.
 - `pause/` — the pause menu: the resume/save/options rows.
 - `hud/` — the route strip: biome, level cap, money, the shared XP bar and the Pokevial meter.
 - `battle-hp/` — the battle HP boxes: the two plates, the bar and the status chip.

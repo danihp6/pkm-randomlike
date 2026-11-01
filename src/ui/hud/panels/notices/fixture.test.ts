@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import fixture from '../../../../../design/fixtures/03k-panels-notice-item.json';
 import { t } from '../../../../i18n';
 import { isHudState } from '../../fixtures';
-import { missionBox, noticeBox, noticesPanelView, type NoticesInput } from './index';
+import { noticeBox, noticesPanelView, type NoticesInput } from './index';
 
 const DESKTOP = { width: 1280, height: 800 };
 
 /** The scene hands the view the lines the run carries, never the fixture object. */
 function inputFrom(): NoticesInput {
-  return { notice: fixture.notice.text, area: fixture.area, mission: fixture.mission };
+  return { notice: fixture.notice.text, area: fixture.area };
 }
 
 describe('design/fixtures/03k-panels-notice-item.json', () => {
@@ -28,10 +28,8 @@ describe('design/fixtures/03k-panels-notice-item.json', () => {
     expect(view.notice?.box).toEqual({ x: 280, y: 24, w: 720, h: 56 });
   });
 
-  it('draws no mission and no area banner, because the fixture carries neither', () => {
+  it('draws no area banner, because the fixture carries none', () => {
     const view = noticesPanelView(inputFrom(), DESKTOP);
-    expect(view.mission).toBeNull();
     expect(view.area).toBeNull();
-    expect(missionBox(DESKTOP).h).toBe(32);
   });
 });

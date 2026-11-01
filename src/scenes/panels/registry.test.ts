@@ -35,6 +35,7 @@ const SHIPPED_IDS = [
   'bag',
   'pc',
   'notices',
+  'missions',
   'rewards',
   'shop',
   'trade',
@@ -43,7 +44,7 @@ const SHIPPED_IDS = [
 ] as const;
 
 /** Their frozen build/z orders. */
-const SHIPPED_ORDERS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+const SHIPPED_ORDERS = [10, 20, 30, 40, 50, 60, 65, 70, 80, 90, 100, 110];
 
 /** A synthetic module holding one descriptor, for an id/order pair the folder never had. */
 const moduleWith = (id: string, order = 1): unknown => ({ descriptor: { id, order } });

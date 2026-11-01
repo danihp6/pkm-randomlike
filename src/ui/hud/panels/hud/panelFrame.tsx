@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { HudPanelId, HudPanelLayout } from '../../../../data/hudLayout';
 import { DRAG_SLOP } from './drag';
 import { clampPanelOffset, type FrameVec } from './panelFrameView';
-import { STRIP_CHIP_LETTERS, STRIP_CHIP_SIZE, type Rect, type Viewport } from './view';
+import { STRIP_CHIP_SIZE, type Rect, type Viewport } from './view';
 import './panelFrame.css';
 
 /**
@@ -22,6 +22,12 @@ export type PanelFrameProps = Readonly<{
   layout: HudPanelLayout;
   label: string | null;
   letter: string;
+  /**
+   * Keeps the chip (and its hit target) on screen while the card is collapsed. Only
+   * for a panel the strip draws **no** badge for (`missions`): everywhere else a
+   * collapsed card is the strip's badge, and a second chip would draw it twice.
+   */
+  chipWhenCollapsed: boolean;
   onToggle(): void;
   onLayout(next: HudPanelLayout): void;
   children: ComponentChildren;
@@ -43,9 +49,19 @@ export type PanelFrameMount = Readonly<{
   label: string | null;
 }>;
 
-/** The chip's letter: the strip's own badge letter, and none on the detail card. */
+/** Every card's badge letter: the strip's own four, none on detail, `!` on missions. */
+export const PANEL_CHIP_LETTERS: Readonly<Record<HudPanelId, string>> = {
+  header: 'M',
+  box: 'C',
+  party: 'P',
+  bag: 'I',
+  detail: '',
+  missions: '!',
+};
+
+/** The chip's letter: the panel's own badge letter, and none on the detail card. */
 function chipLetter(id: HudPanelId): string {
-  return id === 'detail' ? '' : STRIP_CHIP_LETTERS[id];
+  return PANEL_CHIP_LETTERS[id];
 }
 
 /** The frame's props for one card, resolved at paint time from the live record. */
@@ -59,6 +75,9 @@ export function panelFrameProps(
     layout: frame.host.layout,
     label: frame.label,
     letter: chipLetter(frame.host.id),
+    // The strip draws a badge for the four `STRIP_CHIP_ORDER` panels only, so the one
+    // card it has no badge for must carry its own chip while it is collapsed.
+    chipWhenCollapsed: frame.host.id === 'missions',
     onToggle: frame.host.onToggle,
     onLayout: frame.host.onLayout,
   };
@@ -185,11 +204,17 @@ export function PanelFrame(props: PanelFrameProps): JSX.Element {
       ref={root}
       class="hud-frame"
       data-hud-frame={id}
-      hidden={!open}
-      style={{ transform: `translate(${dx}px, ${dy}px)` }}
+      data-collapsed={open ? undefined : 'true'}
+      hidden={!open && !props.chipWhenCollapsed}
+      style={{
+        transform: `translate(${dx}px, ${dy}px)`,
+        // A chip-only frame keeps the card mounted and measured, so a collapsed card
+        // can be dragged back from its chip; `visibility` keeps the box for the clamp.
+        ...(open || !props.chipWhenCollapsed ? {} : { visibility: 'hidden' }),
+      }}
     >
       {props.children}
-      {open && label !== null ? (
+      {(open || props.chipWhenCollapsed) && label !== null ? (
         <button
           type="button"
           ref={chip}
@@ -201,6 +226,7 @@ export function PanelFrame(props: PanelFrameProps): JSX.Element {
             top: `${origin.dy}px`,
             width: `${STRIP_CHIP_SIZE}px`,
             height: `${STRIP_CHIP_SIZE}px`,
+            ...(open ? {} : { visibility: 'visible' }),
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

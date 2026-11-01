@@ -298,6 +298,29 @@ describe('the floor mission', () => {
     expect(next.hpLost).toBe(2);
     expect(next.floorCasualties).toBe(run.floorCasualties);
   });
+
+  it('starts the mission history empty on a fresh run', () => {
+    expect(createRun({ seed: 'run-a', starter }).completedMissions).toEqual([]);
+  });
+
+  it('records exactly the floors it met, oldest first, and nothing on a missed one', () => {
+    const first = missionForMap('run-a', 1);
+    let run = createRun({ seed: 'run-a', starter });
+    run = advanceMap(run);
+    run = advanceMap(recordHpLost(run, 3));
+    const third = run.mission;
+    run = advanceMap(run);
+    expect(run.completedMissions).toEqual([
+      { id: first.id, mapIndex: 1 },
+      { id: third?.id ?? '', mapIndex: 3 },
+    ]);
+  });
+
+  it('keeps the counter and the history the same length', () => {
+    let run = createRun({ seed: 'run-b', starter });
+    for (let floor = 0; floor < 3; floor++) run = advanceMap(run);
+    expect(run.completedMissions).toHaveLength(run.missionsCompleted);
+  });
 });
 
 describe('the run modifiers', () => {

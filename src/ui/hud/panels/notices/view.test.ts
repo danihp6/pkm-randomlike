@@ -6,7 +6,6 @@ import {
   SAFE_AREA_BOTTOM,
   SAFE_AREA_TOP,
   areaBox,
-  missionBox,
   noticeBox,
   noticesPanelView,
   type NoticesInput,
@@ -44,20 +43,17 @@ function frameNode(frame: unknown, name: string): Rect {
 const LINE: NoticesInput = {
   notice: 'Obtained Potion!',
   area: 'Entered Añil Path',
-  mission: 'Mission: Catch 3',
 };
 
-describe('the three card rects', () => {
-  it('stacks them at the desktop board: (280,24,720,56), (460,88,360,32), (460,128,360,64)', () => {
+describe('the two card rects', () => {
+  it('stacks them at the desktop board: (280,24,720,56), (460,88,360,64)', () => {
     expect(noticeBox(DESKTOP)).toEqual({ x: 280, y: 24, w: 720, h: 56 });
-    expect(missionBox(DESKTOP)).toEqual({ x: 460, y: 88, w: 360, h: 32 });
-    expect(areaBox(DESKTOP)).toEqual({ x: 460, y: 128, w: 360, h: 64 });
+    expect(areaBox(DESKTOP)).toEqual({ x: 460, y: 88, w: 360, h: 64 });
   });
 
-  it('stacks them on the phone at the safe area: (8,47,374,56), (8,111,374,32), (8,151,374,64)', () => {
+  it('stacks them on the phone at the safe area: (8,47,374,56), (8,111,374,64)', () => {
     expect(noticeBox(PHONE)).toEqual({ x: 8, y: 47, w: 374, h: 56 });
-    expect(missionBox(PHONE)).toEqual({ x: 8, y: 111, w: 374, h: 32 });
-    expect(areaBox(PHONE)).toEqual({ x: 8, y: 151, w: 374, h: 64 });
+    expect(areaBox(PHONE)).toEqual({ x: 8, y: 111, w: 374, h: 64 });
   });
 
   it('takes the strip’s desktop rect from the board frame 03k', () => {
@@ -72,13 +68,12 @@ describe('the three card rects', () => {
     expect(SAFE_AREA_TOP).toBe(tokens.safeArea.top);
     expect(SAFE_AREA_BOTTOM).toBe(tokens.safeArea.bottom);
     expect(noticeBox(PHONE).y).toBe(tokens.safeArea.top);
-    expect(missionBox(PHONE).y).toBe(tokens.safeArea.top + 56 + 8);
-    expect(areaBox(PHONE).y).toBe(missionBox(PHONE).y + 32 + 8);
+    expect(areaBox(PHONE).y).toBe(tokens.safeArea.top + 56 + 8);
   });
 
   it('keeps every card inside the viewport at 1280×800, 390×844 and 560×800', () => {
     for (const viewport of [DESKTOP, PHONE, BREAKPOINT]) {
-      for (const box of [noticeBox(viewport), missionBox(viewport), areaBox(viewport)]) {
+      for (const box of [noticeBox(viewport), areaBox(viewport)]) {
         const label = `${viewport.width}×${viewport.height} ${JSON.stringify(box)}`;
         expect(box.x, label).toBeGreaterThanOrEqual(0);
         expect(box.y, label).toBeGreaterThanOrEqual(0);
@@ -93,12 +88,11 @@ describe('the three card rects', () => {
     const strip = noticeBox(narrow);
     expect(strip).toEqual({ x: 8, y: 24, w: 584, h: 56 });
     expect(strip.x + strip.w).toBe(narrow.width - 8);
-    expect(missionBox(narrow)).toEqual({ x: 120, y: 88, w: 360, h: 32 });
   });
 
   it('keeps a phone narrower than the board inside its own width', () => {
     const small: Viewport = { width: 320, height: 640 };
-    for (const box of [noticeBox(small), missionBox(small), areaBox(small)]) {
+    for (const box of [noticeBox(small), areaBox(small)]) {
       expect(box.w).toBe(304);
       expect(box.x + box.w).toBe(small.width - 8);
     }
@@ -108,7 +102,7 @@ describe('the three card rects', () => {
     const short: Viewport = { width: 390, height: 240 };
     expect(areaBox(short).y + areaBox(short).h).toBeLessThanOrEqual(SAFE_AREA_BOTTOM);
     const shorter: Viewport = { width: 1280, height: 200 };
-    for (const box of [noticeBox(shorter), missionBox(shorter), areaBox(shorter)]) {
+    for (const box of [noticeBox(shorter), areaBox(shorter)]) {
       expect(box.y + box.h).toBeLessThanOrEqual(shorter.height);
     }
   });
@@ -121,18 +115,16 @@ describe('the three card rects', () => {
 });
 
 describe('noticesPanelView', () => {
-  it('paints the three lines in their own boxes', () => {
+  it('paints the two lines in their own boxes', () => {
     const view = noticesPanelView(LINE, DESKTOP);
     expect(view.notice).toEqual({ text: 'Obtained Potion!', box: noticeBox(DESKTOP) });
     expect(view.area).toEqual({ text: 'Entered Añil Path', box: areaBox(DESKTOP) });
-    expect(view.mission).toEqual({ text: 'Mission: Catch 3', box: missionBox(DESKTOP) });
   });
 
-  it('renders nothing for a null line and keeps the other two', () => {
-    const view = noticesPanelView({ notice: null, area: null, mission: 'Mission: Catch 3' }, PHONE);
+  it('renders nothing for the null line and the other one as it stands', () => {
+    const view = noticesPanelView({ notice: null, area: 'Entered Añil Path' }, PHONE);
     expect(view.notice).toBeNull();
-    expect(view.area).toBeNull();
-    expect(view.mission).toEqual({ text: 'Mission: Catch 3', box: missionBox(PHONE) });
+    expect(view.area).toEqual({ text: 'Entered Añil Path', box: areaBox(PHONE) });
   });
 
   it('is pure and total: the same input gives a deep-equal view and the input is not written', () => {
@@ -146,7 +138,7 @@ describe('noticesPanelView', () => {
   });
 
   it('reads no clock and no state: the view is a function of the input and the viewport', () => {
-    const empty = noticesPanelView({ notice: null, area: null, mission: null }, DESKTOP);
-    expect(empty).toEqual({ notice: null, area: null, mission: null });
+    const empty = noticesPanelView({ notice: null, area: null }, DESKTOP);
+    expect(empty).toEqual({ notice: null, area: null });
   });
 });

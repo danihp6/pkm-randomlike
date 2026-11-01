@@ -27,6 +27,7 @@ const PANEL_IDS: readonly RoutePanelId[] = [
   'bag',
   'pc',
   'notices',
+  'missions',
   'rewards',
   'shop',
   'trade',

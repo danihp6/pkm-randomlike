@@ -1,9 +1,9 @@
 /*
  * The route's three passive cards (`D49`, frames `03k` / `m03k`): the notice strip,
- * the mission line and the area-entry banner. Every rect comes from `view.ts`, so
- * this file carries the board's paint only — radius 11, the 16 % hairline, the 1 px
- * highlight 12 px inside the top edge, the readout on the strip and the mission and
- * the title on the boxed area banner, whose ring is the accent.
+ * the area-entry banner. Every rect comes from `view.ts`, so
+ * this file carries the board's paint only - radius 11, the 16 % hairline, the 1 px
+ * highlight 12 px inside the top edge, the readout on the strip and the title on the
+ * boxed area banner, whose ring is the accent.
  *
  * The cards sit in the `#hud` layer and take no input: `pointer-events: none` here,
  * no handler anywhere, so the route keeps walking under them.

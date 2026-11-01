@@ -340,7 +340,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -362,7 +362,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
   });
 
   it('starts on the source table', () => {
@@ -396,7 +396,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -423,6 +423,7 @@ describe('settings validation', () => {
       '23',
       '24',
       '25',
+      '26',
     ]);
   });
 
@@ -698,7 +699,8 @@ describe('migrateDocument', () => {
       22: (doc) => ({ ...doc, version: 23 }),
       23: (doc) => ({ ...doc, version: 24 }),
       24: (doc) => ({ ...doc, version: 25 }),
-      25: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      25: (doc) => ({ ...doc, version: 26 }),
+      26: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -784,7 +786,7 @@ describe('map-position migration', () => {
     const run: Record<string, unknown> = { ...sampleRun(), pcUnlocked: ['catch-1'] };
     const raw = JSON.stringify({ version: 15, run });
     const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(26);
+    expect(emptySave().version).toBe(27);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
     expect(decoded.run?.party).toHaveLength(6);
@@ -915,7 +917,7 @@ describe('nickname migration', () => {
   it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
     const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
     const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.party).toHaveLength(6);
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
@@ -1202,8 +1204,8 @@ describe('the run modifiers', () => {
   }
 
   it('stamps the current version', () => {
-    expect(SAVE_VERSION).toBe(26);
-    expect(emptySave().version).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
+    expect(emptySave().version).toBe(27);
     expect(SAVE_MIGRATIONS[20]).toBeDefined();
   });
 
@@ -1296,7 +1298,7 @@ describe('the run modifiers', () => {
 
 describe('the per-member usage counter', () => {
   it('stamps the current version and carries the 21 step', () => {
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(SAVE_MIGRATIONS[21]).toBeDefined();
   });
 
@@ -1366,7 +1368,7 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
   }
 
   it('stamps the current version and carries the 22 step', () => {
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(SAVE_MIGRATIONS[22]).toBeDefined();
   });
 
@@ -1472,6 +1474,47 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
       expect('statTreats' in member.fighter).toBe(false);
     }
   });
+
+  it('migrates a v26 run to an empty mission history', () => {
+    const legacy = JSON.stringify({ version: 26, settings: defaultSettings(), run: sampleRun() });
+    const decoded = decodeSave(legacy);
+    expect(SAVE_VERSION).toBe(27);
+    expect(decoded.version).toBe(27);
+    expect(decoded.run?.completedMissions).toEqual([]);
+    expect(decoded.run?.missionsCompleted).toBe(0);
+  });
+
+  it('reads a v27 mission history and drops the rows it cannot trust', () => {
+    const raw = JSON.stringify({
+      version: SAVE_VERSION,
+      run: {
+        ...sampleRun(),
+        completedMissions: [
+          { id: 'flawless', mapIndex: 1 },
+          { id: '', mapIndex: 2 },
+          { id: 'flawless', mapIndex: -1 },
+          { id: 'flawless' },
+          'nope',
+          { id: 'flawless', mapIndex: 4 },
+        ],
+      },
+    });
+    const decoded = decodeSave(raw);
+    expect(decoded.run?.completedMissions).toEqual([
+      { id: 'flawless', mapIndex: 1 },
+      { id: 'flawless', mapIndex: 4 },
+    ]);
+  });
+
+  it('reads a v27 run with no history as empty, and never reconstructs it', () => {
+    const raw = JSON.stringify({
+      version: SAVE_VERSION,
+      run: { ...sampleRun(), missionsCompleted: 4, completedMissions: 'gone' },
+    });
+    const decoded = decodeSave(raw);
+    expect(decoded.run?.completedMissions).toEqual([]);
+    expect(decoded.run?.missionsCompleted).toBe(4);
+  });
 });
 
 describe('the run history (Task-152)', () => {
@@ -1551,8 +1594,8 @@ describe('the run history (Task-152)', () => {
   }
 
   it('stamps the current version and carries the 23 step', () => {
-    expect(SAVE_VERSION).toBe(26);
-    expect(emptySave().version).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
+    expect(emptySave().version).toBe(27);
     expect(SAVE_MIGRATIONS[23]).toBeDefined();
   });
 
@@ -1641,7 +1684,7 @@ describe('the dark Pokémon (Task-154)', () => {
   }
 
   it('stamps the current version and carries the 24 step', () => {
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(SAVE_MIGRATIONS[24]).toBeDefined();
   });
 
@@ -1735,7 +1778,7 @@ describe('the run clock and the faint counters (Task-181)', () => {
   const INSTANT = '2026-10-27T09:30:00.000Z';
 
   it('stamps the current version and carries the 25 step', () => {
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     expect(SAVE_MIGRATIONS[25]).toBeDefined();
   });
 
@@ -1746,7 +1789,7 @@ describe('the run clock and the faint counters (Task-181)', () => {
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.startedAt).toBe('');
     expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 1, faints: 0 });
-    expect(JSON.parse(encodeSave(decoded)).version).toBe(26);
+    expect(JSON.parse(encodeSave(decoded)).version).toBe(27);
   });
 
   it('decodes a current document that simply omits both, with the same defaults', () => {

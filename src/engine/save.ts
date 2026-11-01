@@ -29,7 +29,7 @@ import type { MissionProgress } from './run/missions';
 import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
-import { dedupeMemberIds, emptyRunStats, type RunState, type RunStats } from './run/state';
+import { dedupeMemberIds, emptyRunStats, type CompletedMission, type RunState, type RunStats } from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -80,7 +80,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -360,6 +360,13 @@ export const SAVE_MIGRATIONS: Migrations = {
     run: isRecord(document.run)
       ? { ...document.run, startedAt: '', stats: withFaintCount(document.run.stats) }
       : document.run,
+  }),
+  // The floors whose mission the run met: a v26 run met its floors without recording
+  // them, so the history starts empty and is never reconstructed.
+  26: (document) => ({
+    ...document,
+    version: 27,
+    run: isRecord(document.run) ? { completedMissions: [], ...document.run } : document.run,
   }),
 };
 
@@ -842,6 +849,24 @@ function parseMission(value: unknown): MissionProgress | null {
 }
 
 /**
+ * Reads the floors whose mission the run met. A non-array reads empty; a row that is
+ * not an object with a non-empty `id` and a non-negative integer `mapIndex` is dropped
+ * rather than repaired (the `parseHistory` precedent). The list is **not** filtered
+ * against `MISSION_TABLE`: it is history, and a table may lose a row that a run met.
+ */
+function parseCompletedMissions(value: unknown): readonly CompletedMission[] {
+  if (!Array.isArray(value)) return [];
+  const rows: CompletedMission[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    if (!isString(entry.id) || entry.id === '') continue;
+    if (!isInteger(entry.mapIndex) || entry.mapIndex < 0) continue;
+    rows.push({ id: entry.id, mapIndex: entry.mapIndex });
+  }
+  return rows;
+}
+
+/**
  * Reads the run's NPC modifiers. `curse` only when it is exactly `true`; `nextWildType`
  * only when it is a non-empty string; a `forcedField` only when its `id` names a
  * `ROOM_BATTLEFIELDS` row and its `floorsLeft` is an integer of at least one (the
@@ -1012,6 +1037,7 @@ function parseRun(value: unknown): RunState | null {
   const stats = parseRunStats(value.stats);
   const missionsCompleted =
     isInteger(value.missionsCompleted) && value.missionsCompleted >= 0 ? value.missionsCompleted : 0;
+  const completedMissions = parseCompletedMissions(value.completedMissions);
   const hpLost = isInteger(value.hpLost) && value.hpLost >= 0 ? value.hpLost : 0;
   // Clamped to the run's own casualty count, so a hand-edited document cannot make a
   // floor look casualty-free.
@@ -1047,6 +1073,7 @@ function parseRun(value: unknown): RunState | null {
     capturedRooms,
     mission: parseMission(value.mission),
     missionsCompleted,
+    completedMissions,
     hpLost,
     floorCasualties,
     modifiers: parseModifiers(value.modifiers),

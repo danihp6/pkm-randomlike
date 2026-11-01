@@ -177,6 +177,10 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'hud.evolveTitle': 'EVOLUCIÓN',
   'hud.pressAnyKey': 'pulsa una tecla',
   'hud.mission': 'Misión: {mission}',
+  'hud.missions': 'MISIONES',
+  'hud.missionsEmpty': 'Ninguna misión de planta completada aún.',
+  'hud.missionsMap': 'Mapa {map}',
+  'hud.missionProgress': 'PS perdidos {hp}',
   'hud.searchItems': 'buscar objetos...',
   'hud.candyKnown': 'En esta partida: {stat} {delta}',
 

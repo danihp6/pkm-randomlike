@@ -7,7 +7,7 @@
  */
 
 /** The panels of the route HUD, in the order they are listed. */
-export const HUD_PANEL_IDS = ['header', 'party', 'bag', 'box', 'detail'] as const;
+export const HUD_PANEL_IDS = ['header', 'party', 'bag', 'box', 'detail', 'missions'] as const;
 
 export type HudPanelId = (typeof HUD_PANEL_IDS)[number];
 
@@ -26,6 +26,7 @@ export function defaultHudLayout(): HudLayout {
     bag: { dx: 0, dy: 0, collapsed: true },
     box: { dx: 0, dy: 0, collapsed: true },
     detail: { dx: 0, dy: 0, collapsed: true },
+    missions: { dx: 0, dy: 0, collapsed: true },
   };
 }
 

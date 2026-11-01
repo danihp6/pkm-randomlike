@@ -403,7 +403,9 @@ run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
 - Every floor carries **one mission**: chosen deterministically from the run seed
   when the floor is built (its own stream, so no route, roster or encounter draw
   moves), it is evaluated when the run takes the portal. Meeting it bumps a
-  **run-long counter** and pays a **fixed reward row** (`{ kind: 'room' }` today,
+  **run-long counter** and appends `{ id, mapIndex }` to the run's
+  `completedMissions` history (the floor being left, oldest first), and pays a
+  **fixed reward row** (`{ kind: 'room' }` today,
   read by the special-room tasks); the first kind is `flawless` — leave the floor
   having lost **no HP** and without a casualty.
 - The older mini-boss/boss cadence (`RUN_CHAIN` in `src/data/run.ts`) is folded
@@ -481,13 +483,15 @@ cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
 
-- The HUD carries the floor's own **mission** in one line under the
-  transient-notice strip, and meeting it raises one transient notice through the
+- The HUD carries the floor's own **mission** as its **MISSIONS card** (`D58`): the
+  card the old line lived in became a panel with its own chip, drag and saved slot,
+  the floor's row with its progress first and the floors already met under it,
+  newest first. Meeting a mission raises one transient notice through the
   same module (one message at a time, no key, no block). The static leaf floats its
   refusal line when its seal does not yield to the party (`docs/maps-spec.md` §7),
   and a legendary leaf floats one more line on entry.
-- Entering a **room** raises the **area banner**: a boxed card under the mission
-  line that names the biome the run has walked into (`Deep Forest`), holds 3 s and
+- Entering a **room** raises the **area banner**: a boxed card under the notice
+  strip that names the biome the run has walked into (`Deep Forest`), holds 3 s and
   dismisses itself — it takes no key and blocks nothing. It comes up on **every**
   room entry, not only when the floor changes, while the boss room's rebuild as its
   portal opens is the same room and raises none. The name is the biome's own, so it

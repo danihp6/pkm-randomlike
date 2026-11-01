@@ -1493,3 +1493,42 @@ lies has two honest outcomes — corrected on the board, or removed from it and 
 `[Task-220]` ships the map, the extractor, the command, the checks and this decision. `[Task-223]`
 moves the old exporter's `design/frames/<slug>.json` and its rasters to the import's destinations
 and retires that exporter, so the folder has one pipeline and one shape per file.
+
+
+## D58 — The floor's mission is a HUD card, and the run keeps the floors it met
+
+**Decision.** The floor's mission stops being a passive line of the notices stack and becomes a
+**route panel** like PARTY, BAG and the box: `missions` joins `HUD_PANEL_IDS` with its own saved
+`{ dx, dy, collapsed }` slot, `src/scenes/panels/missions.ts` is its scene module and
+`src/ui/hud/panels/missions/` its DOM card. It hangs in the shared `PanelFrame`, so its chip, its
+drag, its clamp and its offset are the kit's and no second chrome exists.
+
+**Which answer this supersedes.** `[Task-194]`'s first answer was a **canvas pane**, because that is
+what a route panel was when it was parked. `[Task-200]` retired the canvas panel layer, so the card
+is DOM like every other; the saved slot, the chip and the clamp are unchanged by that retirement.
+
+**The list.** The run records the missions it met: `RunState.completedMissions` is a list of
+`{ id, mapIndex }` appended in `advanceMap` at the same place `missionsCompleted` steps, so the
+counter and the list's length are the same number for every run that starts after `SAVE_VERSION` 27.
+`missionsCompleted` stays: the special NPCs' gate and the trainer rows read the number, and the list
+is the history, not a second counter. The card prints the floor the run stands on first (with its
+`HP lost {hp}` progress) and then the met floors, newest first, capped at six rows.
+
+**The migration.** `26 -> 27` seeds `completedMissions: []` and never reconstructs a pre-v27 run's met
+floors from `missionsCompleted`: the counter says how many, not which floors or which rows, so a
+reconstruction would invent history. The decoder drops a row it cannot trust (a missing id or a
+negative floor) instead of repairing it, and it does **not** filter the list against
+`MISSION_TABLE` - the history may name a row the table has since lost.
+
+**The one card without a strip badge.** The strip draws a badge for the four `STRIP_CHIP_ORDER`
+panels only, and this decision adds no fifth badge. A collapsed mission card would therefore be
+unreachable, so `PanelFrame` gained `chipWhenCollapsed`: for the missions card the frame keeps its
+chip (and its drag target) on screen while the card behind it is `visibility: hidden` - the same
+box, so the same clamp - and every other panel keeps the shipped rule that a collapsed card paints
+nothing and the strip's badge is its compressed form.
+
+**No reward is applied here.** `MISSION_TABLE`'s `reward` stays unread: the room tasks hang their
+reward off a completed mission, and this decision only makes the record and the card.
+
+`[Task-194]` ships the field, the migration, the card, the scene module, the i18n keys and the
+removal of the mission line from `notices/`.
