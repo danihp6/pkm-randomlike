@@ -10869,7 +10869,7 @@ becomes a claim, not a silent pass.
       onto a board rect becomes a claim. `[live]` from a clean profile: the first route draws three
       badges and `P` brings up the fourth at `928, 8`, all 26 × 26, none reading `S`.
 
-- [ ] **[Task-246] The floor map is wired to its spec.** The route header card: the floor minimap
+- [x] **[Task-246] The floor map is wired to its spec.** The route header card: the floor minimap
       of `docs/maps-spec.md` §8 and `D32`.
       **Measured:** `design/screens/03o-panels-map-routes.json` is the frame `03o Panels · map
       routes` (`design/board.json`, node `6:2250`), **35 boxes, 4 strings, 18 colours**, and the
@@ -10893,6 +10893,15 @@ becomes a claim, not a silent pass.
       `[data-hud-map="title"]`'s text is the run's own floor title. Claims
       `src/ui/hud/specGap.views/map.ts`, `src/ui/hud/panels/map/specGap.test.ts` and
       `src/ui/hud/panels/map/README.md`. *Dependencies:* none. *(Batch 108)*
+      **SHIPPED** in Batch 108 (`2026-11-01`): `src/ui/hud/specGap.views/map.ts` builds
+      `mapPanelView` from the fixture at 1280×800 and claims nothing: the frame draws a **region** map
+      at `(928, 24, 304, 198)` with 27 route vectors and a ROUTE/MAP toggle, and the game draws the
+      floor minimap at `(8, 8, 216, 250)` with one room and one door — a screen the game does not have,
+      so the adapter measures it and never grows the view to match (the spec forbids it). Its eleven
+      tests pin the five named boxes, the four strings, the `−920/−16/−88/+52` delta and the card's own
+      title. One spec erratum is recorded: the frame carries **27** `Vector` shapes, not 32; the
+      adapter pins no vector count. `[live]` at 1280×800: `[data-hud-panel="header"]` reads
+      `8, 8, 216, 250` and the title is the floor's own, not `VIRIDIAN FOREST`.
 
 - [ ] **[Task-247] The PC box and its RIP list are wired to its spec.** The route's PC window on its
       RIP tab — the list of the dead.

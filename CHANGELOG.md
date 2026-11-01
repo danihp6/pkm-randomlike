@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The floor map is measured against frame `03o`.** `[Task-246]`, Batch 108:
+      `src/ui/hud/specGap.views/map.ts` builds `mapPanelView` from the fixture at 1280×800 and claims
+      nothing, because the frame draws a **region** map — `(928, 24, 304, 198)`, 27 route vectors, a
+      `ROUTE`/`MAP` toggle and the `VIRIDIAN FOREST` title — and the game draws the **floor minimap**
+      at `(8, 8, 216, 250)` with one room and one door. The adapter records the delta (`−920, −16,
+      −88, +52`) and the card's own title (`Map 1 · …` against the board's), and its eleven tests pin
+      the premise; growing the view to match a screen the game does not have is explicitly out of
+      scope. One spec erratum: the frame carries **27** `Vector` shapes, not the 32 the spec said, and
+      the adapter pins no vector count. `[live]` at 1280×800 read `[data-hud-panel="header"]` at
+      `8, 8, 216, 250` with the floor's own title.
+
 - [x] **The compressed HUD is measured against frame `03c`.** `[Task-245]`, Batch 108:
       `src/ui/hud/specGap.views/compress.ts` builds `stripView` with **every card collapsed** at
       1280×800 and claims the four letters the strip prints, `M C P I`, with no box and no colour. The
