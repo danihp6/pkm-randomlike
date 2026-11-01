@@ -63,7 +63,7 @@ export function fieldChipRow(
   const cells = Number.isFinite(count) ? Math.min(2, Math.max(0, Math.trunc(count))) : 0;
   if (cells === 0) return null;
   const stage = battleStage(viewport);
-  const right = stage.x + stage.w - FIELD_CHIP_INSET;
+  const right = viewport.width - FIELD_CHIP_INSET;
   // On a phone the foe's card spans the width at the top, so the corner is taken:
   // the row drops under that side's lowest box and keeps the same right edge.
   const narrow =

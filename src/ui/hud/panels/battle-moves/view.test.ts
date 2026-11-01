@@ -10,10 +10,12 @@ import {
 } from '../../../moveGrid';
 import { FRLG_WINDOW_PADDING } from '../../../frlg';
 import { MOVE_ICON_BOX } from '../../kit/moveIcons';
-import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox } from '../battle-hp/view';
+import { STAGE_CHIP, STAGE_CLEARANCE, STAGE_COLS, STAGE_GAP, battleHpBox, battleStage } from '../battle-hp/view';
 import {
   BATTLE_COMPACT,
   BATTLE_STAGE_MAX,
+  CARD_W,
+  CARD_WINDOW_MARGIN,
   CATEGORY_LABELS,
   COMPACT_CARD_CLEARANCE,
   COMPACT_CARD_RAIL_W,
@@ -203,9 +205,32 @@ describe('elideToWidth', () => {
 });
 
 describe('battleMovesBox', () => {
-  it('derives the desktop card at 1280×800, clear of the foe HP column', () => {
-    expect(battleMovesBox(DESKTOP)).toStrictEqual({ x: 440, y: 582, w: 564, h: 192 });
-    expect(battleMovesBox(DESKTOP).x + battleMovesBox(DESKTOP).w).toBe(1004);
+  it('derives the desktop card at 1280×800 on the window s own 40 px margin', () => {
+    expect(battleMovesBox(DESKTOP)).toStrictEqual({ x: 676, y: 582, w: 564, h: 192 });
+    expect(battleMovesBox(DESKTOP).x + battleMovesBox(DESKTOP).w).toBe(1240);
+  });
+
+  it('keeps the frame s cell width at 222 px on the desk', () => {
+    expect(CARD_W).toBe(564);
+    expect(CARD_WINDOW_MARGIN).toBe(40);
+    const cell = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP) })).slots[0]!;
+    expect(Math.round(cell.box.w)).toBe(222);
+  });
+
+  it('anchors the desk card to the window at every viewport it fixes', () => {
+    const table = [
+      [{ width: 1280, height: 800 }, { x: 676, y: 582, w: 564, h: 192 }],
+      [{ width: 1440, height: 900 }, { x: 836, y: 682, w: 564, h: 192 }],
+      [{ width: 1440, height: 1000 }, { x: 836, y: 732, w: 564, h: 192 }],
+      [{ width: 1200, height: 900 }, { x: 596, y: 682, w: 564, h: 192 }],
+      [{ width: 900, height: 900 }, { x: 440, y: 682, w: 420, h: 192 }],
+      [{ width: 700, height: 800 }, { x: 440, y: 582, w: 240, h: 192 }],
+    ] as const;
+    for (const [viewport, box] of table) {
+      expect(battleMovesBox(viewport)).toStrictEqual(box);
+      expect(box.x + box.w).toBeLessThanOrEqual(viewport.width);
+      expect(box.y + box.h).toBe(battleStage(viewport).y + battleStage(viewport).h - 26);
+    }
   });
 
   it('never intersects the foe s lead box, which now holds the whole HP column', () => {
@@ -220,7 +245,7 @@ describe('battleMovesBox', () => {
       Math.min(card.y + card.h, enemy.y + enemy.h) - Math.max(card.y, enemy.y),
     );
     expect(overlapX * overlapY).toBe(0);
-    expect(card.x).toBe(enemy.x + enemy.w + 8);
+    expect(card.x).toBeGreaterThanOrEqual(enemy.x + enemy.w + 8);
   });
 
   it('starts at or right of the HP column at every wide viewport it sweeps', () => {
@@ -276,13 +301,15 @@ describe('battleMovesBox', () => {
   it('switches at the compact breakpoint and centres a wide stage', () => {
     const wide = battleMovesBox({ width: 700, height: 800 });
     expect(wide.w).toBe(240);
+    // The minimum-width floor keeps the card clear of the HP column and gives back its
+    // window margin instead: 440..680 rather than the 420..660 a pure right anchor gives.
     expect(wide.x).toBe(440);
     const phone = battleMovesBox({ width: 699, height: 800 });
     expect(phone).toStrictEqual({ x: 16, y: 548, w: 699 - 32, h: 236 });
     const square = battleMovesBox({ width: 1200, height: 900 });
-    expect(square.w).toBe(574);
-    expect(square.x).toBe(440);
-    expect(square.x + square.w).toBe(150 + BATTLE_STAGE_MAX - 36);
+    expect(square.w).toBe(564);
+    expect(square.x).toBe(596);
+    expect(square.x + square.w).toBe(1200 - 40);
   });
 });
 
@@ -895,13 +922,13 @@ describe('the wide cell', () => {
     );
     expect(view.compact).toBe(false);
     const slot = view.slots[0]!;
-    expect(slot.box).toStrictEqual({ x: 524, y: 606, w: 222, h: 72 });
-    expect(slot.typeBox).toStrictEqual({ x: 538, y: 636.5, w: 24, h: 24 });
-    expect(slot.boxes.name).toStrictEqual({ x: 538, y: 622.5, w: 162, h: 13 });
-    expect(slot.boxes.category).toStrictEqual({ x: 708, y: 622.5, w: 24, h: 24 });
-    expect(slot.boxes.pp).toStrictEqual({ x: 570, y: 635.5, w: 162, h: 13 });
-    expect(slot.boxes.power).toStrictEqual({ x: 570, y: 648.5, w: 86, h: 13 });
-    expect(slot.boxes.accuracy).toStrictEqual({ x: 664, y: 648.5, w: 68, h: 13 });
+    expect(slot.box).toStrictEqual({ x: 760, y: 606, w: 222, h: 72 });
+    expect(slot.typeBox).toStrictEqual({ x: 774, y: 636.5, w: 24, h: 24 });
+    expect(slot.boxes.name).toStrictEqual({ x: 774, y: 622.5, w: 162, h: 13 });
+    expect(slot.boxes.category).toStrictEqual({ x: 944, y: 622.5, w: 24, h: 24 });
+    expect(slot.boxes.pp).toStrictEqual({ x: 806, y: 635.5, w: 162, h: 13 });
+    expect(slot.boxes.power).toStrictEqual({ x: 806, y: 648.5, w: 86, h: 13 });
+    expect(slot.boxes.accuracy).toStrictEqual({ x: 900, y: 648.5, w: 68, h: 13 });
     expect(slot.nameBox).toBe(slot.boxes.name);
     expect(slot.categoryBox).toBe(slot.boxes.category);
     expect(slot.name).toBe('FLAMETHROWER');
@@ -922,11 +949,11 @@ describe('the wide cell', () => {
 
 describe('cellTextBoxes', () => {
   const phone: Rect = { x: 100, y: 616, w: 119, h: 94 };
-  const wide: Rect = { x: 524, y: 606, w: 222, h: 72 };
+  const wide: Rect = { x: 760, y: 606, w: 222, h: 72 };
 
   it('lays a cell out by its width class alone', () => {
     expect(cellTextBoxes(phone, true).name).toStrictEqual({ x: 114, y: 650, w: 91, h: 13 });
-    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 538, y: 622.5, w: 162, h: 13 });
+    expect(cellTextBoxes(wide, false, 'fire').name).toStrictEqual({ x: 774, y: 622.5, w: 162, h: 13 });
     for (const box of Object.values(cellTextBoxes(phone, true))) {
       expect(fitsInside(box, phone)).toBe(true);
     }
@@ -947,11 +974,11 @@ describe('cellTextBoxes', () => {
 
   it('pins the wide cell s five boxes, which this layout does not move', () => {
     expect(cellTextBoxes(wide, false, 'fire')).toStrictEqual({
-      name: { x: 538, y: 622.5, w: 162, h: 13 },
-      category: { x: 708, y: 622.5, w: 24, h: 24 },
-      pp: { x: 570, y: 635.5, w: 162, h: 13 },
-      power: { x: 570, y: 648.5, w: 86, h: 13 },
-      accuracy: { x: 664, y: 648.5, w: 68, h: 13 },
+      name: { x: 774, y: 622.5, w: 162, h: 13 },
+      category: { x: 944, y: 622.5, w: 24, h: 24 },
+      pp: { x: 806, y: 635.5, w: 162, h: 13 },
+      power: { x: 806, y: 648.5, w: 86, h: 13 },
+      accuracy: { x: 900, y: 648.5, w: 68, h: 13 },
     });
     expect(cellTextBoxes(wide, false, 'electric')).toStrictEqual(cellTextBoxes(wide, false, 'fire'));
     expect(cellTextBoxes(wide, false)).toStrictEqual(cellTextBoxes(wide, false, 'fire'));
@@ -1065,7 +1092,7 @@ describe('the move card', () => {
     const card = battleMovesBox(DESKTOP);
     const info = battleMovesView(inputOf({ card })).info!;
     expect(INFO_CARD_H).toBe(160);
-    expect(info.box).toStrictEqual({ x: 460, y: 414, w: 524, h: 160 });
+    expect(info.box).toStrictEqual({ x: 696, y: 414, w: 524, h: 160 });
     expect(info.box.y + info.box.h).toBeLessThanOrEqual(card.y - 8);
   });
 
@@ -1190,7 +1217,7 @@ describe('the target step s prompt row', () => {
 
   it('ends exactly one px above the first cell, on the card s own arithmetic', () => {
     const view = battleMovesView(inputOf({ card: battleMovesBox(DESKTOP), target: 'Pidgey' }));
-    expect(view.target!.box).toStrictEqual({ x: 460, y: 583, w: 524, h: 22 });
+    expect(view.target!.box).toStrictEqual({ x: 696, y: 583, w: 524, h: 22 });
     expect(view.slots[0]!.box.y - (view.target!.box.y + view.target!.box.h)).toBe(1);
     const phone = battleMovesView(inputOf({ card: battleMovesBox(PHONE), target: 'Pidgey' }));
     expect(phone.target!.box).toStrictEqual({ x: 36, y: 593, w: 318, h: 22 });

@@ -2461,11 +2461,13 @@ export class BattleScene extends Phaser.Scene {
 
   /**
    * The DOM command window's state: the card `battleCommandBox` derives from the
-   * viewport the camera viewport sits in, and the commands this scene offers.
+   * viewport the camera viewport sits in, and the commands this scene offers. Its
+   * horizontal anchor is the **window** (frame `05`'s 40 px margin), so the menu spans
+   * the window while the art keeps its centred square.
    */
   private battleCommandInput(menu: Rect): BattleCommandInput {
-    // `battleMovesBox` already folds the camera viewport's origin into the card, so
-    // it reads the canvas the camera is placed in, never the stage square it centres.
+    // `battleMovesBox` reads the window for x and the stage for y: the card's right edge
+    // is `CARD_WINDOW_MARGIN` from the window, its bottom is the shared stage line.
     const derived = battleCommandBox({ width: this.scale.width, height: this.scale.height });
     // Before the first layout the stage has no size; the canvas's own rect is then
     // the only card there is, and an open window must still land somewhere.

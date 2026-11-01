@@ -51,9 +51,9 @@ describe('the field chip geometry', () => {
 
   it('clamps the count to 0…2 and answers no row for none', () => {
     expect(fieldChipRow(DESKTOP, SINGLE, 0)).toBeNull();
-    expect(fieldChipRow(DESKTOP, SINGLE, 1)).toStrictEqual({ x: 992, y: 16, w: 32, h: 32 });
-    expect(fieldChipRow(DESKTOP, SINGLE, 2)).toStrictEqual({ x: 952, y: 16, w: 72, h: 32 });
-    expect(fieldChipRow(DESKTOP, SINGLE, 9)).toStrictEqual({ x: 952, y: 16, w: 72, h: 32 });
+    expect(fieldChipRow(DESKTOP, SINGLE, 1)).toStrictEqual({ x: 1232, y: 16, w: 32, h: 32 });
+    expect(fieldChipRow(DESKTOP, SINGLE, 2)).toStrictEqual({ x: 1192, y: 16, w: 72, h: 32 });
+    expect(fieldChipRow(DESKTOP, SINGLE, 9)).toStrictEqual({ x: 1192, y: 16, w: 72, h: 32 });
     expect(fieldChipRow(DESKTOP, SINGLE, -3)).toBeNull();
     expect(fieldChipRow(DESKTOP, SINGLE, Number.NaN)).toBeNull();
   });
@@ -61,7 +61,7 @@ describe('the field chip geometry', () => {
   it('drops under the foe card on a phone and holds the corner on a desk', () => {
     expect(fieldChipRow(PHONE, SINGLE, 1)).toStrictEqual({ x: 342, y: 104, w: 32, h: 32 });
     expect(fieldChipRow(PHONE, DOUBLE, 1)).toStrictEqual({ x: 342, y: 192, w: 32, h: 32 });
-    expect(fieldChipRow(DESKTOP, DOUBLE, 1)).toStrictEqual({ x: 992, y: 16, w: 32, h: 32 });
+    expect(fieldChipRow(DESKTOP, DOUBLE, 1)).toStrictEqual({ x: 1232, y: 16, w: 32, h: 32 });
     expect(fieldChipRow(SQUARE, SINGLE, 2)).toStrictEqual({ x: 812, y: 16, w: 72, h: 32 });
   });
 });
@@ -80,14 +80,14 @@ describe('battleFieldView', () => {
     expect(chip!.kind).toBe('weather');
     expect(chip!.turns).toBe('5');
     expect(chip!.label).toBe('Sun · 5');
-    expect(chip!.box).toStrictEqual({ x: 992, y: 16, w: 32, h: 32 });
-    expect(view.row).toStrictEqual({ x: 992, y: 16, w: 32, h: 32 });
+    expect(chip!.box).toStrictEqual({ x: 1232, y: 16, w: 32, h: 32 });
+    expect(view.row).toStrictEqual({ x: 1232, y: 16, w: 32, h: 32 });
   });
 
   it('paints the terrain alone in the very same corner cell', () => {
     const view = battleFieldView(inputOf({ terrain: 'grassy', terrainTurns: 3 }));
     expect(view.chips.map((chip) => chip.id)).toStrictEqual(['grassy']);
-    expect(view.chips[0]!.box).toStrictEqual({ x: 992, y: 16, w: 32, h: 32 });
+    expect(view.chips[0]!.box).toStrictEqual({ x: 1232, y: 16, w: 32, h: 32 });
   });
 
   it('puts the terrain to the weather s left when both are up at 1280×800', () => {
@@ -95,11 +95,11 @@ describe('battleFieldView', () => {
       inputOf({ weather: 'sun', weatherTurns: 5, terrain: 'grassy', terrainTurns: 3 }),
     );
     expect(view.chips.map((chip) => [chip.id, chip.box.x])).toStrictEqual([
-      ['grassy', 952],
-      ['sun', 992],
+      ['grassy', 1192],
+      ['sun', 1232],
     ]);
     expect(view.chips.map((chip) => chip.box.y)).toStrictEqual([16, 16]);
-    expect(view.row).toStrictEqual({ x: 952, y: 16, w: 72, h: 32 });
+    expect(view.row).toStrictEqual({ x: 1192, y: 16, w: 72, h: 32 });
   });
 
   it('keeps that order and the phone row under the foe card at 390×844', () => {
@@ -183,7 +183,7 @@ describe('battleFieldView', () => {
 describe('the chips clear the rest of the battle', () => {
   const VIEWPORTS: readonly Viewport[] = [DESKTOP, PHONE, SQUARE];
 
-  it('never meets an HP box, the command card or the stage edge', () => {
+  it('never meets an HP box or the command card, and stays inside the window', () => {
     for (const viewport of VIEWPORTS) {
       for (const doubles of [SINGLE, DOUBLE]) {
         const view = battleFieldView(
@@ -197,10 +197,10 @@ describe('the chips clear the rest of the battle', () => {
           }),
         );
         expect(view.chips).toHaveLength(2);
-        const stage = battleStage(viewport);
+        const window = { x: 0, y: 0, w: viewport.width, h: viewport.height };
         const card = battleMovesBox(viewport);
         for (const chip of view.chips) {
-          expect(fitsInside(chip.box, stage)).toBe(true);
+          expect(fitsInside(chip.box, window)).toBe(true);
           expect(overlaps(chip.box, card)).toBe(false);
           // The boxes the battle actually fields: an unfielded partner's rect is
           // where the phone row sits, so it is not a box on screen.
@@ -212,12 +212,12 @@ describe('the chips clear the rest of the battle', () => {
     }
   });
 
-  it('keeps the row 16 px inside the stage s right edge, and its top on a wide viewport', () => {
+  it('keeps the row 16 px inside the window s right edge, and its top on a wide viewport', () => {
     for (const viewport of [DESKTOP, SQUARE]) {
       for (const doubles of [SINGLE, DOUBLE]) {
         const row = fieldChipRow(viewport, doubles, 2)!;
         const stage = battleStage(viewport);
-        expect(row.x + row.w).toBe(stage.x + stage.w - FIELD_CHIP_INSET);
+        expect(row.x + row.w).toBe(viewport.width - FIELD_CHIP_INSET);
         expect(row.y).toBe(stage.y + FIELD_CHIP_INSET);
         expect(row.h).toBe(FIELD_CHIP);
         expect(row.w).toBe(FIELD_CHIP * 2 + FIELD_CHIP_GAP);
