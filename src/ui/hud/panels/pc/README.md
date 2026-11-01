@@ -12,6 +12,7 @@ view, so a turn of `?hud=dom` swaps the drawing and not the rules.
 - `view.test.ts` — the mirrored constants against their literals, both panel boxes, the page slice with its empty cells, the tab strip, the RIP tab, the highlight, the key chip, the selected/locked marks and purity, headless.
 - `pcPanel.tsx` — the panel itself: the card, the key chip, the page tabs, the RIP tab, the 16 cells with their name, level, HP bar, HP text, status mark and lock veil, the commands they emit and the pointer drag that reorders the box; the drag cell lives in `PcPanel` (which also drops a carried cell on any release outside the card) and the paint in `PcCard`.
 - `pcPanel.test.ts` — the card walked as Preact props: the drag's one `onReorder` and the click it swallows, the press that only asks for the member's detail, the locked cell and the RIP pane that start no drag, the scene's own press and reorder receivers, and the HUD's one member gesture resolving both cards on release.
+- `specGap.test.ts` — the card against the imported `03p` frame: the seven strings it claims on the RIP tab, the copied lines it cannot claim and the geometry its empty box claim rests on, headless.
 - `pc.css` — the board's card and slot paint plus the shipped tab strip, one scoped custom property per board value.
 - `mount.tsx` — `mountPcPanel`: renders the panel into a host element against the scene's signal, beside the command and reorder callbacks, inside the panel frame that carries its chip and drag, and returns its disposer.
 - `index.ts` — the barrel the scene module imports.
