@@ -11184,18 +11184,21 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
       `src/ui/hud/specGap.views/rewards-pokemon.ts` and
       `src/ui/hud/panels/rewards/specGap.pokemon.test.ts`. *Dependencies:* none. *(Batch 109)*
 
-### Batch 110 - the trade counter, the slot machine and the pause menu
+### Batch 110 - the trade counter, the slot machine and the pause menu **(shipped, 2026-11-02)**
 
-**The state, corrected on `2026-11-02`.** This batch was cut on the night of `2026-11-01` (four
-specs written) and **never launched**: no `task-252`-`task-255` branch ever reached `origin`, so the
-"batch in flight" the Batch 111 cut leaned on was a premise, not a state. The batch is still open
-and still the lowest pending one; it runs **whole, four tasks**, and the cycle that takes it writes
-its specs again, because the ones cut that night are stale.
+**Shipped on `2026-11-02`, whole, four tasks.** This batch was cut on the night of `2026-11-01`
+(four specs written) and never launched: no `task-252`-`task-255` branch ever reached `origin`, and
+the "batch in flight" the Batch 111 cut leaned on was a premise, not a state. The `2026-11-02`
+cycle re-read the block, wrote the four specs again — the ones cut that night were stale — and ran
+the batch whole, one dev and one Task QA per row, one integration pass on the combined tree, and
+one merge push per task in ID order. The walker's `PENDING` map now holds exactly the twelve slugs
+this table still calls `pending`.
 
-**The batch ships four rows, so the table will read seventeen `wired` and 16 `pending` when they
-land.** The adapters are `specGap.views/trade-pick.ts`, `trade-result.ts`, `rocket.ts` and
+**The batch shipped four rows, so the table now reads twenty-one `wired` and 12 `pending`** (it read
+17 and 16 before). The adapters are `specGap.views/trade-pick.ts`, `trade-result.ts`, `rocket.ts` and
+
 `pause.ts`; each `PENDING` line and its table row flip in its own merge push. Two of the four are
-**fully-claiming** rows: `03i` claims thirteen boxes and `03j` four, every delta `0`, because the
+**fully-claiming** rows: `03i` claims fourteen boxes and `03j` four, every delta `0`, because the
 trade panel's `view.ts` was itself rebuilt from these two frames — a different case from Batch 109's,
 where `03f`/`03g` claimed five boxes of a card the panel had been given. The other two are the wave's
 sharpest contrast: `03h` is the only **Phaser** panel in the thirty-two rows (no `PanelView`
@@ -11249,7 +11252,7 @@ draws the pick sheet `tradePanelView` paints — the 760 × 560 card at `(260, 1
 highlight, six 158 × 104 party rows at a 170 / 116 pitch, sixteen 76 px PC slots at an 88 px pitch
 and the 340 × 44 give-away button — so it claims the card, the highlight, its six rows, **five** of
 the sixteen slots (the fixture holds five members; the card paints no empty cell) and the button:
-thirteen boxes, zero delta, five strings, and the `meta` line's middle dot recorded against the
+fourteen boxes, zero delta, five strings, and the `meta` line's middle dot recorded against the
 board's three spaces. `03j` draws the result card the same panel centres inside that box — the
 560 × 420 card at `(360, 190)`, its highlight, the 128 px portrait and the 24 px `type WATER` chip
 all at a zero delta — four boxes and its five lines. `03h` draws a **taller** cabinet: 460 × 344 at
@@ -11280,7 +11283,7 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
       **Fix shape:** add `src/ui/hud/specGap.views/trade-pick.ts` exporting
       `slug = '03i-panels-trade-pick'` and `buildView(spec)`, which builds
       `tradePanelView(inputFrom(FIXTURE.pick), {1280, 800})` — `inputFrom` the mapping
-      `panels/trade/fixture.test.ts` already uses — claims the thirteen boxes at a zero delta
+      `panels/trade/fixture.test.ts` already uses — claims the fourteen boxes at a zero delta
       (`trade panel`, `panel highlight`, `party row 1…6`, `pc slot 1…5`, `give away button`) and the
       five strings `TRADE`, `Pick the Pokémon you will give away.`, `PARTY`, `PC`, `GIVE AWAY`,
       recording `meta` (`PARTY 6/6   PC 5/16` vs `PARTY 6/6 · PC 5/16`), the eleven empty slots the
