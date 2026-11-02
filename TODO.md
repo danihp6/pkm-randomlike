@@ -11261,7 +11261,7 @@ viewport's own rect) and one string (`MENU`), with the card, its highlight, its 
 rows all `+56` away and the board's last two rows unshipable. Every empty claim is guarded by a
 premise test, so a panel that moves onto the board's rect becomes a claim instead of a silent pass.
 
-- [ ] **[Task-252] The trade counter's pick sheet is wired to its spec.** The counter a player
+- [x] **[Task-252] The trade counter's pick sheet is wired to its spec.** The counter a player
       opens on the trade room's NPC: the 760 × 560 card, its six party rows, the PC column and the
       `GIVE AWAY` button.
       **Measured:** `design/screens/03i-panels-trade-pick.json` is the frame `03i Panels · trade

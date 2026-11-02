@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The trade counter's pick sheet is wired to its spec.** `[Task-252]`, Batch 110: the
+      `trade` panel gains its `03i Panels · trade pick` adapter, and the frame turns out to be the
+      shipped card to the pixel — the 760 × 560 box at `260, 120`, its highlight, the six 158 × 104
+      party rows at a 170 / 116 pitch, five of the sixteen PC cells and the `GIVE AWAY` button are
+      claimed at a zero delta, with `PARTY 6/6 · PC 5/16` against the board's three spaces recorded
+      as the copy delta. All criteria `[unit]`: the adapter adds no drawing code and the panel has
+      no fixture preview, so the frame is measured against `tradePanelView` headless.
+
 - [x] **The battle SWITCH window is wired to its spec.** `[Task-261]`, Batch 112: the
       `battle-switch` panel gains its `05d Battle · pokemon` adapter, which claims the frame's copy
       — the four member names and the lead's `98/112` line — and records the measured delta in its
