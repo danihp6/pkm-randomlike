@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The region: the contract, the plan and the names.** `[Task-268]`, Batch 117: a pure
+      `planRegion(seed)` now turns the run seed into the whole world — one starting town, eight gym
+      cities in badge order, one main route per stretch with one or two laterals (16-24 routes),
+      the Victory Road, the League and the tower — and every node carries its `nodeKey`
+      (`<kind>:<id>`), a unique seeded position, its badge stretch and cap, its `gymDistance` (0
+      exactly at the gyms, one per step back along the stretch) and its reciprocal edges. Names are
+      seeded `Adjective Noun` settlements and `Route <n>` in chain order, unique per seed; each node
+      owns four streams `${seed}:node:<key>:{layout,content,encounters,loot}`, with no global route
+      prefix, so walking back replays a node and adding one cannot move another. The sizes, the
+      `9/16/23/30/37/43/49/55` cap ladder and the name lists live in `src/data/region.ts`, and
+      `src/engine/region/index.ts` re-exports only `plan`, `names` and `streams` so Batch 118's
+      three generators add their folders without a shared file. All criteria `[unit]`: eight fixed
+      seeds plus a 406-seed probe hold the invariants, and a fixed seed pins a literal digest.
+
 - [x] **The defeat card is wired to its spec.** `[Task-263]`, Batch 112: the `run-over` panel
       gains its `06 Run over · defeat` adapter, and the frame turns out to be the shipped desk
       board to the pixel — `run over panel` `280, 170, 720, 480`, `main menu button`

@@ -11858,7 +11858,7 @@ not shared this round.
 **What it replaces.** `docs/maps-spec.md` (deleted), the per-map plan, the Image-per-cell draw and
 the biome-only tileset registry.
 
-- [ ] **[Task-268] The region: the contract, the plan and the names.** A pure generator turns the run
+- [x] **[Task-268] The region: the contract, the plan and the names.** A pure generator turns the run
       seed into the whole world: the town, the eight gym cities, one main route per stretch with its
       laterals, the Victory Road, the League and the tower — each node with a stable key, a seeded
       position, its badge cap and its distance to the gym that governs it.
