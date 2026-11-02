@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The trade counter's result card is wired to its spec.** `[Task-253]`, Batch 110: the
+      `trade` panel's other state gains its `03j Panels · trade result` adapter — the 560 × 420 card
+      centred inside the pick box lands on `360, 190` exactly, with its highlight, the 128 px
+      portrait and the `type WATER` chip at a zero delta, and the five lines the card prints
+      (`TRADE`, `TRADE COMPLETE`, `RECEIVED`, `SHELLDER`, `ADDED TO YOUR PARTY`) claimed as copy.
+      The `CLOSE` button the card adds at `470, 542, 340, 44` and the stylesheet's divider are
+      recorded, not claimed. All criteria `[unit]`, for the same reason as its pick-state sibling.
+
 - [x] **The trade counter's pick sheet is wired to its spec.** `[Task-252]`, Batch 110: the
       `trade` panel gains its `03i Panels · trade pick` adapter, and the frame turns out to be the
       shipped card to the pixel — the 760 × 560 box at `260, 120`, its highlight, the six 158 × 104

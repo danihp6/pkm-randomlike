@@ -11293,7 +11293,7 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
       `src/ui/hud/specGap.views/trade-pick.ts`, `src/ui/hud/panels/trade/specGap.pick.test.ts` and
       `src/ui/hud/panels/trade/README.md`. *Dependencies:* none. *(Batch 110)*
 
-- [ ] **[Task-253] The trade counter's result card is wired to its spec.** The same panel on its
+- [x] **[Task-253] The trade counter's result card is wired to its spec.** The same panel on its
       other state: the card a landed trade shows — the portrait, the type chip and the received
       name.
       **Measured:** `design/screens/03j-panels-trade-result.json` is the frame `03j Panels · trade
