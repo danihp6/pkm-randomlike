@@ -44,6 +44,7 @@ testable logic belongs in the computing half.
 - `rocketPanel.test.ts` — the machine's own surface: the resting and revealing reels, the run
   committed before the first frame, the price and lock lines, the tile the grunt is fought on and
   the module's export list.
+- `rocketPanel.specGap.test.ts` — the `03h Panels · rocket slots` adapter: the seven declared-but-unclaimed cabinet boxes and their drift, and the two lines the machine really claims, headless.
 - `abilityInfo.ts` — the ability row's info control and the text it floats, so the route HUD and
   the battle's switch window read the same way.
 - `partyScreen.ts` — the party/box model: rows, panes, cursor, drag/drop and the box page math.
