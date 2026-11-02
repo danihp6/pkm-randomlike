@@ -25,6 +25,49 @@ Showdown's semantics, swappable tilesets, strict permadeath. Reuse of
 
 ## Batch plan
 
+**Phase 24 (the newest round, `2026-11-02`): the floors are gone and the region replaces them.**
+The human's decision of `2026-11-02` retires the Binding-of-Isaac floor model — a run is no longer a
+chain of maps of rooms — and puts a Pokémon **region** in its place: a procedurally named starting
+town, **eight gym cities**, long **routes** (2-4 screens, one biome per route), 1-2 **optional
+laterals** per stretch, the **Victory Road**, the **League** and the **tower** behind the Champion.
+Nothing already shipped is rewritten by this paragraph: Phases 0-23 stay as they are, the panel wave
+keeps its own backlog, and the open work that assumed rooms or floors is **frozen** with a `[!]` and
+its reason in the item (`[Task-256]` is the only one today — its `StarterScene` is what the
+laboratory's first room replaces). The phase is **Batches 116-125** — `113`, `114` and `115` are
+already bound to the panel wave's last rows, so the region's ten batches take the next ten labels and
+no ID moves — and **`[Task-264]` to `[Task-299]`**, in backlog order. Three rules bind the whole
+phase. **Identity:** `nodeKey = <kind>:<id>` is the only name a piece of the world has, and every
+node owns one stream family, `${seed}:node:<key>:…`; `routeIndexForRoom` and the global route prefix
+retire with the floors. **Persistence:** the save steps **27 → 28 with no migration** — the run in
+progress is discarded (there is nothing in production), settings and history survive, the record is
+a **count of badges**, and the tower's streak is tracked apart from it. **Docs:** `docs/region-spec.md`
+is born and `docs/maps-spec.md` dies with the floors; `docs/routes-spec.md`, `docs/design-spec.md`
+and `docs/tech-decisions.md` are rewritten section by section, with new `D59`-`D68`. **The decisions,
+and who writes each:** `[Task-270]` takes `D59` (the region replaces the floors), `D60` (node
+identity and its stream family), `D61` (the save cuts to v28, no migration) and `D62` (the record is
+badges; the tower streak is apart); `[Task-280]` takes `D63` (one precomputed mesh, one `TilemapLayer`,
+generated in a worker), `[Task-281]` `D64` (the region map is a DOM straight-line graph), `[Task-278]`
+`D65` (the guard gates only the way forward), `[Task-279]` `D66` (levels from badge, distance and
+party size), `[Task-283]` `D67` (flight is free from the map, at visited settlements) and `[Task-291]`
+`D68` (missions are a stack). Hot files stay
+serial and every batch names its holder: `package.json`, `src/main.ts`, `vite.config.ts` and each
+`src/scenes/*.ts` a batch touches. The vertical slice is still the acceptance target: after **Batch
+121** the game walks town → route → city 1 → gym 1 end to end, and after **Batch 123** the whole
+eight-city region, the Victory Road and the tower do. The phase's shape:
+
+| batch | what it makes real | width |
+| --- | --- | --- |
+| 116 | the three loose rules the pivot needs before any map exists: an automatic Pokévial, endless Poké Balls, dark Pokémon with two rolled abilities | 4 |
+| 117 | the region **on paper**: the plan, its names, its streams, the frame mesh, the city/interior art and the new spec | 4 |
+| 118 | the three generators (long route, city, interior) and the gym/League/badge tables | 4 |
+| 119 | the run knows the region: save v28, per-node content, the badge gate, the badge curve | 4 |
+| 120 | the world renders: `WorldScene` + `TilemapLayer` + the worker, the DOM region map, the gym puzzles | 3 |
+| 121 | the node scenes: travel and transitions, city, gym, League | 4 |
+| 122 | what a node holds: the prologue, city NPCs, route POIs, catch and encounters | 4 |
+| 123 | the run at full scale: missions in a stack, services and economy, eight cities + Victory Road, the tower | 4 |
+| 124 | the shell: i18n, the debug menu, the balance/regression pass | 3 |
+| 125 | the sweep: the floor modules die, the docs close | 2 |
+
 **Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
 Batch 6b and Batch 7 are
 shipped and
@@ -10634,6 +10677,15 @@ last, whose single row is `01b`:
 | 114 | `08c-stats-pokemon` · `09-ranking` · `09b-ranking-pokemon` |
 | 115 | `01b-main-menu-no-save` |
 
+**Retired in Phase 24 (`2026-11-02`): the `07` rows are never cut.** `07-run-over-victory` and
+`07b-run-over-victory-pokemon` (the "four panels" block of batch 113's row) describe a **victory
+screen**, and the region has none: the Champion opens the endless tower, the run continues, and it
+ends only when the party does, on the defeat card `06` already covers. Those two slugs are struck
+from the wave and no ID will be bound to them; the other six rows of batches 113-115 (`08`, `08b`,
+`08c`, `09`, `09b`, `01b`) stay queued, because the history, the ranking and the menu survive the
+pivot — their *contents* change to badges in Phase 24's i18n/docs tasks, but their frames are still
+the board's.
+
 `[Task-240]` to `[Task-263]` are cut below (`252`-`263` are **entries only** — their own cycle writes
 their specs). The other 8 take the next free ID at **their** cut, in this table's order, so no ID is
 bound to a task that has no entry yet -- the round-20 precedent. No
@@ -11329,7 +11381,10 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
 
 **Four rows are queued and cut, their specs are written by their own cycle** — this block is the cut,
 not the plan: `[Task-256]` to `[Task-259]`, in the table's order. All four are entries only; a spec
-for unattempted work rots, and Batch 110 is the batch in flight.
+for unattempted work rots, and Batch 110 is the batch in flight. **`[Task-256]` is frozen by Phase 24
+(`2026-11-02`)** — the starter adapter moves to the laboratory's prologue, see its own `BLOCKED`
+note — so this batch ships **three** rows (`257`-`259`) and the fourth slot is the freeze's cost,
+recorded here and in the phase that froze it.
 
 **The exclusive paths are one adapter, one test and at most one README line each**, and no two of
 them meet: `specGap.views/starter.ts` + `panels/starter/specGap.test.ts` +
@@ -11345,8 +11400,17 @@ take the name that a future item-frame test would want. `src/ui/hud/specGap.walk
 `PENDING` line and `docs/hud-fidelity.md`'s row stay the **Orchestrator's at merge**, one slug per
 push, exactly as in Batches 107-110.
 
-- [ ] **[Task-256] The starter screen is wired to its spec.** The three cards a new run opens on —
+- [!] **[Task-256] The starter screen is wired to its spec.** The three cards a new run opens on —
       the only screen in the wave whose panel draws page-space rects rather than a card.
+      **BLOCKED: superseded by Phase 24** (`2026-11-02`). The `04-starter-pick` frame is not
+      obsolete — the *screen* is: `StarterScene` is what a new run opens today, and Phase 24 replaces
+      it with the starting town's laboratory, where the same panel is mounted from the professor's
+      interaction (`[Task-287]`). Wiring the adapter to a scene the prologue deletes would ship a
+      `src/ui/hud/specGap.views/starter.ts` whose `[live]` criterion ("press NEW RUN and read the
+      three cards") no longer exists one batch later, so the row is frozen here and **re-cut in this
+      phase**. Its measured numbers are not lost: they stay in the text below and the prologue's
+      entry points at them. The batch therefore runs three rows, not four, and the slot's constraint
+      is the same one the other rows record: the frame's host changes.
       **Measured:** `design/screens/04-starter-pick.json` is the frame `04 Starter pick`
       (`design/board.json`, node `6:1416`), **13 boxes, 6 strings, 7 colours**, and the panel is
       **`starter`** (`src/ui/hud/panels/starter/`). The frame draws `card 1…3` of `260 × 320` at
@@ -11581,6 +11645,1023 @@ and `07b` — and the name `specGap.test.ts` must stay free for the batch after 
       `src/ui/hud/specGap.views/run-over-defeat.ts`,
       `src/ui/hud/panels/run-over/specGap.defeat.test.ts` and
       `src/ui/hud/panels/run-over/README.md`. *Dependencies:* none. *(Batch 112)*
+
+## Phase 24 - La región
+
+The thirty-eighth round is the **pivot**, decided by the human on `2026-11-02` and not open to
+re-litigation: the floor model goes and a Pokémon **region** takes its place. A run is now one
+procedural region: a **starting town** (laboratory + one house + its patch of grass, no Centre), **eight
+gym cities** (50×50 for 1-2, 70×70 for 3-5, 90×90 for 6-8, with 6/10/14 buildings), **long routes**
+(2-4 screens, one biome each, one main route plus 1-2 optional laterals per stretch), the **Victory
+Road** (one long final route), the **League** (four Elite Four members and a Champion, all at 60) and
+the **endless tower** behind the Champion. Settlements are named **procedurally per seed**
+(adjective + noun, Fortnite style); routes are numbered; the region itself has no name. Every
+city carries a **Centre** (heal on entry, the only PC swap and the only shop) and a **gym** of its
+own; the starting town has no Centre — its laboratory heals on entry, hands out the starter and
+the starting bag, and keeps the town's exit shut until the starter is taken. The **guard** at each
+city's exit demands the badge — no barrier, just a refusal — and the player may always walk back;
+what was taken stays taken. Flying is free from the region map, at any visited settlement, outside
+battle.
+
+**What dies with the floors, and when.** `MapPlan`/`MapRoom`/`planMap`, `MapRoomSpecial`, sealed
+portals, the floor minimap, the finite/infinite mode pair, `StarterScene`, the `mapIndex`/`routeIndex`
+pair and `routeIndexForRoom`'s global prefix all go. They do not all go in one task: each batch's
+tasks delete the module they replace, and **Batch 125** sweeps what is left, module by module, with
+the criterion that a grep finds no live import. The intermediate batches keep the old fields and the
+old scene alive on purpose — a 3 900-line scene cannot be rewritten in the same task that changes the
+save schema, and `npm run build` must stay green at every merge — so `RunState` keeps `mapIndex`,
+`routeIndex` and `routeInMap` as **deprecated** compatibility fields from `[Task-276]` until the
+scene rewrite drops their last reader, and `[Task-298]` removes them with the modules that read them.
+
+**What survives untouched.** The battle engine and its effect registry, the dex and its generated
+tables, the HUD kit and its 33-row fidelity wave, settings and history, the ranking, the tileset and
+audio pipelines, the mission *engine* (its catalogue is rewritten, `[Task-291]`), the shop *model*
+(its stock becomes per city, `[Task-292]`) and every screen the player already knows.
+
+**Frozen by this phase.** `[Task-256]` (the starter screen) is marked `[!]`: it wires the `04`
+frame to `StarterScene`, and the prologue replaces that scene with the laboratory's starter pick —
+the adapter is written there, against the same panel, in `[Task-287]`. Two rows of Phase 23's table
+are **retired and will never be cut**: `07-run-over-victory` and `07b-run-over-victory-pokemon`, because
+a run no longer has a victory screen — the Champion opens the tower and the run ends on a wipe. The
+other six rows (`08`, `08b`, `08c`, `09`, `09b`, `01b`) stay queued; their frames are about the
+history and the menu, which survive.
+
+**The batches.** Ten, in dependency order, `[Task-264]` onwards. A batch is an antichain: no task in
+one depends on a batch-mate, and no two touch the same path except a `docs/*.md` held by disjoint
+sections. `docs/region-spec.md` is the one file several batches share: every task that names it names
+the **subsection** it owns (§1, §3, §4, §5, §6, §7.1-§7.11, §8), no two tasks in one batch own the
+same one, and Integration QA reads the combined file for lost lines. Each block names its hot-file
+holder, its width and the constraint that left any slot empty.
+
+### Batch 116 - the three rules the pivot needs before any map exists
+
+**The waves and the one split.** The human's cut named three tasks — the automatic Pokévial, the
+endless Poké Balls and dark Pokémon with two rolled abilities — and the third one carries two
+different halves: the **engine/data** half (the ability row dies, the two rolls happen, the coverage
+table regenerates) and the **card** half (a member with a second ability shows both, each with its
+text and its ⓘ). They are separate tasks because they touch separate layers and neither needs the
+other's file, which is what takes the batch to four.
+
+**Hot files.** `src/data/dex/**` and the generated `docs/balance/effect-coverage.md` are
+`[Task-266]`'s alone. No task claims `package.json`, `src/main.ts`, `vite.config.ts`, any
+`src/scenes/*.ts` or `design/**`. `src/engine/run/README.md` is `[Task-264]`'s (it writes
+`[Task-266]`'s `dark.ts` line verbatim from its spec, the Batch 112 precedent), and `src/data/dex/README.md`
+is `[Task-266]`'s alone.
+
+**What it replaces.** `usePokevial` (a manual rule with no button), the sold-out ball row, the
+hand-authored `darkmatter` row and the one-description ability cell.
+
+- [ ] **[Task-264] The Pokévial drinks itself.** The vial stops being a button nobody pressed: with
+      three charges it **waits** and fires the instant the run has something to cure — HP, PP or a
+      primary status, anywhere in the party or the box — rests both, never revives, and drops to
+      zero. No manual action exists.
+      **Measured:** `src/engine/run/heal.ts` ships `POKEVIAL_MAX_CHARGES = 3` and `usePokevial`,
+      whose only readers are its two tests — no scene, no panel, no key calls it — so the rule is
+      already pure and already unreachable. `healParty` rests party+box without curing status;
+      `restParty` is the private seam both share. `resolveBattle` (`src/engine/run/resolve.ts`)
+      charges the vial on a first trainer win and returns the run; `markBossDefeated`
+      (`state.ts`) fills it to the cap. Damage, PP loss and status only ever enter the run through
+      `resolveBattle`.
+      **Fix shape:** export `pokevialReady`, `needsHealing` and `autoPokevial` (below), make
+      `resolveBattle` end on `autoPokevial` and `markBossDefeated` return
+      `autoPokevial(fillPokevial(...))`, delete `usePokevial` and its export, and leave the HUD's
+      three-step meter exactly as it is (it reads `run.pokevialCharges` and `POKEVIAL_MAX_CHARGES`).
+      **Docs:** `src/engine/run/README.md` (the two `heal.ts` lines), `docs/routes-spec.md` §6 (the
+      vial paragraph becomes automatic).
+      **Tests:** `[unit]` the six `autoPokevial` cases, the two `resolveBattle` orders (charge then
+      drink; nothing to cure → no drink) and `markBossDefeated`; `[unit]` `grep -rn "usePokevial"
+      src` is empty. `[live]` after a trainer win with damage taken and a full meter, the strip's
+      meter reads 0/3 and every living member is full — measured on the strip, with no key pressed.
+      Claims `src/engine/run/heal.ts`, `heal.test.ts`, `state.ts`, `state.test.ts`, `resolve.ts`,
+      `resolve.test.ts`, `src/engine/run/index.ts` and `src/engine/run/README.md`. *Dependencies:*
+      none. *(Batch 116)*
+
+- [ ] **[Task-265] Poké Balls are endless.** The Mart's ball row never sells out: every purchase of
+      the band's ball pack lands in the bag and the row stays on the shelf. Every other row keeps the
+      shipped rule — one purchase per floor, then it is gone until the floor changes.
+      **Measured:** `src/ui/shop.ts` builds the shelf (`buildShop`: the pack, the potion rung, two
+      held rows, one machine, the stone) and marks a bought row with `shopRowKey(mapIndex, itemId)`
+      in `pickedItems`; `buyRows` filters picked rows out, so the ball pack disappears after one
+      purchase. `SHOP_BALL_PACK` is the pack row (`src/data/shop.ts`).
+      **Fix shape:** give `ShopSlot` an optional `infinite` flag, set it on the ball row from a new
+      `SHOP_BALL_INFINITE = true` in `src/data/shop.ts`, have `buyItem` skip the `pickedItems` mark
+      for an infinite slot and `buyRows` keep it listed; `ShopRow` gains `infinite: boolean` so the
+      card and a later city shop can read it. Nothing else about the shelf changes.
+      **Docs:** `docs/maps-spec.md` §7 (the Mart's row table: the ball row is endless), carried into
+      `docs/region-spec.md` by the doc task after this batch.
+      **Tests:** `[unit]` two consecutive ball purchases both land 10 units and both keep the row;
+      `[unit]` a potion row disappears after one purchase and the pack row does not; `[unit]` the
+      ball row is the only infinite slot a band's shelf builds. `[live]` in the Mart, buy the pack
+      twice without moving: the row is still there, the bag gains 20 balls and the money drops twice.
+      Claims `src/ui/shop.ts`, `src/ui/shop.test.ts`, `src/data/shop.ts` and `src/data/shop.test.ts`.
+      *Dependencies:* none. *(Batch 116)*
+
+- [ ] **[Task-266] A dark Pokémon carries two rolled abilities, and `darkmatter` is gone.** The
+      invented ability row, its handler, its ban and its localisation path all die; a dark catch is
+      instead given **two distinct abilities drawn from the whole implemented pool**
+      (`randomAbilityPool`, banned rows excluded), both active and both persisted.
+      **Measured:** `src/engine/run/dark.ts` exports `DARK_ABILITY = 'darkmatter'`,
+      `DARK_ABILITY_NAME = 'Dark Matter'` and `asDark(member)`, which rewrites `fighter.ability` and
+      keeps the old primary as `secondAbility`. `src/data/dex/customAbilities.ts` is the one
+      hand-authored ability row, merged at lookup by `abilities.ts` (`getAbility`,
+      `getCustomAbility`, `allAbilitiesWithCustom`) and counted in `meta.json`
+      (`counts.customAbilities: 1`); `scripts/effect-coverage.mjs` scans that file by path;
+      `src/engine/battle/effects/abilities.ts` registers `['darkmatter', darkmatter()]`;
+      `BANNED` in `randomAbility.ts` lists it; `src/i18n/content.ts` resolves its Spanish copy
+      through `getCustomAbility`. `registry.ts` already dispatches **one ref per distinct slot**, so
+      two abilities on one member both fire today (`Task-153`).
+      **Fix shape:** delete `customAbilities.ts` and the custom merge (with
+      `getCustomAbility`/`allAbilitiesWithCustom` and their readers), the `darkmatter()` handler
+      row, the `BANNED` entry and both `dark.ts` constants; add
+      `darkAbilityNames(memberId, speciesId): readonly [name, name]` drawing two **distinct** rows
+      off `hashSeed(`dark-abilities:${memberId}:${speciesId}`)` and make `asDark(member)` write
+      `fighter.ability` = the first, `fighter.secondAbility` = the second, `member.secondAbility` =
+      the second, `dark: true`; update `meta.json` (`customAbilities: 0`), regenerate
+      `docs/balance/effect-coverage.md` with `npm run docs:coverage`, and teach the coverage
+      script to run with no hand-authored file.
+      **Docs:** `src/data/dex/README.md` (the folder loses its hand-authored row),
+      `docs/data-spec.md` (drop that row), `docs/battle-spec.md` §7 and §11.1, `docs/design-spec.md`
+      (the dark paragraph at the member's abilities), `docs/balance/effect-coverage.md` (generated).
+      **Tests:** `[unit]` the two names are distinct, both resolve through `getAbility`, the pair is
+      stable for a fixed member and species, `asDark` is idempotent, both slots are set on the
+      member **and** the fighter, `getAbility('darkmatter')` is `undefined`, `allAbilities()` is
+      **311**, the pool holds no custom row and a seeded battle still fires the second slot's
+      handler. No browser pass is owed: every criterion is `[unit]`. Claims
+      `src/engine/run/dark.ts`, `dark.test.ts`, `src/engine/battle/randomAbility.ts`,
+      `randomAbility.test.ts`, `src/engine/battle/effects/abilities.ts`, `abilities.test.ts`,
+      `src/engine/battle/fighter.test.ts`, `src/data/dex/customAbilities.ts` (deleted),
+      `src/data/dex/abilities.ts`, `src/data/dex/dex.test.ts`, `src/data/dex/meta.json`,
+      `src/data/dex/README.md`, `src/i18n/content.ts`, `src/i18n/content.test.ts`,
+      `scripts/effect-coverage.mjs`, `docs/balance/effect-coverage.md`, `docs/data-spec.md`,
+      `docs/battle-spec.md` and `docs/design-spec.md`. *Dependencies:* none. *(Batch 116)*
+
+- [ ] **[Task-267] The card tells the second ability's story.** A member carrying two abilities
+      already prints them as `Primary / Secondary` in one cell; the ⓘ explains only the primary.
+      The card gives each ability its own description, on the same rule the first one uses.
+      **Measured:** `MemberDetail` (`src/ui/partyDetail.ts`) carries `ability`, `abilityDesc` and
+      `ability2` (name only); `memberDetail` fills `ability2` from `memberAbilities(member)[1]` and
+      `abilityDesc` from `abilityDescription(fighter.ability)`. `detailPanel.tsx` prints
+      `.detail__info-ability` as `view.ability / view.ability2` and gives the ⓘ
+      (`data-hud-detail="ability-info"`) `aria-label={view.abilityDesc ?? view.ability}`. The frame
+      is `03m Panels · pokemon moves` (`design/screens/03m-panels-pokemon-moves.json`,
+      `design/exports/03m-panels-pokemon-moves.png`).
+      **Fix shape:** add `ability2Desc: string | null` to `MemberDetail` (same helper, the second
+      name) and to `DetailPanelView`; make the ⓘ appear when **either** description exists and its
+      `aria-label` carry both, primary first, joined by `' · '`; the pinned info card lists one line
+      per ability that has text. The cell's `A / B` text does not change.
+      **Docs:** `src/ui/hud/panels/detail/README.md` (one line: the two descriptions).
+      **Tests:** `[unit]` `memberDetail` fills `ability2Desc` from the same lookup as `abilityDesc`
+      and leaves it null on a one-ability member; `[unit]` the view carries it and `abilityInfo` is
+      non-null when only the second has text. `[live]` at 1280×800, open the card of a member with
+      two abilities (a dark catch after this batch, or the NPC's `second-ability` sacrifice) and
+      read `[data-hud-detail="ability-info"]`'s `aria-label`: it contains both descriptions, and
+      `.detail__info-ability` reads `A / B`. If three runs yield no two-ability member, the
+      criterion is reported not-run with the runs tried and the `[unit]` premise stands. Claims
+      `src/ui/partyDetail.ts`, `src/ui/partyDetail.test.ts`,
+      `src/ui/hud/panels/detail/view.ts`, `src/ui/hud/panels/detail/view.test.ts`,
+      `src/ui/hud/panels/detail/detailPanel.tsx` and `src/ui/hud/panels/detail/README.md`.
+      *Dependencies:* none. *(Batch 116)*
+
+### Batch 117 - the region exists on paper
+
+**The four.** The contract and the plan (`[Task-268]`) are the batch's critical path and the only
+task every later batch reads; the frame mesh (`[Task-269]`) is what `WorldScene` will draw from; the
+doc task (`[Task-270]`) writes the new source of truth in the same vocabulary so no later task has
+to infer it; the art task (`[Task-271]`) imports the city and interior tiles the generators are laid
+out against. The contract task **pre-creates the three generator folders' READMEs**
+(`src/engine/region/{route,city,interior}/README.md`) so Batch 118's three generators never touch the
+parent `src/engine/region/README.md` and never collide.
+
+**Hot files.** `src/data/frlg/*.json`, `src/data/tilesets/**`, `src/assets/placeholders/frlg/**` and
+`.gitignore` are `[Task-271]`'s. No task claims `package.json`, `src/main.ts`, `vite.config.ts` or a
+scene. `src/engine/README.md` is `[Task-268]`'s (the one new folder line) and `src/data/README.md` is
+`[Task-268]`'s too (its own `region.ts` bullet, plus `[Task-271]`'s two tileset file names added to
+the existing `tilesets/` bullet verbatim from that spec). `docs/tech-decisions.md` is
+`[Task-270]`'s for `D59`-`D62` only; no other task in the batch writes a doc section, so the file is
+not shared this round.
+
+**What it replaces.** `docs/maps-spec.md` (deleted), the per-map plan, the Image-per-cell draw and
+the biome-only tileset registry.
+
+- [ ] **[Task-268] The region: the contract, the plan and the names.** A pure generator turns the run
+      seed into the whole world: the town, the eight gym cities, one main route per stretch with its
+      laterals, the Victory Road, the League and the tower — each node with a stable key, a seeded
+      position, its badge cap and its distance to the gym that governs it.
+      **Measured:** `src/engine/maps/plan.ts` is the model to replace: `planMap(seed, mapIndex)`
+      derives a floor from `mapStreams(seed, mapIndex).map`, and `routeIndexForRoom` builds a global
+      route index by summing every earlier floor's room count (`src/engine/run/floors.ts`, 65) — the
+      prefix this phase retires. `Rng` (`rng.ts`) exposes `next`, `int`, `split` and `hashSeed`;
+      `Tile` (`grid.ts`) is `{x, y}`.
+      **Fix shape:** a new `src/engine/region/` folder (`plan.ts`, `names.ts`, `streams.ts`,
+      `index.ts`, `README.md`) plus the three empty generator folders with their own READMEs, and a
+      new `src/data/region.ts` holding the size tables, the badge caps and the two name lists. The
+      parent `index.ts` re-exports **only** `plan`, `names` and `streams` — never a generator — so
+      Batch 118's three tasks can add `route/`, `city/` and `interior/` without a shared file.
+      **Docs:** `src/engine/region/README.md` (every module's role line), `src/data/README.md` (the
+      `region.ts` bullet, plus the two tileset file names of the art task), `src/engine/README.md`
+      (the `region/` folder line).
+      **Tests:** `[unit]` the plan's invariants on eight seeds (exactly one town, eight gym cities
+      with badges 1-8 in chain order, one victory road, one league, one tower; a connected graph;
+      every node's position unique; every route numbered in chain order; 2-3 routes per stretch with
+      1-2 laterals; every lateral ending on a POI or a gym-less city; `gymDistance` 0 exactly at the
+      gyms and monotone along the chain); `[unit]` `nodeKey` round-trips `kind` and `id`; `[unit]`
+      names are unique per seed and stable for it; `[unit]` a fixed seed pins a digest of the whole
+      plan. Claims `src/engine/region/plan.ts`, `plan.test.ts`, `names.ts`, `names.test.ts`,
+      `streams.ts`, `streams.test.ts`, `index.ts`, `README.md`,
+      `src/engine/region/route/README.md`, `src/engine/region/city/README.md`,
+      `src/engine/region/interior/README.md`, `src/engine/README.md`, `src/data/region.ts`,
+      `src/data/region.test.ts` and `src/data/README.md`. *Dependencies:* none. *(Batch 117)*
+
+- [ ] **[Task-269] The frame mesh is resolved once, not per cell.** The scene resolves a tile's
+      atlas frame per cell per layer inside `drawTiles`; the mesh resolves the whole map into one
+      compact array so the renderer can hand it to a `TilemapLayer`.
+      **Measured:** `src/engine/frameMap.ts` already resolves every cell (`buildFrameMap` →
+      `resolveTileFrame`) but into rich objects (`FrameCellInfo` with motif rows, masses and trees)
+      built for the dev tool; nothing exposes a flat frame array. `resolveTileFrame` returns
+      `{frame, source} | null`.
+      **Fix shape:** add `buildFrameMesh(map: TileMap, tileset: TilesetConfig, pad?: number):
+      FrameMesh` to `frameMap.ts`, next to `buildFrameMap`, returning `{ width, height, frames }`
+      where `frames` is an `Int32Array` of `width * height` frame indices, row-major, `-1` where a
+      cell resolves to no frame. No Phaser import, no allocation per call beyond the array.
+      **Docs:** none — no file is added or renamed.
+      **Tests:** `[unit]` for a forest map of 60×120 every cell's frame equals `buildFrameMap`'s
+      `frame` for the same cell; `[unit]` an unknown tile reads `-1`; `[unit]` the array length is
+      `width * height` and a second call is byte-identical. No browser pass is owed. Claims
+      `src/engine/frameMap.ts` and `src/engine/frameMap.test.ts`. *Dependencies:* none.
+      *(Batch 117)*
+
+- [ ] **[Task-270] `docs/region-spec.md` is the world's new source of truth.** The floors' spec is
+      replaced: the region's topology, its nodes, its identity and streams, its sizes, names, badge
+      caps, guards, flying and the save's post-cut rules are written down once, in the vocabulary
+      `[Task-268]` freezes.
+      **Measured:** `docs/maps-spec.md` is 700+ lines of floor rules (`MapPlan`, sealed portals, the
+      special leaves, the minimap) and `AGENTS.md` opens by describing a run as "a chain of maps".
+      `docs/tech-decisions.md` stops at `D58`.
+      **Fix shape:** write `docs/region-spec.md` with sections: 1 what a region is (the node kinds,
+      the chain and the laterals, the sizes table), 2 identity and streams (`nodeKey`,
+      `${seed}:node:<key>:…`, no global prefix), 3 the badge ladder and caps, 4 the guard and
+      walking back, 5 the map and flying, 6 services per settlement (Centre, PC, shop, the town's
+      laboratory), 7 what a route and a city hold — opened here as one stub section and filled by the
+      later tasks' own subsections (`§7.1`-`§7.11`) — 8 the save's v28 rules and what the record is;
+      delete `docs/maps-spec.md`; add `D59` (the region replaces the floors), `D60` (node identity
+      and its stream family), `D61` (the save cuts to v28 with no migration) and `D62` (the record is
+      badges; the tower streak is apart) to `docs/tech-decisions.md`; rewrite `AGENTS.md`'s opening
+      pitch and its doc list so no reader is sent to a dead file.
+      **Docs:** itself.
+      **Tests:** `[unit]` `docs/maps-spec.md` no longer exists and no file under `docs/`, `src/` or
+      `AGENTS.md` links to it; `[unit]` every module `[Task-268]` names is named in the spec;
+      `[unit]` `D59`-`D62` exist and `npm test` is green (no code changed). No browser pass is owed.
+      Claims `docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md` and
+      `AGENTS.md`. *Dependencies:* none. *(Batch 117)*
+
+- [ ] **[Task-271] The city and interior tiles are imported.** FRLG's town and indoor tiles enter the
+      same pipeline as the forest: a packer builds the atlases, a placeholder keeps a clean clone
+      running, and the tileset registry gains `city` and `interior`.
+      **Measured:** `scripts/frlg/build-tilesets.mjs` packs the forest atlas; `TILESET_IDS` is
+      `['forest']` and `TILESETS` is keyed by it; `src/data/tilesets/frlg.ts` is the forest frame
+      config; `src/assets/placeholders/frlg/forest.png` is the clean-clone fallback;
+      `src/assets/optional.ts` resolves a packed atlas or the placeholder; the packed atlases are
+      gitignored.
+      **Fix shape:** add `scripts/frlg/build-region-tilesets.mjs` (same argv/environment rule: the
+      source directory never lives inside a worktree), emitting `src/assets/frlg/city.png` and
+      `interior.png` and the frame maps `src/data/frlg/city.json` / `interior.json`; add
+      `src/data/tilesets/city.ts` and `interior.ts` with the tile kinds a city and an interior need
+      (`grass`, `path`, `plaza`, `wall`, `roof`, `door`, `water`, `sign`, `floor`, `counter`,
+      `heal`, `pc`); extend `TILESET_IDS`, `TILESET_NAMES` and `TILESETS`; add both placeholders and
+      their build step; list both atlases in `.gitignore`.
+      **Docs:** `src/assets/README.md` (the two atlases and the packer), `docs/tileset-spec.md` (the
+      two new tilesets and their tile-kind table).
+      **Tests:** `[unit]` every new tile kind resolves to a frame in its config; `[unit]`
+      `TILESETS` covers `TILESET_IDS` exactly; `[unit]` a clean clone (no packed atlas) resolves the
+      placeholder and still builds. `[live]` with the FRLG store present, a 20×20 city patch renders
+      each tile kind at 24 px with no seam and the door tile is visually distinct from the wall.
+      Claims `scripts/frlg/build-region-tilesets.mjs`, `scripts/assets/build-placeholders.mjs`,
+      `src/data/frlg/city.json`, `src/data/frlg/interior.json`, `src/data/tilesets/city.ts`,
+      `interior.ts`, `ids.ts`, `ids.test.ts`, `index.ts`, `palettes.ts`,
+      `src/assets/placeholders/frlg/city.png`, `interior.png`, `.gitignore`,
+      `src/assets/README.md` and `docs/tileset-spec.md`. *Dependencies:* none. *(Batch 117)*
+
+### Batch 118 - the three generators and the gym tables
+
+**The four.** Each generator owns its own folder under `src/engine/region/`, so the batch is three
+independent writers plus the data tables. They read `[Task-268]`'s plan and `[Task-271]`'s tile
+kinds; neither is a batch-mate.
+
+**Hot files.** None. No scene, no `src/main.ts`, no `package.json`, no `vite.config.ts`, no generated
+data file. `src/data/README.md` is `[Task-275]`'s alone (its three new tables).
+
+**What it replaces.** `src/engine/routes/sketch.ts`'s single-screen assumption (the carver's pieces
+are reused inside the new multi-screen route), the hand-placed city content and the per-map boss.
+
+- [ ] **[Task-272] A route is two to four screens long.** The route generator stitches the existing
+      carver into one continuous map 60 tiles wide and 120/160/200 tall, with one biome, no internal
+      transition, an entry band and one exit band per neighbour.
+      **Measured:** `sketchRoute` (`src/engine/routes/sketch.ts`) carves one screen from
+      `routeStreams(seed, routeIndex, attempt)`; `walls.ts` owns the ring and the opening bands;
+      `doors.ts` owns the openings. A route's height is a single screen today.
+      **Fix shape:** `src/engine/region/route/` with `layout.ts` (the screen stack and the spine
+      through it), `map.ts` (the stitched `TileMap`), `streams.ts` (re-exporting the plan's node
+      streams), `index.ts` and `README.md`; `generateRoute(plan, key): RouteMap`-shaped output where
+      the biome comes from the node and the carver is called per screen slice. Every opening sits on
+      the final stitched border; there is no seam and no interior door.
+      **Docs:** `src/engine/region/route/README.md`, `docs/routes-spec.md` §1 (route = 2-4 screens).
+      **Tests:** `[unit]` for eight seeds and both route heights, the map is `60 × (120|160|200)`,
+      connected from the entry band to every exit band, every cell is inside the border ring or
+      reachable, and the frame mesh has no unresolved cell; `[unit]` a fixed seed pins its digest.
+      No browser pass is owed. Claims `src/engine/region/route/layout.ts`, `map.ts`, `streams.ts`,
+      `index.ts`, `README.md`, `layout.test.ts`, `map.test.ts` and `docs/routes-spec.md` §1.
+      *Dependencies:* the region contract (Batch 117) and the city/interior tile kinds (Batch 117).
+      *(Batch 118)*
+
+- [ ] **[Task-273] A city is a grid with a Centre, a gym and grass.** The city generator lays out a
+      50×50, 70×70 or 90×90 town of manzanas and plazas with 6/10/14 buildings, a door per building,
+      a grass corner and its exits on the borders — and the starting town is the same generator with
+      no Centre.
+      **Measured:** `src/data/region.ts` (Batch 117) carries `CITY_TIERS`, `CITY_SIZE`, `TOWN_SIZE`
+      and the building counts; `src/data/tilesets/city.ts` names the tile kinds; nothing generates a
+      settlement today.
+      **Fix shape:** `src/engine/region/city/` with `plan.ts` (the street grid, the plaza, the
+      buildings, the doors, the grass corner), `index.ts`, `README.md`; `planCity(plan, key)` returns
+      a tile map plus a list of `{ door, kind, interiorKey }` entries (`centre`, `gym`, `lab`,
+      `house`, `casino` from city 3), a spawn tile and the exit bands. Building placement is
+      deterministic off `nodeStreams(seed, key).layout` and never blocks an exit.
+      **Docs:** `src/engine/region/city/README.md`, `docs/region-spec.md` §7.1 (the city plan).
+      **Tests:** `[unit]` every tier yields its own size and building count; `[unit]` the Centre, the
+      gym (when the node has one) and the town's laboratory each get a door; `[unit]` every exit band
+      is reachable from the spawn without crossing a wall; `[unit]` the grass corner exists on every
+      city and on the town; `[unit]` a fixed seed pins its digest. No browser pass is owed. Claims
+      `src/engine/region/city/plan.ts`, `index.ts`, `README.md`, `plan.test.ts` and
+      `docs/region-spec.md` §7.1. *Dependencies:* the region contract and `src/data/region.ts` (Batch
+      117). *(Batch 118)*
+
+- [ ] **[Task-274] An interior is a small room with a door back.** Every door a city opens leads to a
+      single small map with a return door on its entry tile, and its kind decides what stands inside:
+      the Centre's counter and PC, the gym's rooms, the laboratory's professor, a house's NPC or the
+      casino's cabinet.
+      **Measured:** `src/engine/region/city/plan.ts` (Batch 118) emits `interiorKey` per door;
+      `src/data/tilesets/interior.ts` (Batch 117) names the indoor tile kinds; the old interiors
+      lived inside `RouteScene`'s room specials and are frozen.
+      **Fix shape:** `src/engine/region/interior/` with `plan.ts` (`planInterior(plan, interiorKey,
+      cityKey)` → a tile map, the return door, the furniture slots), `index.ts` and `README.md`; the
+      gym branch lays out an entrance room, a trainer room, a puzzle room and the leader's room joined
+      by doors. Sizes come from `INTERIOR_SIZE`/`GYM_SIZE` in `src/data/region.ts`.
+      **Docs:** `src/engine/region/interior/README.md`, `docs/region-spec.md` §7.2 (the interior list).
+      **Tests:** `[unit]` the return door sits on the entry tile and leads back to the city key;
+      `[unit]` each interior kind places its own slots; `[unit]` a gym holds four rooms in a fixed
+      order with one door between consecutive rooms; `[unit]` a fixed seed pins its digest. No
+      browser pass is owed. Claims `src/engine/region/interior/plan.ts`, `index.ts`, `README.md`,
+      `plan.test.ts` and `docs/region-spec.md` §7.2. *Dependencies:* the city plan (Batch 118) and
+      `src/data/region.ts` (Batch 117). *(Batch 118)*
+
+- [ ] **[Task-275] The eight leaders, the four and the Champion are data.** The gyms' leaders (a
+      generated six, a fixed three for gym 1, a 10 % double elsewhere, a badge, a TM and money), the
+      League's four and its Champion at 60, and the per-gym TM list are tables, so retuning the
+      campaign is never code.
+      **Measured:** `src/data/trainers.ts` holds the ten archetypes and the four set pieces;
+      `src/data/bosses.ts` holds the shipped boss parties; `trainerRoster` builds a generated party;
+      `src/data/tms.ts` owns the machine catalogue; `BADGE_CAPS` lives in `src/data/region.ts`
+      (Batch 117).
+      **Fix shape:** add `src/data/gyms.ts` (`GYMS: readonly GymRow[]` with `badge`, `leaderId`,
+      `archetypeId`, `partySize`, `fixedParty` for gym 1, `doubleChance` 0.1, `tmItemId`,
+      `moneyMultiplier`), `src/data/league.ts` (`LEAGUE: readonly LeagueRow[]` — four members and the
+      champion, each a `partySize` at 60 with a type theme, plus `TOWER`'s "no leader, no rule" row)
+      and extend `src/data/trainers.ts` only where a leader needs a name/class; the cap ladder stays
+      `src/data/region.ts`'s.
+      **Docs:** `src/data/README.md` (the two new tables), `docs/region-spec.md` §3 (the ladder's
+      data) and §7.
+      **Tests:** `[unit]` eight gyms in badge order, one TM each and no duplicate id; `[unit]` gym 1
+      is the only fixed three; `[unit]` every other row's `doubleChance` is 0.1; `[unit]` the League
+      has five rows at level 60 with distinct themes. No browser pass is owed. Claims
+      `src/data/gyms.ts`, `gyms.test.ts`, `src/data/league.ts`, `league.test.ts`,
+      `src/data/trainers.ts`, `src/data/README.md` and `docs/region-spec.md` §3.
+      *Dependencies:* `src/data/region.ts` (Batch 117). *(Batch 118)*
+
+### Batch 119 - the run knows the region
+
+**The four.** The save and the run state (`[Task-276]`), what sits in a node (`[Task-277]`), the
+badge gate (`[Task-278]`) and the level curve (`[Task-279]`). The gate and the curve are written to
+take **numbers**, never `RunState`, so neither depends on the schema task beside it.
+
+**Hot files.** `src/engine/save.ts` is `[Task-276]`'s — the version file is a serial resource and no
+other task in the batch touches it. `src/engine/run/README.md` and `src/engine/run/index.ts` are
+`[Task-276]`'s too: it writes `[Task-278]`'s and `[Task-279]`'s map lines and export lines verbatim
+from their specs. `src/engine/region/README.md` is `[Task-277]`'s.
+
+**What it replaces.** `mapIndex`/`routeIndex`/`routeInMap` as *the* position, `discoveredRooms`,
+`capturedRooms`, the per-map cap and the floor band.
+
+- [ ] **[Task-276] RunState v28: the node, the badges and the record.** A run stands on a node, not on
+      a floor: `nodeKey`, `visitedNodes`, `badges`, `capturedNodes`, and a save that steps to 28 by
+      **discarding** an old run and keeping settings and history.
+      **Measured:** `SAVE_VERSION = 27`; `parseRun` and `encodeRun` read `flake`-prone fields
+      (`mapIndex`, `routeIndex`, `routeInMap`, `arrivalEdge`, `discoveredRooms`, `bossDefeated`,
+      `capturedRooms`, `levelCap`) and call `floorForRoute` twice (`save.ts` 449, 999);
+      `createRun` takes a `starter`; `history.ts` records floors and a `mode`.
+      **Fix shape:** add `nodeKey: string`, `visitedNodes: readonly string[]`,
+      `badges: readonly number[]`, `capturedNodes: readonly string[]`, `towerStreak: number`; keep
+      `mapIndex`/`routeIndex`/`routeInMap` as `@deprecated` compatibility fields the old scene still
+      reads, all derived from the plan at creation; drop `mode` with the infinite run; cut
+      `SAVE_VERSION` to 28 with a single migration that returns the document with `run: null` (and a
+      test that settings and history survive it); move the record to `badges.length` and the tower's
+      streak to its own figure, keeping history's own shape (a `badges` count replaces the floor
+      count, with the old rows dropped).
+      **Docs:** `src/engine/run/README.md`, `docs/region-spec.md` §8 (the save's post-cut rules).
+      **Tests:** `[unit]` a v27 document decodes to no run and the same settings/history; `[unit]` a
+      v28 round-trip keeps every new field and drops `mode`; `[unit]` a run created from a seed
+      starts on the town's key with zero badges; `[unit]` the record reads badges, not floors.
+      `[live]` a save from the shipped build boots into the main menu with no Continue row and the
+      settings unchanged. Claims `src/engine/run/state.ts`, `state.test.ts`, `src/engine/save.ts`,
+      `save.test.ts`, `src/engine/run/history.ts`, `history.test.ts`, `src/engine/run/index.ts`,
+      `src/engine/run/README.md` and `docs/region-spec.md` §8. *Dependencies:* the region plan (Batch
+      117). *(Batch 119)*
+
+- [ ] **[Task-277] What a node holds is rolled per key.** One pure pass decides, per node, how many
+      NPCs stand in a city, which POIs hang off a lateral, where the grass patch is, which shops
+      exist and which trainers are posted — all off `nodeStreams(seed, key)`, and all stable when a
+      node is walked back into.
+      **Measured:** the old content lived in `planMap`'s special leaves (mini-boss, gated, trade,
+      no-heal, static, secret-shop, banned, puzzle) and in `MapRoomSpecial`, which this phase
+      retires; `src/data/npcs.ts`, `trainers.ts`, `loot.ts`, `staticSpecies.ts` and `puzzles.ts`
+      hold the raw rows.
+      **Fix shape:** `src/engine/region/content.ts` exporting `planNodeContent(plan, key, tier):
+      NodeContent` with `npcs: readonly { npcId: string }[]` sized by the city's tier (2-3 / 4-6 /
+      7-10), `specials: readonly { npcId: string }[]` (1-2 per city, each with its probability),
+      `poi: PoiKind | null` for a lateral's terminus, `grass: boolean`, `shops: readonly ShopKind[]`
+      and `trainers: number`; the draws are on the `content` stream and the POI kind on the same
+      stream last, so a later roll never moves an earlier one.
+      **Docs:** `src/engine/region/README.md` (the `content.ts` line), `docs/region-spec.md` §7.3.
+      **Tests:** `[unit]` the NPC count follows the tier's range for all three tiers; `[unit]` every
+      lateral terminus has exactly one POI and a main-chain node none; `[unit]` a node's content is
+      identical on two calls and differs on a different seed; `[unit]` a fixed seed pins its digest.
+      No browser pass is owed. Claims `src/engine/region/content.ts`, `content.test.ts`,
+      `src/engine/region/index.ts`, `src/engine/region/README.md` and `docs/region-spec.md` §7.3.
+      *Dependencies:* the region plan (Batch 117). *(Batch 119)*
+
+- [ ] **[Task-278] The guard asks for the badge, and nothing blocks the way back.** Leaving a city
+      needs its badge; walking back never does; a locked exit names the badge it wants.
+      **Measured:** `src/engine/routes/gate.ts` and `src/data/gates.ts` are the old room gate (a
+      type-gated obstacle); `src/engine/run/perms.ts` holds the run's permission predicates, none of
+      which reads a badge.
+      **Fix shape:** `src/engine/run/gates.ts` exporting `exitGate(plan, fromKey, toKey, badges):
+      Readonly<{ open: boolean; badge: number }> | null` — null when the edge is not a gate (any edge
+      back, or an edge inside the same stretch), otherwise whether the badge is held and which one is
+      missing — plus `nextBadge(plan, fromKey): number | null`. It takes the badge list, never a
+      `RunState`.
+      **Docs:** `src/engine/run/README.md` (the `gates.ts` line, written by the schema task),
+      `docs/region-spec.md` §4.
+      **Tests:** `[unit]` the exit of city *n* is open with badge *n* and closed without it; `[unit]`
+      every edge back is null (never a gate); `[unit]` a town's exit asks for badge 1; `[unit]` the
+      missing badge's number is reported. No browser pass is owed. Claims `src/engine/run/gates.ts`,
+      `gates.test.ts` and `docs/region-spec.md` §4. *Dependencies:* the region plan (Batch 117).
+      *(Batch 119)*
+
+- [ ] **[Task-279] Levels come from the badge and the distance to the leader.** A regular trainer's
+      level is the stretch's cap minus what the distance to the gym and its party size are worth
+      (1.00 / 0.90 / 0.80); a wild is 60-75 % of the squad's level; a leader sits at the cap.
+      **Measured:** `src/data/trainerLevels.ts` holds the shipped trainer-level rule;
+      `wildLevels.ts` the wild one; `roster.ts` builds a party from a band; `bandForMap` reads a
+      floor's window.
+      **Fix shape:** `src/engine/run/curve.ts` with `trainerLevel(cap: number, gymDistance: number,
+      partySize: 1 | 2 | 3): number`, `wildLevel(squadLevel: number): number` (60-75 %, floored at 2),
+      `leaderLevel(cap: number): number` and the three size factors as data in
+      `src/data/trainerLevels.ts`; `bandForNode` replaces `bandForMap` for the new content, while the
+      old band and the shipped `trainerLevel(squadLevel, size, cap)` stay for the old scene until the
+      sweep, and `roster.ts` reads the new curve.
+      **Docs:** `src/engine/run/README.md` (the `curve.ts` line, written by the schema task),
+      `docs/region-spec.md` §3.
+      **Tests:** `[unit]` a gym-adjacent party of three lands on the cap, the same party three steps
+      away lands lower, and the three factors are exactly 1 / 0.9 / 0.8 before rounding; `[unit]` a
+      wild is within 60-75 % of the squad's level on 1 000 seeded draws; `[unit]` a leader is at the
+      cap. No browser pass is owed. Claims `src/engine/run/curve.ts`, `curve.test.ts`,
+      `src/engine/run/roster.ts`, `roster.test.ts`, `src/data/trainerLevels.ts`,
+      `trainerLevels.test.ts` and `docs/region-spec.md` §3.
+      *Dependencies:* `src/data/region.ts` (Batch 117). *(Batch 119)*
+
+### Batch 120 - the world renders
+
+**The three, and why not four.** `WorldScene` + the precomputed mesh + the worker is **one** task
+because the worker is called *by* that scene: split in two, each half would need the other's file and
+the batch would stop being an antichain — the honest fix is one owner for the rendering seam. The
+other two (the DOM region map and the gym puzzles) touch neither the scene nor each other. The empty
+slot's constraint is written here: every remaining Phase 24 candidate either reads
+`src/scenes/WorldScene.ts` (travel, city, gym, League, catch) or is scheduled behind one that does.
+
+**Hot files.** `src/scenes/RouteScene.ts`, `src/scenes/WorldScene.ts`, `src/main.ts` and
+`vite.config.ts` are `[Task-280]`'s. `src/ui/hud/panels/map/**` and
+`src/ui/hud/specGap.views/map.ts` are `[Task-281]`'s (its frame is `03o Panels · map routes`, the
+one Batch 108 measured as a region map the game did not have). `src/engine/region/README.md` is
+`[Task-280]`'s (it writes `[Task-282]`'s `gym/` line).
+
+**What it replaces.** The per-cell `Image` grid, the synchronous per-transition rebuild, the floor
+minimap and the old puzzle room.
+
+- [ ] **[Task-280] `WorldScene` draws the region: one tilemap, culled, generated off the main
+      thread.** The scene stops building an `Image` per cell and layer: it draws a `TilemapLayer` from
+      the frame mesh, culls to the camera, and asks a worker for the next node's map while the player
+      is still walking this one.
+      **Measured:** `RouteScene.ts` is ~3 900 lines; `drawTiles` creates one `Image` per cell per
+      layer and `transitionTo` rebuilds everything in a frame; `src/engine/frameMap.ts`'s
+      `buildFrameMesh` (Batch 117) resolves the whole map into one `Int32Array`; Vite 8 is the
+      bundler, so a worker is one `new Worker(new URL(...), {type: 'module'})` away.
+      **Fix shape:** a new `src/scenes/WorldScene.ts` holding everything a node shares (the map, the
+      camera follow, the player, the walk, the encounter step, the HUD mount, the transition out);
+      `RouteScene` becomes a thin subclass that applies the region's route node; a new
+      `src/render/tilemapLayer.ts` builds the layer from a `FrameMesh` (one tilemap, one tileset image,
+      culling on); a new `src/workers/nodeWorker.ts` + `src/engine/region/preload.ts` (the pure
+      request/response: `{seed, key}` → the node's map + mesh) generate the next node and cache it;
+      `vite.config.ts` gains the worker's build entry. The old fields stay on `RunState`, so the
+      subclass compiles unchanged where it cannot be ported yet.
+      **Docs:** `src/scenes/README.md` (the two scene lines), `src/render/README.md` (the layer
+      line), `src/engine/region/README.md` (the `preload.ts` line and the `gym/` line written for the
+      puzzle task).
+      **Tests:** `[unit]` `preload.ts` returns byte-identical maps for the same key and null for an
+      unknown one; `[unit]` the layer's tile data equals the mesh's frames cell for cell; `[unit]`
+      `npm run build` emits a separate worker chunk. `[live]` at 1280×800 on the first route, the
+      scene's children hold **one** `TilemapLayer` and no per-cell `Image` for the ground, the dev
+      Map tool's export still lists every cell's frame, and scrolling to the map's bottom keeps the
+      frame rate steady (the debug overlay's counter reads ≥ 55 fps). Claims
+      `src/scenes/WorldScene.ts`, `src/scenes/RouteScene.ts`, `src/scenes/README.md`, `src/main.ts`,
+      `vite.config.ts`, `src/render/tilemapLayer.ts`, `src/render/README.md`,
+      `src/workers/nodeWorker.ts`, `src/engine/region/preload.ts`, `preload.test.ts` and
+      `src/engine/region/README.md`. *Dependencies:* the frame mesh (Batch 117), the region plan
+      (Batch 117). *(Batch 120)*
+
+- [ ] **[Task-281] The header card is the region map.** The map card stops drawing one floor and
+      draws the **whole region** as straight-line nodes, the way FRLG's Town Map does: every
+      settlement visible from the start, visited ones marked, the current one blinking, the badges in
+      the card's header, routes not clickable.
+      **Measured:** `mapPanelView` (`src/ui/hud/panels/map/view.ts`) draws the floor minimap
+      (`RoomView`s, `mapView.ts`) inside `mapPanelBox`; `design/screens/03o-panels-map-routes.json`
+      is the frame `03o Panels · map routes` (Batch 108 measured it as a region map the game did not
+      have and claimed no box); the region plan (Batch 117) carries `col`/`row` per node.
+      **Fix shape:** a new `src/ui/regionMap.ts` (pure: `regionMapView(plan, run)` → node markers
+      with `key`, `kind`, `name`, `x`, `y`, `visited`, `current`, plus the edges as `{from, to}`
+      pairs), and `panels/map/view.ts` rebuilt on it with one `[data-hud-region-node="<key>"]` per
+      node and `data-visited` / `data-current`; the header prints `badges.length` / 8. The click is
+      **not** wired here — the travel task dispatches it.
+      **Docs:** `src/ui/hud/panels/map/README.md`, `src/ui/README.md` (the `regionMap.ts` line),
+      `docs/region-spec.md` §5.
+      **Tests:** `[unit]` the view has one marker per plan node, the current node is flagged once and
+      visited ones are exactly the run's list; `[unit]` the walker still reports no gap for
+      `03o-panels-map-routes` (its premise test is updated, not deleted). `[live]` at 1280×800 press
+      `M`: `[data-hud-region-node]` count equals `planRegion(seed).nodes.length`, exactly one carries
+      `data-current="true"`, and the header's badge count reads the run's. Claims
+      `src/ui/regionMap.ts`, `regionMap.test.ts`, `src/ui/hud/panels/map/view.ts`,
+      `view.test.ts`, `specGap.test.ts`, `README.md`, `src/ui/hud/specGap.views/map.ts`,
+      `src/ui/README.md` and `docs/region-spec.md` §5. *Dependencies:* the region plan (Batch 117).
+      *(Batch 120)*
+
+- [ ] **[Task-282] The gym's puzzle is drawn from a stack, and the first one is ice.** A gym gates
+      its leader behind a puzzle; the stack's first entry is the sliding ice room, where a wrong step
+      drops the player into another room and a solved room stays solved.
+      **Measured:** `src/data/puzzles.ts` is the old puzzle room's switch sequence (frozen with the
+      rooms); `src/engine/routes/puzzle.ts` its rule; `src/engine/region/interior/plan.ts` (Batch
+      118) lays out the gym's four rooms.
+      **Fix shape:** `src/engine/region/gym/` with `ice.ts` (`slideStep(room, from, dir)` — the
+      tile stops or carries the step, the hole's landing room), `stack.ts` (the puzzle stack, in
+      data: `PUZZLE_STACK` in `src/data/puzzles.ts`, the ice puzzle first) and `README.md`;
+      `planGym(plan, key)` picks the puzzle off the node's `content` stream and reports its rooms and
+      the solved flag's key so a revisit finds it solved.
+      **Docs:** `src/data/puzzles.ts`'s own header, `docs/region-spec.md` §7.4 (the gym's puzzle).
+      **Tests:** `[unit]` a slide stops on the first solid tile and a hole moves the player to the
+      named room; `[unit]` the stack's first entry is ice and each entry has a stable id; `[unit]` a
+      solved room is reported solved without a re-roll. No browser pass is owed. Claims
+      `src/engine/region/gym/ice.ts`, `ice.test.ts`, `stack.ts`, `stack.test.ts`, `README.md`,
+      `src/data/puzzles.ts`, `src/data/puzzles.test.ts` and `docs/region-spec.md` §7.4.
+      *Dependencies:* the gym's interior layout (Batch 118). *(Batch 120)*
+
+### Batch 121 - the node scenes (the slice closes here)
+
+**The four.** Travel and transitions (`[Task-283]`), the city (`[Task-284]`), the gym (`[Task-285]`)
+and the League (`[Task-286]`). Three of them add a scene each, which is why the batch is full: every
+scene is its own hot file. After this batch the slice — town → route → city 1 → gym 1 — plays end to
+end.
+
+**Hot files.** `src/scenes/WorldScene.ts` (`[Task-283]`), `src/scenes/CityScene.ts`
+(`[Task-284]`), `src/scenes/GymScene.ts` (`[Task-285]`), `src/scenes/LeagueScene.ts`
+(`[Task-286]`). `src/scenes/README.md` is `[Task-284]`'s (it writes the gym's and the League's lines
+verbatim from their specs). `src/engine/region/README.md` is `[Task-283]`'s (it writes
+`[Task-286]`'s `league.ts` line). `src/engine/run/README.md` is `[Task-285]`'s.
+
+**What it replaces.** `transitionTo`'s rebuild-everything, the room graph's "leave by an edge", the
+portal and the boss room.
+
+- [ ] **[Task-283] Walking, flying and arriving are one seam.** Leaving a node through its exit band
+      and flying from the map both land the player on the target node's spawn tile with its own
+      music, and the guard in between refuses only the way forward.
+      **Measured:** `RouteScene.transitionTo` swaps maps in place and rebuilds; `arrivalEdge` on
+      `RunState` names the edge the old room graph used; the region map (Batch 120) already emits one
+      marker per node but wires no click.
+      **Fix shape:** `src/engine/region/travel.ts` (`travel(run, plan, toKey, from: 'walk' | 'fly')`
+      → the next run state plus the spawn tile; `canTravel(plan, run, toKey)` using `exitGate`), the
+      `WorldScene` transition rewritten to fade, swap the cached map and place the spawn without a
+      rebuild; the map panel's click dispatches `fly` for a visited settlement and is a no-op for the
+      current node and for routes; the arrival plays the node's music cue.
+      **Docs:** `src/engine/region/README.md` (the `travel.ts` line), `docs/region-spec.md` §5 (the
+      flight rule: free, out of battle, visited settlements only).
+      **Tests:** `[unit]` a walk through an open gate lands on the neighbour's spawn; a closed gate
+      refuses with its badge; a flight lands on the target's Centre door (the laboratory in the
+      town); a flight to an unvisited node is refused; the current node is a no-op. `[live]` at
+      1280×800: from city 1, press `M`, click the town — the screen fades once and the player stands
+      on the laboratory's door tile; clicking the route node does nothing.
+      Claims `src/scenes/WorldScene.ts`, `src/engine/region/travel.ts`, `travel.test.ts`,
+      `src/engine/region/README.md`, `src/ui/hud/panels/map/mount.tsx` and `docs/region-spec.md` §5.
+      *Dependencies:* `WorldScene` (Batch 120), the region map (Batch 120), the gate (Batch 119).
+      *(Batch 121)*
+
+- [ ] **[Task-284] A city is walkable: streets, doors and the Centre.** The city scene draws the
+      streets, the buildings and their doors, the plaza, the grass corner and the exits; stepping on a
+      door enters that interior; the Centre is a door like any other.
+      **Measured:** the city plan (Batch 118) emits the tile map, the door list, the spawn and the
+      exit bands; the interior plan (Batch 118) emits each interior's map.
+      **Fix shape:** `src/scenes/CityScene.ts` extending `WorldScene`, applying a city node (its
+      tileset, its music cue, its doors and its exits) and opening the interior scene on a door
+      (a call, not a special-case inside the base scene).
+      **Docs:** `src/scenes/README.md` (the `CityScene` line, written by this task for the gym and the
+      League too), `docs/region-spec.md` §7.5.
+      **Tests:** `[unit]` none beyond the generator's (the scene is the generator's renderer).
+      `[live]` at 1280×800 in city 1: the streets render, the Centre's door is reachable from the
+      spawn, stepping on it fades once, and the exit band toward route 2 is walkable while the exit
+      toward route 1 is walkable too (walking back is always allowed).
+      Claims `src/scenes/CityScene.ts`, `src/scenes/README.md` and `docs/region-spec.md` §7.5.
+      *Dependencies:* `WorldScene` (Batch 120), the city plan (Batch 118). *(Batch 121)*
+
+- [ ] **[Task-285] The gym: trainers, the puzzle, the leader and the badge.** A gym is entered,
+      fought through, puzzled through and beaten; the leader hands over the badge, its TM and its
+      money, and the exit opens.
+      **Measured:** the gym interior (Batch 118) has four rooms; the puzzle stack (Batch 120) names
+      its first entry; `src/data/gyms.ts` (Batch 118) carries the leader's row; `trainerRoster`
+      builds a six.
+      **Fix shape:** `src/scenes/GymScene.ts` over the interior scene's base, the trainers marked
+      beaten by node key, the puzzle's solved flag persisted, the leader's battle at the cap, and
+      `src/engine/run/badge.ts` with `grantBadge(run, badge): RunState` (idempotent, never twice) plus
+      the guard that the badge's number matches the city.
+      **Docs:** `src/engine/run/README.md` (the `badge.ts` line), `docs/region-spec.md` §3.
+      **Tests:** `[unit]` `grantBadge` is idempotent, appends in order and never skips; `[unit]` a
+      leader win returns the badge, the TM and the money exactly once. `[live]` at 1280×800 in gym 1:
+      the leader's party has three, the badge lands in the header (1/8), the TM is in the bag and the
+      exit's guard lets the player through.
+      Claims `src/scenes/GymScene.ts`, `src/engine/run/badge.ts`, `badge.test.ts`,
+      `src/engine/run/index.ts`, `src/engine/run/README.md` and `docs/region-spec.md` §3.
+      *Dependencies:* the gym interior (Batch 118), the leader table (Batch 118), the puzzle stack
+      (Batch 120), the badge gate (Batch 119). *(Batch 121)*
+
+- [ ] **[Task-286] The League: four, a Champion, and a heal between each.** Inside, the party is
+      healed (HP/PP/status, never revived) after every battle, items are allowed, nothing can be
+      bought and there is no way out until the Champion falls — after which the tower opens.
+      **Measured:** `src/data/league.ts` (Batch 118) holds the five rows at 60; `healParty` rests
+      party+box without curing status; `resolveBattle` folds a battle back with permadeath.
+      **Fix shape:** `src/engine/region/league.ts` (`leagueStep(run, plan, index)` → the next foe and
+      the full-heal-between rule; `leagueCleared(run)`), `src/scenes/LeagueScene.ts` chaining the five
+      battles in one scene with no exit, and the Champion's win unlocking the tower node.
+      **Docs:** `src/engine/region/README.md` (the `league.ts` line, written by the travel task),
+      `docs/region-spec.md` §7.6.
+      **Tests:** `[unit]` the five battles run in order, a loss ends the run with no revival, the heal
+      between battles restores HP/PP/status and never a fainted member, and items stay usable;
+      `[unit]` the exit is refused until `leagueCleared`. `[live]` at 1280×800: entering the League
+      with a hurt party heals it once, the five foes appear in order, and the tower node appears on
+      the region map after the Champion.
+      Claims `src/scenes/LeagueScene.ts`, `src/engine/region/league.ts`, `league.test.ts` and
+      `docs/region-spec.md` §7.6. *Dependencies:* the League table (Batch 118), the region plan (Batch
+      117). *(Batch 121)*
+
+### Batch 122 - what a node holds
+
+**The four.** The prologue (`[Task-287]`), the city's people (`[Task-288]`), the routes' POIs
+(`[Task-289]`) and the catch/encounter rule (`[Task-290]`). Each owns its own scene module or its own
+engine module; the base scene is `[Task-290]`'s alone.
+
+**Hot files.** `src/scenes/InteriorScene.ts` (`[Task-287]`), `src/scenes/WorldScene.ts`
+(`[Task-290]`), `src/scenes/README.md` (`[Task-287]`, writing the other three's lines).
+`src/data/npcs.ts` is `[Task-288]`'s, `src/data/pois.ts` `[Task-289]`'s.
+
+**What it replaces.** `StarterScene`, the room NPCs and their `RoomHost`, the room-scoped POIs and
+the route-scoped capture.
+
+- [ ] **[Task-287] The prologue: an empty party, one starter and a closed door.** The run starts in
+      the laboratory with no Pokémon; the professor hands over the starter and the starting bag
+      (Poké Balls and potions), the laboratory heals on entry, and the town's exit stays shut until
+      the starter is taken. `hasLivingParty` cannot declare an empty party a loss.
+      **Measured:** `createRun` requires a `starter` (`state.ts`, `RunInit`); `hasLivingParty`
+      returns false for an empty party and the route scene treats that as the run's end;
+      `StarterScene` is the screen a new run opens; the `04` frame is `starter`'s panel
+      (`src/ui/hud/panels/starter/`).
+      **Fix shape:** `src/engine/run/prologue.ts` (`emptyRun(seed)`, `takeStarter(run, speciesId,
+      level)` granting the bag row and setting `starterTaken`, `canLeaveTown(run)`),
+      `RunState.starterTaken: boolean` (folded into the v28 field set by the schema task's own spec —
+      this task adds the flag and its parse), `src/scenes/InteriorScene.ts` for the laboratory and
+      every house, the starter pick mounted from the shipped `starter` panel **with its `04` adapter
+      restored here** (`specGap.views/starter.ts`, the row `[Task-256]` froze), and `hasLivingParty`
+      reading a prologue run as alive.
+      **Docs:** `src/scenes/README.md` (the interior line), `src/engine/run/README.md` (the
+      `prologue.ts` line), `src/ui/hud/panels/starter/README.md` (the adapter's line),
+      `docs/region-spec.md` §6.
+      **Tests:** `[unit]` a fresh run has no party and is not lost; `[unit]` taking a starter adds
+      the member and the bag once; `[unit]` the town's exit is refused before and open after;
+      `[unit]` the laboratory's heal rests whatever the party holds; `[unit]` the `04` adapter
+      reports no gap for `04-starter-pick` (the numbers `[Task-256]`'s entry measured, quoted there).
+      `[live]` at 1280×800 a new run lands in the laboratory, the door does not open before the
+      pick, the three `[data-hud-starter-card]` elements read `218 / 510 / 802, 176, 260, 320`, and
+      after the pick the town's east exit is walkable.
+      Claims `src/scenes/InteriorScene.ts`, `src/engine/run/prologue.ts`, `prologue.test.ts`,
+      `src/engine/run/state.ts`, `state.test.ts`, `src/data/run.ts`, `src/scenes/README.md`,
+      `src/engine/run/README.md`, `src/ui/hud/specGap.views/starter.ts`,
+      `src/ui/hud/panels/starter/specGap.test.ts`, `src/ui/hud/panels/starter/README.md` and
+      `docs/region-spec.md` §6. *Dependencies:* the city and
+      interior scenes (Batch 121). *(Batch 122)*
+
+- [ ] **[Task-288] Cities have people.** Each city stands 1-2 special NPCs (each with its own
+      probability) and N generic ones with lines by tier (2-3 / 4-6 / 7-10), all from
+      `[Task-277]`'s per-node content, and the specials carry the gift/trade/egg/ability-edit actions
+      the rooms used to.
+      **Measured:** `src/data/npcs.ts` holds 16 rows and their actions; `RouteScene` places them per
+      room through `RoomHost`; `src/engine/routes/npcs.ts` rolls them; the NPC card is
+      `src/ui/npcPanel.ts`.
+      **Fix shape:** `src/data/npcs.ts` reworked into `SPECIAL_NPCS` (each with `chance` and its
+      action) and `GENERIC_LINES` by tier; `src/engine/region/npcs.ts` (`nodeNpcs(plan, key,
+      content)` → the placed list, keyed `npc-<nodeKey>-<n>`); `src/scenes/npcs.ts` placing them in a
+      city and opening the shipped card; the "second-ability" sacrifice stays reachable there.
+      **Docs:** `src/data/npcs.ts` header, `docs/region-spec.md` §7.7.
+      **Tests:** `[unit]` the placed count follows the tier; `[unit]` a special's probability is
+      applied on its own draw so a line roll cannot move it; `[unit]` two calls for one node are
+      identical and marks survive a revisit. `[live]` at 1280×800 in city 1: the generic NPCs are
+      where the plan put them, talking opens the card, and a special's action resolves once.
+      Claims `src/data/npcs.ts`, `npcs.test.ts`, `src/engine/region/npcs.ts`, `npcs.test.ts`,
+      `src/scenes/npcs.ts`, `src/scenes/npcs.test.ts` and `docs/region-spec.md` §7.7.
+      *Dependencies:* per-node content (Batch 119), the city scene (Batch 121). *(Batch 122)*
+
+- [ ] **[Task-289] Routes carry the POIs, as zones.** The vault, the mini-boss (50 % per stretch), the
+      no-heal zone, the banned zone, the puzzle, the static, the legendary's mission, the secret shop
+      and the trade move out of the rooms and onto routes and laterals: one or two per stretch, on a
+      lateral's terminus.
+      **Measured:** `src/data/{loot,gates,noHeal,bannedRoom,staticSpecies,shop}.ts` and
+      `src/scenes/rooms/*` hold the room-bound content; `MapRoomSpecial` names the nine kinds; the
+      per-node content pass (Batch 119) emits a `poi`.
+      **Fix shape:** `src/data/pois.ts` (`POI_KINDS`, each with its own data: the mini-boss's
+      chance, the no-heal zone's radius and rule, the banned zone's banned-species rule, the
+      secret shop's shelf, the static's species, the trade's counter); `src/engine/region/pois.ts`
+      (`nodePoi(plan, key, content)` → the POI and its zone rect on the route); `src/scenes/pois.ts`
+      drawing and triggering them; the zones are rectangles a battle reads, not room flags. The old
+      room tables (`gates.ts`, `noHeal.ts`, `bannedRoom.ts`) keep feeding the old scene until the
+      sweep deletes them (`[Task-298]`): this task folds their rules into `pois.ts` and leaves the
+      originals in place, so no import dangles.
+      **Docs:** `src/data/pois.ts` header, `docs/region-spec.md` §7.8.
+      **Tests:** `[unit]` every lateral terminus with a POI resolves to exactly one kind; `[unit]` the
+      mini-boss appears on 50 % of stretches over 1 000 seeds; `[unit]` a no-heal zone's rect lies
+      inside the route and a battle started in it refuses the bag; `[unit]` the static is unique per
+      region. `[live]` at 1280×800 on the first lateral: the POI's marker stands on its zone, a
+      battle inside the no-heal zone refuses a potion, and outside it the potion works.
+      Claims `src/data/pois.ts`, `pois.test.ts`, `src/engine/region/pois.ts`, `pois.test.ts`,
+      `src/scenes/pois.ts`, `src/scenes/pois.test.ts` and `docs/region-spec.md` §7.8.
+      *Dependencies:* per-node content (Batch 119), the long route (Batch 118). *(Batch 122)*
+
+- [ ] **[Task-290] One catch per grass node, and wilds at 60-75 % of the squad.** The capture is keyed
+      by `nodeKey` — one per node that has grass, town and cities included — and the wild level comes
+      from the squad, never the badge.
+      **Measured:** `canCapture`/`useCapture` read `capturedRooms` (`state.ts`), and `advanceMap`
+      clears them; `resolveBattle` builds the catch and calls `asDark`; `wildLevel` lives in
+      `src/data/wildLevels.ts`; `src/engine/routes/encounters.ts` rolls a route's table.
+      **Fix shape:** `canCapture`/`useCapture`/`markCaptured` keyed by `nodeKey` (the schema task's
+      `capturedNodes`), `WorldScene`'s grass step rolling the node's table through
+      `src/engine/region/encounters.ts` (biome → pool → `wildLevel(squadLevel)`), and the catch's
+      location recorded as the node, not the floor.
+      **Docs:** `src/engine/region/README.md` (the `encounters.ts` line), `docs/region-spec.md` §7.9.
+      **Tests:** `[unit]` a node with grass captures once, a second attempt is refused, and another
+      node still allows one; `[unit]` a wild's level is 60-75 % of the squad's on 1 000 draws;
+      `[unit]` the town and every city with grass are capturable. `[live]` at 1280×800: the first
+      route's grass opens a battle, the catch lands, and stepping back into the same node's grass
+      opens no second capture.
+      Claims `src/scenes/WorldScene.ts`, `src/engine/region/encounters.ts`, `encounters.test.ts`,
+      `src/engine/run/state.ts`, `state.test.ts`, `src/engine/region/README.md` and
+      `docs/region-spec.md` §7.9. *Dependencies:* `WorldScene` (Batch 120), the schema (Batch 119),
+      the curve (Batch 119). *(Batch 122)*
+
+### Batch 123 - the run at full scale
+
+**The four.** Missions (`[Task-291]`), services and economy (`[Task-292]`), the full eight-city scale
+(`[Task-293]`) and the tower with the run's end (`[Task-294]`). The scale task edits the plan and its
+data; the services task edits the heal/shop seams; nothing overlaps.
+
+**Hot files.** `src/scenes/RunOverScene.ts` and `src/scenes/LeagueScene.ts` are `[Task-294]`'s;
+`src/engine/region/plan.ts` and `src/data/region.ts` are `[Task-293]`'s; `src/ui/shop.ts`,
+`src/data/shop.ts` and `src/engine/run/heal.ts` are `[Task-292]`'s; `src/ui/hud/panels/missions/**` and
+`src/data/missions.ts` are `[Task-291]`'s.
+
+**What it replaces.** The per-floor mission, the room merchant/PC/heal, the eight-floor finite run and
+the victory screen.
+
+- [ ] **[Task-291] Missions are a stack: one automatic per stretch, one fixed per city, one random
+      from an NPC.** The catalogue is redesigned around nodes; a stretch's automatic mission is "lose
+      no Pokémon until the leader falls", a city has its fixed one, and an NPC offers a random one.
+      **Measured:** `src/data/missions.ts` holds the shipped mission rows; `src/engine/run/missions.ts`
+      tracks one mission per floor (`MissionProgress`, `completedMissions`); the HUD card is
+      `panels/missions/`; `mission` and `missionsCompleted` live on `RunState` (Batch 119 keeps them).
+      **Fix shape:** rewrite `src/data/missions.ts` as a catalogue over node keys (`stretch`, `city`,
+      `random` kinds with their own predicates), `src/engine/region/missions.ts`
+      (`activeMissions(run, plan)` → the stack in order; `advanceMissions(run, event)` → the
+      completions), and the card drawing the stack instead of one row.
+      **Docs:** `src/data/missions.ts` header, `docs/region-spec.md` §7.10.
+      **Tests:** `[unit]` a stretch's automatic mission fails on a casualty and completes at the
+      leader; `[unit]` the fixed city mission is the same on a revisit; `[unit]` the NPC's random one
+      is stable for a seed and differs across seeds; `[unit]` the stack reports its order.
+      `[live]` at 1280×800: entering a stretch shows its automatic mission in the card, losing a
+      member marks it failed, and the city's fixed mission is listed beside it.
+      Claims `src/data/missions.ts`, `missions.test.ts`, `src/engine/region/missions.ts`,
+      `missions.test.ts`, `src/ui/hud/panels/missions/view.ts`, `view.test.ts` and
+      `docs/region-spec.md` §7.10. *Dependencies:* the region plan (Batch 117), the schema (Batch 119).
+      *(Batch 123)*
+
+- [ ] **[Task-292] Services live in the Centre and nowhere else.** The Centre's counter heals party
+      and box (HP/PP, no status) on entry, its PC is the only place to swap party and box, its
+      merchant is the only shop and its shop is stocked per city; the laboratory heals on entry
+      without a Centre.
+      **Measured:** `healParty` rests party+box; `pcFullyEditable`/`pcMemberEditable` gate the PC
+      (the edit predicates) and are read by the route panel; `openMart` rolls per `seed:map`; the
+      Pokévial became automatic in `[Task-264]`.
+      **Fix shape:** `src/scenes/services.ts` (the Centre's counter, the PC panel and the shop, all
+      three reachable only from a Centre interior), `src/engine/run/heal.ts` gaining
+      `serviceHeal(run)` (party+box, HP/PP, no status, no revival) and the laboratory's call, the
+      shop keyed by node (`shopRowKey(nodeKey, itemId)` in `src/ui/shop.ts`) with the stock rolled per
+      city's tier, and the PC's edit predicates reading "in a Centre" instead of "on a route".
+      **Docs:** `src/engine/run/README.md` (the `serviceHeal` line), `docs/region-spec.md` §6.
+      **Tests:** `[unit]` `serviceHeal` restores HP/PP, leaves a status and never revives; `[unit]`
+      the shop marks a row per node and not per floor; `[unit]` the PC refuses an edit outside a
+      Centre and allows it inside; `[unit]` the ball row stays endless. `[live]` at 1280×800: the
+      Centre heals on entry, its PC swaps two members, its merchant sells, and the same actions are
+      refused on a route.
+      Claims `src/scenes/services.ts`, `src/engine/run/heal.ts`, `heal.test.ts`, `src/ui/shop.ts`,
+      `shop.test.ts`, `src/data/shop.ts`, `src/scenes/panels/pc.ts` and `docs/region-spec.md` §6.
+      *Dependencies:* the city and interior scenes (Batch 121), the badge curve (Batch 119).
+      *(Batch 123)*
+
+- [ ] **[Task-293] The whole region plays at its real scale.** The plan's stretch arithmetic, the
+      city tiers' sizes and the route heights are exercised end to end: nine settlements, sixteen to
+      twenty-four routes, one Victory Road, the League and the tower, with the badge ladder and every
+      guard in order.
+      **Measured:** the plan (Batch 117) already emits the full topology; `src/data/region.ts` holds
+      the tier table; the generators (Batch 118) read both; the scenes (Batch 121) play one city.
+      **Fix shape:** retune `src/data/region.ts`'s tier/building/height tables if the end-to-end walk
+      shows a wall, tighten `planRegion`'s stretch arithmetic to the frozen counts (one main route
+      per stretch plus 1-2 laterals, a POI or a gym-less city at each lateral's end), and add the
+      scale assertions to `plan.test.ts`.
+      **Docs:** `docs/region-spec.md` §1 (the frozen counts), `src/data/region.ts`'s header.
+      **Tests:** `[unit]` over 64 seeds: 8 gym cities, 16-24 routes, one victory road, no node
+      orphaned, every lateral terminates as specified, the Victory Road is one route and the only
+      path into the League; `[unit]` every city's size and building count match its tier; `[unit]` a
+      walk of the chain in badge order never needs a badge the player does not hold. `[live]` at
+      1280×800 a debug teleport walks town → city 8 → Victory Road → League and every gate opens in
+      order.
+      Claims `src/engine/region/plan.ts`, `plan.test.ts`, `src/data/region.ts`,
+      `src/data/region.test.ts`, `src/engine/region/README.md` and `docs/region-spec.md` §1.
+      *Dependencies:* all three generators (Batch 118), the gate (Batch 119), the city and gym scenes
+      (Batch 121). *(Batch 123)*
+
+- [ ] **[Task-294] The Champion opens the tower, and the run ends only when the party does.** After
+      the Champion the tower's node unlocks: five at 60, full random like every trainer, healed
+      between battles, no leader and no rule of its own; its streak is the record, and the run's end
+      card reports badges, not floors.
+      **Measured:** `LeagueScene` (Batch 121) unlocks the tower node; `src/engine/run/history.ts`
+      records floors and a `mode` (Batch 119 moved the record to badges); `RunOverScene` draws the
+      defeat card and the victory frames are retired.
+      **Fix shape:** `src/engine/region/tower.ts` (`towerStep(run, streak)` → the next foe at 60,
+      random, `streak` bumped per win; `towerHeal` after each battle), the tower played as the League
+      scene's endless mode, `towerStreak` written to the history (its own figure, apart from the badge
+      record) and `RunOverScene` reporting badges + streak with no victory state.
+      **Docs:** `src/engine/region/README.md` (the `tower.ts` line), `docs/region-spec.md` §7.11.
+      **Tests:** `[unit]` every tower foe is level 60 and a random party, no leader flag and no
+      special rule; `[unit]` a win bumps the streak and heals, a loss ends the run; `[unit]` the
+      record stores badges and the streak apart; `[unit]` no history row can leave the tower unlocked
+      before the Champion. `[live]` at 1280×800 after the Champion: the tower node is on the map, a
+      first win shows the streak, a wipe shows the defeat card with the badge count and no victory
+      card exists.
+      Claims `src/engine/region/tower.ts`, `tower.test.ts`, `src/scenes/LeagueScene.ts`,
+      `src/scenes/RunOverScene.ts`, `src/engine/run/history.ts`, `history.test.ts` and
+      `docs/region-spec.md` §7.11. *Dependencies:* the League (Batch 121), the schema (Batch 119), the
+      record (Batch 119). *(Batch 123)*
+
+### Batch 124 - the shell
+
+**The three.** i18n (`[Task-295]`), the debug menu (`[Task-296]`) and the balance/regression pass
+(`[Task-297]`). Fewer tasks because every remaining candidate reads one of these three files; the
+empty slot's constraint is that `src/i18n/en.ts` and `src/main.ts` are each a single owner and the
+third task is the only other one left with a disjoint path.
+
+**Hot files.** `src/i18n/en.ts`, `src/i18n/es.ts`, `src/i18n/content.ts` (`[Task-295]` — it writes
+the debug menu's new `dev.*` keys verbatim from `[Task-296]`'s spec). `src/main.ts` and
+`src/dev/debugMenu.ts` are `[Task-296]`'s.
+
+**What it replaces.** The key table's floor biome language, the debug teleports by floor and the
+balance spreadsheets of the eight-floor run.
+
+- [ ] **[Task-295] Every new screen and every old label speaks.** The key table gains the region's
+      vocabulary — node kinds, the guard, the Centre, the badge ladder, the puzzle, the tower, the
+      mission stack — in English first and Spanish by key, and loses the floor's.
+      **Measured:** `src/i18n/en.ts` holds ~1 000 keys, among them the map/floor/portal/biome
+      language; `es.ts` overlays by key; `content.ts` resolves the dex's official Spanish; the
+      key-parity test walks both tables.
+      **Fix shape:** add every new key in `en.ts`, overlay `es.ts` within the parity test, delete the
+      keys whose only screen died (portal, sealed boss, infinite mode, the starter screen's blurb),
+      keep the dex names English, and add `[Task-296]`'s `dev.*` keys.
+      **Docs:** `src/i18n/README.md` (the new groups).
+      **Tests:** `[unit]` the parity test passes and no key is unused (the shipped walker's own
+      rule); `[unit]` no `es.ts` value falls back to English except the dex-name kinds. `[live]` at
+      1280×800 with the locale set to Spanish, open the region map and the Centre: no key id is
+      printed and the labels read Spanish.
+      Claims `src/i18n/en.ts`, `es.ts`, `content.ts`, `content.test.ts`, `index.test.ts` and
+      `src/i18n/README.md`. *Dependencies:* every screen that names its strings (Batches 120-123).
+      *(Batch 124)*
+
+- [ ] **[Task-296] The debug menu knows nodes, not floors.** The dev overlay teleports by node key,
+      grants a badge, marks a node visited, forces the tower and the League, and drops the floor
+      teleports that no longer exist.
+      **Measured:** `src/dev/debugMenu.ts` holds ~20 handlers (`onTeleportFloor`, `onTeleportRoom`,
+      `onTeleportTile`, the two ignore toggles, the party editor); `src/main.ts` wires them to
+      `game.scene.getScene('Route')`; `src/dev/ids.ts` names the inputs.
+      **Fix shape:** replace the floor/room teleports with `onTeleportNode(key)`, add
+      `onGrantBadge(n)` and `onSetTowerStreak(n)`, keep the party/item/battle tools and the two
+      ignore toggles, and rewire `src/main.ts` to the world scene; every label comes from
+      `[Task-295]`'s table.
+      **Docs:** `src/dev/README.md` (the handler list).
+      **Tests:** `[unit]` the menu's handler type compiles and its id list has no dead entry;
+      `[live]` at 1280×800 with `?debug`: the node list shows the plan's keys, teleporting to city 3
+      lands there, granting badge 3 flips the header and the guard lets the player out, and no floor
+      teleport remains.
+      Claims `src/dev/debugMenu.ts`, `debugMenu.test.ts`, `src/dev/ids.ts`, `src/dev/README.md` and
+      `src/main.ts`. *Dependencies:* `WorldScene` (Batch 120), the gate (Batch 119), the badge
+      (Batch 121). *(Batch 124)*
+
+- [ ] **[Task-297] The campaign's numbers are measured once, end to end.** The badge curve, the wild
+      band, the trainer budget per stretch, the economy per city tier and the tower's ramp are
+      checked against the frozen tables, and a fixed-seed regression suite pins the region's plans and
+      every rule this phase moved.
+      **Measured:** `docs/balance/route-curve.md` and `docs/balance/economy.md` describe the
+      eight-floor campaign; `src/engine/run/curve.test.ts`, `roster.test.ts`,
+      `wildLevels.test.ts` and `src/engine/region/*.test.ts` hold the seeds to re-pin.
+      **Fix shape:** a new `docs/balance/campaign.md` with the eight-stretch table (cap, distance,
+      party size, wild band, money, TM), the retuned values in `src/data/` where a stretch is off the
+      curve, and one fixed-seed regression file per moved rule; no behaviour change beyond numbers.
+      **Docs:** `docs/balance/campaign.md` (new), `docs/balance/route-curve.md`, `docs/balance/economy.md`.
+      **Tests:** `[unit]` the whole suite is green with the re-pinned seeds; `[unit]` every stretch's
+      trainer budget clears its cap on a simulated party; `[unit]` the tower's ramp is monotone.
+      No browser pass is owed. Claims `docs/balance/campaign.md`, `docs/balance/route-curve.md`,
+      `docs/balance/economy.md`, `src/engine/run/curve.test.ts`, `src/engine/run/roster.test.ts`,
+      `src/data/wildLevels.ts` and `src/data/wildLevels.test.ts`.
+      *Dependencies:* the curve (Batch 119), the plan at scale (Batch 123). *(Batch 124)*
+
+### Batch 125 - the sweep and the close
+
+**The two.** The phase promised incremental deletion, and this is where what is left goes: the floor
+modules, the room content, the old scene and its registry, and the dead fields. The doc task then
+closes the three specs in the new vocabulary. Two tasks is the floor of the rule and it is justified:
+both claim `src/main.ts`'s neighbourhood and the READMEs, and every other path this batch could have
+carried is already deleted by one of them.
+
+**Hot files.** `src/main.ts` (`[Task-298]`, deleting `StarterScene` and `RouteScene` from the scene
+list). No other hot file.
+
+- [ ] **[Task-298] The floors are deleted.** Every module the region replaced goes, with its tests:
+      the map plan and its progress/route/streams, the room grid, the room descriptors, the old route
+      scene and its registry, the floor minimap, the floor-bound content tables that survived the
+      moves, `routeIndexForRoom` and `floorForRoute`, and the three deprecated position fields on
+      `RunState`.
+      **Measured:** `src/engine/maps/**` (plan, progress, route, streams), `src/scenes/rooms/**`,
+      `src/scenes/RouteScene.ts`, `src/ui/mapView.ts`, `src/engine/run/floors.ts`,
+      `levelCap.ts`, `src/engine/maps/streams.ts`, and `RunState.mapIndex/routeIndex/routeInMap` all
+      still exist after Batches 116-124 by design.
+      **Fix shape:** delete each module with its `*.test.ts`, remove the importers, drop the three
+      deprecated fields and their parse/encode branches, update every folder README the deletions
+      touch, and keep `npm run build` and `npm test` green (a deletion that leaves a dangling import
+      fails the gate).
+      **Docs:** `src/engine/README.md`, `src/scenes/README.md`, `src/ui/README.md`,
+      `src/engine/run/README.md`, `src/data/README.md`.
+      **Tests:** `[unit]` `grep -rn "planMap\|MapRoom\|routeIndexForRoom\|floorForRoute\|RoomHost"
+      src` is empty; `[unit]` `grep -rn "mapIndex\|routeIndex\|routeInMap" src` finds no live reader;
+      `[unit]` the suite and the build are green. No browser pass is owed. Claims
+      `src/engine/maps/**`, `src/engine/run/floors.ts`, `floors.test.ts`,
+      `src/engine/run/levelCap.ts`, `levelCap.test.ts`, `src/engine/run/state.ts`, `state.test.ts`,
+      `src/engine/save.ts`, `save.test.ts`, `src/scenes/rooms/**`, `src/scenes/RouteScene.ts`,
+      `src/scenes/StarterScene.ts`, `StarterScene.test.ts`, `src/ui/mapView.ts`, `mapView.test.ts`,
+      `src/main.ts`, `src/data/maps.ts`, `src/data/mapSize.ts`, `src/data/gates.ts`,
+      `src/data/noHeal.ts`, `src/data/bannedRoom.ts` and the five
+      folder READMEs. *Dependencies:* every batch before it. *(Batch 125)*
+
+- [ ] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
+      `docs/routes-spec.md`, `docs/tech-decisions.md` and `docs/data-spec.md` stop describing floors
+      and describe what shipped, with the new `D##` complete and no dead reference left.
+      **Measured:** `docs/design-spec.md` §2 describes the run as eight maps plus infinite mode;
+      `docs/routes-spec.md` §1 says a route is one room of a floor; `docs/data-spec.md` still rows
+      the deleted tables; `docs/tech-decisions.md`'s `D8`, `D9`, `D28`-`D33` are floors.
+      **Fix shape:** rewrite those sections in place, mark `D8`, `D9`, `D28`-`D33` **superseded** with
+      a pointer to `D59`-`D68` rather than deleting them, keep `docs/region-spec.md` as the source of
+      truth, and confirm `AGENTS.md` (the Batch 117 doc task) agrees with the shipped tree.
+      **Docs:** itself.
+      **Tests:** `[unit]` no doc under `docs/` mentions `planMap`, `MapRoomSpecial`, the sealed
+      portal, `mapIndex` or the infinite mode as live behaviour (a grep list); `[unit]` every
+      `src/` path a doc names exists; `[unit]` `D59`-`D68` all exist and every superseded `D##`
+      points to its replacement. No browser pass is owed. Claims `docs/design-spec.md`,
+      `docs/routes-spec.md`, `docs/tech-decisions.md`, `docs/data-spec.md`,
+      `docs/route-generator.md`, `docs/art-direction.md` and `docs/tileset-spec.md`.
+      *Dependencies:* the sweep (Batch 125) and every batch before it. *(Batch 125)*
 
 ## Bugs
 
