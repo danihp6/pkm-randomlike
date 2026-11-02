@@ -53,16 +53,40 @@ export function fillPokevial(run: RunState): RunState {
 }
 
 /**
- * Drinks the Pokevial: it only works with a **full meter** (`POKEVIAL_MAX_CHARGES`),
- * then rests the whole party and box — HP/PP to full and a primary status cured
- * across both (never a resurrection, D5) — and empties the vial to zero. A
- * partial bar is a no-op, so the charges must build up to a full vial before it
- * can be drunk.
+ * One member as a reason to drink: **alive** and missing HP, missing PP on any of
+ * its moves or carrying a primary status. A member at 0 HP is never a reason, so
+ * the vial never resurrects (D5), and a member with no moves is simply not
+ * missing PP.
  */
-export function usePokevial(run: RunState): RunState {
-  if (run.pokevialCharges < POKEVIAL_MAX_CHARGES) return run;
-  const healed = restParty(run, true);
-  return { ...healed, pokevialCharges: 0 };
+function memberNeedsHealing(member: RunPokemon): boolean {
+  const fighter = member.fighter;
+  if (fighter.hp <= 0) return false;
+  if (fighter.status) return true;
+  // A `FighterSnapshot` carries no maximum of its own, so the bar is re-derived
+  // the way `healMember` rebuilds it.
+  if (fighter.hp < restoreFighter(fighter).maxHp) return true;
+  return fighter.moves.some((slot) => slot.pp < slot.maxPp);
+}
+
+/** True when any member — party **or** box — is something the vial can cure. */
+export function needsHealing(run: RunState): boolean {
+  return run.party.some(memberNeedsHealing) || run.box.some(memberNeedsHealing);
+}
+
+/** True when the meter is full and there is something to cure. */
+export function pokevialReady(run: RunState): boolean {
+  return run.pokevialCharges >= POKEVIAL_MAX_CHARGES && needsHealing(run);
+}
+
+/**
+ * Drinks the vial the instant it is ready: a full meter plus a wounded party or
+ * box rests both — HP/PP to full and a primary status cured, never a
+ * resurrection (D5) — and empties the meter. Not ready is a no-op that returns
+ * the run **by reference**, so a caller never dirties a save on nothing.
+ */
+export function autoPokevial(run: RunState): RunState {
+  if (!pokevialReady(run)) return run;
+  return { ...restParty(run, true), pokevialCharges: 0 };
 }
 
 /**

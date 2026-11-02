@@ -19,8 +19,8 @@ seed (`D11`).
 - `floors.test.ts` — the chain round trip over the finite and infinite modes.
 - `chain.ts` — what a route index plays as: route, mini-boss, boss or final boss.
 - `chain.test.ts` — the cadence in every mode and at every block boundary.
-- `heal.ts` — the Pokevial charges, the heal stop and the party/box heal.
-- `heal.test.ts` — the charge economy and what a heal never does (revive, D5).
+- `heal.ts` — the Pokevial charges and the automatic drink, the heal stop and the party/box heal.
+- `heal.test.ts` — the charge economy, what makes the vial drink and what a heal never does (revive, D5).
 - `perms.ts` — permadeath: the fallen leave the run for good (D5).
 - `perms.test.ts` — the release order, the same-reference no-op and the RIP list.
 - `battleLink.ts` — the contract a route hands a battle and the payload the battle hands back.
@@ -57,7 +57,7 @@ seed (`D11`).
 - `trade.test.ts` — the eligibility, the roll and the member the trade leaves behind.
 - `history.ts` — the record of the last finished runs: seed, mode, reach, catches, casualties, playtime and per-species KOs and damage (`Task-152`).
 - `history.test.ts` — the 50-run cap, the pure record builder and its species rows.
-- `dark.ts` — the dark Pokémon: the catch's own roll and the member it turns `Dark Matter`-first (`Task-154`).
+- `dark.ts` — a dark catch's two rolled abilities (`darkAbilityNames`, `asDark`).
 - `dark.test.ts` — the roll's share over 10 000 catches, its pinned seeds and the member it rewrites.
 - `curve.test.ts` — the route-curve regression: the XP a floor's award pays, checked against the floor chain.
 - `README.md` — this map.

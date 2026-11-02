@@ -4,7 +4,7 @@ import { levelCapForMap } from '../../data/maps';
 import { evolutionBranches } from '../../data/dex/evolutions';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { capForRoute } from './levelCap';
-import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty, usePokevial } from './heal';
+import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot } from './progression';
 import { missionForMap, recordHpLost } from './missions';
 import {
@@ -361,20 +361,24 @@ describe('the run modifiers', () => {
 });
 
 describe('the fallen', () => {
-  const fallen = () => {
+  const deadMember = () => {
     const base = createRunPokemon({ id: 'fallen', speciesId: 'sentret', level: 3 });
     return { ...base, fighter: { ...base.fighter, hp: 0 } };
   };
 
-  it('a floor change and a full vial never touch the fallen', () => {
-    const dead = fallen();
+  it('a floor change and an automatic vial never touch the fallen', () => {
+    const fallen = deadMember();
     const run = createRun({ seed: 'run-a', starter });
-    const withFallen = { ...run, rip: [dead] };
+    const withFallen = { ...run, rip: [fallen] };
+    const hurt = { ...starter, fighter: { ...starter.fighter, hp: 1 } };
+    const wounded = { ...withFallen, party: [hurt, fallen] };
 
     expect(advanceMap(withFallen).rip).toBe(withFallen.rip);
     expect(healParty(withFallen).rip).toBe(withFallen.rip);
     expect(fillPokevial({ ...withFallen, pokevialCharges: 0 }).rip).toBe(withFallen.rip);
-    expect(usePokevial(withFallen).rip).toBe(withFallen.rip);
+    const drunk = autoPokevial(wounded);
+    expect(drunk.rip).toBe(withFallen.rip);
+    expect(drunk.party[1].fighter.hp).toBe(0);
     expect(gainExperience(withFallen, 50, 'run-a').run.rip).toBe(withFallen.rip);
   });
 });
@@ -392,6 +396,24 @@ describe('bossDefeated', () => {
   it('fills the Pokevial to the cap when the boss falls', () => {
     const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 0 };
     expect(markBossDefeated(spent).pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+  });
+
+  it('drinks the boss fill on the same clear when the party is hurt', () => {
+    const hurt = { ...starter, fighter: { ...starter.fighter, hp: 1 } };
+    const run = { ...createRun({ seed: 'run-a', starter: hurt }), pokevialCharges: 0 };
+    const next = markBossDefeated(run);
+    expect(next.pokevialCharges).toBe(0);
+    expect(next.party[0].fighter.hp).toBe(starterMaxHp);
+  });
+
+  it('leaves an already marked boss as the same object, even with a hurt party', () => {
+    const hurt = { ...starter, fighter: { ...starter.fighter, hp: 1 } };
+    const run = {
+      ...createRun({ seed: 'run-a', starter: hurt }),
+      pokevialCharges: 0,
+      bossDefeated: true,
+    };
+    expect(markBossDefeated(run)).toBe(run);
   });
 });
 
