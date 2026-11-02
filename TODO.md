@@ -11449,7 +11449,7 @@ push, exactly as in Batches 107-110.
       `src/ui/hud/specGap.views/starter.ts`, `src/ui/hud/panels/starter/specGap.test.ts` and
       `src/ui/hud/panels/starter/README.md`. *Dependencies:* none. *(Batch 111)*
 
-- [ ] **[Task-257] The options screen is wired to its spec.** The two-card settings screen — the
+- [x] **[Task-257] The options screen is wired to its spec.** The two-card settings screen — the
       wave's first row whose view model carries **no rect at all**.
       **Measured:** `design/screens/02-options.json` is the frame `02 Options`
       (`design/board.json`, node `1:1557`), **33 boxes, 35 strings, 16 colours**, and the panel is

@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The options screen is wired to its spec.** `[Task-257]`, Batch 111: the `options` panel
+      gains its `02 Options` adapter, and it is the wave's first row whose view model carries **no
+      rect at all** — `OptionsView` is strings and row kinds, `options.css` owns the geometry — so
+      the honest claim is `boxes: []`, `colours: []` and the 31 lines the model prints, with a
+      premise test pinning the frame's 33 boxes and its two cards `96, 200, 640, 470` /
+      `760, 200, 424, 470` against a model that has none. The walker's `PENDING` line is gone and
+      `docs/hud-fidelity.md`'s row reads `wired`. `[live]` at 1280×800, pressing the main menu's
+      `OPTIONS` row over CDP and reading `getBoundingClientRect()`: `[data-hud-group="gameplay"]`
+      `96, 200, 640, 470` and `[data-hud-group="keybinds"]` `760, 200, 424, 470`, a zero-pixel
+      delta on both cards.
+
 - [x] **The pause menu is wired to its spec.** `[Task-255]`, Batch 110: the evidence `ESC` opens
       on the route gains its `03n Panels · pause menu` adapter — the one box both sides share is
       claimed at a zero delta (`pause scrim` `0, 0, 1280, 800`, the viewport's own rect) and the

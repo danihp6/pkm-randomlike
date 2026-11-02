@@ -46,7 +46,6 @@ const MAPPED: ReadonlyMap<string, Adapter> = new Map(
  */
 const PENDING: Readonly<Record<string, string>> = {
   '01b-main-menu-no-save': 'the same screen with no save; no view builder is wired',
-  '02-options': 'every options row is data, and no view builder is wired',
   '04-starter-pick': 'the starter cards; no view builder is wired',
   '05e-battle-stats': 'the SWITCH window stats; no view builder is wired',
   '06-run-over-defeat': 'the defeat card; no view builder is wired',

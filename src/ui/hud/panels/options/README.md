@@ -12,6 +12,7 @@ The spike of `D49`: the board's `02 Options` panel as Preact over the `#hud` lay
 - `mount.tsx` — `mountOptionsPanel`: renders the panel into a host element and returns its disposer.
 - `preview.ts` — `previewRequested` and `installOptionsPreview`: the fixture panel behind `?hud=dom&hudFixture=02-options`, one content block per viewport.
 - `preview.test.ts` — `previewRequested`'s truth table, headless.
+- `specGap.test.ts` — the panel's view against `design/screens/02-options.json`: the slug, the 31 lines of copy the model prints, the `boxes: []` premise (33 boxes, two cards pinned, no rect in the model) and the empty gap it reports, headless.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 
