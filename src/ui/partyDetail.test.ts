@@ -308,7 +308,7 @@ describe('the run-level second ability (`Task-154`)', () => {
     expect(memberDetail(run, 'two')?.ability2).toBeNull();
   });
 
-  it('reads Dark Matter first and the rolled ability second, describing the primary', () => {
+  it('reads a dark member’s two rolled abilities, describing the primary', () => {
     const dark = asDark(
       createRunPokemon({
         id: 'dark',
@@ -320,10 +320,10 @@ describe('the run-level second ability (`Task-154`)', () => {
     );
     const run = { ...createRun({ seed: 'run-a', starter }), party: [dark] };
     const detail = memberDetail(run, 'dark');
-    expect(detail?.ability).toBe('Dark Matter');
-    expect(detail?.ability2).toBe('Keen Eye');
+    expect(detail?.ability).toBe(dark.fighter.ability);
+    expect(detail?.ability2).toBe(dark.fighter.secondAbility);
     expect(detail?.abilityDesc).toBe(
-      getAbility('darkmatter')!.shortDesc || getAbility('darkmatter')!.desc,
+      getAbility(dark.fighter.ability)!.shortDesc || getAbility(dark.fighter.ability)!.desc,
     );
   });
 

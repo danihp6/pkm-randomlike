@@ -7,6 +7,7 @@ import naturesData from './natures.json';
 import speciesData from './species.json';
 import typesData from './types.json';
 import { allMoves } from './moves';
+import { allAbilities, getAbility } from './abilities';
 import { learnsetOf } from './learnsets';
 import { playableSpecies } from './species';
 import { TYPE_NAMES, isTypeName } from './types';
@@ -23,6 +24,16 @@ describe('generated dex integrity', () => {
     expect(typesData.length).toBe(counts.types);
     expect(playableSpecies().length).toBe(counts.species);
     expect(allMoves().length).toBe(counts.moves);
+  });
+
+  it('carries no hand-authored ability row any more', () => {
+    expect(counts.customAbilities).toBe(0);
+    expect(counts.abilities).toBe(311);
+    expect(allAbilities().length).toBe(311);
+    expect(abilitiesData.length).toBe(allAbilities().length);
+    for (const row of allAbilities()) {
+      expect(getAbility(row.id), row.id).toBe(row);
+    }
   });
 
   it('only references real moves from learnsets', () => {

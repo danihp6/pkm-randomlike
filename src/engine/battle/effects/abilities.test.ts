@@ -2783,28 +2783,32 @@ describe('a second ability slot (Task-153)', () => {
     expect(activeFighter(primaryOnly, 'enemy').boosts.atk).toBe(0);
   });
 
-  it('Dark Matter pierces an immunity from the second slot', () => {
+  it('fires two different granted abilities in one battle', () => {
     const state = makeBattle(
       createFighter({
         id: 'player',
         speciesId: 'charmander',
         level: 20,
-        ability: 'Blaze',
-        secondAbility: 'Dark Matter',
+        ability: 'Intimidate',
+        secondAbility: 'Levitate',
         moves: ['scratch'],
       }),
-      fighter('enemy', 'gastly', 'Levitate'),
+      fighter('enemy', 'gastly', 'Levitate', ['earthquake']),
     );
-    const ctx = moveCtxOf(state, 'player', 'scratch');
-    expect(runModifyEffectiveness(ctx, getMove('scratch')!, 0)).toBe(1);
+    // The primary's switch-in hook lowered the foe.
+    expect(activeFighter(state, 'enemy').boosts.atk).toBe(-1);
+    // The second slot's own hook still refuses the Ground move.
+    expect(runTryHit(ctxOf(state, 'enemy'), getMove('earthquake')!)).toBe(false);
+    expect(runTryHit(ctxOf(state, 'enemy'), getMove('scratch')!)).toBe(true);
+  });
 
-    const primedOnly = makeBattle(
+  it('leaves a type immunity alone: no ability pierces the type chart', () => {
+    const state = makeBattle(
       fighter('player', 'charmander', 'Blaze', ['scratch']),
       fighter('enemy', 'gastly', 'Levitate'),
     );
-    expect(
-      runModifyEffectiveness(moveCtxOf(primedOnly, 'player', 'scratch'), getMove('scratch')!, 0),
-    ).toBe(0);
+    const ctx = moveCtxOf(state, 'player', 'scratch');
+    expect(runModifyEffectiveness(ctx, getMove('scratch')!, 0)).toBe(0);
   });
 
   it('reads an ability check through both slots (Levitate as the second one)', () => {

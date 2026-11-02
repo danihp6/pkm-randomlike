@@ -319,13 +319,13 @@ carries over.
   if you walk back into it; a different room of the floor can still catch.
 - A caught wild can be **dark** — one in twenty catches (`DARK_CHANCE`,
   `src/data/run.ts`), rolled once at the catch from a stream of its own so the same
-  run seed, map, room and catch id always answer the same way. A dark member always
-  fields **Dark Matter** as its primary ability and keeps the ability the wild had
-  rolled as its **second** slot, so both work in battle; its portrait cell wears the
-  mark — the violet hairline (`#8b5cf6`) over a near-black cell — and the detail
-  panel's ABILITY row prints both names joined by ` / `, the second one reusing the
-  same line. The mark is paint only: no text of its own, and the PC box and RIP panes
-  do not wear it yet.
+  run seed, map, room and catch id always answer the same way. A dark member fields
+  **two abilities rolled from the whole implemented pool**, never the same one twice,
+  as its primary and its **second** slot, so both work in battle; its portrait cell
+  wears the mark — the violet hairline (`#8b5cf6`) over a near-black cell — and the
+  detail panel's ABILITY row prints both names joined by ` / `, the second one reusing
+  the same line. The mark is paint only: no text of its own, and the PC box and RIP
+  panes do not wear it yet.
 - **Permadeath:** 0 HP is permanent. `0 HP = lost forever`, no Revive, no
   Pokémon Center resurrection, no box recovery.
 

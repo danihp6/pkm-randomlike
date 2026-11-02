@@ -505,15 +505,18 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   while the battle's own dispatch reads both slots through `hasAbility` and
   `ownedEffects`, so the second ability works in battle too (D48).
 - A **dark** member (`RunPokemon.dark`, `Task-154`) is born at the catch: one in twenty
-  caught wilds (`DARK_CHANCE`, `src/data/run.ts`) comes back dark, its
-  `fighter.ability` rewritten to **Dark Matter** and the ability the wild had rolled
-  moved into the second slot (`fighter.secondAbility` on the snapshot and
-  `secondAbility` on the run member alike), so `hasAbility`/`ownedEffects` field it
-  beside the primary exactly like a sacrifice's grant. The roll is `isDarkCatch`'s own
-  stream, minted from `(seed, mapIndex, routeInMap, catchId)` at the catch, so it
-  advances no other draw and a replay answers the same; `asDark` reads no RNG and is
-  applied **after** the catch is adopted at the squad's level, so the level rebuild
-  cannot drop the slots it writes.
+  caught wilds (`DARK_CHANCE`, `src/data/run.ts`) comes back dark with **two abilities
+  rolled from the whole implemented pool** (`randomAbilityPool`, the banned rows
+  excluded) and never the same row twice. `darkAbilityNames` writes `fighter.ability`
+  = the first and `fighter.secondAbility` on the snapshot — `secondAbility` on the run
+  member — = the second, so `hasAbility`/`ownedEffects` field both, one ref per
+  distinct slot, exactly like a sacrifice's grant. The pair comes off the catch's own
+  stream, `hashSeed(\`dark-abilities:${catchId}:${speciesId}\`)`, so it advances no
+  other draw and a fixed run seed rebuilds the same pair; `isDarkCatch`'s roll is its
+  own stream too, minted from `(seed, mapIndex, routeInMap, catchId)` at the catch, and
+  `asDark` is applied **after** the catch is adopted at the squad's level, so the level
+  rebuild cannot drop the slots it writes. A dark member carries **no type-chart rule
+  of its own**: it hits and is hit through the chart like every other member.
 - **Transform** — the move and the **Imposter** ability — copies the foe's battle
   shape into the user: species, name, types, stats (never HP), ability, gender, the
   moves at 5 PP each and the stat stages, keeping the original shape so a
@@ -807,11 +810,11 @@ a won battle pays Honey Gather, once per room per floor. Registering the two row
 widens `randomAbilityPool` by two ids, so the abilities a seed rolls are re-rolled
 **once**; a run that already stored one keeps it, and no battle rule changes.
 
-A registered row makes an ability **reachable**, not **rolled**. `darkmatter` is
-registered (its `onModifyEffectiveness` row) and still banned from the pool
-(`BANNED` in `src/engine/battle/randomAbility.ts`), because
-`src/engine/run/dark.ts`'s `asDark` grants it on a dark catch and nothing else
-may; a re-pin of the pool's fixed-seed draws follows a pool change of any size.
+A registered row makes an ability **reachable**, not **rolled**: `randomAbilityPool`
+still drops the six forme-change ids in `BANNED`
+(`src/engine/battle/randomAbility.ts`), none of which has a registry row, so the pool
+is the implemented set and nothing else. A re-pin of the pool's fixed-seed draws
+follows a pool change of any size.
 
 ## 12. Double battles
 
