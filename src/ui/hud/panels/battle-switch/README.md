@@ -27,6 +27,7 @@ layout alike.
 - `index.ts` — the barrel the scene imports.
 - `fixture.test.ts` — `design/fixtures/05d-battle-pokemon.json` is the frame's own copy:
   its desktop card, its six members, the two status marks and the three HP bands.
+- `specGap.pokemon.test.ts` — the `05d` spec-gap adapter: the empty box claim, its deltas and its copy.
 - `README.md` — this map.
 
 ## Rules
