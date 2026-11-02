@@ -11186,6 +11186,12 @@ copying a candidate: `03d` names the list window `shop panel` and `03e` names th
 
 ### Batch 110 - the trade counter, the slot machine and the pause menu
 
+**The state, corrected on `2026-11-02`.** This batch was cut on the night of `2026-11-01` (four
+specs written) and **never launched**: no `task-252`-`task-255` branch ever reached `origin`, so the
+"batch in flight" the Batch 111 cut leaned on was a premise, not a state. The batch is still open
+and still the lowest pending one; it runs **whole, four tasks**, and the cycle that takes it writes
+its specs again, because the ones cut that night are stale.
+
 **The batch ships four rows, so the table will read seventeen `wired` and 16 `pending` when they
 land.** The adapters are `specGap.views/trade-pick.ts`, `trade-result.ts`, `rocket.ts` and
 `pause.ts`; each `PENDING` line and its table row flip in its own merge push. Two of the four are
@@ -11381,7 +11387,10 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
 
 **Four rows are queued and cut, their specs are written by their own cycle** — this block is the cut,
 not the plan: `[Task-256]` to `[Task-259]`, in the table's order. All four are entries only; a spec
-for unattempted work rots, and Batch 110 is the batch in flight. **`[Task-256]` is frozen by Phase 24
+for unattempted work rots. **Batch 110 was cut, not in flight:** the `2026-11-02` cycle read the old
+sentence as a live batch and ran this one first, shipping `258` and `259` beside `[Task-260]` (Batch
+112), so `[Task-257]` is the one still open here and Batch 110 stays the lowest pending batch.
+**`[Task-256]` is frozen by Phase 24
 (`2026-11-02`)** — the starter adapter moves to the laboratory's prologue, see its own `BLOCKED`
 note — so this batch ships **three** rows (`257`-`259`) and the fourth slot is the freeze's cost,
 recorded here and in the phase that froze it.
@@ -11531,6 +11540,10 @@ push, exactly as in Batches 107-110.
 **Four rows are queued and cut, their specs are written by their own cycle:** `[Task-260]` to
 `[Task-263]`, in the table's order — `05c` (the battle bag), `05d` (the SWITCH window),
 `05e` (the same window's stats) and `06` (the defeat card).
+
+**The state on `2026-11-02`.** `[Task-260]` shipped with Batch 111's pair, and `[Task-261]` is **in
+flight**: its branch carries `qa: pass task-261`, so the next cycle merges it before taking anything
+new. `[Task-262]` and `[Task-263]` stay open.
 
 **The exclusive paths:** `specGap.views/battle-bag.ts` + `panels/battle-bag/specGap.test.ts` +
 `panels/battle-bag/README.md` (260); `specGap.views/battle-pokemon.ts` +
