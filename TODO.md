@@ -11711,7 +11711,7 @@ is `[Task-266]`'s alone.
 **What it replaces.** `usePokevial` (a manual rule with no button), the sold-out ball row, the
 hand-authored `darkmatter` row and the one-description ability cell.
 
-- [ ] **[Task-264] The Pokévial drinks itself.** The vial stops being a button nobody pressed: with
+- [x] **[Task-264] The Pokévial drinks itself.** The vial stops being a button nobody pressed: with
       three charges it **waits** and fires the instant the run has something to cure — HP, PP or a
       primary status, anywhere in the party or the box — rests both, never revives, and drops to
       zero. No manual action exists.

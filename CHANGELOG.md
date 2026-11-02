@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Pokévial drinks itself.** `[Task-264]`, Batch 116: with three charges the
+      vial waits and fires the instant the party or the box has HP, PP or a status to cure,
+      rests both, never revives and drops to zero; the manual `usePokevial` is gone.
+      `autoPokevial`, `needsHealing` and `pokevialReady` are pure, and `resolveBattle` and
+      `markBossDefeated` end on the auto-drink. `[live]` at 1280×800: a trainer win with a
+      hurt lead took the meter from 3/3 to 0/3 without a key press.
+
 - [x] **The mini-boss reward's Pokémon rows are measured against frame `03g`.** `[Task-251]`, Batch 109:
       `src/ui/hud/specGap.views/rewards-pokemon.ts` builds the same card from the frame's own three
       unidentified offers at 1280×800, claims the same **five boxes** with a zero delta (card
