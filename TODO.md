@@ -11631,7 +11631,7 @@ and `07b` — and the name `specGap.test.ts` must stay free for the batch after 
       `src/ui/hud/panels/battle-switch/specGap.stats.test.ts`. *Dependencies:* none.
       *(Batch 112)*
 
-- [ ] **[Task-263] The defeat card is wired to its spec.** The screen a wiped run shows — the
+- [x] **[Task-263] The defeat card is wired to its spec.** The screen a wiped run shows — the
       wave's last fully-claiming candidate.
       **Measured:** `design/screens/06-run-over-defeat.json` is the frame `06 Run over · defeat`
       (`design/board.json`, node `6:2171`), **12 boxes, 14 strings, 14 colours**, and the panel is

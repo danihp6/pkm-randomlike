@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The defeat card is wired to its spec.** `[Task-263]`, Batch 112: the `run-over` panel
+      gains its `06 Run over · defeat` adapter, and the frame turns out to be the shipped desk
+      board to the pixel — `run over panel` `280, 170, 720, 480`, `main menu button`
+      `540, 590, 200, 40`, `tab totals` `336, 312, 90, 24` and `tab pokemon` `432, 312, 100, 24`
+      are four zero-delta claims, and the title, the blurb, the four stat label/value pairs, the
+      `SHARE: …` line, `MAIN MENU`, `TOTALS` and `POKEMON` are the fourteen claimed strings. The
+      accent, the four rules and the panel highlight are recorded as the stylesheet's; the
+      `route screenshot` and the scrim are the scene's. `[live]` on a **real wiped run** at
+      1280×800 (starter taken, a wild battle lost), read over CDP:
+      `[data-hud-run-over]` on screen with `data-won="false"` and
+      `[data-hud-run-over-panel]` at `280, 170, 720, 480`, zero delta on all four numbers.
+
 - [x] **The SWITCH window's stats state is wired to its spec.** `[Task-262]`, Batch 112: the
       `battle-switch` panel's second frame gains its `05e Battle · stats` adapter, built from the
       `05e` fixture through `fixtureSwitchInput` + `battleSwitchView` at 1280×800. The shipped
