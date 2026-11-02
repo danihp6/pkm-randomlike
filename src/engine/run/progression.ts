@@ -45,7 +45,7 @@ export type RunPokemon = Readonly<{
    * carries.
    */
   battlesUsed?: number;
-  /** A dark Pokémon (`Task-154`): always born `Dark Matter`, its rolled ability second. Absent means not dark. */
+  /** A dark Pokémon (`Task-154`): born with two rolled abilities, never the same row twice. Absent means not dark. */
   dark?: boolean;
   /** Enemies this member fainted this run; absent means 0 (an older save). */
   kos?: number;

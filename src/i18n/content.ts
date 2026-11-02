@@ -1,5 +1,5 @@
 import { getLocale } from './index';
-import { getAbility, getCustomAbility, allAbilitiesWithCustom } from '../data/dex/abilities';
+import { getAbility, allAbilities } from '../data/dex/abilities';
 import { getMove } from '../data/dex/moves';
 import { getItem } from '../data/items';
 import abilitiesEs from '../data/i18n/es/abilities.json';
@@ -26,9 +26,7 @@ const ABILITIES: Readonly<Record<string, ContentRow>> = abilitiesEs;
 // `name` column; a hand-authored row because the generator has no item pass.
 const ITEMS: Readonly<Record<string, string>> = itemsEs;
 
-const ABILITY_BY_NAME = new Map(
-  allAbilitiesWithCustom().map((ability) => [ability.name, ability] as const),
-);
+const ABILITY_BY_NAME = new Map(allAbilities().map((ability) => [ability.name, ability] as const));
 
 const MISSING_NAMES = new Set<string>([...meta.moves.missingNames, ...meta.abilities.missingNames]);
 
@@ -54,17 +52,7 @@ function spanishMove(id: string): ContentRow | null {
 }
 
 function spanishAbility(id: string): ContentRow | null {
-  const generated = ABILITIES[id];
-  if (generated) return generated;
-  // A hand-authored row carries its own Spanish copy, since the generated table
-  // only covers the 311 rows `allAbilities()` exposes.
-  const custom = getCustomAbility(id);
-  if (!custom) return null;
-  return {
-    name: custom.nameEs,
-    description: custom.descEs,
-    shortDescription: custom.shortDescEs,
-  };
+  return ABILITIES[id] ?? null;
 }
 
 /** A move's display name in the current locale, or the raw id when unknown. */

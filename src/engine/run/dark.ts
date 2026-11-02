@@ -1,13 +1,11 @@
 import { DARK_CHANCE } from '../../data/run';
+import { randomAbilityPool } from '../battle/randomAbility';
+// The pool is the *registered* set, so the ability table has to be loaded for a
+// pair to exist. Importing it here keeps this rule self-contained: a headless
+// caller that never booted a battle still rolls the same two names.
+import '../battle/effects/abilities';
 import { hashSeed, Rng } from '../rng';
-import { normalizeAbilityId } from '../battle/fighter';
 import type { RunPokemon } from './progression';
-
-/** The hand-authored ability id a dark member always carries. */
-export const DARK_ABILITY = 'darkmatter';
-
-/** The row's English name — what a fighter's `ability` field holds (the dex convention). */
-export const DARK_ABILITY_NAME = 'Dark Matter';
 
 /**
  * True when the wild caught under `catchId` is dark. Draws **only** from its own
@@ -23,24 +21,41 @@ export function isDarkCatch(
   return new Rng(hashSeed(`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}`)).next() < DARK_CHANCE;
 }
 
+/** The answer a pool too small to pair up gives; `asDark` reads it as "no grant". */
+const NO_PAIR: readonly [string, string] = ['', ''];
+
 /**
- * The member made dark: `fighter.ability` becomes `DARK_ABILITY_NAME`, the ability it
- * already had becomes the second slot (on the member **and** on the snapshot), and
- * `dark` becomes `true`. A member that is already dark comes back as the same object.
+ * The two ability **names** a dark member carries, drawn from `randomAbilityPool()`
+ * and never the same row twice: the pair comes off the one stream named by the
+ * catch, so a fixed run seed rebuilds it (`D11`). The second draw is made over the
+ * pool minus the first row (`raw >= first ? raw + 1 : raw`), the deletion that
+ * makes a repeat impossible.
+ */
+export function darkAbilityNames(memberId: string, speciesId: string): readonly [string, string] {
+  const pool = randomAbilityPool();
+  if (pool.length < 2) return NO_PAIR;
+  const rng = new Rng(hashSeed(`dark-abilities:${memberId}:${speciesId}`));
+  const first = rng.int(0, pool.length - 1);
+  const raw = rng.int(0, pool.length - 2);
+  const second = raw >= first ? raw + 1 : raw;
+  return [pool[first].name, pool[second].name];
+}
+
+/**
+ * The catch made dark: both slots are the rolled pair — `fighter.ability` the
+ * first, `fighter.secondAbility` and `secondAbility` the second — and `dark`
+ * becomes `true`, so the engine fields both through `hasAbility`/`ownedEffects`.
+ * A member that is already dark comes back as the same object, and a pool that
+ * cannot supply two distinct rows leaves the member unchanged.
  */
 export function asDark(member: RunPokemon): RunPokemon {
   if (member.dark === true) return member;
-  const primary = member.fighter.ability;
-  const rolled = normalizeAbilityId(primary) === normalizeAbilityId(DARK_ABILITY_NAME) ? null : primary;
-  const granted = rolled ?? member.secondAbility ?? null;
+  const [first, second] = darkAbilityNames(member.fighter.id, member.fighter.speciesId);
+  if (first === '' || second === '') return member;
   return {
     ...member,
     dark: true,
-    fighter: {
-      ...member.fighter,
-      ability: DARK_ABILITY_NAME,
-      ...(granted !== null ? { secondAbility: granted } : {}),
-    },
-    ...(granted !== null ? { secondAbility: granted } : {}),
+    fighter: { ...member.fighter, ability: first, secondAbility: second },
+    secondAbility: second,
   };
 }

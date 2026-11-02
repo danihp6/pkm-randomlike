@@ -372,14 +372,14 @@ describe('the second ability (Task-153)', () => {
       id: 'c',
       speciesId: 'charmander',
       level,
-      ability: 'Dark Matter',
+      ability: 'Soul-Heart',
       secondAbility: 'Levitate',
     });
-    expect(hasAbility(fighter, 'darkmatter')).toBe(true);
-    expect(hasAbility(fighter, 'DARK-MATTER')).toBe(true);
+    expect(hasAbility(fighter, 'soulheart')).toBe(true);
+    expect(hasAbility(fighter, 'SOUL-HEART')).toBe(true);
     expect(hasAbility(fighter, 'Levitate')).toBe(true);
     expect(hasAbility(fighter, '')).toBe(false);
-    expect(fighterAbilities(fighter)).toEqual(['Dark Matter', 'Levitate']);
+    expect(fighterAbilities(fighter)).toEqual(['Soul-Heart', 'Levitate']);
   });
 
   it('reads a fighter with no abilities as an empty list', () => {

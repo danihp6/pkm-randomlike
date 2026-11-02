@@ -5,7 +5,7 @@ import { bandForLevel, trainerXpMultiplierForMap } from '../../data/run';
 import { memberDetail } from '../../ui/partyDetail';
 import { restoreFighter } from '../battle/fighter';
 import type { BattleReturn, BattleOutcome } from './battleLink';
-import { DARK_ABILITY_NAME, isDarkCatch } from './dark';
+import { darkAbilityNames, isDarkCatch } from './dark';
 import { POKEVIAL_MAX_CHARGES } from './heal';
 import { createRunPokemon, experienceAward, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
@@ -440,12 +440,13 @@ describe('the dark catch (Task-154)', () => {
     return placed;
   }
 
-  it('folds a dark catch in as Dark Matter, with the rolled ability second', () => {
+  it('folds a dark catch in with both rolled abilities, on the member and its snapshot', () => {
     const placed = catchUnder(seedWhere(true));
+    const [first, second] = darkAbilityNames(placed.fighter.id, placed.fighter.speciesId);
     expect(placed.dark).toBe(true);
-    expect(placed.fighter.ability).toBe(DARK_ABILITY_NAME);
-    expect(placed.fighter.secondAbility).toBe(wildCaught.fighter.ability);
-    expect(placed.secondAbility).toBe(wildCaught.fighter.ability);
+    expect(placed.fighter.ability).toBe(first);
+    expect(placed.fighter.secondAbility).toBe(second);
+    expect(placed.secondAbility).toBe(second);
   });
 
   it('keeps the catch at the squad level, so the rebuild cannot drop the slots', () => {
