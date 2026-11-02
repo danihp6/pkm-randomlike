@@ -11464,7 +11464,7 @@ push, exactly as in Batches 107-110.
       Claims `src/ui/hud/specGap.views/options.ts`, `src/ui/hud/panels/options/specGap.test.ts` and
       `src/ui/hud/panels/options/README.md`. *Dependencies:* none. *(Batch 111)*
 
-- [ ] **[Task-258] The level-up notice is wired to its spec.** The `03l` frame — and the one row in
+- [x] **[Task-258] The level-up notice is wired to its spec.** The `03l` frame — and the one row in
       this batch whose frame draws a card the panel **cannot** build.
       **Measured:** `design/screens/03l-panels-notice-level-up.json` is the frame `03l Panels ·
       notice level up` (`design/board.json`, node `6:1579`), **5 boxes, 5 strings, 6 colours**, and

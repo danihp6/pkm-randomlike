@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The level-up notice is wired to its spec.** `[Task-258]`, Batch 111: the notices panel
+      gains its `03l Panels · notice level up` spec-gap adapter, which claims the strip's one
+      line and records the measured delta in the panel's own doc comment — the frame's strip is
+      132 px tall and carries a learned-moves block the Phaser popup draws, the shipped card is
+      the board's 720 × 56 at `280, 24`. `[live]` at 1280×800 read `[data-hud-notice]` at
+      `280, 24, 720, 56` after a battle that levelled the lead, with the canvas cross-check on
+      the same rect.
+
 - [x] **The card tells the second ability's story.** `[Task-267]`, Batch 116: a two-ability
       member prints both one-line descriptions behind the ability ⓘ (primary first, joined by
       `' · '`), and a one-ability member prints its own single line. `[live]` at 1280×800

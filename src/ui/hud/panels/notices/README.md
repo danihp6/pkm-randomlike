@@ -20,6 +20,9 @@ shape until that variant's data exists.
   clamps and the purity of the view, headless.
 - `fixture.test.ts` — `design/fixtures/03k-panels-notice-item.json`: its snapshot state,
   the frame's own line and the strip's rect, with no area banner.
+- `specGap.levelUp.test.ts` — the `03l` adapter measured against the strip the panel really
+  draws: the one line it prints, the 76 px the frame is taller, and the chips and hairline
+  no view box claims.
 - `noticesPanel.tsx` — the panel itself: the two cards, each one line, each hidden
   rather than absent while it is down.
 - `notices.css` — the board's card paint: radius 11, the 16 % hairline, the 12 px
