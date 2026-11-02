@@ -3,8 +3,10 @@ import { getSpecies, statAtLevel } from '../../data/dex';
 import { levelCapForMap } from '../../data/maps';
 import { bandForLevel, trainerXpMultiplierForMap } from '../../data/run';
 import { memberDetail } from '../../ui/partyDetail';
+import { restoreFighter } from '../battle/fighter';
 import type { BattleReturn, BattleOutcome } from './battleLink';
 import { DARK_ABILITY_NAME, isDarkCatch } from './dark';
+import { POKEVIAL_MAX_CHARGES } from './heal';
 import { createRunPokemon, experienceAward, xpForLevel, type RunPokemon } from './progression';
 import { resolveBattle, type BattleReward } from './resolve';
 import { createRun, squadLevel, type RunState } from './state';
@@ -106,6 +108,39 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'win'), wild).run.pokevialCharges).toBe(0);
   });
 
+  it('drinks the vial on the win that fills it, then keeps the money and the XP', () => {
+    const run = { ...createRun({ seed: 's', starter }), pokevialCharges: POKEVIAL_MAX_CHARGES - 1 };
+    const maxHp = restoreFighter(starter.fighter).maxHp;
+    const lead = { ...starter.fighter, hp: Math.max(1, maxHp - 4) };
+    const reward: BattleReward = {
+      enemyLevels: [4],
+      isTrainer: true,
+      trainerId: 'trainer-1-0',
+      money: 250,
+    };
+    const result = resolveBattle(run, returned(run, 'win', { player: [lead] }), reward);
+    expect(result.run.pokevialCharges).toBe(0);
+    expect(result.run.party[0].fighter.hp).toBe(restoreFighter(result.run.party[0].fighter).maxHp);
+    expect(result.run.money).toBe(250);
+    expect(result.run.xp).toBeGreaterThan(run.xp);
+    expect(result.run.defeatedTrainers).toEqual(['trainer-1-0']);
+  });
+
+  it('keeps a full meter when the same win leaves nothing to cure', () => {
+    const cap = levelCapForMap(1);
+    const whole = createRunPokemon({
+      id: 'starter',
+      speciesId: 'charmander',
+      level: cap,
+      moves: ['scratch'],
+    });
+    const run = createRun({ seed: 's', starter: whole, xp: xpForLevel(cap) });
+    const reward: BattleReward = { enemyLevels: [4], isTrainer: true, trainerId: 'trainer-1-0' };
+    const result = resolveBattle(run, returned(run, 'win'), reward);
+    expect(result.run.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+    expect(result.run.party[0].fighter.hp).toBe(restoreFighter(whole.fighter).maxHp);
+  });
+
   it("drops a trainer's money on a win, exactly once", () => {
     const run = createRun({ seed: 's', starter });
     const reward: BattleReward = {
@@ -167,7 +202,8 @@ describe('resolveBattle', () => {
   });
 
   it('folds a damaged catch at the share of health it had in the wild', () => {
-    const run = createRun({ seed: 's', starter });
+    // An empty meter keeps the automatic vial out of what this test pins.
+    const run = { ...createRun({ seed: 's', starter }), pokevialCharges: 0 };
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 5 });
     const f = caught.fighter;
     const oldMax = statAtLevel(getSpecies('sentret')!, 5, f.nature, f.ivs, f.evs).hp;
@@ -278,7 +314,8 @@ describe('resolveBattle', () => {
       starter: createRunPokemon({ id: 'starter', speciesId: 'charmander', level: 5 }),
     });
     const reserve = createRunPokemon({ id: 'reserve', speciesId: 'squirtle', level: 4 });
-    const two = { ...run, party: [run.party[0], reserve] };
+    // An empty meter keeps the automatic vial from resting the adopted party.
+    const two = { ...run, party: [run.party[0], reserve], pokevialCharges: 0 };
     const result = resolveBattle(
       two,
       returned(two, 'win', {

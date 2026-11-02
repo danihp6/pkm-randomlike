@@ -3,7 +3,7 @@ import type { TrainerItemReward } from '../../data/trainers';
 import type { FighterSnapshot } from '../battle/fighter';
 import type { BattleReturn } from './battleLink';
 import { asDark, isDarkCatch } from './dark';
-import { chargePokevial } from './heal';
+import { autoPokevial, chargePokevial } from './heal';
 import { releaseFainted } from './perms';
 import {
   adoptAtLevel,
@@ -60,7 +60,9 @@ export type ResolveBattleOptions = Readonly<{
  * Folds a finished battle back into the run: adopts the party and bag as the
  * battle left them (HP, PP, status), enforces permanence (fallen members leave
  * party and box), awards the squad's shared XP, places a catch at the squad's
- * level and spends the route's capture, and marks a beaten trainer. Pure, so a
+ * level and spends the route's capture, and marks a beaten trainer. Once every
+ * other mutation is folded in, a ready Pokevial drinks itself (`autoPokevial`),
+ * so a win that both fills the meter and hurts the lead ends rested. Pure, so a
  * replay yields the same run (D11).
  */
 export function resolveBattle(
@@ -123,6 +125,9 @@ export function resolveBattle(
     next = markTrainerDefeated(next, reward.trainerId);
   }
 
+  // The vial is automatic and a full meter must drink in the same call that hurt
+  // the party, so it runs last: after the trainer's charge, money, item and mark.
+  next = autoPokevial(next);
   return { run: next, released: death.released, events, capture };
 }
 

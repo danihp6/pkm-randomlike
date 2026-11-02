@@ -3,7 +3,7 @@ import { getItem } from '../../data/items';
 import { levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import type { BagCounts } from './battleLink';
-import { POKEVIAL_MAX_CHARGES, fillPokevial, healParty } from './heal';
+import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
 import { missionForMap, missionMet, type MissionProgress } from './missions';
 import { decayModifiers, emptyModifiers, type RunModifiers } from './modifiers';
@@ -93,8 +93,10 @@ export type RunState = Readonly<{
   levelCap: number;
   /**
    * Pokevial charges left: up to `POKEVIAL_MAX_CHARGES`, one earned per beaten
-   * trainer and filled by a boss. `usePokevial` **only drinks a full meter**,
-   * resting the party and the box and curing status while emptying it. A run's
+   * trainer and filled by a boss. The vial is **automatic** (`autoPokevial`): a
+   * full meter drinks itself the instant the party or the box has something to
+   * cure — missing HP, missing PP or a primary status — resting both and
+   * emptying the meter, and never resurrecting a fallen member (D5). A run's
    * meter **survives the floor change** (`docs/routes-spec.md` §6); only a fresh
    * run starts full.
    */
@@ -302,9 +304,14 @@ export function isRoomDiscovered(run: RunState, roomId: number): boolean {
   return run.discoveredRooms.includes(roomId);
 }
 
-/** Marks the current map's boss beaten, so its portal opens (D31); also tops the Pokevial up. */
+/**
+ * Marks the current map's boss beaten, so its portal opens (D31); also tops the
+ * Pokevial up, and the full meter drinks itself on the spot (`autoPokevial`). A
+ * boss already marked leaves the run **as the same object**.
+ */
 export function markBossDefeated(run: RunState): RunState {
-  return run.bossDefeated ? run : fillPokevial({ ...run, bossDefeated: true });
+  if (run.bossDefeated) return run;
+  return autoPokevial(fillPokevial({ ...run, bossDefeated: true }));
 }
 
 /** The squad's shared level: the run XP read through the medium-fast curve, capped per map. */
