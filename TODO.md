@@ -11756,7 +11756,7 @@ hand-authored `darkmatter` row and the one-description ability cell.
       Claims `src/ui/shop.ts`, `src/ui/shop.test.ts`, `src/data/shop.ts` and `src/data/shop.test.ts`.
       *Dependencies:* none. *(Batch 116)*
 
-- [ ] **[Task-266] A dark Pokémon carries two rolled abilities, and `darkmatter` is gone.** The
+- [x] **[Task-266] A dark Pokémon carries two rolled abilities, and `darkmatter` is gone.** The
       invented ability row, its handler, its ban and its localisation path all die; a dark catch is
       instead given **two distinct abilities drawn from the whole implemented pool**
       (`randomAbilityPool`, banned rows excluded), both active and both persisted.
