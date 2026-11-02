@@ -11736,7 +11736,7 @@ hand-authored `darkmatter` row and the one-description ability cell.
       `resolve.test.ts`, `src/engine/run/index.ts` and `src/engine/run/README.md`. *Dependencies:*
       none. *(Batch 116)*
 
-- [ ] **[Task-265] Poké Balls are endless.** The Mart's ball row never sells out: every purchase of
+- [x] **[Task-265] Poké Balls are endless.** The Mart's ball row never sells out: every purchase of
       the band's ball pack lands in the bag and the row stays on the shelf. Every other row keeps the
       shipped rule — one purchase per floor, then it is gone until the floor changes.
       **Measured:** `src/ui/shop.ts` builds the shelf (`buildShop`: the pack, the potion rung, two

@@ -8,6 +8,12 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Poké Balls are endless.** `[Task-265]`, Batch 116: the band's ball pack is the
+      one shelf row that never sells out — every purchase lands in the bag and the row stays —
+      while every other row keeps the shipped one-purchase mark. `ShopSlot.infinite` is
+      optional and `buyRows` always fills it; `[live]` at 1280×800 bought the pack twice
+      (5 → 5 rows, +20 balls, −2000) and the potion once (5 → 4 rows).
+
 - [x] **The Pokévial drinks itself.** `[Task-264]`, Batch 116: with three charges the
       vial waits and fires the instant the party or the box has HP, PP or a status to cure,
       rests both, never revives and drops to zero; the manual `usePokevial` is gone.
