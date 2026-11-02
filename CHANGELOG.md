@@ -8,6 +8,12 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The card tells the second ability's story.** `[Task-267]`, Batch 116: a two-ability
+      member prints both one-line descriptions behind the ability ⓘ (primary first, joined by
+      `' · '`), and a one-ability member prints its own single line. `[live]` at 1280×800
+      opened the pinned card and measured two `ability-desc` nodes with both texts, the card's
+      geometry unchanged.
+
 - [x] **A dark catch rolls two abilities, and `darkmatter` is gone.** `[Task-266]`, Batch 116:
       the one hand-authored ability row, its handler, its ban and its localisation path die;
       a dark member instead draws two **distinct** abilities from the implemented pool,

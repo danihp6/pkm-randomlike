@@ -11795,7 +11795,7 @@ hand-authored `darkmatter` row and the one-description ability cell.
       `scripts/effect-coverage.mjs`, `docs/balance/effect-coverage.md`, `docs/data-spec.md`,
       `docs/battle-spec.md` and `docs/design-spec.md`. *Dependencies:* none. *(Batch 116)*
 
-- [ ] **[Task-267] The card tells the second ability's story.** A member carrying two abilities
+- [x] **[Task-267] The card tells the second ability's story.** A member carrying two abilities
       already prints them as `Primary / Secondary` in one cell; the ⓘ explains only the primary.
       The card gives each ability its own description, on the same rule the first one uses.
       **Measured:** `MemberDetail` (`src/ui/partyDetail.ts`) carries `ability`, `abilityDesc` and
