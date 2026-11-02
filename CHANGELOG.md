@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The slot machine is wired to its spec.** `[Task-254]`, Batch 110: the Team Rocket NPC's
+      cabinet — the wave's only Phaser panel — gains its `03h Panels · rocket slots` adapter, built
+      from `casinoReels.ts` plus the panel's three private layout numbers. The shipped card is
+      `410, 250, 460, 300` against the board's `410, 228, 460, 344`: seven candidates (the card, the
+      reel field, the three 48 px windows and the two 38 px row bars) are declared and honestly
+      unclaimed, and only `SLOT MACHINE` and `LEAVE` are claimed, with `MONEY  ¥2480` against
+      `$ 2,480` and `SPIN  ¥300` against `$ 300` recorded. All criteria `[unit]`.
+
 - [x] **The trade counter's result card is wired to its spec.** `[Task-253]`, Batch 110: the
       `trade` panel's other state gains its `03j Panels · trade result` adapter — the 560 × 420 card
       centred inside the pick box lands on `360, 190` exactly, with its highlight, the 128 px

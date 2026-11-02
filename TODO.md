@@ -11323,7 +11323,7 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
       `src/ui/hud/specGap.views/trade-result.ts` and
       `src/ui/hud/panels/trade/specGap.result.test.ts`. *Dependencies:* none. *(Batch 110)*
 
-- [ ] **[Task-254] The slot machine is wired to its spec.** The Team Rocket NPC's cabinet — the
+- [x] **[Task-254] The slot machine is wired to its spec.** The Team Rocket NPC's cabinet — the
       only frame in the wave whose panel is **Phaser**, not Preact.
       **Measured:** `design/screens/03h-panels-rocket-slots.json` is the frame `03h Panels · rocket
       slots` (`design/board.json`, node `6:1485`), **14 boxes, 4 strings, 11 colours**, and the
