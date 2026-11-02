@@ -36,6 +36,9 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `maps.ts` — the per-map tuning: level range, room-count range and the room
   width/height range, plus the infinite-run step past the last map
   (`docs/maps-spec.md` §4).
+- `region.ts` — the region's sizes, badge caps and name lists, plus the three helper
+  functions the generators read (a badge's city tier, its level cap and its city size);
+  balancing lives there, never in an engine file.
 - `bosses.ts` — the fixed party sizes a floor's boss and mini-boss field: six and
   three, or three and two on map 1, the run's on-ramp (`docs/maps-spec.md`
   §6/§7) — plus `BOSS_OPENINGS`, the boss room's two openings: the arena row its

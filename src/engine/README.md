@@ -26,6 +26,10 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `battle/movePower.ts` and the ported effect handlers in `battle/effects/` (`D16`).
 - `maps/` — the floor plan and its geometry: `maps/plan.ts` (the room grid and its links),
   `maps/progress.ts` (boss and portal edges), `maps/route.ts` and `maps/streams.ts`.
+- `region/` — the region the run walks instead of a chain of floors: `region/plan.ts` (the
+  whole world out of the run seed), `region/names.ts` (the settlement names) and
+  `region/streams.ts` (the run seed's region and per-node streams), plus a folder each for
+  the route, city and interior generators.
 - `routes/` — the route generator and its validation: `routes/sketch.ts`, the shapes and access
   edges in `routes/layout.ts`, `routes/routeMap.ts`, `routes/validate.ts`, `routes/encounters.ts`,
   `routes/trainers.ts`, `routes/doors.ts`, `routes/walls.ts`, `routes/streams.ts`,
