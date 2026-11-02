@@ -34,6 +34,8 @@ export type DetailPanelProps = Readonly<{
 const LEVEL_W = 72;
 /** The card's own left inset for its texts: past the chip. */
 const HINT_TOP = DETAIL_TYPE_TOP + 24;
+/** The pinned ability block's line pitch: `--hud-type-meta-line` in `detail.css`. */
+const ABILITY_DESC_LINE = 12;
 
 /** An absolutely positioned box from a panel-relative rect. */
 function box(rect: Rect, origin?: Rect): CSSProperties {
@@ -308,6 +310,9 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
   const stats = active === 'stats';
   const evolution = active === 'evolution';
   const moves = active === 'moves';
+  const abilityTexts = [view.abilityDesc, view.ability2Desc].filter(
+    (text): text is string => text !== null,
+  );
 
   return (
     <div
@@ -450,7 +455,7 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
                 data-hud-detail="ability-info"
                 data-pinned={view.abilityInfo.pinned ? 'true' : undefined}
                 aria-pressed={view.abilityInfo.pinned}
-                aria-label={view.abilityDesc ?? view.ability}
+                aria-label={abilityTexts.length === 0 ? view.ability : abilityTexts.join(' · ')}
                 style={box(view.abilityInfo.box, {
                   x: padX,
                   y: DETAIL_INFO_TOP,
@@ -462,6 +467,18 @@ export function DetailPanel(props: DetailPanelProps): JSX.Element {
                 i
               </button>
             )}
+            {view.abilityInfo?.pinned !== true
+              ? null
+              : abilityTexts.map((text, index) => (
+                  <p
+                    key={String(index)}
+                    class="detail__ability-desc"
+                    data-hud-detail="ability-desc"
+                    style={{ top: `${DETAIL_INFO_ROW * 2 + index * ABILITY_DESC_LINE}px` }}
+                  >
+                    {text}
+                  </p>
+                ))}
             <span class="detail__info-cell detail__info-caught">{view.caught}</span>
           </div>
         ) : null}

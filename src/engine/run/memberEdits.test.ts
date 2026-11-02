@@ -400,8 +400,8 @@ describe('the fixed-seed pins (D11)', () => {
     expect(nature.line).toEqual({ kind: 'nature', nature: 'Docile' });
     expect(ok(rerollNature(run, 'a', CTX('nature'))).line).toEqual(nature.line);
 
-    // The ability pool dropped the hand-authored `darkmatter` row, so every draw
-    // moves with it (the pool is sorted by id); this context re-pins here.
+    // This context pins the pool's draw order (sorted by id); the row it names is
+    // the one the current pool answers.
     const ability = ok(rerollAbility(run, 'a', CTX('ability')));
     expect(ability.line).toEqual({ kind: 'ability', ability: 'Earth Eater' });
     expect(ok(rerollAbility(run, 'a', CTX('ability'))).line).toEqual(ability.line);

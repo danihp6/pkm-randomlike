@@ -290,6 +290,7 @@ describe('the run-level second ability (`Task-154`)', () => {
     expect(detail?.ability).toBe('Blaze');
     expect(detail?.ability2).toBe('Static');
     expect(detail?.abilityDesc).toBe(getAbility('blaze')!.shortDesc || getAbility('blaze')!.desc);
+    expect(detail?.ability2Desc).toBe(getAbility('static')!.shortDesc || getAbility('static')!.desc);
   });
 
   it('reads the run member’s own word as the authority, not the snapshot’s', () => {
@@ -306,9 +307,10 @@ describe('the run-level second ability (`Task-154`)', () => {
     // on the snapshot is not a run-level grant, so the panel prints the primary alone.
     expect(memberDetail(run, 'two')?.ability).toBe('Blaze');
     expect(memberDetail(run, 'two')?.ability2).toBeNull();
+    expect(memberDetail(run, 'two')?.ability2Desc).toBeUndefined();
   });
 
-  it('reads a dark member’s two rolled abilities, describing the primary', () => {
+  it('reads a dark member’s two rolled abilities, describing both', () => {
     const dark = asDark(
       createRunPokemon({
         id: 'dark',
@@ -320,15 +322,53 @@ describe('the run-level second ability (`Task-154`)', () => {
     );
     const run = { ...createRun({ seed: 'run-a', starter }), party: [dark] };
     const detail = memberDetail(run, 'dark');
+    const second = dark.fighter.secondAbility!;
     expect(detail?.ability).toBe(dark.fighter.ability);
-    expect(detail?.ability2).toBe(dark.fighter.secondAbility);
+    expect(detail?.ability2).toBe(second);
     expect(detail?.abilityDesc).toBe(
       getAbility(dark.fighter.ability)!.shortDesc || getAbility(dark.fighter.ability)!.desc,
     );
+    expect(detail?.ability2Desc).toBe(getAbility(second)!.shortDesc || getAbility(second)!.desc);
   });
 
-  it('leaves a one-ability member without a second name', () => {
-    expect(memberDetail(runWith(), 'starter')?.ability2).toBeNull();
+  it('describes the granted second ability off the same lookup the primary uses', () => {
+    const member = createRunPokemon({
+      id: 'granted',
+      speciesId: 'sentret',
+      level: 3,
+      ability: 'Blaze',
+    });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [withSecond(member, 'Run Away')],
+    };
+    const detail = memberDetail(run, 'granted');
+    expect(detail?.ability2).toBe('Run Away');
+    expect(detail?.ability2Desc).toBe(
+      'Always escapes from a wild Pokémon. A trapping effect still stops it.',
+    );
+    expect(detail?.ability2Desc).not.toBe(getAbility('runaway')!.shortDesc);
+  });
+
+  it('leaves the second description null for a second id the dex does not know', () => {
+    const member = createRunPokemon({
+      id: 'odd-second',
+      speciesId: 'sentret',
+      level: 3,
+      ability: 'Blaze',
+    });
+    const run = {
+      ...createRun({ seed: 'run-a', starter }),
+      party: [withSecond(member, 'not-an-ability')],
+    };
+    expect(memberDetail(run, 'odd-second')?.ability2Desc).toBeNull();
+  });
+
+  it('leaves a one-ability member without a second description', () => {
+    const detail = memberDetail(runWith(), 'starter');
+    expect(detail?.ability2).toBeNull();
+    expect(detail?.ability2Desc).toBeUndefined();
+    expect(detail === null ? [] : Object.keys(detail)).not.toContain('ability2Desc');
   });
 });
 

@@ -160,6 +160,8 @@ export type DetailPanelView = Readonly<{
   /** The second ability's name alone, or null when the member carries one. */
   ability2: string | null;
   abilityDesc: string | null;
+  /** The second ability's text, or null. */
+  ability2Desc: string | null;
   abilityInfo: Readonly<{ pinned: boolean; box: Rect }> | null;
   held: string;
   caught: string;
@@ -390,6 +392,7 @@ function emptyView(box: Rect): DetailPanelView {
     ability: '',
     ability2: null,
     abilityDesc: null,
+    ability2Desc: null,
     abilityInfo: null,
     held: '',
     caught: '',
@@ -556,6 +559,7 @@ export function detailPanelView(
   const poolCursor = visible.length === 0 ? -1 : clampInt(ui.poolCursor, 0, visible.length - 1);
   const nicknameX = DETAIL_CONTENT_LEFT + DETAIL_TYPE_W * 2 + DETAIL_TYPE_GAP + DETAIL_INFO_GAP;
   const second = detail.ability2 ?? null;
+  const secondDesc = detail.ability2Desc ?? null;
 
   return {
     open: true,
@@ -597,8 +601,9 @@ export function detailPanelView(
     }),
     ability2: second,
     abilityDesc: detail.abilityDesc,
+    ability2Desc: secondDesc,
     abilityInfo:
-      detail.abilityDesc === null
+      detail.abilityDesc === null && secondDesc === null
         ? null
         : {
             pinned: ui.abilityInfo,

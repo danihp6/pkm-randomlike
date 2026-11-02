@@ -429,6 +429,7 @@ describe('detailPanelView', () => {
     expect(view.held).toBe('HELD  none');
     expect(view.caught).toBe('CAUGHT  starter');
     expect(view.abilityDesc).toBe('Powers up Fire-type moves.');
+    expect(view.ability2Desc).toBeNull();
     expect(view.types.map((entry) => entry.type)).toEqual(['fire', 'flying']);
     expect(view.hints).toEqual({ name: 'click to name', evolve: 'click to evolve' });
     expect(view.nickname).toEqual({
@@ -523,6 +524,54 @@ describe('detailPanelView', () => {
     expect(none.abilityInfo).toBeNull();
   });
 
+  it('carries both ability texts, and shows the ⓘ when only the second one exists', () => {
+    const both = detailPanelView(
+      detailOf({ ability: 'Blaze', ability2: 'Levitate', ability2Desc: 'Levitates.' }),
+      [],
+      uiOf(),
+      DESKTOP,
+    );
+    expect(both.abilityDesc).toBe('Powers up Fire-type moves.');
+    expect(both.ability2Desc).toBe('Levitates.');
+    expect(both.abilityInfo?.pinned).toBe(false);
+
+    const secondOnly = detailPanelView(
+      detailOf({
+        ability: 'Blaze',
+        ability2: 'Levitate',
+        abilityDesc: null,
+        ability2Desc: 'Levitates.',
+      }),
+      [],
+      uiOf({ abilityInfo: true }),
+      DESKTOP,
+    );
+    expect(secondOnly.abilityDesc).toBeNull();
+    expect(secondOnly.ability2Desc).toBe('Levitates.');
+    expect(secondOnly.abilityInfo?.pinned).toBe(true);
+    expect(secondOnly.abilityInfo?.box).toEqual(both.abilityInfo?.box);
+
+    const pinnedBoth = detailPanelView(
+      detailOf({ ability: 'Blaze', ability2: 'Levitate', ability2Desc: 'Levitates.' }),
+      [],
+      uiOf({ abilityInfo: true }),
+      DESKTOP,
+    );
+    expect(pinnedBoth.abilityInfo?.pinned).toBe(true);
+  });
+
+  it('stays without the ⓘ when neither ability has text', () => {
+    const view = detailPanelView(
+      detailOf({ abilityDesc: null, ability2: 'Levitate', ability2Desc: null }),
+      [],
+      uiOf(),
+      DESKTOP,
+    );
+    expect(view.ability2).toBe('Levitate');
+    expect(view.ability2Desc).toBeNull();
+    expect(view.abilityInfo).toBeNull();
+  });
+
   it('prints one ability when the member carries one only (`Task-154`)', () => {
     const view = detailPanelView(detailOf(), [], uiOf(), DESKTOP);
     expect(view.ability).toBe('ABILITY  Blaze');
@@ -531,19 +580,21 @@ describe('detailPanelView', () => {
 
   it('joins a second ability onto the same line, and keeps it alone on the view', () => {
     const view = detailPanelView(
-      detailOf({ ability: 'Dark Matter', ability2: 'Levitate' }),
+      detailOf({ ability: 'Blaze', ability2: 'Levitate', ability2Desc: 'Levitates.' }),
       [],
       uiOf(),
       DESKTOP,
     );
-    expect(view.ability).toBe('ABILITY  Dark Matter / Levitate');
+    expect(view.ability).toBe('ABILITY  Blaze / Levitate');
     expect(view.ability2).toBe('Levitate');
     expect(view.abilityDesc).toBe('Powers up Fire-type moves.');
+    expect(view.ability2Desc).toBe('Levitates.');
   });
 
   it('gives an empty view no second ability at all', () => {
     const view = detailPanelView(null, [], uiOf(), DESKTOP);
     expect(view.ability2).toBeNull();
+    expect(view.ability2Desc).toBeNull();
   });
 
   it('closes on a null member with empty lists', () => {
