@@ -20,6 +20,12 @@ const ballPack = (itemId: string, count: number): ShopPack => {
   return { itemId, count, price: Math.round((unitPrice * count) / 2 / 100) * 100 };
 };
 
+/**
+ * True: the Mart's ball row is endless. It is a data flag so a band, a city or the
+ * region's own shelf can change the rule without touching the model.
+ */
+export const SHOP_BALL_INFINITE = true;
+
 /** The band's own ball, in a pack of ten at a discount. Stock row 1. */
 export const SHOP_BALL_PACK: Readonly<Record<BandId, ShopPack>> = {
   early: ballPack('pokeball', 10),

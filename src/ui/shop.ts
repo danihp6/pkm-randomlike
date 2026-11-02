@@ -1,6 +1,7 @@
 import { GMAX_STONE_IDS, buyPrice, getItem, isForSale, sellPrice } from '../data/items';
 import type { BandId } from '../data/run';
 import {
+  SHOP_BALL_INFINITE,
   SHOP_BALL_PACK,
   SHOP_GMAX_STONE_BANDS,
   SHOP_HELD_ROWS,
@@ -13,6 +14,7 @@ import type { Rng } from '../engine/rng';
 import {
   addItem,
   addMoney,
+  bandForMap,
   consumeItem,
   isItemPicked,
   itemCount,
@@ -28,14 +30,21 @@ import {
  * rows this module builds and the economy is unit-tested headless. The stock is a
  * pure function of `(bandId, rng)`, so a fixed run always opens the same Mart. A
  * bought row is marked per floor in `pickedItems` and leaves that floor's shelf for
- * good; selling marks nothing, so the bag side is unchanged.
+ * good — except the endless ball row (`SHOP_BALL_INFINITE`), which is never marked
+ * and stays on the shelf; selling marks nothing, so the bag side is unchanged.
  */
 
 /**
  * One thing the shop sells: an item, what one purchase costs and how many units
  * that purchase adds. Every stock row but the pack buys a single unit.
  */
-export type ShopSlot = Readonly<{ itemId: string; price: number; count: number }>;
+export type ShopSlot = Readonly<{
+  itemId: string;
+  price: number;
+  count: number;
+  /** True for a row that never sells out. Absent means false. */
+  infinite?: boolean;
+}>;
 
 /** The catalogue price of an id; `0` for an id the catalogue does not hold. */
 const priceOf = (itemId: string): number => {
@@ -54,13 +63,19 @@ const priceOf = (itemId: string): number => {
  * pool, **without replacement**, then one `rng.int` for the machine, then one for
  * the stone at the bands `SHOP_GMAX_STONE_BANDS` names. Every row but the pack
  * takes the catalogue price; the pack carries its own discounted `price` of ten
- * units at half the catalogue sum.
+ * units at half the catalogue sum, and the endless flag the shelf's first row
+ * inherits from `SHOP_BALL_INFINITE` (set, never drawn, so the draws do not move).
  */
 export function buildShop(bandId: BandId, rng: Rng): readonly ShopSlot[] {
   const pack = SHOP_BALL_PACK[bandId];
   const potion = SHOP_POTION[bandId];
   const stock: ShopSlot[] = [
-    { itemId: pack.itemId, price: pack.price, count: pack.count },
+    {
+      itemId: pack.itemId,
+      price: pack.price,
+      count: pack.count,
+      infinite: SHOP_BALL_INFINITE,
+    },
     { itemId: potion, price: priceOf(potion), count: 1 },
   ];
   const pool = [...SHOP_ROTATION[bandId]];
@@ -110,16 +125,34 @@ export function shopRowKey(mapIndex: number, itemId: string): string {
   return `shop-${mapIndex}-${itemId}`;
 }
 
+/** True when the slot carries the endless flag. */
+export function isInfiniteSlot(slot: ShopSlot): boolean {
+  return slot.infinite === true;
+}
+
+/**
+ * True when this slot never sells out: its own flag, or — for a caller that rebuilt
+ * the slot from a rendered row's `(itemId, price, count)` and dropped the optional
+ * flag, as the Mart card does — the band's ball pack while `SHOP_BALL_INFINITE` holds.
+ */
+function endlessSlot(slot: ShopSlot, mapIndex: number): boolean {
+  if (isInfiniteSlot(slot)) return true;
+  return SHOP_BALL_INFINITE && SHOP_BALL_PACK[bandForMap(mapIndex).id].itemId === slot.itemId;
+}
+
 /**
  * Buys one row's units when the run can afford it, and marks the row on its floor so
- * `buyRows` stops listing it. A row the run cannot pay for is a no-op that marks
- * nothing: a refused purchase leaves the shelf as it was.
+ * `buyRows` stops listing it. An endless row (`isInfiniteSlot`) spends the money and
+ * adds the units but writes no mark, so it stays on the shelf. A row the run cannot
+ * pay for is a no-op that marks nothing: a refused purchase leaves the shelf as it was.
  */
 export function buyItem(run: RunState, slot: ShopSlot, mapIndex: number = run.mapIndex): ShopTrade {
   if (run.money < slot.price) return { run, ok: false, amount: 0 };
   const bought = addItem(spendMoney(run, slot.price), slot.itemId, slot.count);
   return {
-    run: markItemPicked(bought, shopRowKey(mapIndex, slot.itemId)),
+    run: endlessSlot(slot, mapIndex)
+      ? bought
+      : markItemPicked(bought, shopRowKey(mapIndex, slot.itemId)),
     ok: true,
     amount: slot.price,
   };
@@ -155,12 +188,17 @@ export type ShopRow = Readonly<{
   affordable: boolean;
   /** True only for a BUY row the run can afford; a sell row is never draggable. */
   draggable: boolean;
+  /**
+   * Carried through from the slot: true for the endless ball row. `buyRows` always
+   * sets it; a hand-built view row (the HUD fixtures) may leave it off.
+   */
+  infinite?: boolean;
 }>;
 
 /** A row's label: a multi-unit row says how many units one purchase adds. */
 const rowName = (name: string, count: number): string => (count > 1 ? `${count}x ${name}` : name);
 
-const toRow = (run: RunState, slot: ShopSlot): ShopRow => {
+const toRow = (run: RunState, slot: ShopSlot, infinite: boolean): ShopRow => {
   const item = getItem(slot.itemId);
   const affordable = run.money >= slot.price;
   return {
@@ -171,13 +209,15 @@ const toRow = (run: RunState, slot: ShopSlot): ShopRow => {
     owned: itemCount(run, slot.itemId),
     affordable,
     draggable: affordable,
+    infinite,
   };
 };
 
 /**
  * The buy rows still on the shelf: the stock without the rows this floor has already
  * sold, filtered **before** the rows are built so a row's index is the drawn index and
- * a purchase removes its own row on the next repaint. Order is the stock's own.
+ * a purchase removes its own row on the next repaint. An endless row is never dropped.
+ * Order is the stock's own.
  */
 export function buyRows(
   run: RunState,
@@ -185,14 +225,16 @@ export function buyRows(
   mapIndex: number = run.mapIndex,
 ): readonly ShopRow[] {
   return stock
-    .filter((slot) => !isItemPicked(run, shopRowKey(mapIndex, slot.itemId)))
-    .map((slot) => toRow(run, slot));
+    .filter(
+      (slot) => endlessSlot(slot, mapIndex) || !isItemPicked(run, shopRowKey(mapIndex, slot.itemId)),
+    )
+    .map((slot) => toRow(run, slot, endlessSlot(slot, mapIndex)));
 }
 
 /** The sell rows: every sellable stack at its `sellPrice`, one unit at a time, in bag order. */
 export function sellRows(run: RunState): readonly ShopRow[] {
   return sellableStacks(run).map((stack) => ({
-    ...toRow(run, { itemId: stack.itemId, price: sellPriceOf(stack.itemId), count: 1 }),
+    ...toRow(run, { itemId: stack.itemId, price: sellPriceOf(stack.itemId), count: 1 }, false),
     // A sale is always available: the price is what the shop pays, not a cost.
     affordable: true,
     // Selling stays a click: a row is only a drag source on the BUY tab.
