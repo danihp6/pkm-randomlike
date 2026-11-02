@@ -8,6 +8,14 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle message box is wired to its spec.** `[Task-259]`, Batch 111: the battle log
+      gains its `05b Battle · message` adapter, which claims the frame's `message box` at a zero
+      delta — the shipped `battleLogBoard('desktop')` box *is* the frame's `664, 544, 576, 216` —
+      and its two message lines as strings, since the line rects are the board's own insets.
+      `[live]` at 1280×800 in a first-route battle read `[data-hud-battle-log]` visible with a
+      line, its rect equal to `battleMovesBox` on the same layout and the canvas snapshot of the
+      same rect opaque.
+
 - [x] **The level-up notice is wired to its spec.** `[Task-258]`, Batch 111: the notices panel
       gains its `03l Panels · notice level up` spec-gap adapter, which claims the strip's one
       line and records the measured delta in the panel's own doc comment — the frame's strip is

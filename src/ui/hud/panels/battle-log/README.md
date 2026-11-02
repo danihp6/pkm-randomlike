@@ -33,6 +33,10 @@ board.
 - `index.ts` — the barrel the scene imports.
 - `fixture.test.ts` — `design/fixtures/05b-battle-message.json` is the frame's own copy, and
   both boards are checked against the exported `design/source/*.json`.
+- `specGap.test.ts` — the card's spec-gap measurement against `design/screens/05b-battle-message.json`:
+  the one box it claims at a zero delta on the frame's `message box` (664, 544, 576, 216), the two
+  message lines it claims as copy, and the highlight 12 px down and the two line insets that stay the
+  card's own arithmetic.
 - `README.md` — this map.
 
 ## Rules

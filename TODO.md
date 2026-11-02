@@ -11496,7 +11496,7 @@ push, exactly as in Batches 107-110.
       `src/ui/hud/panels/notices/specGap.levelUp.test.ts` and
       `src/ui/hud/panels/notices/README.md`. *Dependencies:* none. *(Batch 111)*
 
-- [ ] **[Task-259] The battle message box is wired to its spec.** The textbox every battle line is
+- [x] **[Task-259] The battle message box is wired to its spec.** The textbox every battle line is
       typed into.
       **Measured:** `design/screens/05b-battle-message.json` is the frame `05b Battle · message`
       (`design/board.json`, node `2:569`), **71 boxes, 9 strings, 22 colours**, and the panel is
