@@ -146,6 +146,12 @@ function cardOf(
   return (DetailPanel({ view, onIntent }) as unknown as Readonly<{ props: ElementProps }>).props;
 }
 
+/** The card built over another member detail, on the frame's own pool and viewport. */
+function cardOfDetail(detail: MemberDetail, ui: DetailPanelUi): ElementProps {
+  const view = detailPanelView(detail, FIXTURE.pool, ui, DESKTOP);
+  return (DetailPanel({ view }) as unknown as Readonly<{ props: ElementProps }>).props;
+}
+
 const STATS_UI: DetailPanelUi = { ...FIXTURE.ui, tab: 'stats' };
 const EVOLUTION_UI: DetailPanelUi = { ...FIXTURE.ui, tab: 'evolution' };
 
@@ -277,5 +283,43 @@ describe('the card s keyboard', () => {
         stopped: 0,
       });
     });
+  });
+});
+
+describe('the card names both abilities', () => {
+  const SECOND = 'Boosts the Sp. Atk stat in harsh sunlight.';
+  const TWO: MemberDetail = { ...FIXTURE.detail, ability2: 'Solar Power', ability2Desc: SECOND };
+
+  function descriptions(elements: readonly ElementProps[]): ElementProps[] {
+    return elements.filter((props) => props['data-hud-detail'] === 'ability-desc');
+  }
+
+  function abilityInfoOf(elements: readonly ElementProps[]): ElementProps | undefined {
+    return elements.find((props) => props['data-hud-detail'] === 'ability-info');
+  }
+
+  it('pins one line per ability that has text, and names both on the ⓘ', () => {
+    const elements = cardElements(cardOfDetail(TWO, { ...STATS_UI, abilityInfo: true }));
+    const lines = descriptions(elements);
+    expect(lines).toHaveLength(2);
+    expect(lines.map((props) => props.class)).toEqual(['detail__ability-desc', 'detail__ability-desc']);
+    expect(lines.map((props) => props.children)).toEqual([FIXTURE.detail.abilityDesc, SECOND]);
+    expect(abilityInfoOf(elements)?.['aria-label']).toBe(`${FIXTURE.detail.abilityDesc} · ${SECOND}`);
+    // The block is out of flow: the six stat rows and the cell count stay as they were.
+    expect(attribute(elements, 'data-hud-detail-stat')).toHaveLength(6);
+  });
+
+  it('prints the same two texts on the ⓘ while it is not pinned, and no line at all', () => {
+    const elements = cardElements(cardOfDetail(TWO, STATS_UI));
+    expect(descriptions(elements)).toHaveLength(0);
+    expect(abilityInfoOf(elements)?.['aria-label']).toBe(`${FIXTURE.detail.abilityDesc} · ${SECOND}`);
+  });
+
+  it('keeps a one-ability member on its one line', () => {
+    const elements = cardElements(cardOfDetail(FIXTURE.detail, { ...STATS_UI, abilityInfo: true }));
+    const lines = descriptions(elements);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].children).toBe(FIXTURE.detail.abilityDesc);
+    expect(abilityInfoOf(elements)?.['aria-label']).toBe(FIXTURE.detail.abilityDesc);
   });
 });

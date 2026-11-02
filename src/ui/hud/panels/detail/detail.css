@@ -290,6 +290,22 @@
   color: var(--hud-accent);
 }
 
+/* The pinned ability block: one line per ability that has text. It is out of flow under
+   the info row, so the card's measured boxes never move while it is shown. */
+.detail__ability-desc {
+  position: absolute;
+  right: 0;
+  left: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--hud-text-secondary);
+  font-size: var(--hud-type-meta-size);
+  line-height: var(--hud-type-meta-line);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
 .detail__evolution {
   position: absolute;
   inset: 0;

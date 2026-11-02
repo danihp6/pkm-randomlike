@@ -99,6 +99,13 @@ export type MemberDetail = Readonly<{
    * only (`[Task-153]`'s slot, or a dark member's rolled ability).
    */
   ability2?: string | null;
+  /**
+   * The **second** ability's one-line text, on exactly the rule `abilityDesc`
+   * follows: the hand-authored override in `src/data/abilityText.ts` first, then the
+   * dex row's `shortDesc`, then `desc`, else null. Absent for a member that carries
+   * one ability, and null when the second id is unknown.
+   */
+  ability2Desc?: string | null;
   hp: number;
   maxHp: number;
   status: StatusId | null;
@@ -178,6 +185,9 @@ export function memberDetail(run: RunState, memberId: string): MemberDetail | nu
     // The run-level word wins where the two disagree: a granted second ability
     // lives on the member, and a dark member's rolled one beside `Dark Matter`.
     ability2: second === undefined ? null : abilityNameFromEnglish(second),
+    // One ability leaves the field off entirely rather than null, so a member that
+    // gains no second text keeps the shape it shipped with.
+    ...(second === undefined ? {} : { ability2Desc: abilityDescription(second) }),
     caughtLabel: catchLabel(member.caughtAt),
     evolutions: evolutionGraph(member.fighter.speciesId, member.fighter.level),
   };
