@@ -72,7 +72,15 @@ jobs:
           set -euo pipefail
           cap="${AGENT_DAILY_CYCLES:-0}"
           go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "REASON=$2" >> "$GITHUB_ENV"; echo "$2"; }
-          red() { gh issue create --label agent-blocked --title "$1" --body "$2" || true; }
+          red() {
+            same=$(gh issue list --label agent-blocked --state open --limit 100 --json title \
+              --jq --arg t "$1" '[.[] | select(.title == $t)] | length' 2>/dev/null || echo 0)
+            if [ "${same:-0}" -gt 0 ]; then
+              echo "An open issue already carries '$1': not opening another."
+              return 0
+            fi
+            gh issue create --label agent-blocked --title "$1" --body "$2" || true
+          }
 
           if [ "${AUTOPILOT:-}" != "on" ]; then
             go false "AUTOPILOT is '${AUTOPILOT:-unset}': the loop stays parked."

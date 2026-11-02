@@ -16,7 +16,11 @@ workflow and the git rules; if it conflicts with this file, `AGENTS.md` wins.
 4. Read the batch plan the Architect left in `TODO.md`, and `.agent_specs/resume.md`
    when it exists. A live `task-<ID>` branch is a task already in flight: adopt it
    (`ship` → merge; `qa` → validate; `partial` → delete and redo; `blocked` or
-   `merged` → delete) and do not cut a new batch while a live branch remains.
+   `merged` → delete). **Adopting is a step, not the cycle:** once the adopted tasks
+   are shipped and no live branch remains, cut the lowest pending batch whole and run
+   it **in this same run** — an adoption must never end the cycle green having built
+   nothing new, because that spends one of the day's cycles on work that was already
+   done. Do not cut a new batch while a live branch remains.
 5. Per cut batch, create one worktree per task, in parallel:
    `git worktree add ../wt-pkm-<ID> -b task-<ID>`.
 6. **Copy** `.agent_specs/task-<ID>.md` into that worktree at the same relative path
