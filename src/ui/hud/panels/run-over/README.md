@@ -27,6 +27,10 @@ this panel paints the view it is handed.
 - `preview.test.ts` — `runOverPreviewRequested`'s truth table, headless.
 - `fixture.test.ts` — the three fixtures against `design/source/06`, `07`, `07b`, `m06`, `m07` and
   `m07b`: the copy, the figures, the rows, the party strip, the boards and the payload guards.
+- `specGap.defeat.test.ts` — frame `06 Run over · defeat` measured through
+  `specGap.views/run-over-defeat.ts`: the four boxes claimed at delta 0 (the card, the main menu
+  button and the two tabs), the fourteen strings the card and the board share, the eight boxes
+  declared and not claimed, and the empty view a payload with no `runOver` block yields, headless.
 - `index.ts` — the barrel the scene and the preview import.
 - `README.md` — this map.
 
