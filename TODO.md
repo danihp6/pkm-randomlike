@@ -11612,7 +11612,7 @@ and `07b` — and the name `specGap.test.ts` must stay free for the batch after 
       `src/ui/hud/panels/battle-switch/specGap.pokemon.test.ts` and
       `src/ui/hud/panels/battle-switch/README.md`. *Dependencies:* none. *(Batch 112)*
 
-- [ ] **[Task-262] The SWITCH window's stats state is wired to its spec.** The same window on its
+- [x] **[Task-262] The SWITCH window's stats state is wired to its spec.** The same window on its
       other state — `05e`, the member's stats read inside it.
       **Measured:** `design/screens/05e-battle-stats.json` is the frame `05e Battle · stats`
       (`design/board.json`, node `6:1879`), **111 boxes, 33 strings, 28 colours**, and the panel is

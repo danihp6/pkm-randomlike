@@ -603,7 +603,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | battle-log | 05b Battle · message | `05b-battle-message` | 71 | 9 | 22 | wired |
 | battle-bag | 05c Battle · bag | `05c-battle-bag` | 98 | 26 | 29 | wired |
 | battle-switch | 05d Battle · pokemon | `05d-battle-pokemon` | 116 | 36 | 28 | wired |
-| battle-switch | 05e Battle · stats | `05e-battle-stats` | 111 | 33 | 28 | pending |
+| battle-switch | 05e Battle · stats | `05e-battle-stats` | 111 | 33 | 28 | wired |
 | run-over | 06 Run over · defeat | `06-run-over-defeat` | 12 | 14 | 14 | pending |
 | run-over | 07 Run over · victory | `07-run-over-victory` | 17 | 15 | 13 | pending |
 | run-over | 07b Run over · victory · pokemon | `07b-run-over-victory-pokemon` | 28 | 38 | 15 | pending |

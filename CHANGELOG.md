@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The SWITCH window's stats state is wired to its spec.** `[Task-262]`, Batch 112: the
+      `battle-switch` panel's second frame gains its `05e Battle · stats` adapter, built from the
+      `05e` fixture through `fixtureSwitchInput` + `battleSwitchView` at 1280×800. The shipped
+      window has no stats state, so the six `stat row label/value` lines (`ATTACK 84` … `SPEED
+      100`), the `STATS`/`MOVES` tabs and the `NATURE`/`ABILITY`/item lines are declared in the doc
+      comment and **not** claimed as copy or boxes, the five `stat row rule` rects are likewise
+      unclaimed, and the four member names plus the lead's `98/112` are the claim; `gapFor` is
+      empty on all four lists and the test pins both sides of that premise. The walker loses its
+      `05e-battle-stats` line and `docs/hud-fidelity.md`'s row reads `wired`; the panel's README is
+      untouched, as its `05d` owner wrote it. `[live]` at 1280×800 in a battle with the switch
+      window open, read over CDP: `[data-hud-panel="battle-switch"]` visible, every
+      `[data-hud-switch-row]` rect equal to `battleSwitchView`'s own `row` rect within ±1 px, and
+      the `◀` back control present.
+
 - [x] **The options screen is wired to its spec.** `[Task-257]`, Batch 111: the `options` panel
       gains its `02 Options` adapter, and it is the wave's first row whose view model carries **no
       rect at all** — `OptionsView` is strings and row kinds, `options.css` owns the geometry — so
