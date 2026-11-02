@@ -11546,7 +11546,7 @@ frame (`specGap.defeat.test.ts`) because `run-over` carries three frames in the 
 and `07b` — and the name `specGap.test.ts` must stay free for the batch after this one. The walker's
 `PENDING` line and `docs/hud-fidelity.md`'s row stay the **Orchestrator's at merge**.
 
-- [ ] **[Task-260] The battle bag is wired to its spec.** The battle's four-tab `BAG` card — the
+- [x] **[Task-260] The battle bag is wired to its spec.** The battle's four-tab `BAG` card — the
       frame that draws a *bigger* bag than the route's.
       **Measured:** `design/screens/05c-battle-bag.json` is the frame `05c Battle · bag`
       (`design/board.json`, node `2:702`), **98 boxes, 26 strings, 29 colours**, and the panel is

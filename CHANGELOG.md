@@ -8,6 +8,13 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle bag is wired to its spec.** `[Task-260]`, Batch 112: the battle bag gains its
+      `05c Battle · bag` adapter, which records the measured gap between the frame's bigger bag
+      (a `576 × 216` menu, four `128 × 30` chips) and the shipped `battleMovesBox` card with its
+      `120 × 26` pocket chips, and claims the strings the frame carries. `[live]` at 1280×800
+      opened a battle's `BAG` row and measured the panel at `676, 582, 564, 192` with both tabs
+      at their shipped rects.
+
 - [x] **The battle message box is wired to its spec.** `[Task-259]`, Batch 111: the battle log
       gains its `05b Battle · message` adapter, which claims the frame's `message box` at a zero
       delta — the shipped `battleLogBoard('desktop')` box *is* the frame's `664, 544, 576, 216` —

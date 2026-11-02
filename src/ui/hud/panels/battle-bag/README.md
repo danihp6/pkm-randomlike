@@ -28,6 +28,10 @@ the same window the canvas laid out, at 1280×800 and on the compact phone layou
 - `fixture.test.ts` — `design/fixtures/05c-battle-bag.json` is the frame's own copy: its
   two pocket labels, the `SEARCH ITEMS` placeholder, its eight stacks and quantities, the
   selected first stack and the `Potion` card.
+- `specGap.test.ts` — the `05c Battle · bag` frame against this panel's view at the scene's
+  card: the adapter that answers for the slug, the copy-only claim it makes, the rect-by-rect
+  delta behind that claim (the frame's 576 × 216 menu and 128 × 30 tabs against the card's
+  564 × 192 and 120 × 26 chips) and the copy the frame spells differently.
 - `README.md` — this map.
 
 ## Rules
