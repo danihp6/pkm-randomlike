@@ -156,7 +156,9 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
   issue.
 - Fewer than three red cycles today (a broken loop, not a busy one; re-run
   `agent / cycle` by hand to resume). **Red means the verdict above**, not any
-  non-zero exit: a run that shipped and then lost its socket is green.
+  non-zero exit: a run that shipped and then lost its socket is green. The issue a
+  parked driver opens is deduplicated by title while one is still open, so a brake
+  that parks on every cron does not bury the repository in copies.
 - At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
   **Unset or `0` means no cap** — which is the current setting.
 - Inside the armed window, when there is one: `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` hold
