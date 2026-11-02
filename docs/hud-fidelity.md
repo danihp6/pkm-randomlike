@@ -595,7 +595,7 @@ each run — so the `colours` column is the count a per-panel comparison has to 
 | notices | 03k Panels · notice item | `03k-panels-notice-item` | 4 | 1 | 4 | wired |
 | notices | 03l Panels · notice level up | `03l-panels-notice-level-up` | 5 | 5 | 6 | wired |
 | detail | 03m Panels · pokemon moves | `03m-panels-pokemon-moves` | 47 | 31 | 16 | wired |
-| pause | 03n Panels · pause menu | `03n-panels-pause-menu` | 9 | 5 | 11 | pending |
+| pause | 03n Panels · pause menu | `03n-panels-pause-menu` | 9 | 5 | 11 | wired |
 | map | 03o Panels · map routes | `03o-panels-map-routes` | 35 | 4 | 18 | wired |
 | pc | 03p Panels · pc rip | `03p-panels-pc-rip` | 33 | 20 | 19 | wired |
 | starter | 04 Starter pick | `04-starter-pick` | 13 | 6 | 7 | pending |

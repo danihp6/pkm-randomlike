@@ -11354,7 +11354,7 @@ premise test, so a panel that moves onto the board's rect becomes a claim instea
       `src/ui/hud/specGap.views/rocket.ts`, `src/ui/rocketPanel.specGap.test.ts` and
       `src/ui/README.md`. *Dependencies:* none. *(Batch 110)*
 
-- [ ] **[Task-255] The pause menu is wired to its spec.** The card `ESC` opens on the route: the
+- [x] **[Task-255] The pause menu is wired to its spec.** The card `ESC` opens on the route: the
       game's **two** rows on the board's **four**-row card.
       **Measured:** `design/screens/03n-panels-pause-menu.json` is the frame `03n Panels · pause
       menu` (`design/board.json`, node `6:2217`), **9 boxes, 5 strings, 11 colours**, and the panel

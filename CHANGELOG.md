@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The pause menu is wired to its spec.** `[Task-255]`, Batch 110: the evidence `ESC` opens
+      on the route gains its `03n Panels · pause menu` adapter — the one box both sides share is
+      claimed at a zero delta (`pause scrim` `0, 0, 1280, 800`, the viewport's own rect) and the
+      `MENU` title as copy, while the card, its highlight, its divider and its two rows are declared
+      and unclaimed, each `+56` away because the game ships two rows where the board draws four.
+      The two row candidates are named `pause row 0` / `pause row 1`, not the `pause row 1` /
+      `pause row 2` their rects land on by the pitch. `[live]` at 1280×800 on
+      `?hud=dom&hudFixture=03n-panels-pause-menu`, read over CDP with `getBoundingClientRect()`:
+      the scrim `0, 0, 1280, 800`, `[data-hud-panel="pause"]` `460, 300, 360, 200`, the two rows
+      `484, 376` and `484, 432` at `312 × 48`, and the title `MENU`.
+
 - [x] **The slot machine is wired to its spec.** `[Task-254]`, Batch 110: the Team Rocket NPC's
       cabinet — the wave's only Phaser panel — gains its `03h Panels · rocket slots` adapter, built
       from `casinoReels.ts` plus the panel's three private layout numbers. The shipped card is
