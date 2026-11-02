@@ -12,6 +12,7 @@ import {
 import type { BandId } from './run';
 import { LEVEL_BANDS } from './run';
 import {
+  SHOP_BALL_INFINITE,
   SHOP_BALL_PACK,
   SHOP_GMAX_STONE_BANDS,
   SHOP_HELD_ROWS,
@@ -68,6 +69,15 @@ describe('shop tables', () => {
       expect(pack, band.id).toEqual({ itemId, count: 10, price });
       expect(pack.price, band.id).toBe((buyPrice(getItem(itemId)!) * pack.count) / 2);
       expect(pack.price % 100, band.id).toBe(0);
+    }
+  });
+
+  it('ships the endless ball row on by default (Task-265)', () => {
+    expect(SHOP_BALL_INFINITE).toBe(true);
+    for (const band of LEVEL_BANDS) {
+      const pack = SHOP_BALL_PACK[band.id];
+      expect(getItem(pack.itemId)!.kind, band.id).toBe('ball');
+      expect(pack.count, band.id).toBe(10);
     }
   });
 
