@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The battle SWITCH window is wired to its spec.** `[Task-261]`, Batch 112: the
+      `battle-switch` panel gains its `05d Battle · pokemon` adapter, which claims the frame's copy
+      — the four member names and the lead's `98/112` line — and records the measured delta in its
+      doc comment: the frame draws a two-column grid of `264 × 70` tiles inside `party grid group`
+      `684, 600, 536, 148`, while the shipped window is `partyGridLayout`'s six-row list inside
+      `battleSwitchBox` = `676, 582, 564, 192`, so `boxes` is honestly empty and the test pins both
+      sides of that premise. `[live]` at 1280×800 in a first-route battle picked the `POKEMON` row
+      and read `[data-hud-panel="battle-switch"]` at `676, 582, 564, 192` with one
+      `[data-hud-switch-row]` per party member.
+
 - [x] **The battle bag is wired to its spec.** `[Task-260]`, Batch 112: the battle bag gains its
       `05c Battle · bag` adapter, which records the measured gap between the frame's bigger bag
       (a `576 × 216` menu, four `128 × 30` chips) and the shipped `battleMovesBox` card with its

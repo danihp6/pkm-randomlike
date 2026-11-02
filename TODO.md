@@ -11541,9 +11541,8 @@ push, exactly as in Batches 107-110.
 `[Task-263]`, in the table's order — `05c` (the battle bag), `05d` (the SWITCH window),
 `05e` (the same window's stats) and `06` (the defeat card).
 
-**The state on `2026-11-02`.** `[Task-260]` shipped with Batch 111's pair, and `[Task-261]` is **in
-flight**: its branch carries `qa: pass task-261`, so the next cycle merges it before taking anything
-new. `[Task-262]` and `[Task-263]` stay open.
+**The state on `2026-11-02`.** `[Task-260]` shipped with Batch 111's pair and `[Task-261]` followed
+it on its own cycle. `[Task-262]` and `[Task-263]` stay open.
 
 **The exclusive paths:** `specGap.views/battle-bag.ts` + `panels/battle-bag/specGap.test.ts` +
 `panels/battle-bag/README.md` (260); `specGap.views/battle-pokemon.ts` +
@@ -11586,7 +11585,7 @@ and `07b` — and the name `specGap.test.ts` must stay free for the batch after 
       `src/ui/hud/panels/battle-bag/specGap.test.ts` and
       `src/ui/hud/panels/battle-bag/README.md`. *Dependencies:* none. *(Batch 112)*
 
-- [ ] **[Task-261] The battle's SWITCH window is wired to its spec.** The party grid a player
+- [x] **[Task-261] The battle's SWITCH window is wired to its spec.** The party grid a player
       opens to change the lead — `05d`.
       **Measured:** `design/screens/05d-battle-pokemon.json` is the frame `05d Battle · pokemon`
       (`design/board.json`, node `4:855`), **116 boxes, 36 strings, 28 colours**, and the panel is
