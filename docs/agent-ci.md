@@ -17,7 +17,7 @@ and `brake.sh` in the other, and it is **off** until a human arms it.
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
 | `ci.yml` | push to `main`, pull requests | The gate: `npm test` + `npm run build`. Read-only. |
-| `agent-cycle.yml` | dispatch (the driver dispatches it) | **One batch, end to end.** The only workflow allowed to write `main`. |
+| `agent-cycle.yml` | dispatch (the driver dispatches it) | **One batch, end to end.** The only workflow allowed to write `main`. Signs in to OpenCode with the run's OIDC identity, so no inference key is stored. |
 | `agent-autopilot.yml` | `schedule` every 30 min, dispatch | The loop: decides whether a cycle may start and dispatches one. Spends no tokens. |
 | `agent-autopilot-window.yml` | dispatch, `schedule` hourly | The timed brake: arms `AUTOPILOT` for a range you pick (`hours`, and the range's UTC start) and turns it off on the range's edges. Needs the `AUTOPILOT_TOKEN` secret. |
 
@@ -225,8 +225,13 @@ job skips itself), which is cheap next to the cycle it is there to stop starting
   a public repository. The only thing standing between the agent and `main` is the
   cycle's own gate plus the job permissions, where only `agent-cycle` gets
   `contents: write`.
-- The agent runs with `--auto`, a shell, the inference key in its environment and write
-  access to the repository. It fetches nothing from the outside (the Orchestrator's
+- The agent runs with `--auto`, a shell, an inference key in its environment and write
+  access to the repository. The key on the Actions host is minted per run from the
+  workflow's OIDC identity (`id-token: write`) and expires with it, so there is no
+  stored inference key to rotate; the OAuth client id it exchanges with is the
+  `OPENCODE_CLIENT_ID` secret, kept out of the file because the scanner reads its
+  `sk_` prefix as a Checkout.com key. Only the VM host keeps a key in its `agent.env`.
+  It fetches nothing from the outside (the Orchestrator's
   `webfetch` is denied) but the Architect may, so a poisoned document inside the
   repository is the injection risk worth watching.
 - A human push to `main` while a cycle is in flight can make its final push be

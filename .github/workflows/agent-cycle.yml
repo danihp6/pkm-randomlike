@@ -50,6 +50,9 @@ permissions:
   # To hand the baton to the driver when the cycle ends: the scheduled cron fires far
   # less often than it asks to, so the loop cannot depend on it alone.
   actions: write
+  # To prove to OpenCode that this run is this repository's: the inference key is
+  # exchanged for a short-lived one at sign-in, so no long-lived key is stored.
+  id-token: write
 
 jobs:
   cycle:
@@ -111,11 +114,40 @@ jobs:
           git fetch --prune --quiet origin
           node scripts/agent/recon.mjs --todo TODO.md --base origin/main --out .agent_specs/resume.md
 
+      - name: Sign in to OpenCode
+        env:
+          AUDIENCE: https://opencode.ai/console
+          # The OAuth client id is a public identifier, but it lives in a secret so the
+          # repository's secret scanning does not read its `sk_` prefix as a leaked
+          # Checkout.com key (measured: it flagged the literal, not the value's use).
+          CLIENT_ID: ${{ secrets.OPENCODE_CLIENT_ID }}
+        run: |
+          # No stored inference key: the workflow's OIDC identity is exchanged for one
+          # that expires with the run. `set -euo pipefail` plus curl's `-f` is what makes
+          # a refused exchange fail the job instead of exporting an empty key.
+          set -euo pipefail
+          if [ -z "${CLIENT_ID:-}" ]; then
+            echo "::error::No OPENCODE_CLIENT_ID secret. Store the OpenCode OAuth client id (the sk_… value the console hands out) as the repository secret OPENCODE_CLIENT_ID."
+            exit 1
+          fi
+          oidc=$(curl -sSf --oauth2-bearer "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          token=$(curl -sSf https://opencode.ai/console/auth/oauth/token \
+            -d grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+            -d subject_token_type=urn:ietf:params:oauth:token-type:jwt \
+            -d client_id="$CLIENT_ID" \
+            -d subject_token="$oidc" | jq -r .access_token)
+          if [ -z "${token:-}" ] || [ "$token" = null ]; then
+            echo "::error::OpenCode returned no access token for this run's OIDC identity."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "OPENCODE_API_KEY=$token" >> "$GITHUB_ENV"
+
       - name: Run the cycle
         id: agent
         continue-on-error: true
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail

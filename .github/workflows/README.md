@@ -19,7 +19,9 @@ part it cannot know.
   plan in `TODO.md`, applies each item's `*Decision:*` line, and marks a task `[!]`
   (pushing the mark) when it has to block it. A `[live]` criterion with an objective
   measurement is measured over CDP and passes; only the subjective residue becomes an
-  `agent-review` issue, which does not stop the merge. Dispatch-only.
+  `agent-review` issue, which does not stop the merge. Dispatch-only. It carries
+  `id-token: write` and exchanges that identity for a short-lived OpenCode key at
+  sign-in, so the `OPENCODE_API_KEY` secret is not used by CI.
 - `agent-autopilot.yml` — **the loop**: on a 30-minute schedule it reads the
   `AUTOPILOT` variable and the backlog, and dispatches at most one `agent-cycle`
   when nothing is in flight, work is left, and the day's caps allow it. Spends no
