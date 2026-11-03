@@ -12141,7 +12141,7 @@ from their specs. `src/engine/region/README.md` is `[Task-277]`'s.
       `src/engine/run/README.md` and `docs/region-spec.md` §8. *Dependencies:* the region plan (Batch
       117). *(Batch 119)*
 
-- [ ] **[Task-277] What a node holds is rolled per key.** One pure pass decides, per node, how many
+- [x] **[Task-277] What a node holds is rolled per key.** One pure pass decides, per node, how many
       NPCs stand in a city, which POIs hang off a lateral, where the grass patch is, which shops
       exist and which trainers are posted — all off `nodeStreams(seed, key)`, and all stable when a
       node is walked back into.

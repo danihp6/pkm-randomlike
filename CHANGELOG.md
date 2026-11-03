@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **What a node holds is rolled per key.** `[Task-277]`, Batch 119:
+      `planNodeContent(plan, key, tier)` decides, per node and off that node's own `content`
+      stream, every piece of content the region draws: the generic NPC count by the city's
+      tier (2-3 / 4-6 / 7-10, one in the town) and their ids drawn without replacement from
+      `NPC_ROWS`, one or two special NPCs per city, whether the node has grass (every
+      settlement and every route, never the victory road, the League or the tower), the
+      shops it holds (`mart` in a city, nothing elsewhere), how many trainers are posted and,
+      for a lateral's terminus only, one of the nine `POI_KINDS` — `vault`, `miniboss`,
+      `trade`, `no-heal`, `static`, `secret-shop`, `banned`, `puzzle`, `legendary` — drawn
+      last so a later pass can never move an earlier roll. All criteria `[unit]`: the tier
+      counts over 200 seeds, 1-2 distinct specials, no POI on the main chain and exactly one
+      per lateral over eight seeds, grass and shops per kind, two calls replayed equal, and a
+      fixed seed's whole-plan content digest pinned. `docs/region-spec.md` §7.3 states the
+      pass and the folder README maps the new module.
+
 - [x] **RunState v28: the node, the badges and the record.** `[Task-276]`, Batch 119:
       a run stands on a region **node**, not on a floor: `RunState` gains `nodeKey`,
       `visitedNodes`, `badges` (ascending, deduplicated, badge *n* is gym `city:n`'s),
