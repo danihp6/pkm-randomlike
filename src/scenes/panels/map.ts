@@ -1,24 +1,22 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
-import { getBiome } from '../../data/biomes';
-import { isFinalMap } from '../../engine/maps';
-import { t } from '../../i18n';
+import { planRegion, type RegionPlan } from '../../engine/region/plan';
 import { mapPanelView, mountMapPanel, type MapPanelView } from '../../ui/hud/panels/map';
-import { buildMapView, type MapRoomMarker, type MapView } from '../../ui/mapView';
+import { regionMapView } from '../../ui/regionMap';
 import { panelExpanded, panelFrameMount } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
- * The route header, which **is** the floor minimap (`docs/maps-spec.md` §8, `D32`):
- * the map name over the discovered-rooms grid, one panel in the free top-left
- * corner. The layout and every reveal rule come from the pure `buildMapView`; this
- * module only feeds the view.
+ * The route header, which **is** the region map (`docs/region-spec.md` §5, `D64`): the
+ * current settlement's name and the run's badges over the plan's node graph, one panel
+ * in the free top-left corner. The plan is pure and cheap but not free, so it is built
+ * once per seed and kept here; every repaint only reads it.
  *
- * The card is the Preact panel in `src/ui/hud/panels/map/` and this module draws
- * none of it: it derives the view from the plan and the run, and `refresh` feeds
- * the panel's signal. `#hud` is a DOM layer above the canvas, so while the route is
- * paused under a battle or the Settings screen the mount hides the card and brings
- * it back as it was on `RESUME`.
+ * The card is the Preact panel in `src/ui/hud/panels/map/` and this module draws none
+ * of it: the region view is pure (`regionMapView`), the card's view is pure
+ * (`mapPanelView`), and `refresh` feeds the panel's signal. `#hud` is a DOM layer above
+ * the canvas, so while the route is paused under a battle or the Settings screen the
+ * mount hides the card and brings it back as it was on `RESUME`.
  */
 
 /**
@@ -40,36 +38,20 @@ let domScene: Phaser.Scene | null = null;
  * mount stays and only the view's `open` goes false, which is the collapse state.
  */
 let mapPaused = false;
+/**
+ * The region plan, keyed by the run seed. A seed change is a new run, so the cache is
+ * cleared rather than grown: one region is ever alive in a scene.
+ */
+const planCache = new Map<string, RegionPlan>();
 
-/** The port, plus the marker map the minimap's special rooms come from. */
-function mapViewOf(host: RoutePanelHost): MapView | null {
-  const plan = host.plan();
-  if (!plan) return null;
-  const run = host.run();
-  return buildMapView(plan, {
-    discovered: run.discoveredRooms,
-    currentRoom: run.routeInMap,
-    portalOpen: portalOpen(host),
-    captureSpent: run.capturedRooms,
-    markers: plan.specials.reduce<Record<number, MapRoomMarker>>((all, special) => {
-      all[special.roomId] = special.kind;
-      return all;
-    }, {}),
-  });
-}
-
-/** The header's own line: the floor number and the biome it holds. */
-function mapTitle(host: RoutePanelHost): string {
-  return t('route.mapTitle', {
-    map: host.run().mapIndex,
-    biome: getBiome(host.route().biomeId).name,
-  });
-}
-
-/** The portal is open once the map's boss has fallen, except on the final map (D31). */
-function portalOpen(host: RoutePanelHost): boolean {
-  const run = host.run();
-  return run.bossDefeated && !isFinalMap(run.mode, run.mapIndex);
+/** The plan of `seed`, built once and kept until the run's seed changes. */
+function planFor(seed: string): RegionPlan {
+  const cached = planCache.get(seed);
+  if (cached !== undefined) return cached;
+  planCache.clear();
+  const plan = planRegion(seed);
+  planCache.set(seed, plan);
+  return plan;
 }
 
 /** The number of display objects the header draws in Phaser: none, it is the DOM card. */
@@ -83,12 +65,13 @@ function viewport(host: RoutePanelHost): { width: number; height: number } {
 }
 
 /**
- * The card as data: the floor, its title and the panel record's own open state. It
- * is the one emit point of the DOM panel — the scene owns the run and the plan, the
- * Preact card paints them.
+ * The card as data: the region graph and the panel record's own open state. It is the
+ * one emit point of the DOM panel — the scene owns the run and the plan, the Preact
+ * card paints them.
  */
 function mapDomView(host: RoutePanelHost): MapPanelView {
-  const view = mapPanelView(mapViewOf(host), mapTitle(host), viewport(host));
+  const plan = planFor(host.run().seed);
+  const view = mapPanelView(regionMapView(plan, host.run()), viewport(host));
   return { ...view, open: !mapPaused && panelExpanded(host, 'header') };
 }
 

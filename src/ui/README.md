@@ -59,6 +59,7 @@ testable logic belongs in the computing half.
 - `permadeath.ts` — the release beats for the Pokémon the run lost.
 - `evolutionGraph.ts` — a species' family graph and the levels between its members.
 - `mapView.ts` — the minimap: the room grid, its openings and the boss/portal markers.
+- `regionMap.ts` — the region map: the plan's node graph as one marker per node and one edge per pair, shifted so the graph starts at 0, 0, with the run's current and visited facts and the badge total off the ladder. The header card's only feeder (`docs/region-spec.md` §5).
 - `settingsScreen.ts` — the settings rows and the pure change rules (steps, cycles and rebinds).
 - `typewriter.ts` — the message box's typewriter at the player's text speed.
 - `beats.ts` — the faint, switch and level-up animation beats.

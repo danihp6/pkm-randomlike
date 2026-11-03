@@ -172,9 +172,11 @@ Flight is free, it happens out of battle, and it goes only to a **visited settle
 (`D67`). A flight lands the player on that settlement's Centre door — the laboratory, in
 the town — not on its spawn tile, which is where a walk in through an exit band lands.
 
-Neither half is shipped code yet: `[Task-281]` (Batch 120) builds the map card and
-`[Task-283]` (Batch 121) builds the travel seam, `travel` included, that the card's
-click dispatches.
+The map half ships: the header card draws the plan's straight-line graph, every
+settlement visible from the first frame, the visited ones marked and the current one
+blinking (`[Task-281]`, Batch 120). The flight half does not: `[Task-283]` (Batch 121)
+builds the travel seam, `travel` included, that the card's click dispatches, so the
+nodes are not clickable yet.
 
 ## 6. Services per settlement
 

@@ -1,23 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import fixture from '../../../../../design/fixtures/03o-panels-map-routes.json';
 import screenSpec from '../../../../../design/screens/03o-panels-map-routes.json';
-import type { MapView } from '../../../mapView';
+import { planRegion } from '../../../../engine/region/plan';
+import { regionMapView } from '../../../regionMap';
 import { GAP_TOLERANCE, gapFor, gapIsEmpty, type ScreenSpec, type SpecBox } from '../../specGap';
 import { buildView, slug } from '../../specGap.views/map';
 import { mapPanelBox, mapPanelView } from './view';
 
 /**
  * The `03o Panels · map routes` frame measured against the panel's own view model: the
- * adapter that answers for this slug, the region map the frame draws and the floor
- * minimap the game ships, the empty claim the delta forces, and the title line the card
- * prints that the board does not carry.
+ * adapter that answers for this slug, the region map the frame draws and the card now
+ * draws too, the empty claim the card's docking rect and its missing ROUTE/MAP toggle
+ * force, and the title line the card prints that the board does not carry.
  */
 
 const SPEC = screenSpec as unknown as ScreenSpec;
 const DESKTOP = { width: 1280, height: 800 };
 
-/** The frame's `map.view`, pasted as data by the fixture. */
-const mapView = fixture.map.view as unknown as MapView;
+/** The adapter's own region, rebuilt here so the card can be read field by field. */
+const SEED = '03o';
+const PLAN = planRegion(SEED);
 
 type FrameText = Readonly<{ name: string; characters: string }>;
 
@@ -33,7 +34,11 @@ const frameBox = (name: string): SpecBox => {
   return box;
 };
 
-const view = (): ReturnType<typeof mapPanelView> => mapPanelView(mapView, fixture.map.title, DESKTOP);
+const view = (): ReturnType<typeof mapPanelView> =>
+  mapPanelView(
+    regionMapView(PLAN, { nodeKey: PLAN.townKey, visitedNodes: [PLAN.townKey], badges: [] }),
+    DESKTOP,
+  );
 
 describe('the 03o adapter', () => {
   it('answers for the board frame it is named after', () => {
@@ -66,7 +71,7 @@ describe('the 03o adapter', () => {
   });
 });
 
-describe('the premise: a region map drawn where the game docks a minimap', () => {
+describe('the premise: a region map drawn where the game docks a header card', () => {
   it('draws the card, its highlight, its chip and the ROUTE/MAP toggle', () => {
     expect(frameBox('map routes panel')).toMatchObject({ x: 928, y: 24, width: 304, height: 198 });
     expect(frameBox('map routes highlight')).toMatchObject({
@@ -111,25 +116,22 @@ describe('the premise: a region map drawn where the game docks a minimap', () =>
 });
 
 describe('the shipped card the frame does not draw', () => {
-  it('prints the run title, which the board title cannot carry after the fold', () => {
-    expect(view().title.text).toBe('Map 1 · Viridian Forest');
+  it('titles itself with the node the run stands on, which the board cannot carry', () => {
+    const town = PLAN.nodes.find((node) => node.key === PLAN.townKey)!;
+    expect(view().title.text).toBe(town.name);
     expect(textOf('map routes title')).toBe('VIRIDIAN FOREST');
     expect(fold(view().title.text)).not.toBe(fold(textOf('map routes title')));
     expect(buildView(SPEC).strings).toStrictEqual([]);
   });
 
-  it('draws the floor it has: one room, one link, one entry opening', () => {
+  it('draws the whole region: one node per plan node, every edge once, the run\u2019s badges', () => {
     const card = view();
     expect(card.empty).toBeNull();
-    expect(card.rooms).toHaveLength(1);
-    expect(card.links).toHaveLength(1);
-    expect(card.links[0]).toMatchObject({ from: 0, to: 1 });
-    const room = card.rooms[0]!;
-    expect(room.id).toBe(0);
-    expect(room.current).toBe(true);
-    expect(room.markers.map((marker) => marker.kind)).toEqual(['capture']);
-    expect(room.openings).toHaveLength(1);
-    expect(room.openings[0]).toMatchObject({ edge: 'E', kind: 'entry' });
-    expect(room.openings[0]!.d).toBe('M 90.4 101.995 V 127.339');
+    expect(card.nodes).toHaveLength(PLAN.nodes.length);
+    expect(card.nodes.map((node) => node.key)).toEqual(PLAN.nodes.map((node) => node.key));
+    expect(card.edges).toHaveLength(PLAN.nodes.reduce((sum, node) => sum + node.edges.length, 0) / 2);
+    expect(card.nodes.filter((node) => node.current).map((node) => node.key)).toEqual([PLAN.townKey]);
+    expect(card.nodes.filter((node) => node.visited).map((node) => node.key)).toEqual([PLAN.townKey]);
+    expect(card.badges!.text).toBe('0/8');
   });
 });
