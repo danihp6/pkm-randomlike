@@ -134,6 +134,28 @@ holds `LEAGUE`, the four Elite Four members then the Champion, every row at
 the Champion: no leader, no badge and no fixed party, because its streak's rung decides
 the fight.
 
+A gym hands its badge over only from **its own city**. `grantBadge(run, badge)` —
+`src/engine/run/badge.ts`, pure and off no RNG — appends the ladder's next rung and
+refuses a badge that is not the city's own, one that would skip a rung or fill a gap,
+and one already held, the refusals returning the very run they were given; the town, a
+route and the League hand over nothing at all, because they are no gym. The number it
+appends is the very number `exitGate` reads (§4), so a city's forward band opens the
+moment `badges` carries it and no new gate exists for the badge.
+
+The fights a gym fields are §3's own level rules: the leader at `leaderLevel(cap)` —
+the cap itself, with a fixed party when the row names one — and a room-1 trainer at
+`trainerLevel(cap, gymDistance, size)` through `trainerRoster`'s node option. The badge
+pays the row's `tmItemId` and its money — the borrowed archetype's base plus half its
+jitter, at the band's scale, times the row's `moneyMultiplier` — **once**: a second win
+over the same leader pays no machine and no money.
+
+Every gym fact is a run fact in a field §8 already lists. The leader and the trainers
+are marked in `defeatedTrainers` as `gym-leader:<cityKey>` and
+`gym-trainer:<cityKey>:<n>`, both written by `resolveBattle`'s trainer mark on the first
+win; the solved room is §7.4's `gym-solved:<cityKey>` in `pickedItems`, written the
+first time the player reaches the leader's room, so a revisit replays the same room and
+re-pays nothing.
+
 ## 4. The guard, and walking back
 
 The rule: **leaving a city needs its badge, walking back never does, and a locked exit

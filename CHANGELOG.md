@@ -8,6 +8,27 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The gym: trainers, the puzzle, the leader and the badge.** `[Task-285]`, Batch 123:
+      `src/engine/run/badge.ts` owns the badge as a run fact: `grantBadge` appends the ladder's
+      next rung and returns the **same** run for a badge that is not the city's, one that would
+      skip a rung, one already held, or any badge asked of the town or a route (`nextBadge` is
+      the gate's own rule, so the badge and the city's exit can never disagree);
+      `gymLeaderFoe`/`gymTrainerFoe` field a gym's fights off streams keyed by `cityKey` and
+      role (gym 1's fixed three at the cap, a room trainer at the band's own size), and
+      `gymReward` pays the roster's levels, the archetype's money and a leader's TM **once**.
+      `src/scenes/GymScene.ts` draws the four rooms from `planGym` on the interior tileset, walks
+      them with `WorldWalker`, plays the ice room through `slideStep`, starts the room's trainer
+      and the leader on the interact key through the shipped `Battle`/`resolveBattle`, writes
+      `gym-solved:<city>` the first time the leader's room is entered, and exits to the city door
+      it came through. No new gate code: the city's forward band opens because `badges` carries
+      the number `exitGate` reads. `docs/region-spec.md` §3. `[unit]` the 23 cases of
+      `badge.test.ts` (order, no skip, reference equality on every refusal, both id families, the
+      fixed gym-1 party at `leaderLevel(cap)`, the pay-once reward); `[live]` over CDP at
+      1280×800: gym 1 reads `rooms 4`, `puzzle ice`, one trainer and `leader 3×9`, and folding
+      the two wins gives `badges [1]`, `tm058 ×1`, the exact `gymReward` money, `regionMapView`
+      `1/8` and `canTravel('route:2')` true only with the badge; one ice press is one slide and
+      the solved mark survives a reload in `pickedItems`.
+
 - [x] **The League: four, a Champion, and a heal between each.** `[Task-286]`, Batch 121:
       `src/engine/region/league.ts` plays `src/data/league.ts`'s five rows as one chain.
       `leagueFoe(plan, run, index)` resolves a row's roster off one stream per row

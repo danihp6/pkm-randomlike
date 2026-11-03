@@ -12352,7 +12352,7 @@ portal and the boss room.
       Claims `src/scenes/CityScene.ts`, `src/scenes/README.md` and `docs/region-spec.md` §7.5.
       *Dependencies:* `WorldScene` (Batch 120), the city plan (Batch 118). *(Batch 121)*
 
-- [ ] **[Task-285] The gym: trainers, the puzzle, the leader and the badge.** A gym is entered,
+- [x] **[Task-285] The gym: trainers, the puzzle, the leader and the badge.** A gym is entered,
       fought through, puzzled through and beaten; the leader hands over the badge, its TM and its
       money, and the exit opens.
       **Measured:** the gym interior (Batch 118) has four rooms; the puzzle stack (Batch 120) names
