@@ -1,7 +1,8 @@
 import { normalizeId } from '../../data/dex';
 import { getItem } from '../../data/items';
-import { levelCapForMap } from '../../data/maps';
+import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
 import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
+import { nodeOf, planRegion } from '../region/plan';
 import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { clampToCap } from './levelCap';
@@ -67,18 +68,22 @@ export function addFaints(run: RunState, faints: number): RunState {
  * is the running score the end-of-run screen reports.
  * Every helper here is pure and returns a new state (D11: no hidden randomness).
  *
- * A route is a room of a **map** (a Binding of Isaac-style floor), so the global
- * `routeIndex` counter travels beside the run's actual position — `mapIndex` and
- * `routeInMap` — and `discoveredRooms` is the floor's fog of discovery (D32).
+ * A run stands on a **region node** (`nodeKey`, `docs/region-spec.md` §1): it
+ * carries the nodes it has entered, the badges it holds, the nodes whose single
+ * catch is spent and the tower's own streak. The old floor fields
+ * (`mapIndex`, `routeIndex`, `routeInMap`, `levelCap`, `discoveredRooms`,
+ * `bossDefeated`) stay as the compatibility aliases the shipped floor scene still
+ * reads, derived from `nodeKey` at creation, until the sweep deletes them.
  */
 export type RunState = Readonly<{
   seed: string;
+  /** @deprecated the endless run is retired; the record is the badge count. */
   mode: RunMode;
-  /** Global counter of rooms entered (changes on every transition). */
+  /** @deprecated the old floor scene's counter, derived from `nodeKey`; the sweep deletes it. */
   routeIndex: number;
-  /** The floor the run is on, 1-based (`docs/maps-spec.md` §1). */
+  /** @deprecated the old floor scene's floor, derived from `nodeKey`; the sweep deletes it. */
   mapIndex: number;
-  /** The room of `mapIndex` the run occupies. */
+  /** @deprecated the old floor scene's room, derived from `nodeKey`; the sweep deletes it. */
   routeInMap: number;
   /**
    * The edge the current room was entered through (`docs/maps-spec.md` §2): the
@@ -89,8 +94,18 @@ export type RunState = Readonly<{
   discoveredRooms: readonly number[];
   /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
   bossDefeated: boolean;
-  /** Cached level cap for `mapIndex` (D9/D29); kept in sync on a map advance. */
+  /** @deprecated the old floor scene's cap, derived from `nodeKey`; the sweep deletes it. */
   levelCap: number;
+  /** The region node the run stands on: `nodeKey(kind, id)` of a `planRegion` node. */
+  nodeKey: string;
+  /** Every node the run has entered, in first-entry order, starting with `nodeKey`. */
+  visitedNodes: readonly string[];
+  /** The badges held, ascending, deduplicated; badge `n` is gym `city:n`'s. */
+  badges: readonly number[];
+  /** The nodes whose single catch has been spent. */
+  capturedNodes: readonly string[];
+  /** The tower's own streak, kept apart from the record (`D62`). */
+  towerStreak: number;
   /**
    * Pokevial charges left: up to `POKEVIAL_MAX_CHARGES`, one earned per beaten
    * trainer and filled by a boss. The vial is **automatic** (`autoPokevial`): a
@@ -191,19 +206,59 @@ export type RunInit = Readonly<{
   startedAt?: string;
 }>;
 
+/** The deprecated floor fields a node implies: the plan's chain position read as a floor. */
+export type RunNodeCompat = Readonly<{
+  mapIndex: number;
+  routeIndex: number;
+  routeInMap: number;
+  arrivalEdge: MapEdge;
+  discoveredRooms: readonly number[];
+  bossDefeated: boolean;
+  levelCap: number;
+}>;
+
+/**
+ * The deprecated floor fields a node implies: the plan's chain position read as a
+ * floor, so the shipped floor scene keeps drawing the right map while it walks
+ * floors. A key the plan does not hold reads as the town, never an error, and the
+ * function draws nothing from any Rng and reads no clock (D11).
+ */
+export function compatForNode(seed: string, key: string): RunNodeCompat {
+  const plan = planRegion(seed);
+  const node = nodeOf(plan, key) ?? nodeOf(plan, plan.townKey)!;
+  let chainIndex = plan.chain.indexOf(node.key);
+  if (chainIndex === -1) chainIndex = plan.chain.indexOf(node.lateralOf ?? '');
+  if (chainIndex === -1) chainIndex = 0;
+  const mapIndex = Math.min(FINITE_MAPS, Math.max(1, chainIndex + 1));
+  return {
+    mapIndex,
+    routeIndex: Math.max(1, chainIndex + 1),
+    routeInMap: 0,
+    arrivalEdge: arrivalEdgeFor(planMap(seed, mapIndex), 0),
+    discoveredRooms: [0],
+    bossDefeated: false,
+    levelCap: node.cap,
+  };
+}
+
 export function createRun(init: RunInit): RunState {
-  const plan = planMap(init.seed, FIRST_MAP);
-  const entryRoom = plan.entryRoom;
+  const plan = planRegion(init.seed);
+  const compat = compatForNode(init.seed, plan.townKey);
   return {
     seed: init.seed,
     mode: init.mode ?? 'finite',
-    routeIndex: FIRST_ROUTE,
-    mapIndex: FIRST_MAP,
-    routeInMap: entryRoom,
-    arrivalEdge: plan.entryEdge,
-    discoveredRooms: [entryRoom],
-    bossDefeated: false,
-    levelCap: levelCapForMap(FIRST_MAP),
+    routeIndex: compat.routeIndex,
+    mapIndex: compat.mapIndex,
+    routeInMap: compat.routeInMap,
+    arrivalEdge: compat.arrivalEdge,
+    discoveredRooms: compat.discoveredRooms,
+    bossDefeated: compat.bossDefeated,
+    levelCap: compat.levelCap,
+    nodeKey: plan.townKey,
+    visitedNodes: [plan.townKey],
+    badges: [],
+    capturedNodes: [],
+    towerStreak: 0,
     pokevialCharges: POKEVIAL_MAX_CHARGES,
     xp: init.xp ?? xpForLevel(init.starter.fighter.level),
     party: [init.starter],
@@ -241,6 +296,10 @@ export function createRun(init: RunInit): RunState {
  * Walking does not lock the PC: the box is editable in the floor's entry room on
  * **every** visit, so the rule is the room the run stands in, not where it has
  * been (`pcFullyEditable`, `docs/routes-spec.md` §6).
+ *
+ * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
+ * `towerStreak`) are **not** touched here: the shipped floor scene still walks
+ * floors, and moving the run between nodes is the region scene's job.
  */
 export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
@@ -267,6 +326,10 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
  * mission first, and the next floor is drawn its own (`docs/routes-spec.md` §4).
  * The NPC modifiers travel too, and the floor being left spends one of the forced
  * sky's floors (`decayModifiers`).
+ *
+ * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
+ * `towerStreak`) are **not** touched here: the shipped floor scene still walks
+ * floors, and moving the run between nodes is the region scene's job.
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;

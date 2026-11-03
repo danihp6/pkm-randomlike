@@ -20,7 +20,8 @@ function record(index: number): RunHistoryRecord {
   return {
     seed: `seed-${index}`,
     mode: 'finite',
-    mapReached: index + 1,
+    badges: index,
+    mapReached: index,
     catches: index,
     casualties: 0,
     playtimeMs: index * 1000,
@@ -34,7 +35,7 @@ function history(): RunHistory {
   return {
     seed: 'seed-a',
     mode: 'infinite',
-    mapIndex: 3,
+    badges: [1, 2, 3],
     stats: { catches: 5, casualties: 2 },
     party: [createRunPokemon({ id: 'p0', speciesId: 'charmander', level: 9 })],
     box: [createRunPokemon({ id: 'p1', speciesId: 'sentret', level: 4 })],
@@ -92,6 +93,7 @@ describe('makeHistoryRecord', () => {
     expect(makeHistoryRecord(history(), ENDING)).toEqual({
       seed: 'seed-a',
       mode: 'infinite',
+      badges: 3,
       mapReached: 3,
       catches: 5,
       casualties: 2,
@@ -100,6 +102,26 @@ describe('makeHistoryRecord', () => {
       endedAt: '2026-10-25T12:00:00.000Z',
       species: [],
     });
+  });
+
+  it('reads the badge count as the record, and none as zero on both figures', () => {
+    const three = makeHistoryRecord(history(), ENDING);
+    expect(three.badges).toBe(3);
+    expect(three.mapReached).toBe(3);
+
+    const none = makeHistoryRecord({ ...history(), badges: [] }, ENDING);
+    expect(none.badges).toBe(0);
+    expect(none.mapReached).toBe(0);
+  });
+
+  it('never lets the record outrun the stats card’s scale', () => {
+    const everyBadge = [
+      ...Array.from({ length: 9 }, (_, index) => index + 1),
+      ...Array.from({ length: 120 }, (_, index) => index + 10),
+    ];
+    const record = makeHistoryRecord({ ...history(), badges: everyBadge }, ENDING);
+    expect(record.badges).toBe(everyBadge.length);
+    expect(record.mapReached).toBe(99);
   });
 
   it('is pure: the same arguments build the same record, with no clock read', () => {
@@ -178,6 +200,7 @@ describe('makeHistoryRecord', () => {
     expect(makeHistoryRecord(run, ENDING)).toEqual({
       seed: 'seed-a',
       mode: 'infinite',
+      badges: 3,
       mapReached: 3,
       catches: 5,
       casualties: 2,

@@ -57,6 +57,16 @@ seed (`D11`).
 - `trade.test.ts` — the eligibility, the roll and the member the trade leaves behind.
 - `history.ts` — the record of the last finished runs: seed, mode, reach, catches, casualties, playtime and per-species KOs and damage (`Task-152`).
 - `history.test.ts` — the 50-run cap, the pure record builder and its species rows.
+- `gates.ts` — the badge gate on a settlement's way forward: whether an exit is a gate,
+  whether the badges open it and which badge it names (`exitGate`, `nextBadge`).
+- `gates.test.ts` — each city's exit with and without its badge, the edges back and the
+  named badge.
+- `levelCurve.ts` — the region's level rules: a regular trainer off its stretch's cap, its
+  distance to the gym and its party size, a wild at 60-75 % of the squad, a leader at the
+  cap, and the band a node reads (`trainerLevel`, `wildLevel`, `leaderLevel`,
+  `bandForNode`).
+- `levelCurve.test.ts` — the three size factors, the distance ladder, the wild share over
+  1 000 seeded draws and the leader at the cap.
 - `dark.ts` — a dark catch's two rolled abilities (`darkAbilityNames`, `asDark`).
 - `dark.test.ts` — the roll's share over 10 000 catches, its pinned seeds and the member it rewrites.
 - `curve.test.ts` — the route-curve regression: the XP a floor's award pays, checked against the floor chain.

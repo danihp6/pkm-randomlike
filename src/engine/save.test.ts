@@ -2,14 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
 import { levelCapForMap } from '../data/maps';
-import { floorForRoute } from './run/floors';
+import { BADGE_CAPS } from '../data/region';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { asDark } from './run/dark';
-import { arrivalEdgeFor, planMap } from './maps/plan';
+import { planMap } from './maps/plan';
+import { nodeKey, planRegion } from './region/plan';
 import {
   addItem,
   addMoney,
   addPokemon,
+  compatForNode,
   createRun,
   createRunPokemon,
   markTrainerDefeated,
@@ -45,7 +47,6 @@ import {
   type StorageLike,
 } from './save';
 import type { RunHistoryRecord } from './run/history';
-import { emptyModifiers } from './run/modifiers';
 
 class MemoryStorage implements StorageLike {
   readonly data = new Map<string, string>();
@@ -191,7 +192,7 @@ describe('decodeSave', () => {
     expect(decodeSave(raw).run).toBeNull();
   });
 
-  it('migrates a v1 run onto the current schema, adding the summary counters', () => {
+  it('migrates a v1 document up, keeping the settings and discarding the run', () => {
     const v1run: Record<string, unknown> = { ...sampleRun() };
     delete v1run.stats;
     const raw = JSON.stringify({
@@ -212,8 +213,7 @@ describe('decodeSave', () => {
       aiLevel: DEFAULT_AI_LEVEL,
       language: DEFAULT_LANGUAGE,
     });
-    expect(decoded.run?.party).toHaveLength(6);
-    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
+    expect(decoded.run).toBeNull();
   });
 
   it('migrates a v2 settings onto the current schema', () => {
@@ -235,7 +235,7 @@ describe('decodeSave', () => {
       aiLevel: DEFAULT_AI_LEVEL,
       language: DEFAULT_LANGUAGE,
     });
-    expect(decoded.run?.party).toHaveLength(6);
+    expect(decoded.run).toBeNull();
   });
 
   it('migrates a v3 settings onto the current schema, adding the keybinds', () => {
@@ -257,7 +257,7 @@ describe('decodeSave', () => {
       aiLevel: DEFAULT_AI_LEVEL,
       language: DEFAULT_LANGUAGE,
     });
-    expect(decoded.run?.party).toHaveLength(6);
+    expect(decoded.run).toBeNull();
   });
 
   it('migrates a v4 settings onto the current schema, resetting the accept/cancel keys', () => {
@@ -273,16 +273,16 @@ describe('decodeSave', () => {
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.settings.keybinds).toEqual(DEFAULT_KEYBINDS);
-    expect(decoded.run?.party).toHaveLength(6);
+    expect(decoded.run).toBeNull();
   });
 
-  it('migrates a v9 run onto the current schema, adding the Pokevial charges', () => {
+  it('discards the run of a v9 document rather than reconstructing its Pokevial', () => {
     const v9run: Record<string, unknown> = { ...sampleRun() };
     delete v9run.pokevialCharges;
     const raw = JSON.stringify({ version: 9, run: v9run });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
+    expect(decoded.run).toBeNull();
   });
 });
 
@@ -340,7 +340,7 @@ describe('settings validation', () => {
   it('reads a document with no reduce-flashing field as off', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast', volume: 0.4 } });
     const decoded = document(raw);
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(decoded.settings.reducedFlash).toBe(false);
   });
 
@@ -362,7 +362,7 @@ describe('settings validation', () => {
     expect(
       document(JSON.stringify({ version: 16, settings: { aiLevel: 'nightmare' } })).settings.aiLevel,
     ).toBe('normal');
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
   });
 
   it('starts on the source table', () => {
@@ -370,11 +370,11 @@ describe('settings validation', () => {
     expect(DEFAULT_LANGUAGE).toBe('en');
   });
 
-  it('reads a document written before the language as English, run intact', () => {
+  it('reads a document written before the language as English, discarding its run', () => {
     const raw = JSON.stringify({ version: 16, settings: { textSpeed: 'fast' }, run: sampleRun() });
     const decoded = decodeSave(raw);
     expect(decoded.settings.language).toBe('en');
-    expect(decoded.run?.party).toHaveLength(6);
+    expect(decoded.run).toBeNull();
   });
 
   it('keeps the Spanish language through a round trip with the run', () => {
@@ -396,7 +396,7 @@ describe('settings validation', () => {
     expect(document(JSON.stringify({ version: 16, settings: { language: 42 } })).settings.language).toBe(
       'en',
     );
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(Object.keys(SAVE_MIGRATIONS)).toEqual([
       '1',
       '2',
@@ -424,6 +424,7 @@ describe('settings validation', () => {
       '24',
       '25',
       '26',
+      '27',
     ]);
   });
 
@@ -452,16 +453,17 @@ describe('run validation', () => {
     expect(decoded.run?.levelCap).toBe(levelCapForMap(3));
   });
 
-  it('derives the map position and the discovery set when the save lacks them', () => {
+  it('derives the map position and the discovery set from the node when the save lacks them', () => {
     const run: Record<string, unknown> = { ...sampleRun(), routeIndex: 9 };
     delete run.mapIndex;
     delete run.routeInMap;
     delete run.discoveredRooms;
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    const position = floorForRoute(run.seed as string, 9);
-    expect(decoded.run?.mapIndex).toBe(position.mapIndex);
-    expect(decoded.run?.routeInMap).toBe(position.roomInMap);
-    expect(decoded.run?.discoveredRooms).toContain(position.roomInMap);
+    const compat = compatForNode(run.seed as string, run.nodeKey as string);
+    expect(decoded.run?.mapIndex).toBe(compat.mapIndex);
+    expect(decoded.run?.routeInMap).toBe(compat.routeInMap);
+    expect(decoded.run?.discoveredRooms).toContain(compat.routeInMap);
+    expect(decoded.run?.levelCap).toBe(compat.levelCap);
   });
 
   it('clamps a room outside the plan to the floor', () => {
@@ -566,7 +568,7 @@ describe('run validation', () => {
     expect(emitted).not.toContain('"entryDeparted"');
   });
 
-  it('walks a v10 document up the whole chain and still holds a run', () => {
+  it('discards the run of a v10 document, keeping its settings and its record', () => {
     const run = JSON.parse(JSON.stringify(sampleRun())) as Record<string, unknown>;
     // Strip what the steps after v10 add, so the document really is a v10 one.
     for (const field of [
@@ -582,18 +584,19 @@ describe('run validation', () => {
     ]) {
       delete run[field];
     }
-    const decoded = decodeSave(JSON.stringify({ version: 10, settings: {}, run, history: [] }));
+    const decoded = decodeSave(
+      JSON.stringify({
+        version: 10,
+        settings: { textSpeed: 'fast', volume: 0.3 },
+        run,
+        history: [],
+      }),
+    );
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run).not.toBeNull();
-    expect(decoded.run?.seed).toBe('seed-a');
-    expect(decoded.run?.party).toHaveLength(6);
-    expect(decoded.run?.box.map((member) => member.fighter.id)).toEqual(['boxed']);
-    // The fields the chain writes are the ones the steps added, in order.
-    expect(decoded.run?.money).toBe(1500);
-    expect(decoded.run?.rip).toEqual([]);
-    expect(decoded.run?.caughtSpecies).toEqual([]);
-    expect(decoded.run?.modifiers).toEqual(emptyModifiers());
-    expect(decoded.run?.discoveredCandy).toEqual([]);
+    expect(decoded.run).toBeNull();
+    expect(decoded.settings.textSpeed).toBe('fast');
+    expect(decoded.settings.volume).toBeCloseTo(0.3);
+    expect(decoded.history).toEqual([]);
   });
 
   it('re-keys a saved run whose members share an id', () => {
@@ -700,7 +703,10 @@ describe('migrateDocument', () => {
       23: (doc) => ({ ...doc, version: 24 }),
       24: (doc) => ({ ...doc, version: 25 }),
       25: (doc) => ({ ...doc, version: 26 }),
-      26: (doc) => ({ ...doc, version: SAVE_VERSION }),
+      26: (doc) => ({ ...doc, version: 27 }),
+      // The test keeps its run: the shipped `27` step discards it, which the
+      // pre-v28 tests below cover on their own.
+      27: (doc) => ({ ...doc, version: SAVE_VERSION }),
     };
     const decoded = decodeSave(legacy, migrations);
     expect(decoded.settings).toEqual({
@@ -718,92 +724,122 @@ describe('migrateDocument', () => {
   });
 });
 
-describe('map-position migration', () => {
-  it('adds the floor, the room and the discovery set to a v5 run', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), routeIndex: 9 };
-    delete run.mapIndex;
-    delete run.routeInMap;
-    delete run.discoveredRooms;
-    const raw = JSON.stringify({ version: 5, settings: { textSpeed: 'fast', volume: 0.5 }, run });
+describe('the pre-v28 document', () => {
+  it('discards the run of every version from v5 to v27 and keeps its settings', () => {
+    for (let version = 5; version <= 27; version++) {
+      const raw = JSON.stringify({
+        version,
+        settings: { textSpeed: 'fast', volume: 0.5 },
+        run: sampleRun(),
+        history: [],
+      });
+      const decoded = decodeSave(raw);
+      expect(decoded.version, `v${version}`).toBe(SAVE_VERSION);
+      expect(decoded.run, `v${version}`).toBeNull();
+      expect(decoded.settings.textSpeed, `v${version}`).toBe('fast');
+      expect(decoded.settings.volume, `v${version}`).toBeCloseTo(0.5);
+    }
+  });
+
+  it('reads a v27 document as no run and keeps the record of the runs that ended', () => {
+    const ended: RunHistoryRecord = {
+      seed: 'old-run',
+      mode: 'finite',
+      badges: 2,
+      mapReached: 2,
+      catches: 4,
+      casualties: 1,
+      playtimeMs: 120000,
+      won: false,
+      endedAt: '2026-10-20T10:00:00.000Z',
+      species: [],
+    };
+    const raw = JSON.stringify({
+      version: 27,
+      settings: { ...defaultSettings(), volume: 0.4, language: 'es' },
+      run: sampleRun(),
+      history: [ended],
+    });
     const decoded = decodeSave(raw);
     expect(decoded.version).toBe(SAVE_VERSION);
-    const position = floorForRoute(run.seed as string, 9);
-    expect(decoded.run?.mapIndex).toBe(position.mapIndex);
-    expect(decoded.run?.routeInMap).toBe(position.roomInMap);
-    expect(decoded.run?.discoveredRooms).toEqual(
-      Array.from({ length: position.roomInMap + 1 }, (_, id) => id),
+    expect(decoded.run).toBeNull();
+    expect(decoded.settings.volume).toBeCloseTo(0.4);
+    expect(decoded.settings.language).toBe('es');
+    expect(decoded.history).toEqual([ended]);
+  });
+
+  it('the 27 step discards only the run: the document keeps its settings and its history verbatim', () => {
+    const history = [{ seed: 'kept', mode: 'finite', badges: 1, mapReached: 1 }];
+    const settings = { ...defaultSettings(), volume: 0.4 };
+    const migrated = SAVE_MIGRATIONS[27]?.({ version: 27, settings, run: sampleRun(), history });
+    expect(migrated).toEqual({ version: 28, settings, run: null, history });
+    expect(migrated?.history).toBe(history);
+    expect(migrated?.settings).toBe(settings);
+  });
+
+  it('carries a v28 document round the loop with its node, its badges and its streak', () => {
+    const plan = planRegion('seed-a');
+    const run: RunState = {
+      ...sampleRun(),
+      nodeKey: nodeKey('city', 1),
+      visitedNodes: [plan.townKey, nodeKey('route', 1), nodeKey('city', 1)],
+      badges: [1],
+      capturedNodes: [plan.townKey],
+      towerStreak: 4,
+    };
+    const decoded = document(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
     );
+    expect(decoded.run?.nodeKey).toBe(nodeKey('city', 1));
+    expect(decoded.run?.visitedNodes).toEqual(run.visitedNodes);
+    expect(decoded.run?.badges).toEqual([1]);
+    expect(decoded.run?.capturedNodes).toEqual([plan.townKey]);
+    expect(decoded.run?.towerStreak).toBe(4);
+    expect(decoded.run?.mode).toBe('finite');
+    expect(decoded.run).toEqual(run);
   });
 
-  it('adds the bossDefeated flag to a v6 run', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), bossDefeated: true };
-    delete run.bossDefeated;
-    const raw = JSON.stringify({ version: 6, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.bossDefeated).toBe(false);
-  });
-
-  it('adds the arrival edge to a v7 run', () => {
-    const run: Record<string, unknown> = { ...sampleRun() };
-    delete run.arrivalEdge;
-    delete run.capturedRooms;
-    const raw = JSON.stringify({ version: 7, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    const decodedRun = decoded.run!;
-    const plan = planMap(decodedRun.seed, decodedRun.mapIndex);
-    expect(decodedRun.arrivalEdge).toBe(arrivalEdgeFor(plan, decodedRun.routeInMap));
-  });
-
-  it('turns a v8 captureUsed boolean into the v9 capturedRooms list', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), routeInMap: 2, captureUsed: true };
-    delete run.capturedRooms;
-    const raw = JSON.stringify({ version: 8, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.capturedRooms).toEqual([2]);
-  });
-
-  it('maps a v8 run with no capture to an empty capturedRooms list', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), captureUsed: false };
-    delete run.capturedRooms;
-    const raw = JSON.stringify({ version: 8, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.run?.capturedRooms).toEqual([]);
-  });
-
-  it('adds the money counter to a v13 run', () => {
-    const run: Record<string, unknown> = { ...sampleRun() };
-    delete run.money;
-    const raw = JSON.stringify({ version: 13, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.money).toBe(0);
-  });
-
-  it('drops a v15 floor-scoped catch list without reopening a window', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), pcUnlocked: ['catch-1'] };
-    const raw = JSON.stringify({ version: 15, run });
-    const decoded = decodeSave(raw);
-    expect(emptySave().version).toBe(27);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect('pcUnlocked' in (decoded.run ?? {})).toBe(false);
+  it('drops an unknown node key to the town, and a stray visited or captured key with it', () => {
+    const plan = planRegion('seed-a');
+    const run: Record<string, unknown> = {
+      ...sampleRun(),
+      nodeKey: 'city:99',
+      visitedNodes: ['city:99', plan.townKey, 'route:1', 'route:1', 7],
+      capturedNodes: ['no-such-node', 'route:1', 'route:1'],
+      badges: [0, 1, 1, 2, 99, 2.5, 'x'],
+      towerStreak: -3,
+    };
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run?.nodeKey).toBe(plan.townKey);
+    expect(decoded.run?.visitedNodes).toEqual([plan.townKey, nodeKey('route', 1)]);
+    expect(decoded.run?.capturedNodes).toEqual([nodeKey('route', 1)]);
+    expect(decoded.run?.badges).toEqual([1, 2]);
+    expect(decoded.run?.towerStreak).toBe(0);
     expect(decoded.run?.party).toHaveLength(6);
+  });
+
+  it('reads an absent badge list, node set and streak as none', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.visitedNodes;
+    delete run.badges;
+    delete run.capturedNodes;
+    delete run.towerStreak;
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run?.visitedNodes).toEqual([run.nodeKey as string]);
+    expect(decoded.run?.badges).toEqual([]);
+    expect(decoded.run?.capturedNodes).toEqual([]);
+    expect(decoded.run?.towerStreak).toBe(0);
+  });
+
+  it('keeps the highest badge the ladder carries and no rung past it', () => {
+    const top = BADGE_CAPS.length + 1;
+    const run: Record<string, unknown> = { ...sampleRun(), badges: [top, top + 1] };
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run?.badges).toEqual([top]);
   });
 });
 
 describe('the RIP list', () => {
-  it('adds an empty RIP list to a v16 run', () => {
-    const run: Record<string, unknown> = { ...sampleRun() };
-    delete run.rip;
-    const raw = JSON.stringify({ version: 16, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.rip).toEqual([]);
-    expect(decoded.run?.party).toHaveLength(6);
-  });
-
   it("round-trips a current-schema RIP list with its member's 0 HP", () => {
     const base = createRunPokemon({ id: 'fallen', speciesId: 'sentret', level: 3 });
     const dead = { ...base, fighter: { ...base.fighter, hp: 0 } };
@@ -822,16 +858,6 @@ describe('the RIP list', () => {
 });
 
 describe('the caught-species record', () => {
-  it('adds an empty record to a v17 run, party intact', () => {
-    const run: Record<string, unknown> = { ...sampleRun() };
-    delete run.caughtSpecies;
-    const raw = JSON.stringify({ version: 17, run });
-    const decoded = decodeSave(raw);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.caughtSpecies).toEqual([]);
-    expect(decoded.run?.party).toHaveLength(6);
-  });
-
   it('round-trips the record unchanged on the current schema', () => {
     const run: RunState = { ...sampleRun(), caughtSpecies: ['sentret', 'raichualola'] };
     const decoded = document(
@@ -866,13 +892,13 @@ describe('the floor mission', () => {
     expect(decoded.run?.floorCasualties).toBe(1);
   });
 
-  it('adds a mission-less, clean floor to a v18 run', () => {
+  it('adds a mission-less, clean floor when the save carries neither', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     delete run.mission;
     delete run.missionsCompleted;
     delete run.hpLost;
     delete run.floorCasualties;
-    const decoded = decodeSave(JSON.stringify({ version: 18, run }));
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.mission).toBeNull();
     expect(decoded.run?.missionsCompleted).toBe(0);
@@ -914,14 +940,9 @@ describe('the floor mission', () => {
 });
 
 describe('nickname migration', () => {
-  it('reads a v14 run as a current-schema run with its members intact and unnamed', () => {
-    const raw = JSON.stringify({ version: 14, settings: defaultSettings(), run: sampleRun() });
-    const decoded = decodeSave(raw);
-    expect(SAVE_VERSION).toBe(27);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.party).toHaveLength(6);
+  it('reads a member written without a nickname as unnamed', () => {
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run: sampleRun() }));
     expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
-    expect(decoded.run?.box[0].fighter.speciesId).toBe('greedent');
     expect('nickname' in (decoded.run?.party[0].fighter ?? {})).toBe(false);
   });
 
@@ -1066,10 +1087,11 @@ describe('the NPC member words', () => {
     expect(Object.keys(stored.run.party[1])).toEqual(['fighter']);
   });
 
-  it('migrates a v19 run to the current version with no taught moves and no second ability', () => {
+  it('reads a member with no taught move and no second ability as carrying neither', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
-    const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
-    const decoded = decodeSave(legacy);
+    const decoded = decodeSave(
+      JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run }),
+    );
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
@@ -1204,8 +1226,8 @@ describe('the run modifiers', () => {
   }
 
   it('stamps the current version', () => {
-    expect(SAVE_VERSION).toBe(27);
-    expect(emptySave().version).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
+    expect(emptySave().version).toBe(28);
     expect(SAVE_MIGRATIONS[20]).toBeDefined();
   });
 
@@ -1271,34 +1293,18 @@ describe('the run modifiers', () => {
     });
   });
 
-  it('migrates a v20 run to an empty record', () => {
+  it('reads a run with no modifiers field as the empty record', () => {
     const run: Record<string, unknown> = { ...sampleRun() };
     delete run.modifiers;
-    const legacy = JSON.stringify({ version: 20, settings: defaultSettings(), run });
-    const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(SAVE_VERSION);
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
     expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
     expect(decoded.run?.party).toHaveLength(6);
-  });
-
-  it('migrates a v19 run through every step', () => {
-    const run: Record<string, unknown> = { ...sampleRun() };
-    delete run.modifiers;
-    const legacy = JSON.stringify({ version: 19, settings: defaultSettings(), run });
-    const decoded = decodeSave(legacy);
-    expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.modifiers).toEqual({ curse: false, forcedField: null, nextWildType: null });
-    expect(decoded.run?.party).toHaveLength(6);
-    for (const member of decoded.run?.party ?? []) {
-      expect('taughtMoves' in member).toBe(false);
-      expect('secondAbility' in member).toBe(false);
-    }
   });
 });
 
 describe('the per-member usage counter', () => {
   it('stamps the current version and carries the 21 step', () => {
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(SAVE_MIGRATIONS[21]).toBeDefined();
   });
 
@@ -1344,9 +1350,10 @@ describe('the per-member usage counter', () => {
     }
   });
 
-  it('migrates a v21 run with no counter and no field written', () => {
-    const legacy = JSON.stringify({ version: 21, settings: defaultSettings(), run: sampleRun() });
-    const decoded = decodeSave(legacy);
+  it('reads a member with no usage counter as never having fought', () => {
+    const decoded = decodeSave(
+      JSON.stringify({ version: SAVE_VERSION, settings: defaultSettings(), run: sampleRun() }),
+    );
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.party).toHaveLength(6);
     for (const member of decoded.run?.party ?? []) {
@@ -1368,7 +1375,7 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
   }
 
   it('stamps the current version and carries the 22 step', () => {
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(SAVE_MIGRATIONS[22]).toBeDefined();
   });
 
@@ -1464,9 +1471,10 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     ).toEqual([]);
   });
 
-  it('migrates a v22 run to the current version with no treats and an empty discovered set', () => {
-    const legacy = JSON.stringify({ version: 22, settings: defaultSettings(), run: sampleRun() });
-    const decoded = decodeSave(legacy);
+  it('reads a run with no candy set and no treats as none', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
+    delete run.discoveredCandy;
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run }));
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.discoveredCandy).toEqual([]);
     expect(decoded.run?.party).toHaveLength(6);
@@ -1475,16 +1483,17 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
     }
   });
 
-  it('migrates a v26 run to an empty mission history', () => {
-    const legacy = JSON.stringify({ version: 26, settings: defaultSettings(), run: sampleRun() });
-    const decoded = decodeSave(legacy);
-    expect(SAVE_VERSION).toBe(27);
-    expect(decoded.version).toBe(27);
+  it('reads a run with no mission history as empty, and never reconstructs it', () => {
+    const raw = JSON.stringify({
+      version: SAVE_VERSION,
+      run: { ...sampleRun(), missionsCompleted: 4, completedMissions: 'gone' },
+    });
+    const decoded = decodeSave(raw);
     expect(decoded.run?.completedMissions).toEqual([]);
-    expect(decoded.run?.missionsCompleted).toBe(0);
+    expect(decoded.run?.missionsCompleted).toBe(4);
   });
 
-  it('reads a v27 mission history and drops the rows it cannot trust', () => {
+  it('drops the mission rows it cannot trust', () => {
     const raw = JSON.stringify({
       version: SAVE_VERSION,
       run: {
@@ -1505,16 +1514,6 @@ describe('the coloured candy and the stat treats (Task-103)', () => {
       { id: 'flawless', mapIndex: 4 },
     ]);
   });
-
-  it('reads a v27 run with no history as empty, and never reconstructs it', () => {
-    const raw = JSON.stringify({
-      version: SAVE_VERSION,
-      run: { ...sampleRun(), missionsCompleted: 4, completedMissions: 'gone' },
-    });
-    const decoded = decodeSave(raw);
-    expect(decoded.run?.completedMissions).toEqual([]);
-    expect(decoded.run?.missionsCompleted).toBe(4);
-  });
 });
 
 describe('the run history (Task-152)', () => {
@@ -1524,6 +1523,7 @@ describe('the run history (Task-152)', () => {
   const FINISHED: RunHistoryRecord = {
     seed: 'seed-a',
     mode: 'finite',
+    badges: 3,
     mapReached: 3,
     catches: 5,
     casualties: 2,
@@ -1537,15 +1537,16 @@ describe('the run history (Task-152)', () => {
     ...FINISHED,
     seed: 'seed-b',
     mode: 'infinite',
+    badges: 9,
     mapReached: 9,
     won: true,
     endedAt: '2026-10-24T08:30:00.000Z',
     species: [],
   };
 
-  /** A v23 document written out in full: settings, a one-member run and no history. */
-  const V23_DOCUMENT = JSON.stringify({
-    version: 23,
+  /** A v28 document written out in full: settings, a one-member run and no history. */
+  const V27_DOCUMENT = JSON.stringify({
+    version: 27,
     settings: {
       textSpeed: 'normal',
       volume: 0.8,
@@ -1581,6 +1582,7 @@ describe('the run history (Task-152)', () => {
       box: [],
       bag: [],
     },
+    history: [],
   });
 
   /** A current-version document whose run is the sample one and whose history is as given. */
@@ -1594,20 +1596,18 @@ describe('the run history (Task-152)', () => {
   }
 
   it('stamps the current version and carries the 23 step', () => {
-    expect(SAVE_VERSION).toBe(27);
-    expect(emptySave().version).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
+    expect(emptySave().version).toBe(28);
     expect(SAVE_MIGRATIONS[23]).toBeDefined();
   });
 
-  it('moves a v23 document up through the 23 and 24 steps, run intact', () => {
-    const decoded = decodeSave(V23_DOCUMENT);
+  it('discards the run of a v27 document and keeps its settings, with no record to keep', () => {
+    const decoded = decodeSave(V27_DOCUMENT);
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.history).toEqual([]);
-    expect(decoded.run?.seed).toBe('seed-a');
-    expect(decoded.run?.routeIndex).toBe(1);
-    expect(decoded.run?.party).toHaveLength(1);
-    expect(decoded.run?.party[0].fighter.speciesId).toBe('charmander');
-    expect(decoded.run?.stats).toEqual({ catches: 0, casualties: 0, faints: 0 });
+    expect(decoded.run).toBeNull();
+    expect(decoded.settings.textSpeed).toBe('normal');
+    expect(decoded.settings.language).toBe('en');
   });
 
   it('adds the empty history in the 23 step itself', () => {
@@ -1634,7 +1634,7 @@ describe('the run history (Task-152)', () => {
     expect(encodeSave({ ...decodeSave(canonical) })).toBe(canonical);
     expect(JSON.parse(canonical).history).toEqual([FINISHED, WON]);
     expect(canonical).toContain(
-      '"history":[{"seed":"seed-a","mode":"finite","mapReached":3,"catches":5,"casualties":2,"playtimeMs":540000,"won":false,"endedAt":"2026-10-25T12:00:00.000Z","species":[{"speciesId":"pikachu","kos":7,"damage":412}]}',
+      '"history":[{"seed":"seed-a","mode":"finite","badges":3,"mapReached":3,"catches":5,"casualties":2,"playtimeMs":540000,"won":false,"endedAt":"2026-10-25T12:00:00.000Z","species":[{"speciesId":"pikachu","kos":7,"damage":412}]}',
     );
   });
 
@@ -1670,6 +1670,33 @@ describe('the run history (Task-152)', () => {
     clearRun(storage);
     expect(loadSave(storage).history).toEqual([FINISHED]);
   });
+
+  it('drops a row that carries no badge, the pre-v28 shape', () => {
+    const floorsOnly: Record<string, unknown> = { ...FINISHED };
+    delete floorsOnly.badges;
+    const decoded = document(historyDocument([floorsOnly]));
+    expect(decoded.history).toEqual([]);
+    expect(decoded.run).toEqual(sampleRun());
+  });
+
+  it('reads the badge count as the record, and the floor figure with it', () => {
+    const decoded = document(historyDocument([{ ...FINISHED, badges: 3 }]));
+    expect(decoded.history).toHaveLength(1);
+    expect(decoded.history[0].badges).toBe(3);
+    expect(decoded.history[0].mapReached).toBe(3);
+  });
+
+  it('defaults a missing map figure to the badge count and drops a negative badge', () => {
+    const noFloor: Record<string, unknown> = { ...FINISHED, badges: 4 };
+    delete noFloor.mapReached;
+    expect(document(historyDocument([noFloor])).history[0]).toEqual({
+      ...FINISHED,
+      badges: 4,
+      mapReached: 4,
+    });
+    expect(document(historyDocument([{ ...FINISHED, badges: -1 }])).history).toEqual([]);
+    expect(document(historyDocument([{ ...FINISHED, badges: 'three' }])).history).toEqual([]);
+  });
 });
 
 describe('the dark Pokémon (Task-154)', () => {
@@ -1684,7 +1711,7 @@ describe('the dark Pokémon (Task-154)', () => {
   }
 
   it('stamps the current version and carries the 24 step', () => {
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(SAVE_MIGRATIONS[24]).toBeDefined();
   });
 
@@ -1701,9 +1728,8 @@ describe('the dark Pokémon (Task-154)', () => {
     }
   });
 
-  it('decodes a v24 run with no dark key on any member', () => {
-    const legacy = JSON.stringify({ version: 24, settings: defaultSettings(), run: fullRun() });
-    const decoded = decodeSave(legacy);
+  it('reads a member written without the dark mark as not-dark', () => {
+    const decoded = decodeSave(JSON.stringify({ version: SAVE_VERSION, run: fullRun() }));
     expect(decoded.version).toBe(SAVE_VERSION);
     expect(decoded.run?.party[0].dark).toBeUndefined();
     for (const list of [decoded.run?.party ?? [], decoded.run?.box ?? [], decoded.run?.rip ?? []]) {
@@ -1778,18 +1804,17 @@ describe('the run clock and the faint counters (Task-181)', () => {
   const INSTANT = '2026-10-27T09:30:00.000Z';
 
   it('stamps the current version and carries the 25 step', () => {
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
     expect(SAVE_MIGRATIONS[25]).toBeDefined();
   });
 
-  it('decodes a v25 run with no startedAt and no faints to the safe defaults', () => {
+  it('discards a v25 run: no instant, no faint count and no run to read them from', () => {
     const run: Record<string, unknown> = { ...sampleRun(), stats: { catches: 2, casualties: 1 } };
     delete run.startedAt;
     const decoded = document(JSON.stringify({ version: 25, run }));
     expect(decoded.version).toBe(SAVE_VERSION);
-    expect(decoded.run?.startedAt).toBe('');
-    expect(decoded.run?.stats).toEqual({ catches: 2, casualties: 1, faints: 0 });
-    expect(JSON.parse(encodeSave(decoded)).version).toBe(27);
+    expect(decoded.run).toBeNull();
+    expect(JSON.parse(encodeSave(decoded)).version).toBe(28);
   });
 
   it('decodes a current document that simply omits both, with the same defaults', () => {
@@ -1858,9 +1883,6 @@ describe('the run clock and the faint counters (Task-181)', () => {
     // A member with nothing to report carries none of the three keys at all.
     const plain = JSON.parse(encoded).run.party[1];
     expect(Object.keys(plain)).toEqual(['fighter']);
-    // A v25 member has none, and the decoder leaves the absent fields out.
-    const legacy = document(JSON.stringify({ version: 25, run: { ...run, party: [lead, ...rest] } }));
-    expect(legacy.run?.party[0].kos).toBeUndefined();
   });
 });
 
@@ -1868,6 +1890,7 @@ describe('storeHistory', () => {
   const record = (seed: string): RunHistoryRecord => ({
     seed,
     mode: 'finite',
+    badges: 2,
     mapReached: 2,
     catches: 1,
     casualties: 1,
