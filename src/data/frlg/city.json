@@ -1,0 +1,22 @@
+{
+  "kind": "pkmr-tileset",
+  "version": 1,
+  "id": "city",
+  "atlas": {
+    "tileSize": 16,
+    "cols": 4,
+    "rows": 13,
+    "width": 64,
+    "height": 208
+  },
+  "cells": {
+    "grass": 1,
+    "path": 2,
+    "plaza": 3,
+    "wall": 4,
+    "roof": 5,
+    "door": 6,
+    "water": 7,
+    "sign": 8
+  }
+}

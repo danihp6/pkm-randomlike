@@ -48,6 +48,13 @@ const hsvToRgb = (hue, saturation, value) => {
 }
 
 /**
+ * The one hue a path's hash cannot have: `frlg/city.png` and `beach-cave.png` both
+ * hash into hue 320, and the free hues beside it are taken, so a pinned hue keeps
+ * every blank of the allow-list its own fill. Still a property of the path alone.
+ */
+const HUE_OVERRIDES = new Map([['frlg/city.png', 205]])
+
+/**
  * The two colours one placeholder paints with, derived only from its atlas path.
  * Deterministic: the same path always answers the same pair, across runs and
  * machines, so a committed blank and its criterion never disagree.
@@ -56,7 +63,7 @@ const hsvToRgb = (hue, saturation, value) => {
  * @returns {{ fill: readonly [number, number, number], border: readonly [number, number, number] }}
  */
 export function accentFor(path) {
-  const hue = ((hashPath(path) % HUE_STEPS) * 360) / HUE_STEPS
+  const hue = HUE_OVERRIDES.get(path) ?? ((hashPath(path) % HUE_STEPS) * 360) / HUE_STEPS
   return Object.freeze({
     fill: Object.freeze(hsvToRgb(hue, FILL_SATURATION, FILL_VALUE)),
     border: Object.freeze(hsvToRgb(hue, BORDER_SATURATION, BORDER_VALUE)),

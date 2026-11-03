@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The city and interior tiles are imported.** `[Task-271]`, Batch 117: FRLG's town and
+      indoor tiles enter the same pipeline as the forest. `scripts/frlg/build-region-tilesets.mjs`
+      takes the two source sheets by argv/environment (absolute path into the store, never a link
+      inside a worktree) and emits deterministic `city.png`/`interior.png` (4×13 frames of 16×16,
+      frame 0 the plain ground, every cell opaque) plus the committed manifests
+      `src/data/frlg/{city,interior}.json`; the packer registers the step, and
+      `build-placeholders.mjs` gains the two blanks (page-coloured accents, one pinned hue so the
+      allow-list's distinctness test still holds). The registry ships
+      `TILESET_IDS = ['forest', 'city', 'interior']` with `CITY_KIND_VALUES`/`INTERIOR_KIND_VALUES`
+      as map values `12`-`19` in `src/engine/map.ts` (grass, path, plaza, wall, roof, door, water,
+      sign; floor, counter, heal, pc) with their walkability, so Batch 118's generators never invent
+      a value. The interiors are documented as provisional art composed from the buildings sheet.
+      All `[unit]` criteria green (5694 passed), plus two `[live]` ones read over CDP against the
+      running game: both atlases load 52 frames at 16×16 from a 64×208 sheet, and a 20×20 patch
+      painted from the loaded texture at 24 px reads 0 transparent pixels in 480×480, a door/wall
+      mean distance of 62.6 (bound 25) and a 28.25 minimum pairwise best-channel distance (bound 12).
+
 - [x] **`docs/region-spec.md` is the world's new source of truth.** `[Task-270]`, Batch 117:
       the floors' spec is gone and the region's takes its place: one document with eight frozen
       sections — what a region is (the seven node kinds, the 20-node chain, the sizes table),

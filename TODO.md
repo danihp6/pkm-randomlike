@@ -11975,7 +11975,7 @@ so the honest split, if a later cycle wants one, is "packer + manifests + blanks
       Claims `docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md`,
       `AGENTS.md` and `.prettierignore`. *Dependencies:* none. *(Batch 117)*
 
-- [ ] **[Task-271] The city and interior tiles are imported.** FRLG's town and indoor tiles enter the
+- [x] **[Task-271] The city and interior tiles are imported.** FRLG's town and indoor tiles enter the
       same pipeline as the forest: a packer builds the atlases, a placeholder keeps a clean clone
       running, and the tileset registry gains `city` and `interior`.
       **Measured:** `scripts/frlg/build-tilesets.mjs` packs the forest atlas; `TILESET_IDS` is

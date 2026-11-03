@@ -47,6 +47,12 @@ const STEPS = [
     args: (p) => [p('frlg/tileset-2.png'), p('frlg/tall_grass.png')],
   },
   {
+    name: 'frlg region tilesets',
+    script: 'scripts/frlg/build-region-tilesets.mjs',
+    needs: requires(['frlg/tileset.png', 'frlg/tileset-2.png']),
+    args: (p) => [p('frlg/tileset.png'), p('frlg/tileset-2.png')],
+  },
+  {
     name: 'frlg trainer sprites',
     script: 'scripts/frlg/build-trainer-sprites.mjs',
     needs: requires(['frlg/trainers.png']),

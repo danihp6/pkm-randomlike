@@ -40,7 +40,7 @@ describe('accentFor', () => {
         )
       }
     }
-    expect(ATLASES).toHaveLength(20)
+    expect(ATLASES).toHaveLength(22)
   })
 
   it('stays a dark blank, with the edge lighter than the interior', () => {

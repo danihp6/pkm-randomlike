@@ -19,11 +19,18 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   for every `ball`/`heal`/`status` stack a run hands the player. Item **names**
   stay English in every locale; the English strings stay in the dex (`D43`
   amended for these kinds).
-- `tilesets/` — one file per biome tileset — the forest's row in `frlg.ts`, wired
-  by the `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`,
-  the procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame
+- `tilesets/` — one file per tileset — the forest's row in `frlg.ts`, plus the
+  region fields' `city.ts` and `interior.ts` (their kind → map value table and their
+  `TilesetConfig`, read off `frlg/city.json` / `frlg/interior.json`), wired by the
+  `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`, the
+  procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame
   static props a route draws on a tile, starting with the boss door's 16x16 sign).
   Contract in `docs/tileset-spec.md`.
+- `frlg/` — the **generated, committed** frame manifests of the packed FRLG sheets
+  (`trainers.json`, `overworld.json`, `player.json`, the icon and battle-UI maps) and
+  the two tileset manifests `city.json`/`interior.json`, whose `cells` map each tile
+  kind to its atlas frame. Written by the matching `scripts/frlg/build-*.mjs` packer,
+  never by hand; the sheet pixels themselves are gitignored.
 - `biomes.ts` — biome → tileset and terrain flavour.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a

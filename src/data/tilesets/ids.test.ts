@@ -16,8 +16,8 @@ describe('tileset ids', () => {
     }
   });
 
-  it('ships the forest alone, with the registry in step with the id list', () => {
-    expect(TILESET_IDS).toEqual(['forest']);
+  it('ships the forest, the city and the interior, with the registry in step with the id list', () => {
+    expect(TILESET_IDS).toEqual(['forest', 'city', 'interior']);
     expect(Object.keys(TILESETS)).toEqual([...TILESET_IDS]);
   });
 
