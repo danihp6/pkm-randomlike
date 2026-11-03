@@ -1,22 +1,16 @@
 /*
- * The route header card (`D49`, frame `03o Panels · map routes`): the floor
- * minimap in the shipped 216 × 250 rect of `src/scenes/panels/map.ts`. The card,
- * its 1 px highlight and the title line take the board's paint through
- * `styles/root.css`; the grid, its links, the room cells, their openings and their
- * markers come from `view.ts` as data and are drawn as one SVG, so a viewport
- * change is one re-render. No content colour is retyped here: the view module
- * carries the current-room gold and every room marker's tone.
+ * The region header card (`D64`, frame `03o Panels · map routes`): the plan's node
+ * graph as one SVG in the shipped 216 × 250 rect of `src/scenes/panels/map.ts`. The
+ * card, its 1 px highlight, the title line and the badge line take the board's paint
+ * through `styles/root.css`; the nodes, their edges and every dot tone come from
+ * `view.ts` as data, so a viewport change is one re-render. No content colour is
+ * retyped here: the view module carries the three dot fills and the current ring.
  */
 .map {
   /* 03o map routes highlight: the 1 px band 12 px inside the top edge */
   --map-highlight: var(--hud-row-border);
-  /* FRLG_ROW_FILL / FRLG_ROW_STROKE: white at 6 % and 10 % */
-  --map-room-fill: rgb(255 255 255 / 6%);
-  --map-room-stroke: rgb(255 255 255 / 10%);
   /* FRLG_MUTED, the shipped link line */
   --map-link: #94a3b8;
-  /* the card's own ink: the boss dot's second ink and the capture ball's band */
-  --map-ink: #10161f;
 
   position: fixed;
   box-sizing: border-box;
@@ -28,7 +22,7 @@
   font-family: var(--hud-font);
   font-size: var(--hud-type-readout-size);
   line-height: var(--hud-type-readout-line);
-  /* The header has nothing interactive: no press ever reaches the card. */
+  /* The map is read, not used: no press ever reaches the card. */
   pointer-events: none;
   user-select: none;
 }
@@ -74,19 +68,63 @@
   white-space: nowrap;
 }
 
+/* The run's badge count, a bare figure at the title band's right end. */
+.map__badges {
+  position: absolute;
+  color: var(--hud-text-muted);
+  font-size: var(--hud-type-readout-size);
+  line-height: var(--hud-type-readout-line);
+  text-align: right;
+  white-space: nowrap;
+}
+
 .map__grid {
   position: absolute;
   overflow: visible;
 }
 
 /*
- * The whole minimap is one element. Its ticks and rings are drawn on the room
- * walls, so the SVG lets them spill the way the canvas does instead of clipping
- * them at the grid's own extent.
+ * The whole graph is one element: its dots and edges are placed on the plan's own
+ * cells, so the SVG lets a dot's ring spill the way the canvas does.
  */
 .map__grid svg {
   position: absolute;
   overflow: visible;
+}
+
+/* The edge stroke's colour is CSS's; its width is `MAP_LINK_STROKE` in the view. */
+.map__grid line {
+  stroke: var(--map-link);
+}
+
+/* A dot's ring is one and a half pixels, only ever drawn on the current node. */
+.map__grid circle {
+  stroke-width: 1.5;
+}
+
+/*
+ * The current node blinks, so the eye finds the run's own dot in a 31-node graph.
+ * The blink is an affordance and nothing measures it; a player who asked for less
+ * motion gets a still card.
+ */
+@keyframes map-node-pulse {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+[data-hud-region-node][data-current='true'] circle {
+  animation: map-node-pulse 1.1s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hud-region-node][data-current='true'] circle {
+    animation: none;
+  }
 }
 
 /* `view.empty.box.x` is the label's centre, as the shipped text's `0.5` origin is. */

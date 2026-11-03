@@ -12252,7 +12252,7 @@ minimap and the old puzzle room.
       `src/engine/region/README.md`. *Dependencies:* the frame mesh (Batch 117), the region plan
       (Batch 117). *(Batch 120)*
 
-- [ ] **[Task-281] The header card is the region map.** The map card stops drawing one floor and
+- [x] **[Task-281] The header card is the region map.** The map card stops drawing one floor and
       draws the **whole region** as straight-line nodes, the way FRLG's Town Map does: every
       settlement visible from the start, visited ones marked, the current one blinking, the badges in
       the card's header, routes not clickable.

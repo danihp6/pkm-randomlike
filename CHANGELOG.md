@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The header card is the region map.** `[Task-281]`, Batch 120: the map card stops
+      drawing one floor and draws the whole region the way FRLG's Town Map does.
+      `src/ui/regionMap.ts` turns the plan and the run into one view — `regionMapView(plan,
+      run)` returns a marker per node (`key`, `kind`, `name`, `x`, `y`, `visited`,
+      `current`) and the plan's edges as `{from, to}` pairs, shifted to the minimum so a node
+      with a negative `position` still lands on the canvas, with `badges` / `badgeTotal` for
+      the header. `panels/map/view.ts` is rebuilt on it (`mapPanelBox` unchanged, one
+      `RegionMarkerView` per marker with the frame's own scale and centring, `hud.noMap` when
+      there is no plan), `mapPanel.tsx` emits one `[data-hud-region-node="<key>"]` per node
+      with `data-visited` / `data-current`, the `03o` adapter is fed by the new view, and
+      `src/scenes/panels/map.ts` builds the plan once per seed and pushes the region instead
+      of the floor. The click is deliberately not wired: the travel task dispatches it.
+      `[live]` at 1280×800 pressing `M`: 34 DOM nodes for `planRegion(seed).nodes.length` =
+      34, every key in the plan and in plan order, exactly one `data-current`, `data-kind`
+      matching per node and the header reading the run's badges; `[unit]` the marker/edge
+      invariants on a fixed seed, the negative-row shift, the box and clamp pins and the
+      updated `03o` premise.
+
 - [x] **The world draws once per map, not once per cell.** `[Task-280]`, Batch 120: a node's
       ground is a `Tilemap` built from the frame mesh instead of an `Image` per cell per layer.
       `src/engine/region/preload.ts` resolves `{seed, key}` to a `NodeWorld` purely
