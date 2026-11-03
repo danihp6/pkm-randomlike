@@ -88,7 +88,6 @@ export function MapPanel(props: MapPanelProps): JSX.Element {
                 data-kind={node.kind}
                 data-visited={node.visited ? 'true' : 'false'}
                 data-current={node.current ? 'true' : 'false'}
-                style={{ cursor: 'pointer' }}
                 onClick={() => props.onCommand?.({ type: 'node', key: node.key })}
               >
                 <circle

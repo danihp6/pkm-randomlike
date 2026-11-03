@@ -549,6 +549,10 @@ export class RouteScene extends WorldScene {
    * untouched — while a battle, a release beat, the run-over screen, the pause menu,
    * another travel or a stopped scene owns the moment, and when the rule refuses or
    * the node has no world.
+   *
+   * The guard is taken **before** the preload's `await`: on a cold node that window is
+   * about half a second, and a second press inside it must not commit a second run for
+   * the one transition. Every exit path clears it.
    */
   async travelToNode(toKey: string, mode: TravelMode = 'walk'): Promise<boolean> {
     if (this.travelling || !this.run) return false;
@@ -558,21 +562,25 @@ export class RouteScene extends WorldScene {
     const seed = this.run.seed;
     const result = travel(planRegion(seed), this.run, toKey, mode);
     if (!result.ok) return false;
-    const world = this.cachedWorld(seed, toKey) ?? (await this.preload(seed, toKey));
-    if (world === null) return false;
 
     this.travelling = true;
-    this.run = result.run;
-    this.travelCommits += 1;
-    this.persistRun();
-    const arrived = new Promise<void>((resolve) => {
-      this.events.once(WORLD_ARRIVED, () => resolve());
-    });
-    this.travelFades += 1;
-    this.transitionToNode(world, result.spawn);
-    await arrived;
-    this.travelling = false;
-    return true;
+    try {
+      const world = this.cachedWorld(seed, toKey) ?? (await this.preload(seed, toKey));
+      if (world === null) return false;
+
+      this.run = result.run;
+      this.travelCommits += 1;
+      this.persistRun();
+      const arrived = new Promise<void>((resolve) => {
+        this.events.once(WORLD_ARRIVED, () => resolve());
+      });
+      this.travelFades += 1;
+      this.transitionToNode(world, result.spawn);
+      await arrived;
+      return true;
+    } finally {
+      this.travelling = false;
+    }
   }
 
   /**

@@ -33,7 +33,8 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   city, gym or League needs no `main.ts` edit.
 - `regionScenes.test.ts` — the registry's headless rules: a module with both markers is
   collected, one with one or none is skipped, a duplicate key throws naming both paths, and
-  the folder itself holds no region node scene yet.
+  the folder itself holds no region node scene yet — plus the travel seam's single flight,
+  where two `travelToNode` calls started inside the preload window commit exactly one.
 - `panels/` — the route's overlay panels: one module per panel, discovered by the
   scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
