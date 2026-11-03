@@ -1,4 +1,6 @@
 import { signal, type Signal } from '@preact/signals';
+import type Phaser from 'phaser';
+import type { RunState } from '../../engine/run/state';
 import itemIcons from '../../data/anil/item-icons.json';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, itemIconFrame } from '../../data/itemIcons';
 import { getItem } from '../../data/items';
@@ -14,16 +16,28 @@ import {
   type ShopPanelView,
 } from '../../ui/hud/panels/shop';
 import { buyItem, buyRows, sellItem, sellRows, type ShopRow, type ShopSlot } from '../../ui/shop';
-import type { RoomHost } from '../rooms/types';
 import type { RoutePanelDescriptor } from './types';
 
 /**
- * The scene-side owner of the Mart's DOM card (`D49`). The stock rules, the cache key
- * and the room panel stay in `src/scenes/rooms/shop.ts`; this module paints the card
- * into the `#hud` layer from `src/ui/hud/panels/shop/` and is the **only** writer:
+ * The scene-side owner of the merchant's DOM card (`D49`). The stock rules, the cache
+ * key and the room panel stay in `src/scenes/rooms/shop.ts`; this module paints the
+ * card into the `#hud` layer from `src/ui/hud/panels/shop/` and is the **only** writer:
  * one press, one `ShopTrade`, one `commitRun`. It holds no `Rng` and no clock, so the
- * same floor opens the same shelf.
+ * same node opens the same shelf.
  */
+
+/**
+ * What the card needs from the scene that opened it: the run it trades against, the
+ * one writer for a trade and the slot its own ✕ closes. `RoomHost` satisfies it, and
+ * so does a scene with no route behind it (the Centre's counter).
+ */
+export type ShopCardHost = Readonly<{
+  scene: Phaser.Scene;
+  /** The live run: a getter, so a purchase repaints from the run it just committed. */
+  run: RunState;
+  commitRun(run: RunState): void;
+  closePanel(): void;
+}>;
 
 /** The item atlas' columns (`src/data/anil/item-icons.json`), for the sprite offsets. */
 const ITEM_ICON_COLS: number = itemIcons.cols;
@@ -38,7 +52,7 @@ const SCENE_RESUME = 'resume';
 const SCENE_SHUTDOWN = 'shutdown';
 
 /** The card's session: the host, the view signal and the mount's disposer. */
-let cardHost: RoomHost | null = null;
+let cardHost: ShopCardHost | null = null;
 let cardView: Signal<ShopPanelView> | null = null;
 let cardDispose: (() => void) | null = null;
 let cardUnsubscribe: (() => void) | null = null;
@@ -73,26 +87,33 @@ function shopIcon(itemId: string): ShopIcon | null {
 }
 
 /** The view's viewport: the scene's own window, which the card is centred in. */
-function viewport(host: RoomHost): { width: number; height: number } {
+function viewport(host: ShopCardHost): { width: number; height: number } {
   return { width: host.scene.scale.width, height: host.scene.scale.height };
 }
 
 /**
  * The shelf the card opened on: a BUY row carries its slot's own `(itemId, price,
- * count)`, so the rows the room rolled are the card's stock for its session. The
+ * count)` **and its endless flag**, so the rows the room rolled are the card's stock
+ * for its session and a rebuilt ball row stays endless even when the shelf's band and
+ * the node's band read different balls (a city's Centre stocks by its tier). The
  * room's cache stays in `rooms/shop.ts`; this is the one read the card needs.
  */
 function stockOf(rows: readonly ShopRow[]): readonly ShopSlot[] {
-  return rows.map((row) => ({ itemId: row.itemId, price: row.price, count: row.count }));
+  return rows.map((row) => ({
+    itemId: row.itemId,
+    price: row.price,
+    count: row.count,
+    infinite: row.infinite === true,
+  }));
 }
 
 /** The rows the current tab shows, from the live run: a bought row is off the shelf. */
-function rowsFor(host: RoomHost): readonly ShopRow[] {
-  return cardMode === 'buy' ? buyRows(host.run, cardStock, host.run.mapIndex) : sellRows(host.run);
+function rowsFor(host: ShopCardHost): readonly ShopRow[] {
+  return cardMode === 'buy' ? buyRows(host.run, cardStock, host.run.nodeKey) : sellRows(host.run);
 }
 
 /** Builds the view from the live run and this module's own tab, scroll and message. */
-function paintView(host: RoomHost, rows: readonly ShopRow[]): ShopPanelView {
+function paintView(host: ShopCardHost, rows: readonly ShopRow[]): ShopPanelView {
   return shopPanelView(
     {
       title: cardTitle,
@@ -122,7 +143,7 @@ function setShopPaused(paused: boolean): void {
  * title and the greeting), the mount from the `#hud` layer. A missing layer mounts
  * nothing, exactly as the shipped DOM panels guard it.
  */
-export function openShopCard(host: RoomHost, view: ShopInput): void {
+export function openShopCard(host: ShopCardHost, view: ShopInput): void {
   closeShopCard();
   cardHost = host;
   cardTitle = view.title;
@@ -153,7 +174,7 @@ export function openShopCard(host: RoomHost, view: ShopInput): void {
 }
 
 /** Repaints the card from the live run; the tab, the scroll and the selection stay. */
-export function pushShopCard(host: RoomHost): void {
+export function pushShopCard(host: ShopCardHost): void {
   const view = cardView;
   if (view === null) return;
   cardHost = host;
@@ -184,14 +205,14 @@ export function closeShopCard(): void {
 }
 
 /** A BUY press: one slot, one `buyItem`, one `commitRun`, the shipped message. */
-function buyPressed(host: RoomHost, itemId: string): void {
+function buyPressed(host: ShopCardHost, itemId: string): void {
   const slot = cardStock.find((entry) => entry.itemId === itemId);
   if (slot === undefined) return;
-  const row = buyRows(host.run, cardStock, host.run.mapIndex).findIndex(
+  const row = buyRows(host.run, cardStock, host.run.nodeKey).findIndex(
     (entry) => entry.itemId === itemId,
   );
   if (row >= 0) cardSelected = row;
-  const trade = buyItem(host.run, slot, host.run.mapIndex);
+  const trade = buyItem(host.run, slot, host.run.nodeKey);
   if (!trade.ok) {
     cardMessage = t('mart.noMoney');
     return;
@@ -204,7 +225,7 @@ function buyPressed(host: RoomHost, itemId: string): void {
 }
 
 /** A SELL press: one unit, one `sellItem`, one `commitRun`, the shipped message. */
-function sellPressed(host: RoomHost, itemId: string): void {
+function sellPressed(host: ShopCardHost, itemId: string): void {
   const rows = sellRows(host.run);
   const index = rows.findIndex((entry) => entry.itemId === itemId);
   const trade = sellItem(host.run, itemId);
@@ -218,7 +239,7 @@ function sellPressed(host: RoomHost, itemId: string): void {
 }
 
 /** The card's own command channel: the one place anything is written. */
-function handleShopIntent(host: RoomHost, intent: ShopIntent): void {
+function handleShopIntent(host: ShopCardHost, intent: ShopIntent): void {
   if (cardView === null) return;
   switch (intent.type) {
     case 'mode': {

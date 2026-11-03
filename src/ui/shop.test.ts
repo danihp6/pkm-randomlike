@@ -300,7 +300,7 @@ describe('shop trades', () => {
     expect(itemCount(run, 'pokeball')).toBe(10);
     // The endless row stays on the shelf and reads the new owned count from the bag.
     expect(buyRows(run, [pack])[0].owned).toBe(10);
-    expect(buyRows(run, [pack], run.mapIndex + 1)[0].owned).toBe(10);
+    expect(buyRows(run, [pack], 'city:1')[0].owned).toBe(10);
   });
 
   it('sells one unit and refuses what the shop will not buy', () => {
@@ -367,18 +367,18 @@ describe('the shelf (Task-178)', () => {
   const rich = (money: number) => addMoney(createRun({ seed: 's', starter }), money);
   const early = () => buildShop('early', new Rng(7));
 
-  it('keys a row by its floor: one row, one map', () => {
-    expect(shopRowKey(2, 'potion')).toBe('shop-2-potion');
+  it('keys a row by its node: one row, one city', () => {
+    expect(shopRowKey('city:3', 'potion')).toBe('shop-city:3-potion');
   });
 
-  it('marks the bought row on its own floor', () => {
-    const trade = buyItem(rich(1000), early()[1]!, 2);
+  it('marks the bought row on its own node', () => {
+    const trade = buyItem(rich(1000), early()[1]!, 'city:3');
     expect(trade.ok).toBe(true);
-    expect(trade.run.pickedItems).toEqual(['shop-2-potion']);
-    // A different floor of the same item is a different key.
-    expect(buyItem(trade.run, early()[1]!, 3).run.pickedItems).toEqual([
-      'shop-2-potion',
-      'shop-3-potion',
+    expect(trade.run.pickedItems).toEqual(['shop-city:3-potion']);
+    // A different node of the same item is a different key.
+    expect(buyItem(trade.run, early()[1]!, 'city:4').run.pickedItems).toEqual([
+      'shop-city:3-potion',
+      'shop-city:4-potion',
     ]);
   });
 
@@ -393,11 +393,13 @@ describe('the shelf (Task-178)', () => {
     expect(after).toHaveLength(before.length - 1);
   });
 
-  it('keeps another floor its own shelf: the mark is per map', () => {
+  it('keeps another city its own shelf: the mark is per node', () => {
     const stock = early();
-    const run = buyItem(rich(20_000), stock[1]!, 2).run;
-    expect(buyRows(run, stock, 2)).toHaveLength(stock.length - 1);
-    expect(buyRows(run, stock, 3).map((row) => row.itemId)).toEqual(stock.map((slot) => slot.itemId));
+    const run = buyItem(rich(20_000), stock[1]!, 'city:3').run;
+    expect(buyRows(run, stock, 'city:3')).toHaveLength(stock.length - 1);
+    expect(buyRows(run, stock, 'city:4').map((row) => row.itemId)).toEqual(
+      stock.map((slot) => slot.itemId),
+    );
   });
 
   it('keeps the endless ball row on the shelf, sale after sale', () => {
@@ -491,7 +493,7 @@ describe('the endless ball row (Task-265)', () => {
     const bought = buyItem(run, potion);
     expect(bought.ok).toBe(true);
     run = bought.run;
-    expect(run.pickedItems).toEqual([shopRowKey(run.mapIndex, potion.itemId)]);
+    expect(run.pickedItems).toEqual([shopRowKey(run.nodeKey, potion.itemId)]);
     const rows = buyRows(run, stock);
     expect(rows.map((row) => row.itemId)).not.toContain(potion.itemId);
     expect(rows.filter(isInfiniteSlot)).toHaveLength(1);
@@ -501,8 +503,41 @@ describe('the endless ball row (Task-265)', () => {
 
   it('never marks an endless row on any floor', () => {
     const stock = buildShop('late', new Rng(7));
-    const run = buyItem(rich(20_000), stock[0]!, 4).run;
+    const run = buyItem(rich(20_000), stock[0]!, 'city:6').run;
     expect(run.pickedItems).toEqual([]);
-    expect(buyRows(run, stock, 4)).toHaveLength(stock.length);
+    expect(buyRows(run, stock, 'city:6')).toHaveLength(stock.length);
+  });
+});
+
+describe('the node’s shelf (Task-292)', () => {
+  const rich = (money: number) => addMoney(createRun({ seed: 's', starter }), money);
+
+  it('keeps the ball row endless at every band', () => {
+    for (const band of LEVEL_BANDS) {
+      const stock = buildShop(band.id, new Rng(7));
+      let run = rich(50_000);
+      for (let sale = 0; sale < 3; sale++) run = buyItem(run, stock[0]!).run;
+      expect(run.pickedItems, band.id).toEqual([]);
+      expect(buyRows(run, stock)[0]!.itemId, band.id).toBe(stock[0]!.itemId);
+    }
+  });
+
+  it('defaults the row key to the run’s own node', () => {
+    const run = rich(1000);
+    const potion = { itemId: 'potion', price: 300, count: 1 };
+    const bought = buyItem(run, potion);
+    expect(bought.run.pickedItems).toEqual([shopRowKey(run.nodeKey, 'potion')]);
+    expect(buyRows(bought.run, [potion])).toHaveLength(0);
+    // Another node still has its own row for the same item.
+    expect(buyRows(bought.run, [potion], 'city:1')).toHaveLength(1);
+  });
+
+  it('cards a node’s shelf by the node’s own band, and never throws on an unknown key', () => {
+    const stock = buildShop('early', new Rng(7));
+    const rebuilt = { itemId: stock[1]!.itemId, price: stock[1]!.price, count: stock[1]!.count };
+    const run = buyItem(rich(1000), rebuilt, 'city:1').run;
+    expect(run.pickedItems).toEqual([shopRowKey('city:1', 'potion')]);
+    // A key the plan does not hold reads the run's cap band instead of failing.
+    expect(buyRows(rich(10), stock, 'nowhere:9')).toHaveLength(stock.length);
   });
 });

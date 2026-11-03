@@ -20,6 +20,7 @@ import {
   SHOP_ROTATION,
   SHOP_TM,
   SECRET_SHOP,
+  shopBandForTier,
 } from './shop';
 import { TM_MOVE_IDS, isTmItemId } from './tms';
 
@@ -242,6 +243,20 @@ describe('SECRET_SHOP', () => {
       expect(MEGA_STONE_IDS, id).not.toContain(id);
       expect(GMAX_STONE_IDS, id).not.toContain(id);
       expect(getItem(id)!.kind, id).not.toBe('valuable');
+    }
+  });
+});
+
+describe('shopBandForTier (the Centre’s shelf)', () => {
+  it('answers the band a city tier buys at: 1 early, 2 mid, 3 late', () => {
+    expect(shopBandForTier(1)).toBe('early');
+    expect(shopBandForTier(2)).toBe('mid');
+    expect(shopBandForTier(3)).toBe('late');
+  });
+
+  it('names a real band every time, so a city always has a shelf', () => {
+    for (const tier of [1, 2, 3] as const) {
+      expect(LEVEL_BANDS.map((band) => band.id)).toContain(shopBandForTier(tier));
     }
   });
 });
