@@ -229,15 +229,25 @@ of them moves when another is built, and the city's own draws never touch one. T
 
 ## 8. The save's v28 rules and the record
 
-`SAVE_VERSION` steps **27 → 28 with no migration**. An older document decodes with its
-**run discarded**, while the settings and the history survive untouched; no migration
-code exists because there is nothing in production to migrate (`D61`).
+`SAVE_VERSION` steps **27 → 28**, and the step does one thing: it sets the document's
+`run` to `null`. A v27 (or older) document therefore decodes with its **run
+discarded**, while its `settings` and its `history` survive exactly as the document
+carried them (`D61`). No run data is migrated: the floors a v27 run counted no
+longer mean anything.
 
-A run stands on a **node**, not on a floor. It carries `nodeKey`, `visitedNodes`,
-`badges` and `capturedNodes`, and `mapIndex`, `routeIndex` and `routeInMap` stay only as
-the deprecated compatibility fields the old scene still reads, all derived from the plan,
-until the sweep takes them. The **record** is the badge count, and the tower's streak is
-tracked apart from it (`D62`), so an endless run can never inflate the record.
+A run stands on a **node**, not on a floor. It carries the `nodeKey` it stands on,
+`visitedNodes` (every node entered, in first-entry order, starting with `nodeKey`), the
+`badges` it holds (integers `1..BADGE_CAPS.length + 1`, ascending and deduplicated;
+badge `n` is gym `city:n`'s) and the `capturedNodes` whose single catch is spent, and
+`mapIndex`, `routeIndex`, `routeInMap` and `levelCap` stay only as the deprecated
+compatibility fields the old scene still reads, all derived from the plan, until the
+sweep takes them. The decoder never throws on a hand-edited key: an unknown `nodeKey`
+reads as the town, a node list keeps only the keys the plan still holds, and a badge
+outside the ladder is dropped. The **record** is the badge count — `RunHistoryRecord`
+gains `badges`, and its deprecated `mapReached` carries the same figure for the cards
+that still read it — while the tower's own streak travels beside the record as the
+run's `towerStreak`, so an endless run can never inflate it (`D62`). A history row
+written before v28 carries no `badges` and is dropped by the decoder.
 
 These are the rules `[Task-276]` implements (Batch 119); the schema that ships writes the
 field list.

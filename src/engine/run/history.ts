@@ -22,8 +22,20 @@ export type RunSpeciesRecord = Readonly<{
 /** One finished run. `endedAt` is an ISO-8601 instant; `playtimeMs` a wall clock. */
 export type RunHistoryRecord = Readonly<{
   seed: string;
+  /** @deprecated the endless run is retired; the record is the badge count. */
   mode: RunMode;
-  /** The floor the run reached (1-based); 0 only for a run that never left map 1. */
+  /**
+   * The badges the run earned: the record (`D62`). Optional only because the
+   * history fixtures of five already-shipped panels (`src/ui`, `src/net` and
+   * `src/scenes`) build a record literal without it, and those paths are not this
+   * task's to edit; the decoder always fills it and `makeHistoryRecord` always
+   * writes it, so a stored row always carries it.
+   */
+  badges?: number;
+  /**
+   * @deprecated compatibility figure the shipped stats card and the ranking still
+   * read: it equals `badges`, so a card shows the badge count until the sweep.
+   */
   mapReached: number;
   catches: number;
   casualties: number;
@@ -39,7 +51,7 @@ export type RunHistoryRecord = Readonly<{
 export type RunHistory = Readonly<{
   seed: string;
   mode: RunMode;
-  mapIndex: number;
+  badges: readonly number[];
   stats: RunStats;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
@@ -101,10 +113,12 @@ export function makeHistoryRecord(
   run: RunHistory,
   ending: Readonly<{ endedAt: string; playtimeMs: number; won: boolean }>,
 ): RunHistoryRecord {
+  const badges = run.badges.length;
   return {
     seed: run.seed,
     mode: run.mode,
-    mapReached: run.mapIndex,
+    badges,
+    mapReached: Math.min(99, badges),
     catches: run.stats.catches,
     casualties: run.stats.casualties,
     playtimeMs: ending.playtimeMs,

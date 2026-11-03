@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **RunState v28: the node, the badges and the record.** `[Task-276]`, Batch 119:
+      a run stands on a region **node**, not on a floor: `RunState` gains `nodeKey`,
+      `visitedNodes`, `badges` (ascending, deduplicated, badge *n* is gym `city:n`'s),
+      `capturedNodes` and `towerStreak`, all set at creation from `planRegion(seed)`; the
+      deprecated floor fields stay as the old scene's compatibility aliases, derived by
+      `compatForNode(seed, key)`. `SAVE_VERSION` steps 27 → 28 with one step that leaves
+      only `run: null`: an older document decodes to no run with its settings and history
+      untouched, and a history row written before v28 — carrying no `badges` — is dropped,
+      because the floors it counted no longer mean anything. The record is the badge count
+      (`RunHistoryRecord.badges`), the tower's streak travels beside it, and `mapReached`
+      keeps carrying the same figure for the cards that still read it. The decoder never
+      throws on a hand-edited save: an unknown key reads as the town, unknown nodes and a
+      badge outside the ladder are dropped. All criteria `[unit]` except the boot: a v27
+      document decodes to no run, a v28 round-trip keeps the five fields, `createRun` starts
+      on the town with zero badges, and the record reads badges; measured over CDP, a v27
+      save boots to four menu rows with no CONTINUE and its settings intact, while a v28
+      run written by `createRun`/`encodeSave` gives the CONTINUE row back. `docs/region-spec.md`
+      §8 states the save's post-cut rules.
+
 - [x] **The eight leaders, the four and the Champion are data.** `[Task-275]`, Batch 118:
       `src/data/gyms.ts` holds `GYMS` — eight rows in badge order with `leaderId`, `archetypeId`,
       `partySize`, gym 1's `fixedParty`, the 10 % double outside gym 1, one distinct `tmItemId` each

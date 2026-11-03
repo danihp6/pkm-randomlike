@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRun, createRunPokemon } from './engine/run';
-import { defaultSettings, SAVE_KEY, type StorageLike } from './engine/save';
+import { defaultSettings, SAVE_KEY, SAVE_VERSION, type StorageLike } from './engine/save';
 import { getLocale, setLocale } from './i18n';
 import { applyVolume, browserLanguageTag, loadSettings, saveSettings } from './settings';
 
@@ -122,9 +122,14 @@ describe('the language', () => {
       moves: ['scratch'],
     });
     const run = createRun({ seed: 'kept', starter });
-    // A v16 document written before the language existed: no `language` key at all.
-    const legacy = JSON.stringify({ version: 16, settings: { textSpeed: 'normal', volume: 0.8 }, run });
-    storage.setItem(SAVE_KEY, legacy);
+    // A document at the current schema: `Task-276` discards the run of anything
+    // older, so only a v28 save has one left for the language write to keep.
+    const stored = JSON.stringify({
+      version: SAVE_VERSION,
+      settings: { textSpeed: 'normal', volume: 0.8 },
+      run,
+    });
+    storage.setItem(SAVE_KEY, stored);
     expect(loadSettings(storage, 'es-ES').language).toBe('es');
     const raw = storage.getItem(SAVE_KEY);
     expect(raw).toContain('"seed":"kept"');

@@ -12116,7 +12116,7 @@ from their specs. `src/engine/region/README.md` is `[Task-277]`'s.
 **What it replaces.** `mapIndex`/`routeIndex`/`routeInMap` as *the* position, `discoveredRooms`,
 `capturedRooms`, the per-map cap and the floor band.
 
-- [ ] **[Task-276] RunState v28: the node, the badges and the record.** A run stands on a node, not on
+- [x] **[Task-276] RunState v28: the node, the badges and the record.** A run stands on a node, not on
       a floor: `nodeKey`, `visitedNodes`, `badges`, `capturedNodes`, and a save that steps to 28 by
       **discarding** an old run and keeping settings and history.
       **Measured:** `SAVE_VERSION = 27`; `parseRun` and `encodeRun` read `flake`-prone fields

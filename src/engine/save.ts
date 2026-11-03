@@ -3,6 +3,7 @@ import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLay
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
 import { levelCapForMap } from '../data/maps';
 import { getMission } from '../data/missions';
+import { BADGE_CAPS } from '../data/region';
 import { ROOM_BATTLEFIELDS } from '../data/battlefields';
 import { isLocale, type Locale } from '../i18n';
 import {
@@ -13,7 +14,7 @@ import {
   type MapEdge,
   type MapPlan,
 } from './maps/plan';
-import { floorForRoute } from './run/floors';
+import { nodeOf, planRegion, type RegionPlan } from './region/plan';
 import type { AiLevel } from './battle/ai';
 import {
   normalizeAbilityId,
@@ -29,7 +30,14 @@ import type { MissionProgress } from './run/missions';
 import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
-import { dedupeMemberIds, emptyRunStats, type CompletedMission, type RunState, type RunStats } from './run/state';
+import {
+  compatForNode,
+  dedupeMemberIds,
+  emptyRunStats,
+  type CompletedMission,
+  type RunState,
+  type RunStats,
+} from './run/state';
 
 /** How fast the message box types text (consumed by the settings screen). */
 export type TextSpeed = 'slow' | 'normal' | 'fast';
@@ -80,7 +88,7 @@ export type StorageLike = Readonly<{
 }>;
 
 /** The schema version of the current build. Bump it and add a migration in step. */
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
@@ -190,7 +198,12 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * **run clock and the faint counters** (`Task-181`) — a run written before it has
  * no start instant (`startedAt: ''`, playtime unknown) and no faint count, and its
  * members' optional `kos`/`damage`/`damageTaken` need no write because the decoder
- * leaves an absent one out (the `14` nickname precedent).
+ * leaves an absent one out (the `14` nickname precedent); `26` moves a v26 run onto
+ * the v27 schema, which added the floors whose mission the run met (an old run's list
+ * starts empty); `27` moves a v27 document onto the **node-anchored v28 schema**
+ * (`Task-276`), where a run stands on a region node, so the old run is **discarded**
+ * — the floors it counted no longer mean anything — while `settings` and `history`
+ * travel untouched.
  */
 export const SAVE_MIGRATIONS: Migrations = {
   1: (document) => ({
@@ -218,10 +231,11 @@ export const SAVE_MIGRATIONS: Migrations = {
       ? { ...document.settings, keybinds: DEFAULT_KEYBINDS }
       : document.settings,
   }),
+  // The map position a v5 run lacked has no reader left: a run written before v28 is
+  // discarded by the `27` step, so only the version steps here.
   5: (document) => ({
     ...document,
     version: 6,
-    run: isRecord(document.run) ? withFloorState(document.run) : document.run,
   }),
   6: (document) => ({
     ...document,
@@ -368,6 +382,10 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 27,
     run: isRecord(document.run) ? { completedMissions: [], ...document.run } : document.run,
   }),
+  // The node-anchored run (`Task-276`): a v27 run stands on a floor the v28 schema no
+  // longer keeps, so it is discarded; the settings and the record of the runs that
+  // already ended are the document's own and travel untouched (`D61`).
+  27: (document) => ({ ...document, version: 28, run: null }),
 };
 
 /** A v25 run's counters plus a zero faint count; a malformed record reads as empty. */
@@ -437,22 +455,6 @@ function withDarkFlag(run: Record<string, unknown>): Record<string, unknown> {
       ? list.map((entry) => (isRecord(entry) ? { dark: false, ...entry } : entry))
       : list;
   return { ...run, party: mark(run.party), box: mark(run.box), rip: mark(run.rip) };
-}
-
-/**
- * Adds the map-position fields a v5 run lacks: the floor and room its global
- * `routeIndex` resolves to through the plan chain, and every room up to it as
- * discovered (the old run walked the chain linearly, so it had entered them all).
- */
-function withFloorState(run: Record<string, unknown>): Record<string, unknown> {
-  if (!isString(run.seed) || !isInteger(run.routeIndex) || run.routeIndex < 1) return run;
-  const position = floorForRoute(run.seed, run.routeIndex);
-  return {
-    ...run,
-    mapIndex: position.mapIndex,
-    routeInMap: position.roomInMap,
-    discoveredRooms: Array.from({ length: position.roomInMap + 1 }, (_, id) => id),
-  };
 }
 
 /** Runs a document through the upgrade steps between two versions. */
@@ -985,7 +987,6 @@ function parseRun(value: unknown): RunState | null {
   if (!isRecord(value)) return null;
   if (!isString(value.seed) || value.seed === '') return null;
   if (value.mode !== 'finite' && value.mode !== 'infinite') return null;
-  if (!isInteger(value.routeIndex) || value.routeIndex < 1) return null;
 
   const party = parseMembers(value.party);
   if (party.length === 0) return null;
@@ -993,17 +994,26 @@ function parseRun(value: unknown): RunState | null {
   const bag = parseBag(value.bag);
   if (!bag) return null;
 
-  // The map position and the discovery set are recomputed from the global route
-  // index when the save lacks them, so a hand-edited document cannot strand the
-  // run between floors or hide the room it stands in.
-  const position = floorForRoute(value.seed, value.routeIndex);
-  const mapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : position.mapIndex;
+  // The node the run stands on: a key the plan still holds, else the town, so a
+  // hand-edited or stale key never throws.
+  const region = planRegion(value.seed);
+  const nodeKey = isNodeKeyOf(region, value.nodeKey) ? (value.nodeKey as string) : region.townKey;
+  const compat = compatForNode(value.seed, nodeKey);
+  const visitedNodes = parseNodeKeys(value.visitedNodes, region, nodeKey);
+  const capturedNodes = parseNodeKeys(value.capturedNodes, region);
+
+  // The floor fields are the old scene's compatibility aliases: kept when the
+  // document carries a usable one, else the node's own reading.
+  const storedMapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : null;
+  const mapIndex = storedMapIndex ?? compat.mapIndex;
   const plan = planMap(value.seed, mapIndex);
   const rawRoom =
-    isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : position.roomInMap;
+    isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : compat.routeInMap;
   // Clamp into the plan so a hand-edited save cannot point at a room that does
   // not exist (`RoomView` would throw building it).
   const routeInMap = Math.min(rawRoom, plan.rooms.length - 1);
+  const routeIndex =
+    isInteger(value.routeIndex) && value.routeIndex >= 1 ? value.routeIndex : compat.routeIndex;
   const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, routeInMap);
   const arrivalEdge = readArrivalEdge(value.arrivalEdge, plan, routeInMap);
 
@@ -1052,13 +1062,20 @@ function parseRun(value: unknown): RunState | null {
   return dedupeMemberIds({
     seed: value.seed,
     mode: value.mode,
-    routeIndex: value.routeIndex,
+    routeIndex,
     mapIndex,
     routeInMap,
     arrivalEdge,
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
-    levelCap: levelCapForMap(mapIndex),
+    // The cap is never trusted from the document, only derived from the floor the
+    // run stands on — or, when it carries no floor, from its node.
+    levelCap: storedMapIndex === null ? compat.levelCap : levelCapForMap(mapIndex),
+    nodeKey,
+    visitedNodes,
+    badges: parseBadges(value.badges),
+    capturedNodes,
+    towerStreak: isInteger(value.towerStreak) && value.towerStreak >= 0 ? value.towerStreak : 0,
     pokevialCharges,
     xp,
     party,
@@ -1080,6 +1097,44 @@ function parseRun(value: unknown): RunState | null {
     stats,
     startedAt: parseStartedAt(value.startedAt),
   });
+}
+
+/** True when `key` names a node the plan still holds. */
+function isNodeKeyOf(plan: RegionPlan, key: unknown): key is string {
+  return isString(key) && nodeOf(plan, key) !== undefined;
+}
+
+/**
+ * Reads a list of node keys: the ones the plan resolves, in document order, deduped;
+ * a key the plan no longer holds is dropped rather than repaired. `anchor` is
+ * appended when absent, so the list always names the node the run stands on.
+ */
+function parseNodeKeys(value: unknown, plan: RegionPlan, anchor?: string): string[] {
+  const keys: string[] = [];
+  if (Array.isArray(value)) {
+    for (const key of value) {
+      if (!isString(key) || keys.includes(key)) continue;
+      if (nodeOf(plan, key) === undefined) continue;
+      keys.push(key);
+    }
+  }
+  if (anchor !== undefined && !keys.includes(anchor)) keys.push(anchor);
+  return keys;
+}
+
+/**
+ * Reads the badges the run holds: integers `1..BADGE_CAPS.length + 1`, deduped and
+ * sorted ascending. Anything else reads as no badge, so a hand-edited document
+ * cannot invent a rung the ladder does not carry.
+ */
+function parseBadges(value: unknown): number[] {
+  const badges: number[] = [];
+  if (!Array.isArray(value)) return badges;
+  for (const badge of value) {
+    if (!isInteger(badge) || badge < 1 || badge > BADGE_CAPS.length + 1) continue;
+    if (!badges.includes(badge)) badges.push(badge);
+  }
+  return badges.sort((a, b) => a - b);
 }
 
 /**
@@ -1113,7 +1168,9 @@ function parseHistoryRecord(value: unknown): RunHistoryRecord | null {
   if (!isRecord(value)) return null;
   if (!isString(value.seed) || value.seed === '') return null;
   if (value.mode !== 'finite' && value.mode !== 'infinite') return null;
-  if (!isInteger(value.mapReached) || value.mapReached < 0) return null;
+  // A row written before v28 counted floors and carries no badge: the floors it
+  // reached no longer mean anything, so the row is dropped rather than repaired.
+  if (!isInteger(value.badges) || value.badges < 0) return null;
   if (!isInteger(value.catches) || value.catches < 0) return null;
   if (!isInteger(value.casualties) || value.casualties < 0) return null;
   if (!isNumber(value.playtimeMs) || value.playtimeMs < 0) return null;
@@ -1122,7 +1179,9 @@ function parseHistoryRecord(value: unknown): RunHistoryRecord | null {
   return {
     seed: value.seed,
     mode: value.mode,
-    mapReached: value.mapReached,
+    badges: value.badges,
+    // The compatibility figure reads as stored and falls back to the badge count.
+    mapReached: isInteger(value.mapReached) && value.mapReached >= 0 ? value.mapReached : value.badges,
     catches: value.catches,
     casualties: value.casualties,
     playtimeMs: value.playtimeMs,

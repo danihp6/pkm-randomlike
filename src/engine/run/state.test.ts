@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { restoreFighter } from '../battle/fighter';
-import { levelCapForMap } from '../../data/maps';
+import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
+import { BADGE_CAPS, badgeCap } from '../../data/region';
 import { evolutionBranches } from '../../data/dex/evolutions';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
+import { nodeKey, planRegion } from '../region/plan';
 import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot } from './progression';
@@ -17,6 +21,7 @@ import {
   advanceMap,
   advanceRoute,
   canCapture,
+  compatForNode,
   consumeItem,
   createRun,
   dedupeMemberIds,
@@ -105,6 +110,88 @@ describe('createRun', () => {
     expect(emptyRunStats()).toEqual({ catches: 0, casualties: 0, faints: 0 });
     expect(createRun({ seed: 'run-a', starter }).stats.faints).toBe(0);
     expect(runFaints(createRun({ seed: 'run-a', starter }).stats)).toBe(0);
+  });
+});
+
+describe('the node a run stands on', () => {
+  it('opens the run on the region’s town with no badge, no catch spent and no streak', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const plan = planRegion('run-a');
+    expect(run.nodeKey).toBe(plan.townKey);
+    expect(run.visitedNodes).toEqual([plan.townKey]);
+    expect(run.badges).toEqual([]);
+    expect(run.capturedNodes).toEqual([]);
+    expect(run.towerStreak).toBe(0);
+  });
+
+  it('derives the deprecated floor fields from the town exactly as compatForNode does', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const compat = compatForNode('run-a', run.nodeKey);
+    expect(run.mapIndex).toBe(compat.mapIndex);
+    expect(run.routeIndex).toBe(compat.routeIndex);
+    expect(run.routeInMap).toBe(compat.routeInMap);
+    expect(run.arrivalEdge).toBe(compat.arrivalEdge);
+    expect(run.discoveredRooms).toEqual(compat.discoveredRooms);
+    expect(run.bossDefeated).toBe(compat.bossDefeated);
+    expect(run.levelCap).toBe(compat.levelCap);
+  });
+
+  it('reads a chain node as its own rung of the ladder', () => {
+    const plan = planRegion('run-a');
+    const compat = compatForNode('run-a', plan.townKey);
+    expect(compat.mapIndex).toBe(1);
+    expect(compat.routeIndex).toBe(1);
+    expect(compat.routeInMap).toBe(0);
+    expect(compat.arrivalEdge).toBe(arrivalEdgeFor(planMap('run-a', 1), 0));
+    expect(compat.discoveredRooms).toEqual([0]);
+    expect(compat.bossDefeated).toBe(false);
+    expect(compat.levelCap).toBe(badgeCap(1));
+
+    const firstRoute = compatForNode('run-a', nodeKey('route', 1));
+    expect(firstRoute.mapIndex).toBe(2);
+    expect(firstRoute.routeIndex).toBe(2);
+    expect(firstRoute.levelCap).toBe(badgeCap(1));
+  });
+
+  it('reads a lateral off the main route it hangs from, and clamps the floor to the ladder', () => {
+    const plan = planRegion('run-a');
+    const lateral = plan.nodes.find((node) => node.kind === 'lateral');
+    expect(lateral).toBeDefined();
+    const compat = compatForNode('run-a', lateral!.key);
+    const parent = plan.chain.indexOf(lateral!.lateralOf!);
+    expect(compat.mapIndex).toBe(Math.min(FINITE_MAPS, parent + 1));
+    expect(compat.routeIndex).toBe(parent + 1);
+    expect(compat.levelCap).toBe(lateral!.cap);
+
+    const tower = compatForNode('run-a', nodeKey('tower', 1));
+    expect(tower.mapIndex).toBe(FINITE_MAPS);
+    expect(tower.routeIndex).toBe(plan.chain.length);
+    expect(tower.levelCap).toBe(badgeCap(BADGE_CAPS.length + 1));
+  });
+
+  it('reads an unknown key as the town, never an error', () => {
+    const plan = planRegion('run-a');
+    for (const key of ['', 'no-such-node', 'city:99', 'town:0']) {
+      expect(compatForNode('run-a', key)).toEqual(compatForNode('run-a', plan.townKey));
+    }
+  });
+
+  it('draws nothing from any stream: the same seed always reads the same node', () => {
+    expect(compatForNode('run-a', 'route:3')).toEqual(compatForNode('run-a', 'route:3'));
+    expect(compatForNode('run-a', 'route:3')).not.toEqual(compatForNode('run-b', 'route:3'));
+  });
+
+  it('leaves the node fields alone when the old floor scene walks a room or a floor', () => {
+    const run = createRun({ seed: 'run-a', starter });
+    const walked = advanceRoute(run, 1);
+    const floored = advanceMap(walked);
+    for (const next of [walked, floored]) {
+      expect(next.nodeKey).toBe(run.nodeKey);
+      expect(next.visitedNodes).toBe(run.visitedNodes);
+      expect(next.badges).toBe(run.badges);
+      expect(next.capturedNodes).toBe(run.capturedNodes);
+      expect(next.towerStreak).toBe(run.towerStreak);
+    }
   });
 });
 
@@ -976,5 +1063,21 @@ describe('the discovered candy colours (Task-103)', () => {
     expect(nextFloor.mapIndex).toBe(2);
     expect(nextFloor.discoveredCandy).toEqual(['pink']);
     expect(nextFloor.caughtSpecies).toEqual(discovered.caughtSpecies);
+  });
+});
+
+describe('the run engine stays pure', () => {
+  const SOURCES = ['state.ts', 'history.ts', '../save.ts'];
+
+  // `document` in `save.ts` is the JSON save document, not the DOM: the browser
+  // store reaches it only through the injected `StorageLike`.
+  it('imports no Phaser, reaches no browser global and draws nothing unseeded', () => {
+    for (const path of SOURCES) {
+      const source = readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
+      expect(source, path).not.toMatch(/from ['"]phaser['"]/);
+      expect(source, path).not.toMatch(/\bMath\.random\b/);
+      expect(source, path).not.toMatch(/\bDate\.now\b/);
+      expect(source, path).not.toMatch(/\blocalStorage\b|\bwindow\.|\bglobalThis\.document\b/);
+    }
   });
 });
