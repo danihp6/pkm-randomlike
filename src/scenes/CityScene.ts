@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 import { playMusic } from '../audio/audio';
+import type { KeybindAction } from '../data/keybinds';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
 import { IS_DEVELOP } from '../dev/env';
 import type { Tile } from '../engine/grid';
 import type { CityBuilding, CityExitBand, CityPlan } from '../engine/region/city/plan';
 import { planCity } from '../engine/region/city/plan';
-import { nodeOf, planRegion, type RegionNodeKind } from '../engine/region/plan';
+import { planNodeContent } from '../engine/region/content';
+import { markNpcUsed, nodeNpcs, npcUsed, useNpc, type PlacedNpc } from '../engine/region/npcs';
+import { nodeOf, planRegion, type RegionNodeKind, type RegionPlan } from '../engine/region/plan';
 import type { NodeWorld } from '../engine/region/preload';
 import { travel } from '../engine/region/travel';
 import type { RunState } from '../engine/run';
@@ -14,19 +17,22 @@ import { TILE_SIZE } from '../engine/tileset';
 import { actionKeys } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
+import { openNpcPanel, type NpcPanel } from '../ui/npcPanel';
 import { actorDepth, WorldScene, WORLD_TRANSITION_MS } from './WorldScene';
+import { drawCityNpcs, npcCardView } from './npcs';
 import { WorldWalker } from './walker';
 
 /**
  * A settlement as a place you walk (`docs/region-spec.md` §7.5): the street grid,
  * the buildings and their doors, the plaza and the grass corner drawn on the base
  * scene's two layers, the player spawned on the plan's own spawn and walked on the
- * run's movement keys, and the two things a settlement tile can do — a **door**
+ * run's movement keys, and the three things a settlement tile can do — a **door**
  * opens the interior its key names, an **exit band** walks to the neighbour
- * through the pure travel rule.
+ * through the pure travel rule, and a **person** (§7.7) opens its own card.
  *
- * It owns no rule: every walk decision is `map.ts`'s, every exit is `travel.ts`'s
- * and every wall, door and band is `planCity`'s.
+ * It owns no rule: every walk decision is `map.ts`'s, every exit is `travel.ts`'s,
+ * every wall, door and band is `planCity`'s and every body, line and use mark is
+ * `src/engine/region/npcs.ts`'s.
  */
 
 /** What the debug/dev browser pass reads. */
@@ -37,7 +43,23 @@ export type CityDebugState = Readonly<{
   interior: string | null;
   /** How many settle transitions this scene played. */
   travels: number;
+  /** Every placed NPC of the settlement on screen, in placement order. */
+  npcs: readonly Readonly<{
+    id: string;
+    kind: 'generic' | 'special';
+    rowId: string;
+    x: number;
+    y: number;
+    used: boolean;
+  }>[];
+  /** The card on screen, or null. */
+  card: Readonly<{ rowId: string; used: boolean }> | null;
 }>;
+
+/** The keys a settlement reads for its people: one to talk, the rest for the card. */
+type NpcKeySet = Readonly<
+  Record<'interact' | 'up' | 'down' | 'confirm' | 'cancel', Phaser.Input.Keyboard.Key[]>
+>;
 
 /** The building whose door is `tile`, or null. */
 export function doorAt(plan: CityPlan, tile: Tile): CityBuilding | null {
@@ -85,6 +107,15 @@ export class CityScene extends WorldScene {
   private opening = false;
   /** True while a band step's travel is in flight; the player may not step again. */
   private travelling = false;
+  /** Every person this settlement stands, in placement order. */
+  private npcs: readonly PlacedNpc[] = [];
+  /** The sprites drawn for `npcs`, in the same order (a sprite-less row is skipped). */
+  private npcSprites: readonly Phaser.GameObjects.Sprite[] = [];
+  /** The card on screen, or null; the one panel slot of the scene. */
+  private card: Readonly<{ rowId: string; used: boolean }> | null = null;
+  private npcPanel: NpcPanel | null = null;
+  /** The keys the people are read from; one panel is open at a time. */
+  private npcKeys: NpcKeySet | null = null;
 
   constructor() {
     super('City');
@@ -108,8 +139,13 @@ export class CityScene extends WorldScene {
     this.travels = 0;
     this.opening = false;
     this.travelling = false;
+    this.npcs = [];
+    this.npcSprites = [];
+    this.card = null;
+    this.npcPanel = null;
     this.settings = loadSettings();
     this.refreshRunKey();
+    this.refreshNpcKeys();
     this.exposeDebugScene();
 
     const run = this.run;
@@ -141,30 +177,47 @@ export class CityScene extends WorldScene {
 
   override update(time: number, delta: number): void {
     void time;
+    const action = this.readNpcAction();
+    const panel = this.npcPanel;
+    if (panel !== null) {
+      if (action !== null) panel.handle(action);
+      return;
+    }
     const walker = this.walker;
     const sprite = this.playerSprite;
     if (walker === null || sprite === null) return;
     if (this.opening || this.travelling) return;
+    if (action === 'confirm' || action === 'interact') {
+      const npc = this.npcAt(walker.tile);
+      if (npc !== null) {
+        this.openNpcCard(npc);
+        return;
+      }
+    }
     const running = this.settings.alwaysRun || (this.runKey?.isDown ?? false);
     walker.update(delta, running);
     sprite.setDepth(actorDepth(sprite.y));
   }
 
   /**
-   * The base scene swapped the map and hands the spawn over: the neighbour's plan is
-   * the one on screen now, so its tiles become the walker's map.
+   * The neighbour is on screen: its plan is the walker's map now, and its people
+   * are stood on its own free tiles.
    */
   protected override onNodeArrived(key: string, spawn: Tile): void {
     this.travelling = false;
     const plan = planRegion(this.run.seed);
     const node = nodeOf(plan, key);
-    if (node && (node.kind === 'town' || node.kind === 'city')) this.city = planCity(plan, key);
+    if (node && (node.kind === 'town' || node.kind === 'city')) {
+      this.city = planCity(plan, key);
+      this.standNpcs(plan, key);
+    }
     this.buildPlayer(spawn);
     playMusic(this, CITY_MUSIC);
   }
 
   /** Draws an already-resolved settlement and stands the player where it spawns. */
   private enter(world: NodeWorld): void {
+    this.standNpcs(planRegion(this.run.seed), world.key);
     this.applyWorld(world);
     this.buildPlayer(this.spawnFor(world.key));
     playMusic(this, CITY_MUSIC);
@@ -206,13 +259,95 @@ export class CityScene extends WorldScene {
   }
 
   /**
-   * What a landed step means on a settlement: a door opens its interior, a band
-   * walks to its neighbour, and a street does nothing at all.
+   * Stands the node's people (the content pass decides them, `nodeNpcs` places
+   * them) and draws the bodies the atlas can pose. One call per arrival, never per
+   * frame: a revisit replays the very same list.
+   */
+  private standNpcs(plan: RegionPlan, key: string): void {
+    const node = nodeOf(plan, key);
+    this.npcs = node ? nodeNpcs(plan, key, planNodeContent(plan, key, node.tier ?? 1)) : [];
+    for (const sprite of this.npcSprites) sprite.destroy();
+    const city = this.city;
+    this.npcSprites = city === null ? [] : drawCityNpcs(this, city, this.npcs);
+  }
+
+  /** The person standing on `tile`, or null. */
+  private npcAt(tile: Tile): PlacedNpc | null {
+    return this.npcs.find((npc) => npc.tile.x === tile.x && npc.tile.y === tile.y) ?? null;
+  }
+
+  /**
+   * Opens one person's card through the scene's one panel slot: its name, its line
+   * and, when it has anything left, its own rows plus `LEAVE` (`openNpcCardView`'s
+   * bookkeeping, so a confirm that fired a choice closes the card once).
+   */
+  private openNpcCard(placed: PlacedNpc): void {
+    if (this.npcPanel !== null) return;
+    const used = npcUsed(this.run, placed);
+    this.card = { rowId: placed.rowId, used };
+    let chosen = false;
+    const panel = openNpcPanel(this, npcCardView(placed, used), (id) => {
+      chosen = true;
+      this.chooseNpc(placed, id);
+    });
+    this.openPanel({
+      handle: (action) => {
+        chosen = false;
+        panel.handle(action);
+        if (!chosen && (action === 'confirm' || action === 'interact' || action === 'cancel')) {
+          this.closePanel();
+        }
+      },
+      close: () => panel.close(),
+    });
+  }
+
+  /**
+   * Resolves the row the card accepted. The **medic** heals and the **chef** trades
+   * here; every other special's effect belongs to its own scene, so the card only
+   * marks the placement spent, and a reopened card prints `npc.used`.
+   */
+  private chooseNpc(placed: PlacedNpc, _choiceId: string): void {
+    const use = useNpc(this.run, placed);
+    if (use.ok) this.commitRun(use.run);
+    else if (use.reason === 'needs-scene') this.commitRun(markNpcUsed(this.run, placed));
+    this.closePanel();
+  }
+
+  /** Gives the card the settlement's one panel slot; the scene closes it. */
+  private openPanel(panel: NpcPanel): void {
+    this.npcPanel = panel;
+  }
+
+  /** Tears the card down and clears the debug state's own record of it. */
+  private closePanel(): void {
+    const panel = this.npcPanel;
+    this.npcPanel = null;
+    this.card = null;
+    panel?.close();
+  }
+
+  /** Sets the scene's run and persists it, so a use mark survives a reload. */
+  private commitRun(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+  }
+
+  /**
+   * What a landed step means on a settlement: a person opens its card, a door opens
+   * its interior, a band walks to its neighbour, and a street does nothing at all.
+   * The NPC's tile stays walkable — it blocks nothing but the step's own rule — so
+   * the check comes first and only decides what the landing opens.
    */
   private landed(tile: Tile): void {
     if (this.opening || this.travelling) return;
     const city = this.city;
     if (city === null) return;
+    const npc = this.npcAt(tile);
+    if (npc !== null) {
+      this.openNpcCard(npc);
+      return;
+    }
     const building = doorAt(city, tile);
     if (building !== null) {
       this.openDoor(building);
@@ -305,6 +440,36 @@ export class CityScene extends WorldScene {
     this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
   }
 
+  /** Resolves the keys the people are talked to and the card walked with, once. */
+  private refreshNpcKeys(): void {
+    const bind = (action: KeybindAction): Phaser.Input.Keyboard.Key[] =>
+      actionKeys(this, action, this.settings.keybinds);
+    this.npcKeys = {
+      interact: bind('interact'),
+      up: bind('up'),
+      down: bind('down'),
+      confirm: bind('confirm'),
+      cancel: bind('cancel'),
+    };
+  }
+
+  /**
+   * The shared action a press this frame means, or null. `confirm` and `interact`
+   * are one key by default (`E`), so the card opens and answers on the same press
+   * the route's does; the order keeps a menu press off the walk.
+   */
+  private readNpcAction(): KeybindAction | null {
+    const keys = this.npcKeys;
+    if (keys === null) return null;
+    const down = (key: Phaser.Input.Keyboard.Key): boolean => Phaser.Input.Keyboard.JustDown(key);
+    if (keys.up.some(down)) return 'up';
+    if (keys.down.some(down)) return 'down';
+    if (keys.cancel.some(down)) return 'cancel';
+    if (keys.confirm.some(down)) return 'confirm';
+    if (keys.interact.some(down)) return 'interact';
+    return null;
+  }
+
   /** Dev only: the browser pass reaches this scene by name, as it does the route's. */
   private exposeDebugScene(): void {
     if (!IS_DEVELOP) return;
@@ -314,16 +479,33 @@ export class CityScene extends WorldScene {
     });
   }
 
-  /** Dev only: the settlement on screen, the tile stood on and the last door taken. */
+  /** Dev only: the settlement on screen, the tile stood on, the last door and the people. */
   debugCityState(): CityDebugState {
     const city = this.city;
     const tile = this.walker?.tile ?? { x: 0, y: 0 };
+    const run = this.run;
     return {
       key: city?.key ?? '',
       tile: { x: tile.x, y: tile.y },
       interior: this.interior,
       travels: this.travels,
+      npcs: this.npcs.map((npc) => ({
+        id: npc.id,
+        kind: npc.kind,
+        rowId: npc.rowId,
+        x: npc.tile.x,
+        y: npc.tile.y,
+        used: run !== undefined && npcUsed(run, npc),
+      })),
+      card: this.card === null ? null : { rowId: this.card.rowId, used: this.card.used },
     };
+  }
+
+  /** Dev only: opens the card of the person with that placement id, as the interact key does. */
+  talkTo(id: string): void {
+    const placed = this.npcs.find((npc) => npc.id === id);
+    if (placed === undefined) return;
+    this.openNpcCard(placed);
   }
 
   /** Dev only: stands the player on `tile` and lets that tile's own rule answer. */

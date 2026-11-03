@@ -28,6 +28,12 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   (`planNodeContent`, `PoiKind`, `ShopKind`, `POI_KINDS`).
 - `content.test.ts` — the tier counts, the lateral-only POI, the replay and a fixed seed's
   content digest.
+- `npcs.ts` — the people a settlement stands: the generic rows its content pass rolled and the
+  specials whose own draw passed, each on a free walkable tile off the node's own stream, with
+  the card it opens and the once mark it leaves.
+- `npcs.test.ts` — the placements of a pinned seed, the tier bands, the replay and the free
+  tiles, and the once rule (the medic's heal and the chef's trade).
+- `pois.ts` — the POI a lateral's terminus ends on and the zone rect a battle reads.
 - `preload.ts` — one node resolved to everything a scene draws and walks: the plan names it, its
   own generator carves it, and it comes back as its tile map, its two frame meshes (the tiles'
   and the floor under them) and its spawn. It also holds the worker's request and reply and the

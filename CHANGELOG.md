@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Cities have people.** `[Task-288]`, Batch 122: `src/data/npcs.ts` carries a `cityChance`
+      per special row and the three-tier `GENERIC_LINES`, `src/engine/region/npcs.ts` places a
+      settlement's people off its own content stream (`nodeNpcs`, keyed `npc-<nodeKey>-<n>`, never
+      on the spawn or a building's door, one tile and one use per person), `src/scenes/npcs.ts`
+      draws them and opens the shipped card, and `CityScene` stands them on entry.
+      `docs/region-spec.md` §7.7 pins the `qa-288` placement table. `[unit]` the tier bands, the
+      isolated special draw, the replay, the once rule and the pinned placements, 5981 tests green;
+      `[live]` over CDP at 1280x800 on seed `qa-288`: `city:1` stands its five bodies at `(15,27)`,
+      `(43,32)`, `(36,38)`, `(36,35)`, `(4,39)` with every `used` false, a special's card resolves
+      once and writes one `pickedItems` mark, and `town:1` stands one generic at `(34,26)` whose
+      card prints `npc.generic.tier1.3`.
+
 - [x] **The prologue opens in the laboratory, behind a shut door.** `[Task-287]`, Batch 122:
       `src/engine/run/prologue.ts` starts a run with no party (`emptyRun`, `takeStarter` granting
       the member and the two-row `STARTING_BAG` once, `canLeaveTown`), `RunState.starterTaken`

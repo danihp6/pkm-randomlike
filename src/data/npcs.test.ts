@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getMove } from './dex/moves';
 import { TYPE_NAMES } from './dex/types';
-import { en, es, setLocale, t, translationParams } from '../i18n';
+import { en, es, setLocale, t, translationParams, type TranslationKey } from '../i18n';
 import { normalizeId } from './dex/species';
 import { getItem } from './items';
 import { OVERWORLD_SPRITE_KEYS, overworldSpriteFrame } from './overworldSprites';
@@ -13,12 +13,19 @@ import {
   BERRY_TREE_MIN,
   CHEF_BERRY_COUNT,
   CHEF_DISH_ITEM_ID,
+  CITY_SPECIAL_CHANCE_DEFAULT,
   CURSE_ENEMY_BOOST,
+  GENERIC_LINES,
   MAGICIAN_TYPES,
   NPC_ROWS,
   SACRIFICE_REWARDS,
+  SPECIAL_NPCS,
   TUTOR_MOVES,
+  cityChanceOf,
+  genericLines,
   getNpcRow,
+  specialNpcRow,
+  type GenericTier,
   type NpcRow,
 } from './npcs';
 import { MEGA_STONE_IDS } from './items';
@@ -457,5 +464,106 @@ describe('the tutor and the sacrifice tables', () => {
 
   it('ships the four sacrifice rewards in their table order', () => {
     expect(SACRIFICE_REWARDS).toEqual(['nature', 'second-ability', 'ivs', 'species']);
+  });
+});
+
+/**
+ * The table's other half (`docs/region-spec.md` §7.7): the sixteen rows keep their
+ * identity and gain the chance a city stands them, and the generic people's lines
+ * are one table per city tier.
+ */
+describe('the settlement people tables', () => {
+  /** A row a later task could add to the legacy table alone, with no `cityChance`. */
+  const PLAIN: NpcRow = {
+    id: 'plain',
+    nameKey: 'npc.generic.name',
+    greetingKey: 'npc.generic.tier1.1',
+    spriteKey: 'merchant',
+    chance: 0,
+    floorStep: 0,
+  };
+
+  const CITY_CHANCES: Readonly<Record<string, number>> = {
+    merchant: 1,
+    rocket: 1,
+    tutor: 0.8,
+    nature: 0.8,
+    ability: 0.8,
+    'iv-judge': 0.8,
+    species: 0.8,
+    sacrifice: 0.8,
+    exorcist: 0.75,
+    'weather-man': 0.75,
+    magician: 0.75,
+    'type-gate': 0.75,
+    medic: 0.9,
+    chef: 0.9,
+    'berry-tree': 0.9,
+    'mega-stone': 0.9,
+  };
+
+  it('keeps the sixteen rows under both names, as one array in one order', () => {
+    expect(SPECIAL_NPCS).toBe(NPC_ROWS);
+    expect(SPECIAL_NPCS.map((row) => row.id)).toEqual(ROW_IDS);
+    expect(NPC_ROWS[0].id).toBe('merchant');
+    expect(SPECIAL_NPCS.length).toBe(16);
+  });
+
+  it('gives every row the city chance the table records, all of them probabilities', () => {
+    for (const row of SPECIAL_NPCS) {
+      expect(row.cityChance, row.id).toBe(CITY_CHANCES[row.id]);
+      expect(row.cityChance, row.id).toBeGreaterThanOrEqual(0);
+      expect(row.cityChance, row.id).toBeLessThanOrEqual(1);
+      expect(cityChanceOf(row), row.id).toBe(row.cityChance);
+    }
+  });
+
+  it('answers the default chance, clamped, for a row without one', () => {
+    expect(CITY_SPECIAL_CHANCE_DEFAULT).toBe(0.8);
+    expect(cityChanceOf(PLAIN)).toBe(CITY_SPECIAL_CHANCE_DEFAULT);
+    const over = { ...PLAIN, cityChance: 4 } as NpcRow;
+    const under = { ...PLAIN, cityChance: -4 } as NpcRow;
+    expect(cityChanceOf(over)).toBe(1);
+    expect(cityChanceOf(under)).toBe(0);
+  });
+
+  it('answers a special row by id, and nothing else', () => {
+    expect(specialNpcRow('medic')).toBe(SPECIAL_NPCS.find((row) => row.id === 'medic'));
+    expect(specialNpcRow('tutor')?.cityChance).toBe(0.8);
+    expect(specialNpcRow('')).toBeUndefined();
+    expect(specialNpcRow('nurse')).toBeUndefined();
+  });
+
+  it('carries four generic lines for each of the three city tiers, in tier order', () => {
+    const tiers: readonly GenericTier[] = [1, 2, 3];
+    expect(Object.keys(GENERIC_LINES).sort()).toEqual(['1', '2', '3']);
+    const keys: string[] = [];
+    for (const tier of tiers) {
+      expect(GENERIC_LINES[tier]).toHaveLength(4);
+      expect(genericLines(tier)).toBe(GENERIC_LINES[tier]);
+      for (let index = 1; index <= 4; index++) {
+        expect(GENERIC_LINES[tier]).toContain(`npc.generic.tier${tier}.${index}`);
+      }
+      keys.push(...GENERIC_LINES[tier]);
+    }
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys).toHaveLength(12);
+  });
+
+  it('keys the generic title and every generic line in both locales, with no token', () => {
+    const all: readonly TranslationKey[] = ['npc.generic.name', ...Object.values(GENERIC_LINES).flat()];
+    for (const locale of [en, es]) {
+      for (const key of all) {
+        expect(Object.prototype.hasOwnProperty.call(locale, key), key).toBe(true);
+        expect(translationParams(locale[key]), key).toEqual([]);
+      }
+    }
+    setLocale('en');
+    expect(t('npc.generic.name')).toBe('PASSERBY');
+    expect(t('npc.generic.tier2.3')).toBe('The Centre heals. Nothing brings them back.');
+    setLocale('es');
+    expect(t('npc.generic.name')).toBe('TRANSEUNTE');
+    expect(t('npc.generic.tier3.4')).toBe('El Campeón cura entre combates. Tú no.');
+    setLocale('en');
   });
 });

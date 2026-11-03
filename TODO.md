@@ -12436,7 +12436,7 @@ the route-scoped capture.
       `docs/region-spec.md` §6. *Dependencies:* the city and
       interior scenes (Batch 121). *(Batch 122)*
 
-- [ ] **[Task-288] Cities have people.** Each city stands 1-2 special NPCs (each with its own
+- [x] **[Task-288] Cities have people.** Each city stands 1-2 special NPCs (each with its own
       probability) and N generic ones with lines by tier (2-3 / 4-6 / 7-10), all from
       `[Task-277]`'s per-node content, and the specials carry the gift/trade/egg/ability-edit actions
       the rooms used to.
