@@ -5,28 +5,38 @@ How a route is generated, walked and exited. The generator is pure logic in
 
 ## 1. What a route is
 
-A rectangular tile map, sized for a single screen (no scrolling beyond the
-camera follow), containing:
+A route is one node of the region plan (`docs/region-spec.md` §1) turned into **one
+continuous top-down map**: `ROUTE_WIDTH` (60) tiles wide and one of `ROUTE_HEIGHTS`
+(120, 160 or 200) tall, i.e. two, three or four screens of **one** biome. There is no
+internal transition, no room boundary and no interior door — the tiles, the entry, the
+exits and the guaranteed lane all come out of a single carve
+(`src/engine/region/route/`).
 
-- a **entry** opening, where the player arrives from the previous route;
-- one or more **exit** openings (the shape's far ends). Openings sit on the map
-  border and punch a gap in the tree ring: the **band** the lane leaves there
-  (`openingBandCells`: the seeded cell plus the cells toward `+y` on a `W`/`E`
-  opening or `+x` on an `N`/`S` one, `pathWidth` cells in all) is all door, not just
-  the one cell the tidy may or may not widen. They are plain floor and stepping on
-  one does **not** end the route yet, so the map can be inspected without leaving
-  it;
-- a one-tile ring of trees/rock along the border and a solid tree interior, with
-  the shape's lanes carved through it.
+- **Openings.** Every neighbour the plan names gets one opening **band** on the map's
+  own border. The entry neighbour — the node before it on the chain, the parent of a
+  lateral, else the first of its edges in sorted order — always takes the `N` long end,
+  because chain order (not the coarse map position) decides which end is which, and
+  every other neighbour takes the next unused edge of `S`, `E`, `W` in `edges` order. A
+  band is the lane's whole cross-section at the ring (`openingBandCells`, cut at the
+  carver's own lane width) and all of it is plain floor; stepping on one does **not**
+  end the route yet, so the map can be inspected without leaving it. A chain route
+  therefore carries one `N` entry band and one `S` exit band; a **lateral** has a single
+  neighbour, so one `N` band with role entry and **no** exit at all — it is walked into
+  and back out of.
+- **The lane.** The carver guarantees a lane from the entry band to every exit band, and
+  that lane crosses every screen, so the route is walkable end to end by following
+  floor. The terrain (tall grass, ledges) never blocks it, and no walkable cell sits off
+  the lane and its branches.
+- **The map.** A one-tile ring of trees/rock along the border but for the bands, a solid
+  tree interior with the lanes carved through it, and one biome's tileset for the whole
+  map (`D10`).
 
-A route is one **room** of a **map** (a Binding of Isaac-style floor,
-`docs/maps-spec.md`): all its rooms share the map's biome, level range and size
-band, and a route's openings join it to its grid neighbours — leaving by one edge
-enters the neighbour by the **opposite** edge. A room's shape follows from its
-opening set: one opening is a **dead-end**, two opposite a **corridor** (no
-branches), two adjacent a `bend`, three a T and four a crossing. The room
-**farthest from the entry** holds the map **boss**, whose onward opening opens the
-**portal** to the next map.
+Everything §2 describes — one 20×20 **room** shaped by an opening set, with its own
+`pathWidth`, chamber and map-size tier — is the **legacy floor generator** the region
+replaces: it still ships and still builds the maps the old single-room pipeline asks
+for, but no region node reads it, and it is swept in **Batch 125**. Where the two
+sections disagree, this one is what a region route is and §2 is the pipeline being
+retired.
 
 ## 2. Generation pipeline
 
