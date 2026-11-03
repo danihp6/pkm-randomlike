@@ -105,6 +105,17 @@ closes the stretch — 0 exactly at a gym, one more per step back, and one step 
 route for a lateral. Past the eighth gym there is no gym left, so the count keeps rising
 from that gym: the Victory Road is 1, the League 2 and the tower 3.
 
+The fights themselves are data, and neither table restates a cap. `src/data/gyms.ts`
+holds `GYMS`, one row per badge — its `leaderId` (a `LEADER_IDENTITIES` row in
+`src/data/trainers.ts`, the leader's name and class), the route `archetypeId` it borrows
+its sprite, AI flags and money base from, its `partySize` or gym 1's fixed three, the
+tenth-of-a-chance double battle, the `tmItemId` the badge pays and its
+`moneyMultiplier` — and `gymForBadge(badge)` reads the ladder. `src/data/league.ts`
+holds `LEAGUE`, the four Elite Four members then the Champion, every row at
+`LEAGUE_LEVEL` and each with its own type theme, plus `TOWER`, the endless row behind
+the Champion: no leader, no badge and no fixed party, because its streak's rung decides
+the fight.
+
 ## 4. The guard, and walking back
 
 The rule: **leaving a city needs its badge, walking back never does, and a locked exit

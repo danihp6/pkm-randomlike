@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The eight leaders, the four and the Champion are data.** `[Task-275]`, Batch 118:
+      `src/data/gyms.ts` holds `GYMS` — eight rows in badge order with `leaderId`, `archetypeId`,
+      `partySize`, gym 1's `fixedParty`, the 10 % double outside gym 1, one distinct `tmItemId` each
+      and a `moneyMultiplier` — plus `gymForBadge`; `src/data/league.ts` holds `LEAGUE`, the four
+      Elite rows and the Champion at `LEAGUE_LEVEL` 60 with distinct type themes, and `TOWER`'s
+      leaderless, badgeless row; `src/data/trainers.ts` gains only `LEADER_IDENTITIES` and
+      `leaderIdentity`, so a leader is a name and a class, never an archetype. Retuning the campaign
+      is now a data edit. All criteria `[unit]`: eight badge-ordered gyms with unique TMs, gym 1 the
+      only fixed three, `0.1` doubles elsewhere, five League rows at 60 with five themes and a
+      Champion last, and the two pre-existing trainer/region suites untouched and green. `src/data/README.md`
+      names both tables and `docs/region-spec.md` §3 carries the ladder's data paragraph.
+
 - [x] **An interior is a small room with a door back.** `[Task-274]`, Batch 118:
       `planInterior(plan, interiorKey, cityKey)` turns a settlement door's own key into one indoor
       map — `INTERIOR_SIZE` 24×18 for a Centre, laboratory, house or casino and `GYM_SIZE` 40×40 for

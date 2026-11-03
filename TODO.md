@@ -12079,7 +12079,7 @@ are reused inside the new multi-screen route), the hand-placed city content and 
       `plan.test.ts` and `docs/region-spec.md` §7.2. *Dependencies:* the city plan (Batch 118) and
       `src/data/region.ts` (Batch 117). *(Batch 118)*
 
-- [ ] **[Task-275] The eight leaders, the four and the Champion are data.** The gyms' leaders (a
+- [x] **[Task-275] The eight leaders, the four and the Champion are data.** The gyms' leaders (a
       generated six, a fixed three for gym 1, a 10 % double elsewhere, a badge, a TM and money), the
       League's four and its Champion at 60, and the per-gym TM list are tables, so retuning the
       campaign is never code.

@@ -50,6 +50,13 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   three, or three and two on map 1, the run's on-ramp (`docs/maps-spec.md`
   §6/§7) — plus `BOSS_OPENINGS`, the boss room's two openings: the arena row its
   battles begin under and the stat stages its lead starts with.
+- `gyms.ts` — the eight gym fights, one row per badge: its leader's identity id, the
+  archetype it borrows its sprite, AI flags and money from, its party size or gym 1's
+  fixed three, its double-battle chance, the TM the badge pays and its money multiplier
+  (`docs/region-spec.md` §3).
+- `league.ts` — the five League fights (the four Elite Four rows, then the Champion, each
+  with its own type theme at `LEAGUE_LEVEL`) and `TOWER`, the endless row behind the
+  Champion: no leader, no badge and no fixed party (`docs/region-spec.md` §3).
 - `trainers.ts` — trainer archetypes: identity, sprites, reward and the AI script
   flags their trainers think with (`aiFlags`, `docs/battle-spec.md` §11); their
   roster is the floor's BST pool (`src/engine/run/pool.ts`, `D39`). Its
