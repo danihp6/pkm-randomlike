@@ -336,6 +336,45 @@ A solved gym is one mark in `RunState.pickedItems`, `gymSolvedKey(cityKey)` —
 recomputed deep-equal on a revisit, so the room the player comes back to is the room they left, and
 the flag is a read, never a re-roll.
 
+### 7.6 The League and the Champion
+
+The League is one **node** and five fights: `src/data/league.ts`'s `LEAGUE` — the four
+Elite Four members in order and the Champion last, every row at `LEAGUE_LEVEL` and each
+with its own type theme. The rule that plays them is `src/engine/region/league.ts`,
+pure and headless; `LeagueScene` is its screen.
+
+`LeagueFoe` is one row resolved to the roster it fields, and `leagueFoe(plan, run,
+index)` builds it: the band comes off the League node's `cap` through `bandForLevel`, so
+`LEAGUE_LEVEL` answers the last band, and a plan without a `league` node reads
+`LEAGUE_LEVEL` too instead of throwing. The roster is `trainerRoster` at
+`row.partySize` with `levelFor` the row's own level (never a band draw), off one stream
+per row, `${seed}:league:<index>`: a replay fields the same five teams and appending a
+row could not move the first five (`D11`, `D60`).
+
+A row is remembered by `leagueTrainerId(index)` — `league:<index>` — in
+`RunState.defeatedTrainers`, and the run's League progress is the **prefix** of that
+list (`leagueProgress`): a later row beaten on its own completes no earlier one.
+`leagueNext` answers the next unbeaten index and `null` once the Champion has fallen;
+`leagueWin` marks a row only when it is that one, and a repeat is a no-op;
+`leagueCleared` is true only after row 5.
+
+The League's one service is the heal between fights (§6): `leagueEnter` is the shipped
+`healParty` — HP and PP back to full across the party and the box, never a status cure
+and never a revival (D5) — and it returns the run untouched when nothing is missing. It
+runs on entry, after every won row and once more after the Champion.
+
+`leagueReward(foe)` is what a beaten row folds into the run: its roster's levels for the
+XP, `isTrainer`, the row's `leagueTrainerId`, and the money the archetype's base and
+jitter pay at the League's band — the expected value of `trainerMoney`'s roll, so no draw
+is spent outside the roster stream. The Champion's `ace` base pays more than an Elite
+Four row's.
+
+The way out is the tower (`tower:1`), walked through the region's one travel seam (§5),
+and it opens only once `leagueCleared(run)` is true: before the Champion the League
+refuses the press and keeps the run. `LeagueScene` plays the whole chain — the entry
+heal, the five fights, the exit — with no shop, no capture and no wandering, and it
+registers itself through the folder registry like a city or a gym screen.
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28**, and the step does one thing: it sets the document's

@@ -8,8 +8,8 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 
 ## Layout
 
-- `index.ts` — the barrel: it re-exports `plan`, `names`, `streams` and `travel` only, so the
-  generator folders can join without touching a shared file.
+- `index.ts` — the barrel: it re-exports `plan`, `names`, `streams`, `content`, `league` and
+  `travel` only, so the generator folders can join without touching a shared file.
 - `plan.ts` — the whole world out of the run seed: the spine, the laterals, and each node's
   key, kind, name, badge, cap, gym distance, position and edges (`planRegion`, `nodeKey`,
   `parseNodeKey`, `nodeOf`).
@@ -43,6 +43,14 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 - `travel.test.ts` — the walk's own spawn per kind, the gate and its badge, walking back, the
   flight's Centre/laboratory door, the unvisited and non-settlement refusals, the visited-once
   order and the same answer twice.
+- `league.ts` — the League's five fights as one rule: the next unbeaten row, the roster it
+  fields off its own stream at `LEAGUE_LEVEL`, the heal between two of them that never
+  revives, the mark a win leaves, the reward it folds and the fact the League is cleared
+  only once the Champion has fallen (`leagueFoe`, `leagueNext`, `leagueProgress`,
+  `leagueWin`, `leagueEnter`, `leagueReward`, `leagueIds`, `leagueTrainerId`, `LeagueFoe`).
+- `league.test.ts` — the 1→5 walk and the prefix, the two-call replay and the per-row ids,
+  the party size and levels, the seed's digest, the heal (and its no-op), the out-of-order
+  refusal and the money the rows pay.
 - `route/` — the long route generator; its README holds the folder until its batch lands.
 - `city/` — the settlement generator; its README holds the folder until its batch lands.
 - `interior/` — the building-interior generator; its README holds the folder until its
