@@ -37,9 +37,11 @@ export function drawCityNpcs(
   city: CityPlan,
   placed: readonly PlacedNpc[],
 ): readonly Phaser.GameObjects.Sprite[] {
-  void city;
   const sprites: Phaser.GameObjects.Sprite[] = [];
   for (const npc of placed) {
+    // A body off the settlement's own square has no tile to stand on.
+    if (npc.tile.x < 0 || npc.tile.x >= city.width) continue;
+    if (npc.tile.y < 0 || npc.tile.y >= city.height) continue;
     const frame = npcFrameOf(npc);
     if (frame === null) continue;
     const pose = trainerFacingPose(npc.facing);
