@@ -582,6 +582,53 @@ scene owns the stream and splits the shiny one, so a fixed seed replays the same
 The route scene feeds this module the node it resolved from `run.nodeKey`, which is
 what keeps the catch rule and the wild rule from disagreeing.
 
+### 7.10 A node's missions
+
+The run's missions are a **stack over the node it stands on**, never a floor it once
+walked (`src/engine/region/missions.ts`): every node exposes, in a fixed order, (1) its
+**stretch's automatic mission** — lose no Pokémon until the leader of the badge stretch
+falls — (2) the **city's fixed mission** when the node is a `city`, and (3) the **random
+mission an NPC of that city offers**. A town, a route, a lateral, the Victory Road, the
+League and the tower show the stretch row alone: the two city rows are a city's own.
+
+The three scopes are `stretch`, `city` and `random`, and the catalogue behind them is
+`STACK_MISSIONS` in `src/data/missions.ts` (`STRETCH_MISSION_ID`, `cityMissionFor(tier)`,
+`randomMissions()`, `stackMissionsOfKind(kind)`). It sits beside the retired **floor**
+table (`MISSION_TABLE`), which stays verbatim until the sweep deletes it, so no shipped
+call site breaks and this section adds no row to it.
+
+`activeMissions(run, plan)` answers the stack as `ActiveMission`s, each carrying the row's
+`id`, its `scopeKey` (`stretch`, `city:<key>` or `random:<key>` — stable, and the card's
+DOM hook), its `nameKey`, its `status` and its `progress`. Every status is **derived**
+from facts the run already persists, so the stack adds no field to the save, no
+`SAVE_VERSION` step and no write to the legacy floor path:
+
+| row | present on | `met` when | `failed` when | `progress` |
+| --- | --- | --- | --- | --- |
+| `stretch` | every node | `completedMissions` holds `{ id: stretch, mapIndex: <the node's badge> }` | that progress is above 0 | `stats.casualties - floorCasualties`, at least 0 |
+| `city` | a `city` node | `completedMissions` holds `{ id, mapIndex: <the city's badge> }` | never | 0 |
+| `random` | a `city` node | as the city row | never | 0 |
+
+The random row is drawn **once per city and seed** — one `int` over `randomMissions()`
+from `Rng(hashSeed(`${seed}:mission:random:<nodeKey>`))` — so a revisit reads the same row
+and another seed reads another. That is the stack's only draw: it touches no `plan`,
+`layout`, `content` or battle stream (`D11`, `D60`).
+
+`advanceMissions(run, event)` is the one writer of a completion. `enter-node` opens the
+node's own stretch — `hpLost` 0 and `floorCasualties` pinned to `stats.casualties` — and
+`travel` runs it on every accepted arrival, so the stretch row always reads the node the
+run stands on (§4). `leader-fallen` records the stretch's completion and is what
+`grantBadge` folds in once the badge is appended, so a badge that is refused records
+nothing and a repeated badge completes nothing twice (§3). `mission-met` records any other
+row. Each completion appends `{ id, mapIndex: badge }` to `completedMissions` and steps
+`missionsCompleted` by one, together, as the floor path already did; an event that records
+nothing returns the run **it was given**.
+
+The HUD's **MISSIONS card** draws the stack instead of a single row
+(`src/ui/hud/panels/missions/`): one row per mission, in `activeMissions`' order, each
+printing `data-hud-missions-row={scopeKey}` and `data-state={status}` over the same box
+math and the same six-row cap as before.
+
 ### 7.11 The tower behind the Champion
 
 The tower is the region's one **endless** node, `tower:1`, and its rule is

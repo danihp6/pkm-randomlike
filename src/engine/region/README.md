@@ -49,11 +49,18 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   worker reply's shape.
 - `travel.ts` — the region's one travel seam: whether a run may walk an exit band (through the
   badge gate) or fly to a settlement it has visited (free, `D67`), and the next run state with its
-  refreshed compat fields and spawn tile (`canTravel`, `travel`, `TravelMode`, `TravelRefusal`,
-  `TravelArrival`).
+  refreshed compat fields, its missions' `enter-node` reset and spawn tile (`canTravel`, `travel`,
+  `TravelMode`, `TravelRefusal`, `TravelArrival`).
 - `travel.test.ts` — the walk's own spawn per kind, the gate and its badge, walking back, the
   flight's Centre/laboratory door, the unvisited and non-settlement refusals, the visited-once
-  order and the same answer twice.
+  order, the stretch reset an accepted travel opens, the untouched run a refusal leaves and the
+  same answer twice.
+- `missions.ts` — a node's mission stack: its stretch's automatic row, its city's fixed one and
+  the random row an NPC of that city offers, each with the status the run's own persisted facts
+  derive (`activeMissions`, `advanceMissions`, `MissionStatus`, `ActiveMission`, `MissionEvent`).
+- `missions.test.ts` — the stack's order per node kind, the stretch failed/met rule, the city
+  rows' completion, the random row's replay per seed and its other-seed difference, the
+  `enter-node` reset and the no-op events.
 - `league.ts` — the League's five fights as one rule: the next unbeaten row, the roster it
   fields off its own stream at `LEAGUE_LEVEL`, the heal between two of them that never
   revives, the mark a win leaves, the reward it folds and the fact the League is cleared

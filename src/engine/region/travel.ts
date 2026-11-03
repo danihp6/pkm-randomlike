@@ -3,6 +3,7 @@ import { exitGate } from '../run/gates';
 import { canLeaveTown } from '../run/prologue';
 import { compatForNode, type RunState } from '../run/state';
 import { planCity } from './city';
+import { advanceMissions } from './missions';
 import { nodeOf, type RegionNode, type RegionPlan } from './plan';
 import { generateRoute } from './route';
 
@@ -136,14 +137,16 @@ export function travel(
   const visitedNodes = run.visitedNodes.includes(toKey)
     ? run.visitedNodes
     : [...run.visitedNodes, toKey];
+  // Entering a node opens its own stretch: the stretch row reads this node's casualties,
+  // so the stack resets where the run stands, not where it was (`docs/region-spec.md`
+  // §7.10). A refusal never reaches here, so it still answers no run at all.
+  const next = advanceMissions(
+    { ...run, nodeKey: toKey, visitedNodes, ...compatForNode(run.seed, toKey) },
+    { kind: 'enter-node', nodeKey: toKey },
+  );
   return {
     ok: true,
-    run: {
-      ...run,
-      nodeKey: toKey,
-      visitedNodes,
-      ...compatForNode(run.seed, toKey),
-    },
+    run: next,
     key: toKey,
     spawn: resolved.spawn,
     mode,

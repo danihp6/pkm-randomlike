@@ -181,11 +181,22 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'hud.missionsEmpty': 'Ninguna misión de planta completada aún.',
   'hud.missionsMap': 'Mapa {map}',
   'hud.missionProgress': 'PS perdidos {hp}',
+  'hud.missionsBadge': 'Medalla {badge}',
+  'hud.missionsFailed': 'perdida',
+  'hud.missionsMet': 'cumplida',
   'hud.searchItems': 'buscar objetos...',
   'hud.candyKnown': 'En esta partida: {stat} {delta}',
 
   // mission — the floor's own objective (`src/data/missions.ts`)
   'mission.flawless': 'Planta sin daño',
+  // mission — the region's node-scoped stack (`docs/region-spec.md` §7.10)
+  'mission.stretch': 'Sin bajas antes del líder',
+  'mission.city1': 'Habla con todos',
+  'mission.city2': 'Encuentra el objeto oculto',
+  'mission.city3': 'Vence a los del gimnasio',
+  'mission.errand': 'Haz un recado',
+  'mission.delivery': 'Entrega un paquete',
+  'mission.tour': 'Recorre la ciudad',
 
   // route — RouteScene prose
   'route.mapTitle': 'Mapa {map} · {biome}',
