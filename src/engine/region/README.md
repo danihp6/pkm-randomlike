@@ -51,6 +51,14 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 - `league.test.ts` — the 1→5 walk and the prefix, the two-call replay and the per-row ids,
   the party size and levels, the seed's digest, the heal (and its no-op), the out-of-order
   refusal and the money the rows pay.
+- `tower.ts` — the endless node behind the Champion: whether its door is open, the next
+  fight at `LEAGUE_LEVEL` off its own rung stream, the streak a win steps, the heal
+  between two fights and the fact a wipe is the only ending (`towerStep`, `towerWin`,
+  `towerHeal`, `towerResolve`, `towerReward`, `towerOpen`, `TowerFoe`, `TowerResult`,
+  `TOWER_NODE_KEY`).
+- `tower.test.ts` — the door before and after the Champion, the five-at-60 leaderless
+  roster and its replay, the pinned rung digest, the streak and the heal, the wipe that
+  ends the run and the reward that pays no money.
 - `route/` — the long route generator; its README holds the folder until its batch lands.
 - `city/` — the settlement generator; its README holds the folder until its batch lands.
 - `interior/` — the building-interior generator; its README holds the folder until its

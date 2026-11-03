@@ -12582,7 +12582,7 @@ the victory screen.
       *Dependencies:* all three generators (Batch 118), the gate (Batch 119), the city and gym scenes
       (Batch 121). *(Batch 123)*
 
-- [ ] **[Task-294] The Champion opens the tower, and the run ends only when the party does.** After
+- [x] **[Task-294] The Champion opens the tower, and the run ends only when the party does.** After
       the Champion the tower's node unlocks: five at 60, full random like every trainer, healed
       between battles, no leader and no rule of its own; its streak is the record, and the run's end
       card reports badges, not floors.

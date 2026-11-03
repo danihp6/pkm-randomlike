@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 
 vi.mock('phaser', () => {
   class Scene {}
@@ -24,7 +25,8 @@ vi.mock('../ui/hud/panels/run-over', async (importOriginal) => {
 });
 
 import { createRun, createRunPokemon, type RunState } from '../engine/run';
-import { runOverDrawnObjectCount, RunOverScene } from './RunOverScene';
+import type { RunOverView } from '../ui/hud/panels/run-over';
+import { runOverDrawnObjectCount, runOverStatValues, RunOverScene } from './RunOverScene';
 
 /** A saved run with a living party: the only shape the score screen reads. */
 function lostRun(): RunState {
@@ -123,5 +125,99 @@ describe('the DOM score screen on a clean boot', () => {
     scene.create();
 
     expect(mocks.mountRunOver).not.toHaveBeenCalled();
+  });
+});
+
+/** The view the panel was mounted with, as the scene built it. */
+function mountedView(): RunOverView {
+  const view = mocks.mountRunOver.mock.calls[0]?.[1];
+  return view as RunOverView;
+}
+
+/** A run that earned three badges and eleven tower wins, on floor 20 of the old scale. */
+function deepRun(): RunState {
+  const run = lostRun();
+  return {
+    ...run,
+    routeIndex: 20,
+    badges: [1, 2, 3],
+    towerStreak: 11,
+    stats: { catches: 9, casualties: 4, faints: 61 },
+  };
+}
+
+describe('runOverStatValues', () => {
+  it('reads the badge count, not the deprecated floor counter', () => {
+    const values = runOverStatValues(deepRun());
+    expect(values[0]).toBe(3);
+    expect(values[0]).not.toBe(20);
+  });
+
+  it('reads the catches, the casualties and the tower’s streak', () => {
+    expect(runOverStatValues(deepRun())).toStrictEqual([3, 9, 4, 11]);
+  });
+
+  it('floors a missing or unreadable streak at zero', () => {
+    const run = deepRun();
+    expect(runOverStatValues({ ...run, towerStreak: -6 })[3]).toBe(0);
+    expect(runOverStatValues({ ...run, towerStreak: Number.NaN })[3]).toBe(0);
+    expect(runOverStatValues({ ...run, towerStreak: 2.7 })[3]).toBe(2);
+  });
+});
+
+describe('the card has no victory state', () => {
+  it('mounts a won: false view even when init was handed won: true', () => {
+    stubBrowser();
+    stubHud({});
+    const { scene } = sceneWithSeams();
+    scene.init({ run: deepRun(), won: true });
+
+    scene.create();
+
+    const view = mountedView();
+    expect(view.won).toBe(false);
+    expect(view.title).toBe('You have no more Pokémon!');
+    expect(view.blurb).toBe('The run is over — nothing carries over.');
+  });
+
+  it('prints the badge count first and the streak fourth, padded to two figures', () => {
+    stubBrowser();
+    stubHud({});
+    const { scene } = sceneWithSeams();
+    scene.init({ run: deepRun(), won: true });
+
+    scene.create();
+
+    const stats = mountedView().stats;
+    expect(stats.map((stat) => stat.id)).toEqual(['routes', 'catches', 'lost', 'fainted']);
+    expect(stats[0].value).toBe('03');
+    expect(stats[1].value).toBe('09');
+    expect(stats[2].value).toBe('04');
+    expect(stats[3].value).toBe('11');
+    expect(stats[3].label).toBe('MAX ELITE STRIKE');
+  });
+
+  it('reports the same view it mounts', () => {
+    stubBrowser();
+    stubHud({});
+    const { scene } = sceneWithSeams();
+    scene.init({ run: deepRun() });
+
+    scene.create();
+
+    const debug = (
+      scene as unknown as { debugRunOverState(): ReturnType<RunOverScene['debugRunOverState']> }
+    ).debugRunOverState();
+    expect(debug.won).toBe(false);
+    expect(debug.badges).toBe(3);
+    expect(debug.towerStreak).toBe(11);
+    expect(debug.tab).toBe('totals');
+    expect(debug.stats.map((stat) => stat.value)).toEqual(['03', '09', '04', '11']);
+  });
+
+  it('leaves no live victory path in the scene', () => {
+    const source = readFileSync(new URL('./RunOverScene.ts', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/headlineWin|blurbWin|won: true/);
+    expect(source).toMatch(/liveRunOverView\(this\.run, false,/);
   });
 });

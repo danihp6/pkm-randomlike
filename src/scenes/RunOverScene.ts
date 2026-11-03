@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
+import { IS_DEVELOP } from '../dev/env';
 import type { RunState } from '../engine/run';
 import { clearRun } from '../engine/save';
+import { t } from '../i18n';
 import { subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
@@ -29,13 +31,32 @@ export function runOverDrawnObjectCount(_scene: Phaser.Scene): number {
   return 0;
 }
 
+/** The tower's streak as the card prints it: a whole number of at least zero. */
+function streakOf(run: RunState): number {
+  const streak = run.towerStreak;
+  return Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
+}
+
 /**
- * The end-of-run score screen (Phase 7). The route hands over the run and
- * whether it was won; a lost run is the permadeath payoff — the party is gone
- * and nothing carries over, so this is where the run stops. A win and a loss
- * both end here, and the confirm returns to the main menu, where a new run is
- * started. The summary reports the routes cleared, the catches, the casualties
- * and the seed, all from the run itself.
+ * The four figures the card prints, in the panel's own stat order: the record's
+ * badge count, the catches, the losses and the tower's streak. The badges are the
+ * record (`D62`), never the deprecated floor counter, and the streak stands beside
+ * them and apart from them.
+ */
+export function runOverStatValues(run: RunState): readonly [number, number, number, number] {
+  return [run.badges.length, run.stats.catches, run.stats.casualties, streakOf(run)];
+}
+
+/**
+ * The end-of-run score screen (Phase 7). The route hands over the run and whether
+ * it was won; a lost run is the permadeath payoff — the party is gone and nothing
+ * carries over — so this is where the run stops. The run ends only when its party
+ * does, so there is no victory state: every ending is the defeat card, and the
+ * `won` the route still passes is ignored here.
+ *
+ * The summary reports the badge count, the catches, the casualties and the tower's
+ * streak, all from the run itself: the badge count says how far the region went,
+ * and the streak how far the tower did.
  *
  * The screen is the `run-over` panel (`D49`): the scene keeps the permadeath rule
  * (it clears the save), the input delay, the tab it owns and the return to the
@@ -43,7 +64,6 @@ export function runOverDrawnObjectCount(_scene: Phaser.Scene): number {
  */
 export class RunOverScene extends Phaser.Scene {
   private run!: RunState;
-  private won = false;
   private leaving = false;
   private armed = false;
   /** The tab the scene owns; `'totals'` at create, switched by a press or left/right. */
@@ -57,7 +77,6 @@ export class RunOverScene extends Phaser.Scene {
 
   init(data: { run: RunState; won?: boolean }): void {
     this.run = data.run;
-    this.won = data.won ?? false;
     this.leaving = false;
     this.armed = false;
     this.tab = 'totals';
@@ -73,6 +92,13 @@ export class RunOverScene extends Phaser.Scene {
     this.time.delayedCall(RUN_OVER_INPUT_DELAY_MS, () => {
       this.armed = true;
     });
+
+    if (IS_DEVELOP) {
+      (globalThis as Record<string, unknown>).__pkmRunOver = this;
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        delete (globalThis as Record<string, unknown>).__pkmRunOver;
+      });
+    }
   }
 
   /** The screen's one build: the same rules, no Phaser object, one panel in `#hud`. */
@@ -100,9 +126,40 @@ export class RunOverScene extends Phaser.Scene {
     this.controller = null;
   }
 
-  /** The live view the panel paints: `runSummary`'s figures, the run's rows, this tab. */
+  /** The live view the panel paints: the panel's own rows, this run's four figures, this tab. */
   private view(): RunOverView {
-    return liveRunOverView(this.run, this.won, this.tab, keyLabel(loadSettings().keybinds.confirm));
+    const base = liveRunOverView(this.run, false, this.tab, keyLabel(loadSettings().keybinds.confirm));
+    const values = runOverStatValues(this.run);
+    return {
+      ...base,
+      stats: base.stats.map((stat, index) => ({
+        ...stat,
+        label: index === 3 ? t('menu.stat.elite') : stat.label,
+        value: String(values[index] ?? 0).padStart(2, '0'),
+      })),
+    };
+  }
+
+  /** Dev only: what a browser pass reads off the defeat card. */
+  debugRunOverState(): Readonly<{
+    won: boolean;
+    title: string;
+    blurb: string;
+    badges: number;
+    towerStreak: number;
+    tab: RunOverTab;
+    stats: readonly Readonly<{ id: string; value: string }>[];
+  }> {
+    const view = this.view();
+    return {
+      won: view.won,
+      title: view.title,
+      blurb: view.blurb,
+      badges: this.run.badges.length,
+      towerStreak: streakOf(this.run),
+      tab: this.tab,
+      stats: view.stats.map((stat) => ({ id: stat.id, value: stat.value })),
+    };
   }
 
   /** The one shared action this screen answers: A / confirm returns to the main menu. */

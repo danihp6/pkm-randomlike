@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Champion opens the tower, and the run ends only when the party does.** `[Task-294]`,
+      Batch 123: `src/engine/region/tower.ts` is the endless node's rule — `towerOpen` is
+      `leagueCleared` and nothing else, `towerStep` fields the next five at `LEAGUE_LEVEL` off
+      `${seed}:tower:<rung>` and answers `null` before the Champion, `towerWin` steps the streak
+      and never backwards, `towerHeal` is the League's own heal (HP/PP across party and box, no
+      status cure, no revival), `towerResolve` ends the run only on a wipe, and `towerReward` pays
+      no money. `LeagueScene` plays the tower as its own endless mode (the entry heal, the next
+      rung, the heal after a win, a `scene.restart` for the way in), `RouteScene.arrivalSceneFor`
+      hands a saved `tower:1` run to it, `RunHistoryRecord` carries `towerStreak` beside `badges`
+      (the decoder defaults it to `0`; `SAVE_VERSION` stays `28`), and `RunOverScene` prints the
+      badge count and the streak on the defeat card with **no victory state** — `init`'s `won` is
+      accepted and ignored. `docs/region-spec.md` §7.11. `[unit]` the 170 tests of the four
+      touched files (five at 60 for rungs 1..20, the pinned rung digest, streak/heal/wipe, the
+      record apart from the badges, the absent-key decode); `[live]` over CDP at 1280×800: after
+      the Champion `cleared`/`towerOpen` are true and a confirm press opens rung 1, five at 60; a
+      win repaints the streak and opens rung 2; a wipe lands on `RunOver` with `won: false`,
+      `badges: 8`, `routes = 08`, the streak in row four and no `data-won="true"` anywhere.
+
 - [x] **The gym: trainers, the puzzle, the leader and the badge.** `[Task-285]`, Batch 123:
       `src/engine/run/badge.ts` owns the badge as a run fact: `grantBadge` appends the ladder's
       next rung and returns the **same** run for a badge that is not the city's, one that would

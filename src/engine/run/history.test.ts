@@ -36,6 +36,7 @@ function history(): RunHistory {
     seed: 'seed-a',
     mode: 'infinite',
     badges: [1, 2, 3],
+    towerStreak: 0,
     stats: { catches: 5, casualties: 2 },
     party: [createRunPokemon({ id: 'p0', speciesId: 'charmander', level: 9 })],
     box: [createRunPokemon({ id: 'p1', speciesId: 'sentret', level: 4 })],
@@ -94,6 +95,7 @@ describe('makeHistoryRecord', () => {
       seed: 'seed-a',
       mode: 'infinite',
       badges: 3,
+      towerStreak: 0,
       mapReached: 3,
       catches: 5,
       casualties: 2,
@@ -112,6 +114,26 @@ describe('makeHistoryRecord', () => {
     const none = makeHistoryRecord({ ...history(), badges: [] }, ENDING);
     expect(none.badges).toBe(0);
     expect(none.mapReached).toBe(0);
+  });
+
+  it('keeps the tower’s streak apart from the badge record, and carries both', () => {
+    const run: RunHistory = { ...history(), badges: [1, 2, 3, 4, 5, 6, 7, 8], towerStreak: 7 };
+    const record = makeHistoryRecord(run, ENDING);
+    expect(record.badges).toBe(8);
+    expect(record.towerStreak).toBe(7);
+
+    const deeper = makeHistoryRecord({ ...run, towerStreak: 19 }, ENDING);
+    expect(deeper.badges).toBe(8);
+    expect(deeper.towerStreak).toBe(19);
+
+    const fewerBadges = makeHistoryRecord({ ...run, badges: [] }, ENDING);
+    expect(fewerBadges.badges).toBe(0);
+    expect(fewerBadges.towerStreak).toBe(7);
+  });
+
+  it('writes no streak for a negative or unreadable figure', () => {
+    expect(makeHistoryRecord({ ...history(), towerStreak: -4 }, ENDING).towerStreak).toBe(0);
+    expect(makeHistoryRecord({ ...history(), towerStreak: Number.NaN }, ENDING).towerStreak).toBe(0);
   });
 
   it('never lets the record outrun the stats card’s scale', () => {
@@ -201,6 +223,7 @@ describe('makeHistoryRecord', () => {
       seed: 'seed-a',
       mode: 'infinite',
       badges: 3,
+      towerStreak: 0,
       mapReached: 3,
       catches: 5,
       casualties: 2,
@@ -245,6 +268,16 @@ describe('endRun', () => {
     expect(log.history[0].seed).toBe('seed-a');
     expect(log.history.slice(1)).toEqual(stored);
     expect(stored).toEqual([record(3), record(1), record(2)]);
+  });
+
+  it('carries the badge count and the tower’s streak through the end seam', () => {
+    const log = endRun(
+      emptyEndLog([]),
+      { ...history(), badges: [1, 2, 3, 4, 5], towerStreak: 12 },
+      ENDING,
+    );
+    expect(log.history[0].badges).toBe(5);
+    expect(log.history[0].towerStreak).toBe(12);
   });
 
   it('carries the caller’s ending verbatim and reads no clock', () => {
