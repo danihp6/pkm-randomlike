@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { megaFormsForBase } from '../../data/dex/megas';
 import { getSpecies, normalizeId } from '../../data/dex/species';
 import { LEVEL_BANDS } from '../../data/run';
+import { nodeOf, planRegion, type RegionNode } from '../region/plan';
 import { Rng } from '../rng';
+import { trainerLevel } from './levelCurve';
 import { speciesPool } from './pool';
 import { assignMegaStone, trainerRoster, type RosterEntry } from './roster';
 
@@ -237,5 +239,62 @@ describe('assignMegaStone', () => {
     const roster: RosterEntry[] = [{ id: 't:0', speciesId: 'garchomp', level: 40 }];
     assignMegaStone(roster, new Rng(4));
     expect(megaFormsForBase('garchomp').map((form) => form.stoneId)).toContain(roster[0].heldItem);
+  });
+});
+
+describe('trainerRoster node', () => {
+  const plan = planRegion('alpha');
+  const route = nodeOf(plan, 'route:2') as RegionNode;
+  const gym = nodeOf(plan, 'city:2') as RegionNode;
+  const league = nodeOf(plan, 'victory-road:1') as RegionNode;
+  const NODES: readonly RegionNode[] = [route, gym, league];
+  const band = LEVEL_BANDS[2];
+
+  const levelForNode = (node: RegionNode, size: number): number =>
+    trainerLevel(node.cap, node.gymDistance, Math.min(3, Math.max(1, size)) as 1 | 2 | 3);
+
+  it('posts every member on the node, at the size-clamped trainer level', () => {
+    for (const node of NODES) {
+      for (const count of [undefined, 1, 2, 3, 6]) {
+        const roster = trainerRoster(
+          band,
+          new Rng(7),
+          'x',
+          count === undefined ? { node } : { node, count },
+        );
+        const expected = levelForNode(node, roster.length);
+        for (const entry of roster) expect(entry.level, `${node.key} ${entry.id}`).toBe(expected);
+      }
+    }
+  });
+
+  it('sits on the cap on a gym node and lower one step back', () => {
+    const onGym = trainerRoster(band, new Rng(7), 'x', { node: gym, count: 3 });
+    const onRoute = trainerRoster(band, new Rng(7), 'x', { node: route, count: 3 });
+    for (const entry of onGym) expect(entry.level).toBe(gym.cap);
+    for (const entry of onRoute) expect(entry.level).toBeLessThan(route.cap);
+  });
+
+  it('yields the same species as the equivalent levelFor: no level draw is taken', () => {
+    for (const node of NODES) {
+      const byNode = trainerRoster(band, new Rng(31), 'x', { node, count: 3 });
+      const byLevel = trainerRoster(band, new Rng(31), 'x', {
+        count: 3,
+        levelFor: (size) => levelForNode(node, size),
+      });
+      expect(byNode, node.key).toEqual(byLevel);
+    }
+  });
+
+  it('lets levelFor win over the node', () => {
+    const roster = trainerRoster(band, new Rng(7), 'x', { node: league, levelFor: () => 5 });
+    for (const entry of roster) expect(entry.level).toBe(5);
+  });
+
+  it('builds the identical roster twice from the same seed', () => {
+    const build = (): readonly RosterEntry[] =>
+      trainerRoster(LEVEL_BANDS[5], new Rng(7), 't1', { node: league, count: 4 });
+    expect(build()).toEqual(build());
+    for (const entry of build()) expect(entry.level).toBe(levelForNode(league, 4));
   });
 });

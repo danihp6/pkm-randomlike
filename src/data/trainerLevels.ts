@@ -32,3 +32,17 @@ export function trainerLevel(squadLevel: number, size: number, cap: number): num
   const ceiling = Number.isFinite(cap) ? Math.max(1, Math.floor(cap)) : MAP_MAX_LEVEL;
   return Math.min(ceiling, Math.max(1, Math.floor(base * trainerLevelPercent(size))));
 }
+
+/** The party-size factor a regular trainer's level is worth: bigger party, lower members. */
+export const TRAINER_SIZE_FACTOR: Readonly<Record<1 | 2 | 3, number>> = {
+  1: 1,
+  2: 0.9,
+  3: 0.8,
+};
+
+/** The factor of a party of `size`, clamped into `1..3` (`TRAINER_SIZE_FACTOR[size]`). */
+export function trainerSizeFactor(size: number): number {
+  if (!Number.isFinite(size)) return TRAINER_SIZE_FACTOR[1];
+  const row = Math.min(3, Math.max(1, Math.floor(size))) as 1 | 2 | 3;
+  return TRAINER_SIZE_FACTOR[row];
+}
