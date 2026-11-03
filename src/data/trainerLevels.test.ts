@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { LEVEL_BANDS } from './run';
 import { MAP_MAX_LEVEL } from './maps';
-import { TRAINER_LEVEL_PERCENT, trainerLevel, trainerLevelPercent } from './trainerLevels';
+import {
+  TRAINER_LEVEL_PERCENT,
+  TRAINER_SIZE_FACTOR,
+  trainerLevel,
+  trainerLevelPercent,
+  trainerSizeFactor,
+} from './trainerLevels';
 
 describe('TRAINER_LEVEL_PERCENT', () => {
   it('pins every row of the table', () => {
@@ -82,5 +88,34 @@ describe('trainerLevel', () => {
     expect(trainerLevel(Number.NaN, 1, 30)).toBe(1);
     expect(trainerLevel(Number.POSITIVE_INFINITY, 1, 30)).toBe(1);
     expect(trainerLevel(-5, 1, 30)).toBe(1);
+  });
+});
+
+describe('TRAINER_SIZE_FACTOR', () => {
+  it('pins the step back a party of that size costs, in levels', () => {
+    expect(TRAINER_SIZE_FACTOR).toEqual({ 1: 1, 2: 0.9, 3: 0.8 });
+    expect(Object.keys(TRAINER_SIZE_FACTOR)).toHaveLength(3);
+  });
+
+  it('is strictly weaker as the party grows', () => {
+    expect(TRAINER_SIZE_FACTOR[1]).toBeGreaterThan(TRAINER_SIZE_FACTOR[2]);
+    expect(TRAINER_SIZE_FACTOR[2]).toBeGreaterThan(TRAINER_SIZE_FACTOR[3]);
+  });
+});
+
+describe('trainerSizeFactor', () => {
+  it('reads the row of the party size', () => {
+    expect(trainerSizeFactor(1)).toBe(1);
+    expect(trainerSizeFactor(2)).toBe(0.9);
+    expect(trainerSizeFactor(3)).toBe(0.8);
+  });
+
+  it('clamps an out-of-table size to the nearest row', () => {
+    expect(trainerSizeFactor(0)).toBe(1);
+    expect(trainerSizeFactor(-3)).toBe(1);
+    expect(trainerSizeFactor(7)).toBe(0.8);
+    expect(trainerSizeFactor(2.9)).toBe(0.9);
+    expect(trainerSizeFactor(Number.NaN)).toBe(1);
+    expect(trainerSizeFactor(Number.POSITIVE_INFINITY)).toBe(1);
   });
 });

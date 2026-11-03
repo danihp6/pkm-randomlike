@@ -12181,7 +12181,7 @@ from their specs. `src/engine/region/README.md` is `[Task-277]`'s.
       `gates.test.ts` and `docs/region-spec.md` §4. *Dependencies:* the region plan (Batch 117).
       *(Batch 119)*
 
-- [ ] **[Task-279] Levels come from the badge and the distance to the leader.** A regular trainer's
+- [x] **[Task-279] Levels come from the badge and the distance to the leader.** A regular trainer's
       level is the stretch's cap minus what the distance to the gym and its party size are worth
       (1.00 / 0.90 / 0.80); a wild is 60-75 % of the squad's level; a leader sits at the cap.
       **Measured:** `src/data/trainerLevels.ts` holds the shipped trainer-level rule;

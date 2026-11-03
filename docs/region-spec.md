@@ -105,6 +105,24 @@ closes the stretch — 0 exactly at a gym, one more per step back, and one step 
 route for a lateral. Past the eighth gym there is no gym left, so the count keeps rising
 from that gym: the Victory Road is 1, the League 2 and the tower 3.
 
+The three rules are shipped, pure and off the RNG but for the wild's own draw, in
+`src/engine/run/levelCurve.ts`:
+
+| rule | what it answers |
+| --- | --- |
+| `trainerLevel(cap, gymDistance, partySize)` | a regular trainer member: `floor(cap − gymDistance × TRAINER_SIZE_FACTOR[partySize])`, floored again into `1..cap`, so a party at `gymDistance` 0 **is** the cap and every step back costs that size's factor |
+| `wildLevel(squadLevel, rng)` | a wild: `WILD_LEVEL_FRACTION`'s 60-75 % of the squad's level, floored, never below 2, off one `next()` of the caller's `encounters` stream |
+| `leaderLevel(cap)` | a gym leader, the Elite Four and the Champion: the cap itself, floored, never below 1 |
+
+`TRAINER_SIZE_FACTOR` is `src/data/trainerLevels.ts`'s new table — `1 → 1`, `2 → 0.9`,
+`3 → 0.8`, read through `trainerSizeFactor(size)` which clamps the size into `1..3` — so
+a step back from the gym costs a bigger party more levels. `bandForNode(node)` turns the
+anchor into the band a node reads for its species pool and roster size: the **previous**
+stretch's cap (`LEVEL_BANDS[0].minLevel` for badge 1) up to this node's own `cap`, off
+the archetype row `bandForLevel` picks for that minimum — the same shape `bandForMap`
+has for a floor. A trainer roster posts on a node through `RosterOptions.node`, which
+runs `trainerLevel` off it and takes no level draw, exactly as `levelFor` does.
+
 The fights themselves are data, and neither table restates a cap. `src/data/gyms.ts`
 holds `GYMS`, one row per badge — its `leaderId` (a `LEADER_IDENTITIES` row in
 `src/data/trainers.ts`, the leader's name and class), the route `archetypeId` it borrows

@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Levels come from the badge and the distance to the leader.** `[Task-279]`, Batch 119:
+      `src/engine/run/levelCurve.ts` holds the region's three rules as pure functions.
+      `trainerLevel(cap, gymDistance, partySize)` is the stretch's cap less one step of that
+      party's worth per step back from the closing gym — `TRAINER_SIZE_FACTOR` 1 / 0.9 / 0.8 in
+      `src/data/trainerLevels.ts`, floored and clamped into `1..cap`, so a gym-adjacent three
+      sits exactly on the cap; `wildLevel(squadLevel, rng)` takes one draw from the caller's
+      `encounters` stream for its 60-75 % window (`WILD_LEVEL_FRACTION`), floored and never
+      below 2; `leaderLevel(cap)` is the cap; and `bandForNode(node)` reads a node's band from
+      the previous stretch's cap up to its own. `trainerRoster` gains `RosterOptions.node`, so a
+      posted roster is built straight off a node and takes no level draw. The shipped
+      `trainerLevel(squadLevel, size, cap)` and `bandForMap` stay frozen for the old scene until
+      the sweep. All criteria `[unit]`: the three factors exactly, the cap at distance zero and
+      lower three steps back for every cap, the wild share over 1 000 seeded draws replayed from
+      one seed, the leader on every cap, the band on four plans, and the roster's species
+      unchanged by the new branch. `docs/region-spec.md` §3 states the shipped rules.
+
 - [x] **The guard asks for the badge, and nothing blocks the way back.** `[Task-278]`, Batch
       119: `src/engine/run/gates.ts` answers, purely and totally, whether an edge of the region
       plan is a guard at all and which badge it wants — `exitGate(plan, fromKey, toKey,

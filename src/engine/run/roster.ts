@@ -1,6 +1,8 @@
 import { megaFormsForBase } from '../../data/dex/megas';
 import type { LevelBand } from '../../data/run';
+import type { RegionNode } from '../region/plan';
 import type { Rng } from '../rng';
+import { trainerLevel } from './levelCurve';
 import { speciesPool, variantSpecies } from './pool';
 
 export type RosterEntry = Readonly<{
@@ -39,22 +41,29 @@ export type RosterOptions = Readonly<{
    * shipped draw is kept byte for byte.
    */
   levelFor?: (size: number) => number;
+  /**
+   * The region node the roster is posted on. When given (and `levelFor` is not),
+   * the roster's level is `trainerLevel(node.cap, node.gymDistance, size)` and the
+   * band's level draw is **not** taken, exactly as with `levelFor`.
+   */
+  node?: RegionNode;
 }>;
 
 /**
  * A deterministic trainer roster: `options.count ?? band.trainerSize` species
  * drawn without replacement from the band's BST pool (repeats only if the pool is
- * smaller than the party), each level inside the band, or `options.levelFor(size)`
- * when the caller resolves it from the live squad level. The pool is shared by
+ * smaller than the party), each level inside the band, `options.levelFor(size)`
+ * when the caller resolves it from the live squad level, or the level of the
+ * region node the roster is posted on (`options.node`). The pool is shared by
  * every archetype — it varies only by the floor's BST window and the bans
  * (`D39`), and a trainer (unlike the wild) may field a legendary or mythical —
  * and a boss raises the window to its upper half. The run's battle seed feeds the
  * `rng`, so a replay rebuilds the same team. The forme each entry is generated as
  * comes from the `variant` sibling stream split off that same seed before the
  * first draw, so the picks, the levels and the Mega Stone stay where they were
- * (`D38`). A roster built with `levelFor` takes no level draw, so the draws after
- * it in the same stream shift — the Mega Stone pick moves with them — while the
- * seed still fixes every draw (`D11`/`D17` amended).
+ * (`D38`). A roster built with `levelFor` or a `node` takes no level draw, so the
+ * draws after it in the same stream shift — the Mega Stone pick moves with them —
+ * while the seed still fixes every draw (`D11`/`D17` amended).
  */
 export function trainerRoster(
   band: LevelBand,
@@ -70,10 +79,19 @@ export function trainerRoster(
   for (let i = 0; i < size; i++) {
     const speciesId =
       pool.length > 0 ? pool.splice(rng.int(0, pool.length - 1), 1)[0] : source[i % source.length];
+    const level = options.levelFor
+      ? options.levelFor(size)
+      : options.node
+        ? trainerLevel(
+            options.node.cap,
+            options.node.gymDistance,
+            Math.min(3, Math.max(1, size)) as 1 | 2 | 3,
+          )
+        : rng.int(band.minLevel, band.maxLevel);
     roster.push({
       id: `${idPrefix}:${i}`,
       speciesId: variantSpecies(speciesId, variantRng),
-      level: options.levelFor ? options.levelFor(size) : rng.int(band.minLevel, band.maxLevel),
+      level,
     });
   }
   if (options.allowMega) assignMegaStone(roster, rng);
