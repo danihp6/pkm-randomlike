@@ -1,7 +1,8 @@
 # `src/scenes/` — Phaser scenes
 
 One `Scene` per file, each registered in `src/main.ts`'s `scene` array: `Boot`, `MainMenu`,
-`Starter`, `Route`, `Battle`, `RunOver` and `Settings`. A scene draws the game and routes input,
+`Starter`, `Route`, `Battle`, `RunOver` and `Settings` — plus `WorldScene`, the abstract base the
+node scenes extend, which is registered nowhere. A scene draws the game and routes input,
 mounts its DOM card and decides nothing. **The DOM HUD is the HUD** (`D49` amended): every scene
 mounts its panel into `#hud` on a clean boot, `?hud=dom` is only an alias, and no scene draws HUD
 chrome in Phaser — `?hudFixture=<slug>` still pins a board frame. Rules come from `src/engine/`, panels and their pure helpers from
@@ -17,9 +18,14 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `StarterScene.ts` — picks the starter pool and opens the seed prompt.
 - `StarterScene.test.ts` — the starter pick's headless test: a reroll draws its offer
   through the seed helper and resets the cursor.
-- `RouteScene.ts` — the route itself: the player, tall grass, trainers, items, the room
-  panel slot, the pointer dispatch, the run's battles and the touch controls. Its
-  overlay chrome (HUD panels, notices, pause menu) is built by the panel layer below.
+- `WorldScene.ts` — the base every node scene extends: one map drawn as two culled tile
+  layers, the world camera's bounds and zoom, and a node preloaded off the worker. It
+  owns no run, no plan and no HUD, and is not registered in `src/main.ts` (it is abstract
+  and has no key).
+- `RouteScene.ts` — the route itself: it extends `WorldScene` for the tile draw and the
+  camera and keeps the player, tall grass, trainers, items, the room panel slot, the
+  pointer dispatch, the run's battles and the touch controls. Its overlay chrome (HUD
+  panels, notices, pause menu) is built by the panel layer below.
 - `panels/` — the route's overlay panels: one module per panel, discovered by the
   scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s

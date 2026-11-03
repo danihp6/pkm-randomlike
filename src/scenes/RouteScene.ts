@@ -119,7 +119,7 @@ import {
 import { livingTeamTypes, partyHasType } from '../engine/run/party';
 import { wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
-import { COMMON_TEXTURE_KEY, TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
+import { TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
 import {
   FLOOR,
@@ -195,18 +195,16 @@ import {
   type MapPlan,
   type RoomView,
 } from '../engine/maps';
-import { COMMON_TILE_SIZE, TILE_SIZE } from '../engine/tileset';
+import { TILE_SIZE } from '../engine/tileset';
 import {
-  resolveTileFrame,
-  resolveGroundFrame,
   grassRustleFrames,
   grassTipKeys,
   hiddenItemFrame,
   isGrassStepTile,
   treeTipKeys,
-  type TileFrame,
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
+import { buildNodeMeshes } from '../engine/region/preload';
 import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
 import {
@@ -232,12 +230,12 @@ import { createTouchControls, type TouchControls } from '../ui/touchControls';
 import { t, type TranslationKey } from '../i18n';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
-import { prefersTouchControls } from '../input/device';
 import { playCue, playMusic } from '../audio/audio';
 import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking } from '../net/ranking';
 import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
+import { actorDepth, WorldScene } from './WorldScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
 import type { RoomDescriptor, RoomHost, RoomPanel, RoomWildBattle } from './rooms/types';
@@ -284,41 +282,10 @@ const PANEL_MODULES = import.meta.glob(['./panels/*.ts', '!./panels/*.test.ts'],
 });
 
 /**
- * The world camera's zoom while walking a route: tiles read at 2x on a desktop
- * window. A touch screen has a much narrower viewport, so it pulls back a quarter
- * (`ROUTE_TOUCH_ZOOM_OUT`) to keep the same slice of the route on screen. Only
- * the route uses this camera; the menus and the battle are untouched.
- */
-const ROUTE_CAMERA_ZOOM = 2;
-const ROUTE_TOUCH_ZOOM_OUT = 0.75;
-const routeCameraZoom = (): number =>
-  ROUTE_CAMERA_ZOOM * (prefersTouchControls() ? ROUTE_TOUCH_ZOOM_OUT : 1);
-
-/**
- * Render depth of a wall cell's walkable tip: above the actors so the character
- * passes **behind** the crown, below the grass overlay and the HUD.
- */
-const TREE_TIP_DEPTH = 20;
-
-/**
  * Render depth of a room's condition filter: over the tiles, the actors and the tree
  * tips, under the dev hover marker (30) and the HUD (150).
  */
 const BATTLEFIELD_DEPTH = 25;
-
-/**
- * Ground actors (the player and the trainers) sort by their foot position, so a
- * lower tile draws in front: a player standing north of a trainer passes behind
- * it. The whole band stays between the ground items (`5`) and the tree tips
- * (`20`), so layering above the map is untouched.
- */
-const ACTOR_DEPTH = 8;
-const ACTOR_DEPTH_STEP = 0.0001;
-
-/** The render depth of a ground actor standing with its feet at `footY`. */
-function actorDepth(footY: number): number {
-  return ACTOR_DEPTH + footY * ACTOR_DEPTH_STEP;
-}
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
@@ -329,7 +296,7 @@ const RUN_STEP_MS = 110;
 
 /** One frame of the player's own tall-grass rustle, in ms. */
 const GRASS_STEP_MS = 70;
-/** Over the actor band (`ACTOR_DEPTH` + foot-y step, 491-497), under `TREE_TIP_DEPTH`. */
+/** Over the actor band (`ACTOR_DEPTH` + foot-y step, 491-497), under the battlefield filter (25). */
 const GRASS_STEP_DEPTH = 10;
 
 /** How long a "spinning" trainer holds a facing before it turns to the next. */
@@ -440,7 +407,7 @@ const DEMO_BAG: readonly BagCounts[] = [];
 /** One dev wild roll: what the room's live stream handed out on a step. */
 export type DebugWildRoll = Readonly<{ speciesId: string; level: number; shiny: boolean }>;
 
-export class RouteScene extends Phaser.Scene {
+export class RouteScene extends WorldScene {
   private route!: RouteMap;
   private map!: TileMap;
   /** `map` for movement: a tree's walkable tip is passable even though it draws as wall. */
@@ -454,7 +421,6 @@ export class RouteScene extends Phaser.Scene {
   private tilesetId: TilesetId = 'forest';
   private player: Tile = { x: 1, y: 1 };
   private playerSprite!: Phaser.GameObjects.Sprite;
-  private tileSprites: Phaser.GameObjects.Image[][][] = [];
   private entitySprites: Phaser.GameObjects.GameObject[] = [];
   /** The one sprite the player's own grass rustle draws; hidden when out of grass. */
   private grassStep: Phaser.GameObjects.Sprite | null = null;
@@ -1097,7 +1063,6 @@ export class RouteScene extends Phaser.Scene {
     // A restart in place (`scene.start('Route', …)`) runs `create` again over the
     // previous room's arrays, whose objects Phaser already destroyed with the
     // scene, so the stale entries must go before the rebuild (#34).
-    this.tileSprites = [];
     this.entitySprites = [];
     this.itemSprites = [];
     this.grassStep = null;
@@ -1144,10 +1109,7 @@ export class RouteScene extends Phaser.Scene {
     this.movePlayerTo(this.player.x, this.player.y);
     this.refreshTrainerVisibility();
 
-    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
-    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
-    this.cameras.main.setZoom(routeCameraZoom());
-    this.cameras.main.startFollow(this.playerSprite, true, 0.2, 0.2);
+    this.followCamera(this.playerSprite);
 
     this.refreshMoveKeys();
 
@@ -1381,47 +1343,6 @@ export class RouteScene extends Phaser.Scene {
   }
 
   /**
-   * A tile's display scale so every atlas lands on the same `TILE_SIZE` world
-   * cell: the biome sheet's own cell (`D18`) or the 24px common sheet.
-   */
-  private tileScale(source: 'atlas' | 'common'): number {
-    if (source === 'common') return TILE_SIZE / COMMON_TILE_SIZE;
-    return TILE_SIZE / TILESETS[this.tilesetId].config.atlas.tileSize;
-  }
-
-  private tileImage(x: number, y: number, frame: TileFrame): Phaser.GameObjects.Image {
-    const key = frame.source === 'common' ? COMMON_TEXTURE_KEY : tilesetTextureKey(this.tilesetId);
-    return this.add
-      .image(x * TILE_SIZE, y * TILE_SIZE, key, frame.frame)
-      .setOrigin(0, 0)
-      .setScale(this.tileScale(frame.source));
-  }
-
-  /**
-   * The frames a cell draws: the floor under everything, then the tile itself
-   * when it differs. The FRLG tree keeps a transparent ground, so the floor
-   * (with its wall-edge variant) shows through instead of a baked flat colour.
-   */
-  private tileFrames(x: number, y: number): TileFrame[] {
-    const config = TILESETS[this.tilesetId].config;
-    const ground = resolveGroundFrame(this.renderTiles, x, y, config);
-    const frames: TileFrame[] = [ground];
-    // A tree tip a grass patch shares draws the grass frame under its crown; the
-    // tilesets that fall back to the procedural tuft draw it in `drawEntities`.
-    const grassFrame = config.frames[TALL_GRASS];
-    if (
-      grassFrame !== undefined &&
-      grassFrame !== config.frames[FLOOR] &&
-      this.grassTipKeys.has(`${x},${y}`)
-    ) {
-      frames.push({ source: 'atlas', frame: grassFrame });
-    }
-    const frame = resolveTileFrame(this.renderTiles, x, y, config, true);
-    if (frame && (frame.source !== ground.source || frame.frame !== ground.frame)) frames.push(frame);
-    return frames;
-  }
-
-  /**
    * Returns `route` with its border opening on `edge` walled off, used to keep the
    * boss room's portal **sealed** until the boss falls. The interior lane that led
    * to it stays, ending at the solid border.
@@ -1448,29 +1369,14 @@ export class RouteScene extends Phaser.Scene {
     return copy;
   }
 
+  /**
+   * Draws the map on screen as the base scene's two culled layers. Every caller
+   * (`create`, `transitionTo`, `rebuildRoom`, the frame-map import and the dev
+   * generator step) keeps calling it after it changed `renderTiles`.
+   */
   private drawTiles(): void {
-    const tips = treeTipKeys(this.renderTiles, TILESETS[this.tilesetId].config);
-    const created: Phaser.GameObjects.GameObject[] = [];
-    for (let y = 0; y < this.renderTiles.length; y++) {
-      const row: Phaser.GameObjects.Image[][] = [];
-      for (let x = 0; x < this.renderTiles[y].length; x++) {
-        const tip = tips.has(`${x},${y}`);
-        row.push(
-          this.tileFrames(x, y).map((frame, index, all) => {
-            const image = this.tileImage(x, y, frame);
-            // Only the wall motif of a walkable tip goes over the player; its
-            // ground - and a shared grass frame - stay under, so the player still
-            // shows standing on the tile and walking through the grass.
-            if (tip && index === all.length - 1) image.setDepth(TREE_TIP_DEPTH);
-            created.push(image);
-            return image;
-          }),
-        );
-      }
-      this.tileSprites.push(row);
-    }
-    // At create time the HUD camera does not exist yet and ignores everything
-    // afterwards; on a rebuild it must ignore only the freshly drawn cells.
+    const meshes = buildNodeMeshes(this.renderTiles, TILESETS[this.tilesetId].config);
+    this.drawWorld({ tiles: this.renderTiles, meshes, tilesetId: this.tilesetId });
   }
 
   private drawEntities(): void {
@@ -1488,7 +1394,7 @@ export class RouteScene extends Phaser.Scene {
         : this.add.sprite(0, 0, tilesetTextureKey(this.tilesetId), rest);
     step
       .setOrigin(0.5, 1) // was the default centre anchor
-      .setScale(rest === undefined ? 1 : this.tileScale('atlas'))
+      .setScale(rest === undefined ? 1 : TILE_SIZE / config.atlas.tileSize)
       .setDepth(GRASS_STEP_DEPTH)
       .setTint(config.grassRustleTint ?? 0xffffff)
       .setVisible(false);
@@ -1690,15 +1596,6 @@ export class RouteScene extends Phaser.Scene {
     if (!entry.spriteKey) return;
     const key = trainerWalkAnimKey(entry.spriteKey, pose.facing);
     if (this.anims.exists(key)) entry.sprite.play(key, true);
-  }
-
-  /** A route tile's centre in world pixels. */
-  private centerX(tileX: number): number {
-    return tileX * TILE_SIZE + TILE_SIZE / 2;
-  }
-
-  private centerY(tileY: number): number {
-    return tileY * TILE_SIZE + TILE_SIZE / 2;
   }
 
   /** Snaps the sprite to a tile, without a step. */
@@ -2057,8 +1954,6 @@ export class RouteScene extends Phaser.Scene {
     this.player = options?.keepPosition === true ? tile : { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     this.refreshTrainerVisibility();
-    const bounds = mapPixelSize(this.map, TILE_SIZE);
-    this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
     const picks = this.applyMapPassives('room');
     this.showPassivePickups(picks);
     this.refreshHud();
@@ -3433,14 +3328,8 @@ export class RouteScene extends Phaser.Scene {
     this.playerSprite?.anims.stop();
   }
 
-  /** Destroys the route's tiles and entity overlays before a rebuild. */
+  /** Destroys the route's entity overlays before a rebuild. */
   private clearRouteSprites(): void {
-    for (const row of this.tileSprites) {
-      for (const cell of row) {
-        for (const image of cell) image.destroy();
-      }
-    }
-    this.tileSprites = [];
     for (const entry of this.itemSprites) this.tweens.killTweensOf(entry.sprite);
     for (const entry of this.trainerSprites) this.tweens.killTweensOf(entry.sprite);
     if (this.grassStep) this.grassStep.anims.stop();
@@ -3694,8 +3583,6 @@ export class RouteScene extends Phaser.Scene {
     this.drawRoomFixture();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
-    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
-    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
   }
 
   /**
@@ -3832,8 +3719,6 @@ export class RouteScene extends Phaser.Scene {
     this.drawRoomFixture();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
-    const cameraBounds = mapPixelSize(this.map, TILE_SIZE);
-    this.cameras.main.setBounds(0, 0, cameraBounds.width, cameraBounds.height);
     return { ok: true };
   }
 

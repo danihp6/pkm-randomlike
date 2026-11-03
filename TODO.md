@@ -12221,7 +12221,7 @@ one Batch 108 measured as a region map the game did not have). `src/engine/regio
 **What it replaces.** The per-cell `Image` grid, the synchronous per-transition rebuild, the floor
 minimap and the old puzzle room.
 
-- [ ] **[Task-280] `WorldScene` draws the region: one tilemap, culled, generated off the main
+- [x] **[Task-280] `WorldScene` draws the region: one tilemap, culled, generated off the main
       thread.** The scene stops building an `Image` per cell and layer: it draws a `TilemapLayer` from
       the frame mesh, culls to the camera, and asks a worker for the next node's map while the player
       is still walking this one.

@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The world draws once per map, not once per cell.** `[Task-280]`, Batch 120: a node's
+      ground is a `Tilemap` built from the frame mesh instead of an `Image` per cell per layer.
+      `src/engine/region/preload.ts` resolves `{seed, key}` to a `NodeWorld` purely
+      (`preloadNode`, `buildNodeMeshes`, `answerNodeRequest`, two meshes — the cells' own
+      `overlay` and the `ground` its transparent tree tips need), `src/workers/nodeWorker.ts`
+      answers that request off the main thread, `src/render/tilemapLayer.ts` turns the meshes
+      into two culled `TilemapLayer`s (`tilemapData`, `buildWorldLayers`) and
+      `src/scenes/WorldScene.ts` is the base scene every node scene extends — it owns the
+      draw, the camera follow, `actorDepth`/`worldCameraZoom` and the preload cache.
+      `RouteScene` becomes its first subclass and keeps its rooms, battles, items and HUD, and
+      `vite.config.ts` gains the worker's build entry, so the build emits a separate
+      `nodeWorker` chunk. `[live]` measured over CDP on the first route: two `TilemapLayer`s,
+      zero per-cell `Image`s, both culled, every cell's layer index equal to the mesh frame,
+      and the map still drawing at its far end; `[unit]` the fixed-seed mesh replay, the
+      unknown-key `null`s, `buildNodeMeshes`' ground cells and the separate chunk.
+
 - [x] **Levels come from the badge and the distance to the leader.** `[Task-279]`, Batch 119:
       `src/engine/run/levelCurve.ts` holds the region's three rules as pure functions.
       `trainerLevel(cap, gymDistance, partySize)` is the stretch's cap less one step of that

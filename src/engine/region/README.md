@@ -28,10 +28,19 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   (`planNodeContent`, `PoiKind`, `ShopKind`, `POI_KINDS`).
 - `content.test.ts` — the tier counts, the lateral-only POI, the replay and a fixed seed's
   content digest.
+- `preload.ts` — one node resolved to everything a scene draws and walks: the plan names it, its
+  own generator carves it, and it comes back as its tile map, its two frame meshes (the tiles'
+  and the floor under them) and its spawn. It also holds the worker's request and reply and the
+  resolver that answers one without throwing (`preloadNode`, `buildNodeMeshes`,
+  `answerNodeRequest`, `NodeWorld`, `NodeMeshes`).
+- `preload.test.ts` — a fixed seed's route mesh against the generator's own `buildFrameMesh`, the
+  settlement's spawn and tileset, the nulls (unknown key, malformed key, no generator yet) and the
+  worker reply's shape.
 - `route/` — the long route generator; its README holds the folder until its batch lands.
 - `city/` — the settlement generator; its README holds the folder until its batch lands.
 - `interior/` — the building-interior generator; its README holds the folder until its
   batch lands.
+- `gym/` — the gym's puzzle stack and the rooms it fills; its README holds the folder.
 
 ## Rules
 
