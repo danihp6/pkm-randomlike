@@ -169,16 +169,17 @@ describe('city plan', () => {
   });
 
   it('resolves every cell to a frame in the city tileset', () => {
+    const unresolved: string[] = [];
     for (const seed of SEEDS) {
       for (const city of settlementsOf(seed)) {
         for (const cell of allCells(city.tiles)) {
-          expect(
-            resolveTileFrame(city.tiles, cell.x, cell.y, FRLG_CITY_TILESET),
-            `${seed} ${city.key} ${cell.x},${cell.y}`,
-          ).not.toBeNull();
+          if (resolveTileFrame(city.tiles, cell.x, cell.y, FRLG_CITY_TILESET) === null) {
+            unresolved.push(`${seed} ${city.key} ${cell.x},${cell.y}`);
+          }
         }
       }
     }
+    expect(unresolved).toEqual([]);
   });
 
   it("pins a fixed seed's settlement digests", () => {
