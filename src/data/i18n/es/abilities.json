@@ -316,22 +316,22 @@
   },
   "embodyaspectcornerstone": {
     "name": "Evocarrecuerdos",
-    "description": "Al entrar en combate, los recuerdos de la máscara de piedra refuerzan su Defensa y la suben un nivel.",
+    "description": "Al entrar en combate, los recuerdos de la máscara de piedra refuerzan su cuerpo y su Defensa sube un nivel.",
     "shortDescription": "Al entrar en combate, sube un nivel su Defensa."
   },
   "embodyaspecthearthflame": {
     "name": "Evocarrecuerdos",
-    "description": "Al entrar en combate, los recuerdos de la máscara ígnea avivan su fuerza y suben un nivel su Ataque.",
+    "description": "Al entrar en combate, los recuerdos de la máscara ígnea avivan su fuerza y su Ataque sube un nivel.",
     "shortDescription": "Al entrar en combate, sube un nivel su Ataque."
   },
   "embodyaspectteal": {
     "name": "Evocarrecuerdos",
-    "description": "Al entrar en combate, los recuerdos de la máscara turquesa lo llenan de energía y suben un nivel su Velocidad.",
+    "description": "Al entrar en combate, los recuerdos de la máscara turquesa lo llenan de energía y su Velocidad sube un nivel.",
     "shortDescription": "Al entrar en combate, sube un nivel su Velocidad."
   },
   "embodyaspectwellspring": {
     "name": "Evocarrecuerdos",
-    "description": "Al entrar en combate, los recuerdos de la máscara del pozo lo fortalecen y suben un nivel su Defensa Especial.",
+    "description": "Al entrar en combate, los recuerdos de la máscara del pozo lo fortalecen y su Defensa Especial sube un nivel.",
     "shortDescription": "Al entrar en combate, sube un nivel su Defensa Especial."
   },
   "emergencyexit": {
@@ -771,7 +771,7 @@
   },
   "myceliummight": {
     "name": "Poder Fúngico",
-    "description": "El micelio que lo cubre hace que sus movimientos de estado ignoren las habilidades rivales, aunque actúan los últimos.",
+    "description": "El micelio que lo cubre hace que sus movimientos de estado ignoren las habilidades rivales, aunque hacen actuar en último lugar.",
     "shortDescription": "Sus movimientos de estado ignoran habilidades, pero van últimos."
   },
   "naturalcure": {
@@ -1401,7 +1401,7 @@
   },
   "toxicchain": {
     "name": "Cadena Tóxica",
-    "description": "La cadena venenosa que lleva tiene un treinta por ciento de posibilidades de envenenar gravemente al rival.",
+    "description": "La cadena venenosa que lleva tiene un treinta por ciento de probabilidad de envenenar gravemente al rival.",
     "shortDescription": "Puede envenenar gravemente con sus ataques."
   },
   "toxicdebris": {

@@ -66,7 +66,7 @@
   },
   "alluringvoice": {
     "name": "Canto Encantador",
-    "description": "Un canto hechizador que confunde al objetivo si este había subido alguna de sus características durante ese turno.",
+    "description": "Un canto embelesador que confunde al objetivo si este había subido alguna de sus características durante ese turno.",
     "shortDescription": "Confunde al objetivo que haya subido alguna característica."
   },
   "allyswitch": {
@@ -2116,7 +2116,7 @@
   },
   "matchagotcha": {
     "name": "Cañón Batidor",
-    "description": "Rocía té hirviendo que puede quemar, recupera la mitad del daño infligido y descongela al objetivo.",
+    "description": "Rocía té hirviendo que puede quemar y descongelar al objetivo; quien lo usa recupera la mitad del daño infligido.",
     "shortDescription": "Puede quemar, drena PS y descongela al objetivo."
   },
   "meanlook": {
