@@ -1,6 +1,7 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
-import { getMission } from '../../data/missions';
+import { activeMissions } from '../../engine/region/missions';
+import { nodeOf, planRegion } from '../../engine/region/plan';
 import type { RunState } from '../../engine/run';
 import { t } from '../../i18n';
 import {
@@ -13,8 +14,9 @@ import { panelExpanded, panelFrameMount } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
- * The floor's mission, as a card: the floor the run stands on and its progress, then the
- * floors it already met, newest first (`D58`).
+ * The node's missions, as a card: the stack the run stands on — its stretch's automatic
+ * mission, its city's fixed one and the random row an NPC offers — one row each, in the
+ * engine's own order (`docs/region-spec.md` §7.10, `D58`).
  *
  * The card is the Preact panel in `#hud` and this module draws none of it: it resolves
  * the strings the panel prints, mounts the card in the shared frame (the chip, the drag
@@ -36,32 +38,25 @@ let domScene: Phaser.Scene | null = null;
 /** True while a battle or the Settings screen covers the route. */
 let routePaused = false;
 
-/** A row's display name: the table's key, or the id a row the table lost was stored as. */
-function missionName(id: string): string {
-  const row = getMission(id);
-  return row === undefined ? id : t(row.nameKey);
-}
-
-/** The card's data from the run: the head row, then the met floors newest first. */
+/** The card's data from the run: every row of the node's stack, with its status word. */
 export function missionsInput(run: RunState, open: boolean): MissionsInput {
-  const current =
-    run.mission === null
-      ? null
-      : {
-          id: run.mission.id,
-          name: missionName(run.mission.id),
-          progress: t('hud.missionProgress', { hp: run.hpLost }),
-        };
-  const completed = [...run.completedMissions].reverse().map((floor) => ({
-    id: floor.id,
-    name: missionName(floor.id),
-    map: t('hud.missionsMap', { map: floor.mapIndex }),
+  const plan = planRegion(run.seed);
+  const tag = t('hud.missionsBadge', { badge: nodeOf(plan, run.nodeKey)?.badge ?? 1 });
+  const missions = activeMissions(run, plan).map((mission) => ({
+    id: mission.id,
+    scopeKey: mission.scopeKey,
+    name: t(mission.nameKey),
+    tag,
+    progress:
+      mission.status === 'active'
+        ? null
+        : t(mission.status === 'met' ? 'hud.missionsMet' : 'hud.missionsFailed'),
+    status: mission.status,
   }));
   return {
     open,
     title: t('hud.missions'),
-    current,
-    completed,
+    missions,
     empty: t('hud.missionsEmpty'),
   };
 }
@@ -70,7 +65,7 @@ function viewport(host: RoutePanelHost): { width: number; height: number } {
   return { width: host.scene.scale.width, height: host.scene.scale.height };
 }
 
-/** The view the DOM paints: the run's rows plus the card's own open state. */
+/** The view the DOM paints: the node's rows plus the card's own open state. */
 function missionsView(host: RoutePanelHost): MissionsPanelView {
   const open = !routePaused && panelExpanded(host, 'missions');
   return missionsPanelView(missionsInput(host.run(), open), viewport(host));
