@@ -24,6 +24,27 @@ value, never by art:
 | 9 | `LEDGE` | no | jump down only (movement rule, later) |
 | 10 | `BUSH` | no | a field-gate obstacle; opened by a party type, not a move |
 | 11 | `ROCK` | no | same, the rock seal |
+| 12 | `PATH` | yes | a city street |
+| 13 | `PLAZA` | yes | a city square |
+| 14 | `ROOF` | no | a building's roof |
+| 15 | `DOOR` | yes | a building's entrance (the one walkable part of its front) |
+| 16 | `SIGN` | no | a readable post |
+| 17 | `COUNTER` | no | a shop / Pokémon Centre counter |
+| 18 | `HEAL` | no | the Centre's healing station |
+| 19 | `PC` | no | the storage PC |
+
+Values 12-19 are the **city and interior vocabulary**, frozen here so a region
+generator emits map values the engine already walks and the scene already draws:
+`grass`, `path`, `plaza`, `wall`, `roof`, `door`, `water`, `sign` for a city and
+`floor`, `wall`, `door`, `counter`, `heal`, `pc` for an interior, mapped by
+`CITY_KIND_VALUES` / `INTERIOR_KIND_VALUES` (§2b). A city's grass corner is
+`TALL_GRASS` (8), so it rolls wild encounters with no new rule, and `DOOR`/`PATH`
+are walkable while `ROOF`, `SIGN`, `COUNTER`, `HEAL` and `PC` are solid.
+
+`SKETCH_LEGEND` carries one character per value, so a hand-authored fixture can
+build a city or an interior from a string: `P` `PATH`, `Z` `PLAZA`, `O` `ROOF`,
+`D` `DOOR`, `S` `SIGN`, `U` `COUNTER`, `H` `HEAL`, `X` `PC` (beside `.` `#` `E`
+`T` `C` `I` `~` `,` `"` `^` `B` `R`).
 
 ## 2. Atlas contract
 
@@ -103,6 +124,31 @@ type TilesetConfig = {
   hiddenItemFrame?: number                 // hidden ground item's floor frame; absent = frames[FLOOR]
 }
 ```
+
+## 2b. The city and interior atlases
+
+A **city** and an **interior** are not biomes: they are the two region fields a map's
+non-route rooms draw, and each ships its own 4x13 sheet of 16px cells (64x208) plus
+a committed manifest, all written by `scripts/frlg/build-region-tilesets.mjs`:
+
+| Tileset | sheet | manifest | kinds (kind → map value → frame) |
+| --- | --- | --- | --- |
+| `city` | `src/assets/frlg/city.png` | `src/data/frlg/city.json` | `grass`→8→1, `path`→12→2, `plaza`→13→3, `wall`→1→4, `roof`→14→5, `door`→15→6, `water`→6→7, `sign`→16→8 |
+| `interior` | `src/assets/frlg/interior.png` | `src/data/frlg/interior.json` | `floor`→0→0, `wall`→1→1, `door`→15→2, `counter`→17→3, `heal`→18→4, `pc`→19→5 |
+
+The manifests are the only source of the frame numbers: `CITY_KIND_VALUES` /
+`INTERIOR_KIND_VALUES` freeze the **kind → map value** table (the generators read
+those, never a literal) and `FRLG_CITY_TILESET` / `FRLG_INTERIOR_TILESET` read the
+frame for each value out of the committed JSON. Frame 0 is the field's own ground —
+the city's plain pavement, which `resolveGroundFrame` lays under every cell, and the
+interior's floor, which is the same tile a room's `FLOOR` cells draw.
+
+Neither field declares an autotile, a wall pattern, variants, a rustle or a
+hidden-item frame: **one frame per kind is the whole contract**, so a building is a
+rectangular block of `WALL`/`ROOF` cells with a `DOOR` cell on its street row and a
+room is a `WALL` ring around a `FLOOR` field with its fixtures on it. Shape-aware
+building edges are still open (§6). Every cell of both sheets is a **filled field**
+(the crop composited over the ground), so a patch of map never shows a hole.
 
 ## 3. Autotiling
 
@@ -184,6 +230,14 @@ keep the per-shape `autotileFrame`, their wall-edge floor decals
 TILESETS: Record<TilesetId, { id, name, atlasUrl, palette, config }>
 ```
 
+`TILESET_IDS` is `['forest', 'city', 'interior']`: the forest is the only **biome**
+(`BIOME_ORDER` stays `['forest']`), while `city` and `interior` are the region fields
+of §2b. `BootScene` loads every id as a spritesheet under `tilesetTextureKey(id)`
+(`tiles:forest`, `tiles:city`, `tiles:interior`) at its own `config.atlas.tileSize`,
+so a new field is one registry row plus its sheet and its placeholder — no scene edit.
+`packedAtlasUrl` falls back to `src/assets/placeholders/frlg/<id>.png` on a clone
+without the pack, and each blank carries the real sheet's 64x208 size.
+
 Swapping is `config = TILESETS[nextId].config` plus loading
 `TILESETS[nextId].atlasUrl`; the route scene in the scaffold proves it with the
 `R` key. Adding a biome is one entry plus its sheet.
@@ -199,7 +253,8 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   is gitignored and the processed crops must not be published. See
   `docs/art-direction.md`.
 - `frlg/*.png` are the **FireRed/LeafGreen** field atlases
-  (`scripts/frlg/build-tilesets.mjs`), composed from `sprite-sources/frlg/`; the
+  (`scripts/frlg/build-tilesets.mjs` for the fields, `build-region-tilesets.mjs` for
+  the city and the interior), composed from `sprite-sources/frlg/`; the
   UI sheets live beside them. Same licence line: local only, never redistributed.
 - The `scripts/legacy-art/` pipeline (imported from the sibling project)
   regenerates the sheets and sprites from local source packs.
@@ -276,3 +331,23 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   gone, and Reduce flashing keeps only its battle and reset-scrim surfaces (`D45`).
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).
+- **City and interior kinds** draw one real frame each (§2b), so nothing is pending
+  per kind; what is still open is shape: a building's front is a flat `WALL`/`ROOF`
+  block, with no door surround, awning or edge-aware roof line, and a room's fixtures
+  are single cells rather than multi-tile furniture. `autotile`/`wallPattern`/
+  `variants` for the two fields, a `grassRustle` for the city's grass corner and a
+  `hiddenItemFrame` for either are the not-yet-declared slots.
+- **The interior is provisional art, and the doc says so plainly.** The asset store
+  has **no indoor tileset**: `docs/art-direction.md`'s FRLG inventory is terrain
+  (`tileset-2.png`), buildings (`tileset.png`, `tileset-1.png`) and characters, and
+  pret/pokefirered is not in the store. So `INTERIOR_CELLS` in
+  `scripts/frlg/build-region-tilesets.mjs` composes the interior from the two sheets
+  that do exist: the terrain sheet's wooden plank platform (source cell `20,12`)
+  reads as the floor, and the buildings sheet supplies the plaster wall (`244,132`),
+  a dark doorway (`171,104`), a wooden counter (`112,166`), a heal station (`180,125`)
+  and a PC (`159,3`) from its props — the city's own kinds are terrain `7,0` (grass),
+  `0,18` (path), `0,15` (plaza), `0,24` (ground) and `11,1` (water) plus buildings
+  `56,212` (wall), `30,168` (roof), `40,209` (door) and `176,4` (sign). **When a real
+  indoor rip arrives it replaces `INTERIOR_CELLS` in that one script and nothing
+  else**: the manifests are regenerated from it, the kind table and the registry rows
+  stay, and no tile kind changes.

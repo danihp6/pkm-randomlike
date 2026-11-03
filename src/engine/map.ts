@@ -14,8 +14,32 @@ export const TALL_GRASS = 8;
 export const LEDGE = 9;
 export const BUSH = 10;
 export const ROCK = 11;
+/**
+ * The city and interior vocabulary. A city and an interior are laid out against
+ * these values, not against their own private numbers, so the generators emit a
+ * map this engine already walks and the scene draws from one atlas contract.
+ */
+export const PATH = 12;
+export const PLAZA = 13;
+export const ROOF = 14;
+export const DOOR = 15;
+export const SIGN = 16;
+export const COUNTER = 17;
+export const HEAL = 18;
+export const PC = 19;
 
-const SOLID: ReadonlySet<number> = new Set([WALL, WATER, LEDGE, BUSH, ROCK]);
+const SOLID: ReadonlySet<number> = new Set([
+  WALL,
+  WATER,
+  LEDGE,
+  BUSH,
+  ROCK,
+  ROOF,
+  SIGN,
+  COUNTER,
+  HEAL,
+  PC,
+]);
 
 /**
  * A ledge blocks entry from every direction; walking off one downward is a
@@ -137,6 +161,14 @@ export const SKETCH_LEGEND: Readonly<Record<string, number>> = {
   '^': LEDGE,
   B: BUSH,
   R: ROCK,
+  P: PATH,
+  Z: PLAZA,
+  O: ROOF,
+  D: DOOR,
+  S: SIGN,
+  U: COUNTER,
+  H: HEAL,
+  X: PC,
 };
 
 export function mapFromSketch(rows: readonly string[]): TileMap {

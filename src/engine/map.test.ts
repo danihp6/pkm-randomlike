@@ -3,11 +3,19 @@ import {
   BUSH,
   CARPET,
   CHEST,
+  COUNTER,
+  DOOR,
   EXIT,
   FLOOR,
+  HEAL,
   ITEM,
   LEDGE,
+  PATH,
+  PC,
+  PLAZA,
+  ROOF,
   ROCK,
+  SIGN,
   TALL_GRASS,
   TRAP,
   WALL,
@@ -66,6 +74,14 @@ describe('the obstacle seals', () => {
     [LEDGE, false],
     [BUSH, false],
     [ROCK, false],
+    [PATH, true],
+    [PLAZA, true],
+    [ROOF, false],
+    [DOOR, true],
+    [SIGN, false],
+    [COUNTER, false],
+    [HEAL, false],
+    [PC, false],
   ];
 
   it('numbers the two obstacle seals 10 and 11', () => {
@@ -74,7 +90,7 @@ describe('the obstacle seals', () => {
   });
 
   it('blocks a bush and a rock, and every other solid', () => {
-    for (const value of [WALL, WATER, LEDGE, BUSH, ROCK]) {
+    for (const value of [WALL, WATER, LEDGE, BUSH, ROCK, ROOF, SIGN, COUNTER, HEAL, PC]) {
       expect(isWalkable([[value]], { x: 0, y: 0 }), `value ${value}`).toBe(false);
     }
   });
@@ -87,6 +103,51 @@ describe('the obstacle seals', () => {
 
   it('round-trips both seals through the sketch legend', () => {
     expect(mapFromSketch(['BR'])).toEqual([[BUSH, ROCK]]);
+  });
+});
+
+describe('the city and interior vocabulary', () => {
+  it('numbers the eight region kinds 12 to 19', () => {
+    expect([PATH, PLAZA, ROOF, DOOR, SIGN, COUNTER, HEAL, PC]).toEqual([12, 13, 14, 15, 16, 17, 18, 19]);
+  });
+
+  it('lands each region kind on the walkability the generators are written against', () => {
+    expect(isWalkable([[PATH]], { x: 0, y: 0 })).toBe(true);
+    expect(isWalkable([[PLAZA]], { x: 0, y: 0 })).toBe(true);
+    expect(isWalkable([[DOOR]], { x: 0, y: 0 })).toBe(true);
+    expect(isWalkable([[ROOF]], { x: 0, y: 0 })).toBe(false);
+    expect(isWalkable([[SIGN]], { x: 0, y: 0 })).toBe(false);
+    expect(isWalkable([[COUNTER]], { x: 0, y: 0 })).toBe(false);
+    expect(isWalkable([[HEAL]], { x: 0, y: 0 })).toBe(false);
+    expect(isWalkable([[PC]], { x: 0, y: 0 })).toBe(false);
+  });
+
+  it('builds a city street from the sketch legend', () => {
+    const city = mapFromSketch(['ZOPS', 'PD..', '"P#~']);
+    expect(city).toEqual([
+      [PLAZA, ROOF, PATH, SIGN],
+      [PATH, DOOR, FLOOR, FLOOR],
+      [TALL_GRASS, PATH, WALL, WATER],
+    ]);
+    expect(isWalkable(city, { x: 2, y: 1 })).toBe(true);
+    expect(isWalkable(city, { x: 3, y: 2 })).toBe(false);
+  });
+
+  it('builds an interior room from the sketch legend', () => {
+    const room = mapFromSketch(['#UHX', '#.D#']);
+    expect(room).toEqual([
+      [WALL, COUNTER, HEAL, PC],
+      [WALL, FLOOR, DOOR, WALL],
+    ]);
+    for (const x of [1, 2, 3]) expect(isWalkable(room, { x, y: 0 })).toBe(false);
+    expect(isWalkable(room, { x: 2, y: 1 })).toBe(true);
+  });
+
+  it('keeps the city grass a wild-encounter tile with no new rule', () => {
+    const corner = mapFromSketch(['"P']);
+    expect(tileAt(corner, { x: 0, y: 0 })).toBe(TALL_GRASS);
+    expect(triggersWildEncounter(corner, { x: 0, y: 0 })).toBe(true);
+    expect(triggersWildEncounter(corner, { x: 1, y: 0 })).toBe(false);
   });
 });
 

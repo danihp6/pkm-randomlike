@@ -34,6 +34,8 @@ export const ATLASES = [
   'frlg/outdoor.png',
   'frlg/forest.png',
   'frlg/cave.png',
+  'frlg/city.png',
+  'frlg/interior.png',
   'frlg/trainers.png',
   'frlg/overworld.png',
   'frlg/player.png',
