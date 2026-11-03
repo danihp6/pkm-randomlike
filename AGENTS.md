@@ -1,23 +1,23 @@
 # Project: PokeRandomLike
 
-Browser **Pokémon roguelike**. You walk a procedural **route** (our word for the
-rooms of a floor): a small top-down screen of 24px tiles with tall grass, its
-openings, items and trainers. Trainers have a line of sight and open a **classic
-menu battle** (fight / bag / switch / run) when they see you; tall grass rolls
-wild encounters. You catch at most one Pokémon per route, the classic way. Every
-Pokémon you lose is lost **forever** — 0 HP means gone, no Revive, no resurrection
-— and when the last one falls the run ends and nothing carries over. A run is a
-chain of **maps**: Binding of Isaac-style floors — a grid of routes (rooms) of one
-biome, closed into a loop, each room joined to its grid neighbours by their
-openings, with a level range per map and a boss in the room farthest from the
-entry that opens the portal to the next map — plus an infinite mode.
+Browser **Pokémon roguelike**. You walk a procedural **route**: a long top-down map
+of 24px tiles with tall grass, its openings, items and trainers. Trainers have a
+line of sight and open a **classic menu battle** (fight / bag / switch / run) when
+they see you; tall grass rolls wild encounters. You catch at most one Pokémon per
+route, the classic way. Every Pokémon you lose is lost **forever** — 0 HP means
+gone, no Revive, no resurrection — and when the last one falls the run ends and
+nothing carries over. A run is one **region**: a procedurally named starting
+**town**, **eight gym cities** in badge order, long routes of two to four screens
+with one or two optional **laterals**, the **Victory Road**, the **League**, and
+the **tower** behind the Champion — plus an endless mode.
 
 Winning is where the roguelike lives: the only way to grow the party is to catch,
 and the only way to keep it is not to lose it.
 
-`docs/design-spec.md` is the gameplay source of truth. `docs/battle-spec.md`,
-`docs/routes-spec.md`, `docs/maps-spec.md`, `docs/tileset-spec.md`,
-`docs/showdown-reuse.md` and `docs/data-spec.md` narrow it down by area.
+`docs/design-spec.md` is the gameplay source of truth. `docs/region-spec.md` is the
+world's — the region, its nodes and its save. `docs/battle-spec.md`,
+`docs/routes-spec.md`, `docs/tileset-spec.md`, `docs/showdown-reuse.md` and
+`docs/data-spec.md` narrow it down by area.
 `docs/tech-decisions.md` holds the `D##` decisions. `TODO.md` is the open
 backlog; `CHANGELOG.md` archives what already shipped (read only when asked).
 `docs/agent-spec-template.md` is the per-task spec format the multi-agent

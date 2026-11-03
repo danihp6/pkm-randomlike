@@ -11949,7 +11949,7 @@ so the honest split, if a later cycle wants one, is "packer + manifests + blanks
       `src/engine/frameMap.ts` and `src/engine/frameMap.test.ts`. *Dependencies:* none.
       *(Batch 117)*
 
-- [ ] **[Task-270] `docs/region-spec.md` is the world's new source of truth.** The floors' spec is
+- [x] **[Task-270] `docs/region-spec.md` is the world's new source of truth.** The floors' spec is
       replaced: the region's topology, its nodes, its identity and streams, its sizes, names, badge
       caps, guards, flying and the save's post-cut rules are written down once, in the vocabulary
       `[Task-268]` freezes.

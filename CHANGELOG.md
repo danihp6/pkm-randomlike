@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **`docs/region-spec.md` is the world's new source of truth.** `[Task-270]`, Batch 117:
+      the floors' spec is gone and the region's takes its place: one document with eight frozen
+      sections — what a region is (the seven node kinds, the 20-node chain, the sizes table),
+      identity and streams (`nodeKey`, seeded names, the four per-node streams and the retired global
+      route prefix), the `9/16/23/30/37/43/49/55` badge ladder with `LEAGUE_LEVEL` 60, the guard and
+      walking back, the map and flying, services per settlement, what a route and a city hold (a stub
+      Batch 118 fills by section) and the save's v28 rules — written in the shipped code's
+      vocabulary. `D59`-`D62` join `docs/tech-decisions.md` (62 decisions, each three lines or more),
+      `AGENTS.md`'s pitch and doc list now point at the region and no longer at `docs/maps-spec.md`,
+      and `.prettierignore` swaps the file. All criteria `[unit]`: the headings, the 35-name list,
+      the `D##` shapes and the document's numbers were compared against `src/engine/region/*` and
+      `src/data/region.ts`; the ≈90 other `maps-spec` references are Batch 125's and were counted to
+      prove this task added none.
+
 - [x] **The frame mesh is resolved once, not per cell.** `[Task-269]`, Batch 117:
       `src/engine/frameMap.ts` gains `buildFrameMesh(map, tileset, pad = 0)`, the renderer's flat
       twin of `buildFrameMap`: one `Int32Array` of atlas frame indices, row-major over the unpadded
