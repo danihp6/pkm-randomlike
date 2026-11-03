@@ -12404,7 +12404,7 @@ engine module; the base scene is `[Task-290]`'s alone.
 **What it replaces.** `StarterScene`, the room NPCs and their `RoomHost`, the room-scoped POIs and
 the route-scoped capture.
 
-- [ ] **[Task-287] The prologue: an empty party, one starter and a closed door.** The run starts in
+- [x] **[Task-287] The prologue: an empty party, one starter and a closed door.** The run starts in
       the laboratory with no Pokémon; the professor hands over the starter and the starting bag
       (Poké Balls and potions), the laboratory heals on entry, and the town's exit stays shut until
       the starter is taken. `hasLivingParty` cannot declare an empty party a loss.

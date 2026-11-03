@@ -47,6 +47,7 @@ import {
   type StorageLike,
 } from './save';
 import type { RunHistoryRecord } from './run/history';
+import { emptyRun } from './run/prologue';
 
 class MemoryStorage implements StorageLike {
   readonly data = new Map<string, string>();
@@ -641,6 +642,65 @@ describe('run validation', () => {
       JSON.stringify({ version: SAVE_VERSION, run: { ...run, party: [deep], box: [] } }),
     );
     expect(decoded.run?.party[0].fighter.level).toBe(MAX_LEVEL);
+  });
+});
+
+describe('the prologue run (Task-287)', () => {
+  it('round-trips a run with no party while its starter is untaken', () => {
+    const prologue = emptyRun('prologue-save');
+    const decoded = decodeSave(
+      encodeSave({
+        version: SAVE_VERSION,
+        settings: defaultSettings(),
+        run: prologue,
+        history: [],
+      }),
+    );
+
+    expect(decoded.run).not.toBeNull();
+    expect(decoded.run?.party).toEqual([]);
+    expect(decoded.run?.starterTaken).toBe(false);
+    expect(decoded.run?.nodeKey).toBe(planRegion('prologue-save').townKey);
+    expect(SAVE_VERSION).toBe(28);
+    expect(decoded.run).toEqual(prologue);
+  });
+
+  it('keeps the flag on a run that took its starter, party intact', () => {
+    const run = createRun({
+      seed: 'prologue-save',
+      starter: createRunPokemon({ id: 'catch-1', speciesId: 'charmander', level: 5 }),
+    });
+    const decoded = decodeSave(
+      encodeSave({ version: SAVE_VERSION, settings: defaultSettings(), run, history: [] }),
+    );
+
+    expect(decoded.run?.starterTaken).toBe(true);
+    expect(decoded.run?.party.map((member) => member.fighter.speciesId)).toEqual(['charmander']);
+  });
+
+  it('drops a run that says it took its starter but holds no party', () => {
+    const run = { ...emptyRun('prologue-save'), starterTaken: true };
+    const decoded = decodeSave(
+      JSON.stringify({
+        version: SAVE_VERSION,
+        settings: { textSpeed: 'fast', volume: 0.3 },
+        run,
+        history: [],
+      }),
+    );
+
+    expect(decoded.run).toBeNull();
+    expect(decoded.settings.textSpeed).toBe('fast');
+    expect(decoded.settings.volume).toBeCloseTo(0.3);
+  });
+
+  it('reads a document written before the flag as a run with its party and no prologue', () => {
+    const run = JSON.parse(JSON.stringify(sampleRun())) as Record<string, unknown>;
+    delete run.starterTaken;
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+
+    expect(decoded.run?.starterTaken).toBe(false);
+    expect(decoded.run?.party).toHaveLength(6);
   });
 });
 

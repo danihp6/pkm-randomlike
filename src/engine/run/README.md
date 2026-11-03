@@ -33,6 +33,8 @@ seed (`D11`).
 - `pool.test.ts` — the legendary exclusion, the BST windows and the variant formes.
 - `starters.ts` — the starter pool the first screen rolls.
 - `starters.test.ts` — the distinct base forms with two evolutions ahead.
+- `prologue.ts` — the prologue: the empty run a new game starts with, the professor's one starter and starting bag, and the shut town door (`Task-287`).
+- `prologue.test.ts` — the empty run, the one gift and its same-object refusal, and the pinned starter.
 - `share.ts` — the run share string: seed and mode, round-tripping totally (`D21`).
 - `share.test.ts` — every encode/decode case, spaces and non-ASCII seeds included.
 - `party.ts` — the party predicates a room asks: its types, moves and abilities (`D47`).

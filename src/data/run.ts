@@ -149,10 +149,14 @@ export type StartingItem = Readonly<{ itemId: string; count: number }>;
 
 /**
  * What a fresh run's bag holds before the first route: a stack of Poké Balls, so
- * the player can attempt catches from the very first route. Every other item is
- * still earned along the way.
+ * the player can attempt catches from the very first route, and three Potions, so
+ * the first route is survivable. Every other item is still earned along the way
+ * (`docs/region-spec.md` §6).
  */
-export const STARTING_BAG: readonly StartingItem[] = [{ itemId: 'pokeball', count: 10 }];
+export const STARTING_BAG: readonly StartingItem[] = [
+  { itemId: 'pokeball', count: 10 },
+  { itemId: 'potion', count: 3 },
+];
 
 /**
  * Share of **caught** wilds born dark (`Task-154`). One catch per room, so this is

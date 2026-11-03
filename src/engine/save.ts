@@ -90,6 +90,13 @@ export type StorageLike = Readonly<{
 /** The schema version of the current build. Bump it and add a migration in step. */
 export const SAVE_VERSION = 28;
 
+/*
+ * The run's `starterTaken` flag (`Task-287`) opens no step: it is read per field
+ * (`value.starterTaken === true`, the `bossDefeated`/`towerStreak` precedent), so a
+ * document written before the flag decodes as `starterTaken: false` over a party that
+ * already exists, which behaves exactly as it does today, and the schema stays 28.
+ */
+
 /** The storage key. It carries no version: the version lives inside the JSON. */
 export const SAVE_KEY = 'pokerandomlike.save';
 
@@ -989,7 +996,10 @@ function parseRun(value: unknown): RunState | null {
   if (value.mode !== 'finite' && value.mode !== 'infinite') return null;
 
   const party = parseMembers(value.party);
-  if (party.length === 0) return null;
+  // A run with no party is a legal document only while its starter has not been
+  // taken: the prologue stands in the laboratory with no Pokémon at all.
+  const starterTaken = value.starterTaken === true;
+  if (party.length === 0 && starterTaken) return null;
   const box = parseMembers(value.box);
   const bag = parseBag(value.bag);
   if (!bag) return null;
@@ -1078,6 +1088,7 @@ function parseRun(value: unknown): RunState | null {
     towerStreak: isInteger(value.towerStreak) && value.towerStreak >= 0 ? value.towerStreak : 0,
     pokevialCharges,
     xp,
+    starterTaken,
     party,
     box,
     rip: parseMembers(value.rip),

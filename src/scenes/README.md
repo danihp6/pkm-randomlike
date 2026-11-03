@@ -36,6 +36,15 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   door starting the interior scene its key names and an exit band travelling through the
   pure travel rule (a settlement re-drawn in place, any other node handed to the scene its
   kind names). Its dev-only surface is `__pkmCity` with `debugCityState` and `placePlayer`.
+- `InteriorScene.ts` — the town's laboratory, the prologue's one room: the interior drawn
+  from `planInterior` on the interior tileset, the player on the shared walker, the
+  professor's starter pick mounted as the shipped `starter` panel, the run it leaves in the
+  save and the door back to the town. Its dev-only surface is `__pkmInterior` with
+  `debugInteriorState` and `placePlayer`.
+- `interior.test.ts` — the laboratory's headless half: the offer before and after the pick,
+  the intent that takes it, and the scene's own registration.
+- `npcs.ts` — a node's NPCs drawn and opened.
+- `pois.ts` — a route's POI drawn and triggered.
 - `walker.ts` — the one tile walker the node scenes share: `canWalkStep` (walkable and
   corner-cut aware), the shared `WALK_STEP_MS` / `RUN_STEP_MS` cadence and `WorldWalker`,
   which slides a scene's own sprite one cell per step on the run's movement keys, plays the

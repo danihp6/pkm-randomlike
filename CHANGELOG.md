@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The prologue opens in the laboratory, behind a shut door.** `[Task-287]`, Batch 122:
+      `src/engine/run/prologue.ts` starts a run with no party (`emptyRun`, `takeStarter` granting
+      the member and the two-row `STARTING_BAG` once, `canLeaveTown`), `RunState.starterTaken`
+      rides the v28 schema, `hasLivingParty` reads a prologue run as alive so neither `BootScene`
+      nor the route scene discards it, and `travel` refuses the town's forward band until the pick
+      (answering `'prologue'`). `src/scenes/InteriorScene.ts` mounts the shipped `starter` panel in
+      the `Lab` and returns to the town on the door, `MainMenuScene` starts `Lab` instead of
+      `Starter`, and `src/ui/hud/specGap.views/starter.ts` restores frame `04`'s adapter.
+      `docs/region-spec.md` §6. `[unit]` 16 criteria, the 5995 tests of `npm test` green;
+      `[live]` over CDP at 1280x800: the three starter cards read `(218,176,260,320)`,
+      `(510,176,260,320)`, `(802,176,260,320)`; a new run lands on `Lab`/`town:1` with `party 0`
+      and the save at v28 `starterTaken: false`; and the town's east band refuses a prologue run
+      (`nodeKey 'town:1'`) while the same walk after the pick reads `nodeKey 'route:1'`.
+
 - [x] **The Champion opens the tower, and the run ends only when the party does.** `[Task-294]`,
       Batch 123: `src/engine/region/tower.ts` is the endless node's rule — `towerOpen` is
       `leagueCleared` and nothing else, `towerStep` fields the next five at `LEAGUE_LEVEL` off
