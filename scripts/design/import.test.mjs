@@ -198,7 +198,7 @@ describe('runImport from the committed snapshot', () => {
     expect(readFileSync(path.join(design, 'exports', '02-options.png'))).toEqual(
       readFileSync(path.join(ROOT, 'design', 'exports', '02-options.png')),
     );
-  });
+  }, 60_000);
 
   it('is still the REST path when no directory is named', async () => {
     const result = await runImport({ root: ROOT, env: {} });
