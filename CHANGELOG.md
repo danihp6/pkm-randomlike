@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A route is two to four screens long.** `[Task-272]`, Batch 118:
+      `src/engine/region/route/` stitches the shipped carver into one continuous map: `layout.ts`
+      draws the screen count (two, three or four) and one opening per neighbour off the node's
+      `edges` — the entry band on the north, the rest by travel order — `map.ts` carves the whole
+      `ROUTE_WIDTH` 60-tile width at 120, 160 or 200 tiles in a single pass, so the openings sit on
+      the final stitched border and there is no interior seam and no door, and the biome comes from
+      the node; `streams.ts` re-exports the node's four streams and `index.ts` is the barrel. All
+      criteria `[unit]`: eight seeds at the three heights yield `60 × (120|160|200)`, the entry band
+      reaches every exit band, no cell sits outside the ring that is unreachable, every cell
+      resolves to a forest frame and a fixed seed pins its stitched digest. The folder README maps
+      the new files and `docs/routes-spec.md` §1 now reads "two to four screens of one biome".
+
 - [x] **The city and interior tiles are imported.** `[Task-271]`, Batch 117: FRLG's town and
       indoor tiles enter the same pipeline as the forest. `scripts/frlg/build-region-tilesets.mjs`
       takes the two source sheets by argv/environment (absolute path into the store, never a link

@@ -12019,7 +12019,7 @@ data file. `src/data/README.md` is `[Task-275]`'s alone (its three new tables).
 **What it replaces.** `src/engine/routes/sketch.ts`'s single-screen assumption (the carver's pieces
 are reused inside the new multi-screen route), the hand-placed city content and the per-map boss.
 
-- [ ] **[Task-272] A route is two to four screens long.** The route generator stitches the existing
+- [x] **[Task-272] A route is two to four screens long.** The route generator stitches the existing
       carver into one continuous map 60 tiles wide and 120/160/200 tall, with one biome, no internal
       transition, an entry band and one exit band per neighbour.
       **Measured:** `sketchRoute` (`src/engine/routes/sketch.ts`) carves one screen from
