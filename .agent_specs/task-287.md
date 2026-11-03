@@ -454,19 +454,30 @@ the two places named above, and nothing else is tunable.
     `localStorage.getItem('pokerandomlike.save')` and keep it as `qa287.json`; assert
     `run.starterTaken === true`, `run.party.length === 1`, `run.nodeKey === 'town:1'`,
     `version === 28`.
+    *The walk to the band (both passes).* `planCity` puts the spawn in the **central
+    block's** plaza, so a right-hold from the spawn never reaches the town's east
+    band: the band rides the street rows `y 13..15` at `x 38..39`, while the spawn
+    row `y 19` is a block row. Walk the street: after CONTINUE wait until
+    `__pkmCity.debugCityState().tile` is the spawn `(19, 19)`, hold **up** until
+    `tile.y === 13` (about 1.4 s at the walk step), then hold **right** for 6 s.
     *Pass A (before the pick):* write
     `JSON.stringify({ ...doc, run: { ...doc.run, party: [], starterTaken: false } })`
-    into `pokerandomlike.save`, reload, click CONTINUE, wait for `__pkmCity`, then
-    `__pkmCity.debugCityState()`. Hold the right arrow (or the run's `right` key) for
-    6 s. Expected: `debugCityState().travels === 0`, `key === 'town:1'`,
-    `tile.x >= 38`, and `window.__pkmRoute === undefined`.
+    into `pokerandomlike.save`, reload, click CONTINUE, walk to the band as above.
+    Expected: `debugCityState().key === 'town:1'`, `debugCityState().tile.x >= 38`
+    with `tile.y` in `13..15` (the band is reached and refused),
+    `window.__pkmRoute === undefined`, and the save still reads
+    `run.nodeKey === 'town:1'` with `run.visitedNodes === ['town:1']`.
     *Pass B (after the pick):* write `qa287.json` back unchanged, reload, click
-    CONTINUE, wait for `__pkmCity`, hold right for 6 s. Expected:
-    `debugCityState().travels === 1` and `window.__pkmRoute` defined (the walk left
-    the town through the rule).
-    (Measurement: the scene's own `travels`/`key`/`tile` counters; `travels` is the
-    number of committed settlement travels, so its value before and after the pick is
-    the door.)
+    CONTINUE, walk to the band the same way. Expected: `window.__pkmRoute` is
+    defined, `window.__pkmCity` is gone, and the save reads
+    `run.nodeKey === 'route:1'` with
+    `run.visitedNodes === ['town:1', 'route:1']` (the walk left the town through the
+    rule).
+    (Measurement: the scene's own `key`/`tile` fields, the presence of
+    `__pkmRoute`/`__pkmCity`, and the save's `run.nodeKey`/`run.visitedNodes`.
+    **`travels` is not the door's counter:** `CityScene.walkBand` increments it only
+    on arrival at a **settlement**, so a walk out into a route never moves it; the
+    two passes are told apart by the save's `nodeKey` and by `__pkmRoute`.)
 
 - **A `[live]` that compares pixels is not a criterion** (`D57`). L1 reads DOM rects,
   L2 and L3 read scene fields and the save's JSON — never a screenshot.
