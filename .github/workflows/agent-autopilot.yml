@@ -12,12 +12,10 @@ name: agent / autopilot
 # half. A blocked or red task does NOT stop the loop by itself: the cycle marks it
 # `[!]` in `TODO.md` and takes the next candidate.
 #
-# There is no daily cap by default (`AGENT_DAILY_CYCLES` unset or `0`), so the only
-# thing bounding the loop is the backlog's own finiteness: with no open `[ ]` left it
-# parks itself, and ~10 whole-batch cycles cover today's 30 tasks. The two stops that
-# remain are the day's three red cycles (something is broken; carrying on would only
-# bill minutes for garbage — re-run `agent / cycle` by hand to resume) and the
-# in-flight check.
+# The loop is bounded by the backlog and the brake, nothing else: with no open `[ ]`
+# left it parks itself, and `agent / autopilot window` is what bounds a day when a
+# human wants one. The two stops that remain are three red cycles in a row (something
+# is broken; carrying on would only bill minutes for garbage) and the in-flight check.
 #
 # The brake can also be a **timed window**: `agent / autopilot window` writes a range
 # into `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` (UTC ISO instants) and turns the brake on
@@ -67,13 +65,8 @@ jobs:
           PARKED_UNTIL: ${{ vars.PARKED_UNTIL }}
           PARKED_SHA: ${{ vars.PARKED_SHA }}
           IGNORE_RUN: ${{ inputs.ignore_run }}
-          # `0` or unset means no cap: the backlog's own finiteness is then the only
-          # thing bounding the loop (30 tasks in whole batches is ~10 cycles, and the
-          # loop parks itself when no `[ ]` is left). Set it to a number to bound a day.
-          AGENT_DAILY_CYCLES: ${{ vars.AGENT_DAILY_CYCLES }}
         run: |
           set -euo pipefail
-          cap="${AGENT_DAILY_CYCLES:-0}"
           go() { echo "go=$1" >> "$GITHUB_OUTPUT"; echo "REASON=$2" >> "$GITHUB_ENV"; echo "$2"; }
           red() {
             same=$(gh issue list --label agent-blocked --state open --limit 100 --json title \
@@ -167,15 +160,6 @@ jobs:
             red "Autopilot parked: three red cycles in a row" \
                 "The last three agent / cycle runs all had a red verdict, so the loop stopped itself instead of burning the day. It lifts by itself when a commit lands on main (push the fix) or at ${tomorrow}T00:00:00Z, and \`agent / autopilot window\` with \`hours: 0\` clears the stamp immediately."
             go false "Three red cycles in a row."
-            exit 0
-          fi
-
-          today=$(date -u +%Y-%m-%d)
-          started=$(gh run list --workflow=agent-cycle.yml --created "$today" --json databaseId --jq 'length')
-          echo "cycles today=$started cap=$cap"
-
-          if [ "$cap" -gt 0 ] && [ "$started" -ge "$cap" ]; then
-            go false "Daily cap reached ($started cycles today, cap $cap)."
             exit 0
           fi
 

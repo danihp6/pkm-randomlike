@@ -168,8 +168,6 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
   count alone; it never fails for that. The issue a parked driver opens is deduplicated by title
   while one is still open, so a brake that parks on every cron does not bury the repository in
   copies.
-- At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
-  **Unset or `0` means no cap** — which is the current setting.
 - Inside the armed window, when there is one: `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` hold
   the range as absolute UTC instants and the driver parks outside them even if the brake
   still reads `on`, so a cron that fires late cannot start a cycle past the end.

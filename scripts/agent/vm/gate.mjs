@@ -21,9 +21,7 @@ const RED_LIMIT = 3;
  * @param {number|null} input.windowUntil epoch seconds, or null
  * @param {number} input.now            epoch seconds
  * @param {number} input.openTasks      `- [ ]` items in TODO.md
- * @param {number} input.cyclesToday    cycles started since UTC midnight
  * @param {number} input.redToday       cycles that failed since UTC midnight
- * @param {number} [input.cap]          daily cap; 0 or unset means no cap
  */
 export function decideGate({
   brake,
@@ -31,9 +29,7 @@ export function decideGate({
   windowUntil = null,
   now,
   openTasks,
-  cyclesToday,
   redToday = 0,
-  cap = 0,
 }) {
   if (String(brake ?? '').trim() !== 'on') {
     return { go: false, reason: `brake is '${String(brake ?? '').trim() || 'unset'}'`, alert: null };
@@ -68,11 +64,6 @@ export function decideGate({
         body: `The loop stopped itself after ${redToday} failed cycles on ${iso(now).slice(0, 10)}. Look at the last cycle logs, fix or free the task it was on, then reset the streak (\`brake.sh reset\`).`,
       },
     };
-  }
-
-  const limit = Number(cap) || 0;
-  if (limit > 0 && cyclesToday >= limit) {
-    return { go: false, reason: `daily cap reached (${cyclesToday}/${limit})`, alert: null };
   }
 
   return { go: true, reason: 'a cycle may start', alert: null };
@@ -113,9 +104,7 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
     windowUntil: window.until,
     now: Number(arg(argv, 'now', Math.floor(Date.now() / 1000))),
     openTasks: Number(arg(argv, 'open', 0)),
-    cyclesToday: Number(arg(argv, 'cycles-today', 0)),
     redToday: Number(arg(argv, 'red-today', 0)),
-    cap: Number(arg(argv, 'cap', 0)),
   });
   process.stdout.write(`${JSON.stringify(decision)}\n`);
 }

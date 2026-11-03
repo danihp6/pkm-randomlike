@@ -29,7 +29,7 @@ mark_alerted() {
   printf '%s\n' "$key" >> "$STATE/alerts"
 }
 
-log "driver starting: repo=$PKM_REPO state=$STATE model=$PKM_MODEL cap=$AGENT_DAILY_CYCLES"
+log "driver starting: repo=$PKM_REPO state=$STATE model=$PKM_MODEL"
 
 while :; do
   if ! git -C "$PKM_REPO" fetch --prune --quiet origin; then
@@ -40,15 +40,12 @@ while :; do
 
   open=$(git -C "$PKM_REPO" show origin/main:TODO.md 2>/dev/null |
     grep -cE '^[[:space:]]*-[[:space:]]*\[ \][[:space:]]*\*\*\[Task-' || true)
-  cycles_today=$(count_today all)
   red_today=$(count_today red)
 
   decision=$(node "$VM_DIR/gate.mjs" \
     --state "$STATE" \
     --open "${open:-0}" \
-    --cycles-today "${cycles_today:-0}" \
-    --red-today "${red_today:-0}" \
-    --cap "${AGENT_DAILY_CYCLES:-0}")
+    --red-today "${red_today:-0}")
 
   go=$(printf '%s' "$decision" | jq -r .go)
   reason=$(printf '%s' "$decision" | jq -r .reason)

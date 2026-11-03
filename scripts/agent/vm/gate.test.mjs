@@ -7,9 +7,7 @@ const base = {
   windowUntil: null,
   now: 1_800_000_000,
   openTasks: 3,
-  cyclesToday: 0,
   redToday: 0,
-  cap: 0,
 };
 
 describe('decideGate', () => {
@@ -56,12 +54,6 @@ describe('decideGate', () => {
     expect(decision.go).toBe(false);
     expect(decision.alert?.title).toContain('3 red cycles');
     expect(decideGate({ ...base, redToday: 9 }).reason).toContain('limit 3');
-  });
-
-  it('caps the day only when a cap is set', () => {
-    expect(decideGate({ ...base, cyclesToday: 99, cap: 0 }).go).toBe(true);
-    expect(decideGate({ ...base, cyclesToday: 4, cap: 5 }).go).toBe(true);
-    expect(decideGate({ ...base, cyclesToday: 5, cap: 5 }).go).toBe(false);
   });
 
   it('reads the brake before the window, so a manual off parks inside a range', () => {
