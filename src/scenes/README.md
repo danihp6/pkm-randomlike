@@ -19,13 +19,21 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `StarterScene.test.ts` — the starter pick's headless test: a reroll draws its offer
   through the seed helper and resets the cursor.
 - `WorldScene.ts` — the base every node scene extends: one map drawn as two culled tile
-  layers, the world camera's bounds and zoom, and a node preloaded off the worker. It
-  owns no run, no plan and no HUD, and is not registered in `src/main.ts` (it is abstract
-  and has no key).
+  layers, the world camera's bounds and zoom, the node preloaded off the worker and the one
+  fade-and-swap transition that draws an already-preloaded node (`transitionToNode`,
+  `WORLD_ARRIVED`, `arrival`). It owns no run, no plan and no HUD, and is not registered in
+  `src/main.ts` (it is abstract and has no key).
 - `RouteScene.ts` — the route itself: it extends `WorldScene` for the tile draw and the
   camera and keeps the player, tall grass, trainers, items, the room panel slot, the
-  pointer dispatch, the run's battles and the touch controls. Its overlay chrome (HUD
-  panels, notices, pause menu) is built by the panel layer below.
+  pointer dispatch, the run's battles and the touch controls. It also hosts the region's
+  travel seam today (`travelToNode`, `onNodeArrived`, the dev-only `debugTravelState`). Its
+  overlay chrome (HUD panels, notices, pause menu) is built by the panel layer below.
+- `regionScenes.ts` — the region node scenes' folder registry: a scene module that exports
+  `regionSceneKey` and `regionSceneClass` is collected for `main.ts`'s scene list, so a new
+  city, gym or League needs no `main.ts` edit.
+- `regionScenes.test.ts` — the registry's headless rules: a module with both markers is
+  collected, one with one or none is skipped, a duplicate key throws naming both paths, and
+  the folder itself holds no region node scene yet.
 - `panels/` — the route's overlay panels: one module per panel, discovered by the
   scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
@@ -39,7 +47,10 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 
 ## Rules
 
-1. A new scene is registered in `src/main.ts`'s `scene` array with a unique key.
+1. A new scene is registered in `src/main.ts`'s `scene` array with a unique key. A **region
+   node scene** (city, gym, League, anything the travel seam may enter) registers itself
+   instead by exporting `regionSceneKey` and `regionSceneClass` and is collected by
+   `regionScenes.ts`; the base seven stay in `main.ts`.
 2. A scene holds no game rule: it reads and writes the run state through `src/engine/run/`,
    never in the scene.
 3. Draw panels through `src/ui/` and animations through `src/render/`; a scene that

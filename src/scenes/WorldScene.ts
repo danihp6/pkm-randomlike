@@ -1,12 +1,19 @@
 import Phaser from 'phaser';
 import type { TilesetId } from '../data/tilesets';
 import { TILESETS, tilesetTextureKey } from '../data/tilesets';
+import type { Tile } from '../engine/grid';
 import { mapPixelSize, type TileMap } from '../engine/map';
 import type { NodeMeshes, NodeReply, NodeRequest, NodeWorld } from '../engine/region/preload';
 import { TILE_SIZE } from '../engine/tileset';
 import { prefersTouchControls } from '../input/device';
 import type { WorldLayers } from '../render/tilemapLayer';
 import { buildWorldLayers, destroyWorldLayers } from '../render/tilemapLayer';
+
+/** The one transition's length: the fade out, then the fade in. */
+export const WORLD_TRANSITION_MS = 200;
+
+/** Emitted after a transition swapped the drawn node; the payload is the arrival. */
+export const WORLD_ARRIVED = 'world:arrived';
 
 /**
  * Ground actors (the player and the trainers) sort by their foot position, so a
@@ -63,6 +70,10 @@ export abstract class WorldScene extends Phaser.Scene {
   private pendingNodes = new Map<string, PendingNode>();
   private worker: Worker | null = null;
   private workerUnavailable = false;
+  /** The node and spawn of the last transition, or null before the first one. */
+  private lastArrival: Readonly<{ key: string; spawn: Tile }> | null = null;
+  /** True while a fade is in flight, so a second `transitionToNode` cannot double-draw. */
+  private transitioning = false;
 
   constructor(key: string) {
     super(key);
@@ -103,6 +114,38 @@ export abstract class WorldScene extends Phaser.Scene {
   protected applyWorld(world: NodeWorld): void {
     this.drawWorld({ tiles: world.tiles, meshes: world.meshes, tilesetId: world.tilesetId });
     this.worlds.set(world.key, world);
+  }
+
+  /** The node and spawn of the last transition, or null before the first one. */
+  protected arrival(): Readonly<{ key: string; spawn: Tile }> | null {
+    return this.lastArrival;
+  }
+
+  /**
+   * The one transition the game plays: fade out **once**, draw `world` (which
+   * destroys the old layers), fade in and hand the spawn to the subclass. A second
+   * call while a fade is in flight is ignored, so a double click cannot draw two
+   * maps. It never touches the run, the HUD or the music: the subclass does.
+   */
+  protected transitionToNode(world: NodeWorld, spawn: Tile): void {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    const camera = this.cameras.main;
+    camera.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.applyWorld(world);
+      this.lastArrival = { key: world.key, spawn: { x: spawn.x, y: spawn.y } };
+      camera.fadeIn(WORLD_TRANSITION_MS);
+      this.onNodeArrived(world.key, this.lastArrival.spawn);
+      this.events.emit(WORLD_ARRIVED, this.lastArrival);
+      this.transitioning = false;
+    });
+    camera.fadeOut(WORLD_TRANSITION_MS);
+  }
+
+  /** Hook a subclass implements to place its own actor; the base does nothing. */
+  protected onNodeArrived(key: string, spawn: Tile): void {
+    void key;
+    void spawn;
   }
 
   /** Starts the camera on `target` at `worldCameraZoom()`. */
