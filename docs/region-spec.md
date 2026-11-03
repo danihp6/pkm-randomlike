@@ -150,6 +150,45 @@ the tasks that ship each piece: `§7.1` the city plan, `§7.2` the interior list
 node content, `§7.4` the gym's puzzle, `§7.5` the city screen, `§7.6` the League and
 `§7.10` the missions' schema.
 
+### 7.1 The city plan
+
+A settlement's whole map comes out of `planCity(plan, key)` for a `town` or a `city` node
+(`src/engine/region/city/plan.ts`): a square of `citySize(badge)` for a city — 50x50,
+70x70 or 90x90 — or `TOWN_SIZE` (40x40) for the town, laid out as a street grid. The map
+is emitted in the engine's map values — `PATH`, `PLAZA`, `ROOF`, `DOOR`, `WALL`,
+`TALL_GRASS` — never in atlas frames. A key that names anything else is refused with
+`not a settlement: <key>`.
+
+The grid is a solid wall ring around 7-tile blocks between 3-tile streets, one street every
+10 tiles, centred so the leftover border is shared by the two sides. The **central block** is
+the plaza and its centre tile is the **spawn**: where a walk in through an exit band lands,
+while a flight lands on the Centre's door (§5). The **bottom-right block** is the **grass
+corner**, its whole square `TALL_GRASS`, so a settlement rolls wild encounters with no new
+rule. Every other block holds at most one building in its top-left corner — a 5x4 footprint
+whose front (top) row is wall with exactly one door and whose other three rows are roof —
+and the lots left over stay solid wall. The tile north of a door is a street, so every door
+opens onto pavement.
+
+The kinds fill in this order: the **Centre** (a city only), the **gym** (a city only, and
+only when the node carries one), the **laboratory**, the **casino** (a city from badge 3),
+then houses. A city fills `cityTierForBadge(badge).buildings` of them — 6, 10 or 14 — and
+the town holds exactly the two §6 gives it, one laboratory and one house, with no Centre,
+gym or casino. Each door names the interior behind it, city-relative and stable across a
+rebuild: `centre`, `gym`, `lab`, `casino`, or `house:<n>` numbered 1.. from the first house
+when the settlement holds more than one — and `house`, unsuffixed, for the town's single
+one. The interior generator parses that string and takes the city key separately.
+
+One **exit band** per neighbour, three tiles wide and two deep, opens on the border edge
+the plan implies: the dominant axis of the neighbour's position less the node's, ties going
+to the horizontal (`|dx| >= |dy|` picks east or west, otherwise south or north). A band
+rides a street and is joined to the grid by a straight run, so a walk in reaches the spawn;
+a band is never a gate — walking back never needs a badge (§4).
+
+The generator is deterministic and reads **only** `nodeStreams(seed, key).layout`, in one
+fixed order: the buildings' lots are shuffled once, then each door's column in placement
+order, and nothing else. The content, encounter and loot passes can therefore layer onto
+the same node without moving a wall (`D11`, `D60`).
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28 with no migration**. An older document decodes with its
