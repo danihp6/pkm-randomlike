@@ -8,7 +8,7 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 
 ## Layout
 
-- `index.ts` — the barrel: it re-exports `plan`, `names` and `streams` only, so the three
+- `index.ts` — the barrel: it re-exports `plan`, `names`, `streams` and `travel` only, so the
   generator folders can join without touching a shared file.
 - `plan.ts` — the whole world out of the run seed: the spine, the laterals, and each node's
   key, kind, name, badge, cap, gym distance, position and edges (`planRegion`, `nodeKey`,
@@ -36,6 +36,13 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 - `preload.test.ts` — a fixed seed's route mesh against the generator's own `buildFrameMesh`, the
   settlement's spawn and tileset, the nulls (unknown key, malformed key, no generator yet) and the
   worker reply's shape.
+- `travel.ts` — the region's one travel seam: whether a run may walk an exit band (through the
+  badge gate) or fly to a settlement it has visited (free, `D67`), and the next run state with its
+  refreshed compat fields and spawn tile (`canTravel`, `travel`, `TravelMode`, `TravelRefusal`,
+  `TravelArrival`).
+- `travel.test.ts` — the walk's own spawn per kind, the gate and its badge, walking back, the
+  flight's Centre/laboratory door, the unvisited and non-settlement refusals, the visited-once
+  order and the same answer twice.
 - `route/` — the long route generator; its README holds the folder until its batch lands.
 - `city/` — the settlement generator; its README holds the folder until its batch lands.
 - `interior/` — the building-interior generator; its README holds the folder until its

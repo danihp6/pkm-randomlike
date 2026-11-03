@@ -13,6 +13,7 @@ export const HUD_COMMAND_TYPES = [
   'move',
   'item',
   'member',
+  'node',
   'panel',
   'answer',
 ] as const;
@@ -25,6 +26,7 @@ export type HudCommand =
   | Readonly<{ type: 'move'; moveIndex: number }>
   | Readonly<{ type: 'item'; itemId: string }>
   | Readonly<{ type: 'member'; memberId: string }>
+  | Readonly<{ type: 'node'; key: string }>
   | Readonly<{ type: 'panel'; panel: HudPanelId }>
   | Readonly<{ type: 'answer'; accept: boolean }>;
 
@@ -35,6 +37,7 @@ export type HudIntent =
   | Readonly<{ kind: 'move'; moveIndex: number }>
   | Readonly<{ kind: 'item'; itemId: string }>
   | Readonly<{ kind: 'member'; memberId: string }>
+  | Readonly<{ kind: 'node'; key: string }>
   | Readonly<{ kind: 'panel'; panel: HudPanelId }>
   | Readonly<{ kind: 'answer'; accept: boolean }>;
 
@@ -66,6 +69,10 @@ export function reduceHudCommand(command: HudCommand): HudIntent | null {
     case 'member': {
       const memberId = trimmedId(command.memberId);
       return memberId === null ? null : { kind: 'member', memberId };
+    }
+    case 'node': {
+      const key = trimmedId(command.key);
+      return key === null ? null : { kind: 'node', key };
     }
     case 'panel':
       return HUD_PANEL_IDS.includes(command.panel) ? { kind: 'panel', panel: command.panel } : null;

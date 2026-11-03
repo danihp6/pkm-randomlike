@@ -205,6 +205,8 @@ import {
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
 import { buildNodeMeshes } from '../engine/region/preload';
+import { nodeOf, planRegion } from '../engine/region/plan';
+import { travel, type TravelMode } from '../engine/region/travel';
 import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
 import {
@@ -235,7 +237,7 @@ import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking 
 import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
-import { actorDepth, WorldScene } from './WorldScene';
+import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
 import type { RoomDescriptor, RoomHost, RoomPanel, RoomWildBattle } from './rooms/types';
@@ -462,6 +464,11 @@ export class RouteScene extends WorldScene {
   private battleCounter = 0;
   private debugMonCounter = 0;
   private pendingBattle: BattleLaunch | null = null;
+  /** True while a region travel is fading between nodes, so one click travels once. */
+  private travelling = false;
+  /** The transitions started and the travels committed, for the dev browser pass. */
+  private travelFades = 0;
+  private travelCommits = 0;
   /** The run-history log the end seam writes through; built from the loaded save. */
   private endLog: RunEndLog | null = null;
   /** The monthly ranking's endpoint, resolved once; `undefined` = not asked yet. */
@@ -533,6 +540,59 @@ export class RouteScene extends WorldScene {
   /** Writes the run to the save slot (Phase 7), so a reload resumes it. */
   private persistRun(): void {
     storeRun(browserStorage(), this.run);
+  }
+
+  /**
+   * The region's one travel seam (`docs/region-spec.md` §4 and §5): asks the pure
+   * `travel` rule, takes the already-preloaded node (or asks the worker for it) and
+   * plays the one fade-and-swap. Returns false — with the run, the save and the map
+   * untouched — while a battle, a release beat, the run-over screen, the pause menu,
+   * another travel or a stopped scene owns the moment, and when the rule refuses or
+   * the node has no world.
+   *
+   * The guard is taken **before** the preload's `await`: on a cold node that window is
+   * about half a second, and a second press inside it must not commit a second run for
+   * the one transition. Every exit path clears it.
+   */
+  async travelToNode(toKey: string, mode: TravelMode = 'walk'): Promise<boolean> {
+    if (this.travelling || !this.run) return false;
+    if (this.pendingBattle || this.releaseRoot || this.gameOver) return false;
+    if (pauseMenuOpenNow() || !this.scene.isActive()) return false;
+
+    const seed = this.run.seed;
+    const result = travel(planRegion(seed), this.run, toKey, mode);
+    if (!result.ok) return false;
+
+    this.travelling = true;
+    try {
+      const world = this.cachedWorld(seed, toKey) ?? (await this.preload(seed, toKey));
+      if (world === null) return false;
+
+      this.run = result.run;
+      this.travelCommits += 1;
+      this.persistRun();
+      const arrived = new Promise<void>((resolve) => {
+        this.events.once(WORLD_ARRIVED, () => resolve());
+      });
+      this.travelFades += 1;
+      this.transitionToNode(world, result.spawn);
+      await arrived;
+      return true;
+    } finally {
+      this.travelling = false;
+    }
+  }
+
+  /**
+   * The base scene swapped the map and hands the spawn over: place the player there
+   * and play the node's own bed — the route's theme on a route and a lateral, the
+   * menu theme in a settlement.
+   */
+  protected override onNodeArrived(key: string, spawn: Tile): void {
+    this.movePlayerTo(spawn.x, spawn.y);
+    const node = nodeOf(planRegion(this.run.seed), key);
+    const route = node?.kind === 'route' || node?.kind === 'lateral';
+    playMusic(this, route ? 'route-music' : 'menu-music');
   }
 
   /**
@@ -744,6 +804,9 @@ export class RouteScene extends WorldScene {
       rooms: () => scene.roomRegistry,
       openSettings: () => scene.openSettings(),
       restartRun: () => scene.restartRun(),
+      flyToNode: (key) => {
+        void scene.travelToNode(key, 'fly');
+      },
     };
   }
 
@@ -1076,6 +1139,9 @@ export class RouteScene extends WorldScene {
     this.clearHoverInspect();
     this.gameOver = false;
     this.pendingBattle = null;
+    this.travelling = false;
+    this.travelFades = 0;
+    this.travelCommits = 0;
     this.releaseRoot = null;
     this.releaseQueue = [];
     this.releaseOnDone = null;
@@ -3380,6 +3446,26 @@ export class RouteScene extends WorldScene {
       tile: { x: this.player.x, y: this.player.y },
       ignoreEncounters: this.ignoreEncounters,
       ignoreTrainers: this.ignoreTrainers,
+    };
+  }
+
+  /**
+   * Dev only: where the last travel left the run, and how many transitions started
+   * (`fades`) against travels committed (`travels`). A browser pass reads it to prove
+   * the screen fades once per travel.
+   */
+  debugTravelState(): Readonly<{
+    nodeKey: string;
+    tile: { x: number; y: number };
+    fades: number;
+    travels: number;
+  }> | null {
+    if (!IS_DEVELOP || !this.run || !this.scene.isActive()) return null;
+    return {
+      nodeKey: this.run.nodeKey,
+      tile: { x: this.player.x, y: this.player.y },
+      fades: this.travelFades,
+      travels: this.travelCommits,
     };
   }
 

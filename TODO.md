@@ -12312,7 +12312,7 @@ verbatim from their specs). `src/engine/region/README.md` is `[Task-283]`'s (it 
 **What it replaces.** `transitionTo`'s rebuild-everything, the room graph's "leave by an edge", the
 portal and the boss room.
 
-- [ ] **[Task-283] Walking, flying and arriving are one seam.** Leaving a node through its exit band
+- [x] **[Task-283] Walking, flying and arriving are one seam.** Leaving a node through its exit band
       and flying from the map both land the player on the target node's spawn tile with its own
       music, and the guard in between refuses only the way forward.
       **Measured:** `RouteScene.transitionTo` swaps maps in place and rebuilds; `arrivalEdge` on

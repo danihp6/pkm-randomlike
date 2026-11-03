@@ -13,6 +13,7 @@ const INTENT_KEYS: readonly string[] = [
   'accept',
   'action',
   'itemId',
+  'key',
   'kind',
   'memberId',
   'moveIndex',
@@ -26,6 +27,7 @@ const INTENT_KEYS_BY_TYPE: Readonly<Record<HudCommandType, readonly string[]>> =
   move: ['kind', 'moveIndex'],
   item: ['itemId', 'kind'],
   member: ['kind', 'memberId'],
+  node: ['key', 'kind'],
   panel: ['kind', 'panel'],
   answer: ['accept', 'kind'],
 };
@@ -36,6 +38,7 @@ const VALID_COMMANDS: Readonly<Record<HudCommandType, HudCommand>> = {
   move: { type: 'move', moveIndex: 0 },
   item: { type: 'item', itemId: 'potion' },
   member: { type: 'member', memberId: 'catch-1' },
+  node: { type: 'node', key: 'city:1' },
   panel: { type: 'panel', panel: 'party' },
   answer: { type: 'answer', accept: true },
 };
@@ -91,6 +94,20 @@ describe('reduceHudCommand', () => {
     });
     expect(reduceHudCommand({ type: 'member', memberId: '' })).toBeNull();
     expect(reduceHudCommand({ type: 'member', memberId: '  ' })).toBeNull();
+  });
+
+  it('maps a region node key', () => {
+    expect(reduceHudCommand({ type: 'node', key: 'city:1' })).toStrictEqual({
+      kind: 'node',
+      key: 'city:1',
+    });
+    expect(reduceHudCommand({ type: 'node', key: '  town:1 ' })).toStrictEqual({
+      kind: 'node',
+      key: 'town:1',
+    });
+    expect(reduceHudCommand({ type: 'node', key: '' })).toBeNull();
+    expect(reduceHudCommand({ type: 'node', key: '   ' })).toBeNull();
+    expect(reduceHudCommand({ type: 'node', key: 7 } as unknown as HudCommand)).toBeNull();
   });
 
   it('maps a panel id', () => {

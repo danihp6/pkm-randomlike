@@ -58,6 +58,7 @@ import {
   MAX_PARTY_SIZE,
   battleTallies,
   launchTeamTypes,
+  returnSceneOf,
   type BattleLaunch,
   type BattleOutcome,
   type BattleReturn,
@@ -173,7 +174,9 @@ import { partyGridFieldRows, stepPartyCursor } from '../ui/partyGrid';
 import { BATTLE_MON_TEXTURE_KEY, BATTLE_PLATFORM_TEXTURE_KEY } from './BootScene';
 import { t } from '../i18n';
 import { moveName, moveShortDescription } from '../i18n/content';
-import type { RouteScene } from './RouteScene';
+
+/** The receiver of a finished battle: every scene a launch may return to exposes this. */
+type BattleResultHost = Readonly<{ applyBattleResult(result: BattleReturn): void }>;
 
 /** How long the win / loss / catch line stays up before the battle closes itself. */
 const OUTCOME_HOLD_MS = 1300;
@@ -523,6 +526,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     const launch = this.launch;
     if (!launch) throw new Error('BattleScene requires a BattleLaunch from the route');
+    const returnKey = returnSceneOf(launch);
 
     const trigger = launch.trigger;
     const battlefield = launch.battlefield ?? null;
@@ -574,7 +578,7 @@ export class BattleScene extends Phaser.Scene {
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.onResize, this);
-      this.scene.setVisible(true, 'Route');
+      this.scene.setVisible(true, returnKey);
       this.releaseMonSprites();
       this.disposeHpPanel();
       this.disposeMovesPanel();
@@ -594,7 +598,7 @@ export class BattleScene extends Phaser.Scene {
     this.mountBattleLogPanel();
     // The battle owns a centred square; hide the paused route so the letterbox
     // around it stays clean instead of showing the overworld through it.
-    this.scene.setVisible(false, 'Route');
+    this.scene.setVisible(false, returnKey);
     playMusic(this, 'battle-music');
     if (IS_DEVELOP) (globalThis as Record<string, unknown>).__pkmBattle = this;
     this.startEntry(trigger.kind);
@@ -1650,10 +1654,11 @@ export class BattleScene extends Phaser.Scene {
       used: [...this.state.usedFighterIds],
       tallies: battleTallies(this.state.log, this.state.sides.player.party),
     };
-    const route = this.scene.get('Route') as RouteScene;
-    this.scene.setVisible(true, 'Route');
-    route.applyBattleResult(result);
-    this.scene.resume('Route');
+    const returnKey = returnSceneOf(this.launch ?? {});
+    const receiver = this.scene.get(returnKey) as unknown as BattleResultHost | null;
+    this.scene.setVisible(true, returnKey);
+    receiver?.applyBattleResult(result);
+    this.scene.resume(returnKey);
     this.scene.stop();
   }
 

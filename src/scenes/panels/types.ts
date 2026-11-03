@@ -92,6 +92,8 @@ export type RoutePanelHost = Readonly<{
   openSettings(): void;
   /** Starts a brand-new run with a fresh seed (the pause menu's Reset row). */
   restartRun(): void;
+  /** Flies the run to a visited settlement from the region card; the scene refuses one it may not. */
+  flyToNode(key: string): void;
 }>;
 
 /**

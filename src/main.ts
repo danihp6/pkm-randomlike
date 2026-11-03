@@ -9,6 +9,7 @@ import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StarterScene } from './scenes/StarterScene';
+import { REGION_SCENES } from './scenes/regionScenes';
 import { mountHud } from './ui/hud/mount';
 
 export const GAME_WIDTH = 1280;
@@ -32,7 +33,16 @@ export const config: Phaser.Types.Core.GameConfig = {
   // Two extra touch pointers: the on-screen pad can be held while A / B is
   // pressed (Mouse + pointer1 + pointer2 + pointer3).
   input: { activePointers: 3 },
-  scene: [BootScene, MainMenuScene, StarterScene, RouteScene, BattleScene, RunOverScene, SettingsScene],
+  scene: [
+    BootScene,
+    MainMenuScene,
+    StarterScene,
+    RouteScene,
+    BattleScene,
+    RunOverScene,
+    SettingsScene,
+    ...REGION_SCENES.map((entry) => entry.Scene as Phaser.Types.Scenes.SceneType),
+  ],
 };
 
 export const game = new Phaser.Game(config);

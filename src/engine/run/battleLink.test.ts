@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { scriptedBattle } from '../battle/harness';
 import type { BattleEvent } from '../battle/state';
-import { battleSeed, battleTallies, launchTeamTypes, type BattleLaunch } from './battleLink';
+import {
+  battleSeed,
+  battleTallies,
+  launchTeamTypes,
+  returnSceneOf,
+  type BattleLaunch,
+} from './battleLink';
 
 /** A launch as the route builds it, so the optional field can be read back. */
 function launch(extra: Partial<BattleLaunch> = {}): BattleLaunch {
@@ -177,5 +183,27 @@ describe('battleTallies', () => {
     expect(tallies.map((tally) => tally.memberId)).toEqual(['player']);
     expect(tallies[0].kos).toBeGreaterThan(0);
     expect(tallies[0].damage + tallies[0].damageTaken).toBeGreaterThan(0);
+  });
+});
+
+describe('returnSceneOf', () => {
+  it('sends a launch that names no scene back to the route', () => {
+    expect(returnSceneOf({})).toBe('Route');
+    expect(returnSceneOf(launch())).toBe('Route');
+  });
+
+  it('answers the scene key a launch names', () => {
+    expect(returnSceneOf({ returnScene: 'Gym' })).toBe('Gym');
+    expect(returnSceneOf(launch({ returnScene: 'City' }))).toBe('City');
+  });
+
+  it('falls back to the route for a blank or whitespace key', () => {
+    expect(returnSceneOf({ returnScene: '' })).toBe('Route');
+    expect(returnSceneOf({ returnScene: '   ' })).toBe('Route');
+    expect(returnSceneOf({ returnScene: '\n\t' })).toBe('Route');
+  });
+
+  it('normalises a padded key to the scene it names', () => {
+    expect(returnSceneOf({ returnScene: ' Gym ' })).toBe('Gym');
   });
 });

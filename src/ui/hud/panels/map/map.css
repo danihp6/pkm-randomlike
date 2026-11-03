@@ -22,7 +22,7 @@
   font-family: var(--hud-font);
   font-size: var(--hud-type-readout-size);
   line-height: var(--hud-type-readout-line);
-  /* The map is read, not used: no press ever reaches the card. */
+  /* The HUD layer is inert and so is the card: only a node marker opts back in. */
   pointer-events: none;
   user-select: none;
 }
@@ -100,6 +100,16 @@
 /* A dot's ring is one and a half pixels, only ever drawn on the current node. */
 .map__grid circle {
   stroke-width: 1.5;
+}
+
+/*
+ * The card's one control: every ancestor in the HUD layer is `pointer-events: none`,
+ * so the marker opts back in itself and the painted dot is the hit target. A press
+ * dispatches `{ type: 'node', key }` (`mapPanel.tsx`), which the route flies.
+ */
+[data-hud-region-node] {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /*

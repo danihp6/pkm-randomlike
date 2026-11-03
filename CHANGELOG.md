@@ -8,6 +8,36 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Walking, flying and arriving are one seam.** `[Task-283]`, Batch 121: the region
+      gets one travel rule and one transition. `src/engine/region/travel.ts` is the pure rule
+      (`canTravel`, `travel`): a walk follows one of the node's own edges and goes through
+      `exitGate`, a landed walk is that node's own entry (`planCity(...).spawn`,
+      `generateRoute(...).entry`), a flight is free to a settlement the run has already
+      visited (`D67`) and lands on its Centre door — the laboratory in the town — while a
+      closed gate, an unvisited node, a route, a missing edge and the node the run already
+      stands on are each refused with their reason (the last one returns the run untouched).
+      An arrival commits `nodeKey`, appends `visitedNodes` once and refreshes the deprecated
+      floor fields through `compatForNode`. `WorldScene.transitionToNode` is the one
+      transition: fade out once, swap the already preloaded node's cached map, fade in, hand
+      the spawn to `onNodeArrived` and emit `WORLD_ARRIVED`, with a second call ignored
+      mid-fade; `RouteScene.travelToNode` refuses under a battle, the pause menu or the end,
+      takes its in-flight guard **before** the preload await, persists the run and plays the
+      node's own bed (`route-music` on a route, `menu-music` on a settlement), and its
+      `debugTravelState()` reports the node, the tile and the fade/travel counters.
+      The header card's markers now answer a press (`HudCommandType` gains `node`, the marker
+      is its own hit target in `map.css`, the panel descriptor dispatches `travelTo`), so a
+      click on a visited settlement flies and a click on a route does nothing. Two seams the
+      next batch needs are here too: `src/scenes/regionScenes.ts` collects every scene module
+      exporting `regionSceneKey`/`regionSceneClass` into `main.ts`'s scene list, and
+      `BattleLaunch.returnScene` (read by `returnSceneOf`) makes a battle come back to the
+      scene that launched it, the route by default. `[live]` over CDP at 1280×800: after two
+      walks `debugTravelState()` reads `city:1` with `fades === travels === 2`, a real mouse
+      click on `[data-hud-region-node="town:1"]` lands `town:1` at tile `{29,6}` — exactly
+      `planCity(planRegion(seed),'town:1')`'s laboratory door — with one `fadeOut`/`fadeIn`
+      and `3/3`, and a real click on `route:1` changes nothing; two overlapping travels commit
+      once. `[unit]` the walk/flight rules and their refusals, the registry's collection and
+      duplicate refusal, `returnSceneOf`'s default and the new command.
+
 - [x] **A gym's puzzle is a stack, and the first one is ice.** `[Task-282]`, Batch 120:
       `src/engine/region/gym/` gives the gym its gating floor. `ice.ts` lays an ice room
       (`planIceRoom`) and slides the player across it (`slideStep(room, from, dir)` returns

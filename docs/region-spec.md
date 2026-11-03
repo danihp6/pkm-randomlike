@@ -174,9 +174,11 @@ the town — not on its spawn tile, which is where a walk in through an exit ban
 
 The map half ships: the header card draws the plan's straight-line graph, every
 settlement visible from the first frame, the visited ones marked and the current one
-blinking (`[Task-281]`, Batch 120). The flight half does not: `[Task-283]` (Batch 121)
-builds the travel seam, `travel` included, that the card's click dispatches, so the
-nodes are not clickable yet.
+blinking (`[Task-281]`, Batch 120). The flight half ships with it: `[Task-283]`
+(Batch 121) builds the travel seam in `src/engine/region/travel.ts` — `travel` walks an
+exit band through `exitGate` and flies free to a visited settlement (`D67`) — and the
+card's node markers dispatch it, so a press on a visited settlement flies there. The
+routes stay unclickable.
 
 ## 6. Services per settlement
 
