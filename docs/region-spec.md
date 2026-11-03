@@ -425,6 +425,61 @@ refuses the press and keeps the run. `LeagueScene` plays the whole chain — the
 heal, the five fights, the exit — with no shop, no capture and no wandering, and it
 registers itself through the folder registry like a city or a gym screen.
 
+### 7.7 The city's people
+
+A settlement is not empty. The content pass (§7.3, `planNodeContent`) decides **how many**
+people it holds and **which** rows: `2..3` generic NPCs in a tier-1 city, `4..6` in a tier-2
+one and `7..10` in a tier-3 one, and exactly one in the starting town. Those rows are only
+names; `nodeNpcs` (`src/engine/region/npcs.ts`) turns them into bodies standing on the
+settlement's own tiles, named `npc-<nodeKey>-<n>` (`npc-city:1-0`), the generic NPCs first
+and the specials after them. The placement reads no draw of the content pass: it splits its
+own stream off the node's `content` one (`nodeStreams(seed, key).content.split('npcs')`,
+`D60`), so a later pass can neither move a person nor be moved by one.
+
+Each **special** row the content pass offers carries its own `cityChance` in
+`src/data/npcs.ts` (`SPECIAL_NPCS`, `cityChanceOf`): the merchant and the Rocket grunt are
+`1`, the five member-edit rows and the sacrifice sit at `0.8`, the four run-modifier rows
+at `0.75` and the four item-and-battle rows at `0.9`. One row, one stream, one draw —
+`Rng(hashSeed(`${seed}:node:${key}:npc-special:${rowId}`))` — so a special's presence can
+never be moved by how many people the node holds, and a generic's line can never be moved by
+a special. The generic lines are one table per city tier (`GENERIC_LINES`, tier 1 for badges
+1-2, tier 2 for 3-5 and tier 3 for 6-8, the bands `CITY_TIERS` uses; the town reads tier 1)
+and they are drawn **after** every tile, so a line cannot move a body.
+
+The tiles are the settlement's own: every walkable tile of `planCity`'s map, never the spawn
+(a walk in lands there) and never a building's door (a step there opens the building). One
+draw per person, in placement order, and the chosen tile leaves the pool, so no two people
+share a tile; a settlement with fewer free tiles than people stands the ones it could place
+instead of throwing. The facing is derived from the map — south when the tile below is
+walkable, else north, else east, else west — and never drawn.
+
+A person is spent **once per node**: its card writes `npc-<nodeKey>-<n>-<rowId>` (the
+placement id plus the row it stands, `npcUseId`) into `RunState.pickedItems`, which is
+node-scoped, so a revisit and a reload print `npc.used` and offer no choice. Two effects
+resolve headless: the **medic** heals the party and the box (`healParty`, no status cure and
+no revival, D5) and the **chef** trades three berries for its dish (`chefTrade`); both mark
+the use. Every other special's effect belongs to its own scene — the card answers
+`needs-scene` and the scene marks the use when it resolves the row. A generic NPC is
+`line-only`: it prints its tier's line and offers `LEAVE`.
+
+`CityScene` stands the people when it enters a settlement (`onNodeArrived` and its first
+draw both call the pass once), draws one overworld sprite per body exactly as the route draws
+a room's NPC, and opens the card on the interact key — a landed step on a person's tile opens
+it before the door and exit-band rules, and the step itself is unchanged: the tile stays
+walkable. For the seed `qa-288` the placements are exactly:
+
+| node | index | id | kind | rowId | x | y |
+| --- | --- | --- | --- | --- | --- | --- |
+| town:1 | 0 | npc-town:1-0 | generic | merchant | 34 | 26 |
+| city:1 | 0 | npc-city:1-0 | generic | rocket | 15 | 27 |
+| city:1 | 1 | npc-city:1-1 | generic | species | 43 | 32 |
+| city:1 | 2 | npc-city:1-2 | generic | merchant | 36 | 38 |
+| city:1 | 3 | npc-city:1-3 | special | iv-judge | 36 | 35 |
+| city:1 | 4 | npc-city:1-4 | special | ability | 4 | 39 |
+
+The town's one person prints `npc.generic.tier1.3` for that seed, and the two specials
+`city:1` stands are the ones whose own draw passed out of the two the content pass offered.
+
 ### 7.11 The tower behind the Champion
 
 The tower is the region's one **endless** node, `tower:1`, and its rule is
