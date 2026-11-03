@@ -1,4 +1,5 @@
 import type { PuzzleStackEntry } from '../../../data/puzzles';
+import type { Tile } from '../../grid';
 import { planInterior, type InteriorPlan } from '../interior';
 import { nodeOf, type RegionPlan } from '../plan';
 import { nodeStreams } from '../streams';
@@ -40,6 +41,33 @@ export function gymSolvedKey(cityKey: string): string {
   return `gym-solved:${cityKey}`;
 }
 
+/**
+ * The cells a room's door opens onto: the door's unit neighbours that lie strictly
+ * inside the room's rect, off the one-cell ring its walls are drawn on. A door stands on
+ * that ring, so these are the cells a player stands on to use it — and the puzzle room
+ * of a gym is the only way into the leader's, so its floor may never shut them.
+ */
+function doorApproach(
+  rect: Readonly<{ x: number; y: number; width: number; height: number }>,
+  door: Tile,
+): readonly Tile[] {
+  const steps: readonly Tile[] = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+  return steps
+    .map((step) => ({ x: door.x + step.x, y: door.y + step.y }))
+    .filter(
+      (cell) =>
+        cell.x > rect.x &&
+        cell.x < rect.x + rect.width - 1 &&
+        cell.y > rect.y &&
+        cell.y < rect.y + rect.height - 1,
+    );
+}
+
 /** The floor the entry's own module lays, or `null` for an entry with no floor yet. */
 function planFloor(
   plan: RegionPlan,
@@ -54,6 +82,7 @@ function planFloor(
   // A gym's rooms 1-3 all carry a `doorIn`; the entrance's own entry is the fallback a
   // total plan keeps, and it only moves the hole sites, never the room's geometry.
   if (puzzleRoom === undefined || landingRoom === undefined) return null;
+  const leaderDoor = rooms[3]?.doorIn;
 
   return planIceRoom(
     {
@@ -62,6 +91,7 @@ function planFloor(
       landingRoom: entry.dropsInto,
       landingRect: landingRoom.rect,
       holes: entry.holes,
+      keepClear: leaderDoor === undefined ? [] : doorApproach(puzzleRoom.rect, leaderDoor),
     },
     nodeStreams(plan.seed, `${cityKey}/gym/puzzle`).content,
   );

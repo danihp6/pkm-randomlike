@@ -3,6 +3,7 @@ import { planNodeContent } from '../content';
 import { planInterior } from '../interior';
 import { nodeOf, planRegion } from '../plan';
 import { gymSolved, gymSolvedKey, planGym, type GymPlan } from './plan';
+import { iceCellAt } from './ice';
 import { gymPuzzlesFor, puzzleStackIds } from './stack';
 
 const PLAN = planRegion('task-282');
@@ -17,6 +18,35 @@ function cellsWhere(gym: GymPlan, cell: string): { x: number; y: number }[] {
     for (let x = 0; x < ice.cells[y].length; x++) {
       if (ice.cells[y][x] === cell) cells.push({ x: ice.rect.x + x, y: ice.rect.y + y });
     }
+  }
+  return cells;
+}
+
+/**
+ * The cells of the puzzle room a player stands on to take the leader's door: the door's
+ * own neighbours inside the puzzle rect, off the ring its walls are drawn on. Computed
+ * here from the rooms alone, so it never asks the floor where its holes are.
+ */
+function leaderDoorCells(gym: GymPlan): { x: number; y: number }[] {
+  const rooms = gym.interior.rooms ?? [];
+  const puzzle = rooms[2];
+  const door = rooms[3]?.doorIn;
+  if (puzzle === undefined || door === undefined) return [];
+  const rect = puzzle.rect;
+  const cells: { x: number; y: number }[] = [];
+  for (const step of [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ]) {
+    const cell = { x: door.x + step.x, y: door.y + step.y };
+    const inside =
+      cell.x > rect.x &&
+      cell.x < rect.x + rect.width - 1 &&
+      cell.y > rect.y &&
+      cell.y < rect.y + rect.height - 1;
+    if (inside) cells.push(cell);
   }
   return cells;
 }
@@ -76,6 +106,34 @@ describe('the gym plan', () => {
     for (const [key, landing] of Object.entries(ice.landings)) {
       expect(landing, key).toEqual({ room: gym.puzzle.entry.dropsInto, tile: centre });
     }
+  });
+
+  it('never cuts a hole on the way to the leader, whatever the seed', () => {
+    const seeds = [
+      'task-282',
+      ...Array.from({ length: 40 }, (_, index) => `gym-sweep-${index}`),
+      'ice-sweep-2',
+      'ice-sweep-20',
+      'ice-sweep-40',
+      'ice-sweep-46',
+      'ice-sweep-75',
+      'ice-sweep-119',
+    ];
+    const blocked: string[] = [];
+    for (const seed of seeds) {
+      const plan = planRegion(seed);
+      for (const key of GYM_KEYS) {
+        const gym = planGym(plan, key);
+        const ice = gym.puzzle.ice;
+        if (ice === null) continue;
+        const approach = leaderDoorCells(gym);
+        expect(approach, `${seed} ${key}`).toHaveLength(1);
+        for (const cell of approach) {
+          if (iceCellAt(ice, cell) === 'hole') blocked.push(`${seed} ${key} ${cell.x},${cell.y}`);
+        }
+      }
+    }
+    expect(blocked).toEqual([]);
   });
 
   it('refuses a key that is not a gym city', () => {

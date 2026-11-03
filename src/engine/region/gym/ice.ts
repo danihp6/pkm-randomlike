@@ -62,6 +62,13 @@ export type IceRoomRequest = Readonly<{
   landingRect: Readonly<{ x: number; y: number; width: number; height: number }>;
   /** How many holes the floor holds (`PuzzleStackEntry.holes`). */
   holes: number;
+  /**
+   * Cells a hole must never stand on: the far door of the rooms this floor is the only
+   * way into, and the cells in front of them. An ice floor can carry the player past a
+   * cell but never lets them stop on one, so a hole there would shut the only way on
+   * and ship an unwinnable gym.
+   */
+  keepClear?: readonly Tile[];
 }>;
 
 /** The ring of `solid` cells a room's rect wears: the one its walls are drawn on. */
@@ -106,9 +113,14 @@ export function iceCellAt(room: IceRoom, tile: Tile): IceCell | null {
 
 /**
  * The floor: an `ice` rectangle in a one-cell `solid` ring, with `holes` holes. A hole
- * stands at Manhattan distance 2 or more from `entry`, so entering the room never falls.
- * A floor too small for the holes stays all ice with no landings: a gym is never left
- * unsolvable, and that refusal takes no draw off `layout`.
+ * stands at Manhattan distance 2 or more from `entry`, so entering the room never falls,
+ * and never on one of `keepClear`'s cells.
+ *
+ * The shuffle stays over the whole eligible floor and `keepClear` is skipped while the
+ * holes are picked, so a seed whose holes never landed on one of those cells replays the
+ * floor it always had. A floor too small for the holes stays all ice with no landings: a
+ * gym is never left unsolvable, and that refusal takes no draw off `layout` while the
+ * floor is too small to hold them.
  */
 export function planIceRoom(request: IceRoomRequest, layout: Rng): IceRoom {
   const rect = {
@@ -142,12 +154,16 @@ export function planIceRoom(request: IceRoomRequest, layout: Rng): IceRoom {
   if (request.holes < 1 || open.length < request.holes) return { room: 'puzzle', rect, cells, landings };
 
   shuffle(open, layout);
+  const clear = new Set((request.keepClear ?? []).map(iceCellKey));
+  const sites = open.filter((cell) => !clear.has(iceCellKey(cell)));
+  if (sites.length < request.holes) return { room: 'puzzle', rect, cells, landings };
+
   const centre: Tile = {
     x: request.landingRect.x + Math.floor(request.landingRect.width / 2),
     y: request.landingRect.y + Math.floor(request.landingRect.height / 2),
   };
   for (let index = 0; index < request.holes; index++) {
-    const hole = open[index];
+    const hole = sites[index];
     cells[hole.y - rect.y][hole.x - rect.x] = 'hole';
     landings[iceCellKey(hole)] = { room: request.landingRoom, tile: { x: centre.x, y: centre.y } };
   }

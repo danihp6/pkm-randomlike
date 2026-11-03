@@ -347,6 +347,14 @@ come off one Fisher–Yates shuffle of the eligible cells and nothing else is dr
 to hold them stays all ice with no landings, so a gym is never left unsolvable. Every hole lands on
 the same cell: the centre of the rect of the room `dropsInto` names.
 
+No hole ever stands on a cell `planGym` keeps clear: the puzzle room's cells in front of the
+**leader's door**, which is the room's only interior neighbour. The puzzle room is the only way into
+the leader's, and a slide carries the player past a cell without letting them stop on one, so a hole
+on the approach would shut the last door of the gym. The shuffle still runs over the whole eligible
+floor and the kept cells are only skipped while the holes are picked, so a seed whose holes never
+landed there replays the floor it always had; a floor whose kept cells leave fewer sites than
+`holes` falls back to the all-ice refusal above.
+
 `slideStep(room, from, dir)` is the room's whole rule. A step crosses `ice` until a `solid` cell or
 the rect's edge stops it on the last cell it entered; a `hole` ends the step where the player stood —
 or on the last `ice` cell — and answers that hole's landing, with the hole itself never in the path.
