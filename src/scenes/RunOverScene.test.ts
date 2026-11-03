@@ -78,6 +78,10 @@ function stubBrowser(search = ''): void {
     location: { search },
     localStorage: { getItem: (): null => null, setItem: (): void => undefined },
   });
+  // `loadSettings` drafts the locale from the browser's tag, so the stub pins one:
+  // Node ships the machine's `navigator`, and without this an `es-ES` laptop reads
+  // the Spanish table and fails a suite that is green on CI.
+  vi.stubGlobal('navigator', { language: 'en-US' });
 }
 
 beforeAll(() => {
