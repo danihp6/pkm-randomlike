@@ -150,6 +150,34 @@ the tasks that ship each piece: `§7.1` the city plan, `§7.2` the interior list
 node content, `§7.4` the gym's puzzle, `§7.5` the city screen, `§7.6` the League and
 `§7.10` the missions' schema.
 
+### 7.2 The interior list
+
+Every door a settlement emits opens onto one small indoor map the engine builds from
+the door's own key — `centre`, `gym`, `lab`, `casino`, `house` or `house:<n>` with `n` a
+1-based decimal. A building's inside is `INTERIOR_SIZE` tiles, a gym's is `GYM_SIZE`
+(both `src/data/region.ts`); the key names the room, and the settlement it belongs to is
+a second, separate key.
+
+The room is a `FLOOR` rectangle inside a one-tile `WALL` ring with a single `DOOR` in its
+bottom wall: the player arrives on that door and a step back returns them to the
+settlement. A gym is four rectangles in the fixed order `entrance`, `trainer`, `puzzle`,
+`leader`, walked as a 2×2 — entrance top-left, trainer top-right, puzzle bottom-right,
+leader bottom-left — each in its own ring; consecutive rooms share one wall, and that
+wall carries exactly one `DOOR`, so a gym's four doors are its entry plus the three inner
+ones.
+
+What stands in a room is a **slot** list: a position and a role the scene fills in, in a
+fixed order per kind — `heal` then `pc` at a Centre, `professor` at the laboratory, `npc`
+at a house, `cabinet` at the casino, `trainer` then `leader` at a gym. The Centre's
+counter is at least three `COUNTER` cells in one straight row with the healing station
+set into it. A slot is where a thing goes, never what it says: NPC identities, trainer
+rosters and shop stock are content (§7.3), and the gym's puzzle is §7.4.
+
+An interior's geometry comes off the `layout` stream of the city node's sub-key,
+`<cityKey>/<interiorKey>` (`D60`), so no two interiors of a region share a stream, none
+of them moves when another is built, and the city's own draws never touch one. The
+`content`, `encounters` and `loot` passes are left free for a later task.
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28 with no migration**. An older document decodes with its
