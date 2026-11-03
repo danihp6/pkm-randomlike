@@ -198,7 +198,7 @@ trainers — is rolled per node off that node's `content` stream by `planNodeCon
 (`[Task-277]`, Batch 119) and drawn by the scene tasks. Its subsections are written by
 the tasks that ship each piece: `§7.1` the city plan, `§7.2` the interior list, `§7.3`
 node content, `§7.4` the gym's puzzle, `§7.5` the city screen, `§7.6` the League and
-`§7.10` the missions' schema.
+`§7.10` the missions' schema, §7.11 the tower.
 
 ### 7.1 The city plan
 
@@ -402,6 +402,42 @@ and it opens only once `leagueCleared(run)` is true: before the Champion the Lea
 refuses the press and keeps the run. `LeagueScene` plays the whole chain — the entry
 heal, the five fights, the exit — with no shop, no capture and no wandering, and it
 registers itself through the folder registry like a city or a gym screen.
+
+### 7.11 The tower behind the Champion
+
+The tower is the region's one **endless** node, `tower:1`, and its rule is
+`src/engine/region/tower.ts`. The plan already holds it — `planRegion` appends it after
+the League — and the region map draws it with every other node, because the map is the
+straight-line graph of the plan (§5), not a list of what a run has unlocked. What the
+Champion opens is the **way in**: the tower's door is `towerOpen(run)`, true exactly when
+`leagueCleared(run)` is, and both `LeagueScene`'s exit and `towerStep` read it. Before
+the Champion there is no tower fight to ask for.
+
+`towerStep(run, streak)` is the fight after `streak` wins: five members at
+`LEAGUE_LEVEL` (60), every level forced by `levelFor`, drawn off one stream per rung —
+`${seed}:tower:<rung>`, the `D60` family keyed by the rung, so a rung replays alone and
+appending one cannot move an earlier rung (`D11`). The foe carries the shipped `TOWER`
+row: no leader, no badge and no party table of its own. The tower is an ordinary trainer
+battle with no rule the routes do not have, and `towerStep` answers `null` before the
+Champion, so a streak can never stand in for the badge.
+
+`towerWin(run, streak)` steps the run's `towerStreak` to `streak + 1` and never
+backwards; `towerHeal` is the League's own heal (§6) — HP and PP across the party and
+the box, never a status cure and never a revival (`D5`) — and it runs after every won
+fight. `towerResolve(run, foe, won)` is the rule in one answer: a win bumps the streak
+and heals, and `over` is true exactly when nobody in the party is living. A loss that
+leaves a living member re-asks for the same rung: the tower never ends a run that still
+has a party. `towerReward(foe)` folds the roster's levels for the XP and the fight's
+`tower:<rung>` mark, and pays no Poké Dollars — the endless mode has no shop behind it.
+
+The streak is the tower's **record** and it stays apart from the badge record (`D62`):
+`RunHistoryRecord` carries it as `towerStreak` beside `badges`, the badge count is still
+the record, and a row written without that figure reads `0`. The run's own `towerStreak`
+already travelled the save (§8), so this adds no `SAVE_VERSION` step. `LeagueScene`
+plays the tower as its own endless mode — the entry heal, the next rung off the run's own
+streak, the heal after a win and the wipe that ends the run — and `RunOverScene` draws
+the defeat card with the badge count and the streak. The run ends only when its party
+does, so there is no victory state: every ending is the defeat card.
 
 ## 8. The save's v28 rules and the record
 
