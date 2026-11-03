@@ -227,6 +227,41 @@ An interior's geometry comes off the `layout` stream of the city node's sub-key,
 of them moves when another is built, and the city's own draws never touch one. The
 `content`, `encounters` and `loot` passes are left free for a later task.
 
+### 7.3 Node content
+
+`planNodeContent(plan, key, tier)` (`src/engine/region/content.ts`) answers the `NodeContent`
+a node holds: `npcs` and `specials`, each a list of `{ npcId }`; `poi`, a `PoiKind` on a
+lateral's terminus and `null` on the main chain; `grass`; `shops`, a list of `ShopKind`; and
+`trainers`, a count. It is pure and total over the plan: a key the plan holds always
+resolves, one it does not is refused with `unknown node: <key>`, and the returned object is
+fresh on every call.
+
+The draws come off `nodeStreams(seed, key).content` and off nothing else, in **one fixed
+order** — the generic NPC count, each generic id, the special count, each special id, the
+trainer count, the POI kind **last** — so a later pass may append a draw without moving an
+earlier one (`D60`), and walking back into a node replays it exactly (`D11`). A kind that
+holds none of a row takes no draw for it, so the town, the Victory Road, the League and the
+tower leave the stream where the previous row left it.
+
+| field | rule |
+| --- | --- |
+| `npcs` | a `city` draws `2..3` / `4..6` / `7..10` by its own tier — tier 1, 2, 3; every other kind is passed tier 1 and draws `2..3`, except the **town**, which stands exactly one (`NPC_ROWS[0].id`) with no draw at all |
+| `specials` | a `city` draws one or two; every other kind stands none and takes no draw. The per-NPC probability is not rolled here — the row's `chance` stays `src/data/npcs.ts`'s |
+| `grass` | `true` for `town`, `city`, `route` and `lateral` (the settlement's grass corner, the route's tall grass); `false` for `victory-road`, `league` and `tower`. No draw |
+| `shops` | `['mart']` for a `city`, `[]` for every other kind. No draw |
+| `trainers` | a `city` draws `1..2` / `2..3` / `3..4` by tier; a `route` or a `lateral` draws `2..4`; the `town`, the `victory-road`, the `league` and the `tower` post none and take no draw |
+| `poi` | a node whose `lateralOf` is not `null` draws one of `POI_KINDS`; a main-chain node has `null` and takes no draw |
+
+Both ID lists are drawn **without replacement**, in `NPC_ROWS` order, off a fresh copy of the
+row ids — the generic pass and the special pass each take their own copy, so a city may offer
+the same row as an NPC and as a special. `POI_KINDS` carries the nine a terminus can end on:
+`vault`, `miniboss`, `trade`, `no-heal`, `static`, `secret-shop`, `banned`, `puzzle`,
+`legendary`. A kind's own data — its zone, its trigger, its stock — is not this module's;
+the content pass only names it.
+
+The counts above are constants of the module until the campaign's full scale moves them into
+`src/data/`; they are the only numbers a rebalance would touch, and no other pass reads them.
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28 with no migration**. An older document decodes with its

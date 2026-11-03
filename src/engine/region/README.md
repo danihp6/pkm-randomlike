@@ -23,6 +23,11 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   `encounters`, `loot`), keyed by `nodeKey`.
 - `streams.test.ts` — the stream keys, the replay and the fact no node's stream depends on
   another.
+- `content.ts` — what a node holds: its NPCs, its special NPCs, its grass, its shops, its
+  posted trainers and a lateral's point of interest, all off the node's `content` stream
+  (`planNodeContent`, `PoiKind`, `ShopKind`, `POI_KINDS`).
+- `content.test.ts` — the tier counts, the lateral-only POI, the replay and a fixed seed's
+  content digest.
 - `route/` — the long route generator; its README holds the folder until its batch lands.
 - `city/` — the settlement generator; its README holds the folder until its batch lands.
 - `interior/` — the building-interior generator; its README holds the folder until its
