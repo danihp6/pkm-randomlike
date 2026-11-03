@@ -603,12 +603,14 @@ export class RouteScene extends WorldScene {
 
   /**
    * The scene a node of `kind` belongs to, or null while this scene keeps it: a
-   * settlement is the city screen's, the League's is its own, and a route, a lateral,
-   * the Victory Road and the tower are drawn here until their scenes exist.
+   * settlement is the city screen's, the League's and the tower's are the League
+   * scene's, and a route, a lateral and the Victory Road are drawn here until
+   * their scenes exist.
    */
   private arrivalSceneFor(kind: RegionNodeKind): string | null {
     if (kind === 'town' || kind === 'city') return 'City';
     if (kind === 'league') return 'League';
+    if (kind === 'tower') return 'League';
     return null;
   }
 

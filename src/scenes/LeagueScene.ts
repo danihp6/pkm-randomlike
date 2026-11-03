@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { KeybindAction } from '../data/keybinds';
 import { LEAGUE, type LeagueRow } from '../data/league';
+import { LEAGUE_LEVEL } from '../data/region';
 import { IS_DEVELOP } from '../dev/env';
 import {
   leagueCleared,
@@ -13,7 +14,16 @@ import {
   leagueWin,
   type LeagueFoe,
 } from '../engine/region/league';
-import { nodeKey, nodeOf, planRegion } from '../engine/region/plan';
+import { nodeKey, nodeOf, planRegion, type RegionPlan } from '../engine/region/plan';
+import {
+  TOWER_NODE_KEY,
+  towerHeal,
+  towerOpen,
+  towerResolve,
+  towerReward,
+  towerStep,
+  type TowerFoe,
+} from '../engine/region/tower';
 import { travel } from '../engine/region/travel';
 import {
   battleSeed,
@@ -33,17 +43,20 @@ import { addFrlgWindow, FRLG_ACCENT, FRLG_MUTED, FRLG_SURFACE } from '../ui/frlg
 import { addFrlgText, FRLG_INK } from '../ui/frlgFont';
 
 /**
- * The League (`docs/region-spec.md` §7.6): the four Elite Four members and the
- * Champion, fought as one chain the moment the run walks in. The screen heals on
- * entry, opens the next unbeaten row's battle, heals again after every win and
- * never shows a shop or a door: `src/engine/region/league.ts` owns who fights,
- * what they field and when the way out opens, and this scene plays that rule.
+ * The League (`docs/region-spec.md` §7.6) and the endless tower behind it (§7.11),
+ * as one screen of two modes. In **league** mode it is the four Elite Four members
+ * and the Champion, fought as one chain the moment the run walks in: the screen heals
+ * on entry, opens the next unbeaten row's battle, heals again after every win and
+ * never shows a shop or a door. In **tower** mode it is the run's endless streak:
+ * the entry heal, the next rung off the run's own streak and the wipe that is the
+ * only ending. `src/engine/region/league.ts` and `src/engine/region/tower.ts` own
+ * who fights, what they field and when the way out opens; this scene plays those
+ * rules and draws them.
  *
  * It is a region node scene like a city or a gym, so it registers itself through
  * `regionSceneKey` / `regionSceneClass` and `src/main.ts` never names it. It
- * reads the run it is handed (`scene.start('League', { run })`), folds each
- * battle through the shipped `resolveBattle` and hands the run back to the route
- * once the Champion has fallen.
+ * reads the run it is handed (`scene.start('League', { run })`) — or, on a resume,
+ * the saved one — and folds each battle through the shipped `resolveBattle`.
  */
 
 export const regionSceneKey = 'League';
@@ -51,8 +64,8 @@ export const regionSceneKey = 'League';
 /** The scene key a League row's battle returns to. */
 export const LEAGUE_RETURN_SCENE = 'League';
 
-/** The way out of the League: the tower behind the Champion (`D62`). */
-const TOWER_NODE_KEY = nodeKey('tower', 1);
+/** Which of the League node's two modes the scene is playing. */
+export type LeagueSceneMode = 'league' | 'tower';
 
 /** The panel's widest size, the margin it keeps from the screen, and its two row heights. */
 const PANEL_MAX_WIDTH = 720;
@@ -65,14 +78,20 @@ export class LeagueScene extends Phaser.Scene {
   private run: RunState | null = null;
   /** The run `init` was handed, before the entry heal. */
   private incoming: RunState | null = null;
-  /** The row whose battle is open, or null while the scene is not fighting. */
+  /** Which of the node's two modes the run it was handed asks for. */
+  private mode: LeagueSceneMode = 'league';
+  /** The League row whose battle is open, or null while the scene is not fighting. */
   private foe: LeagueFoe | null = null;
+  /** The tower rung whose battle is open, or null in league mode or between fights. */
+  private towerFoe: TowerFoe | null = null;
   /**
    * The row to open once this scene is resumed. A battle's `stop` lands in the
    * same scene queue as anything launched from its own return, so the next fight
    * waits a frame: `update` opens it after the resume.
    */
   private pending: number | null = null;
+  /** The tower's next rung, queued the same one-frame way as `pending`. */
+  private pendingTower = false;
   /** True once the run-over hand-off is queued; the scene stops itself after it. */
   private ending = false;
   /** True once the exit has been taken, so a second press cannot travel twice. */
@@ -89,7 +108,9 @@ export class LeagueScene extends Phaser.Scene {
   init(data?: { run?: RunState }): void {
     this.incoming = data?.run ?? null;
     this.foe = null;
+    this.towerFoe = null;
     this.pending = null;
+    this.pendingTower = false;
     this.ending = false;
     this.leaving = false;
     this.healed = 0;
@@ -102,9 +123,14 @@ export class LeagueScene extends Phaser.Scene {
       return;
     }
 
+    // The mode is the node the run stands on: the League plays its chain, the
+    // tower behind it plays the endless streak (`docs/region-spec.md` §7.11).
+    this.mode = incoming.nodeKey === TOWER_NODE_KEY ? 'tower' : 'league';
+
     // The entry heal: HP and PP back to full across the party and the box, never
     // a revival (D5), and the run only rewritten when something was missing.
-    this.run = leagueEnter(incoming);
+    const healed = this.mode === 'tower' ? towerHeal(incoming) : leagueEnter(incoming);
+    this.run = healed;
     if (this.run !== incoming) this.healed += 1;
     this.persistRun();
 
@@ -129,6 +155,10 @@ export class LeagueScene extends Phaser.Scene {
       });
     }
 
+    if (this.mode === 'tower') {
+      this.startTowerFight();
+      return;
+    }
     const next = leagueNext(this.run);
     if (next !== null) this.startFight(next);
   }
@@ -145,6 +175,11 @@ export class LeagueScene extends Phaser.Scene {
       if (!this.leaving && !this.ending) this.startFight(index);
       return;
     }
+    if (this.pendingTower) {
+      this.pendingTower = false;
+      if (!this.leaving && !this.ending) this.startTowerFight();
+      return;
+    }
     if (this.ending) {
       this.ending = false;
       this.scene.stop();
@@ -154,8 +189,14 @@ export class LeagueScene extends Phaser.Scene {
   /**
    * Called by `BattleScene` before it stops: folds the row's result, heals after
    * a win and queues the next row. A wipe goes straight to the run-over screen.
+   * In tower mode it folds through `towerResolve`, so a win steps the streak and
+   * heals while a loss re-opens the same rung and only a wipe ends the run.
    */
   applyBattleResult(result: BattleReturn): void {
+    if (this.mode === 'tower') {
+      this.applyTowerResult(result);
+      return;
+    }
     const foe = this.foe;
     const run = this.run;
     this.foe = null;
@@ -196,22 +237,48 @@ export class LeagueScene extends Phaser.Scene {
   /** Dev only: what a browser pass reads. */
   debugLeagueState(): Readonly<{
     key: string;
+    mode: LeagueSceneMode;
     progress: number;
     next: number | null;
     cleared: boolean;
     foes: readonly number[];
     healed: number;
     paused: boolean;
+    streak: number;
+    towerOpen: boolean;
+    towerFoe: Readonly<{
+      rung: number;
+      trainerId: string;
+      name: string;
+      level: number;
+      partySize: number;
+    }> | null;
+    run: RunState;
   }> {
     const run = this.run;
+    const tower = this.mode === 'tower';
+    const foe = tower ? this.towerFoe : null;
     return {
       key: regionSceneKey,
+      mode: this.mode,
       progress: run ? leagueProgress(run) : 0,
-      next: run ? leagueNext(run) : null,
+      next: tower || !run ? null : leagueNext(run),
       cleared: run ? leagueCleared(run) : false,
       foes: LEAGUE.map((row) => row.index),
       healed: this.healed,
       paused: this.scene.isPaused(),
+      streak: run ? run.towerStreak : 0,
+      towerOpen: run ? towerOpen(run) : false,
+      towerFoe: foe
+        ? {
+            rung: foe.rung,
+            trainerId: foe.trainerId,
+            name: foe.name,
+            level: foe.level,
+            partySize: foe.roster.length,
+          }
+        : null,
+      run: run as RunState,
     };
   }
 
@@ -256,23 +323,102 @@ export class LeagueScene extends Phaser.Scene {
   }
 
   /**
-   * The exit (`docs/region-spec.md` §5, §7.6): the tower's door, through the
-   * region's one travel seam, and only once the Champion has fallen. Before that
-   * the press is refused and the League keeps the run.
+   * The tower's fight after the run's own streak (`docs/region-spec.md` §7.11):
+   * the shipped trainer battle, with no archetype row, no capture and the rung's
+   * own battle seed, over a paused League.
+   */
+  private startTowerFight(): void {
+    const run = this.run;
+    if (!run || this.leaving) return;
+    const foe = towerStep(run, run.towerStreak);
+    if (foe === null) return;
+    const launch: BattleLaunch = {
+      trigger: {
+        kind: 'trainer',
+        trainerId: foe.trainerId,
+        trainerName: foe.name,
+        roster: foe.roster,
+      },
+      player: run.party.map((member) => member.fighter),
+      bag: run.bag,
+      xp: run.xp,
+      seed: battleSeed(run.seed, run.routeIndex, foe.trainerId),
+      runSeed: run.seed,
+      routeIndex: run.routeIndex,
+      // The tower is endless and fought for its own streak: no capture, no catch.
+      canCapture: false,
+      firstCatch: false,
+      aiLevel: loadSettings().aiLevel,
+      returnScene: LEAGUE_RETURN_SCENE,
+    };
+    this.towerFoe = foe;
+    this.scene.pause();
+    this.scene.launch('Battle', launch);
+  }
+
+  /**
+   * The tower's fold: a win steps the streak and rests the squad, a loss re-asks
+   * for the same rung, and only a party with nobody living ends the run — the
+   * tower never ends a run that still has a party.
+   */
+  private applyTowerResult(result: BattleReturn): void {
+    const foe = this.towerFoe;
+    const run = this.run;
+    this.towerFoe = null;
+    if (!foe || !run) return;
+
+    const folded = resolveBattle(run, result, towerReward(foe));
+    const won = result.outcome === 'win' || result.outcome === 'capture';
+    const settled = towerResolve(folded.run, foe, won);
+    this.run = settled.run;
+    this.persistRun();
+
+    if (settled.over) {
+      this.paint();
+      this.ending = true;
+      this.scene.start('RunOver', { run: this.run });
+      return;
+    }
+
+    if (!won) {
+      this.pendingTower = true;
+      return;
+    }
+
+    playCue(this, 'victory');
+    this.paint();
+    this.pendingTower = true;
+  }
+
+  /**
+   * The exit (`docs/region-spec.md` §5, §7.6, §7.11): the tower's door, through the
+   * region's one travel seam, and only once `towerOpen` says the Champion has
+   * fallen. Before that the press is refused and the League keeps the run, and in
+   * tower mode there is nowhere left to walk: the tower is the last node.
    */
   exitToTower(): boolean {
     const run = this.run;
-    if (!run || this.leaving || this.foe !== null || this.pending !== null) {
+    if (
+      !run ||
+      this.mode === 'tower' ||
+      this.leaving ||
+      this.foe !== null ||
+      this.towerFoe !== null ||
+      this.pending !== null ||
+      this.pendingTower
+    ) {
       return false;
     }
-    if (!leagueCleared(run)) return false;
+    if (!towerOpen(run)) return false;
     const arrived = travel(planRegion(run.seed), run, TOWER_NODE_KEY, 'walk');
     if (!arrived.ok) return false;
     this.leaving = true;
     this.run = arrived.run;
     this.persistRun();
-    this.scene.start('Route', { run: this.run });
-    this.scene.stop();
+    // The tower has no world and no carver, so the run re-enters this scene: the
+    // restart's `init` resets `leaving` and its `create` reads the tower node and
+    // plays tower mode. A self-`start` paired with `stop` would kill it instead.
+    this.scene.restart({ run: this.run });
     return true;
   }
 
@@ -283,7 +429,7 @@ export class LeagueScene extends Phaser.Scene {
     this.exitToTower();
   }
 
-  /** Repaints the whole screen from the live run: it is only ever a five-row list. */
+  /** Repaints the whole screen from the live run: the five League rows, or the tower's one. */
   private paint(): void {
     for (const object of this.painted) object.destroy();
     this.painted = [];
@@ -304,6 +450,11 @@ export class LeagueScene extends Phaser.Scene {
     this.painted.push(backdrop, panel);
 
     const plan = planRegion(run.seed);
+    if (this.mode === 'tower') {
+      this.paintTower(run, plan, left, top, panelWidth);
+      return;
+    }
+
     const title = nodeOf(plan, nodeKey('league', 1))?.name ?? regionSceneKey;
     this.painted.push(
       addFrlgText(this, left + PANEL_PADDING, top + PANEL_PADDING, title, {
@@ -326,6 +477,38 @@ export class LeagueScene extends Phaser.Scene {
         }),
       );
     }
+  }
+
+  /**
+   * The tower's one row (`docs/region-spec.md` §7.11): the node's name as the
+   * title, the run's streak as a bare figure and the level every rung's five carry.
+   * The panel's box is the League's own, so the screen does not move, and there is
+   * no cleared footer: the tower is never cleared.
+   */
+  private paintTower(
+    run: RunState,
+    plan: RegionPlan,
+    left: number,
+    top: number,
+    panelWidth: number,
+  ): void {
+    const title = nodeOf(plan, TOWER_NODE_KEY)?.name ?? regionSceneKey;
+    const rowY = top + PANEL_PADDING + ROW_HEIGHT;
+    this.painted.push(
+      addFrlgText(this, left + PANEL_PADDING, top + PANEL_PADDING, title, { tint: FRLG_ACCENT }),
+      addFrlgText(this, left + PANEL_PADDING, rowY, String(run.towerStreak), { tint: FRLG_ACCENT }),
+      addFrlgText(
+        this,
+        left + panelWidth - PANEL_PADDING,
+        rowY,
+        t('hud.level', { level: LEAGUE_LEVEL }),
+        {
+          tint: FRLG_MUTED,
+          align: 'right',
+          origin: [1, 0],
+        },
+      ),
+    );
   }
 
   /** One row of the list: the mark, the class, the name and the level. */
