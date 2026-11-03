@@ -12696,7 +12696,7 @@ carried is already deleted by one of them.
 **Hot files.** `src/main.ts` (`[Task-298]`, deleting `StarterScene` and `RouteScene` from the scene
 list). No other hot file.
 
-- [ ] **[Task-298] The floors are deleted.** Every module the region replaced goes, with its tests:
+- [!] **[Task-298] The floors are deleted.** Every module the region replaced goes, with its tests:
       the map plan and its progress/route/streams, the room grid, the room descriptors, the old route
       scene and its registry, the floor minimap, the floor-bound content tables that survived the
       moves, `routeIndexForRoom` and `floorForRoute`, and the three deprecated position fields on
@@ -12721,8 +12721,14 @@ list). No other hot file.
       `src/main.ts`, `src/data/maps.ts`, `src/data/mapSize.ts`, `src/data/gates.ts`,
       `src/data/noHeal.ts`, `src/data/bannedRoom.ts` and the five
       folder READMEs. *Dependencies:* every batch before it. *(Batch 125)*
+      **BLOCKED:** the premise is false at `2406214` — `RouteScene` is the live `route`/`lateral`
+      screen (`CityScene.ts:431`, `MainMenuScene.ts:327`) and `create()` → `buildRoom()` still calls
+      `planMap`/`roomView` (`RouteScene.ts:1210`, `:633-643`), so the list would delete the region's
+      working route screen and the compat fields `region/travel.ts:144` writes on every node entry;
+      only `maps/route.ts`, `capForRoute` and `floorForRoute` are really dead. The regional route
+      scene it is missing was never planned as a task — human decision needed (issue #119).
 
-- [ ] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
+- [!] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
       `docs/routes-spec.md`, `docs/tech-decisions.md` and `docs/data-spec.md` stop describing floors
       and describe what shipped, with the new `D##` complete and no dead reference left.
       **Measured:** `docs/design-spec.md` §2 describes the run as eight maps plus infinite mode;
@@ -12739,6 +12745,8 @@ list). No other hot file.
       `docs/routes-spec.md`, `docs/tech-decisions.md`, `docs/data-spec.md`,
       `docs/route-generator.md`, `docs/art-direction.md` and `docs/tileset-spec.md`.
       *Dependencies:* the sweep (Batch 125) and every batch before it. *(Batch 125)*
+      **BLOCKED:** waits on the sweep ([Task-298]), which is blocked on the live route scene
+      (issue #119); until that is decided this task would document a tree that still plays rooms.
 
 ## Bugs
 
