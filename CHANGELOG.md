@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **An interior is a small room with a door back.** `[Task-274]`, Batch 118:
+      `planInterior(plan, interiorKey, cityKey)` turns a settlement door's own key into one indoor
+      map — `INTERIOR_SIZE` 24×18 for a Centre, laboratory, house or casino and `GYM_SIZE` 40×40 for
+      a gym — with a `FLOOR` rectangle inside a one-tile `WALL` ring and a single `DOOR` in its
+      bottom wall sitting on the entry tile and leading back to the city key. Each kind places its
+      own slot list in a fixed order (`heal` then `pc`, `professor`, `npc`, `cabinet`, `trainer`
+      then `leader`); a gym is four rooms in the order `entrance`, `trainer`, `puzzle`, `leader`,
+      walked as a 2×2 with exactly one `DOOR` between consecutive rooms. Geometry comes off
+      `nodeStreams(seed, '<cityKey>/<interiorKey>').layout`, never another generator's file. All
+      criteria `[unit]`: the return door, the per-kind slots, the gym's four ordered rooms, the two
+      sizes, flood-fill reachability, the interior frame resolution and a pinned six-string digest.
+      The folder README maps the new files and `docs/region-spec.md` §7.2 documents the list.
+
 - [x] **A city is a grid with a Centre, a gym and grass.** `[Task-273]`, Batch 118:
       `planCity(plan, key)` lays out a settlement's whole tile map from `src/data/region.ts`: a
       50×50, 70×70 or 90×90 square for a city (6, 10 or 14 buildings) and 40×40 for the town, as 7-
@@ -1736,7 +1749,7 @@ file is the human-readable summary.
       side is now a roll of the run's own seed, not a constant. `BOSS_PARTY[kind].double`
       became `doubleChance` (**0.25** for the map boss, **0.1** for the mini-boss) and
       `bossIsDouble(kind, seed, mapIndex, routeKey)` beside the table answers it from a
-      stream of its own — `hashSeed(\`${seed}:double:${kind}:${mapIndex}:${routeKey}\`)` —
+      stream of its own — `hashSeed(`${seed}:double:${kind}:${mapIndex}:${routeKey}`)` —
       so no existing draw moves and a replay rebuilds the same floor. The mini-boss's
       trainer launch (`RouteScene.startTrainerBattle`) now carries the flag the boss room
       already carried, through a new `BattleExtras.double` rolled **once** per fight, so a
@@ -1751,7 +1764,7 @@ file is the human-readable summary.
       its primary ability is always **Dark Matter** (`darkmatter`) and the ability the
       wild had rolled becomes its second slot, on the member **and** on its battle
       snapshot, which `hasAbility`/`ownedEffects` already read. The catch folds the flag
-      in from a stream of its own — `hashSeed(\`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}\`)`
+      in from a stream of its own — `hashSeed(`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}`)`
       against `DARK_CHANCE = 0.05` in `src/data/run.ts` — so no existing draw moves and a
       replay rebuilds the same catch. Both party render paths paint the mark with one
       shared tint (`DARK_PORTRAIT_TINT = 0x8b5cf6`): the Phaser card tints the portrait,
@@ -2193,7 +2206,7 @@ file is the human-readable summary.
 
 - [x] **The battle's action log speaks the locale.** The engine stops composing English sentences:
       the `text` event carries `{ key: BattleTextKey; params?: BattleTextParams }`
-      (`BattleTextKey = Extract<TranslationKey, \`battle.log.${string}\`>`, a **type-only** import from
+      (`BattleTextKey = Extract<TranslationKey, `battle.log.${string}`>`, a **type-only** import from
       `src/i18n/en.ts`, so `src/engine/battle/` keeps no locale, no runtime i18n and no `t`) and
       `pushText(state, key, params?)` types every one of its **226** call sites across the twelve
       engine files, the message tables they read and the thirty `applyBoostEffect` overrides.

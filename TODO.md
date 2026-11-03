@@ -12060,7 +12060,7 @@ are reused inside the new multi-screen route), the hand-placed city content and 
       `docs/region-spec.md` §7.1. *Dependencies:* the region contract and `src/data/region.ts` (Batch
       117). *(Batch 118)*
 
-- [ ] **[Task-274] An interior is a small room with a door back.** Every door a city opens leads to a
+- [x] **[Task-274] An interior is a small room with a door back.** Every door a city opens leads to a
       single small map with a return door on its entry tile, and its kind decides what stands inside:
       the Centre's counter and PC, the gym's rooms, the laboratory's professor, a house's NPC or the
       casino's cabinet.
