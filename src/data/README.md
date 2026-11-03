@@ -79,6 +79,11 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
 - `puzzles.ts` — the puzzle room's table: the leaf's first floor and chance, and one
   row per puzzle with its switch count, its reward id, the first floor that may carry
   it and its wrong-press rule (`docs/maps-spec.md` §7).
+- `pois.ts` — the nine points of interest a lateral's terminus can end on, one row per
+  kind, each folding the legacy room table it replaces by reference (the vault's seals,
+  the no-heal rule and barred moves, the banned-species row, the secret shop's shelf,
+  the static's and the legendary's species, the puzzle stack) plus the two zone sizes
+  (`docs/region-spec.md` §7.8).
 - `staticSpecies.ts` — the static-species room's table: the leaf's and its legendary
   variant's first floor and chance, the property row that opens each seal kind and the
   two species lists (`docs/maps-spec.md` §7).
