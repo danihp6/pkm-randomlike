@@ -12372,7 +12372,7 @@ portal and the boss room.
       *Dependencies:* the gym interior (Batch 118), the leader table (Batch 118), the puzzle stack
       (Batch 120), the badge gate (Batch 119). *(Batch 121)*
 
-- [ ] **[Task-286] The League: four, a Champion, and a heal between each.** Inside, the party is
+- [x] **[Task-286] The League: four, a Champion, and a heal between each.** Inside, the party is
       healed (HP/PP/status, never revived) after every battle, items are allowed, nothing can be
       bought and there is no way out until the Champion falls — after which the tower opens.
       **Measured:** `src/data/league.ts` (Batch 118) holds the five rows at 60; `healParty` rests

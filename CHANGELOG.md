@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The League: four, a Champion, and a heal between each.** `[Task-286]`, Batch 121:
+      `src/engine/region/league.ts` plays `src/data/league.ts`'s five rows as one chain.
+      `leagueFoe(plan, run, index)` resolves a row's roster off one stream per row
+      (`${seed}:league:<index>`, so a replay fields the same five and appending a row moves
+      none of them), its band off the League node's `cap` through `bandForLevel` and a plan
+      without a league node falls back to `LEAGUE_LEVEL` instead of throwing. A row is
+      remembered as `league:<index>` in `RunState.defeatedTrainers`, `leagueProgress` is the
+      prefix of that list, `leagueNext` the next unbeaten index (`null` once the Champion
+      falls), `leagueWin` a no-op on a repeat and `leagueCleared` true only after row 5.
+      `leagueEnter` is the shipped `healParty` — HP and PP across party and box, never a
+      status cure, never a revival (D5) — and runs on entry, after every won row and once
+      after the Champion; `leagueReward` folds a beaten row's levels, `isTrainer`, its
+      trainer id and the archetype's expected money in. `src/scenes/LeagueScene.ts` is the
+      screen: the five fights in one scene, no shop, no capture, no wandering, the exit
+      (`tower:1`) refused until `leagueCleared`, and it registers itself through the folder
+      registry. `docs/region-spec.md` §7.6 states the League. `[live]` over CDP at 1280×800
+      with `renderer.snapshotArea`: the entry heal takes `hp 3 → 20` and `pp 0 → 35`, the
+      progress reads `0` with next `1` and foes `[1..5]`, a battle returns to `League` with
+      the party at level 60, every win heals and advances, the exit is refused before row 5
+      and open after, and the cleared screen draws the five rows; `[unit]` the five in
+      order, a loss ending the run with no revival, the heal's shape, the usable items and
+      the refused exit.
+
 - [x] **A city is walkable.** `[Task-284]`, Batch 121: `src/scenes/CityScene.ts` draws a
       settlement from the plan `planCity` already emits — the streets, the buildings and
       their doors, the plaza, the grass corner and the exit bands — extending `WorldScene`
