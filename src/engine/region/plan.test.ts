@@ -2,13 +2,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { badgeCap, cityTierForBadge } from '../../data/region';
+import { badgeCap, cityTierForBadge, REGION_COUNTS, TOWN_SIZE } from '../../data/region';
+import { exitGate } from '../run/gates';
+import { planCity } from './city/plan';
 import { routeName, settlementNames } from './names';
 import {
   nodeKey,
   nodeOf,
   parseNodeKey,
   planRegion,
+  regionScale,
   type RegionNode,
   type RegionNodeKind,
   type RegionPlan,
@@ -342,6 +345,201 @@ city:8|Cobalt Port|b8|c55|d0|96,2|route:8,victory-road:1
 victory-road:1|Victory Road|b9|c60|d1|102,2|city:8,league:1
 league:1|League|b9|c60|d2|108,1|victory-road:1,tower:1
 tower:1|Tower|b9|c60|d3|114,0|league:1`);
+  });
+});
+
+describe('region plan scale', () => {
+  it('holds the table scale over 64 seeds: 28-36 nodes, 16-24 routes, 9 settlements', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      const scale = regionScale(plan);
+      expect(scale.nodes, seed).toBe(plan.nodes.length);
+      expect(scale.nodes, seed).toBeGreaterThanOrEqual(28);
+      expect(scale.nodes, seed).toBeLessThanOrEqual(36);
+      expect(scale.settlements, seed).toBe(9);
+      expect(scale.cities, seed).toBe(8);
+      expect(scale.gymCities, seed).toBe(8);
+      expect(scale.routes, seed).toBeGreaterThanOrEqual(16);
+      expect(scale.routes, seed).toBeLessThanOrEqual(24);
+      expect(scale.mainRoutes, seed).toBe(8);
+      expect(scale.laterals, seed).toBeGreaterThanOrEqual(8);
+      expect(scale.laterals, seed).toBeLessThanOrEqual(16);
+      expect(scale.victoryRoads, seed).toBe(1);
+    }
+  });
+
+  it('counts what the plan holds, node by node, against the data table', () => {
+    const plan = planRegion('scale-0');
+    const scale = regionScale(plan);
+    expect(scale.cities).toBe(ofKind(plan, 'city').length);
+    expect(scale.gymCities).toBe(plan.nodes.filter((node) => node.gym).length);
+    expect(scale.mainRoutes).toBe(ofKind(plan, 'route').length);
+    expect(scale.laterals).toBe(ofKind(plan, 'lateral').length);
+    expect(scale.routes).toBe(scale.mainRoutes + scale.laterals);
+    expect(scale.settlements).toBe(ofKind(plan, 'town').length + scale.cities);
+    expect(scale.victoryRoads).toBe(ofKind(plan, 'victory-road').length);
+    expect(scale.settlements).toBe(REGION_COUNTS.settlements);
+    expect(scale.settlements).toBe(REGION_COUNTS.towns + REGION_COUNTS.cities);
+    expect(scale.cities).toBe(REGION_COUNTS.cities);
+    expect(scale.mainRoutes).toBe(REGION_COUNTS.mainRoutes);
+    expect(scale.victoryRoads).toBe(REGION_COUNTS.victoryRoads);
+    expect(ofKind(plan, 'league')).toHaveLength(REGION_COUNTS.leagues);
+    expect(ofKind(plan, 'tower')).toHaveLength(REGION_COUNTS.towers);
+    expect(plan.chain).toHaveLength(
+      REGION_COUNTS.cities * 2 +
+        REGION_COUNTS.towns +
+        REGION_COUNTS.victoryRoads +
+        REGION_COUNTS.leagues +
+        REGION_COUNTS.towers,
+    );
+    expect(scale.nodes).toBe(plan.chain.length + scale.laterals);
+    expect(scale.laterals).toBeGreaterThanOrEqual(
+      REGION_COUNTS.cities * REGION_COUNTS.lateralsPerStretch.min,
+    );
+    expect(scale.laterals).toBeLessThanOrEqual(
+      REGION_COUNTS.cities * REGION_COUNTS.lateralsPerStretch.max,
+    );
+  });
+
+  it('orphans no node over 64 seeds: mirrored edges, no repeat, one component', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      const edges = new Set<string>();
+      let endpoints = 0;
+      for (const node of plan.nodes) {
+        expect(node.edges.length, `${seed} ${node.key}`).toBeGreaterThan(0);
+        expect(new Set(node.edges).size, `${seed} ${node.key}`).toBe(node.edges.length);
+        endpoints += node.edges.length;
+        for (const edge of node.edges) {
+          const other = nodeOf(plan, edge);
+          expect(other, `${seed} ${node.key} -> ${edge}`).toBeDefined();
+          expect(other?.edges, `${seed} ${edge} -> ${node.key}`).toContain(node.key);
+          edges.add([node.key, edge].sort().join('|'));
+        }
+      }
+      expect(edges.size * 2, seed).toBe(endpoints);
+      const reached = new Set<string>([plan.townKey]);
+      const queue: string[] = [plan.townKey];
+      for (let head = 0; head < queue.length; head++) {
+        for (const next of nodeOf(plan, queue[head])?.edges ?? []) {
+          if (reached.has(next)) continue;
+          reached.add(next);
+          queue.push(next);
+        }
+      }
+      expect(reached.size, seed).toBe(plan.nodes.length);
+    }
+  });
+
+  it('terminates every lateral on its parent, off the chain, over 64 seeds', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      const chain = new Set(plan.chain);
+      const laterals = ofKind(plan, 'lateral');
+      expect(laterals.length, seed).toBeGreaterThanOrEqual(8);
+      for (const lateral of laterals) {
+        expect(lateral.edges, `${seed} ${lateral.key}`).toEqual([lateral.lateralOf]);
+        const parent = nodeOf(plan, lateral.lateralOf ?? '');
+        expect(parent?.kind, `${seed} ${lateral.key}`).toBe('route');
+        expect(
+          parent?.edges.filter((edge) => edge === lateral.key),
+          `${seed} ${lateral.key}`,
+        ).toEqual([lateral.key]);
+        expect(chain.has(lateral.key), `${seed} ${lateral.key}`).toBe(false);
+      }
+      expect(
+        plan.chain.every((key) => parseNodeKey(key)?.kind !== 'lateral'),
+        seed,
+      ).toBe(true);
+    }
+  });
+
+  it('puts one victory road between the eighth city and a league it alone reaches', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      const roads = ofKind(plan, 'victory-road');
+      const leagues = ofKind(plan, 'league');
+      const towers = ofKind(plan, 'tower');
+      expect(roads, seed).toHaveLength(1);
+      expect(leagues, seed).toHaveLength(1);
+      expect(towers, seed).toHaveLength(1);
+      const road = roads[0];
+      const league = leagues[0];
+      const tower = towers[0];
+      const eighth = plan.gymKeys[plan.gymKeys.length - 1];
+      expect(nodeOf(plan, eighth)?.badge, seed).toBe(8);
+      expect([...road.edges].sort(), seed).toEqual([eighth, league.key].sort());
+      expect([...league.edges].sort(), seed).toEqual([road.key, tower.key].sort());
+      expect(tower.edges, seed).toEqual([league.key]);
+      for (const node of plan.nodes) {
+        expect(node.edges.includes(league.key), `${seed} ${node.key} -> league`).toBe(
+          node.key === road.key || node.key === tower.key,
+        );
+      }
+      const reached = new Set<string>([plan.townKey]);
+      const queue: string[] = [plan.townKey];
+      for (let head = 0; head < queue.length; head++) {
+        for (const next of nodeOf(plan, queue[head])?.edges ?? []) {
+          if (next === road.key || reached.has(next)) continue;
+          reached.add(next);
+          queue.push(next);
+        }
+      }
+      expect(reached.has(league.key), seed).toBe(false);
+      expect(reached.has(tower.key), seed).toBe(false);
+    }
+  });
+
+  it('sizes every city from its tier and the town from TOWN_SIZE over 64 seeds', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      for (const city of ofKind(plan, 'city')) {
+        const tier = cityTierForBadge(city.badge);
+        const built = planCity(plan, city.key);
+        expect(built.width, `${seed} ${city.key}`).toBe(tier.size.width);
+        expect(built.height, `${seed} ${city.key}`).toBe(tier.size.height);
+        expect(built.buildings.length, `${seed} ${city.key}`).toBe(tier.buildings);
+      }
+      const town = planCity(plan, plan.townKey);
+      expect(town.width, seed).toBe(TOWN_SIZE.width);
+      expect(town.height, seed).toBe(TOWN_SIZE.height);
+      expect(town.buildings, seed).toHaveLength(2);
+      expect(town.buildings.map((building) => building.kind).sort(), seed).toEqual(['house', 'lab']);
+    }
+  });
+
+  it('walks the chain in badge order, never needing a badge the walk does not hold', () => {
+    for (let i = 0; i < 64; i++) {
+      const seed = `scale-${i}`;
+      const plan = planRegion(seed);
+      const held: number[] = [];
+      let gates = 0;
+      for (let step = 0; step < plan.chain.length - 1; step++) {
+        const from = plan.chain[step];
+        const to = plan.chain[step + 1];
+        const node = nodeOf(plan, from);
+        expect(node, `${seed} ${from}`).toBeDefined();
+        if (node?.kind === 'city' && node.gym) {
+          expect(exitGate(plan, from, to, held), `${seed} ${from}`).toEqual({
+            open: false,
+            badge: node.badge,
+          });
+          held.push(node.badge);
+        }
+        const gate = exitGate(plan, from, to, held);
+        if (gate !== null) {
+          gates += 1;
+          expect(gate.open, `${seed} ${from} -> ${to}`).toBe(true);
+        }
+      }
+      expect(held, seed).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+      expect(gates, seed).toBe(8);
+    }
   });
 });
 

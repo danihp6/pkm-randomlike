@@ -1,10 +1,54 @@
 /**
- * The region's balance tables: how big a settlement, an interior, a gym and a
- * route are, the eight badge caps, the League's level and the word lists a
- * settlement's name is drawn from. A run is one region (`docs/region-spec.md`),
- * so these numbers are the only place a generator or a scene reads a size or a
- * level from; retuning a region never touches the engine.
+ * The region's balance tables: how many nodes a region holds, how big a settlement,
+ * an interior, a gym and a route are, the eight badge caps, the League's level and
+ * the word lists a settlement's name is drawn from. A run is one region
+ * (`docs/region-spec.md` §1), so these numbers are the only place a generator or a
+ * scene reads a count, a size or a level from; retuning a region never touches the
+ * engine.
+ *
+ * `REGION_COUNTS` is the region's whole scale: nine settlements, twenty chain nodes,
+ * sixteen to twenty-four routes, one Victory Road, one League and one tower.
+ * `planRegion` reads that table rather than hard-coding a count, so a region's shape
+ * changes here and nowhere else.
  */
+
+/**
+ * The region's frozen counts, in one table: what a seed's region always holds.
+ * `planRegion` reads these and never hard-codes one; a rebalance changes them here.
+ */
+export const REGION_COUNTS: Readonly<{
+  /** The gym cities, one per badge, badges 1-8. */
+  cities: number;
+  /** One long main route per stretch. */
+  mainRoutes: number;
+  /** One or two optional detours per stretch. */
+  lateralsPerStretch: Readonly<{ min: number; max: number }>;
+  /** The starting town. */
+  towns: number;
+  /** The gauntlet between the eighth city and the League. */
+  victoryRoads: number;
+  /** The Elite Four and the Champion, one node. */
+  leagues: number;
+  /** The endless node behind the Champion. */
+  towers: number;
+  /** The settlements a region names: the town plus every city. */
+  settlements: number;
+}> = {
+  cities: 8,
+  mainRoutes: 8,
+  lateralsPerStretch: { min: 1, max: 2 },
+  towns: 1,
+  victoryRoads: 1,
+  leagues: 1,
+  towers: 1,
+  settlements: 9,
+};
+
+// Asserted, never derived: a derived `settlements` would follow a miscount silently,
+// while this fails the moment the town and the cities stop adding up.
+if (REGION_COUNTS.settlements !== REGION_COUNTS.towns + REGION_COUNTS.cities) {
+  throw new Error('REGION_COUNTS.settlements must equal towns + cities');
+}
 
 /** A tile count a generated map is drawn on. */
 export type RegionSize = Readonly<{ width: number; height: number }>;

@@ -7,6 +7,7 @@ import {
   LEAGUE_LEVEL,
   NAME_ADJECTIVES,
   NAME_NOUNS,
+  REGION_COUNTS,
   ROUTE_HEIGHTS,
   ROUTE_WIDTH,
   TOWN_SIZE,
@@ -14,6 +15,45 @@ import {
   citySize,
   cityTierForBadge,
 } from './region';
+
+describe('region counts', () => {
+  it('pins the scale every region holds', () => {
+    expect(REGION_COUNTS.towns).toBe(1);
+    expect(REGION_COUNTS.cities).toBe(8);
+    expect(REGION_COUNTS.mainRoutes).toBe(8);
+    expect(REGION_COUNTS.lateralsPerStretch).toEqual({ min: 1, max: 2 });
+    expect(REGION_COUNTS.victoryRoads).toBe(1);
+    expect(REGION_COUNTS.leagues).toBe(1);
+    expect(REGION_COUNTS.towers).toBe(1);
+    expect(REGION_COUNTS.settlements).toBe(9);
+    expect(REGION_COUNTS.settlements).toBe(REGION_COUNTS.towns + REGION_COUNTS.cities);
+  });
+
+  it('keeps every count a positive integer', () => {
+    const counts: readonly (readonly [string, number])[] = [
+      ['towns', REGION_COUNTS.towns],
+      ['cities', REGION_COUNTS.cities],
+      ['mainRoutes', REGION_COUNTS.mainRoutes],
+      ['lateralsPerStretch.min', REGION_COUNTS.lateralsPerStretch.min],
+      ['lateralsPerStretch.max', REGION_COUNTS.lateralsPerStretch.max],
+      ['victoryRoads', REGION_COUNTS.victoryRoads],
+      ['leagues', REGION_COUNTS.leagues],
+      ['towers', REGION_COUNTS.towers],
+      ['settlements', REGION_COUNTS.settlements],
+    ];
+    for (const [name, value] of counts) {
+      expect(Number.isInteger(value), name).toBe(true);
+      expect(value, name).toBeGreaterThan(0);
+    }
+  });
+
+  it('ships one main route per city and an ordered detour range', () => {
+    expect(REGION_COUNTS.mainRoutes).toBe(REGION_COUNTS.cities);
+    expect(REGION_COUNTS.lateralsPerStretch.max).toBeGreaterThanOrEqual(
+      REGION_COUNTS.lateralsPerStretch.min,
+    );
+  });
+});
 
 describe('region sizes', () => {
   it('pins the town, the interior, the gym and the route', () => {
