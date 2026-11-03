@@ -41,7 +41,6 @@ import {
 import { trainerFacingPose, trainerWalkAnimKey } from '../render/trainerAnim';
 import { getTrainerArchetype, TRAINER_ARCHETYPE_IDS } from '../data/trainers';
 import { trainerLevel } from '../data/trainerLevels';
-import { bandForLevel } from '../data/run';
 import { IS_DEVELOP } from '../dev/env';
 import { nextDebugPokemonId } from '../dev/ids';
 import type {
@@ -142,7 +141,6 @@ import {
   borderEdge,
   bossChamberTile,
   chefTrade,
-  encounterTableFor,
   exitEdgeAt,
   gateId,
   guaranteedNpc,
@@ -205,7 +203,8 @@ import {
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
 import { buildNodeMeshes } from '../engine/region/preload';
-import { nodeOf, planRegion, type RegionNodeKind } from '../engine/region/plan';
+import { NODE_ENCOUNTER_CHANCE, nodeEncounterTable, nodeWildLevel } from '../engine/region/encounters';
+import { nodeOf, planRegion, type RegionNode, type RegionNodeKind } from '../engine/region/plan';
 import { travel, type TravelMode } from '../engine/region/travel';
 import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
@@ -612,6 +611,17 @@ export class RouteScene extends WorldScene {
     if (kind === 'league') return 'League';
     if (kind === 'tower') return 'League';
     return null;
+  }
+
+  /**
+   * The region node the run stands on: the plan's node for its `nodeKey`, or the
+   * starting town when a hand-edited save names one the plan does not hold. The
+   * grass table and the wild level are the node's, so every room of one node rolls
+   * the same pool and spends the same single catch (`docs/region-spec.md` §7.9).
+   */
+  private regionNode(): RegionNode {
+    const plan = planRegion(this.run.seed);
+    return nodeOf(plan, this.run.nodeKey) ?? nodeOf(plan, plan.townKey)!;
   }
 
   /**
@@ -1094,7 +1104,12 @@ export class RouteScene extends WorldScene {
    * render maps, and the tileset and encounter stream follow the route's biome.
    * Both `buildRoute` and the debug frame-map import go through here so they
    * cannot drift. `view` is the plan room on screen (null for an imported map or
-   * the dev generator), which carries the map band and the floor's level cap.
+   * the dev generator), which carries the room's band and the boss portal.
+   *
+   * The grass rolls the **node** the run stands on, never the room's band
+   * (`src/engine/region/encounters.ts`, `docs/region-spec.md` §7.9): the table is
+   * the node's own stretch pool and the level is the squad's share clamped to the
+   * node's cap, so the catch rule and the wild rule cannot disagree.
    */
   private applyRoute(route: RouteMap, view: RoomView | null = null): void {
     // The boss room's portal is carved from the start but sealed until the boss
@@ -1107,19 +1122,20 @@ export class RouteScene extends WorldScene {
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
     const biome = getBiome(route.biomeId);
-    const band = view ? bandForMap(view.mapIndex) : runBand(this.run.seed, route.routeIndex);
-    const cap = band.maxLevel;
+    const node = this.regionNode();
     this.tilesetId = biome.tilesetId;
     this.moveMap = this.movementMap(this.map);
     this.encounters = new RouteEncounters(
-      encounterTableFor(bandForLevel(squadLevel(this.run))),
+      nodeEncounterTable(node, this.run),
       new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
-      (rng) => rollWildLevel(rng, squadLevel(this.run), cap),
-      undefined,
+      (rng) => nodeWildLevel(node, this.run, rng),
+      NODE_ENCOUNTER_CHANCE,
       // Shinies roll on their own stream, so they never shift the encounter
       // sequence a fixed seed already produced.
       new Rng(hashSeed(`${route.seed}:shiny:${route.routeIndex}`)),
-      wildExclusions(this.run),
+      // The node's table already dropped the run's exclusions, so the live set starts
+      // empty; `applyBattleResult` refreshes it after every catch.
+      undefined,
       // The magician's type, so a room rebuilt from a save still obeys it.
       this.run.modifiers.nextWildType,
     );
@@ -2872,11 +2888,11 @@ export class RouteScene extends WorldScene {
     this.battleCounter += 1;
     const key =
       trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
-    // The room's capture is spent the moment its **first wild battle** starts,
+    // The node's one catch is spent the moment its **first wild battle** starts,
     // whatever the outcome: catching, defeating or fleeing all close the window, so
     // only the first wild Pokémon that appears can be caught. The battle still
     // allows the catch (the flag is read before spending) and the route HUD and
-    // minimap mark the room spent as soon as it is back.
+    // minimap mark the node spent as soon as it is back.
     const captureAllowed = canCapture(this.run);
     const firstCatch = this.run.stats.catches === 0;
     if (trigger.kind === 'wild') {
@@ -3034,6 +3050,26 @@ export class RouteScene extends WorldScene {
   }
 
   /**
+   * Dev only: the catch and the wild roll the node on screen is playing — the live
+   * `nodeKey`, whether that node's one catch is still unspent, the keys already spent
+   * and the chance a grass step rolls at. Every field is read off the live run at call
+   * time, never off a snapshot taken in `create`.
+   */
+  debugWildState(): {
+    nodeKey: string;
+    canCapture: boolean;
+    capturedNodes: readonly string[];
+    encounterChance: number;
+  } {
+    return {
+      nodeKey: this.run.nodeKey,
+      canCapture: canCapture(this.run),
+      capturedNodes: this.run.capturedNodes,
+      encounterChance: NODE_ENCOUNTER_CHANCE,
+    };
+  }
+
+  /**
    * Dev only: rolls `count` wild encounters off the room's live stream, skipping
    * the chance misses and advancing that stream. Returns them in roll order, or
    * nothing with no live run, a finished run or no room on screen.
@@ -3127,7 +3163,7 @@ export class RouteScene extends WorldScene {
     });
     this.run = run;
     this.run = recordHpLost(this.run, hpLoss);
-    // The room's capture was already spent when the wild battle started
+    // The node's capture was already spent when the wild battle started
     // (`startBattle`); this keeps it spent even if a path ever skips that.
     if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
     // A catch narrows this room's table at once: the room is NOT rebuilt (`applyRoute`

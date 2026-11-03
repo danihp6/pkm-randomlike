@@ -555,6 +555,33 @@ owns no rule, starts nothing and registers no scene; the scene that mounts it is
 world's (`WorldScene`), which is where the zone is drawn and the rules are folded into a
 launch.
 
+### 7.9 A node's catch and its wilds
+
+The single catch is a **node** fact, not a room's and not a floor's: the run carries
+the keys whose catch is spent in `capturedNodes`, `canCapture(run)` is
+`!run.capturedNodes.includes(run.nodeKey)` and `useCapture(run)` appends the key it
+stands on (`src/engine/run/state.ts`). A node that holds grass — the town, a city,
+a route, a lateral (§7.3) — is therefore capturable exactly once, and every room of
+one node reads the same answer, so walking away from a defeat and back changes
+nothing. `resolveBattle`'s capture branch is the one writer: it spends `next.nodeKey`,
+the node the battle was fought on. The old per-floor `capturedRooms` stays in the
+schema (§8) as a field no rule reads or writes any more, and the sweep deletes it.
+
+A wild's level is the squad's own share, never the node's band floor: it is
+`wildLevel(squadLevel(run), rng)` — 60-75 % of the squad (`WILD_LEVEL_FRACTION`),
+floored — clamped into `1..node.cap`, so a wild can never stand above the cap of the
+stretch it lives in (`nodeWildLevel`, `src/engine/run/levelCurve.ts`).
+
+The roll itself is `src/engine/region/encounters.ts`. `nodeEncounterTable(node, run)`
+is the node's band pool (`bandForNode`) minus the run's `wildExclusions`, so the grass
+never offers a line the run holds; `NODE_ENCOUNTER_CHANCE` is the shipped
+`DEFAULT_ENCOUNTER_CHANCE` (0.15) referenced, never re-literal'd; and
+`rollNodeEncounter(node, run, rng, { shinyRng })` is one step: the chance, the species,
+then the level, all off the `Rng` the caller hands in and nothing else (`D11`) — the
+scene owns the stream and splits the shiny one, so a fixed seed replays the same grass.
+The route scene feeds this module the node it resolved from `run.nodeKey`, which is
+what keeps the catch rule and the wild rule from disagreeing.
+
 ### 7.11 The tower behind the Champion
 
 The tower is the region's one **endless** node, `tower:1`, and its rule is
