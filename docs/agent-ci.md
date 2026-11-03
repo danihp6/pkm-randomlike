@@ -154,11 +154,20 @@ task (or a `git revert -m 1 <merge>`), not a blocked merge.
   baton at its end by dispatching this workflow with its own run id in `ignore_run`).
 - At least one `- [ ]` task remains. With none, the loop parks itself and says so in an
   issue.
-- Fewer than three red cycles today (a broken loop, not a busy one; re-run
-  `agent / cycle` by hand to resume). **Red means the verdict above**, not any
-  non-zero exit: a run that shipped and then lost its socket is green. The issue a
-  parked driver opens is deduplicated by title while one is still open, so a brake
-  that parks on every cron does not bury the repository in copies.
+- Not the third **consecutive** red cycle (a broken loop, not a busy one). **Red means the
+  verdict above**, not any non-zero exit: a run that shipped and then lost its socket is green.
+  A green cycle between two reds resets the count — a per-day count parked a healthy loop on
+  `2026-11-03` after `green, red, red, green, red`, and the rule exists to catch a loop that
+  cannot finish anything, not a task that fails QA twice through no fault of the harness.
+  When it trips the driver writes **`PARKED_UNTIL`** (next UTC midnight) and **`PARKED_SHA`**
+  (the `main` it tripped on), and the stamp is read before anything is counted: the loop lifts
+  by itself when a commit lands on `main` — a fix *is* a push, no variable surgery — or when the
+  instant passes, and a stale stamp is cleared rather than left behind. `agent / autopilot
+  window` with `hours: 0` clears it immediately, and a manual `agent / cycle` dispatch is never
+  gated by it. Without `AUTOPILOT_TOKEN` the driver cannot write the stamp and falls back to the
+  count alone; it never fails for that. The issue a parked driver opens is deduplicated by title
+  while one is still open, so a brake that parks on every cron does not bury the repository in
+  copies.
 - At most `AGENT_DAILY_CYCLES` cycles today, when that variable is set to a number.
   **Unset or `0` means no cap** — which is the current setting.
 - Inside the armed window, when there is one: `AUTOPILOT_FROM` / `AUTOPILOT_UNTIL` hold
