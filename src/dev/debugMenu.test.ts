@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Species } from '../data/dex';
 import { ITEMS } from '../data/items';
+import { BADGE_CAPS } from '../data/region';
 import { RUN_CHAIN } from '../data/run';
-import { ROUTE_SHAPES } from '../engine/routes/layout';
+import { planRegion } from '../engine/region/plan';
+import { SHAPES, ROUTE_SHAPES } from '../engine/routes/layout';
+import { createRun } from '../engine/run/state';
+import { en } from '../i18n/en';
 import { setLocale } from '../i18n';
 import {
+  changedRun,
   clampItemCount,
   clampLevel,
   DEBUG_DEFAULT_LEVEL,
@@ -13,18 +21,24 @@ import {
   DEBUG_MIN_LEVEL,
   DEBUG_ROUTE_HEIGHT,
   DEBUG_ROUTE_WIDTH,
-  debugLocationLabel,
+  debugNodeLabel,
+  debugNodeOptionLabel,
   matchAbility,
   matchItem,
   matchMove,
   matchNature,
   matchPartyMember,
   matchSpecies,
+  nodeContextFor,
+  parseBadge,
   parseOptionalInt,
   parseOptionalText,
   partyMemberLabel,
   partyMemberLabels,
   randomRouteInput,
+  withTowerStreak,
+  withVisitedNode,
+  type DebugMenuHandlers,
   type DebugPartyMember,
 } from './debugMenu';
 
@@ -193,44 +207,129 @@ describe('matchPartyMember', () => {
   });
 });
 
-describe('debugLocationLabel', () => {
-  it('joins the floor, room and tile clauses with " · "', () => {
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } })).toBe(
-      'map 3 · room 2/7 · (14,9)',
-    );
+describe('nodeContextFor', () => {
+  const SEED = 'node-tab';
+  const run = createRun({ seed: SEED });
+  const plan = planRegion(SEED);
+  const context = nodeContextFor(run);
+
+  it('reads the node the run stands on, its badges, its streak and its visited keys', () => {
+    expect(context.nodeKey).toBe(run.nodeKey);
+    expect(context.nodeKey).toBe(plan.townKey);
+    expect(context.badges).toEqual([]);
+    expect(context.towerStreak).toBe(0);
+    expect(context.visitedNodes).toEqual([plan.townKey]);
   });
 
-  it('drops the room clause when the floor has no plan', () => {
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: { x: 14, y: 9 } })).toBe(
-      'map 3 · (14,9)',
-    );
+  it('lists every plan node exactly once, with its kind, name and badge', () => {
+    const keys = context.nodes.map((node) => node.key);
+    expect(context.nodes).toHaveLength(plan.nodes.length);
+    expect(new Set(keys).size).toBe(plan.nodes.length);
+    expect(keys).toEqual(plan.nodes.map((node) => node.key));
+    expect(keys).toContain('town:1');
+    expect(keys).toContain('city:3');
+    const city = context.nodes.find((node) => node.key === 'city:3');
+    const planned = plan.nodes.find((node) => node.key === 'city:3')!;
+    expect(city).toEqual({
+      key: planned.key,
+      kind: planned.kind,
+      name: planned.name,
+      badge: planned.badge,
+    });
   });
 
-  it('drops the tile clause when there is no tile', () => {
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: null })).toBe(
-      'map 3 · room 2/7',
-    );
+  it('is drawn off the run alone, so a seed always lists the same nodes', () => {
+    expect(nodeContextFor(createRun({ seed: SEED }))).toEqual(context);
+  });
+});
+
+describe('debugNodeLabel', () => {
+  it('prints the node key, never a floor', () => {
+    expect(debugNodeLabel({ nodeKey: 'city:3' })).toBe('city:3');
   });
 
-  it('prints only the map clause with neither rooms nor a tile', () => {
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 0, tile: null })).toBe('map 3');
-  });
-
-  it('never pads a number', () => {
-    expect(debugLocationLabel({ mapIndex: 1, roomInMap: 0, roomCount: 6, tile: { x: 4, y: 9 } })).toBe(
-      'map 1 · room 0/6 · (4,9)',
-    );
-  });
-
-  it('draws the clauses in the current locale', () => {
+  it('draws the line in the current locale', () => {
     setLocale('es');
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: { x: 14, y: 9 } })).toBe(
-      'mapa 3 · sala 2/7 · (14,9)',
-    );
+    expect(debugNodeLabel({ nodeKey: 'lateral:2' })).toBe('Nodo lateral:2');
     setLocale('en');
-    expect(debugLocationLabel({ mapIndex: 3, roomInMap: 2, roomCount: 7, tile: null })).toBe(
-      'map 3 · room 2/7',
-    );
+    expect(debugNodeLabel({ nodeKey: 'town:1' })).toBe('town:1');
+  });
+});
+
+describe('debugNodeOptionLabel', () => {
+  const node = planRegion('option-label').nodes.find((entry) => entry.key === 'city:3')!;
+
+  it('names the kind, the node and its badge stretch', () => {
+    expect(debugNodeOptionLabel(node)).toBe(`city · ${node.name} · Badge ${node.badge}`);
+  });
+
+  it('draws the badge word in the current locale', () => {
+    setLocale('es');
+    expect(debugNodeOptionLabel(node)).toBe(`city · ${node.name} · Insignia ${node.badge}`);
+    setLocale('en');
+  });
+});
+
+describe('withVisitedNode', () => {
+  const run = createRun({ seed: 'visited' });
+
+  it('appends the key once and returns the same run on a second call', () => {
+    const once = withVisitedNode(run, 'city:2');
+    expect(once.visitedNodes).toEqual([run.nodeKey, 'city:2']);
+    const twice = withVisitedNode(once, 'city:2');
+    expect(twice).toBe(once);
+  });
+
+  it('trims the key and ignores a blank one', () => {
+    expect(withVisitedNode(run, '  city:2  ').visitedNodes).toContain('city:2');
+    expect(withVisitedNode(run, '   ')).toBe(run);
+  });
+
+  it('keeps onMarkVisited idempotent: the second call changes nothing', () => {
+    const first = changedRun(run, (current) => withVisitedNode(current, 'city:2'));
+    expect(first).not.toBeNull();
+    expect(changedRun(first!, (current) => withVisitedNode(current, 'city:2'))).toBeNull();
+  });
+});
+
+describe('withTowerStreak', () => {
+  const run = createRun({ seed: 'streak' });
+
+  it('sets the streak, floors a fraction and clamps it at zero', () => {
+    expect(withTowerStreak(run, 4).towerStreak).toBe(4);
+    expect(withTowerStreak(run, 2.9).towerStreak).toBe(2);
+    expect(withTowerStreak(run, -3).towerStreak).toBe(0);
+  });
+
+  it('returns the same run when the value does not move', () => {
+    expect(withTowerStreak(run, 0)).toBe(run);
+    expect(withTowerStreak(run, Number.NaN)).toBe(run);
+  });
+});
+
+describe('changedRun', () => {
+  const run = createRun({ seed: 'changed' });
+
+  it('hands back the new run when the rule moved it', () => {
+    expect(changedRun(run, (current) => withTowerStreak(current, 5))?.towerStreak).toBe(5);
+  });
+
+  it('hands back null when the rule refused', () => {
+    expect(changedRun(run, (current) => withTowerStreak(current, 0))).toBeNull();
+  });
+});
+
+describe('parseBadge', () => {
+  it('accepts a rung the ladder carries', () => {
+    expect(parseBadge('1')).toBe(1);
+    expect(parseBadge(String(BADGE_CAPS.length))).toBe(BADGE_CAPS.length);
+  });
+
+  it('refuses a blank, a rung off the ladder and a non-number', () => {
+    expect(parseBadge('')).toBeNull();
+    expect(parseBadge('0')).toBeNull();
+    expect(parseBadge(String(BADGE_CAPS.length + 1))).toBeNull();
+    expect(parseBadge('badge')).toBeNull();
   });
 });
 
@@ -299,5 +398,147 @@ describe('randomRouteInput', () => {
     expect(input.width).toBe(DEBUG_ROUTE_WIDTH);
     expect(input.height).toBe(DEBUG_ROUTE_HEIGHT);
     expect(ROUTE_SHAPES).toContain(input.shape);
+  });
+
+  it('keeps drawing a shape the generator can carve', () => {
+    for (const unit of [0, 0.25, 0.5, 0.75, 0.999999]) {
+      expect(Object.keys(SHAPES)).toContain(randomRouteInput(() => unit).shape);
+    }
+  });
+});
+
+/**
+ * The handler surface is the contract `src/main.ts` implements: the node tools and
+ * no floor teleport. The `Record` below fails to compile if a floor teleport comes
+ * back, so the typecheck is half of this assertion.
+ */
+type NodeTeleportHandlers = Extract<keyof DebugMenuHandlers, `onTeleport${string}`>;
+const TELEPORT_HANDLERS: Readonly<Record<NodeTeleportHandlers, true>> = { onTeleportNode: true };
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const MENU_SOURCE = readFileSync(join(HERE, 'debugMenu.ts'), 'utf8');
+const IDS_SOURCE = readFileSync(join(HERE, 'ids.ts'), 'utf8');
+const CALL_SITE = /(?<![\w.$])t\(\s*'([a-z][A-Za-z0-9.]*)'/g;
+const USED_KEYS = [...MENU_SOURCE.matchAll(CALL_SITE)].map((match) => match[1]!);
+
+/** The floor, room and tile keys this task retires: nothing may draw them again. */
+const FLOOR_KEYS = [
+  'dev.floor',
+  'dev.floorTitle',
+  'dev.room',
+  'dev.roomTitle',
+  'dev.x',
+  'dev.tileXTitle',
+  'dev.y',
+  'dev.tileYTitle',
+  'dev.go',
+  'dev.teleportFloor',
+  'dev.teleportRoom',
+  'dev.teleportTile',
+  'dev.location.map',
+  'dev.location.room',
+  'dev.location.tile',
+  'dev.status.teleported',
+];
+
+/** The node group Task-295 pinned: the panel must draw these, not a floor. */
+const NODE_KEYS = [
+  'dev.node',
+  'dev.nodeTitle',
+  'dev.nodePlaceholder',
+  'dev.teleportNode',
+  'dev.markVisited',
+  'dev.badge',
+  'dev.badgeTitle',
+  'dev.badgePlaceholder',
+  'dev.grantBadge',
+  'dev.streak',
+  'dev.streakTitle',
+  'dev.streakPlaceholder',
+  'dev.setStreak',
+  'dev.mode',
+  'dev.modeLeague',
+  'dev.modeTower',
+  'dev.status.unknownNode',
+  'dev.status.teleportedTo',
+  'dev.status.badge',
+  'dev.status.streak',
+  'dev.status.visited',
+  'dev.location.node',
+];
+
+describe('the node tab', () => {
+  it('carries the node teleport and no floor, room or tile handler', () => {
+    expect(Object.keys(TELEPORT_HANDLERS)).toEqual(['onTeleportNode']);
+    for (const gone of ['onTeleportFloor', 'onTeleportRoom', 'onTeleportTile']) {
+      expect(MENU_SOURCE, gone).not.toContain(gone);
+    }
+  });
+
+  it('draws every label it shows through t() with a key the table carries', () => {
+    expect(USED_KEYS.length).toBeGreaterThan(20);
+    expect(USED_KEYS.filter((key) => !(key in en))).toEqual([]);
+    expect(USED_KEYS.filter((key) => key.startsWith('dev.'))).not.toHaveLength(0);
+  });
+
+  it('supplies exactly the tokens each of its keys declares', () => {
+    // The walker in `src/i18n/index.test.ts` compares every `t('<key>', { … })` call
+    // site's params with the tokens its key declares; this panel is one of its files.
+    expect(USED_KEYS.every((key) => key in en)).toBe(true);
+  });
+
+  it('draws the node, badge, streak and mode labels and none of the floor keys', () => {
+    for (const key of NODE_KEYS) expect(USED_KEYS, key).toContain(key);
+    for (const key of FLOOR_KEYS) expect(USED_KEYS, key).not.toContain(key);
+  });
+
+  it('mounts a node, a badge and a streak control, and nothing floor-shaped', () => {
+    const ids = [...MENU_SOURCE.matchAll(/setAttribute\('data-debug-id', '([^']+)'\)/g)].map(
+      (match) => match[1],
+    );
+    expect(ids).toEqual(['node', 'badge', 'streak']);
+    expect(MENU_SOURCE).toContain("setAttribute('data-debug-node-option', node.kind)");
+    expect(MENU_SOURCE).toContain("nodeList.id = 'debug-node-list'");
+  });
+
+  it('keeps the generator tab and the frame-map importer', () => {
+    expect(USED_KEYS).toContain('dev.tab.route');
+    expect(USED_KEYS).toContain('dev.export');
+    expect(USED_KEYS).toContain('dev.import');
+    expect(MENU_SOURCE).toContain('handlers.importFrameMap(mapArea.value)');
+  });
+});
+
+describe('the debug ids', () => {
+  function sourceFiles(dir: string): string[] {
+    const files: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) files.push(...sourceFiles(path));
+      else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) files.push(path);
+    }
+    return files;
+  }
+
+  const OTHERS = sourceFiles(join(HERE, '..'))
+    .filter((file) => file !== join(HERE, 'ids.ts'))
+    .map((file) => readFileSync(file, 'utf8'));
+
+  it('exports no id nothing mints', () => {
+    const exported = [...IDS_SOURCE.matchAll(/export (?:function|const) (\w+)/g)].map(
+      (match) => match[1]!,
+    );
+    expect(exported).toEqual(['nextDebugPokemonId']);
+    for (const name of exported) {
+      expect(
+        OTHERS.some((source) => source.includes(name)),
+        name,
+      ).toBe(true);
+    }
+    expect(OTHERS.some((source) => source.includes('nextDebugPokemonId'))).toBe(true);
+  });
+
+  it('mints the ids the panel-adjacent tools address a member by', () => {
+    expect(IDS_SOURCE).toContain('debug:${speciesId}:${counter}');
   });
 });
