@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Every new screen and every old label speaks.** `[Task-295]`, Batch 124: the key table catches
+      up with the region and loses the labels nothing reads. `src/i18n/en.ts` and `es.ts` gain the
+      22-key `dev.*` group Task-296's node-aware debug menu is written against (node, badge, streak,
+      mode, the four status lines, the placeholders; `dev.status.teleportedTo` carries the node
+      parameter while the shipped paramless `dev.status.teleported` stays for the floor jumps), and
+      drop the **18** keys no live caller, data row or runtime-built family reads
+      (`menu.controls`, `settings.controls*`, `hud.mission*`, `trade.controls`, `battle.xp`, …).
+      `src/i18n/README.md` records the four-rule pruning test, the pruned list and the **31** keys
+      only `RouteScene.ts`/`StarterScene.ts` read, which Batch 125 deletes with those screens.
+      `docs` are not touched: the table is. `[unit]` 6 criteria (the 22-key group pinned as an exact
+      sorted array, parity both ways, the README audit reading both lists back), 6140 tests green;
+      `[live]` over CDP at 1280×800 with locale `es`: the Centre's shop title reads `TIENDA` and its
+      greeting the Spanish value, and neither the region map nor the Centre prints a key-shaped
+      string.
+
 - [x] **The campaign's numbers are measured once, end to end.** `[Task-297]`, Batch 124: the region
       gets one measured balance sheet. `docs/balance/campaign.md` walks the eight badge stretches
       end to end (cap, distance, party size, wild band, money and TM per stretch, each column

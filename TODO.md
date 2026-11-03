@@ -12630,7 +12630,7 @@ the debug menu's new `dev.*` keys verbatim from `[Task-296]`'s spec). `src/main.
 **What it replaces.** The key table's floor biome language, the debug teleports by floor and the
 balance spreadsheets of the eight-floor run.
 
-- [ ] **[Task-295] Every new screen and every old label speaks.** The key table gains the region's
+- [x] **[Task-295] Every new screen and every old label speaks.** The key table gains the region's
       vocabulary — node kinds, the guard, the Centre, the badge ladder, the puzzle, the tower, the
       mission stack — in English first and Spanish by key, and loses the floor's.
       **Measured:** `src/i18n/en.ts` holds ~1 000 keys, among them the map/floor/portal/biome

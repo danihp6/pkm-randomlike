@@ -6,16 +6,13 @@
 export const en = {
   // menu — MainMenuScene
   'menu.title': 'PokeRandomLike',
-  'menu.subtitle': 'A Pokémon roguelike',
   'menu.continue': 'Continue',
   'menu.new': 'New run',
   'menu.options': 'Options',
-  'menu.controls': '{up} {down}  select      {confirm}  confirm      {settings}  options',
 
   // starter — StarterScene
   'starter.title': 'Choose your starter',
   'starter.blurb': 'Your first Pokémon. Lose it and it is gone for good.',
-  'starter.blurbCompact': 'Lose it and it is gone for good.',
   'starter.controls':
     '{left}  {right}  choose      {confirm}  confirm      {reroll}  reroll      S  seed      {settings}  settings      {cancel}  back',
   'starter.controlsCompact':
@@ -131,12 +128,6 @@ export const en = {
   'settings.language.hint': 'The language the game’s text is drawn in.',
   'settings.keybind.hint': 'Press confirm to rebind this key.',
   'settings.pressKey': 'Press a key…',
-  'settings.hintPressKey': 'Press any key to bind it, {cancel} to keep the old one.',
-  'settings.hintRebind': 'Press {confirm} to rebind this key.',
-  'settings.hintVolume': 'Click or drag the bar to set the volume.',
-  'settings.controls':
-    '{up} {down}  select      {left} {right}  change      {confirm}  confirm      {cancel}  close',
-  'settings.controlsTouch': 'Tap a row to change it · tap outside to close',
   'settings.speed.slow': 'Slow',
   'settings.speed.normal': 'Normal',
   'settings.speed.fast': 'Fast',
@@ -171,13 +162,9 @@ export const en = {
   'hud.noItems': 'no items',
   'hud.menu': 'MENU',
   'hud.learnTitle': 'LEVEL UP',
-  'hud.evolveTitle': 'EVOLUTION',
   'hud.pressAnyKey': 'press any key',
-  'hud.mission': 'Mission: {mission}',
   'hud.missions': 'MISSIONS',
   'hud.missionsEmpty': 'No floor mission completed yet.',
-  'hud.missionsMap': 'Map {map}',
-  'hud.missionProgress': 'HP lost {hp}',
   'hud.missionsBadge': 'Badge {badge}',
   'hud.missionsFailed': 'failed',
   'hud.missionsMet': 'met',
@@ -198,7 +185,6 @@ export const en = {
   // route — RouteScene prose
   'route.mapTitle': 'Map {map} · {biome}',
   'route.learned': '{name} learned {move}!',
-  'route.evolved': '{from} evolved into {into}!',
   'route.released': 'Lv{level} {name}\nwas released.',
 
   // pause — the route's pause menu
@@ -233,13 +219,10 @@ export const en = {
   // reward — the mini-boss reward window
   'reward.title': 'MINI-BOSS REWARD',
   'reward.choose': 'Choose one.',
-  'reward.controls': 'Drag a reward onto the bag or the party.',
 
   // trade — the trade room's window
   'trade.title': 'TRADE',
   'trade.greeting': 'Pick the Pokémon you will give away.',
-  'trade.leave': 'LEAVE',
-  'trade.controls': '{confirm}: trade    {cancel}: leave',
   'trade.used': 'The trade in this room is done.',
   'trade.refused': 'You need another Pokémon to trade.',
   'trade.missing': 'That Pokémon is not in your party.',
@@ -409,8 +392,6 @@ export const en = {
   'battle.outcomeFainted': 'The wild {name} fainted!',
   'battle.outcomeRan': 'Got away safely!',
   'battle.outcomeLost': 'Your last Pokémon fainted...',
-  'battle.panelName': '{name}  Lv{level}',
-  'battle.xp': 'XP {xp}',
 
   // the battle field chips — the eight conditions the weather and the terrain chips name
   'battle.info.weather.sun': 'Sun · {turns}',
@@ -995,6 +976,30 @@ export const en = {
   'dev.location.map': 'map {map}',
   'dev.location.room': 'room {room}/{count}',
   'dev.location.tile': '({x},{y})',
+  'dev.location.node': '{node}',
+
+  // dev.node — the node-aware tools: the run's node, its badge stretch, the tower streak and the mode
+  'dev.node': 'Node',
+  'dev.nodeTitle': 'node key',
+  'dev.nodePlaceholder': 'node:1',
+  'dev.teleportNode': 'Teleport',
+  'dev.markVisited': 'Mark visited',
+  'dev.badge': 'Badge',
+  'dev.badgeTitle': 'badge (1-8)',
+  'dev.badgePlaceholder': '1',
+  'dev.grantBadge': 'Grant badge',
+  'dev.streak': 'Streak',
+  'dev.streakTitle': 'tower streak',
+  'dev.streakPlaceholder': '0',
+  'dev.setStreak': 'Set streak',
+  'dev.mode': 'Mode',
+  'dev.modeLeague': 'League',
+  'dev.modeTower': 'Tower',
+  'dev.status.unknownNode': 'unknown node',
+  'dev.status.teleportedTo': 'Teleported to {node}',
+  'dev.status.badge': 'Badge {badge} granted',
+  'dev.status.streak': 'Streak {streak}',
+  'dev.status.visited': 'Marked {node} visited',
   'dev.stepInfo': '{label} {index}/{total}',
   'dev.routeInfo': '{mode} · {biome} · band {band}',
   'dev.error.noRoute': 'no active route',
