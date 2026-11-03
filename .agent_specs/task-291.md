@@ -239,11 +239,19 @@ module still reads it).
     `storeRun`, reload): `document.querySelector('[data-hud-panel="missions"]')` holds
     exactly **one** `[data-hud-missions-row]` and it has
     `data-state="failed"`; the same save with `stats.casualties === floorCasualties`
-    renders `data-state="active"`. On a `city:2` save the card holds **three** rows in
-    order `stretch`, `city:city:2`, `random:city:2` (the `data-hud-missions-row`
-    values), the first with `data-state="active"`.
-    **Measurement:** read the DOM with `document.querySelectorAll`, report the row
-    count, the ordered `data-hud-missions-row` values and each `data-state`.
+    renders `data-state="active"`.
+    On a `city:2` save the city stack is measured **on the card's own view** at
+    1280×800 — the region scenes do not mount the panel registry yet, which is outside
+    this task's paths and tracked by an issue — read in the running page with
+    `(await import('/src/scenes/panels/missions.ts')).missionsInput(run, true)` and
+    `(await import('/src/ui/hud/panels/missions/view.ts')).missionsPanelView(input, { width: 1280, height: 800 })`:
+    it holds **three** rows in order `stretch`, `city:city:2`, `random:city:2`, the first
+    with `status: 'active'`. The DOM rendering of that same panel is what the two
+    `route:1` sub-criteria measure.
+    **Measurement:** on the two `route:1` saves read the DOM with
+    `document.querySelectorAll`, reporting the row count, the ordered
+    `data-hud-missions-row` values and each `data-state`; on the `city:2` save report the
+    three rows' `scopeKey` and `status` from the card's view.
 - **No pixel comparison:** fidelity is read from `design/screens/03-route-hud.json`,
   never from a screenshot diff (`D57`).
 
