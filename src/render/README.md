@@ -1,10 +1,11 @@
-# `src/render/` — animation and geometry registries
+# `src/render/` — animation and geometry registries, and the objects built from them
 
-The row/frame tables and pure selectors a scene needs to draw a sheet. Each module holds its
-asset's table plus the selectors over it, imports no Phaser, and ships a co-located
-`*.test.ts`; a table that describes a committed atlas is pinned by a test that reads and
-measures that PNG, so a re-extract which shifts a row fails the test instead of drawing the
-wrong art.
+The row/frame tables and pure selectors a scene needs to draw a sheet, plus the one builder that
+turns a table into a Phaser object. A module here either **tabulates** — frames, keys,
+measurements, no Phaser at all — or **builds a Phaser object from a scene and a table**, and
+ships a co-located `*.test.ts` over its pure half; a table that describes a committed atlas is
+pinned by a test that reads and measures that PNG, so a re-extract which shifts a row fails the
+test instead of drawing the wrong art.
 
 ## Layout
 
@@ -25,11 +26,18 @@ wrong art.
 - `spriteBounds.ts` — measures how much of a battle sheet is actually drawn and where its
   feet are, so a sprite can be zoomed and anchored by its feet; reads the pixels through a
   canvas and caches the result per texture key.
+- `tilemapLayer.ts` — builds the two culled tile layers a map draws from the engine's frame
+  meshes (the underlay and the tiles over it), their depths and their teardown; it resolves no
+  frame, and its only Phaser import is a type one.
+- `tilemapLayer.test.ts` — the pure half of that builder, the mesh → tile-data conversion: one
+  row of indices per map row, `-1` kept as the empty cell, no rows for an empty mesh.
 
 ## Rules
 
-1. No Phaser import: a module here returns frames, keys or measurements, and the scene
-   registers the animation.
+1. A module here either tabulates — frames, keys or measurements, no Phaser at all — or it
+   builds one Phaser object from a scene and a table (`tilemapLayer.ts` is the only builder,
+   and imports Phaser by type only). A builder carries no game rule: what it draws is handed
+   to it.
 2. A frame table describing a committed atlas is pinned by a test that measures that atlas,
    not by a comment.
 3. A new atlas or row means a new registry entry plus its test, and a line in the matching
