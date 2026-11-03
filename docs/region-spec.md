@@ -425,6 +425,54 @@ refuses the press and keeps the run. `LeagueScene` plays the whole chain — the
 heal, the five fights, the exit — with no shop, no capture and no wandering, and it
 registers itself through the folder registry like a city or a gym screen.
 
+### 7.8 The route's points of interest
+
+A lateral's terminus ends on one **point of interest**, and the kind it ends on is the
+content pass's own draw (§7.3). What that kind *is*, is data: `src/data/pois.ts` holds one
+row per `PoiKind` in `POI_ROWS`, a discriminated union read through `poiRow(kind)`, and
+every row that has a retired room table under it **references** that table rather than
+copying it — the vault's `GATE_KINDS`, the no-heal room's rule and its
+`BARRED_HEALING_MOVES`, the banned-species row, the secret shop and the shelf its `held`
+and `tm` rows make, the static's and the legendary's room and species lists, and the
+puzzle stack. No odds and no counters are invented there: a `miniboss`'s presence is the
+content draw itself and its roster is the trainer engine's, and a `trade`'s counter is
+`src/engine/run/trade.ts`'s rule. The only geometry is `POI_ZONE_WIDTH` (7) and
+`POI_ZONE_HEIGHT` (5), and the engine reads them instead of a literal.
+
+`src/engine/region/pois.ts` answers the zone. `poiRect(route)` is the rectangle at the end
+of the route's spine: the two zone sizes, and a top-left corner that centres the zone on
+the spine's last tile and clamps it one tile inside the border ring, so a zone is always
+walkable body and never the ring. `nodePoi(plan, key, content)` builds the one `NodePoi` a
+terminus owns — its `kind`, the `row` that kind reads, the `rect` it owns, the `marker`
+tile (the spine's end, clamped into the rect), the region's `gateKind` for a vault and the
+`speciesId` of a static or a legendary — and refuses a key the plan does not hold with
+`unknown node: <key>` and a node that is no lateral with `not a terminus: <key>`.
+
+Three named splits of the region's stream are its whole randomness. `pois:vault` picks the
+region's one seal, so every vault of a seed is sealed with the same obstacle and a second
+call is the same answer (`regionVaultGate`). `pois:statics` is one Fisher–Yates shuffle of
+`STATIC_SPECIES` for the whole region, and the plan's statics take the next species of it
+in `plan.nodes` order; a region with more statics than species walks the shuffle by index
+modulo the pool's length rather than throwing, which is the one documented order
+(`regionStatics`). `pois:legendary:<key>` draws one legendary per legendary terminus. Every
+content read is `planNodeContent` off a node's own `content` stream, which replays alone
+and in a fixed order (`D60`), so building a POI moves no content draw of the node being
+asked about and a fixed seed reproduces the same POI for ever (`D11`).
+
+`inPoiRect`, `poiAt` and `poiBattleRules` are the reads a battle makes. Zones never
+overlap, so the first zone that holds a tile is the one, and a `no-heal` zone answers
+`noHeal: true` with the room's barred move ids — exactly the launch field
+`src/engine/run/battleLink.ts` declares and the list `src/engine/battle/commands.ts` reads,
+so a battle begun inside the zone refuses the bag without a battle-side change. Every other
+zone, and a tile outside every zone, answers `noHeal: false` and no barred move.
+
+`src/scenes/pois.ts` is the drawing half only: `poiScreenRect` and `poiMarkerPoint` turn a
+rect and a marker tile into pixels at a tile size the caller hands in, and `drawPoi` paints
+the zone's outline and its marker above the tile layers and returns what it created. It
+owns no rule, starts nothing and registers no scene; the scene that mounts it is the
+world's (`WorldScene`), which is where the zone is drawn and the rules are folded into a
+launch.
+
 ### 7.11 The tower behind the Champion
 
 The tower is the region's one **endless** node, `tower:1`, and its rule is
