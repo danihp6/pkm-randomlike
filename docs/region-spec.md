@@ -208,14 +208,39 @@ routes stay unclickable.
 
 ## 6. Services per settlement
 
-A **city** has a **Pokémon Centre** (heal and PC), a shop and its **gym**. The **town**
-has no Centre: it has one **laboratory** and one house. The **League** heals the party
-between its battles and sells nothing.
+A **city** has a **Pokémon Centre**, and its Centre is the city's only place for its three
+**services**: the **counter**, the **PC** and the **merchant**. The **town** has no Centre:
+it has one **laboratory**, which heals on entry for free, and one house. The **League**
+heals the party between its battles and sells nothing. A **route has no service at all**:
+nothing between the tall grass gives HP, PP, a party edit or a shelf back.
 
-The **laboratory** is where a run starts: no Pokémon, one starter, and the town's exit
-stays shut until the starter is taken. Services are doors like any other — Batch 118's
-city plan emits a door row for each of them, the Centre's, the gym's and the
-laboratory's included.
+The Centre is an interior you walk (`src/scenes/services.ts`, scene key `Centre`), opened
+from a city's `centre` building like any other door, and its three services are the room's
+own:
+
+- **The counter heals.** Entering the Centre rests the **party and the box** — HP and PP
+  back to full, through `serviceHeal` (`src/engine/run/heal.ts`) — and commits that run to
+  the save, so the file holds the healed squad from the first frame in the room. Standing
+  at the counter's healing station re-heals. The counter **never cures a status** and
+  **never revives**: a member at 0 HP is gone for good (`D5`).
+- **The PC is only here.** `pcFullyEditable` / `pcMemberEditable`
+  (`src/engine/run/state.ts`) read one fact, `inCentre`: inside a Centre every party ↔ box
+  edit is allowed, on every visit; on a route, in a gym or in any other room both
+  directions are refused and a boxed member reads as locked. Reordering the party within
+  itself stays free everywhere.
+- **The merchant is the region's only shop.** The Centre's counter sells the city's own
+  shelf, rolled once per city off `Rng(hashSeed(`${seed}:shop:${cityKey}`))` (`D11`) at the
+  band its **tier** buys at (`shopBandForTier`, `src/data/shop.ts`: 1 → `early`, 2 → `mid`,
+  3 → `late`), so the eight cities stock three shelves. A bought row is marked per **node**
+  (`shopRowKey(nodeKey, itemId)`), so one city's sold-out row never touches another's, and
+  the ball row stays endless (`SHOP_BALL_INFINITE`).
+
+The **laboratory** is the town's own service and its free rest: a run starts there with no
+Pokémon and one starter, the town's exit stays shut until the starter is taken, and the
+room **heals on entry** — party and box, HP and PP, never a status and never a revival —
+exactly as a Centre's counter does, because the town has no Centre. Services are doors like
+any other — Batch 118's city plan emits a door row for each of them, the Centre's, the gym's
+and the laboratory's included.
 
 The prologue is one run state, not a special mode (`[Task-287]`,
 `src/engine/run/prologue.ts`): `emptyRun(seed)` is an ordinary v28 run with `party: []` and
