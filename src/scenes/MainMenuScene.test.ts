@@ -65,8 +65,10 @@ type SceneInternals = {
   statsOpen: boolean;
   input: { keyboard: { on: () => void } };
   events: { on: () => void; once: () => void };
+  scene: { start: (key: string, data?: unknown) => void };
   create(): void;
   createDom(): void;
+  choose(): void;
   menuView(): MainMenuView;
   history: readonly RunHistoryRecord[];
   statsMode: StatsMode;
@@ -394,5 +396,52 @@ describe('the RANKING row', () => {
     expect(mainMenuDrawnObjectCount(instance as unknown as Phaser.Scene)).toBe(0);
     expect(SOURCE).not.toContain(['DOM', 'HUD'].join('_'));
     expect(SOURCE).not.toContain('addFrlgText');
+  });
+});
+
+/** The prologue's on-ramp: NEW RUN opens the laboratory, not the retired picker. */
+describe('the new-run seam (Task-287)', () => {
+  it('starts the laboratory from the source, and never the starter screen', () => {
+    expect(SOURCE).toContain("this.scene.start('Lab'");
+    expect(SOURCE).toContain('emptyRun(');
+    expect(SOURCE).toContain('storeRun(');
+    expect(SOURCE).not.toContain("this.scene.start('Starter'");
+  });
+
+  it('draws the new run’s own seed inside choose, and the preview seed still once', () => {
+    const chooseAt = SOURCE.indexOf('private choose(): void {');
+    const drawAt = SOURCE.indexOf('const seed = randomSeed();');
+
+    expect(drawAt).toBeGreaterThan(chooseAt);
+    expect(SOURCE.match(/const seed = randomSeed\(\);/g)).toHaveLength(1);
+    expect(SOURCE.match(/this\.previewSeed = randomSeed\(\);/g)).toHaveLength(1);
+  });
+
+  it('hands the laboratory a stored prologue run standing in the town', () => {
+    stubDocument(null);
+    const starts: { key: string; data?: unknown }[] = [];
+    const instance = scene();
+    instance.scene = {
+      start: (key: string, data?: unknown): void => {
+        starts.push({ key, data });
+      },
+    };
+    instance.items = ['new', 'options'];
+    instance.index = 0;
+
+    instance.choose();
+
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.key).toBe('Lab');
+    const data = starts[0]!.data as {
+      run: RunState;
+      cityKey: string;
+      interiorKey: string;
+    };
+    expect(data.cityKey).toBe('town:1');
+    expect(data.interiorKey).toBe('lab');
+    expect(data.run.party).toEqual([]);
+    expect(data.run.starterTaken).toBe(false);
+    expect(data.run.nodeKey).toBe('town:1');
   });
 });

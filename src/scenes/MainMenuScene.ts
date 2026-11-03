@@ -3,8 +3,10 @@ import { playMusic } from '../audio/audio';
 import type { KeybindAction } from '../data/keybinds';
 import type { RunHistoryRecord } from '../engine/run/history';
 import { hasLivingParty, type RunState } from '../engine/run';
+import { emptyRun } from '../engine/run/prologue';
+import { planRegion } from '../engine/region/plan';
 import { randomSeed } from '../engine/rng';
-import { loadSave, type Settings } from '../engine/save';
+import { loadSave, storeRun, type Settings } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
 import { fetchRanking, loadRankingEndpoint, rankingDeviceId, type RankingBoard } from '../net/ranking';
 import { loadSettings } from '../settings';
@@ -50,14 +52,18 @@ export function mainMenuDrawnObjectCount(_scene: Phaser.Scene): number {
 
 /**
  * The landing screen (Phase 7): the hub the game boots on. It offers a **new
- * run** (the starter pick, with a fresh seed), **continue** (the run left in
- * progress, shown only when the save holds one that still has a living party)
- * and the **options** (the settings screen, launched paused-on-top).
+ * run** (the town's laboratory, with a fresh seed), **continue** (the run left in
+ * progress, shown only when the save holds one that still has a living party — a
+ * prologue run counts, it is not a loss) and the **options** (the settings screen,
+ * launched paused-on-top).
  *
- * The run is never cleared here; a new run only replaces the old one once its
- * starter is picked and the route writes itself to the save, so an accidental
- * "new run" is undone by cancelling at the starter pick. Keyboard and mouse both
- * pick a row, and the shared keybind map drives it so a rebind reaches it too.
+ * A new run is written to the save as it starts, because it is a legal prologue
+ * document: no party, `starterTaken: false`, standing in the town
+ * (`src/engine/run/prologue.ts`). The starter is picked in `Lab`, and the town's exit
+ * stays shut until it is.
+ *
+ * Keyboard and mouse both pick a row, and the shared keybind map drives it so a
+ * rebind reaches it too.
  *
  * The menu is the `main-menu` panel (`D49`): the scene owns the save, the cursor,
  * the stats panel and every navigation, and the panel only paints what it is told.
@@ -320,11 +326,16 @@ export class MainMenuScene extends Phaser.Scene {
       case 'continue':
         if (this.run) this.scene.start('Route', { run: this.run });
         return;
-      case 'new':
-        // A fresh seed for the starter offer; the old run is replaced only once
-        // the new one is written, so cancelling at the starter pick keeps it.
-        this.scene.start('Starter', { seed: randomSeed() });
+      case 'new': {
+        // A brand-new run starts inside the town's laboratory with no Pokémon at
+        // all: the professor hands over the starter there, and the town's exit stays
+        // shut until it does (`docs/region-spec.md` §6).
+        const seed = randomSeed();
+        const run = emptyRun(seed, new Date().toISOString());
+        storeRun(browserStorage(), run);
+        this.scene.start('Lab', { run, cityKey: planRegion(seed).townKey, interiorKey: 'lab' });
         return;
+      }
       case 'options':
         this.openOptions();
         return;
