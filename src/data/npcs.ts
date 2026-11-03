@@ -6,13 +6,22 @@ import { TYPE_NAMES } from './dex/types';
 import { MEGA_STONE_IDS } from './items';
 
 /**
- * The special-NPC table (`docs/maps-spec.md` §7): every special NPC a trainer room
- * can hold, its art, its per-floor chance and the gate that makes it eligible.
- * Pure data — the roll lives in `src/engine/routes/npcs.ts`, the member edits in
+ * The NPC tables (`docs/maps-spec.md` §7, `docs/region-spec.md` §7.7): the sixteen
+ * **special** rows a settlement can stand and the lines its **generic** people say.
+ * Pure data — the legacy room roll lives in `src/engine/routes/npcs.ts`, the
+ * settlement placement in `src/engine/region/npcs.ts`, the member edits in
  * `src/engine/run/memberEdits.ts` and the card the interact key opens in
  * `src/ui/npcPanel.ts`, so this file carries no function that reads a run and no
- * Phaser. Its last four rows pay in items or in a battle: the **medic**, the
- * **chef**, the **berry tree** and the **Mega Stone keeper**.
+ * Phaser.
+ *
+ * `SPECIAL_NPCS` is the table: every row's id, keys, art, its legacy per-floor
+ * `chance`/`floorStep`, its gate and its own `cityChance`, the odds it takes one of
+ * a city's special slots. `NPC_ROWS` is the **same array** under the name
+ * `src/engine/region/content.ts` and `src/engine/routes/npcs.ts` read, so the
+ * legacy floor draw is unchanged.
+ *
+ * `GENERIC_LINES` is the other half: four passersby lines per city tier, printed by
+ * the people a settlement's content pass stands beside its specials.
  */
 
 /**
@@ -74,6 +83,15 @@ export type NpcRow = Readonly<{
   battle?: NpcBattle;
 }>;
 
+/** A special row with the chance it takes one of a city's special slots. */
+export type CityNpcRow = NpcRow & Readonly<{ cityChance: number }>;
+
+/**
+ * What a row's `cityChance` reads when a caller hands in a plain `NpcRow`, so a row
+ * added to the legacy table alone still takes a slot more often than not.
+ */
+export const CITY_SPECIAL_CHANCE_DEFAULT = 0.8;
+
 /**
  * Every special NPC. The **merchant** is the floor's one guaranteed row: on every
  * floor, map 1 included, it stands in the floor's first trainer room and opens the
@@ -88,8 +106,13 @@ export type NpcRow = Readonly<{
  * the weather man, the magician and the type gate. The last four rows pay in items or
  * in a battle: the **medic**, the **chef**, the **berry tree** and the **Mega Stone
  * keeper**.
+ *
+ * `cityChance` is the other roll: whether a city that offers the row stands it at all
+ * (`src/engine/region/npcs.ts`). The merchant and the grunt are `1` because they are
+ * the city's shop and its casino counter; the last four are likelier because a city
+ * that offers them has nowhere else to get them.
  */
-export const NPC_ROWS: readonly NpcRow[] = [
+export const SPECIAL_NPCS: readonly CityNpcRow[] = [
   {
     id: 'merchant',
     nameKey: 'npc.merchant.name',
@@ -100,6 +123,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     guaranteedFromMap: 1,
     repeatable: true,
     choices: [{ id: 'mart', label: 'npc.merchant.trade' }],
+    cityChance: 1,
   },
   {
     id: 'rocket',
@@ -108,6 +132,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     spriteKey: 'rocket',
     chance: 0,
     floorStep: 0.03,
+    cityChance: 1,
     repeatable: true,
   },
   {
@@ -118,6 +143,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'teach', label: 'npc.tutor.teach' }],
+    cityChance: 0.8,
   },
   {
     id: 'nature',
@@ -127,6 +153,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'reroll', label: 'npc.nature.reroll' }],
+    cityChance: 0.8,
   },
   {
     id: 'ability',
@@ -136,6 +163,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'reroll', label: 'npc.ability.reroll' }],
+    cityChance: 0.8,
   },
   {
     id: 'iv-judge',
@@ -145,6 +173,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'reroll', label: 'npc.iv.reroll' }],
+    cityChance: 0.8,
   },
   {
     id: 'species',
@@ -154,6 +183,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'swap', label: 'npc.species.swap' }],
+    cityChance: 0.8,
   },
   {
     id: 'sacrifice',
@@ -164,6 +194,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     floorStep: 0.005,
     requires: { kind: 'missionsCompleted', min: 1 },
     choices: [{ id: 'offer', label: 'npc.sacrifice.offer' }],
+    cityChance: 0.8,
   },
   {
     id: 'exorcist',
@@ -173,6 +204,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'hex', label: 'npc.exorcist.cast' }],
+    cityChance: 0.75,
   },
   {
     id: 'weather-man',
@@ -182,6 +214,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'sky', label: 'npc.weather.cast' }],
+    cityChance: 0.75,
   },
   {
     id: 'magician',
@@ -191,6 +224,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.02,
     floorStep: 0.005,
     choices: [{ id: 'type', label: 'npc.magician.cast' }],
+    cityChance: 0.75,
   },
   {
     id: 'type-gate',
@@ -201,6 +235,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     floorStep: 0.005,
     choices: [{ id: 'claim', label: 'npc.gate.claim' }],
     grant: { types: ['bug'], itemId: 'silverpowder' },
+    cityChance: 0.75,
   },
   {
     id: 'medic',
@@ -210,6 +245,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.01,
     floorStep: 0.0025,
     choices: [{ id: 'heal', label: 'npc.medic.heal' }],
+    cityChance: 0.9,
   },
   {
     id: 'chef',
@@ -219,6 +255,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.01,
     floorStep: 0.0025,
     choices: [{ id: 'trade', label: 'npc.chef.trade' }],
+    cityChance: 0.9,
   },
   {
     id: 'berry-tree',
@@ -228,6 +265,7 @@ export const NPC_ROWS: readonly NpcRow[] = [
     chance: 0.01,
     floorStep: 0.0025,
     choices: [{ id: 'shake', label: 'npc.berry-tree.shake' }],
+    cityChance: 0.9,
   },
   {
     id: 'mega-stone',
@@ -238,8 +276,12 @@ export const NPC_ROWS: readonly NpcRow[] = [
     floorStep: 0.0025,
     choices: [{ id: 'battle', label: 'npc.mega-stone.battle' }],
     battle: { archetypeId: 'ace', prizeIds: MEGA_STONE_IDS },
+    cityChance: 0.9,
   },
 ];
+
+/** The same sixteen rows under the name `content.ts` and the legacy room roll read. */
+export const NPC_ROWS: readonly NpcRow[] = SPECIAL_NPCS;
 
 /** The berries the chef takes and the berry tree gives, in table order. */
 export const BERRY_IDS: readonly string[] = [
@@ -304,4 +346,37 @@ export const SACRIFICE_REWARDS: readonly SacrificeReward[] = [
 
 export function getNpcRow(id: string): NpcRow | undefined {
   return NPC_ROWS.find((row) => row.id === id);
+}
+
+/** The special row `id` names, or undefined. */
+export function specialNpcRow(id: string): CityNpcRow | undefined {
+  return SPECIAL_NPCS.find((row) => row.id === id);
+}
+
+/**
+ * The chance `row` takes one of a city's special slots, always a probability: a row
+ * with no `cityChance` of its own reads `CITY_SPECIAL_CHANCE_DEFAULT`.
+ */
+export function cityChanceOf(row: NpcRow): number {
+  const chance = (row as CityNpcRow).cityChance ?? CITY_SPECIAL_CHANCE_DEFAULT;
+  return chance < 0 ? 0 : chance > 1 ? 1 : chance;
+}
+
+/** The three city bands the generic lines are written for. */
+export type GenericTier = 1 | 2 | 3;
+
+/**
+ * What a settlement's passersby say, by the tier that stands them: badges 1-2 read
+ * tier 1, badges 3-5 tier 2 and badges 6-8 tier 3, the bands `src/data/region.ts`'s
+ * `CITY_TIERS` uses. The town reads tier 1, because it is the on-ramp.
+ */
+export const GENERIC_LINES: Readonly<Record<GenericTier, readonly TranslationKey[]>> = {
+  1: ['npc.generic.tier1.1', 'npc.generic.tier1.2', 'npc.generic.tier1.3', 'npc.generic.tier1.4'],
+  2: ['npc.generic.tier2.1', 'npc.generic.tier2.2', 'npc.generic.tier2.3', 'npc.generic.tier2.4'],
+  3: ['npc.generic.tier3.1', 'npc.generic.tier3.2', 'npc.generic.tier3.3', 'npc.generic.tier3.4'],
+};
+
+/** The tier's own lines, the same array object (readonly). */
+export function genericLines(tier: GenericTier): readonly TranslationKey[] {
+  return GENERIC_LINES[tier];
 }
