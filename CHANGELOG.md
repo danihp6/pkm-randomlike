@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A city is walkable.** `[Task-284]`, Batch 121: `src/scenes/CityScene.ts` draws a
+      settlement from the plan `planCity` already emits — the streets, the buildings and
+      their doors, the plaza, the grass corner and the exit bands — extending `WorldScene`
+      and registering itself through `regionSceneKey`/`regionSceneClass` (`City`), so no
+      `main.ts` edit is needed. The step rule is `isWalkable` plus `cutsCorner`; the walker
+      is shared, not per scene: `src/scenes/walker.ts` (`WorldWalker`, `canWalkStep`)
+      slides the player one cell per step on the route's own cadence and reports each
+      landed step, which is the module the gym and the League's interior reuse. Two tiles
+      act: a **door** fades once and records its `interiorKey` for the scene
+      `interiorSceneKey` names (`centre` → `Centre`, `gym` → `Gym`, `lab` → `Lab`,
+      `casino` → `Casino`, `house:<n>` → `House`), and an **exit band** asks
+      `travel(plan, run, neighbourKey, 'walk')`, commits the run and either re-draws a
+      settlement neighbour in place through `transitionToNode` or hands another kind to its
+      scene (`Route`); a closed gate refuses and nothing moves. `RouteScene` now hands a run
+      that starts on, or walks into, a settlement to `CityScene`. `docs/region-spec.md`
+      §7.5 states the screen. `[live]` over CDP at 1280×800 with `renderer.snapshotArea`
+      pixels: the boot run is drawn by `CityScene` on `town:1` with two `TilemapLayer`s,
+      zero per-cell `Image`s and `mapBounds` `960×960`, the Centre's door is in
+      `reachableTiles` from the spawn and one fade leaves `interior === 'centre'`, the band
+      toward `route:2` is refused with badge 1 while `route:1` travels, and the canvas at
+      the spawn is opaque; `[unit]` `doorAt`, `exitBandAt`, `interiorSceneKey` and
+      `canWalkStep` (including a corner-cut refusal).
+
 - [x] **Walking, flying and arriving are one seam.** `[Task-283]`, Batch 121: the region
       gets one travel rule and one transition. `src/engine/region/travel.ts` is the pure rule
       (`canTravel`, `travel`): a walk follows one of the node's own edges and goes through

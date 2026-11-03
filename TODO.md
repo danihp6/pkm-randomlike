@@ -12335,7 +12335,7 @@ portal and the boss room.
       *Dependencies:* `WorldScene` (Batch 120), the region map (Batch 120), the gate (Batch 119).
       *(Batch 121)*
 
-- [ ] **[Task-284] A city is walkable: streets, doors and the Centre.** The city scene draws the
+- [x] **[Task-284] A city is walkable: streets, doors and the Centre.** The city scene draws the
       streets, the buildings and their doors, the plaza, the grass corner and the exits; stepping on a
       door enters that interior; the Centre is a door like any other.
       **Measured:** the city plan (Batch 118) emits the tile map, the door list, the spawn and the
