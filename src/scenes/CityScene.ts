@@ -79,6 +79,8 @@ export class CityScene extends WorldScene {
   private runKey: Phaser.Input.Keyboard.Key | null = null;
   private interior: string | null = null;
   private travels = 0;
+  /** The spawn the payload named (a hand-off from a flight), or null. */
+  private handedSpawn: Tile | null = null;
   /** True while a door's fade is in flight, so one landing fades once. */
   private opening = false;
   /** True while a band step's travel is in flight; the player may not step again. */
@@ -88,8 +90,14 @@ export class CityScene extends WorldScene {
     super('City');
   }
 
-  init(data?: { run?: RunState }): void {
+  /**
+   * `spawn` is the tile a hand-off already resolved (a flight lands on a settlement's
+   * own door, `docs/region-spec.md` §5); the plan's spawn is the fallback for a run
+   * that arrives with no tile named.
+   */
+  init(data?: { run?: RunState; spawn?: Tile }): void {
     if (data?.run) this.run = data.run;
+    this.handedSpawn = data?.spawn ? { x: data.spawn.x, y: data.spawn.y } : null;
   }
 
   create(): void {
@@ -158,10 +166,19 @@ export class CityScene extends WorldScene {
   /** Draws an already-resolved settlement and stands the player where it spawns. */
   private enter(world: NodeWorld): void {
     this.applyWorld(world);
-    const arrival = this.arrival();
-    const spawn = arrival !== null && arrival.key === world.key ? arrival.spawn : this.citySpawn();
-    this.buildPlayer(spawn);
+    this.buildPlayer(this.spawnFor(world.key));
     playMusic(this, CITY_MUSIC);
+  }
+
+  /**
+   * Where the player stands: the payload's own spawn first (a flight's door), then
+   * the arrival of a transition that landed on this node, then the plan's spawn.
+   */
+  private spawnFor(worldKey: string): Tile {
+    if (this.handedSpawn !== null) return { x: this.handedSpawn.x, y: this.handedSpawn.y };
+    const arrival = this.arrival();
+    if (arrival !== null && arrival.key === worldKey) return { ...arrival.spawn };
+    return this.citySpawn();
   }
 
   private citySpawn(): Tile {

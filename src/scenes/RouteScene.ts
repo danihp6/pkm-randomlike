@@ -590,7 +590,10 @@ export class RouteScene extends WorldScene {
     const node = nodeOf(planRegion(this.run.seed), key);
     const arrivalScene = node ? this.arrivalSceneFor(node.kind) : null;
     if (arrivalScene !== null && this.scene.manager.getScene(arrivalScene) !== null) {
-      this.scene.start(arrivalScene, { run: this.run });
+      // The arrival's own spawn travels with the hand-off: a flight lands on the
+      // settlement's Centre door and the city screen must stand there, not on the
+      // plaza its plan calls a spawn (`docs/region-spec.md` §5).
+      this.scene.start(arrivalScene, { run: this.run, spawn });
       return;
     }
     this.movePlayerTo(spawn.x, spawn.y);
@@ -1142,7 +1145,12 @@ export class RouteScene extends WorldScene {
     const arrival = nodeOf(planRegion(this.run.seed), this.run.nodeKey);
     const arrivalScene = arrival ? this.arrivalSceneFor(arrival.kind) : null;
     if (arrivalScene !== null && this.scene.manager.getScene(arrivalScene) !== null) {
-      this.scene.start(arrivalScene, { run: this.run });
+      // A transition that already resolved this run's spawn (a flight onto a door)
+      // hands it over too, so the city screen lands where the travel rule said. A
+      // stale arrival of another node is not this run's spawn and is not passed.
+      const last = this.arrival();
+      const spawn = last !== null && last.key === this.run.nodeKey ? last.spawn : null;
+      this.scene.start(arrivalScene, spawn ? { run: this.run, spawn } : { run: this.run });
       return;
     }
     // A restart in place (`scene.start('Route', …)`) runs `create` again over the

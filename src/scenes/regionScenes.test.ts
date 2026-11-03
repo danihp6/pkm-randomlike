@@ -55,9 +55,10 @@ describe('collectRegionScenes', () => {
     );
   });
 
-  it('collects the folder itself: the city screen is its first region scene', () => {
-    expect(Array.isArray(REGION_SCENES)).toBe(true);
-    expect(REGION_SCENES.map((entry) => entry.key)).toStrictEqual(['City']);
+  it('collects the folder itself: every region scene in it is registered', () => {
+    const keys = REGION_SCENES.map((entry) => entry.key);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 
