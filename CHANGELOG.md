@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The frame mesh is resolved once, not per cell.** `[Task-269]`, Batch 117:
+      `src/engine/frameMap.ts` gains `buildFrameMesh(map, tileset, pad = 0)`, the renderer's flat
+      twin of `buildFrameMap`: one `Int32Array` of atlas frame indices, row-major over the unpadded
+      `width × height`, `-1` where a cell resolves to no frame, no cell objects, no mass index and
+      no tree list, and the only allocation is that array. It resolves every cell exactly as
+      `buildFrameMap` does (same `padMap`/`border` path), so the two agree cell for cell at `pad` 0
+      and `pad` 6 on a 60×120 forest map; an unresolvable value writes `-1` and never `0`. No Phaser,
+      no DOM, no RNG. All criteria `[unit]`: 12 cases in `frameMap.test.ts`, the six pre-existing
+      ones untouched, and a fixed-seed `sketchRoute` pins an FNV-1a literal (`0xf70f8c2b`) so a
+      moved frame fails the suite.
+
 - [x] **The region: the contract, the plan and the names.** `[Task-268]`, Batch 117: a pure
       `planRegion(seed)` now turns the run seed into the whole world — one starting town, eight gym
       cities in badge order, one main route per stretch with one or two laterals (16-24 routes),

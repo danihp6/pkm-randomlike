@@ -191,6 +191,38 @@ export function buildFrameMap(map: TileMap, tileset: TilesetConfig, pad = 0): Fr
   return { width, height, cols, rows, cells, trees };
 }
 
+/**
+ * The whole map resolved into frames: one `Int32Array` of atlas frame indices,
+ * row-major (`y * width + x`), `-1` where a cell resolves to no frame. The flat
+ * twin of `buildFrameMap`, built for the renderer: no cell objects, no mass index,
+ * no tree list.
+ */
+export type FrameMesh = Readonly<{
+  width: number;
+  height: number;
+  frames: Int32Array;
+}>;
+
+/**
+ * Resolves every cell of `map` against `tileset` into one contiguous frame array,
+ * with the same resolution `buildFrameMap` uses (the padded map, `border` on), so a
+ * layer can be filled once per map instead of once per cell.
+ */
+export function buildFrameMesh(map: TileMap, tileset: TilesetConfig, pad = 0): FrameMesh {
+  const height = map.length;
+  const width = height > 0 ? map[0].length : 0;
+  if (width === 0 || height === 0) return { width: 0, height: 0, frames: new Int32Array(0) };
+  const framed = pad > 0 ? padMap(map, pad, FLOOR) : map;
+  const frames = new Int32Array(width * height);
+  let index = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      frames[index++] = resolveTileFrame(framed, x + pad, y + pad, tileset, true)?.frame ?? -1;
+    }
+  }
+  return { width, height, frames };
+}
+
 /** Wraps a route and its frame map into the JSON the dev tool exports. */
 export function serializeFrameMap(route: RouteMap, tileset: TilesetConfig, pad = 0): FrameMapExport {
   return {

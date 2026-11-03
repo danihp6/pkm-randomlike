@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { FLOOR, WALL } from './map';
+import { FLOOR, LEDGE, TALL_GRASS, WALL, WATER } from './map';
 import {
   buildFrameMap,
+  buildFrameMesh,
   frameMapTiles,
   parseFrameMapExport,
   routeFromFrameMapExport,
   serializeFrameMap,
   type FrameMapExport,
 } from './frameMap';
+import { FRLG_FOREST_TILESET } from '../data/tilesets/frlg';
 import type { RouteMap } from './routes/routeMap';
+import { sketchRoute } from './routes/sketch';
 import type { TilesetConfig, WallPattern } from './tileset';
 
 const PATTERN: WallPattern = {
@@ -150,5 +153,105 @@ describe('frame map export', () => {
     expect(() => parseFrameMapExport(JSON.stringify(broken))).toThrow(
       'cell count does not match the size',
     );
+  });
+});
+
+function paint(tiles: number[][], x: number, y: number, w: number, h: number, value: number): void {
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) tiles[y + j][x + i] = value;
+}
+
+function forestMap(): number[][] {
+  const tiles = blank(60, 120);
+  paint(tiles, 0, 0, 60, 1, WALL);
+  paint(tiles, 0, 119, 60, 1, WALL);
+  paint(tiles, 0, 0, 1, 120, WALL);
+  paint(tiles, 59, 0, 1, 120, WALL);
+  paint(tiles, 10, 20, 3, 4, WALL);
+  paint(tiles, 30, 40, 2, 2, WATER);
+  paint(tiles, 20, 60, 3, 1, LEDGE);
+  paint(tiles, 40, 80, 4, 3, TALL_GRASS);
+  return tiles;
+}
+
+/** FNV-1a 32-bit fold over the frames, each index folded as four little-endian bytes. */
+function frameChecksum(frames: Int32Array): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < frames.length; i++) {
+    const value = frames[i];
+    for (let shift = 0; shift < 32; shift += 8) {
+      hash ^= (value >>> shift) & 0xff;
+      hash = Math.imul(hash, 0x01000193);
+    }
+  }
+  return hash >>> 0;
+}
+
+function mismatches(mesh: Int32Array, frameMap: ReturnType<typeof buildFrameMap>): number[] {
+  const bad: number[] = [];
+  for (let i = 0; i < mesh.length; i++) {
+    if (mesh[i] !== (frameMap.cells[i].frame ?? -1)) bad.push(i);
+  }
+  return bad;
+}
+
+describe('buildFrameMesh', () => {
+  it('resolves every cell of a 60x120 forest map as buildFrameMap does', () => {
+    const tiles = forestMap();
+    const mesh = buildFrameMesh(tiles, FRLG_FOREST_TILESET);
+    const frameMap = buildFrameMap(tiles, FRLG_FOREST_TILESET);
+    expect(mesh.frames.length).toBe(7200);
+    expect(mismatches(mesh.frames, frameMap)).toEqual([]);
+  });
+
+  it('keeps the same equality with pad = 6 and unpadded dimensions', () => {
+    const tiles = forestMap();
+    const mesh = buildFrameMesh(tiles, FRLG_FOREST_TILESET, 6);
+    const frameMap = buildFrameMap(tiles, FRLG_FOREST_TILESET, 6);
+    expect(mismatches(mesh.frames, frameMap)).toEqual([]);
+    expect(mesh.width).toBe(60);
+    expect(mesh.height).toBe(120);
+    expect(mesh.frames.length).toBe(7200);
+  });
+
+  it('reads an unknown map value as -1', () => {
+    const tiles = blank(3, 3);
+    tiles[1][1] = 99;
+    const mesh = buildFrameMesh(tiles, FRLG_FOREST_TILESET);
+    expect(mesh.frames[4]).toBe(-1);
+    for (let i = 0; i < mesh.frames.length; i++) {
+      if (i === 4) continue;
+      expect(mesh.frames[i]).not.toBe(-1);
+    }
+  });
+
+  it('returns a row-major Int32Array of width * height entries', () => {
+    const mesh = buildFrameMesh(forestMap(), FRLG_FOREST_TILESET);
+    expect(mesh.width).toBe(60);
+    expect(mesh.height).toBe(120);
+    expect(mesh.frames.length).toBe(mesh.width * mesh.height);
+    expect(mesh.frames instanceof Int32Array).toBe(true);
+  });
+
+  it('returns the same bytes on a second call', () => {
+    const tiles = forestMap();
+    const first = buildFrameMesh(tiles, FRLG_FOREST_TILESET);
+    const second = buildFrameMesh(tiles, FRLG_FOREST_TILESET);
+    expect(Array.from(second.frames)).toEqual(Array.from(first.frames));
+    expect(second.frames.byteLength).toBe(first.frames.byteLength);
+  });
+
+  it('pins the frames of a fixed-seed route', () => {
+    const route = sketchRoute({
+      seed: 'mesh-269',
+      routeIndex: 1,
+      biomeId: 'forest',
+      shape: 'straight',
+      width: 32,
+      height: 24,
+    });
+    const mesh = buildFrameMesh(route.tiles, FRLG_FOREST_TILESET);
+    expect(mesh.width).toBe(32);
+    expect(mesh.height).toBe(24);
+    expect(frameChecksum(mesh.frames)).toBe(0xf70f8c2b);
   });
 });

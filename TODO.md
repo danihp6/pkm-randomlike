@@ -11847,16 +11847,60 @@ out against. The contract task **pre-creates the three generator folders' README
 (`src/engine/region/{route,city,interior}/README.md`) so Batch 118's three generators never touch the
 parent `src/engine/region/README.md` and never collide.
 
-**Hot files.** `src/data/frlg/*.json`, `src/data/tilesets/**`, `src/assets/placeholders/frlg/**` and
-`.gitignore` are `[Task-271]`'s. No task claims `package.json`, `src/main.ts`, `vite.config.ts` or a
-scene. `src/engine/README.md` is `[Task-268]`'s (the one new folder line) and `src/data/README.md` is
-`[Task-268]`'s too (its own `region.ts` bullet, plus `[Task-271]`'s two tileset file names added to
-the existing `tilesets/` bullet verbatim from that spec). `docs/tech-decisions.md` is
-`[Task-270]`'s for `D59`-`D62` only; no other task in the batch writes a doc section, so the file is
-not shared this round.
+**Hot files.** `src/data/frlg/*.json`, `src/data/tilesets/**`, `src/assets/placeholders/frlg/**`,
+`src/engine/map.ts`, `scripts/frlg/build-region-tilesets.mjs`, `scripts/assets/pack.mjs`,
+`scripts/assets/build-placeholders.mjs`, `src/data/README.md`, `src/assets/README.md` and
+`docs/tileset-spec.md` are `[Task-271]`'s; `src/engine/frameMap.ts` is `[Task-269]`'s;
+`docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md` (`D59`-`D62` only),
+`AGENTS.md` and `.prettierignore` are `[Task-270]`'s. No task claims `package.json`, `src/main.ts`,
+`vite.config.ts`, a scene or `src/data/dex/**`. `src/engine/README.md` stays `[Task-268]`'s (it
+shipped with the folder line) and needs no line this round, since no task adds a file to
+`src/engine/`. `src/data/README.md` moves to `[Task-271]`: `[Task-268]` shipped its `region.ts` bullet
+but not the two tileset file names the old note expected of it. No doc file is shared by section this
+round — `docs/tileset-spec.md` (271) and `docs/region-spec.md` (270) are different files.
 
 **What it replaces.** `docs/maps-spec.md` (deleted), the per-map plan, the Image-per-cell draw and
 the biome-only tileset registry.
+
+**As it runs (`2026-11-03`).** `[Task-268]` is merged on `main`, so this batch is `[Task-269]`,
+`[Task-270]` and `[Task-271]` in three dev slots. **The fourth slot cannot be filled**, and the
+constraint is written per candidate below; no slot is filled from a later batch, so the batch runs
+as three devs and three QAs and the plan's cut is its width.
+
+- `[Task-272]` (118) — needs `src/data/tilesets/city.ts`/`interior.ts`, which `[Task-271]` writes.
+- `[Task-273]` (118) — needs `docs/region-spec.md` §7.1, a file `[Task-270]` creates, and the city
+  tile kinds `[Task-271]` writes. Two batch-mates.
+- `[Task-274]` (118) — its own *Dependencies:* line names the city plan (`[Task-273]`), unmerged.
+- `[Task-275]` (118) — claims `src/data/README.md` (held by `[Task-271]`) and
+  `docs/region-spec.md` §3 (in the file `[Task-270]` creates).
+- `[Task-276]`, `[Task-277]`, `[Task-278]`, `[Task-279]` (119) — each writes a section of
+  `docs/region-spec.md` (§8, §7.3, §4, §3), a file `[Task-270]` creates in this batch.
+- `[Task-280]` (120) — needs `buildFrameMesh`, which `[Task-269]` ships in this batch.
+- `[Task-281]` (120) — writes `docs/region-spec.md` §5, the same collision.
+- Every item from `[Task-282]` on names a Batch 118-121 file in its own *Dependencies:* line (the
+  city plan, the gym interior, `WorldScene`, the puzzle stack, the League table), so none is
+  dependency-clean on `main` today.
+
+**What the specs changed in the plan, and why.** Three refinements, all inside the batch's own
+items: `[Task-271]` gains `src/engine/map.ts` and `map.test.ts`, because a tile kind needs a map
+value and `docs/tileset-spec.md` §1 defines them once there — the eight city/interior kinds become
+values `12`-`19` with their walkability, so Batch 118's generators never invent a value. Its
+`.gitignore` claim is dropped (both atlases land in `src/assets/frlg/`, already ignored) and it gains
+`scripts/assets/pack.mjs` (the new packer must be a step), `src/data/README.md` (`[Task-268]` shipped
+without the two tileset file names the item said it would add), and the two test files the configs
+owe. `[Task-270]` gains `.prettierignore` (the prose doc must replace the deleted one there) and its
+dangling-reference criterion is **narrowed to the files it owns**: `docs/maps-spec.md` is quoted by
+≈90 further references in `docs/design-spec.md`, `docs/routes-spec.md`, `docs/battle-spec.md`,
+`docs/route-generator.md`, `docs/balance/*.md`, `docs/data-spec.md`, `src/**` comments, `TODO.md` and
+`CHANGELOG.md`, and those die with `[Task-298]` (the floor modules) and `[Task-299]` (the docs
+close) in Batch 125 — the item as written could not have been done inside its own four paths.
+`[Task-271]`'s `[live]` keeps its wording but states its method: no scene draws a city or an
+interior until Batch 118/120, so the pass reads the atlas the running game loaded
+(`tiles:city` / `tiles:interior`) and paints the 20×20 grid from it in-page with `getImageData`.
+It is also the batch's widest task (twenty paths, fourteen of them mechanical), and its spec says so;
+splitting it is **not legal inside one batch** — the configs need the map values and the manifests —
+so the honest split, if a later cycle wants one, is "packer + manifests + blanks" in one batch and
+"configs + map values" in the next.
 
 - [x] **[Task-268] The region: the contract, the plan and the names.** A pure generator turns the run
       seed into the whole world: the town, the eight gym cities, one main route per stretch with its
@@ -11887,7 +11931,7 @@ the biome-only tileset registry.
       `src/engine/region/interior/README.md`, `src/engine/README.md`, `src/data/region.ts`,
       `src/data/region.test.ts` and `src/data/README.md`. *Dependencies:* none. *(Batch 117)*
 
-- [ ] **[Task-269] The frame mesh is resolved once, not per cell.** The scene resolves a tile's
+- [x] **[Task-269] The frame mesh is resolved once, not per cell.** The scene resolves a tile's
       atlas frame per cell per layer inside `drawTiles`; the mesh resolves the whole map into one
       compact array so the renderer can hand it to a `TilemapLayer`.
       **Measured:** `src/engine/frameMap.ts` already resolves every cell (`buildFrameMap` →
@@ -11923,11 +11967,13 @@ the biome-only tileset registry.
       badges; the tower streak is apart) to `docs/tech-decisions.md`; rewrite `AGENTS.md`'s opening
       pitch and its doc list so no reader is sent to a dead file.
       **Docs:** itself.
-      **Tests:** `[unit]` `docs/maps-spec.md` no longer exists and no file under `docs/`, `src/` or
-      `AGENTS.md` links to it; `[unit]` every module `[Task-268]` names is named in the spec;
+      **Tests:** `[unit]` `docs/maps-spec.md` no longer exists and none of the four files this task
+      owns (`AGENTS.md`, `docs/region-spec.md`, `docs/tech-decisions.md`, `.prettierignore`) links to
+      it — the ≈90 references left in the other docs and in `src/**` are `[Task-298]`'s and
+      `[Task-299]`'s (Batch 125); `[unit]` every module `[Task-268]` names is named in the spec;
       `[unit]` `D59`-`D62` exist and `npm test` is green (no code changed). No browser pass is owed.
-      Claims `docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md` and
-      `AGENTS.md`. *Dependencies:* none. *(Batch 117)*
+      Claims `docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md`,
+      `AGENTS.md` and `.prettierignore`. *Dependencies:* none. *(Batch 117)*
 
 - [ ] **[Task-271] The city and interior tiles are imported.** FRLG's town and indoor tiles enter the
       same pipeline as the forest: a packer builds the atlases, a placeholder keeps a clean clone
@@ -11942,18 +11988,23 @@ the biome-only tileset registry.
       `interior.png` and the frame maps `src/data/frlg/city.json` / `interior.json`; add
       `src/data/tilesets/city.ts` and `interior.ts` with the tile kinds a city and an interior need
       (`grass`, `path`, `plaza`, `wall`, `roof`, `door`, `water`, `sign`, `floor`, `counter`,
-      `heal`, `pc`); extend `TILESET_IDS`, `TILESET_NAMES` and `TILESETS`; add both placeholders and
-      their build step; list both atlases in `.gitignore`.
+      `heal`, `pc`), stamped as the map values `12`-`19` this task adds to `src/engine/map.ts` with
+      their walkability; extend `TILESET_IDS`, `TILESET_NAMES` and `TILESETS`; add both placeholders
+      and their build step (both atlases land in the already-ignored `src/assets/frlg/`).
       **Docs:** `src/assets/README.md` (the two atlases and the packer), `docs/tileset-spec.md` (the
       two new tilesets and their tile-kind table).
       **Tests:** `[unit]` every new tile kind resolves to a frame in its config; `[unit]`
       `TILESETS` covers `TILESET_IDS` exactly; `[unit]` a clean clone (no packed atlas) resolves the
       placeholder and still builds. `[live]` with the FRLG store present, a 20×20 city patch renders
-      each tile kind at 24 px with no seam and the door tile is visually distinct from the wall.
-      Claims `scripts/frlg/build-region-tilesets.mjs`, `scripts/assets/build-placeholders.mjs`,
-      `src/data/frlg/city.json`, `src/data/frlg/interior.json`, `src/data/tilesets/city.ts`,
-      `interior.ts`, `ids.ts`, `ids.test.ts`, `index.ts`, `palettes.ts`,
-      `src/assets/placeholders/frlg/city.png`, `interior.png`, `.gitignore`,
+      each tile kind at 24 px with no seam and the door tile is visually distinct from the wall
+      (measured on the atlas the running game loaded — no scene draws these kinds until Batches
+      118/120). Claims `scripts/frlg/build-region-tilesets.mjs`, `scripts/assets/pack.mjs`,
+      `scripts/assets/build-placeholders.mjs`, `scripts/assets/placeholderAccent.mjs` and its
+      test (only the pinned hue `frlg/city.png` needs to keep its own blank, plus the list
+      length), `src/data/frlg/city.json`, `interior.json`,
+      `src/data/tilesets/city.ts`, `city.test.ts`, `interior.ts`, `interior.test.ts`, `ids.ts`,
+      `ids.test.ts`, `index.ts`, `palettes.ts`, `src/engine/map.ts`, `map.test.ts`,
+      `src/assets/placeholders/frlg/city.png`, `interior.png`, `src/data/README.md`,
       `src/assets/README.md` and `docs/tileset-spec.md`. *Dependencies:* none. *(Batch 117)*
 
 ### Batch 118 - the three generators and the gym tables
