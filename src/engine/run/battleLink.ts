@@ -90,7 +90,15 @@ export type BattleLaunch = Readonly<{
    * computed by the route through `livingTeamTypes`. Absent means none.
    */
   teamTypes?: readonly string[];
+  /** The scene key that receives the result; absent means the route ('Route'). */
+  returnScene?: string;
 }>;
+
+/** The scene key a battle hands its result back to: the launch's own, or the route. */
+export function returnSceneOf(launch: { returnScene?: string }): string {
+  const key = launch.returnScene;
+  return typeof key === 'string' && key.trim() !== '' ? key.trim() : 'Route';
+}
 
 export type BattleOutcome = 'win' | 'lose' | 'run' | 'capture';
 
