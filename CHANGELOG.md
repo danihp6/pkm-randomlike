@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The debug menu knows nodes, not floors.** `[Task-296]`, Batch 124: the `?debug` overlay stops
+      speaking floors. Its route tab draws the plan's node list (`readNodeContext`, one row per
+      `RegionNode` with its key, kind, name and badge), teleports the live run through the shipped
+      `RouteScene.travelToNode(key, 'fly')` seam, grants the ladder's next badge (`grantBadge`), marks
+      a node visited and sets the tower streak, each writing the save only through `storeRun` and
+      reporting `true` only when the value moved; the floor, room and tile handlers and their DOM are
+      deleted from the overlay and from `DebugMenuHandlers`, and `src/main.ts` no longer resolves the
+      `Route` scene for them. Every label comes from the `dev.*` group `[Task-295]` pinned; 16 floor
+      keys (`dev.floor`, `dev.room`, `dev.x`, `dev.y`, `dev.go`, `dev.teleportFloor/Room/Tile`,
+      `dev.location.map/room/tile`, `dev.status.teleported`) lose their last caller and are listed
+      for Batch 125's i18n sweep. `[unit]` 5 criteria, 6159 tests green; `[live]` over CDP at
+      1280×800 with `?debug`: the node datalist holds 31 options for `plan.nodes.length` 31
+      (`town:1` … `tower:1`), a teleport to `city:3` lands the save and the `City` scene there,
+      badge 3 flips the save to `[1,2,3]` and opens the guard, and the document carries only the
+      `node`/`badge`/`streak` debug ids.
+
 - [x] **Every new screen and every old label speaks.** `[Task-295]`, Batch 124: the key table catches
       up with the region and loses the labels nothing reads. `src/i18n/en.ts` and `es.ts` gain the
       22-key `dev.*` group Task-296's node-aware debug menu is written against (node, badge, streak,

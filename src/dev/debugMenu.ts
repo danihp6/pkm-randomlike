@@ -11,9 +11,12 @@ import {
   type Species,
 } from '../data/dex';
 import { ITEMS, type ItemDef } from '../data/items';
+import { BADGE_CAPS } from '../data/region';
 import { RUN_CHAIN } from '../data/run';
+import { planRegion } from '../engine/region/plan';
 import { SHAPES, isRouteShape, type RouteShape } from '../engine/routes/layout';
 import { ROUTE_HEIGHT, ROUTE_WIDTH } from '../engine/routes/sketch';
+import type { RunState } from '../engine/run/state';
 import { t } from '../i18n';
 import { DEBUG_MENU_TOGGLE_KEY, IS_DEVELOP } from './env';
 
@@ -36,7 +39,9 @@ export const DEBUG_ROUTE_HEIGHT = ROUTE_HEIGHT;
 
 /**
  * The live values the route panel pre-fills: the current route's base inputs plus
- * the derived biome/band and the read-only run mode.
+ * the derived biome/band and the read-only run mode. The floor, room and tile
+ * fields are the old floor scene's compatibility aliases, still reported by the
+ * scene; the panel no longer draws them.
  */
 export type DebugRouteContext = Readonly<{
   seed: string;
@@ -51,11 +56,11 @@ export type DebugRouteContext = Readonly<{
   passThrough: boolean;
   /** Dev inspect: color the hovered cell and show its tile coordinates. */
   hoverInspect: boolean;
-  /** 1-based floor of the live run. */
+  /** @deprecated the floor scene's counter, kept as the scene reports it. */
   mapIndex: number;
-  /** 0-based room id inside that floor (`RunState.routeInMap`). */
+  /** @deprecated the floor scene's room, kept as the scene reports it. */
   roomInMap: number;
-  /** Rooms in the floor's plan; 0 on a dev-built route (the generator/import tools have no plan). */
+  /** @deprecated the floor scene's room count, kept as the scene reports it. */
   roomCount: number;
   /** The player's tile. The scene always fills it; nullable only so the helper's clause-drop is defined. */
   tile: { x: number; y: number } | null;
@@ -65,7 +70,23 @@ export type DebugRouteContext = Readonly<{
   ignoreTrainers: boolean;
 }>;
 
-/** Where a dev teleport landed, or why it refused. `where` is reserved and stays unset here. */
+/**
+ * The node-aware context the route tab reads; null when there is no saved run. It
+ * comes from the **save**, not the scene, so the panel can draw before a route
+ * exists; that is a dev tool's contract, not a game rule.
+ */
+export type DebugNodeContext = Readonly<{
+  nodeKey: string;
+  badges: readonly number[];
+  towerStreak: number;
+  visitedNodes: readonly string[];
+  nodes: readonly Readonly<{ key: string; kind: string; name: string; badge: number }>[];
+}>;
+
+/** One row of `DebugNodeContext.nodes`: a plan node as the node tab lists it. */
+export type DebugNodeRow = DebugNodeContext['nodes'][number];
+
+/** Where a dev teleport landed, or why it refused. */
 export type DebugTeleportResult = Readonly<{ ok: boolean; where?: string; error?: string }>;
 
 /** The resolved inputs the panel sends back; a blank field already fell back. */
@@ -132,12 +153,16 @@ export type DebugMenuHandlers = Readonly<{
   exportFrameMap: () => string | null;
   /** Loads an exported frame map back into the scene; reports why it failed. */
   importFrameMap: (text: string) => Readonly<{ ok: boolean; error?: string }>;
-  /** Dev only: moves the run to a floor, clamped to the run's map range. */
-  onTeleportFloor: (mapIndex: number) => DebugTeleportResult;
-  /** Dev only: moves the run to a room of the current floor, clamped to the plan. */
-  onTeleportRoom: (roomInMap: number) => DebugTeleportResult;
-  /** Dev only: moves the player onto a tile of the current room. */
-  onTeleportTile: (x: number, y: number) => DebugTeleportResult;
+  /** The node-aware context the route tab reads; null when there is no saved run. */
+  readNodeContext: () => DebugNodeContext | null;
+  /** Teleports the live run to `nodeKey`; resolves after the fade, or refuses. */
+  onTeleportNode: (nodeKey: string) => Promise<DebugTeleportResult>;
+  /** Grants badge `badge` (1-8, ladder prefix only); true when the save changed. */
+  onGrantBadge: (badge: number) => boolean;
+  /** Marks `nodeKey` visited in the save; true when it changed. */
+  onMarkVisited: (nodeKey: string) => boolean;
+  /** Sets `RunState.towerStreak` (clamped to >= 0); true when it changed. */
+  onSetTowerStreak: (streak: number) => boolean;
   /** Dev only: while true the tall grass rolls no wild encounter. */
   onToggleIgnoreEncounters: (enabled: boolean) => void;
   /** Dev only: while true no line of sight opens a trainer battle. */
@@ -252,22 +277,69 @@ export function matchPartyMember(
 }
 
 /**
- * One line naming the run's position: `map 3 · room 2/7 · (14,9)`. Clauses join
- * with `space · space` and are **dropped** rather than printed empty: the room
- * clause only when the floor has a plan (`roomCount > 0`), the tile clause only
- * when there is a tile. The `map` clause is always printed.
+ * The node-aware context for a saved run: where it stands, its badges, its tower
+ * streak, the nodes it has entered and the whole plan's node list. Pure — it reads
+ * the run and derives the plan off the run seed, and draws nothing from any Rng.
  */
-export function debugLocationLabel(
-  context: Pick<DebugRouteContext, 'mapIndex' | 'roomInMap' | 'roomCount' | 'tile'>,
-): string {
-  const clauses = [t('dev.location.map', { map: context.mapIndex })];
-  if (context.roomCount > 0) {
-    clauses.push(t('dev.location.room', { room: context.roomInMap, count: context.roomCount }));
-  }
-  if (context.tile) {
-    clauses.push(t('dev.location.tile', { x: context.tile.x, y: context.tile.y }));
-  }
-  return clauses.join(' · ');
+export function nodeContextFor(run: RunState): DebugNodeContext {
+  const plan = planRegion(run.seed);
+  return {
+    nodeKey: run.nodeKey,
+    badges: [...run.badges],
+    towerStreak: run.towerStreak,
+    visitedNodes: [...run.visitedNodes],
+    nodes: plan.nodes.map((node) => ({
+      key: node.key,
+      kind: node.kind,
+      name: node.name,
+      badge: node.badge,
+    })),
+  };
+}
+
+/** One line naming where the run stands: its node key, never a floor. */
+export function debugNodeLabel(context: Pick<DebugNodeContext, 'nodeKey'>): string {
+  return t('dev.location.node', { node: context.nodeKey });
+}
+
+/** A node's datalist label: `city · Añil · Badge 3`, with the key as its value. */
+export function debugNodeOptionLabel(node: DebugNodeRow): string {
+  return `${node.kind} · ${node.name} · ${t('dev.badge')} ${node.badge}`;
+}
+
+/**
+ * Marks `nodeKey` visited in the run, the set-union the save decoder round-trips. A
+ * key the run already carries, or a blank one, returns the run **as the same
+ * object**, so `onMarkVisited` can report "nothing changed" with `===` and a second
+ * press never dirties the save.
+ */
+export function withVisitedNode(run: RunState, nodeKey: string): RunState {
+  const key = nodeKey.trim();
+  if (key === '' || run.visitedNodes.includes(key)) return run;
+  return { ...run, visitedNodes: [...run.visitedNodes, key] };
+}
+
+/** Sets `RunState.towerStreak`, floored and clamped at 0; unchanged is the same object. */
+export function withTowerStreak(run: RunState, streak: number): RunState {
+  const next = Math.max(0, Math.floor(Number.isFinite(streak) ? streak : 0));
+  return next === run.towerStreak ? run : { ...run, towerStreak: next };
+}
+
+/**
+ * The run a save tool hands back: the rule's result when it moved the run, or null
+ * when it returned the run it was given. `null` means "write nothing", which is how
+ * a panel handler reports `false` without a second comparison.
+ */
+export function changedRun(run: RunState, rule: (run: RunState) => RunState): RunState | null {
+  const next = rule(run);
+  return next === run ? null : next;
+}
+
+/** The badge a typed field names: a whole number in the ladder's own range, or null. */
+export function parseBadge(value: string): number | null {
+  const badge = parseOptionalInt(value);
+  if (badge === undefined || badge < 1 || badge > BADGE_CAPS.length) return null;
+  return badge;
 }
 
 /** A level the wild can legally hold; a blank or broken field falls back to 5. */
@@ -483,78 +555,174 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   locationInfo.id = 'debug-location';
   locationInfo.style.cssText = 'color:#94a3b8;';
 
-  // Teleport block: jump the run to a floor, to a room of the current floor or
-  // to a tile of the current room. A blank field means "wherever the run is now",
-  // so it reads back the live position rather than guessing one.
-  const teleportSection = document.createElement('div');
-  teleportSection.style.cssText =
+  // Node block: the run stands on a region node, so the tools name a node key (with
+  // the plan's own list as the autocomplete), a badge rung and the tower streak. There
+  // is no floor, room or tile here any more.
+  const nodeSection = document.createElement('div');
+  nodeSection.style.cssText =
     'display:flex;flex-direction:column;gap:6px;border-top:1px solid #334155;padding-top:6px;';
 
-  const teleportGrid = document.createElement('div');
-  teleportGrid.style.cssText = routeGrid.style.cssText;
+  const nodeGrid = document.createElement('div');
+  nodeGrid.style.cssText = routeGrid.style.cssText;
 
-  const teleportField = (labelText: string, control: HTMLElement): void => {
+  const nodeField = (labelText: string, control: HTMLElement): void => {
     const label = document.createElement('span');
     label.textContent = labelText;
-    teleportGrid.append(label, control);
+    nodeGrid.append(label, control);
   };
 
-  const floorInput = numberField(t('dev.floorTitle'), t('dev.auto'));
-  const roomInput = numberField(t('dev.roomTitle'), t('dev.auto'));
-  const tileXInput = numberField(t('dev.tileXTitle'), t('dev.auto'));
-  const tileYInput = numberField(t('dev.tileYTitle'), t('dev.auto'));
+  const nodeInput = document.createElement('input');
+  nodeInput.type = 'text';
+  nodeInput.placeholder = t('dev.nodePlaceholder');
+  nodeInput.title = t('dev.nodeTitle');
+  nodeInput.autocomplete = 'off';
+  nodeInput.setAttribute('list', 'debug-node-list');
+  nodeInput.setAttribute('data-debug-id', 'node');
+  nodeInput.style.cssText = compact;
 
-  teleportField(t('dev.floor'), floorInput);
-  teleportField(t('dev.room'), roomInput);
-  teleportField(t('dev.x'), tileXInput);
-  teleportField(t('dev.y'), tileYInput);
+  const badgeInput = numberField(t('dev.badgeTitle'), t('dev.badgePlaceholder'));
+  badgeInput.min = '1';
+  badgeInput.max = String(BADGE_CAPS.length);
+  badgeInput.setAttribute('data-debug-id', 'badge');
 
-  const teleportStatus = document.createElement('div');
-  teleportStatus.id = 'debug-teleport-status';
-  teleportStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+  const streakInput = numberField(t('dev.streakTitle'), t('dev.streakPlaceholder'));
+  streakInput.min = '0';
+  streakInput.setAttribute('data-debug-id', 'streak');
 
-  /** Rewrites the position readout; called on the tick and after every teleport. */
-  const refreshLocation = (): void => {
-    const ctx = handlers.readRouteContext();
-    locationInfo.textContent = ctx ? debugLocationLabel(ctx) : t('dev.error.noRoute');
-  };
+  nodeField(t('dev.node'), nodeInput);
+  nodeField(t('dev.badge'), badgeInput);
+  nodeField(t('dev.streak'), streakInput);
 
-  const teleport = (run: (ctx: DebugRouteContext) => DebugTeleportResult): void => {
-    const ctx = handlers.readRouteContext();
+  const nodeList = document.createElement('datalist');
+  nodeList.id = 'debug-node-list';
+
+  const nodeStatus = document.createElement('div');
+  nodeStatus.id = 'debug-node-status';
+  nodeStatus.style.cssText = 'min-height:16px;color:#94a3b8;';
+
+  const nodeMode = document.createElement('div');
+  nodeMode.style.cssText = 'color:#94a3b8;';
+
+  /** The node key the field names, or null when the plan holds no such node. */
+  const nodeOfField = (): string | null => {
+    const key = nodeInput.value.trim();
+    const ctx = handlers.readNodeContext();
     if (!ctx) {
-      teleportStatus.textContent = t('dev.error.noRoute');
+      nodeStatus.textContent = t('dev.status.noRun');
+      return null;
+    }
+    if (!ctx.nodes.some((node) => node.key === key)) {
+      nodeStatus.textContent = t('dev.status.unknownNode');
+      return null;
+    }
+    return key;
+  };
+
+  /** Refills the plan's node list; the signature guard keeps the tick from churning it. */
+  let nodeSignature = '';
+  const refreshNodeOptions = (ctx: DebugNodeContext | null): void => {
+    const signature = ctx ? ctx.nodes.map((node) => `${node.key}:${node.name}`).join(',') : '';
+    if (signature === nodeSignature) return;
+    nodeSignature = signature;
+    nodeList.replaceChildren();
+    if (!ctx) return;
+    for (const node of ctx.nodes) {
+      const option = document.createElement('option');
+      option.value = node.key;
+      option.label = debugNodeOptionLabel(node);
+      option.setAttribute('data-debug-node-option', node.kind);
+      nodeList.append(option);
+    }
+  };
+
+  /**
+   * Rewrites the node readout and the fields the panel owns. A filled field is the
+   * user's (or the live refresh would eat a half-typed node key); only a blank one,
+   * or a `force` after the run itself moved, is refilled from the save.
+   */
+  const refreshNodeFields = (force = false): void => {
+    const ctx = handlers.readNodeContext();
+    if (ctx) {
+      if (force || nodeInput.value === '') nodeInput.value = ctx.nodeKey;
+      if (force || streakInput.value === '') streakInput.value = String(ctx.towerStreak);
+      locationInfo.textContent = debugNodeLabel(ctx);
+    } else {
+      nodeInput.value = '';
+      streakInput.value = '';
+      locationInfo.textContent = t('dev.error.noRoute');
+    }
+    const route = handlers.readRouteContext();
+    nodeMode.textContent = route
+      ? `${t('dev.mode')} · ${route.mode === 'infinite' ? t('dev.modeTower') : t('dev.modeLeague')}`
+      : '';
+    refreshNodeOptions(ctx);
+  };
+
+  const teleportNode = (): void => {
+    const key = nodeOfField();
+    if (key === null) return;
+    (document.activeElement as HTMLElement | null)?.blur();
+    void handlers.onTeleportNode(key).then((result) => {
+      nodeStatus.textContent = result.ok
+        ? t('dev.status.teleportedTo', { node: result.where ?? key })
+        : t('dev.status.teleportFailed', { error: result.error ?? t('dev.status.unknown') });
+      refreshNodeFields(true);
+    });
+  };
+
+  const markVisited = (): void => {
+    const key = nodeOfField();
+    if (key === null) return;
+    handlers.onMarkVisited(key);
+    refreshNodeFields();
+    nodeStatus.textContent = t('dev.status.visited', { node: key });
+  };
+
+  const grantBadge = (): void => {
+    const badge = parseBadge(badgeInput.value);
+    if (badge === null) {
+      nodeStatus.textContent = t('dev.status.unknown');
       return;
     }
-    const result = run(ctx);
-    teleportStatus.textContent = result.ok
-      ? t('dev.status.teleported')
-      : t('dev.status.teleportFailed', { error: result.error ?? t('dev.status.unknown') });
-    refreshLocation();
+    const changed = handlers.onGrantBadge(badge);
+    refreshNodeFields();
+    const ctx = handlers.readNodeContext();
+    if (!ctx) {
+      nodeStatus.textContent = t('dev.status.noRun');
+      return;
+    }
+    nodeStatus.textContent =
+      changed || ctx.badges.includes(badge) ? t('dev.status.badge', { badge }) : t('dev.status.unknown');
   };
 
-  const floorGo = button(t('dev.go'), () => {
-    teleport((ctx) => handlers.onTeleportFloor(parseOptionalInt(floorInput.value) ?? ctx.mapIndex));
-  });
-  floorGo.title = t('dev.teleportFloor');
-  const roomGo = button(t('dev.go'), () => {
-    teleport((ctx) => handlers.onTeleportRoom(parseOptionalInt(roomInput.value) ?? ctx.roomInMap));
-  });
-  roomGo.title = t('dev.teleportRoom');
-  const tileGo = button(t('dev.go'), () => {
-    teleport((ctx) =>
-      handlers.onTeleportTile(
-        parseOptionalInt(tileXInput.value) ?? ctx.tile?.x ?? 0,
-        parseOptionalInt(tileYInput.value) ?? ctx.tile?.y ?? 0,
-      ),
-    );
-  });
-  tileGo.title = t('dev.teleportTile');
+  const setStreak = (): void => {
+    const streak = parseOptionalInt(streakInput.value);
+    if (streak === undefined) {
+      nodeStatus.textContent = t('dev.status.unknown');
+      return;
+    }
+    handlers.onSetTowerStreak(streak);
+    refreshNodeFields();
+    const ctx = handlers.readNodeContext();
+    if (!ctx) {
+      nodeStatus.textContent = t('dev.status.noRun');
+      return;
+    }
+    streakInput.value = String(ctx.towerStreak);
+    nodeStatus.textContent = t('dev.status.streak', { streak: ctx.towerStreak });
+  };
 
-  const teleportButtons = document.createElement('div');
-  teleportButtons.style.cssText = 'display:flex;gap:6px;';
-  teleportButtons.append(floorGo, roomGo, tileGo);
+  const teleportNodeButton = button(t('dev.teleportNode'), teleportNode);
+  teleportNodeButton.title = t('dev.nodeTitle');
+  const markVisitedButton = button(t('dev.markVisited'), markVisited);
+  const grantBadgeButton = button(t('dev.grantBadge'), grantBadge);
+  const setStreakButton = button(t('dev.setStreak'), setStreak);
 
-  teleportSection.append(teleportGrid, teleportButtons, teleportStatus);
+  const nodeButtons = document.createElement('div');
+  nodeButtons.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+  nodeButtons.append(teleportNodeButton, markVisitedButton, grantBadgeButton, setStreakButton);
+
+  nodeSection.append(nodeGrid, nodeMode, nodeButtons, nodeStatus);
 
   /** True while the fields hold the user's edits; pauses the live refresh. */
   let dirty = false;
@@ -681,7 +849,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     if (!ctx) {
       routeInfo.textContent = t('dev.error.noRoute');
       routeStatus.textContent = '';
-      refreshLocation();
+      refreshNodeFields();
       refreshGeneratorStep();
       return;
     }
@@ -701,7 +869,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
       band: ctx.bandName,
     });
     routeStatus.textContent = '';
-    refreshLocation();
+    refreshNodeFields();
     refreshGeneratorStep();
   };
 
@@ -729,7 +897,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     routeStatus,
     routeInfo,
     locationInfo,
-    teleportSection,
+    nodeSection,
   );
 
   const battlePanel = document.createElement('div');
@@ -1143,6 +1311,18 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
     });
   }
 
+  nodeInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') teleportNode();
+  });
+  for (const [input, run] of [
+    [badgeInput, grantBadge],
+    [streakInput, setStreak],
+  ] as const) {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') run();
+    });
+  }
+
   // Map section: describe the route cell by cell (tile, resolved frame, wall
   // pattern membership) so a cut tree can be spotted, and round-trip it as JSON.
   const mapSection = document.createElement('div');
@@ -1293,7 +1473,7 @@ export function installDebugMenu(handlers: DebugMenuHandlers): () => void {
   }
 
   body.append(tabs, generalSection, battlePanel, partySection, bagSection, routeSection, mapSection);
-  root.append(title, body, list, itemList, partyList, moveList, abilityList, natureList);
+  root.append(title, body, list, itemList, partyList, moveList, abilityList, natureList, nodeList);
   document.body.append(root);
   selectTab('general');
   refreshRouteFields();

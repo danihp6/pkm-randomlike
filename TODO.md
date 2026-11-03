@@ -12648,7 +12648,7 @@ balance spreadsheets of the eight-floor run.
       `src/i18n/README.md`. *Dependencies:* every screen that names its strings (Batches 120-123).
       *(Batch 124)*
 
-- [ ] **[Task-296] The debug menu knows nodes, not floors.** The dev overlay teleports by node key,
+- [x] **[Task-296] The debug menu knows nodes, not floors.** The dev overlay teleports by node key,
       grants a badge, marks a node visited, forces the tower and the League, and drops the floor
       teleports that no longer exist.
       **Measured:** `src/dev/debugMenu.ts` holds ~20 handlers (`onTeleportFloor`, `onTeleportRoom`,

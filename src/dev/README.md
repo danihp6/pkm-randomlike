@@ -10,9 +10,10 @@ game path, and nothing here may produce output when the gate is off.
 - `env.ts` — the gate: which build this is, the flag derived from it and the key that shows and
   hides the debug menu.
 - `debugMenu.ts` — the DOM overlay: the species/item/move/ability/nature matchers, the party
-  editor, the route and generator stepping tools, and the installer that wires them to the
-  handlers `src/main.ts` passes in. `src/main.ts` imports it dynamically, so it never enters the
-  production entry chunk.
+  editor, the route and generator stepping tools, the node tools (teleport to a node key, mark it
+  visited, grant a badge, set the tower streak) and the installer that wires them to the handlers
+  `src/main.ts` passes in. `src/main.ts` imports it dynamically, so it never enters the production
+  entry chunk.
 - `warnings.ts` — the once-per-page console nudge when a battle meets a rule handler that has not
   been ported yet (`D16`).
 - `ids.ts` — mints the stable, unique ids for the Pokémon a dev tool drops into a run, kept in its
@@ -25,4 +26,7 @@ game path, and nothing here may produce output when the gate is off.
 2. The shipping path never imports this folder at the top level — `src/main.ts` reaches
    `debugMenu.ts` through a dynamic import.
 3. A debug id is stable and unique per run, so a tool can address a member without guessing.
-4. Adding a dev tool means adding its line here.
+4. The panel names a region **node**, never a floor: its list is `planRegion(seed).nodes`, the
+   teleport is the live route's `travelToNode`, and the save tools read the save and write through
+   `storeRun`.
+5. Adding a dev tool means adding its line here.
