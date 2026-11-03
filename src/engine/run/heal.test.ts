@@ -9,6 +9,7 @@ import {
   healParty,
   needsHealing,
   pokevialReady,
+  serviceHeal,
   POKEVIAL_MAX_CHARGES,
 } from './heal';
 import { addPokemon, createRun, type RunState } from './state';
@@ -220,5 +221,40 @@ describe('fullHealMember', () => {
     expect(healed.hp).toBe(starterMaxHp);
     expect(healed.status).toBeNull();
     expect(healed.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
+  });
+});
+
+describe('serviceHeal', () => {
+  it('restores HP and PP across the party and the box', () => {
+    const hurt = damaged(starter, 3, 1);
+    const hurtBox = damaged(boxed('boxed'), 2, 0);
+    const stacked: RunState = { ...createRun({ seed: 's', starter: hurt }), party: Array(6).fill(hurt) };
+    const healed = serviceHeal(addPokemon(stacked, hurtBox));
+    expect(healed.party.every((member) => member.fighter.hp === starterMaxHp)).toBe(true);
+    expect(
+      healed.party.every((member) => member.fighter.moves.every((slot) => slot.pp === slot.maxPp)),
+    ).toBe(true);
+    expect(healed.box[0].fighter.hp).toBe(restoreFighter(hurtBox.fighter).maxHp);
+    expect(healed.box[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
+  });
+
+  it('leaves a primary status in place, where the Pokevial would cure it', () => {
+    const sick = damaged({ ...starter, fighter: { ...starter.fighter, status: 'psn' as const } }, 3, 1);
+    const healed = serviceHeal(createRun({ seed: 's', starter: sick }));
+    expect(healed.party[0].fighter.status).toBe('psn');
+    expect(healed.party[0].fighter.hp).toBe(starterMaxHp);
+  });
+
+  it('never revives a member at 0 HP (D5)', () => {
+    const fallen = dead(starter);
+    const run = { ...createRun({ seed: 's', starter }), party: [starter, fallen] };
+    const healed = serviceHeal(run);
+    expect(healed.party[1].fighter.hp).toBe(0);
+    expect(healed.party[0].fighter.hp).toBe(starterMaxHp);
+  });
+
+  it('returns the same object when nothing is missing', () => {
+    const whole = createRun({ seed: 's', starter });
+    expect(serviceHeal(whole)).toBe(whole);
   });
 });

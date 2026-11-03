@@ -964,53 +964,34 @@ describe('PC editing rights', () => {
   };
   const caught = () => createRunPokemon({ id: 'catch', speciesId: 'pikachu', level: 4 });
 
-  it('opens the box in the entry room on every visit, and nowhere else', () => {
+  it('is refused everywhere but a Centre, and the flag is the only way in', () => {
     const run = createRun({ seed: 'pc-a', starter });
-    expect(run.routeInMap).toBe(0);
-    expect(pcFullyEditable(run)).toBe(true);
-    expect(pcMemberEditable(run)).toBe(true);
+    expect(pcFullyEditable(run)).toBe(false);
+    expect(pcMemberEditable(run)).toBe(false);
+    expect(pcFullyEditable(run, false)).toBe(false);
+    expect(pcMemberEditable(run, false)).toBe(false);
+    expect(pcFullyEditable(run, true)).toBe(true);
+    expect(pcMemberEditable(run, true)).toBe(true);
+  });
 
-    const away = advanceRoute(run, 1);
-    expect(pcFullyEditable(away)).toBe(false);
+  it('reads the room, not the run: no floor state opens the box', () => {
+    const entry = createRun({ seed: 'pc-a', starter });
+    expect(entry.routeInMap).toBe(0);
+    expect(pcMemberEditable(entry)).toBe(false);
+
+    const away = advanceRoute(entry, 1);
     expect(pcMemberEditable(away)).toBe(false);
-
-    // The rule is the room, not the history: coming back reopens the whole PC.
-    const back = advanceRoute(away, 0);
-    expect(back.routeInMap).toBe(0);
-    expect(pcFullyEditable(back)).toBe(true);
-    expect(pcMemberEditable(back)).toBe(true);
+    expect(pcMemberEditable(advanceMap(away))).toBe(false);
+    // A Centre is a room the run walks into, so the same run opens it there.
+    expect(pcMemberEditable(away, true)).toBe(true);
+    expect(pcMemberEditable(advanceMap(away), true)).toBe(true);
   });
 
-  it('answers false in every other room of the same floor', () => {
-    const run = createRun({ seed: 'pc-a', starter });
-    for (const room of [1, 2, 3]) {
-      const away = advanceRoute(run, room);
-      expect(pcFullyEditable(away)).toBe(false);
-      expect(pcMemberEditable(away)).toBe(false);
-    }
-  });
-
-  it("reopens the PC in the next floor's entry room", () => {
-    const away = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
-    const next = advanceMap(away);
-    expect(next.routeInMap).toBe(0);
-    expect(pcFullyEditable(next)).toBe(true);
-    expect(pcMemberEditable(next)).toBe(true);
-  });
-
-  it('lets a boxed catch be withdrawn only from the room it was caught in, when that is the entry room', () => {
-    const inEntry = addCaughtPokemon(full(), caught());
-    expect(inEntry.box.map((member) => member.fighter.id)).toEqual(['catch']);
-    expect(pcMemberEditable(inEntry)).toBe(true);
-
-    const away = advanceRoute(full(), 1);
-    const inRoom = addCaughtPokemon(away, caught());
-    expect(inRoom.box.map((member) => member.fighter.id)).toEqual(['catch']);
-    expect(pcMemberEditable(inRoom)).toBe(false);
-    expect(pcMemberEditable(advanceRoute(inRoom, 2))).toBe(false);
-
-    // Walking back into the entry room does not read the catch: it reads the room.
-    expect(pcMemberEditable(advanceRoute(inRoom, 0))).toBe(true);
+  it('boxes a catch on a full party and withdraws it only inside a Centre', () => {
+    const boxed = addCaughtPokemon(full(), caught());
+    expect(boxed.box.map((member) => member.fighter.id)).toEqual(['catch']);
+    expect(pcMemberEditable(boxed)).toBe(false);
+    expect(pcMemberEditable(boxed, true)).toBe(true);
   });
 
   it('places a catch in the party first and only boxes it on a full party', () => {
