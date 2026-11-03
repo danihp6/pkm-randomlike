@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { restoreFighter } from '../battle/fighter';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
-import { BADGE_CAPS, badgeCap } from '../../data/region';
+import { BADGE_CAPS, REGION_COUNTS, badgeCap } from '../../data/region';
 import { evolutionBranches } from '../../data/dex/evolutions';
 import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
+import { planNodeContent } from '../region/content';
 import { nodeKey, planRegion } from '../region/plan';
 import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
@@ -238,7 +239,7 @@ describe('money', () => {
 });
 
 describe('advanceRoute', () => {
-  it('enters a room of the same map and keeps the floor marks and spent captures', () => {
+  it('enters a room of the same map and keeps the floor marks and the node capture', () => {
     let run = createRun({ seed: 'run-a', starter });
     run = useCapture(run);
     run = markTrainerDefeated(run, 'trainer-1-0');
@@ -252,9 +253,9 @@ describe('advanceRoute', () => {
     expect(next.pickedItems).toEqual(['item-1-0']);
     expect(next.capturedRooms).toEqual(run.capturedRooms);
     expect(next.party).toBe(run.party);
-    // The capture is per room: a different room can still catch, the same one cannot.
-    expect(canCapture(next)).toBe(true);
-    expect(canCapture(advanceRoute(run, 0))).toBe(false);
+    // The capture is per node: every room of this node reads it spent, another node not.
+    expect(canCapture(next)).toBe(false);
+    expect(canCapture({ ...run, nodeKey: nodeKey('route', 2) })).toBe(true);
   });
 
   it('discovers each room once, even when it is re-entered', () => {
@@ -792,17 +793,31 @@ describe('dedupeMemberIds', () => {
 });
 
 describe('capture and trainers', () => {
-  it('allows one capture per room, and only the room that spent it', () => {
-    let run = createRun({ seed: 'run-a', starter });
-    expect(canCapture(run)).toBe(true);
-    run = useCapture(run);
-    expect(canCapture(run)).toBe(false);
-    expect(useCapture(run)).toBe(run);
-    // Another room of the floor may still catch.
-    const next = advanceRoute(run, 1, undefined);
-    expect(canCapture(next)).toBe(true);
-    // Coming back to the room that spent its capture is refused.
-    expect(canCapture(advanceRoute(run, 0))).toBe(false);
+  it('spends the route node its one catch, and only that node', () => {
+    const plan = planRegion('run-a');
+    const route: RunState = { ...createRun({ seed: 'run-a', starter }), nodeKey: nodeKey('route', 1) };
+    expect(planNodeContent(plan, route.nodeKey, 1).grass).toBe(true);
+
+    expect(canCapture(route)).toBe(true);
+    const spent = useCapture(route);
+    expect(spent.capturedNodes).toEqual([nodeKey('route', 1)]);
+    expect(canCapture(spent)).toBe(false);
+    // The same node again is the same object: nothing to spend and nothing to dirty.
+    expect(useCapture(spent)).toBe(spent);
+    // Another node of the region is still unspent.
+    expect(canCapture({ ...spent, nodeKey: nodeKey('route', 2) })).toBe(true);
+  });
+
+  it('leaves the town and every city with grass capturable', () => {
+    const plan = planRegion('run-a');
+    const start = createRun({ seed: 'run-a', starter });
+    expect(canCapture({ ...start, nodeKey: plan.townKey })).toBe(true);
+    const settings = plan.nodes.filter((node) => node.kind === 'city');
+    expect(settings).toHaveLength(REGION_COUNTS.cities);
+    for (const city of settings) {
+      expect(planNodeContent(plan, city.key, city.tier ?? 1).grass, city.key).toBe(true);
+      expect(canCapture({ ...start, nodeKey: city.key }), city.key).toBe(true);
+    }
   });
 
   it('records a beaten trainer once', () => {

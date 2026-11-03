@@ -164,7 +164,11 @@ export type RunState = Readonly<{
   defeatedTrainers: readonly string[];
   /** Ground-item ids already taken on `mapIndex`. Resets per map. */
   pickedItems: readonly string[];
-  /** Room ids of `mapIndex` whose single capture has been spent. Resets per map. */
+  /**
+   * @deprecated the old floor scene's spent rooms: no rule reads or writes it since
+   * the capture rule became the node (`capturedNodes`), and the sweep deletes it.
+   * `advanceMap`/`advanceRoute` still reset it exactly as they did.
+   */
   capturedRooms: readonly number[];
   /** The floor's mission and whether the run has met it, or null on an old save. */
   mission: MissionProgress | null;
@@ -617,15 +621,15 @@ export function swapPartyBox(run: RunState, partyIndex: number, boxIndex: number
   return { ...run, party, box };
 }
 
-/** True while the room the run stands in has not spent its single capture (D5). */
+/** True while the node the run stands on has not spent its single capture (D5). */
 export function canCapture(run: RunState): boolean {
-  return !run.capturedRooms.includes(run.routeInMap);
+  return !run.capturedNodes.includes(run.nodeKey);
 }
 
-/** Spends the room's single capture; the same room again is a no-op. */
+/** Spends the node's single capture; the same node again is a no-op. */
 export function useCapture(run: RunState): RunState {
   if (!canCapture(run)) return run;
-  return { ...run, capturedRooms: [...run.capturedRooms, run.routeInMap] };
+  return { ...run, capturedNodes: [...run.capturedNodes, run.nodeKey] };
 }
 
 /**

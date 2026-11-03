@@ -8,6 +8,7 @@ import type { BattleReturn, BattleOutcome } from './battleLink';
 import { darkAbilityNames, isDarkCatch } from './dark';
 import { POKEVIAL_MAX_CHARGES } from './heal';
 import { createRunPokemon, experienceAward, xpForLevel, type RunPokemon } from './progression';
+import { nodeKey } from '../region/plan';
 import { resolveBattle, type BattleReward } from './resolve';
 import { createRun, squadLevel, type RunState } from './state';
 
@@ -167,14 +168,23 @@ describe('resolveBattle', () => {
     expect(resolveBattle(run, returned(run, 'lose'), reward).run.money).toBe(0);
   });
 
-  it('places a catch, spends the room capture and awards XP', () => {
+  it('places a catch, spends the node capture and awards XP', () => {
     const run = createRun({ seed: 's', starter });
     const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
     const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild);
-    expect(result.run.capturedRooms).toContain(run.routeInMap);
+    expect(result.run.capturedNodes).toEqual([run.nodeKey]);
+    expect(result.run.capturedRooms).toEqual(run.capturedRooms);
     expect(result.run.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch-1']);
     expect(result.run.xp).toBeGreaterThan(run.xp);
     expect(result.run.stats.catches).toBe(1);
+  });
+
+  it('spends the node the battle was fought on', () => {
+    const town = createRun({ seed: 's', starter });
+    const run: RunState = { ...town, nodeKey: nodeKey('route', 3) };
+    const caught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
+    const result = resolveBattle(run, returned(run, 'capture', { captured: caught.fighter }), wild);
+    expect(result.run.capturedNodes).toEqual([nodeKey('route', 3)]);
   });
 
   it('does not count a battle that was not a capture', () => {
@@ -262,8 +272,8 @@ describe('resolveBattle', () => {
     expect(result.run.box.map((member) => member.fighter.id)).toEqual(['catch-1']);
     expect(result.capture?.toPc).toBe(true);
     expect(result.capture?.member.fighter.id).toBe('catch-1');
-    // The room's single capture is spent and the catch counted.
-    expect(result.run.capturedRooms).toContain(full.routeInMap);
+    // The node's single capture is spent and the catch counted.
+    expect(result.run.capturedNodes).toEqual([full.nodeKey]);
     expect(result.run.stats.catches).toBe(1);
   });
 

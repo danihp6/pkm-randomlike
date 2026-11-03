@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **One catch per grass node, and wilds at 60-75 % of the squad.** `[Task-290]`, Batch 122:
+      the capture rule and the wild roll stop being floor facts. `canCapture`/`useCapture` key the
+      already-persisted `RunState.capturedNodes` by `run.nodeKey` (`src/engine/run/state.ts`), the
+      new pure `src/engine/region/encounters.ts` rolls a node's table
+      (`nodeEncounterTable` — `bandForNode` minus the run's exclusions) and its level
+      (`nodeWildLevel` — `wildLevel` of the squad, clamped to the node's cap), and the route
+      scene's grass step feeds that module instead of the floor band. `capturedRooms` stays in the
+      v28 record and no rule reads it; `caughtAt` and its label are untouched. `docs/region-spec.md`
+      §7.9. `[unit]` 13 new tests: the 1 000-draw band `18..23` at squad 30, the cap clamp, the
+      replay and the seed split, the town and every grass city capturable, and the re-pinned
+      `state`/`resolve` capture assertions; 6075 tests green. `[live]` over CDP on headless
+      Chromium at 1280x800 `?debug`: `debugWildState()` reports `route:1` with `canCapture` true,
+      a grass step launches a wild at level 3 with the squad at 5 (band `[3,3]`), the launch closes
+      the node's catch (`capturedNodes: ['route:1']`, `route:2` still open) and a second wild on the
+      same node launches with its capture gate closed — one catch per node, the grass keeps
+      rolling. Cut as a **one-task batch**: the fill search found no legal mate and names each
+      constraint — `[Task-291]` shares `src/engine/region/README.md` (both add a file to that
+      folder) and `[Task-292]` shares `src/engine/run/state.ts` **and** needs
+      `src/scenes/RouteScene.ts`'s panel host for its Centre, both 290's; `[Task-295]` waits on the
+      screens of Batch 123, `[Task-296]` on 295's key table, `[Task-297]` re-pins the wild band and
+      the economy 290/292 rewrite, and `[Task-298]`/`[Task-299]` depend on every batch before them.
+
 - [x] **The whole region plays at its real scale.** `[Task-293]`, Batch 123: `REGION_COUNTS` in
       `src/data/region.ts` is the frozen scale (nine settlements, eight cities, eight main routes,
       one to two laterals per stretch, one Victory Road, the League and the tower) and

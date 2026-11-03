@@ -12481,7 +12481,7 @@ the route-scoped capture.
       `src/scenes/pois.ts`, `src/scenes/pois.test.ts` and `docs/region-spec.md` §7.8.
       *Dependencies:* per-node content (Batch 119), the long route (Batch 118). *(Batch 122)*
 
-- [ ] **[Task-290] One catch per grass node, and wilds at 60-75 % of the squad.** The capture is keyed
+- [x] **[Task-290] One catch per grass node, and wilds at 60-75 % of the squad.** The capture is keyed
       by `nodeKey` — one per node that has grass, town and cities included — and the wild level comes
       from the squad, never the badge.
       **Measured:** `canCapture`/`useCapture` read `capturedRooms` (`state.ts`), and `advanceMap`
@@ -12501,6 +12501,17 @@ the route-scoped capture.
       `src/engine/run/state.ts`, `state.test.ts`, `src/engine/region/README.md` and
       `docs/region-spec.md` §7.9. *Dependencies:* `WorldScene` (Batch 120), the schema (Batch 119),
       the curve (Batch 119). *(Batch 122)*
+
+**Batch 122 shipped as a one-task batch, and the fill search's three empty slots name their
+blockers.** `[Task-290]` was the cut's last open item; `[Task-291]` (Batch 123) cannot ride because
+it adds `src/engine/region/missions.ts` and therefore writes the same folder README 290 writes
+(a code-folder README, not a `docs/*.md`, so it cannot be split by section), and `[Task-292]`
+(Batch 123) shares `src/engine/run/state.ts` with 290's capture predicates **and** would need
+`src/scenes/RouteScene.ts`'s `RoutePanelHost` to reach its Centre — the tree has no Centre scene
+yet. The later open tasks are all blocked by an unmerged dependency or by the batch itself:
+`[Task-295]` on the screens Batch 123 introduces, `[Task-296]` on 295's key table, `[Task-297]` on
+the wild band and the economy 290 and 292 rewrite, and `[Task-298]`/`[Task-299]` on every batch
+before them. `[Task-291]` and `[Task-292]` stay `[ ]` for the next cycle's Batch 123.
 
 ### Batch 123 - the run at full scale
 

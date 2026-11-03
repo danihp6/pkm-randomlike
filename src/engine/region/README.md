@@ -28,6 +28,11 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   (`planNodeContent`, `PoiKind`, `ShopKind`, `POI_KINDS`).
 - `content.test.ts` — the tier counts, the lateral-only POI, the replay and a fixed seed's
   content digest.
+- `encounters.ts` — a node's wild encounters: its band pool minus the run's exclusions, the
+  level as the squad's own share clamped to the node's cap, and one step's roll at the shipped
+  chance (`NODE_ENCOUNTER_CHANCE`, `nodeEncounterTable`, `nodeWildLevel`, `rollNodeEncounter`).
+- `encounters.test.ts` — the table's exclusions and its node band, the 1 000-roll level band
+  and its cap clamp, the replay and a fixed stream's pinned sequence.
 - `npcs.ts` — the people a settlement stands: the generic rows its content pass rolled and the
   specials whose own draw passed, each on a free walkable tile off the node's own stream, with
   the card it opens and the once mark it leaves.
