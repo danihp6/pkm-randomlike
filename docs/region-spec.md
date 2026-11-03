@@ -119,13 +119,30 @@ the fight.
 ## 4. The guard, and walking back
 
 The rule: **leaving a city needs its badge, walking back never does, and a locked exit
-names the badge it wants.** The town's exit asks for badge 1; an edge back, or an edge
+names the badge it wants.** The town's exit names badge 1; an edge back, or an edge
 inside the same stretch, is never a gate at all.
 
-The predicate that answers it — whether an edge is gated and which badge it wants
-(`exitGate`, `nextBadge`) — is `[Task-278]`'s and is not shipped code: it lands in Batch
-119, reads the plan, the edge and the badge list, and answers "not a gate" rather than a
-gate for any edge back.
+The predicate that answers it ships in `src/engine/run/gates.ts`, and it reads the plan,
+the edge and the badge list — never a `RunState`, so a caller can ask about a walk it has
+not committed to yet. `exitGate(plan, fromKey, toKey, badges)` answers an `ExitGate`, the
+pair `{ badge, open }` where `open` is whether `badges` holds that badge, or `null` when
+the edge is not a gate at all. An edge is a gate only when both of its ends are nodes of
+the plan, `toKey` is one of `fromKey`'s `edges`, `fromKey` is a `city`, and `toKey` is the
+**next node on the main chain**: walking back asks the previous chain node, so it is not
+forward, and a lateral is off the `chain` entirely, so both directions of every lateral
+edge answer `null`. A city's gate asks for `city.badge` — the very badge that city's gym
+hands over — so no stretch can be skipped. `nextBadge(plan, key)` is the gym badge a node's
+way forward asks for: the stretch's own badge for the town, a city, a route and a lateral
+(the town's node carries badge 1, so `nextBadge(plan, plan.townKey)` is 1), and `null` once
+no gym is ahead of it, which is every node of badge 9: `BADGE_CAPS.length + 1`, where the
+gyms stop. Both functions are pure and total — no RNG, no clock, no DOM, and an unknown
+key or a `toKey` that is not a neighbour answers `null` instead of throwing.
+
+The town's door is the prologue's, not the guard's: `exitGate` answers `null` for the
+town's forward edge because the town has no badge to win, and that door stays shut until
+the starter is taken (`canLeaveTown`, the prologue's own task). Badge-gating the town
+would deadlock every run at its first step. `nextBadge(plan, plan.townKey)` still answers
+1, because badge 1 is the badge that way forward names.
 
 ## 5. The map and flying
 

@@ -12163,7 +12163,7 @@ from their specs. `src/engine/region/README.md` is `[Task-277]`'s.
       `src/engine/region/index.ts`, `src/engine/region/README.md` and `docs/region-spec.md` §7.3.
       *Dependencies:* the region plan (Batch 117). *(Batch 119)*
 
-- [ ] **[Task-278] The guard asks for the badge, and nothing blocks the way back.** Leaving a city
+- [x] **[Task-278] The guard asks for the badge, and nothing blocks the way back.** Leaving a city
       needs its badge; walking back never does; a locked exit names the badge it wants.
       **Measured:** `src/engine/routes/gate.ts` and `src/data/gates.ts` are the old room gate (a
       type-gated obstacle); `src/engine/run/perms.ts` holds the run's permission predicates, none of

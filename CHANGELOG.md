@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The guard asks for the badge, and nothing blocks the way back.** `[Task-278]`, Batch
+      119: `src/engine/run/gates.ts` answers, purely and totally, whether an edge of the region
+      plan is a guard at all and which badge it wants — `exitGate(plan, fromKey, toKey,
+      badges)` returns `null` for anything that is not a **city's forward edge on the main
+      chain** (every way back, every lateral edge, every node that holds no badge), and
+      otherwise `{ open, badge }` where the badge is that city's own, so leaving `city:n` needs
+      badge *n* and no stretch can be skipped; `nextBadge(plan, fromKey)` names the gym badge a
+      node's way forward asks for (the town's is 1) and `null` past the eighth gym. The town's
+      door is deliberately not a badge gate — the prologue owns it and a badge-gated town would
+      deadlock the first step of every run. Both take the badge list, never a `RunState`. All
+      criteria `[unit]`: each city's exit open with its badge and closed without it, city 8's
+      way into the victory road, every edge back null under any list, `nextBadge` on the town,
+      the cities, the routes and the three end nodes, unknown keys and non-neighbours answered
+      with `null`, and a sweep pinning exactly the eight forward gates. `docs/region-spec.md`
+      §4 states the shipped predicate.
+
 - [x] **What a node holds is rolled per key.** `[Task-277]`, Batch 119:
       `planNodeContent(plan, key, tier)` decides, per node and off that node's own `content`
       stream, every piece of content the region draws: the generic NPC count by the city's
