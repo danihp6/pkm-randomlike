@@ -42,6 +42,7 @@
 - `src/data/shop.test.ts`
 - `src/ui/partyScreen.ts`
 - `src/ui/partyScreen.test.ts`
+- `src/ui/hud/panels/pc/pcPanel.test.ts`
 - `src/scenes/panels/pc.ts`
 - `src/scenes/panels/party.ts`
 - `src/scenes/panels/shop.ts`
@@ -225,6 +226,10 @@ Keep the section's existing heading and its position; no other section moves.
     `pcMemberEditable(run, true)` is true; with the second argument omitted it is false.
   - [ ] `[unit]` `partyScreen.test.ts`: a box drag with `inCentre = false` moves
     nothing; with `true` it withdraws/deposits.
+  - [ ] `[unit]` `pcPanel.test.ts`: the box drag is a **Centre** gesture — with a
+    Centre host (`scene.sys.settings.key === 'Centre'`) a box cell let go on the party
+    card withdraws once and a party row let go on the PC card deposits once; with a
+    route host (`'Route'`) the same two gestures move nothing.
   - [ ] `[unit]` `regionScenes.test.ts`: `collectRegionScenes` still throws on a
     duplicate key and the new Centre entry is collected with key `Centre`.
   - [ ] `[unit]` Nothing outside the exclusive paths was touched.
