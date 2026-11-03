@@ -8,6 +8,20 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Missions are a stack: one automatic per stretch, one fixed per city, one random from an
+      NPC.** `[Task-291]`, Batch 123: a mission stops being one row remembered per floor and
+      becomes the stack a region node exposes. `src/data/missions.ts` holds the catalogue over node
+      keys (`stretch`, `city` and `random` kinds with their own predicates),
+      `src/engine/region/missions.ts` derives the stack (`activeMissions`) and its completions
+      (`advanceMissions`) from state the run already persists (`completedMissions`,
+      `stats.casualties`, `floorCasualties`), and the HUD card draws every row instead of one. The
+      stretch's automatic mission fails on a casualty and completes at the leader, the city's fixed
+      mission is the same on a revisit, and the NPC's random row is stable for a seed and differs
+      across seeds. `docs/region-spec.md` §7.10. `[unit]` 7 criteria, 6104 tests green; `[live]`
+      over CDP at 1280×800: a `route:1` save with one casualty draws one `[data-hud-missions-row]`
+      in `data-state="failed"` and the same save without it in `active`, and a `city:2` run draws
+      three rows in order `stretch`, `city:city:2`, `random:city:2`, the first active.
+
 - [x] **One catch per grass node, and wilds at 60-75 % of the squad.** `[Task-290]`, Batch 122:
       the capture rule and the wild roll stop being floor facts. `canCapture`/`useCapture` key the
       already-persisted `RunState.capturedNodes` by `run.nodeKey` (`src/engine/run/state.ts`), the

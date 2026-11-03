@@ -1,37 +1,51 @@
+import type { MissionStatus } from '../../../../engine/region/missions';
+
 /**
- * The floor-mission panel's value model: the card's box and one row per mission, in
- * plain data. Pure and total — no run, no scene, no `src/data/**` — because the scene
- * resolves every string and this module only places it.
+ * The mission panel's value model: the card's box and one row per mission on the node's
+ * stack, in plain data. Pure and total — no run, no scene, no RNG and no strings of its
+ * own — because the scene resolves every string and this module only places it.
+ *
+ * The one engine import is the status union, type-only, so the row's state and the
+ * engine's can never drift apart.
  */
 
 export type Rect = Readonly<{ x: number; y: number; w: number; h: number }>;
 export type Viewport = Readonly<{ width: number; height: number }>;
 
-/** One row of the card: the floor the run stands on, or a floor it already met. */
+/** One row of the card: a mission of the node's stack, already resolved to text. */
 export type MissionRowView = Readonly<{
   id: string;
+  /** `stretch`, `city:<key>` or `random:<key>`: the row's DOM hook and its only identity. */
+  scopeKey: string;
   /** The row's display name, resolved by the scene. */
   name: string;
-  /** The floor's progress line, or null on a completed row. */
+  /** The badge tag, resolved by the scene (`Badge 3`). */
+  tag: string;
+  /** The row's status word, or null while it is active. */
   progress: string | null;
-  /** `Map 3`, resolved by the scene; empty on the head row. */
-  map: string;
-  /** True on a floor the run already met. */
-  completed: boolean;
+  status: MissionStatus;
   /** Panel-relative. */
   box: Rect;
 }>;
 
-/** What the scene hands the panel: the strings, already resolved. */
+/** One mission of the stack, as the scene hands it over: strings already resolved. */
+export type StackMissionInput = Readonly<{
+  id: string;
+  scopeKey: string;
+  name: string;
+  tag: string;
+  progress: string | null;
+  status: MissionStatus;
+}>;
+
+/** What the scene hands the panel: the stack in the engine's own order, already resolved. */
 export type MissionsInput = Readonly<{
   open: boolean;
   /** `t('hud.missions')`. */
   title: string;
-  /** The floor the run stands on, or null when the run carries no mission row. */
-  current: Readonly<{ id: string; name: string; progress: string }> | null;
-  /** The run's met floors, **newest first**, already named by the scene. */
-  completed: readonly Readonly<{ id: string; name: string; map: string }>[];
-  /** `t('hud.missionsEmpty')`, printed only when `completed` is empty. */
+  /** The node's stack, exactly as `activeMissions` answered it. */
+  missions: readonly StackMissionInput[];
+  /** `t('hud.missionsEmpty')`, printed only when the stack is empty. */
   empty: string;
 }>;
 
@@ -40,11 +54,11 @@ export type MissionsPanelView = Readonly<{
   /** Viewport coordinates. */
   box: Rect;
   title: string;
-  /** The head row: the floor's mission with its progress, or null. */
+  /** The stack's first row (the stretch's automatic one), drawn at the head row's height. */
   current: MissionRowView | null;
-  /** Newest first, at most `MISSIONS_MAX_ROWS`; empty when nothing was met. */
+  /** The rest of the stack, in order, at most `MISSIONS_MAX_ROWS` in total. */
   rows: readonly MissionRowView[];
-  /** `t('hud.missionsEmpty')` while `rows` is empty, else null. */
+  /** `t('hud.missionsEmpty')` while the card holds no row at all, else null. */
   empty: string | null;
 }>;
 
@@ -54,11 +68,11 @@ export const MISSIONS_W = 360;
 export const MISSIONS_PHONE_W = 374;
 /** At or below this width the phone card is used. */
 export const MISSIONS_NARROW = 560;
-/** The head row's height: the floor's own mission and its progress. */
+/** The head row's height: the stack's first mission and its status. */
 export const MISSIONS_HEAD_H = 32;
-/** One completed floor's row. */
+/** One further mission's row. */
 export const MISSIONS_ROW_H = 22;
-/** The rows the card draws before it stops: the oldest are the ones that fall off. */
+/** The rows the card draws before it stops: the last ones are the ones that fall off. */
 export const MISSIONS_MAX_ROWS = 6;
 /** The card's own inset from the row's sides, and the phone's gutter. */
 export const MISSIONS_PAD = 8;
@@ -67,10 +81,10 @@ export const MISSIONS_CONTENT_LEFT = 30;
 
 /**
  * The card's box: the notice stack's second row, widened to the card's own width, with
- * one head row plus one row per completed floor (at least one, so the empty state has
- * somewhere to paint). Clamped to the window it is drawn in.
+ * one head row plus one row per further mission of the stack (at least one, so the empty
+ * state has somewhere to paint). Clamped to the window it is drawn in.
  */
-export function missionsPanelBox(viewport: Viewport, completedCount: number): Rect {
+export function missionsPanelBox(viewport: Viewport, stackCount: number): Rect {
   const narrow = viewport.width <= MISSIONS_NARROW;
   const w = Math.min(
     narrow ? MISSIONS_PHONE_W : MISSIONS_W,
@@ -80,48 +94,50 @@ export function missionsPanelBox(viewport: Viewport, completedCount: number): Re
   const top = (narrow ? 47 : 24) + 56 + MISSIONS_PAD;
   const rows = Math.max(
     1,
-    Math.min(Number.isFinite(completedCount) ? Math.trunc(completedCount) : 0, MISSIONS_MAX_ROWS),
+    Math.min(Number.isFinite(stackCount) ? Math.trunc(stackCount) : 0, MISSIONS_MAX_ROWS),
   );
   const h = MISSIONS_HEAD_H + rows * MISSIONS_ROW_H;
   const y = Math.max(0, Math.min(top, Math.min(viewport.height, 810) - h));
   return { x, y, w, h };
 }
 
-/** The card as data: the head row first, then the floors the run met, newest first. */
+/** Every row the card paints, the head row first: the stack in the order the engine gave. */
+export function missionsPanelRows(view: MissionsPanelView): readonly MissionRowView[] {
+  return view.current === null ? view.rows : [view.current, ...view.rows];
+}
+
+/** The card as data: one row per mission of the node's stack, in its own order. */
 export function missionsPanelView(input: MissionsInput, viewport: Viewport): MissionsPanelView {
-  const completed = input.completed.slice(0, MISSIONS_MAX_ROWS);
-  const box = missionsPanelBox(viewport, completed.length);
+  const stack = input.missions.slice(0, MISSIONS_MAX_ROWS);
+  // The stack's first row is the head row, so the box grows by the rows below it (and
+  // never past the one spare row the empty state paints in).
+  const box = missionsPanelBox(viewport, stack.length - 1);
   const rowW = Math.max(0, box.w - MISSIONS_PAD * 2);
-  const current: MissionRowView | null =
-    input.current === null
-      ? null
-      : {
-          id: input.current.id,
-          name: input.current.name,
-          progress: input.current.progress,
-          map: '',
-          completed: false,
-          box: { x: MISSIONS_PAD, y: 0, w: rowW, h: MISSIONS_HEAD_H },
-        };
-  const rows = completed.map((row, index) => ({
-    id: row.id,
-    name: row.name,
-    progress: null,
-    map: row.map,
-    completed: true,
-    box: {
-      x: MISSIONS_PAD,
-      y: MISSIONS_HEAD_H + index * MISSIONS_ROW_H,
-      w: rowW,
-      h: MISSIONS_ROW_H,
-    },
+  const placed = stack.map((mission, index) => ({
+    id: mission.id,
+    scopeKey: mission.scopeKey,
+    name: mission.name,
+    tag: mission.tag,
+    progress: mission.progress,
+    status: mission.status,
+    box:
+      index === 0
+        ? { x: MISSIONS_PAD, y: 0, w: rowW, h: MISSIONS_HEAD_H }
+        : {
+            x: MISSIONS_PAD,
+            y: MISSIONS_HEAD_H + (index - 1) * MISSIONS_ROW_H,
+            w: rowW,
+            h: MISSIONS_ROW_H,
+          },
   }));
+  const current: MissionRowView | null = placed[0] ?? null;
+  const rows = placed.slice(1);
   return {
     open: input.open,
     box,
     title: input.title,
     current,
     rows,
-    empty: rows.length === 0 ? input.empty : null,
+    empty: placed.length === 0 ? input.empty : null,
   };
 }

@@ -1,7 +1,8 @@
 /*
- * The floor-mission card (`D58`): the route HUD's other cards' glass, one head row and
- * one row per floor the run met. Every number the card places is the view model's; the
- * stylesheet only paints, so a measured rect can never drift from a rule here.
+ * The mission card (`D58`, `docs/region-spec.md` §7.10): the route HUD's other cards'
+ * glass, one head row and one row per further mission of the node's stack. Every number
+ * the card places is the view model's; the stylesheet only paints, so a measured rect
+ * can never drift from a rule here.
  */
 .missions {
   position: absolute;
@@ -40,8 +41,13 @@
   overflow: hidden;
 }
 
-.missions__row[data-completed='true'] {
+/* A met row is history; a failed one is the loss the stretch never gets back. */
+.missions__row[data-state='met'] {
   color: var(--hud-text-secondary);
+}
+
+.missions__row[data-state='failed'] {
+  color: var(--hud-text-warning);
 }
 
 .missions__name {
@@ -50,7 +56,7 @@
   text-overflow: ellipsis;
 }
 
-.missions__map {
+.missions__tag {
   flex: 0 0 auto;
   color: var(--hud-text-muted);
   font-size: var(--hud-type-meta-size);

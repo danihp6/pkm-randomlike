@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { STRETCH_MISSION_ID } from '../../data/missions';
 import { createRunPokemon } from '../run/progression';
 import { emptyRun, takeStarter } from '../run/prologue';
 import { compatForNode, createRun, type RunState } from '../run/state';
 import { exitGate } from '../run/gates';
 import { planCity } from './city';
+import { activeMissions } from './missions';
 import { planRegion } from './plan';
 import { generateRoute } from './route';
 import { canTravel, travel } from './travel';
@@ -199,6 +201,51 @@ describe('travel', () => {
     expect(second).toStrictEqual(first);
     expect(travel(PLAN, run, 'town:1', 'walk')).toStrictEqual(travel(PLAN, run, 'town:1', 'walk'));
     expect(canTravel(PLAN, run, 'route:2', 'fly')).toStrictEqual(travel(PLAN, run, 'route:2', 'fly'));
+  });
+
+  it('opens the entered node s stretch: no HP lost, and the casualty count pinned', () => {
+    const hurt: RunState = {
+      ...runAt('route:1', ['town:1', 'route:1']),
+      hpLost: 37,
+      stats: { catches: 2, casualties: 4, faints: 0 },
+      floorCasualties: 0,
+    };
+    const result = travel(PLAN, hurt, 'city:1', 'walk');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.run.hpLost).toBe(0);
+    expect(result.run.floorCasualties).toBe(4);
+    expect(activeMissions(result.run, PLAN)[0]).toStrictEqual({
+      id: STRETCH_MISSION_ID,
+      scopeKey: 'stretch',
+      nameKey: 'mission.stretch',
+      status: 'active',
+      progress: 0,
+    });
+
+    const flight = travel(PLAN, hurt, 'town:1', 'fly');
+    expect(flight.ok).toBe(true);
+    if (!flight.ok) return;
+    expect(flight.run.hpLost).toBe(0);
+    expect(flight.run.floorCasualties).toBe(4);
+  });
+
+  it('leaves the run object untouched when it refuses', () => {
+    const hurt: RunState = {
+      ...runAt('city:1', ['town:1', 'route:1', 'city:1']),
+      hpLost: 12,
+      stats: { catches: 0, casualties: 2, faints: 0 },
+      floorCasualties: 1,
+    };
+    const before = hurt;
+    const refused = travel(PLAN, hurt, 'route:2', 'walk');
+    const gate = exitGate(PLAN, 'city:1', 'route:2', hurt.badges)!;
+    expect(refused).toStrictEqual({ ok: false, reason: 'gate', badge: gate.badge });
+    expect(Object.keys(refused).sort()).toStrictEqual(['badge', 'ok', 'reason']);
+    expect(hurt).toBe(before);
+    expect(hurt.hpLost).toBe(12);
+    expect(hurt.floorCasualties).toBe(1);
+    expect(hurt.completedMissions).toHaveLength(0);
   });
 });
 

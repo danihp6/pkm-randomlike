@@ -8,6 +8,7 @@ import {
   type TrainerItemReward,
 } from '../../data/trainers';
 import { nodeOf, planRegion, type RegionNode, type RegionPlan } from '../region/plan';
+import { advanceMissions } from '../region/missions';
 import { hashSeed, Rng } from '../rng';
 import { nextBadge } from './gates';
 import { bandForNode, leaderLevel } from './levelCurve';
@@ -79,7 +80,10 @@ export function gymBadge(plan: RegionPlan, cityKey: string): number | null {
 
 /**
  * Adds `badge` to the run — the ladder's next rung, handed over by the gym the run
- * stands in — or returns the run **it was given** (`===`) when it may not.
+ * stands in — or returns the run **it was given** (`===`) when it may not. A badge that
+ * is granted records its stretch's automatic mission through `advanceMissions`, so the
+ * stretch row closes exactly where the ladder does (`docs/region-spec.md` §7.10): the
+ * leader falling is the stretch's own completion.
  */
 export function grantBadge(run: RunState, badge: number): RunState {
   if (!Number.isInteger(badge) || badge < 1 || badge > BADGE_CAPS.length) return run;
@@ -93,7 +97,13 @@ export function grantBadge(run: RunState, badge: number): RunState {
   // never disagree on which rung this stretch asks for.
   if (nextBadge(plan, run.nodeKey) !== badge) return run;
 
-  return { ...run, badges: [...run.badges, badge] };
+  return advanceMissions(
+    { ...run, badges: [...run.badges, badge] },
+    {
+      kind: 'leader-fallen',
+      badge,
+    },
+  );
 }
 
 /**

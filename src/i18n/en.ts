@@ -178,11 +178,22 @@ export const en = {
   'hud.missionsEmpty': 'No floor mission completed yet.',
   'hud.missionsMap': 'Map {map}',
   'hud.missionProgress': 'HP lost {hp}',
+  'hud.missionsBadge': 'Badge {badge}',
+  'hud.missionsFailed': 'failed',
+  'hud.missionsMet': 'met',
   'hud.searchItems': 'search items...',
   'hud.candyKnown': 'This run: {stat} {delta}',
 
   // mission — the floor's own objective (`src/data/missions.ts`)
   'mission.flawless': 'Flawless floor',
+  // mission — the region's node-scoped stack (`docs/region-spec.md` §7.10)
+  'mission.stretch': 'No losses before the leader',
+  'mission.city1': 'Talk to everyone here',
+  'mission.city2': 'Find the hidden item',
+  'mission.city3': 'Beat the gym trainers',
+  'mission.errand': 'Run an errand',
+  'mission.delivery': 'Deliver a parcel',
+  'mission.tour': 'Tour the city',
 
   // route — RouteScene prose
   'route.mapTitle': 'Map {map} · {biome}',

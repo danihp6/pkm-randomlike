@@ -3,6 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BADGE_CAPS, badgeCap } from '../../data/region';
+import { STRETCH_MISSION_ID } from '../../data/missions';
+import { activeMissions } from '../region/missions';
 import { planRegion } from '../region/plan';
 import {
   grantBadge,
@@ -290,6 +292,54 @@ describe('gymReward', () => {
     const trainer = gymReward(gymTrainerFoe(PLAN, run, 'city:2', 0));
     expect(leader.money).toBeGreaterThan(trainer.money);
     expect(leader.item).toEqual({ itemId: 'tm011', count: 1 });
+  });
+});
+
+describe('the stretch completes with the badge', () => {
+  it('records the stretch mission once the leader falls', () => {
+    const run = runOn('city:1');
+    const granted = grantBadge(run, 1);
+    expect(granted.badges).toEqual([1]);
+    expect(granted.completedMissions).toStrictEqual([{ id: STRETCH_MISSION_ID, mapIndex: 1 }]);
+    expect(granted.missionsCompleted).toBe(1);
+    expect(activeMissions(granted, PLAN)[0].status).toBe('met');
+    expect(run.completedMissions).toHaveLength(0);
+    expect(run.missionsCompleted).toBe(0);
+  });
+
+  it('completes nothing twice on a repeated badge', () => {
+    const first = grantBadge(runOn('city:1'), 1);
+    const again = grantBadge(first, 1);
+    expect(again).toBe(first);
+    expect(again.completedMissions).toHaveLength(1);
+    expect(again.missionsCompleted).toBe(1);
+  });
+
+  it('records nothing for a badge it refuses', () => {
+    const route = runOn('route:1');
+    expect(grantBadge(route, 1)).toBe(route);
+    const skipping = runOn('city:2');
+    expect(grantBadge(skipping, 2)).toBe(skipping);
+    expect(skipping.completedMissions).toHaveLength(0);
+    expect(skipping.missionsCompleted).toBe(0);
+  });
+
+  it("closes each stretch on the ladder's own badge", () => {
+    const first = grantBadge(runOn('city:1'), 1);
+    const second = grantBadge(
+      {
+        ...first,
+        nodeKey: 'city:2',
+        visitedNodes: ['city:1', 'city:2'],
+        ...compatForNode(SEED, 'city:2'),
+      },
+      2,
+    );
+    expect(second.completedMissions).toStrictEqual([
+      { id: STRETCH_MISSION_ID, mapIndex: 1 },
+      { id: STRETCH_MISSION_ID, mapIndex: 2 },
+    ]);
+    expect(second.missionsCompleted).toBe(2);
   });
 });
 

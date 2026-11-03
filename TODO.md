@@ -12527,7 +12527,7 @@ data; the services task edits the heal/shop seams; nothing overlaps.
 **What it replaces.** The per-floor mission, the room merchant/PC/heal, the eight-floor finite run and
 the victory screen.
 
-- [ ] **[Task-291] Missions are a stack: one automatic per stretch, one fixed per city, one random
+- [x] **[Task-291] Missions are a stack: one automatic per stretch, one fixed per city, one random
       from an NPC.** The catalogue is redesigned around nodes; a stretch's automatic mission is "lose
       no Pokémon until the leader falls", a city has its fixed one, and an NPC offers a random one.
       **Measured:** `src/data/missions.ts` holds the shipped mission rows; `src/engine/run/missions.ts`
