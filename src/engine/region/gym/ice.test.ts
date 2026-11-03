@@ -229,6 +229,57 @@ describe('planning an ice floor', () => {
     ]);
   });
 
+  it('never cuts a hole on a cell the request keeps clear', () => {
+    const keepClear: readonly Tile[] = [
+      { x: 21, y: 21 },
+      { x: 28, y: 29 },
+      { x: 37, y: 37 },
+    ];
+    for (const seed of ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot']) {
+      const room = build({ ...GYM_REQUEST, keepClear }, seed);
+      for (const cell of keepClear) {
+        expect(iceCellAt(room, cell), `${seed} ${iceCellKey(cell)}`).toBe('ice');
+      }
+      expect(cellsOf(room).filter((cell) => cell.cell === 'hole')).toHaveLength(GYM_REQUEST.holes);
+    }
+  });
+
+  it('replays the floor it always had when no hole landed on a kept cell', () => {
+    const plain = build();
+    const kept = cellsOf(plain).find((cell) => cell.cell === 'ice');
+    if (kept === undefined) throw new Error('the floor has no ice cell');
+    expect(build({ ...GYM_REQUEST, keepClear: [{ x: kept.x, y: kept.y }] })).toEqual(plain);
+  });
+
+  it('moves aside the hole it would have cut on a kept cell', () => {
+    const plain = build();
+    const holes = cellsOf(plain).filter((cell) => cell.cell === 'hole');
+    expect(holes).toHaveLength(GYM_REQUEST.holes);
+    const kept = holes[0];
+    const moved = build({ ...GYM_REQUEST, keepClear: [{ x: kept.x, y: kept.y }] });
+    expect(moved).not.toEqual(plain);
+    expect(iceCellAt(moved, kept)).toBe('ice');
+    expect(cellsOf(moved).filter((cell) => cell.cell === 'hole')).toHaveLength(GYM_REQUEST.holes);
+    expect(moved.landings[iceCellKey(kept)]).toBeUndefined();
+  });
+
+  it('stays all ice when the kept cells leave fewer sites than holes', () => {
+    const room = build({
+      rect: { x: 0, y: 0, width: 5, height: 5 },
+      entry: { x: 2, y: 2 },
+      landingRoom: 0,
+      landingRect: { x: 0, y: 0, width: 3, height: 3 },
+      holes: 3,
+      keepClear: [
+        { x: 1, y: 1 },
+        { x: 1, y: 3 },
+        { x: 3, y: 1 },
+      ],
+    });
+    expect(room.cells.flat().filter((cell) => cell === 'hole')).toEqual([]);
+    expect(room.landings).toEqual({});
+  });
+
   it('stays pure: the request is never mutated', () => {
     const request: IceRoomRequest = {
       rect: { ...GYM_REQUEST.rect },
