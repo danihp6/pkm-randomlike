@@ -25,7 +25,11 @@ alias kept only so old links still boot.
 
 1. The view is data, never the plan: `src/scenes/panels/map.ts` calls `regionMapView(plan, run)` and then `mapPanelView`, and pushes the resulting `MapPanelView`. The card holds no `RegionPlan` and reads no node itself.
 2. The panel paints one SVG for the whole graph, so a viewport change is one re-render; there is no per-node DOM box and no canvas `Graphics` under the flag.
-3. The card sends no command and mounts no handler: the region map is read, not used. `mountMapPanel` keeps the `onCommand` seam for `[Task-283]`, which owns the travel click.
-4. Every plan node is exactly one `[data-hud-region-node="<key>"]` element and every edge one `[data-hud-region-edge="<from>-<to>"]` line; the travel task reads the key off that attribute and changes no view.
+3. A press on a node marker dispatches `{ type: 'node', key }` through `onCommand`;
+   `src/scenes/panels/map.ts` folds it and asks the route to fly there, so the card never
+   reads the plan and never decides a travel.
+4. Every plan node is exactly one `[data-hud-region-node="<key>"]` element and every edge one
+   `[data-hud-region-edge="<from>-<to>"]` line; the card's click reads the key off that
+   attribute and changes no view.
 5. The card prints `badges/badgeTotal` as a bare figure and reads one i18n key (`hud.noMap`); the title is the current node's own name, so no new string is owed to `src/i18n/**`.
 6. The blink is a CSS affordance and is never measured: nothing in a test or a browser pass reads its opacity.

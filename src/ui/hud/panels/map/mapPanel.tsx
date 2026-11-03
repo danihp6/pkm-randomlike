@@ -35,8 +35,8 @@ function nodeFill(node: RegionMarkerView): string {
 /**
  * The region header card: the current settlement's name over the plan's node graph
  * (`docs/region-spec.md` §5). It paints a `MapPanelView` — every settlement from the
- * first frame, the visited ones marked, the current one ringed — and answers no press:
- * the map is not a menu yet, so `onCommand` stays the seam the travel task will use.
+ * first frame, the visited ones marked, the current one ringed — and a press on a node
+ * marker dispatches `{ type: 'node', key }`, the seam the travel task flies through.
  */
 export function MapPanel(props: MapPanelProps): JSX.Element {
   const { view } = props;
@@ -88,6 +88,8 @@ export function MapPanel(props: MapPanelProps): JSX.Element {
                 data-kind={node.kind}
                 data-visited={node.visited ? 'true' : 'false'}
                 data-current={node.current ? 'true' : 'false'}
+                style={{ cursor: 'pointer' }}
+                onClick={() => props.onCommand?.({ type: 'node', key: node.key })}
               >
                 <circle
                   cx={node.cx - grid.dx}

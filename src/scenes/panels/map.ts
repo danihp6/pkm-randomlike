@@ -1,6 +1,7 @@
 import { signal, type Signal } from '@preact/signals';
 import type Phaser from 'phaser';
 import { planRegion, type RegionPlan } from '../../engine/region/plan';
+import { reduceHudCommand, type HudCommand } from '../../ui/hud/commands';
 import { mapPanelView, mountMapPanel, type MapPanelView } from '../../ui/hud/panels/map';
 import { regionMapView } from '../../ui/regionMap';
 import { panelExpanded, panelFrameMount } from './hud';
@@ -109,6 +110,15 @@ function disposeDomPanel(): void {
 }
 
 /**
+ * The card's own command seam: a press on a node marker is a flight, and the scene —
+ * not the card — decides whether the run may make it.
+ */
+function dispatchHudCommand(host: RoutePanelHost, command: HudCommand): void {
+  const intent = reduceHudCommand(command);
+  if (intent !== null && intent.kind === 'node') host.flyToNode(intent.key);
+}
+
+/**
  * The card's build: the plan and the run go into the view, the Preact card in `#hud`
  * paints them. A missing layer mounts nothing, and the module's own calls stay total.
  */
@@ -121,7 +131,12 @@ function buildDom(host: RoutePanelHost): void {
   domHost = host;
   const layer = typeof document === 'undefined' ? null : document.getElementById('hud');
   if (layer !== null)
-    domDispose = mountMapPanel(layer, view, undefined, panelFrameMount(host, 'header'));
+    domDispose = mountMapPanel(
+      layer,
+      view,
+      (command) => dispatchHudCommand(host, command),
+      panelFrameMount(host, 'header'),
+    );
   domScene = scene;
   domScene.events.on(SCENE_PAUSE, pauseDomPanel);
   domScene.events.on(SCENE_RESUME, resumeDomPanel);
