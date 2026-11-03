@@ -122,6 +122,11 @@ export type RunState = Readonly<{
    * there is no per-member XP.
    */
   xp: number;
+  /**
+   * True once the professor's starter has been taken. A prologue run is `false`:
+   * it stands in the laboratory with no party at all (`src/engine/run/prologue.ts`).
+   */
+  starterTaken: boolean;
   party: readonly RunPokemon[];
   box: readonly RunPokemon[];
   /**
@@ -195,7 +200,8 @@ export type CompletedMission = Readonly<{ id: string; mapIndex: number }>;
 
 export type RunInit = Readonly<{
   seed: string;
-  starter: RunPokemon;
+  /** A prologue run passes no `starter`: its party is empty until `takeStarter`. */
+  starter?: RunPokemon;
   mode?: RunMode;
   bag?: readonly BagCounts[];
   /** Starting Poké Dollars; a fresh run has none (`docs/maps-spec.md` §7). */
@@ -260,8 +266,9 @@ export function createRun(init: RunInit): RunState {
     capturedNodes: [],
     towerStreak: 0,
     pokevialCharges: POKEVIAL_MAX_CHARGES,
-    xp: init.xp ?? xpForLevel(init.starter.fighter.level),
-    party: [init.starter],
+    xp: init.xp ?? xpForLevel(init.starter?.fighter.level ?? 1),
+    starterTaken: init.starter !== undefined,
+    party: init.starter === undefined ? [] : [init.starter],
     box: [],
     rip: [],
     caughtSpecies: [],
@@ -521,7 +528,14 @@ export function setParty(run: RunState, party: readonly RunPokemon[]): RunState 
   return { ...run, party: [...party] };
 }
 
+/**
+ * Whether the run still has someone standing: a member with `hp > 0`. An **empty
+ * party is alive while the starter has not been taken** — the prologue stands in the
+ * laboratory with no Pokémon and is not a loss — while an empty party that already
+ * took its starter (a hand-edited save) is still a loss.
+ */
 export function hasLivingParty(run: RunState): boolean {
+  if (run.party.length === 0) return !run.starterTaken;
   return run.party.some((member) => member.fighter.hp > 0);
 }
 

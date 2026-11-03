@@ -1,5 +1,6 @@
 import type { Tile } from '../grid';
 import { exitGate } from '../run/gates';
+import { canLeaveTown } from '../run/prologue';
 import { compatForNode, type RunState } from '../run/state';
 import { planCity } from './city';
 import { nodeOf, type RegionNode, type RegionPlan } from './plan';
@@ -19,7 +20,14 @@ export type TravelMode = 'walk' | 'fly';
 
 /** Why a travel was refused. */
 export type TravelRefusalReason =
-  'same-node' | 'no-such-node' | 'not-neighbour' | 'gate' | 'unvisited' | 'not-settlement';
+  | 'same-node'
+  | 'no-such-node'
+  | 'not-neighbour'
+  | 'gate'
+  | 'unvisited'
+  | 'not-settlement'
+  /** The town's exit before the starter is taken (Task-287). */
+  | 'prologue';
 
 export type TravelRefusal = Readonly<{
   ok: false;
@@ -96,6 +104,9 @@ function resolveTravel(
 
   const from = nodeOf(plan, run.nodeKey);
   if (from === undefined || !from.edges.includes(toKey)) return refusal('not-neighbour');
+  // The town's door is the prologue's, not the guard's: no badge wins it, it opens
+  // once the professor's starter is taken (`docs/region-spec.md` §4, §6).
+  if (from.kind === 'town' && !canLeaveTown(run)) return refusal('prologue');
   // Only a main-chain step forward out of a city is gated; a lateral and a step back
   // answer null, so walking back always works (`docs/region-spec.md` §4).
   const gate = exitGate(plan, run.nodeKey, toKey, run.badges);

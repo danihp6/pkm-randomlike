@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRunPokemon } from '../run/progression';
+import { emptyRun, takeStarter } from '../run/prologue';
 import { compatForNode, createRun, type RunState } from '../run/state';
 import { exitGate } from '../run/gates';
 import { planCity } from './city';
@@ -198,5 +199,54 @@ describe('travel', () => {
     expect(second).toStrictEqual(first);
     expect(travel(PLAN, run, 'town:1', 'walk')).toStrictEqual(travel(PLAN, run, 'town:1', 'walk'));
     expect(canTravel(PLAN, run, 'route:2', 'fly')).toStrictEqual(travel(PLAN, run, 'route:2', 'fly'));
+  });
+});
+
+describe('the town’s door (Task-287)', () => {
+  it('refuses the walk out of the town before the starter is taken', () => {
+    const run = emptyRun(SEED);
+    const walk = travel(PLAN, run, 'route:1', 'walk');
+    expect(walk).toStrictEqual({ ok: false, reason: 'prologue', badge: null });
+    expect(canTravel(PLAN, run, 'route:1', 'walk')).toStrictEqual(walk);
+    // A refusal answers no run: the caller's own object is untouched and unsaved.
+    expect(run.party).toEqual([]);
+    expect(run.starterTaken).toBe(false);
+    expect(run.visitedNodes).toStrictEqual(['town:1']);
+  });
+
+  it('opens the same walk once the starter is taken', () => {
+    const run = takeStarter(emptyRun(SEED), 'bulbasaur', 5);
+    const result = travel(PLAN, run, 'route:1', 'walk');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.key).toBe('route:1');
+    expect(result.run.nodeKey).toBe('route:1');
+    expect(result.spawn).toStrictEqual(generateRoute(PLAN, 'route:1').entry);
+  });
+
+  it('never refuses a walk back into the town for the prologue', () => {
+    // The rule is the town's **own** exit: a door whose origin is not the town never
+    // answers `prologue`, whatever the party looks like.
+    const stranded: RunState = {
+      ...emptyRun(SEED),
+      nodeKey: 'route:1',
+      visitedNodes: ['town:1', 'route:1'],
+      ...compatForNode(SEED, 'route:1'),
+    };
+    const back = travel(PLAN, stranded, 'town:1', 'walk');
+    expect(back.ok).toBe(true);
+    if (!back.ok) return;
+    expect(back.key).toBe('town:1');
+  });
+
+  it('leaves the badge gate as the city’s own refusal', () => {
+    const city = runAt('city:1', ['town:1', 'route:1', 'city:1']);
+    const gate = exitGate(PLAN, 'city:1', 'route:2', city.badges);
+    expect(gate!.open).toBe(false);
+    expect(travel(PLAN, city, 'route:2', 'walk')).toStrictEqual({
+      ok: false,
+      reason: 'gate',
+      badge: gate!.badge,
+    });
   });
 });

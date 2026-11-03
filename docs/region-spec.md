@@ -213,6 +213,21 @@ stays shut until the starter is taken. Services are doors like any other — Bat
 city plan emits a door row for each of them, the Centre's, the gym's and the
 laboratory's included.
 
+The prologue is one run state, not a special mode (`[Task-287]`,
+`src/engine/run/prologue.ts`): `emptyRun(seed)` is an ordinary v28 run with `party: []` and
+`starterTaken: false`, which `hasLivingParty` reads as **alive**, and
+`takeStarter(run, speciesId, STARTER_LEVEL)` — the level is 5 — mints the one member off
+the run seed (`learnsetSeed: run.seed`, id `catch-1`), sets `xp` to that level's curve,
+flips `starterTaken` and adds the starting bag, **10 Poké Balls and 3 Potions**
+(`STARTING_BAG`, `src/data/run.ts`), exactly once: a second press returns the same run. The
+starter is **not a catch** — `stats.catches` and `caughtSpecies` are untouched — and the
+town's door is the pure travel seam's refusal `reason: 'prologue'`, asked only of a walk
+that starts in the town, so a flight and a walk back are never refused by it. A run with no
+party is a legal save exactly while `starterTaken` is false. The room is the `Lab` scene
+(`src/scenes/InteriorScene.ts`), drawn from
+`planInterior(planRegion(run.seed), interiorKey, cityKey)`, and the pick inside it is the
+shipped `04 Starter pick` panel.
+
 ## 7. What a route and a city hold
 
 What a node holds — its NPCs, its points of interest, its grass, its shops and its

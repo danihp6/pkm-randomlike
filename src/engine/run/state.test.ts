@@ -9,7 +9,7 @@ import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/pla
 import { nodeKey, planRegion } from '../region/plan';
 import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
-import { createRunPokemon, runPokemonFromSnapshot } from './progression';
+import { createRunPokemon, runPokemonFromSnapshot, xpForLevel } from './progression';
 import { missionForMap, recordHpLost } from './missions';
 import {
   MAX_PARTY_SIZE,
@@ -530,6 +530,28 @@ describe('pokemon moves', () => {
     expect(hasLivingParty(run)).toBe(true);
     const fainted = { ...starter, fighter: { ...starter.fighter, hp: 0 } };
     expect(hasLivingParty(setParty(run, [fainted]))).toBe(false);
+  });
+});
+
+describe('the alive rule and the prologue (Task-287)', () => {
+  it('reads an empty party as alive only while the starter has not been taken', () => {
+    expect(hasLivingParty(createRun({ seed: 'run-a' }))).toBe(true);
+    const handEdited: RunState = { ...createRun({ seed: 'run-a' }), starterTaken: true };
+    expect(hasLivingParty(handEdited)).toBe(false);
+  });
+
+  it('reads a party by its HP, taken or not', () => {
+    const fainted = { ...starter, fighter: { ...starter.fighter, hp: 0 } };
+    expect(hasLivingParty(createRun({ seed: 'run-a', starter }))).toBe(true);
+    expect(hasLivingParty(createRun({ seed: 'run-a', starter: fainted }))).toBe(false);
+  });
+
+  it('flags the starter a run was created with, and only that one', () => {
+    expect(createRun({ seed: 'run-a', starter }).starterTaken).toBe(true);
+    const prologue = createRun({ seed: 'run-a' });
+    expect(prologue.starterTaken).toBe(false);
+    expect(prologue.party).toEqual([]);
+    expect(prologue.xp).toBe(xpForLevel(1));
   });
 });
 

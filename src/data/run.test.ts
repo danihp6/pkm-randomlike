@@ -98,7 +98,10 @@ describe('starter pool', () => {
     expect(candidates).not.toContain('scyther');
   });
 
-  it('starts the run with ten Poke Balls, everything else earned on the route', () => {
-    expect(STARTING_BAG).toEqual([{ itemId: 'pokeball', count: 10 }]);
+  it('starts the run with ten Poke Balls and three Potions, everything else earned on the route', () => {
+    expect(STARTING_BAG).toEqual([
+      { itemId: 'pokeball', count: 10 },
+      { itemId: 'potion', count: 3 },
+    ]);
   });
 });
