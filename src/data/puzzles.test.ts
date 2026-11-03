@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getItem } from './items';
-import { PUZZLES, PUZZLE_ROOM, puzzleRowsForMap } from './puzzles';
+import { PUZZLES, PUZZLE_ROOM, PUZZLE_STACK, puzzleRowsForMap } from './puzzles';
 
 describe('the puzzle room table', () => {
   it('hangs the leaf from map 2 on, one floor in five', () => {
@@ -51,5 +51,43 @@ describe('the puzzle room table', () => {
     expect(puzzleRowsForMap(4).map((row) => row.id)).toEqual(['three']);
     expect(puzzleRowsForMap(5).map((row) => row.id)).toEqual(['three', 'four']);
     expect(puzzleRowsForMap(99).map((row) => row.id)).toEqual(['three', 'four']);
+  });
+});
+
+describe('the gym puzzle stack', () => {
+  it('is never empty and starts on ice', () => {
+    expect(PUZZLE_STACK.length).toBeGreaterThan(0);
+    expect(PUZZLE_STACK[0].id).toBe('ice');
+  });
+
+  it('names each entry once, never empty', () => {
+    for (const entry of PUZZLE_STACK) expect(entry.id.length, entry.id).toBeGreaterThan(0);
+    const ids = PUZZLE_STACK.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('fills the puzzle room of the gym and nothing else', () => {
+    for (const entry of PUZZLE_STACK) expect(entry.room, entry.id).toBe('puzzle');
+  });
+
+  it('opens on a badge 1-8 and never walks backwards down the table', () => {
+    let previous = 0;
+    for (const entry of PUZZLE_STACK) {
+      expect(Number.isInteger(entry.fromBadge), entry.id).toBe(true);
+      expect(entry.fromBadge, entry.id).toBeGreaterThanOrEqual(1);
+      expect(entry.fromBadge, entry.id).toBeLessThanOrEqual(8);
+      expect(entry.fromBadge, entry.id).toBeGreaterThanOrEqual(previous);
+      previous = entry.fromBadge;
+    }
+  });
+
+  it('holds a positive whole number of holes and drops into one of the four rooms', () => {
+    for (const entry of PUZZLE_STACK) {
+      expect(Number.isInteger(entry.holes), entry.id).toBe(true);
+      expect(entry.holes, entry.id).toBeGreaterThan(0);
+      expect(Number.isInteger(entry.dropsInto), entry.id).toBe(true);
+      expect(entry.dropsInto, entry.id).toBeGreaterThanOrEqual(0);
+      expect(entry.dropsInto, entry.id).toBeLessThanOrEqual(3);
+    }
   });
 });
