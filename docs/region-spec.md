@@ -32,9 +32,13 @@ names it — so it is walked into and back out of, never through. With the later
 region is 28 to 36 nodes.
 
 Sizes and counts are data, in `src/data/region.ts`, and no engine file hard-codes one.
-`RegionSize` is a tile-count pair, `CityTier` is one rung of the city ladder, and
-`cityTierForBadge(badge)` returns the rung a badge's city is built from (`citySize(badge)`
-is that rung's square):
+`REGION_COUNTS` is the region's frozen scale, and `planRegion` reads it: **one town**
+and **eight gym cities** (**nine settlements**), **eight main routes** plus **one or
+two laterals per stretch** (**sixteen to twenty-four routes**), **one Victory Road**,
+**one League** and **one tower** — **twenty chain nodes**, and 28 to 36 nodes with the
+laterals. `RegionSize` is a tile-count pair, `CityTier` is one rung of the city ladder,
+and `cityTierForBadge(badge)` returns the rung a badge's city is built from
+(`citySize(badge)` is that rung's square):
 
 | table | value |
 | --- | --- |

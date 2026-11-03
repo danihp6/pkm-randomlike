@@ -1,4 +1,4 @@
-import { BADGE_CAPS, badgeCap, cityTierForBadge } from '../../data/region';
+import { BADGE_CAPS, badgeCap, cityTierForBadge, REGION_COUNTS } from '../../data/region';
 import { routeName, settlementNames } from './names';
 import { regionStream } from './streams';
 
@@ -52,6 +52,18 @@ export type RegionPlan = Readonly<{
   gymKeys: readonly string[];
 }>;
 
+/** The counts a plan actually holds, read off the plan itself. */
+export type RegionScale = Readonly<{
+  nodes: number;
+  settlements: number;
+  cities: number;
+  gymCities: number;
+  routes: number;
+  mainRoutes: number;
+  laterals: number;
+  victoryRoads: number;
+}>;
+
 const NODE_KINDS: readonly RegionNodeKind[] = [
   'town',
   'city',
@@ -62,17 +74,13 @@ const NODE_KINDS: readonly RegionNodeKind[] = [
   'tower',
 ];
 
-const CITY_COUNT = 8;
-
-/** The town plus the eight cities: the settlements a region names. */
-const SETTLEMENT_COUNT = CITY_COUNT + 1;
-
 /** `town, route 1, city 1, …, route 8, city 8, victory road, league, tower`. */
-const CHAIN_LENGTH = CITY_COUNT * 2 + 4;
-
-/** Every stretch carries one main route plus one or two laterals (`docs/region-spec.md` §1). */
-const LATERALS_MIN = 1;
-const LATERALS_MAX = 2;
+const CHAIN_LENGTH =
+  REGION_COUNTS.cities * 2 +
+  REGION_COUNTS.towns +
+  REGION_COUNTS.victoryRoads +
+  REGION_COUNTS.leagues +
+  REGION_COUNTS.towers;
 
 /** The badge of the Victory Road, the League and the tower: one past the last gym's. */
 const LEAGUE_BADGE = BADGE_CAPS.length + 1;
@@ -132,6 +140,36 @@ export function nodeOf(plan: RegionPlan, key: string): RegionNode | undefined {
   return plan.nodes.find((node) => node.key === key);
 }
 
+/** The plan's own arithmetic, counted. Pure; reads no RNG and no clock. */
+export function regionScale(plan: RegionPlan): RegionScale {
+  let settlements = 0;
+  let cities = 0;
+  let gymCities = 0;
+  let routes = 0;
+  let mainRoutes = 0;
+  let laterals = 0;
+  let victoryRoads = 0;
+  for (const node of plan.nodes) {
+    if (node.kind === 'town' || node.kind === 'city') settlements += 1;
+    if (node.kind === 'city') cities += 1;
+    if (node.gym) gymCities += 1;
+    if (node.kind === 'route' || node.kind === 'lateral') routes += 1;
+    if (node.kind === 'route') mainRoutes += 1;
+    if (node.kind === 'lateral') laterals += 1;
+    if (node.kind === 'victory-road') victoryRoads += 1;
+  }
+  return {
+    nodes: plan.nodes.length,
+    settlements,
+    cities,
+    gymCities,
+    routes,
+    mainRoutes,
+    laterals,
+    victoryRoads,
+  };
+}
+
 /**
  * Rolls the whole region off the run seed. The `plan` stream lays out the stretches,
  * the lateral counts and every position; the `names` stream names the settlements.
@@ -140,11 +178,13 @@ export function nodeOf(plan: RegionPlan, key: string): RegionNode | undefined {
  */
 export function planRegion(seed: string): RegionPlan {
   const planRng = regionStream(seed).split('plan');
-  const settlements = settlementNames(regionStream(seed).split('names'), SETTLEMENT_COUNT);
+  const settlements = settlementNames(regionStream(seed).split('names'), REGION_COUNTS.settlements);
 
   const lateralsPerStretch: number[] = [];
-  for (let stretch = 0; stretch < CITY_COUNT; stretch++) {
-    lateralsPerStretch.push(planRng.int(LATERALS_MIN, LATERALS_MAX));
+  for (let stretch = 0; stretch < REGION_COUNTS.cities; stretch++) {
+    lateralsPerStretch.push(
+      planRng.int(REGION_COUNTS.lateralsPerStretch.min, REGION_COUNTS.lateralsPerStretch.max),
+    );
   }
 
   const chainY: number[] = [];
@@ -185,18 +225,26 @@ export function planRegion(seed: string): RegionPlan {
     chain.push({ ...draft, position: { x: index * CHAIN_X_STEP, y: chainY[index] } });
   };
 
-  addChain(0, chainDraft('town', 1, settlements[0], 1, null, false));
   let chainIndex = 0;
-  for (let stretch = 1; stretch <= CITY_COUNT; stretch++) {
-    addChain(++chainIndex, chainDraft('route', stretch, '', stretch, null, false));
+  for (let town = 1; town <= REGION_COUNTS.towns; town++) {
+    addChain(chainIndex++, chainDraft('town', town, settlements[town - 1], 1, null, false));
+  }
+  for (let stretch = 1; stretch <= REGION_COUNTS.cities; stretch++) {
+    addChain(chainIndex++, chainDraft('route', stretch, '', stretch, null, false));
     addChain(
-      ++chainIndex,
+      chainIndex++,
       chainDraft('city', stretch, settlements[stretch], stretch, cityTierForBadge(stretch).tier, true),
     );
   }
-  addChain(++chainIndex, chainDraft('victory-road', 1, 'Victory Road', LEAGUE_BADGE, null, false));
-  addChain(++chainIndex, chainDraft('league', 1, 'League', LEAGUE_BADGE, null, false));
-  addChain(++chainIndex, chainDraft('tower', 1, 'Tower', LEAGUE_BADGE, null, false));
+  for (let road = 1; road <= REGION_COUNTS.victoryRoads; road++) {
+    addChain(chainIndex++, chainDraft('victory-road', road, 'Victory Road', LEAGUE_BADGE, null, false));
+  }
+  for (let league = 1; league <= REGION_COUNTS.leagues; league++) {
+    addChain(chainIndex++, chainDraft('league', league, 'League', LEAGUE_BADGE, null, false));
+  }
+  for (let tower = 1; tower <= REGION_COUNTS.towers; tower++) {
+    addChain(chainIndex++, chainDraft('tower', tower, 'Tower', LEAGUE_BADGE, null, false));
+  }
 
   for (let at = 0; at < chain.length; at++) {
     if (at > 0) chain[at].edges.push(chain[at - 1].key);

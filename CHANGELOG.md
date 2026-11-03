@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The whole region plays at its real scale.** `[Task-293]`, Batch 123: `REGION_COUNTS` in
+      `src/data/region.ts` is the frozen scale (nine settlements, eight cities, eight main routes,
+      one to two laterals per stretch, one Victory Road, the League and the tower) and
+      `regionScale`/`planRegion` hold it. `docs/region-spec.md` §1. `[unit]` over 64 seeds: nodes
+      29-36, routes 17-24, laterals 9-16, every node reached from the town, every lateral on its
+      parent and off the chain, the League reachable only through the Victory Road, every city
+      sized by its tier, the badge-order walk never needing an unheld badge, and seed `alpha`'s
+      plan digest byte-identical to `main`; 5969 tests green. The item's `[live]` debug-teleport
+      walk is deferred to `[Task-296]`, which ships the teleport it needs.
+
 - [x] **Routes carry the POIs, as zones.** `[Task-289]`, Batch 122: `src/data/pois.ts` folds the
       nine kinds into one `POI_ROWS` table whose rows reference the retired room tables instead of
       copying them, `src/engine/region/pois.ts` resolves a lateral's terminus to exactly one kind

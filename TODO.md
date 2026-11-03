@@ -12560,7 +12560,7 @@ the victory screen.
       *Dependencies:* the city and interior scenes (Batch 121), the badge curve (Batch 119).
       *(Batch 123)*
 
-- [ ] **[Task-293] The whole region plays at its real scale.** The plan's stretch arithmetic, the
+- [x] **[Task-293] The whole region plays at its real scale.** The plan's stretch arithmetic, the
       city tiers' sizes and the route heights are exercised end to end: nine settlements, sixteen to
       twenty-four routes, one Victory Road, the League and the tower, with the badge ladder and every
       guard in order.
