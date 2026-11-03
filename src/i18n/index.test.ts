@@ -76,6 +76,67 @@ describe('the tables', () => {
   });
 });
 
+/**
+ * The node-aware dev group: the labels the region's debug menu draws, pinned with the
+ * English wording and as an exact sorted list so the next task can be written against it
+ * and no later edit can drop one silently. `dev.status.teleported` is **not** here: it
+ * still names the floor, room and tile teleports, and it gains no param; the node's own
+ * line is `dev.status.teleportedTo`.
+ */
+const NODE_GROUP: Readonly<Record<string, string>> = {
+  'dev.badge': 'Badge',
+  'dev.badgePlaceholder': '1',
+  'dev.badgeTitle': 'badge (1-8)',
+  'dev.grantBadge': 'Grant badge',
+  'dev.location.node': '{node}',
+  'dev.markVisited': 'Mark visited',
+  'dev.mode': 'Mode',
+  'dev.modeLeague': 'League',
+  'dev.modeTower': 'Tower',
+  'dev.node': 'Node',
+  'dev.nodePlaceholder': 'node:1',
+  'dev.nodeTitle': 'node key',
+  'dev.setStreak': 'Set streak',
+  'dev.status.badge': 'Badge {badge} granted',
+  'dev.status.streak': 'Streak {streak}',
+  'dev.status.teleportedTo': 'Teleported to {node}',
+  'dev.status.unknownNode': 'unknown node',
+  'dev.status.visited': 'Marked {node} visited',
+  'dev.streak': 'Streak',
+  'dev.streakPlaceholder': '0',
+  'dev.streakTitle': 'tower streak',
+  'dev.teleportNode': 'Teleport',
+};
+
+describe('the node-aware dev group', () => {
+  const keys = Object.keys(NODE_GROUP) as TranslationKey[];
+
+  it('is the exact sorted list the node menu is written against', () => {
+    expect(keys).toHaveLength(22);
+    expect([...keys].sort()).toEqual(keys);
+  });
+
+  it('carries the contract wording in English and a different Spanish line, params included', () => {
+    for (const key of keys) {
+      expect(key in en, `${key} in en`).toBe(true);
+      expect(key in es, `${key} in es`).toBe(true);
+      expect(en[key], key).toBe(NODE_GROUP[key]);
+      expect(en[key].length, key).toBeGreaterThan(0);
+      expect(es[key].length, key).toBeGreaterThan(0);
+      expect(es[key], `${key} is not a copy of the English line`).not.toBe(en[key]);
+      for (const name of translationParams(en[key])) {
+        expect(translationParams(es[key]), `${key}: ${name}`).toContain(name);
+      }
+    }
+  });
+
+  it('leaves the floor, room and tile teleport status paramless', () => {
+    expect(en['dev.status.teleported']).toBe('teleported');
+    expect(translationParams(en['dev.status.teleported'])).toEqual([]);
+    expect(translationParams(es['dev.status.teleported'])).toEqual([]);
+  });
+});
+
 describe('width guards', () => {
   function valuesFor(prefix: string): readonly [TranslationKey, string, string][] {
     return KEYS.filter((key) => key.startsWith(prefix)).map((key) => [key, en[key], es[key]]);
@@ -268,11 +329,11 @@ describe('t / setLocale / getLocale', () => {
 
   it('interpolates a named and a number param', () => {
     expect(t('route.learned', { name: 'Charmander', move: 'Ember' })).toBe('Charmander learned Ember!');
-    expect(t('battle.xp', { xp: 1200 })).toBe('XP 1200');
+    expect(t('hud.missionsBadge', { badge: 3 })).toBe('Badge 3');
   });
 
   it('ignores extra params', () => {
-    expect(t('battle.xp', { xp: 7, spare: 'unused' })).toBe('XP 7');
+    expect(t('hud.missionsBadge', { badge: 7, spare: 'unused' })).toBe('Badge 7');
   });
 
   it('throws when a token has no param, naming the key and the token', () => {
@@ -280,7 +341,9 @@ describe('t / setLocale / getLocale', () => {
     expect(() => t('route.learned', { name: 'Charmander' })).toThrow(
       'i18n: missing param "move" for key "route.learned"',
     );
-    expect(() => t('battle.xp')).toThrow('i18n: missing param "xp" for key "battle.xp"');
+    expect(() => t('hud.missionsBadge')).toThrow(
+      'i18n: missing param "badge" for key "hud.missionsBadge"',
+    );
   });
 
   it('keeps the Spanish wording of the anchors the next tasks build on', () => {
@@ -313,7 +376,6 @@ describe('t / setLocale / getLocale', () => {
 describe('the source table is the record', () => {
   it('keeps the shipped English wording verbatim', () => {
     expect(en['menu.title']).toBe('PokeRandomLike');
-    expect(en['menu.subtitle']).toBe('A Pokémon roguelike');
     expect(en['menu.continue']).toBe('Continue');
     expect(en['menu.new']).toBe('New run');
     expect(en['menu.options']).toBe('Options');
@@ -456,5 +518,43 @@ describe('the call sites', () => {
       }
     }
     expect(mismatches).toEqual([]);
+  });
+});
+
+/**
+ * The pruning sweep's record is `README.md`: the dead keys it deleted and the ones it
+ * kept because a doomed screen still reads them. The two lists are read back here, so
+ * the document cannot drift from the tables.
+ */
+const README = readFileSync(join(SRC_DIR, 'i18n', 'README.md'), 'utf8');
+
+function readmeKeys(heading: string): readonly TranslationKey[] {
+  const start = README.indexOf(heading);
+  expect(start, heading).toBeGreaterThan(-1);
+  const rest = README.slice(start + heading.length);
+  const end = rest.search(/^#{2,3} /m);
+  const body = end < 0 ? rest : rest.slice(0, end);
+  return [...body.matchAll(/`([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9-]+)+)`/g)].map(
+    (match) => match[1] as TranslationKey,
+  );
+}
+
+describe('the README audit', () => {
+  it('lists every pruned key, and neither table carries one', () => {
+    const pruned = readmeKeys('### Pruned');
+    expect(pruned).toHaveLength(18);
+    for (const key of pruned) {
+      expect(key in en, `${key} in en`).toBe(false);
+      expect(key in es, `${key} in es`).toBe(false);
+    }
+  });
+
+  it('lists the keys the doomed screens still read, and keeps every one', () => {
+    const kept = readmeKeys('### Kept for Batch 125');
+    expect(kept).toHaveLength(31);
+    for (const key of kept) {
+      expect(key in en, `${key} in en`).toBe(true);
+      expect(key in es, `${key} in es`).toBe(true);
+    }
   });
 });

@@ -9,16 +9,13 @@ import type { TranslationKey } from './en';
 export const es: Readonly<Record<TranslationKey, string>> = {
   // menu — MainMenuScene
   'menu.title': 'PokeRandomLike',
-  'menu.subtitle': 'Un roguelike Pokémon',
   'menu.continue': 'Continuar',
   'menu.new': 'Nueva partida',
   'menu.options': 'Ajustes',
-  'menu.controls': '{up} {down}  elegir      {confirm}  confirmar      {settings}  ajustes',
 
   // starter — StarterScene
   'starter.title': 'Elige tu inicial',
   'starter.blurb': 'Tu primer Pokémon. Si lo pierdes, se va para siempre.',
-  'starter.blurbCompact': 'Si lo pierdes, se va para siempre.',
   'starter.controls':
     '{left}  {right}  elegir      {confirm}  confirmar      {reroll}  nueva semilla      S  semilla      {settings}  ajustes      {cancel}  atrás',
   'starter.controlsCompact':
@@ -134,12 +131,6 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'settings.language.hint': 'El idioma en el que se dibuja el texto del juego.',
   'settings.keybind.hint': 'Pulsa confirmar para reasignar esta tecla.',
   'settings.pressKey': 'Pulsa una tecla…',
-  'settings.hintPressKey': 'Pulsa cualquier tecla para asignarla, {cancel} para dejar la actual.',
-  'settings.hintRebind': 'Pulsa {confirm} para reasignar esta tecla.',
-  'settings.hintVolume': 'Haz clic o arrastra la barra para ajustar el volumen.',
-  'settings.controls':
-    '{up} {down}  elegir      {left} {right}  cambiar      {confirm}  confirmar      {cancel}  cerrar',
-  'settings.controlsTouch': 'Toca una fila para cambiarla · toca fuera para cerrar',
   'settings.speed.slow': 'Lenta',
   'settings.speed.normal': 'Normal',
   'settings.speed.fast': 'Rápida',
@@ -174,13 +165,9 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'hud.noItems': 'sin objetos',
   'hud.menu': 'MENÚ',
   'hud.learnTitle': 'SUBE DE NIVEL',
-  'hud.evolveTitle': 'EVOLUCIÓN',
   'hud.pressAnyKey': 'pulsa una tecla',
-  'hud.mission': 'Misión: {mission}',
   'hud.missions': 'MISIONES',
   'hud.missionsEmpty': 'Ninguna misión de planta completada aún.',
-  'hud.missionsMap': 'Mapa {map}',
-  'hud.missionProgress': 'PS perdidos {hp}',
   'hud.missionsBadge': 'Medalla {badge}',
   'hud.missionsFailed': 'perdida',
   'hud.missionsMet': 'cumplida',
@@ -201,7 +188,6 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   // route — RouteScene prose
   'route.mapTitle': 'Mapa {map} · {biome}',
   'route.learned': '¡{name} ha aprendido {move}!',
-  'route.evolved': '¡{from} ha evolucionado a {into}!',
   'route.released': 'Nv{level} {name}\nha sido liberado.',
 
   // pause — the route's pause menu
@@ -236,13 +222,10 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   // reward — the mini-boss reward window
   'reward.title': 'RECOMPENSA DE MINIJEFE',
   'reward.choose': 'Elige una.',
-  'reward.controls': 'Arrastra una recompensa a la mochila o al equipo.',
 
   // trade — the trade room's window
   'trade.title': 'INTERCAMBIO',
   'trade.greeting': 'Elige el Pokémon que vas a entregar.',
-  'trade.leave': 'SALIR',
-  'trade.controls': '{confirm}: intercambiar    {cancel}: salir',
   'trade.used': 'El intercambio de esta planta ya está hecho.',
   'trade.refused': 'Necesitas otro Pokémon para intercambiar.',
   'trade.missing': 'Ese Pokémon no está en tu equipo.',
@@ -412,8 +395,6 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'battle.outcomeFainted': '¡El {name} salvaje se ha debilitado!',
   'battle.outcomeRan': '¡Has escapado sin problemas!',
   'battle.outcomeLost': 'Tu último Pokémon se ha debilitado...',
-  'battle.panelName': '{name}  Nv{level}',
-  'battle.xp': 'EXP {xp}',
 
   // the battle field chips — the eight conditions the weather and the terrain chips name
   'battle.info.weather.sun': 'Sol · {turns}',
@@ -1002,6 +983,30 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'dev.location.map': 'mapa {map}',
   'dev.location.room': 'sala {room}/{count}',
   'dev.location.tile': '({x},{y})',
+  'dev.location.node': 'Nodo {node}',
+
+  // dev.node — the node-aware tools: the run's node, its badge stretch, the tower streak and the mode
+  'dev.node': 'Nodo',
+  'dev.nodeTitle': 'clave del nodo',
+  'dev.nodePlaceholder': 'p. ej. city:2',
+  'dev.teleportNode': 'Teletransportar',
+  'dev.markVisited': 'Marcar como visitado',
+  'dev.badge': 'Insignia',
+  'dev.badgeTitle': 'insignia (1-8)',
+  'dev.badgePlaceholder': 'ej. 1',
+  'dev.grantBadge': 'Otorgar insignia',
+  'dev.streak': 'Racha',
+  'dev.streakTitle': 'racha de la torre',
+  'dev.streakPlaceholder': 'ej. 0',
+  'dev.setStreak': 'Fijar racha',
+  'dev.mode': 'Modo',
+  'dev.modeLeague': 'Liga',
+  'dev.modeTower': 'Torre',
+  'dev.status.unknownNode': 'nodo desconocido',
+  'dev.status.teleportedTo': 'Teletransportado a {node}',
+  'dev.status.badge': 'Insignia {badge} otorgada',
+  'dev.status.streak': 'Racha {streak}',
+  'dev.status.visited': '{node} marcado como visitado',
   'dev.stepInfo': '{label} {index}/{total}',
   'dev.routeInfo': '{mode} · {biome} · banda {band}',
   'dev.error.noRoute': 'sin ruta activa',
