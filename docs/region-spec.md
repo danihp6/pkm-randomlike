@@ -336,6 +336,34 @@ A solved gym is one mark in `RunState.pickedItems`, `gymSolvedKey(cityKey)` —
 recomputed deep-equal on a revisit, so the room the player comes back to is the room they left, and
 the flag is a read, never a re-roll.
 
+### 7.5 The city screen
+
+A settlement is a place you **walk**, drawn by `CityScene` (`src/scenes/CityScene.ts`), which
+extends `WorldScene` and is registered by its own `regionSceneKey` (`City`) — no `main.ts` edit.
+`create` plans the region off the run seed, takes the plan of `run.nodeKey` (`planCity`) and draws
+it from the **preloaded** node (`cachedWorld` first, `preload` second), never by rebuilding the
+generator; a node the plan does not hold, or a world the worker cannot resolve, is a logged no-op
+on an empty camera and never a throw.
+
+The player is the player sprite on the plan's own **spawn** — or on the arrival's spawn when the
+scene was entered through a travel — one tile per step on the run's movement keys, with the
+route's walk/run cadence and its walk cycle. The step rule is `isWalkable` plus `cutsCorner`
+(`src/engine/map.ts`): a settlement plans no ledges, so a wall, a roof or water simply refuses the
+step. Two tiles do more than walk: a **door** (`CityBuilding.door`) fades the camera once, records
+the building's `interiorKey` and starts the scene `interiorSceneKey` names (`'centre' → 'Centre'`,
+`'gym' → 'Gym'`, `'lab' → 'Lab'`, `'casino' → 'Casino'`, `'house:<n>' → 'House'`) with
+`{ run, cityKey, interiorKey }`, and comes back in on the door tile while that scene does not exist
+yet; an **exit band** tile asks `travel(plan, run, band.neighbourKey, 'walk')`, commits the run
+(`persistRun`) and re-draws a settlement neighbour in place through `transitionToNode` or hands any
+other kind to the scene it names (`Route` for a route or a lateral). A closed gate refuses the band
+and **nothing moves**; the badge notice is the HUD's (a later pass).
+
+The walker itself is shared, never per scene: `WorldWalker` (`src/scenes/walker.ts`) slides the
+scene's own sprite one cell per step, plays the player's walk cycle and reports each landed step —
+`canWalkStep` is its whole rule — so the gym and the League's interior reuse it. `RouteScene` hands
+a run that starts on (or walks into) a settlement to `CityScene`, and keeps only the kinds whose
+scenes do not exist yet (a route and a lateral stay; `league` is handed to `League`).
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28**, and the step does one thing: it sets the document's

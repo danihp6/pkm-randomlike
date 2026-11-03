@@ -2,7 +2,8 @@
 
 One `Scene` per file, each registered in `src/main.ts`'s `scene` array: `Boot`, `MainMenu`,
 `Starter`, `Route`, `Battle`, `RunOver` and `Settings` — plus `WorldScene`, the abstract base the
-node scenes extend, which is registered nowhere. A scene draws the game and routes input,
+node scenes extend, which is registered nowhere, and the region node scenes, which register
+themselves through `regionScenes.ts`. A scene draws the game and routes input,
 mounts its DOM card and decides nothing. **The DOM HUD is the HUD** (`D49` amended): every scene
 mounts its panel into `#hud` on a clean boot, `?hud=dom` is only an alias, and no scene draws HUD
 chrome in Phaser — `?hudFixture=<slug>` still pins a board frame. Rules come from `src/engine/`, panels and their pure helpers from
@@ -26,15 +27,30 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `RouteScene.ts` — the route itself: it extends `WorldScene` for the tile draw and the
   camera and keeps the player, tall grass, trainers, items, the room panel slot, the
   pointer dispatch, the run's battles and the touch controls. It also hosts the region's
-  travel seam today (`travelToNode`, `onNodeArrived`, the dev-only `debugTravelState`). Its
-  overlay chrome (HUD panels, notices, pause menu) is built by the panel layer below.
+  travel seam today (`travelToNode`, `onNodeArrived`, the dev-only `debugTravelState`) and
+  hands a run that stands on a settlement to the city screen. Its overlay chrome (HUD
+  panels, notices, pause menu) is built by the panel layer below.
+- `CityScene.ts` — a settlement as a place you walk: the street grid, the buildings, their
+  doors, the plaza, the grass corner and the exit bands drawn from the cached/preloaded
+  node, the player spawned on the plan's own spawn and walked with the shared walker, a
+  door starting the interior scene its key names and an exit band travelling through the
+  pure travel rule (a settlement re-drawn in place, any other node handed to the scene its
+  kind names). Its dev-only surface is `__pkmCity` with `debugCityState` and `placePlayer`.
+- `walker.ts` — the one tile walker the node scenes share: `canWalkStep` (walkable and
+  corner-cut aware), the shared `WALK_STEP_MS` / `RUN_STEP_MS` cadence and `WorldWalker`,
+  which slides a scene's own sprite one cell per step on the run's movement keys, plays the
+  player's walk cycle and reports each landed step through its hook. It draws nothing and
+  owns no rule.
+- `walker.test.ts` — the walking seam's headless test: the walker's step rule on a
+  hand-built map, and the city's own pure lookups (`doorAt`, `exitBandAt`,
+  `interiorSceneKey`) over a fixed seed's `city:1`.
 - `regionScenes.ts` — the region node scenes' folder registry: a scene module that exports
   `regionSceneKey` and `regionSceneClass` is collected for `main.ts`'s scene list, so a new
   city, gym or League needs no `main.ts` edit.
 - `regionScenes.test.ts` — the registry's headless rules: a module with both markers is
   collected, one with one or none is skipped, a duplicate key throws naming both paths, and
-  the folder itself holds no region node scene yet — plus the travel seam's single flight,
-  where two `travelToNode` calls started inside the preload window commit exactly one.
+  the folder itself collects the city screen — plus the travel seam's single flight, where
+  two `travelToNode` calls started inside the preload window commit exactly one.
 - `panels/` — the route's overlay panels: one module per panel, discovered by the
   scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
@@ -59,4 +75,5 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 4. Rebindable keys go through `src/input/`; only a scene's own one-off dev key stays on
    Phaser directly.
 5. Read the dex through a typed accessor in `src/data/dex`, never the raw JSON.
-6. The dev-only hooks the debug overlay drives live on the route scene and nowhere else.
+6. The dev-only hooks the debug overlay drives live on the route scene, and the browser
+   pass's own hooks (`__pkmCity`) on the node scene they drive, nowhere else.

@@ -205,7 +205,7 @@ import {
 } from '../engine/tileFrames';
 import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from '../engine/frameMap';
 import { buildNodeMeshes } from '../engine/region/preload';
-import { nodeOf, planRegion } from '../engine/region/plan';
+import { nodeOf, planRegion, type RegionNodeKind } from '../engine/region/plan';
 import { travel, type TravelMode } from '../engine/region/travel';
 import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
@@ -238,6 +238,7 @@ import { loadSettings, saveSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
+import { RUN_STEP_MS, WALK_STEP_MS } from './walker';
 import { collectDescriptors, type RoomRegistry } from './rooms/registry';
 import { openMart } from './rooms/shop';
 import type { RoomDescriptor, RoomHost, RoomPanel, RoomWildBattle } from './rooms/types';
@@ -291,10 +292,6 @@ const BATTLEFIELD_DEPTH = 25;
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
-
-/** How long one tile takes to cross on foot, and with the run key held. */
-const WALK_STEP_MS = 200;
-const RUN_STEP_MS = 110;
 
 /** One frame of the player's own tall-grass rustle, in ms. */
 const GRASS_STEP_MS = 70;
@@ -586,13 +583,30 @@ export class RouteScene extends WorldScene {
   /**
    * The base scene swapped the map and hands the spawn over: place the player there
    * and play the node's own bed — the route's theme on a route and a lateral, the
-   * menu theme in a settlement.
+   * menu theme in a settlement. A settlement the region offers a scene of its own is
+   * handed over instead of drawn here.
    */
   protected override onNodeArrived(key: string, spawn: Tile): void {
-    this.movePlayerTo(spawn.x, spawn.y);
     const node = nodeOf(planRegion(this.run.seed), key);
+    const arrivalScene = node ? this.arrivalSceneFor(node.kind) : null;
+    if (arrivalScene !== null && this.scene.manager.getScene(arrivalScene) !== null) {
+      this.scene.start(arrivalScene, { run: this.run });
+      return;
+    }
+    this.movePlayerTo(spawn.x, spawn.y);
     const route = node?.kind === 'route' || node?.kind === 'lateral';
     playMusic(this, route ? 'route-music' : 'menu-music');
+  }
+
+  /**
+   * The scene a node of `kind` belongs to, or null while this scene keeps it: a
+   * settlement is the city screen's, the League's is its own, and a route, a lateral,
+   * the Victory Road and the tower are drawn here until their scenes exist.
+   */
+  private arrivalSceneFor(kind: RegionNodeKind): string | null {
+    if (kind === 'town' || kind === 'city') return 'City';
+    if (kind === 'league') return 'League';
+    return null;
   }
 
   /**
@@ -1123,6 +1137,14 @@ export class RouteScene extends WorldScene {
     // run was resumed from, never from a list the scene invents (`Task-181`).
     this.endLog = emptyEndLog(loadSave(browserStorage()).history);
     this.persistRun();
+    // A run standing on a settlement is drawn by the node's own scene, never here:
+    // the city scene walks the streets and hands any other node straight back.
+    const arrival = nodeOf(planRegion(this.run.seed), this.run.nodeKey);
+    const arrivalScene = arrival ? this.arrivalSceneFor(arrival.kind) : null;
+    if (arrivalScene !== null && this.scene.manager.getScene(arrivalScene) !== null) {
+      this.scene.start(arrivalScene, { run: this.run });
+      return;
+    }
     // A restart in place (`scene.start('Route', …)`) runs `create` again over the
     // previous room's arrays, whose objects Phaser already destroyed with the
     // scene, so the stale entries must go before the rebuild (#34).
