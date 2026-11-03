@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A gym's puzzle is a stack, and the first one is ice.** `[Task-282]`, Batch 120:
+      `src/engine/region/gym/` gives the gym its gating floor. `ice.ts` lays an ice room
+      (`planIceRoom`) and slides the player across it (`slideStep(room, from, dir)` returns
+      the stop cell, the cells walked and the landing room when the slide falls into a hole),
+      `stack.ts` reads the stack off `PUZZLE_STACK` in `src/data/puzzles.ts` (`gymPuzzlesFor`,
+      `puzzleStackIds`, ice first and a badge's list a prefix of the table) and `plan.ts`
+      builds a gym from the city plan (`planGym`, `gymSolved`, `gymSolvedKey`) with the four
+      rooms the interior generator already lays out, the puzzle on the node's own
+      `content`-family sub-streams so it never consumes the city's draw and a
+      `gym-solved:<cityKey>` mark so a revisit finds the room solved without a re-roll. All
+      criteria `[unit]`: the slide stopping before the first solid tile, a blocked first step
+      and a hole as the very first cell, the ring and the holes' distance from the entry, two
+      calls of one seed deep-equal, the city's content stream unread, the solved flag's key and
+      no re-roll, and a fixed seed's gym pinned (4 rooms, 21×21, four holes, `gym-solved:city:3`).
+      `docs/region-spec.md` §7.4 states the puzzle, and `src/engine/region/README.md` now maps
+      the `gym/` folder.
+
 - [x] **The header card is the region map.** `[Task-281]`, Batch 120: the map card stops
       drawing one floor and draws the whole region the way FRLG's Town Map does.
       `src/ui/regionMap.ts` turns the plan and the run into one view — `regionMapView(plan,

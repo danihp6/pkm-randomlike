@@ -299,6 +299,41 @@ the content pass only names it.
 The counts above are constants of the module until the campaign's full scale moves them into
 `src/data/`; they are the only numbers a rebalance would touch, and no other pass reads them.
 
+### 7.4 The gym's puzzle
+
+A gym's third room is the one that asks something of the player, and what it asks comes off a
+**stack** (`src/data/puzzles.ts`): `PUZZLE_STACK`, one row per puzzle with its `id`, the `room` it
+fills (`'puzzle'`), the first badge whose gym may carry it (`fromBadge`), the `holes` its floor holds
+and the room a wrong step drops the player into (`dropsInto`). The first row is `ice` from badge 1,
+so every gym rolls the ice room today and no engine file names a puzzle's id on its own.
+
+`planGym(plan, cityKey)` (`src/engine/region/gym/plan.ts`) answers the gym a city node holds: its four
+rooms exactly as `planInterior(plan, 'gym', cityKey)` emits them, the stack row the node rolled, the
+floor that row lays on the `puzzle` room and the key a solved room is remembered by. A key that
+names no gym city — `nodeOf` finds none, or the node's `gym` is false — is refused with
+`not a gym: <key>`. The roll is the rows `gymPuzzlesFor(badge)` keeps (`stack.ts`), one draw off the
+gym's own `content` sub-key `<cityKey>/gym` (a stack of one takes no draw); the floor is planned off
+`<cityKey>/gym/puzzle`, so the city's `content` pass takes the same draws before and after a gym is
+planned (`D11`, `D60`).
+
+The **ice room** (`src/engine/region/gym/ice.ts`) is the puzzle room's rect floored in three cells: a
+one-cell `solid` ring on the rect's own edges, `ice` inside it and `holes` holes, each at Manhattan
+distance 2 or more from the room's `doorIn` so the step that enters the room never falls. The holes
+come off one Fisher–Yates shuffle of the eligible cells and nothing else is drawn; a floor too small
+to hold them stays all ice with no landings, so a gym is never left unsolvable. Every hole lands on
+the same cell: the centre of the rect of the room `dropsInto` names.
+
+`slideStep(room, from, dir)` is the room's whole rule. A step crosses `ice` until a `solid` cell or
+the rect's edge stops it on the last cell it entered; a `hole` ends the step where the player stood —
+or on the last `ice` cell — and answers that hole's landing, with the hole itself never in the path.
+The screen moves the player to the landing's room and cell; the floor fights nothing, spawns nothing
+and pays nothing.
+
+A solved gym is one mark in `RunState.pickedItems`, `gymSolvedKey(cityKey)` —
+`gym-solved:<cityKey>`. `gymSolved(run, gym)` only asks whether the run carries it: the plan is
+recomputed deep-equal on a revisit, so the room the player comes back to is the room they left, and
+the flag is a read, never a re-roll.
+
 ## 8. The save's v28 rules and the record
 
 `SAVE_VERSION` steps **27 → 28**, and the step does one thing: it sets the document's

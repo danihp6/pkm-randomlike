@@ -12277,7 +12277,7 @@ minimap and the old puzzle room.
       `src/ui/README.md` and `docs/region-spec.md` §5. *Dependencies:* the region plan (Batch 117).
       *(Batch 120)*
 
-- [ ] **[Task-282] The gym's puzzle is drawn from a stack, and the first one is ice.** A gym gates
+- [x] **[Task-282] The gym's puzzle is drawn from a stack, and the first one is ice.** A gym gates
       its leader behind a puzzle; the stack's first entry is the sliding ice room, where a wrong step
       drops the player into another room and a solved room stays solved.
       **Measured:** `src/data/puzzles.ts` is the old puzzle room's switch sequence (frozen with the

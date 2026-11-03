@@ -8,6 +8,31 @@
  * a row here and never an engine branch.
  */
 
+/**
+ * The **region's** gym puzzle table (`docs/region-spec.md` §7.4): one row per puzzle
+ * a gym may carry, its room and the first badge that may roll it. `PUZZLES` below is
+ * the retired floor room's table, kept until the sweep deletes it.
+ */
+
+/** One entry in a gym's puzzle stack: the puzzle and the room it fills. */
+export type PuzzleStackEntry = Readonly<{
+  /** The entry's only name. The stack's first entry is `'ice'`. */
+  id: string;
+  /** The gym room its floor takes over. A gym's rooms are `entrance`, `trainer`, `puzzle`, `leader`. */
+  room: 'puzzle';
+  /** The first badge whose gym may carry it (1-8). */
+  fromBadge: number;
+  /** How many holes the room's floor holds. */
+  holes: number;
+  /** The gym room a wrong step drops the player into, by index: `0` is `entrance`. */
+  dropsInto: number;
+}>;
+
+/** A gym's puzzles, in stack order: the first eligible entry is the one a gym rolls first. */
+export const PUZZLE_STACK: readonly PuzzleStackEntry[] = [
+  { id: 'ice', room: 'puzzle', fromBadge: 1, holes: 3, dropsInto: 0 },
+];
+
 export type PuzzleRow = Readonly<{
   /** The row's id; also the plan's `rowId`. */
   id: string;
