@@ -284,6 +284,40 @@ export const SPECIAL_TRAINER_ROWS: readonly SpecialTrainerRow[] = [
   { archetypeId: 'secret', chance: 0.2, minMissionsCompleted: 1 },
 ];
 
+/**
+ * A named boss fight's identity: what the HUD prints, and nothing else. A leader
+ * borrows its sprite, AI flags and money base from a `TRAINER_ARCHETYPES` id
+ * (`src/data/gyms.ts`'s `archetypeId`) instead of becoming an archetype itself, so
+ * the route's roll pool stays the ten classes it ships.
+ */
+export type LeaderIdentity = Readonly<{
+  id: string;
+  /** The displayed name, e.g. `Boulder`. */
+  name: string;
+  /** The displayed class, e.g. `Gym Leader`. */
+  className: string;
+}>;
+
+export const LEADER_IDENTITIES: readonly LeaderIdentity[] = [
+  { id: 'leader-1', name: 'Boulder', className: 'Gym Leader' },
+  { id: 'leader-2', name: 'Tide', className: 'Gym Leader' },
+  { id: 'leader-3', name: 'Thorn', className: 'Gym Leader' },
+  { id: 'leader-4', name: 'Volt', className: 'Gym Leader' },
+  { id: 'leader-5', name: 'Dusk', className: 'Gym Leader' },
+  { id: 'leader-6', name: 'Frost', className: 'Gym Leader' },
+  { id: 'leader-7', name: 'Ember', className: 'Gym Leader' },
+  { id: 'leader-8', name: 'Steel', className: 'Gym Leader' },
+];
+
+const LEADER_BY_ID = new Map<string, LeaderIdentity>(
+  LEADER_IDENTITIES.map((leader) => [leader.id, leader]),
+);
+
+/** The identity `id` names, or `undefined`. */
+export function leaderIdentity(id: string): LeaderIdentity | undefined {
+  return LEADER_BY_ID.get(id);
+}
+
 const BY_ID = new Map<string, TrainerArchetype>(
   [...TRAINER_ARCHETYPES, ...SPECIAL_ARCHETYPES].map((archetype) => [archetype.id, archetype]),
 );
