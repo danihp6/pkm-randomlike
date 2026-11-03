@@ -12039,7 +12039,7 @@ are reused inside the new multi-screen route), the hand-placed city content and 
       *Dependencies:* the region contract (Batch 117) and the city/interior tile kinds (Batch 117).
       *(Batch 118)*
 
-- [ ] **[Task-273] A city is a grid with a Centre, a gym and grass.** The city generator lays out a
+- [x] **[Task-273] A city is a grid with a Centre, a gym and grass.** The city generator lays out a
       50×50, 70×70 or 90×90 town of manzanas and plazas with 6/10/14 buildings, a door per building,
       a grass corner and its exits on the borders — and the starting town is the same generator with
       no Centre.

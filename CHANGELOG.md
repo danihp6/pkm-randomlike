@@ -8,6 +8,21 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A city is a grid with a Centre, a gym and grass.** `[Task-273]`, Batch 118:
+      `planCity(plan, key)` lays out a settlement's whole tile map from `src/data/region.ts`: a
+      50×50, 70×70 or 90×90 square for a city (6, 10 or 14 buildings) and 40×40 for the town, as 7-
+      tile blocks between 3-tile streets inside a solid wall ring. The central block is the plaza and
+      its centre tile the spawn; the bottom-right block is the grass corner, its square all
+      `TALL_GRASS`; every other block holds at most one 5×4 building whose front row carries one
+      `DOOR` and whose `interiorKey` reads `centre`, `gym`, `lab`, `casino` or `house:<n>` (`house`
+      for the town's single one). One three-tile exit band per neighbour rides a street and is
+      reachable from the spawn; the town is the same generator with no Centre, gym or casino. All
+      criteria `[unit]`: the three tiers and the town yield their own square and building count, the
+      Centre/gym/laboratory each get a door, every exit band is reachable, the grass corner is 49
+      tiles on every settlement, every cell resolves to a city frame and a fixed seed pins the nine
+      settlement digests. The folder README maps the new files, `docs/region-spec.md` §7.1 documents
+      the plan and the generator reads only `nodeStreams(seed, key).layout`.
+
 - [x] **A route is two to four screens long.** `[Task-272]`, Batch 118:
       `src/engine/region/route/` stitches the shipped carver into one continuous map: `layout.ts`
       draws the screen count (two, three or four) and one opening per neighbour off the node's
