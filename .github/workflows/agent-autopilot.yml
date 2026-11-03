@@ -58,11 +58,14 @@ jobs:
         id: gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARK_TOKEN: ${{ secrets.AUTOPILOT_TOKEN }}
           AUTOPILOT: ${{ vars.AUTOPILOT }}
           # The timed window's range, if one is armed. Both are absolute UTC instants,
           # so the reading never depends on which day a recurring `HH:MM` meant.
           WINDOW_FROM: ${{ vars.AUTOPILOT_FROM }}
           WINDOW_UNTIL: ${{ vars.AUTOPILOT_UNTIL }}
+          PARKED_UNTIL: ${{ vars.PARKED_UNTIL }}
+          PARKED_SHA: ${{ vars.PARKED_SHA }}
           IGNORE_RUN: ${{ inputs.ignore_run }}
           # `0` or unset means no cap: the backlog's own finiteness is then the only
           # thing bounding the loop (30 tasks in whole batches is ~10 cycles, and the
@@ -80,6 +83,19 @@ jobs:
               return 0
             fi
             gh issue create --label agent-blocked --title "$1" --body "$2" || true
+          }
+          put_var() {
+            [ -n "${PARK_TOKEN:-}" ] || return 0
+            GH_TOKEN="$PARK_TOKEN" gh variable set "$1" --body "$2" >/dev/null || true
+          }
+          drop_var() {
+            [ -n "${PARK_TOKEN:-}" ] || return 0
+            GH_TOKEN="$PARK_TOKEN" gh api "repos/$GITHUB_REPOSITORY/actions/variables/$1" >/dev/null 2>&1 || return 0
+            GH_TOKEN="$PARK_TOKEN" gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/variables/$1" >/dev/null 2>&1 || true
+          }
+          unpark() {
+            drop_var PARKED_UNTIL
+            drop_var PARKED_SHA
           }
 
           if [ "${AUTOPILOT:-}" != "on" ]; then
@@ -121,17 +137,42 @@ jobs:
             exit 0
           fi
 
-          today=$(date -u +%Y-%m-%d)
-          started=$(gh run list --workflow=agent-cycle.yml --created "$today" --json databaseId --jq 'length')
-          failed=$(gh run list --workflow=agent-cycle.yml --created "$today" --status failure --json databaseId --jq 'length')
-          echo "cycles today=$started failed=$failed cap=$cap"
+          if [ -n "${PARKED_UNTIL:-}" ] || [ -n "${PARKED_SHA:-}" ]; then
+            now_epoch=$(date -u +%s)
+            parked_epoch=$(date -u -d "${PARKED_UNTIL:-1970-01-01T00:00:00Z}" +%s 2>/dev/null || echo 0)
+            head_sha=$(git rev-parse HEAD)
+            if [ -n "${PARKED_SHA:-}" ] && [ "$PARKED_SHA" != "$head_sha" ]; then
+              echo "Park stamp names ${PARKED_SHA} but main is ${head_sha}: a fix landed, clearing it."
+              unpark
+            elif [ "$parked_epoch" -le "$now_epoch" ]; then
+              echo "Park stamp expired at ${PARKED_UNTIL:-none}: clearing it."
+              unpark
+            else
+              red "Autopilot parked: three red cycles in a row" \
+                  "Three consecutive agent / cycle runs had a red verdict on main \`${PARKED_SHA:-unknown}\`. This lifts by itself when a commit lands on main (push the fix) or at ${PARKED_UNTIL}; \`agent / autopilot window\` with \`hours: 0\` clears the stamp now. A manual \`agent / cycle\` run is never gated by it."
+              go false "Three red cycles in a row; parked until ${PARKED_UNTIL} or until main moves."
+              exit 0
+            fi
+          fi
 
-          if [ "$failed" -ge 3 ]; then
-            red "Autopilot parked: $failed red cycles today" \
-                "The loop stopped itself after $failed failed cycles on $today (limit 3). Look at the last agent / cycle runs, fix or free the task it was on, then re-run this workflow."
-            go false "Too many red cycles today."
+          completed=$(gh run list --workflow=agent-cycle.yml --status completed --limit 3 --json conclusion --jq 'length' || echo 0)
+          reds=$(gh run list --workflow=agent-cycle.yml --status completed --limit 3 --json conclusion \
+            --jq '[.[] | select(.conclusion == "failure")] | length' || echo 0)
+          echo "last $completed completed cycles: $reds red"
+
+          if [ "$completed" -ge 3 ] && [ "$reds" -ge 3 ]; then
+            tomorrow=$(date -u -d tomorrow +%Y-%m-%d)
+            put_var PARKED_UNTIL "${tomorrow}T00:00:00Z"
+            put_var PARKED_SHA "$(git rev-parse HEAD)"
+            red "Autopilot parked: three red cycles in a row" \
+                "The last three agent / cycle runs all had a red verdict, so the loop stopped itself instead of burning the day. It lifts by itself when a commit lands on main (push the fix) or at ${tomorrow}T00:00:00Z, and \`agent / autopilot window\` with \`hours: 0\` clears the stamp immediately."
+            go false "Three red cycles in a row."
             exit 0
           fi
+
+          today=$(date -u +%Y-%m-%d)
+          started=$(gh run list --workflow=agent-cycle.yml --created "$today" --json databaseId --jq 'length')
+          echo "cycles today=$started cap=$cap"
 
           if [ "$cap" -gt 0 ] && [ "$started" -ge "$cap" ]; then
             go false "Daily cap reached ($started cycles today, cap $cap)."
@@ -154,6 +195,8 @@ jobs:
           AUTOPILOT_STATE: ${{ vars.AUTOPILOT }}
           WINDOW_FROM: ${{ vars.AUTOPILOT_FROM }}
           WINDOW_UNTIL: ${{ vars.AUTOPILOT_UNTIL }}
+          PARKED_UNTIL: ${{ vars.PARKED_UNTIL }}
+          PARKED_SHA: ${{ vars.PARKED_SHA }}
         run: |
           # The driver's own summary, so the usual question — "why has nothing run?" —
           # is answered in the runs list instead of in a log.
@@ -168,6 +211,7 @@ jobs:
             echo "| --- | --- |"
             echo "| AUTOPILOT | \`${AUTOPILOT_STATE:-unset}\` |"
             echo "| Window | \`${WINDOW_FROM:-—}\` → \`${WINDOW_UNTIL:-—}\` UTC |"
+            echo "| Park stamp | \`${PARKED_UNTIL:-—}\` on \`${PARKED_SHA:-—}\` |"
             echo "| Now | $(date -u '+%Y-%m-%d %H:%M') UTC |"
             echo "| Open tasks | $(grep -cE '^- \[ \] \*\*\[Task-' TODO.md || true) |"
             echo "| Blocked | $(grep -cE '^- \[!\] \*\*\[Task-' TODO.md || true) |"

@@ -152,6 +152,8 @@ jobs:
           if [ "$stop" = true ]; then
             drop AUTOPILOT_FROM
             drop AUTOPILOT_UNTIL
+            drop PARKED_UNTIL
+            drop PARKED_SHA
           fi
           echo "armed=$armed" >> "$GITHUB_OUTPUT"
 
