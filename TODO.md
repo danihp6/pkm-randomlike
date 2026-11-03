@@ -12667,7 +12667,7 @@ balance spreadsheets of the eight-floor run.
       `src/main.ts`. *Dependencies:* `WorldScene` (Batch 120), the gate (Batch 119), the badge
       (Batch 121). *(Batch 124)*
 
-- [ ] **[Task-297] The campaign's numbers are measured once, end to end.** The badge curve, the wild
+- [x] **[Task-297] The campaign's numbers are measured once, end to end.** The badge curve, the wild
       band, the trainer budget per stretch, the economy per city tier and the tower's ramp are
       checked against the frozen tables, and a fixed-seed regression suite pins the region's plans and
       every rule this phase moved.

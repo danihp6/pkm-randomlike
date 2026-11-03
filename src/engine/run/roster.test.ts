@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { megaFormsForBase } from '../../data/dex/megas';
 import { getSpecies, normalizeId } from '../../data/dex/species';
+import { badgeCap } from '../../data/region';
 import { LEVEL_BANDS } from '../../data/run';
 import { nodeOf, planRegion, type RegionNode } from '../region/plan';
 import { Rng } from '../rng';
-import { trainerLevel } from './levelCurve';
+import { bandForNode, trainerLevel } from './levelCurve';
 import { speciesPool } from './pool';
 import { assignMegaStone, trainerRoster, type RosterEntry } from './roster';
 
@@ -296,5 +297,84 @@ describe('trainerRoster node', () => {
       trainerRoster(LEVEL_BANDS[5], new Rng(7), 't1', { node: league, count: 4 });
     expect(build()).toEqual(build());
     for (const entry of build()) expect(entry.level).toBe(levelForNode(league, 4));
+  });
+});
+
+/**
+ * The roster each of the region's eight stretches posts on its main route, off
+ * `bandForNode` (the previous stretch's cap up to this one's) and the node's own
+ * `cap`/`gymDistance`. One fixed Rng per stretch, so the list is reproducible; a
+ * re-pin recomputes it from the tree and asserts it, never loosens it.
+ *
+ * **Pinned by Task-297.** The stretch's band and cap are the region's, not a map's:
+ * `band.trainerSize` is the party the route posts, and `trainerLevel(cap, 1, size)`
+ * is the level every member carries — one level under the cap on the on-ramp bands,
+ * further under it where the party is bigger.
+ */
+describe('trainerRoster region stretches (fixed seed)', () => {
+  const plan = planRegion('curve-a');
+  const routeOf = (badge: number): RegionNode => nodeOf(plan, `route:${badge}`) as RegionNode;
+
+  const PINNED: readonly { badge: number; band: string; party: number; roster: string }[] = [
+    { badge: 1, band: 'early', party: 1, roster: 'flabebe@8' },
+    { badge: 2, band: 'low', party: 1, roster: 'deerlingautumn@15' },
+    { badge: 3, band: 'mid', party: 2, roster: 'mawile@22 sableye@22' },
+    { badge: 4, band: 'high', party: 2, roster: 'mimikyu@29 vileplume@29' },
+    { badge: 5, band: 'late', party: 3, roster: 'arctozolt@36 minioryellow@36 scyther@36' },
+    {
+      badge: 6,
+      band: 'end',
+      party: 4,
+      roster: 'kyuremwhite@42 glastrier@42 kommoototem@42 greninjabond@42',
+    },
+    { badge: 7, band: 'end', party: 4, roster: 'palkia@48 azelf@48 arceusfairy@48 tapukoko@48' },
+    {
+      badge: 8,
+      band: 'end',
+      party: 4,
+      roster: 'genesectdouse@54 floetteeternal@54 metagross@54 pheromosa@54',
+    },
+  ];
+
+  /** `species@level` per member, the one string a re-pin moves. */
+  const digest = (roster: readonly RosterEntry[]): string =>
+    roster.map((entry) => `${entry.speciesId}@${entry.level}`).join(' ');
+
+  it('pins the party and the roster each stretch posts on its main route', () => {
+    for (const row of PINNED) {
+      const route = routeOf(row.badge);
+      const band = bandForNode(route);
+      expect(band.id, `route:${row.badge} band`).toBe(row.band);
+      expect(band.trainerSize, `route:${row.badge} party`).toBe(row.party);
+      const roster = trainerRoster(band, new Rng(290 + row.badge), 'route', { node: route });
+      expect(roster, `route:${row.badge}`).toHaveLength(row.party);
+      expect(digest(roster), `route:${row.badge}`).toBe(row.roster);
+      expect(roster.map((entry) => entry.id)).toEqual(
+        Array.from({ length: row.party }, (_, index) => `route:${index}`),
+      );
+    }
+  });
+
+  it('posts every member at the node’s own trainer level, off its cap and distance', () => {
+    for (const row of PINNED) {
+      const route = routeOf(row.badge);
+      const roster = trainerRoster(bandForNode(route), new Rng(290 + row.badge), 'route', {
+        node: route,
+      });
+      const level = trainerLevel(route.cap, route.gymDistance, roster.length as 1 | 2 | 3);
+      for (const entry of roster) expect(entry.level, `route:${row.badge} ${entry.id}`).toBe(level);
+      expect(level, `route:${row.badge} one under its cap`).toBeLessThan(route.cap);
+      expect(route.gymDistance, `route:${row.badge} distance`).toBe(1);
+      expect(route.cap, `route:${row.badge} cap`).toBe(badgeCap(row.badge));
+    }
+  });
+
+  it('replays every stretch roster on a second build', () => {
+    for (const row of PINNED) {
+      const route = routeOf(row.badge);
+      const build = (): readonly RosterEntry[] =>
+        trainerRoster(bandForNode(route), new Rng(290 + row.badge), 'route', { node: route });
+      expect(build(), `route:${row.badge}`).toEqual(build());
+    }
   });
 });

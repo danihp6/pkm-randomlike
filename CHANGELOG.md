@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The campaign's numbers are measured once, end to end.** `[Task-297]`, Batch 124: the region
+      gets one measured balance sheet. `docs/balance/campaign.md` walks the eight badge stretches
+      end to end (cap, distance, party size, wild band, money and TM per stretch, each column
+      naming the table it is read from and the test that pins it), with the trainer-budget check,
+      the tower's monotone ramp and the economy per city tier carried as references into the two
+      existing sheets; `docs/balance/route-curve.md` and `docs/balance/economy.md` stop describing
+      an eight-floor campaign. The seeds those sheets rest on are re-pinned in
+      `src/engine/run/curve.test.ts`, `src/engine/run/roster.test.ts` and
+      `src/data/wildLevels.test.ts`. No behaviour changes: numbers and their pins only.
+      `[unit]` 7 criteria (a sampled cell per block traced to source: cap badge 4 = 30, fill
+      stretch 6 = 1.06, rung XP 17 910), 6096 tests green.
+
 - [x] **Services live in the Centre and nowhere else.** `[Task-292]`, Batch 123: the Pokémon
       Centre's three services are one interior scene and nowhere else. `src/scenes/services.ts`
       mounts the counter, the PC and the merchant only in a `Centre` (the city scene's door hands

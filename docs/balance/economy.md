@@ -1,16 +1,20 @@
 # Economy
 
-Phase 6 notes. **Prices live in `src/data/items.ts`** (`ItemDef.price`); this sheet
-records the reasoning, not the numbers. The Mart's own tables live in
-`src/data/shop.ts` and its model in `src/ui/shop.ts`.
+**Prices live in `src/data/items.ts`** (`ItemDef.price`); this sheet records the
+reasoning, not the numbers. The Mart's own tables live in `src/data/shop.ts` and its
+model in `src/ui/shop.ts`. The campaign the money is spent across is one **region**
+(`docs/region-spec.md` §1): eight badge **stretches**, each a long main route and its
+optional laterals, then the Victory Road, the League and the tower.
+`docs/balance/campaign.md` is the same walk in one page; this sheet is the catalogue,
+the shelves and the awards in depth.
 
-**Re-measured (Task-09).** Every table below was re-walked against the shipped
-tree: the prices are read from `src/data/items.ts`, the shelves from
-`buildShop` (`src/ui/shop.ts`) at the fixed seed `src/ui/shop.test.ts` freezes
+**Re-measured (Task-09).** Every table below was re-walked against the shipped tree:
+the prices are read from `src/data/items.ts`, the shelves from `buildShop`
+(`src/ui/shop.ts`) at the fixed seed `src/ui/shop.test.ts` freezes
 (`task-54:<band>`), the pools from `src/data/loot.ts` and the award from
 `src/data/trainers.ts`. The walk **moved no number**: the pack stays value-neutral,
 every shelf row stays at its catalogue price, no cure and no X-item is on the buy
-list, and a floor's whole trainer money stays under two of that floor's own Mart
+list, and a stretch's whole trainer money stays under two of that stretch's own Mart
 rows. What it did change is this sheet: the tier notes below had drifted from the
 catalogue (the type items are 18, not 17, and the 4000-class held set reaches the
 shelf at `mid`, not at `late`), and the trainer award was not recorded at all.
@@ -24,8 +28,8 @@ shelf at `mid`, not at `late`), and the trainer award was not recorded at all.
   the economy must be able to replace a fallen Pokémon).
 - **Selling** returns half the buy price, rounded down (`sellPrice`), except a
   **valuable**, which is pure treasure and sells for its whole listed price.
-- **Money comes only from defeating trainers** (`docs/maps-spec.md` §7): a fixed
-  base plus a jitter per archetype, scaled by the map's band. A fresh run starts
+- **Money comes only from defeating trainers** (`docs/region-spec.md` §7): a fixed
+  base plus a jitter per archetype, scaled by the stretch's band. A fresh run starts
   with none.
 
 ## Prices
@@ -68,7 +72,7 @@ them: a competitive row is `200` when the dex calls it a berry **and the battle
 spends it**, `1000` when it is a berry-class no-op the engine never spends, and
 `4000` otherwise, while a Memory or a Drive is its own ground-only `3000` row.
 
-**The held tier's 1000 floor (Task-178).** A `kind: 'held'` item the engine never
+**The held tier's 1000 minimum (Task-178).** A `kind: 'held'` item the engine never
 consumes is a permanent held slot: it is not a berry in the economy's eyes, so it
 costs the held tier and never the berry tier. The rule is *no for-sale held item
 without `consumed: true` is priced under 1000* (an unsold Mega Stone keeps its `0`
@@ -121,7 +125,7 @@ prices above:
   steep enough to open a buy-and-sell loop.
 - **The potion rung** is the band's heal at the catalogue price, one rung per band
   or two: Potion (300) at early, Super Potion (700) at low/mid, Hyper Potion (1200)
-  at high/late, Full Restore (3000) at end. A rung that beats a floor's damage is
+  at high/late, Full Restore (3000) at end. A rung that beats a stretch's damage is
   what makes money worth holding.
 - **The two held rows** take the **catalogue price with no per-band markup**, so
   the tiers are the catalogue's own: the cheap berries (100–200) at early and low,
@@ -129,10 +133,11 @@ prices above:
   from `mid` on — Wide Lens, Muscle Band, Wise Glasses, Normal Gem, Iron Ball and
   Lagging Tail at `mid`, Expert Belt, Scope Lens and Razor Claw at `high` — while
   the **premium** 4000-class pieces (Leftovers, the Choice set, Life Orb, the
-  Sashes, the Orbs, Binding Band) wait for `late`, and the 18 resist berries arrive with them. A
-  `mid` floor's whole money (≈ 2 500) buys the pack and the rung rather than one of
-  its 4000-class rows; that is accepted, because the row is a two-of-fourteen draw
-  and the premium rows still wait for `late`.
+  Sashes, the Orbs, Binding Band) wait for `late`, and the 18 resist berries arrive
+  with them. A `mid` stretch's whole purse (2 963.75, `campaign.md` §4) buys neither
+  its pack (3 000 — thirty-six short) nor one of its 4000-class rows, which is
+  accepted: the row is a two-of-fourteen draw and the premium rows still wait for
+  `late`.
 - **No cure and no X-item is sold.** Every `kind: 'status'` item (Antidote,
   Paralyze Heal, Full Heal, …) and every `kind: 'boost'` item (X Attack, X Defense,
   X Speed) has left the buy list, so a cure or a booster reaches a run from the
@@ -141,32 +146,34 @@ prices above:
   `sellPrice`.
 - **The machine** (Task-22) is appended last: the band's one TM off `SHOP_TM` at the
   catalogue 3000, undiscounted, because a slot priced below `sellPrice` would be a
-  money loop. It is the reason the counter shows five rows and not four.
+  money loop. It is the reason the counter shows five rows and not four, and every
+  band's eight ids are disjoint from every other band's
+  (`src/engine/run/curve.test.ts`).
 - **The G-Max Stone row** (`D44`) comes after the machine, and only at `late` and
   `end` (`SHOP_GMAX_STONE_BANDS`): one of the 34 stones at the catalogue 8 000,
   `count: 1`, drawn from `GMAX_STONE_IDS` on the same seeded `Rng`. It is a real
-  sink — a `late` floor's whole money (≈ 5 148) does not buy it and an `end` floor's
-  (≈ 8 747 … 10 333) buys one — so a stone is saved for across floors. It is never a
-  duplicate of a row already on the shelf: the held pool holds no stone, exactly as
-  it holds no Mega Stone. `sellPrice` halves it to 4 000, so buying and reselling a
-  stone loses 4 000 and opens no money loop.
-- The stock is rolled **once per map** from the run seed
+  sink — a `late` stretch's whole purse (6 361.50) does not reach it and an `end`
+  stretch's (8 915 … 10 661.25, `campaign.md` §4) buys one — so a stone is saved for
+  across stretches. It is never a duplicate of a row already on the shelf: the held
+  pool holds no stone, exactly as it holds no Mega Stone. `sellPrice` halves it to
+  4 000, so buying and reselling a stone loses 4 000 and opens no money loop.
+- The stock is rolled **once per stretch's route** from the run seed
   (`${seed}:shop:${mapIndex}`) and never saved, so a Mart always reopens the same.
-- **A bought row leaves the shelf for the rest of the floor** (`Task-178`). A
+- **A bought row leaves the shelf for the rest of the stretch** (`Task-178`). A
   successful `buyItem` marks `shop-<mapIndex>-<itemId>` in the run's
   `pickedItems` (already saved, already cleared by `advanceMap`), and `buyRows`
   drops every marked row before it builds the list — so the 10× pack and the
   potion rung retire as completely as a held row, the mark names one row of one
-  floor, and the next floor's Mart stocks its own full shelf again. A refused
+  stretch, and the next stretch's Mart stocks its own full shelf again. A refused
   purchase (no money) marks nothing. Selling marks nothing: a marked item still
   sells from the bag, and a sale never restocks a row. No new run field and no
-  save-version step — the per-floor bookkeeping the route already keeps carries
+  save-version step — the per-stretch bookkeeping the route already keeps carries
   it.
 
 ## The trainer award
 
 A beaten trainer drops `money.base + rng.int(0, money.jitter)`, multiplied by the
-map's band scale (`TRAINER_MONEY_BAND_SCALE`). The ten archetypes are unchanged by
+stretch's band scale (`TRAINER_MONEY_BAND_SCALE`). The ten archetypes are unchanged by
 this pass:
 
 | Archetype                 | Award (base + jitter) |
@@ -184,29 +191,39 @@ The band scale rounds each archetype's base and jitter **before** the roll
 (`trainerMoney`, `src/engine/run/reward.ts`), so one drop is
 `round(base × scale) + rng.int(0, round(jitter × scale))` — an integer, and the
 mean over the ten archetypes is `round(base × scale) + round(jitter × scale) / 2`
-averaged over them. Read against the floor's own density (`T̄(m)` from
+averaged over them. Read against the stretch's own density (`T̄(s)` from
 `route-curve.md`) and its own Mart:
 
-| Band (map) | Scale | Mean award per trainer | One drop ranges | Floor total `T̄(m) × award` | Pack + rung | Floor / (pack + rung) |
-| ---------- | ----: | ---------------------: | --------------: | -------------------------: | ----------: | --------------------: |
-| early (1)  |     1 |                 119.25 |       50 … 280  |                       ≈ 676 |   1000 + 300 |                  0.52 |
-| low (2)    |  1.25 |                 149.35 |       63 … 350  |                       ≈ 945 |   1000 + 700 |                  0.56 |
-| mid (3)    |  1.75 |                 208.95 |       88 … 490  |                      ≈ 2507 |   3000 + 700 |                  0.68 |
-| high (4)   |   2.5 |                 298.25 |      125 … 700  |                      ≈ 3877 |  3000 + 1200 |                  0.92 |
-| late (5)   |   3.5 |                 417.50 |      175 … 980  |                      ≈ 5148 |  6000 + 1200 |                  0.71 |
-| end (6)    |     5 |                 596.25 |     250 … 1400  |                      ≈ 8747 |  6000 + 3000 |                  0.97 |
-| end (7)    |     5 |                 596.25 |     250 … 1400  |                      ≈ 8747 |  6000 + 3000 |                  0.97 |
-| end (8)    |     5 |                 596.25 |     250 … 1400  |                     ≈ 10333 |  6000 + 3000 |                  1.15 |
+| Band (stretches) | Scale | Mean award per trainer | One drop ranges | Stretch total `T̄(s) × award` | Pack + rung | Stretch ÷ (pack + rung) |
+| ---------------- | ----: | ---------------------: | --------------: | ---------------------------: | ----------: | ----------------------: |
+| early (1)        |     1 |                 119.25 |       50 … 280  |                       357.75 |  1000 + 300 |                    0.28 |
+| low (2)          |  1.25 |                 149.35 |       63 … 350  |                       497.83 |  1000 + 700 |                    0.29 |
+| mid (3)          |  1.75 |                 208.95 |       88 … 490  |                     1 044.75 |  3000 + 700 |                    0.28 |
+| high (4)         |   2.5 |                 298.25 |      125 … 700  |                     1 491.25 | 3000 + 1200 |                    0.36 |
+| late (5)         |   3.5 |                 417.50 |      175 … 980  |                     2 087.50 | 6000 + 1200 |                    0.29 |
+| end (6)          |     5 |                 596.25 |     250 … 1400  |                     3 180.00 | 6000 + 3000 |                    0.35 |
+| end (7)          |     5 |                 596.25 |     250 … 1400  |                     3 180.00 | 6000 + 3000 |                    0.35 |
+| end (8)          |     5 |                 596.25 |     250 … 1400  |                     2 981.25 | 6000 + 3000 |                    0.33 |
 
 A **boss** pays `BOSS_MONEY_MULTIPLIER` (3) times the same roll, so the finale is
-the floor's single richest drop; a mini-boss pays the ordinary award.
+the stretch's single richest drop; a mini-boss pays the ordinary award. Both are
+hand-placed fights the scene injects on the route, and neither is in the column
+above.
 
-The floor total is the **whole** floor's money — every trainer on it beaten, at the
-mean archetype, with `T̄(m)` the same three-seed average `route-curve.md` records,
-so a density change re-solves both sheets. Re-measured, the ratio stays **under
-two** on every floor (0.52 … 1.15): a floor's money buys its pack *or* its rung,
-rarely both, which is the tight Isaac-style trade-off `docs/maps-spec.md` §7 asks
-for. No archetype award and no band scale moved in this pass.
+The stretch total is the **regular trainers'** money — every trainer on the route
+beaten, at the mean archetype, with `T̄(s)` the same three-seed average
+`route-curve.md` records, so a density change re-solves both sheets. The finale and
+the badge sit beside it and not in it: `campaign.md` §4 adds the boss, the mini-boss
+and the leader's purse to this column, and **that** is the money a stretch actually
+holds. Re-measured, this column is **under 0.4 of a pack and a rung on every
+stretch** (0.28 … 0.36): seven of the eight stretches' regular trainers pay their own
+potion rung (stretch 8 falls 18.75 short of a Full Restore) and every stretch pays at
+least a berry row, while the pack is where the finale's surplus goes. The whole purse buys
+pack and rung together on five of the eight stretches (1, 2, 4, 6 and 8), which is
+the tight Isaac-style trade-off `docs/region-spec.md` §7 asks for. No archetype
+award and no band scale moved in this pass; the two columns had drifted from
+`route-curve.md`'s counts (a stretch's total read roughly twice the walk's) and are
+corrected here.
 
 ## Between-route rewards
 
@@ -233,7 +250,7 @@ The pools, re-measured (the hidden and item chances are pinned by
 | end   |           0.45 |         0.75 |   57 | 1 ball, 2 heal, 1 cure, 1 X-item, 3 valuable, 2 TM, 41 held, 6 G-Max Stones (82 %) |
 
 The hidden chance rises with the band and never falls (0.35 → 0.45), the two
-on-ramp floors keep the thinned `itemChance` (0.5 and 0.6) the population pass
+on-ramp stretches keep the thinned `itemChance` (0.5 and 0.6) the population pass
 shipped (`O-M5`), and the held share climbs from **none** on the two on-ramp bands
 to 72–82 % from `mid` on: the Plates are `late`/`end` treasure only, every
 unmodelled id reaches a run from the ground alone and never from the Mart (`D16`),
@@ -244,7 +261,7 @@ reachable from the Mart's one-stone row at those two bands and nowhere else.
 
 ## The casino's spin
 
-The slot machine (`docs/maps-spec.md` §7, `src/data/casino.ts`, `src/ui/casino.ts`)
+The slot machine (`docs/region-spec.md` §7, `src/data/casino.ts`, `src/ui/casino.ts`)
 takes one price per band and pays a prize on 85 % of the spins; the other 15 % are
 the grunt fight (`CASINO.battleChance`). One row of every band is the **grouped
 equipable**, weight 1, whose id is drawn from the band's own `SHOP_ROTATION` shelf
@@ -272,4 +289,17 @@ The two bands that sat over break-even with the grouped row folded in — `low` 
 `mid` — ship **diluted**: their heal and ball rungs carry four and three weights (13
 and 9 total), so the machine stays a currency sink. `early`, `high`, `late` and `end`
 keep the weights the row measured first. The two on-ramp bands draw `mid`'s shelf
-because their own shelf is berry-only, which the recovery column already counts.
+because their own shelf is berry-only, which the recovery column already counts. The
+row counts and totals are `src/data/casino.test.ts`'s; this pass re-walked the prices,
+the shelves, the award and the loot pools, not the machine.
+
+**Re-walked on the region's ladder (Task-297).** This sheet was re-read end to end
+with the same walk `route-curve.md` and `campaign.md` use (`curve-a`, `curve-b`,
+`curve-c` in `src/engine/run/curve.test.ts`): the prices, the six shelf rows, the
+frozen counter of `task-54:<band>`, the ten archetypes' awards, the loot pools and the
+casino's own tables are the shipped tree's. The stretch map was re-worded to the
+region's — a stretch, not a per-map row — and the trainer-award table's `T̄(s)`, total and
+ratio columns were **corrected** to the walk's counts — they had drifted from
+`route-curve.md`'s own `T̄` and read roughly twice the money the route pays. **Nothing
+this pass measured moved in `src/data/`**: no price, no shelf, no award, no scale and
+no pool changed.
