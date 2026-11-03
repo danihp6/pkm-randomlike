@@ -90,7 +90,7 @@ same run; there is a regression test whenever the RNG or a generator changes.
 
 A **regular trainer's** level is no longer a value the seed fixes: it is a
 function of the live squad level and the floor's cap (`trainerLevel`,
-`src/data/trainerLevels.ts`, `docs/maps-spec.md` §5). The seed still fixes the
+`src/data/trainerLevels.ts`). The seed still fixes the
 **draws** — the species picks, the variant rolls and the Mega Stone — so a
 replay from the same save rebuilds the same team at the levels the squad has at
 that moment. Two consequences are deliberate: replaying at a higher squad level
@@ -190,8 +190,8 @@ A wild encounter's **level** leaves the list of things randomness touches: it is
 `clamp(floor(squadLevel(run) × fraction), 1, cap)`, with `fraction ∈ [0.60, 0.75)`
 drawn on the encounter stream (`WILD_LEVEL_FRACTION`, `wildLevel`,
 `src/data/wildLevels.ts`) and `cap` the floor's `maxLevel`, so the seed fixes the
-draw while the level follows the live squad (`docs/routes-spec.md` §3/§5,
-`docs/maps-spec.md` §5). The **species** and **variant** draws stay rolled, and the
+draw while the level follows the live squad (`docs/routes-spec.md` §3/§5).
+The **species** and **variant** draws stay rolled, and the
 wild table's species window follows the band the squad's own level falls in
 (`bandForLevel(squadLevel(run))`), not the floor's.
 
@@ -432,7 +432,7 @@ trunks. The wall's ground is transparent where the tree meets the floor, and the
 scene lays a floor frame under every cell (`resolveGroundFrame`), so the tree sits
 on the field's plain floor frame instead of a baked flat colour. A route is
 larger than the camera view (its size now comes from the map plan, 30x30 up to
-48x48 tiles, `docs/maps-spec.md` §1), so the camera follows the player and
+48x48 tiles), so the camera follows the player and
 scrolls; the scene renders a tree/rock margin past the playable edge (`padMap`,
 three tiles on the sides and four top/bottom with the route's own border) and
 bounds the camera to it, so the route border never shows the empty background. The map is drawn in
@@ -503,7 +503,7 @@ The run's chain is now a chain of **maps**, and a map is a **graph of routes**
 (rooms) laid out on a coarse grid — Binding of Isaac's floors with rooms. A map
 owns the three things that used to be rolled per route: the **biome**, the
 **level range** and the route **sizes**. So `biomeForRoute` and a per-route band
-are replaced by one `MapPlan` per map index (`docs/maps-spec.md`). Consequence:
+are replaced by one `MapPlan` per map index. Consequence:
 the same biome repeats across a map's rooms, which reads as one continuous floor,
 and the run advances map to map. Refines D8 (the cadence now sits on top of the
 maps) and D26 (the layout style is per map, not per route).
@@ -546,8 +546,7 @@ A room with a single `link` is the new **`dead-end`** shape (a leaf that holds t
 usual trainers, items and grass). The shape follows from the room's opening set:
 `dead-end` (1), `corridor` (2 opposite, the "pasillo", no branches), `bend` (2
 adjacent), `tee` (3), `cross` (4) and the older branchy `straight`. The plan fixes
-the openings; the route builder no longer rolls a shape on its own
-(`docs/maps-spec.md` §2–§3).
+the openings; the route builder no longer rolls a shape on its own.
 
 ### D30 — addendum: a floor tags each regular room's population role
 
@@ -563,7 +562,7 @@ one** (`TRAINERS_PER_ROOM`, `src/data/population.ts`), so the room's size no lon
 changes the count. The role draws are **appended after the last special draw** of
 the `map` stream, so a fixed seed's floor — biome, count, topology, ids, sizes and
 specials — does not move; the pass reads `MapRoom.role` / `RoomView.role` and never
-re-derives it (`docs/maps-spec.md` §2–§3, `docs/route-generator.md` §3.4).
+re-derives it (`docs/route-generator.md` §3.4).
 
 ## D31 — The map boss seals the exit and opens the portal *(decided)*
 
@@ -583,8 +582,7 @@ position from its `size` and shape with its openings on the matching walls, the
 current room highlighted, the boss room marked and the portal flagged. Rooms that
 have not been **discovered** (entered) yet — and the links to them — stay hidden,
 so the floor reveals itself as the run advances. The pure layout and the reveal
-filter live in `src/ui/mapView.ts`; `RouteScene` only draws it
-(`docs/maps-spec.md` §7).
+filter live in `src/ui/mapView.ts`; `RouteScene` only draws it.
 
 ## D33 — Special rooms and the Poké Dollar economy *(decided)*
 
@@ -593,7 +591,7 @@ extra `dead-end` leaves that carry **only their own content** — a guaranteed
 **shop** near the entry (on every floor, map 1 included), a **mini-boss** room (medium chance) whose strong
 trainer offers a **choice of items**, and a **mega-stone** room (low chance) that
 hands out a random **Mega Stone**. They count outside K and are discovered on
-entry like any room (`docs/maps-spec.md` §7).
+entry like any room.
 
 Money is **Poké Dollars**, earned **only** by defeating trainers — a **fixed base
 per trainer plus a random jitter** (data, per archetype/band) — and spent in the
@@ -1063,14 +1061,13 @@ still draws off `${run.seed}:mega:${mapIndex}` and the shop's shelves still off
 `${run.seed}:shop:${run.mapIndex}` through `buildShop`.
 
 **A new room is a new file** in `src/scenes/rooms/` exporting `descriptor`, plus its own
-`MapRoomSpecial` value in `src/engine/maps/plan.ts` and its `docs/maps-spec.md` §7 row — the
-scene and the registry need no edit. Hooks a later room needs and does not have yet (starting a
+`MapRoomSpecial` value in `src/engine/maps/plan.ts` — the scene and the registry need no edit. Hooks a later room needs and does not have yet (starting a
 battle, adding an item, spending money, hooking `advanceMap`) are `RouteScene` edits that task
 must claim.
 
 ## D48 — An NPC member edit is one pure run transaction, and its two member words are optional *(decided)*
 
-The five member-edit NPCs and the sacrifice (`docs/maps-spec.md` §7) all live in **one** engine
+The five member-edit NPCs and the sacrifice all live in **one** engine
 module, `src/engine/run/memberEdits.ts`, and each is a single pure transaction on the run: it
 takes the `RunState` plus the member (or, for the sacrifice, the run alone), draws only from its
 own `:npc:` stream and answers either the new run with a `MemberEditLine` or the **same run
@@ -1534,3 +1531,65 @@ reward off a completed mission, and this decision only makes the record and the 
 
 `[Task-194]` ships the field, the migration, the card, the scene module, the i18n keys and the
 removal of the mission line from `notices/`.
+
+## D59 — The region replaces the floors *(decided)*
+
+**Decision.** The human's `2026-11-02` decision retires the Binding-of-Isaac floor model: a run is
+no longer a chain of **maps** of rooms but **one region** — a procedurally named starting town,
+eight gym cities in badge order, long routes of two to four screens with one or two optional
+laterals per stretch, the Victory Road, the League and the endless tower behind the Champion. The
+world's rules live in `docs/region-spec.md` from here on, and the floor model's own spec is
+deleted with the floors.
+
+**What it supersedes.** `D8`, whose vertical slice closed at "a second route": the slice is now
+town → route 1 → city 1 → gym 1, and it still closes there, long before the other seven cities are
+written. `D9` and `D28`-`D33` are the rest of the floor log — the per-route cap, the map of rooms,
+its topology, its streams, its boss and portal, its HUD map and its special rooms — and they
+describe a model this decision replaces; they keep their text, and the pass that closes the docs
+marks them superseded rather than rewriting them here.
+
+**What it keeps.** Everything the game already was: tall grass that rolls wild encounters, trainers
+with a line of sight, the classic menu battle, one catch per route, permadeath, and a run that ends
+with nothing carried over. The floors were the run's structure, never its rules.
+
+## D60 — Node identity is `nodeKey`, and its stream family is per node *(decided)*
+
+**Decision.** `<kind>:<id>` — `nodeKey` — is the only name a piece of the world has: 1-based within
+its kind, read back by `parseNodeKey`, resolved against the plan by `nodeOf`, and never a running
+counter or a position. A node's randomness is its own family,
+`${seed}:node:<key>:<layout|content|encounters|loot>`, and the topology and the settlement names
+split off the region's own `${seed}:region` stream.
+
+**Why a family and not one stream per region.** No node's draw depends on how many nodes precede
+it, so a node replays alone when it is walked back into, and appending a node cannot move another
+(`D11`). That is the promise `D11` makes for a run, applied one level down: the seed fixes a node,
+whatever the region around it has grown to.
+
+**What it supersedes.** The per-map stream family of `D29`/`D30`: a floor's plan was keyed by the
+map index, and a room inside it by `routeIndexForRoom` — a running sum of every earlier floor's
+room count — so a floor that grew moved every room after it. That global route prefix retires with
+the floors, and a node's key is minted where the node is.
+
+## D61 — The save cuts to v28 with no migration *(decided)*
+
+**Decision.** `SAVE_VERSION` steps **27 → 28** and the step is a cut, not a migration: a document
+written before v28 decodes with its **run discarded**, while its settings and its history survive
+untouched. No migration code ships, because nothing is in production — no released build wrote a
+v27 save that a player would lose.
+
+**What it supersedes.** The floor-shaped save: `mapIndex`, `routeIndex`, `routeInMap`,
+`discoveredRooms`, `capturedRooms` and the cached per-map `levelCap` as the run's position and
+progress. A v28 run stands on a `nodeKey`, with `visitedNodes`, `badges` and `capturedNodes`; the
+old fields stay as deprecated compatibility fields the shipped scene still reads, derived from the
+plan, until the sweep deletes them.
+
+## D62 — The record is the badges, and the tower's streak is apart *(decided)*
+
+**Decision.** A run's **record** is the number of badges held (`badges.length`), not the number of
+floors walked. The endless tower's streak is its own figure, kept beside the record and apart from
+it, so an endless run can never inflate the record: reaching the tower and farming it is one
+achievement, and winning the region is another.
+
+**What it supersedes.** The floor-shaped record: `RunHistoryRecord`'s `mapReached` — the deepest
+map a run reached — with the run's `mode` beside it. The history keeps one number per run, and that
+number is the badges.
