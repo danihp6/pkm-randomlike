@@ -1,4 +1,5 @@
 export * from './battleLink';
+export * from './badge';
 export * from './chain';
 export * from './floors';
 export * from './roster';

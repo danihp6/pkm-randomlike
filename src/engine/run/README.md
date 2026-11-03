@@ -61,6 +61,11 @@ seed (`D11`).
   whether the badges open it and which badge it names (`exitGate`, `nextBadge`).
 - `gates.test.ts` — each city's exit with and without its badge, the edges back and the
   named badge.
+- `badge.ts` — the gym as a run fact: the badge a city's gym hands over and the guard that
+  appends it in ladder order only, the roster a gym's trainer and its leader field, and the
+  money and the TM one win pays.
+- `badge.test.ts` — the ladder's refusals and its reference-equality no-ops, the two gym
+  rosters at a fixed seed and the payout a second win never repeats.
 - `levelCurve.ts` — the region's level rules: a regular trainer off its stretch's cap, its
   distance to the gym and its party size, a wild at 60-75 % of the squad, a leader at the
   cap, and the band a node reads (`trainerLevel`, `wildLevel`, `leaderLevel`,
