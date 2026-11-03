@@ -31,6 +31,9 @@
 - `scripts/frlg/build-region-tilesets.mjs` (new)
 - `scripts/assets/pack.mjs`
 - `scripts/assets/build-placeholders.mjs`
+- `scripts/assets/placeholderAccent.mjs` (one pinned hue for `frlg/city.png`; see the
+  accent note under **Build** — the allow-list's own distinctness test forces it)
+- `scripts/assets/placeholderAccent.test.mjs` (the allow-list length it pins)
 - `src/data/frlg/city.json` (new, generated, committed)
 - `src/data/frlg/interior.json` (new, generated, committed)
 - `src/assets/placeholders/frlg/city.png` (new, generated, committed)
@@ -240,6 +243,17 @@ node scripts/frlg/build-region-tilesets.mjs [buildings.png] [terrain.png]
   committed. Generate them with
   `node scripts/assets/build-placeholders.mjs frlg/city.png frlg/interior.png` and
   commit both; each is a 64×208 blank in its own accent (`placeholderAccent.mjs`).
+- **The accent exception, and why it is in scope.** `placeholderAccent.test.mjs`
+  already proves that every path in `ATLASES` gets its **own** fill
+  (`accentFor(ATLASES[i]).fill !== accentFor(ATLASES[j]).fill`, all pairs) and it
+  pins `ATLASES`' length. Adding `frlg/city.png` and `frlg/interior.png` therefore
+  enters the allow-list: `frlg/city.png` hashes into the same hue as
+  `beach-cave.png`, so `placeholderAccent.mjs` gains **one** pinned entry
+  (`HUE_OVERRIDES` with `frlg/city.png` → a free hue) and
+  `placeholderAccent.test.mjs` moves its length literal from 20 to 22. No other
+  edit is allowed in either file: the accent stays a property of the path alone and
+  every existing blank keeps its pair. This is the only reason those two files are
+  in the exclusive list, and QA must check that no other line of them moved.
 
 ### Data — the registry
 
@@ -295,8 +309,9 @@ Walkability, frozen (`isWalkable`):
     task adds or extends (`src/engine/map.test.ts`, `src/data/tilesets/city.test.ts`,
     `src/data/tilesets/interior.test.ts`, `src/data/tilesets/ids.test.ts`).
   - `npm run build` — `tsc --noEmit && vite build`.
-  - `git diff --name-only main...task-271` — the twenty paths of the exclusive list
-    and nothing else. (`src/assets/frlg/city.png` and `interior.png` must **not**
+  - `git diff --name-only main...task-271` — the twenty-two paths of the exclusive
+    list (the twenty of the items plus the two `scripts/assets/placeholderAccent*`
+    paths of the accent exception) and nothing else. (`src/assets/frlg/city.png` and `interior.png` must **not**
     appear: that folder is gitignored.)
   - Art commands, run from the worktree:
     `node scripts/frlg/build-region-tilesets.mjs "$ASSETS_ROOT/frlg/tileset.png" "$ASSETS_ROOT/frlg/tileset-2.png"`
@@ -313,9 +328,10 @@ Walkability, frozen (`isWalkable`):
 - **Acceptance criteria:**
   - [ ] `[unit]` `npm run build` is clean.
   - [ ] `[unit]` `npm test` is green.
-  - [ ] `[unit]` `git diff --name-only main...task-271` lists only the twenty
+  - [ ] `[unit]` `git diff --name-only main...task-271` lists only the twenty-two
         exclusive paths (the two `placeholders/frlg/*.png` included, the two
-        `assets/frlg/*.png` excluded).
+        `assets/frlg/*.png` excluded, and the two `scripts/assets/placeholderAccent*`
+        files carrying nothing but the pinned hue and the allow-list length).
   - [ ] `[unit]` `src/engine/map.test.ts` pins the new vocabulary: `PATH`…`PC` are
         `12`…`19`; every value of the walkability table above answers exactly as
         declared; each of the eight new sketch characters round-trips through
@@ -442,8 +458,9 @@ Walkability, frozen (`isWalkable`):
   `src/engine/map.ts`; Batch 118's specs must read `CITY_KIND_VALUES` /
   `INTERIOR_KIND_VALUES` rather than invent values, and `docs/region-spec.md`'s
   §7.1/§7.2 quotes this table.
-- **For QA:** this is the batch's widest task (twenty paths, fourteen of them
-  mechanical). Audit the diff against the list before running the suite, and give
+- **For QA:** this is the batch's widest task (twenty-two paths, fourteen of them
+  mechanical; the two accent files may carry only the pinned hue and the length
+  literal). Audit the diff against the list before running the suite, and give
   the two `[live]` criteria the whole browser budget.
 
 ## ⛔ Out of scope
