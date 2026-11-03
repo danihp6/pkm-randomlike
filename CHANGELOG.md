@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Routes carry the POIs, as zones.** `[Task-289]`, Batch 122: `src/data/pois.ts` folds the
+      nine kinds into one `POI_ROWS` table whose rows reference the retired room tables instead of
+      copying them, `src/engine/region/pois.ts` resolves a lateral's terminus to exactly one kind
+      (`nodePoi`) and lays its zone inside the route (`inPoiRect`, `poiBattleRules`,
+      `regionStatics`), and `src/scenes/pois.ts` draws the outline and its marker owning no rule.
+      `docs/region-spec.md` §7.8. `[unit]` 13 criteria: all nine kinds reachable over 64 seeds, the
+      mini-boss share `0.105` against `1/9` over 1 000 seeds, 769 termini with their marker inside
+      the zone (minimum margin 24 tiles to the border), the replay moving no content draw, and 5992
+      tests green. No `[live]`: the task ships no caller for its scene.
+
 - [x] **Cities have people.** `[Task-288]`, Batch 122: `src/data/npcs.ts` carries a `cityChance`
       per special row and the three-tier `GENERIC_LINES`, `src/engine/region/npcs.ts` places a
       settlement's people off its own content stream (`nodeNpcs`, keyed `npc-<nodeKey>-<n>`, never

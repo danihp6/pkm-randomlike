@@ -12456,7 +12456,7 @@ the route-scoped capture.
       `src/scenes/npcs.ts`, `src/scenes/npcs.test.ts` and `docs/region-spec.md` §7.7.
       *Dependencies:* per-node content (Batch 119), the city scene (Batch 121). *(Batch 122)*
 
-- [ ] **[Task-289] Routes carry the POIs, as zones.** The vault, the mini-boss (50 % per stretch), the
+- [x] **[Task-289] Routes carry the POIs, as zones.** The vault, the mini-boss (50 % per stretch), the
       no-heal zone, the banned zone, the puzzle, the static, the legendary's mission, the secret shop
       and the trade move out of the rooms and onto routes and laterals: one or two per stretch, on a
       lateral's terminus.
