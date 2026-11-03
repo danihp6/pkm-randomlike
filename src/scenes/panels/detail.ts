@@ -513,6 +513,22 @@ function cardUnder(event: Event): 'party' | 'box' | null {
 }
 
 /**
+ * The Centre's scene key (`regionSceneKey` of `src/scenes/services.ts`), spelled out
+ * because a panel module never imports a scene: the flag the PC rules read is whether
+ * the card is mounted **inside a Pokémon Centre** (`docs/region-spec.md` §6).
+ */
+const CENTRE_SCENE_KEY = 'Centre';
+
+/**
+ * True when this card's scene is a Centre: the one room a party ↔ box edit is allowed
+ * in. The settings lookup is optional all the way down, so a headless host with no
+ * Phaser scene behind it simply answers "not a Centre".
+ */
+export function pcInCentre(host: RoutePanelHost): boolean {
+  return host.scene.sys?.settings?.key === CENTRE_SCENE_KEY;
+}
+
+/**
  * The member a pointer went down on: a party row by its id, a PC/RIP cell by the
  * slot its card prints. Anything else — a chip, a tab, the wall — carries no member.
  */
@@ -534,7 +550,8 @@ function dragPick(host: RoutePanelHost, target: Element): DragPick | null {
 
 /**
  * A press on a member starts a drag; the pure `grabAt` decides whether there is one
- * to start, so a locked cell, an empty slot and the fallen's pane begin none.
+ * to start, so a locked cell, an empty slot and the fallen's pane begin none, and a
+ * box cell is only grabbable in a Centre (`pcInCentre`).
  */
 function startDrag(host: RoutePanelHost, event: Event): void {
   hudDrag = null;
@@ -543,21 +560,22 @@ function startDrag(host: RoutePanelHost, event: Event): void {
   if (!(target instanceof Element)) return;
   const pick = dragPick(host, target);
   if (pick === null) return;
-  const grabbed = grabAt(host.run(), host.ui(), pick.pane, pick.index).ui.grabbed;
+  const grabbed = grabAt(host.run(), host.ui(), pick.pane, pick.index, pcInCentre(host)).ui.grabbed;
   hudDrag = grabbed === null ? null : { pane: grabbed.pane, index: grabbed.origin };
 }
 
 /**
  * The pointer let go: the drag lands on one of the two cards, or on nothing and
  * moves no member. A drop on the member's own card is the card's own gesture, so
- * this leaves it alone; only the crossing is committed here (`dropOnCard`).
+ * this leaves it alone; only the crossing is committed here (`dropOnCard`), and only
+ * inside a Centre.
  */
 function endDrag(host: RoutePanelHost, event: Event): void {
   const drag = hudDrag;
   hudDrag = null;
   if (drag === null || domPaused) return;
   const run = host.run();
-  const next = dropOnCard(run, drag, cardUnder(event));
+  const next = dropOnCard(run, drag, cardUnder(event), pcInCentre(host));
   if (next !== run) host.commitRun(next);
 }
 

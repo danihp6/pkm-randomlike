@@ -12548,7 +12548,7 @@ the victory screen.
       `docs/region-spec.md` §7.10. *Dependencies:* the region plan (Batch 117), the schema (Batch 119).
       *(Batch 123)*
 
-- [ ] **[Task-292] Services live in the Centre and nowhere else.** The Centre's counter heals party
+- [x] **[Task-292] Services live in the Centre and nowhere else.** The Centre's counter heals party
       and box (HP/PP, no status) on entry, its PC is the only place to swap party and box, its
       merchant is the only shop and its shop is stocked per city; the laboratory heals on entry
       without a Centre.

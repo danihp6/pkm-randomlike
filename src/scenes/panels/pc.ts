@@ -17,7 +17,7 @@ import {
   type PcPanelView,
   type PcRow,
 } from '../../ui/hud/panels/pc';
-import { openMemberDetail } from './detail';
+import { openMemberDetail, pcInCentre } from './detail';
 import { panelExpanded, panelFrameMount, toggleHudPanel } from './hud';
 import type { RoutePanelDescriptor, RoutePanelHost } from './types';
 
@@ -59,7 +59,7 @@ function viewport(host: RoutePanelHost): { width: number; height: number } {
 }
 
 /** One box/RIP row as the panel draws it; the box's lock is the shipped dimming. */
-function pcRow(run: RunState, pane: PcPane, row: PartyRow): PcRow {
+function pcRow(run: RunState, pane: PcPane, row: PartyRow, inCentre: boolean): PcRow {
   return {
     memberId: row.id,
     name: row.name,
@@ -67,7 +67,7 @@ function pcRow(run: RunState, pane: PcPane, row: PartyRow): PcRow {
     hp: row.hp,
     maxHp: row.maxHp,
     statusLabel: row.statusLabel,
-    locked: pane === 'box' && !pcMemberEditable(run),
+    locked: pane === 'box' && !pcMemberEditable(run, inCentre),
   };
 }
 
@@ -81,8 +81,11 @@ function refreshDom(host: RoutePanelHost): void {
   if (view === null) return;
   const run = host.run();
   const ui = host.ui();
+  const inCentre = pcInCentre(host);
   const pane: PcPane = ui.pane === 'rip' ? 'rip' : 'box';
-  const rows = (pane === 'rip' ? ripRows(run) : boxRows(run)).map((row) => pcRow(run, pane, row));
+  const rows = (pane === 'rip' ? ripRows(run) : boxRows(run)).map((row) =>
+    pcRow(run, pane, row, inCentre),
+  );
   const pageCount = boxPageCount(rows.length);
   const page = Math.min(boxPageForIndex(ui.index), pageCount - 1);
   view.value = {
@@ -226,6 +229,21 @@ function closeDom(): void {
   unsubscribeScene();
   disposeDomPanel();
   pcView = null;
+}
+
+/**
+ * Opens the box card on this scene: the Centre's PC. The card's own open flag is the
+ * HUD's collapsed record, so it is raised first — a card mounted collapsed would show
+ * nothing — and then the shipped build mounts it in `#hud` and paints the box.
+ */
+export function openPcPanel(host: RoutePanelHost): void {
+  if (!host.hudCardOpen('box')) host.setHudCardOpen('box', true);
+  buildDom(host);
+}
+
+/** Repaints the mounted box card from the live run; nothing before it is opened. */
+export function refreshPcPanel(host: RoutePanelHost): void {
+  refreshDom(host);
 }
 
 export const descriptor: RoutePanelDescriptor = {

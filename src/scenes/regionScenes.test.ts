@@ -14,10 +14,13 @@ vi.mock('phaser', () => {
   };
 });
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createRunPokemon } from '../engine/run/progression';
 import { createRun } from '../engine/run/state';
 import type { NodeWorld } from '../engine/region/preload';
 import { RouteScene } from './RouteScene';
+import { regionSceneClass } from './services';
 import { WORLD_ARRIVED } from './WorldScene';
 import { collectRegionScenes, REGION_SCENES } from './regionScenes';
 
@@ -59,6 +62,15 @@ describe('collectRegionScenes', () => {
     const keys = REGION_SCENES.map((entry) => entry.key);
     expect(keys.length).toBeGreaterThan(0);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('collects the Centre from services.ts beside the *Scene.ts files', () => {
+    const centre = REGION_SCENES.find((entry) => entry.key === 'Centre');
+    expect(centre).toBeDefined();
+    expect(centre?.Scene).toBe(regionSceneClass);
+    // The glob is what reaches a scene file that is not called `*Scene.ts`.
+    const source = readFileSync(fileURLToPath(new URL('./regionScenes.ts', import.meta.url)), 'utf8');
+    expect(source).toContain("'./*Scene.ts', './services.ts', '!./*.test.ts'");
   });
 });
 

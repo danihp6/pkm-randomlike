@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **Services live in the Centre and nowhere else.** `[Task-292]`, Batch 123: the Pokémon
+      Centre's three services are one interior scene and nowhere else. `src/scenes/services.ts`
+      mounts the counter, the PC and the merchant only in a `Centre` (the city scene's door hands
+      it `cityKey`/`interiorKey`), `serviceHeal(run)` in `src/engine/run/heal.ts` rests party and
+      box (HP/PP, never a status, never a revival) and the laboratory's entry heal is its only
+      other caller; the shop keys a row per node (`shopRowKey(nodeKey, itemId)`) with its stock
+      rolled from the city's tier (`shopBandForTier`) and the ball row stays endless, and the PC's
+      edit predicates (`pcFullyEditable`/`pcMemberEditable`) now mean "inside a Centre" instead of
+      "on a route". `docs/region-spec.md` §6. `[unit]` 9 criteria, 6085 tests green; `[live]` over
+      CDP at 1280×800 on a `city:2` save: entering the `Centre` heals lead and box to full HP/PP,
+      `pcEditable` is true and the shop opens five rows under `shop:city:2`, while the same save
+      on `route:1` refuses the PC edit and mounts no shop.
+
 - [x] **Missions are a stack: one automatic per stretch, one fixed per city, one random from an
       NPC.** `[Task-291]`, Batch 123: a mission stops being one row remembered per floor and
       becomes the stack a region node exposes. `src/data/missions.ts` holds the catalogue over node

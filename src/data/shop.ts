@@ -47,6 +47,15 @@ export const SHOP_POTION: Readonly<Record<BandId, string>> = {
 };
 
 /**
+ * The band a **city's Centre** buys at (`docs/region-spec.md` §6): its tier is the
+ * balance data, so the eight cities stock three shelves — the first two the early
+ * band, the middle three the mid band and the last three the late one.
+ */
+export function shopBandForTier(tier: 1 | 2 | 3): BandId {
+  return tier === 1 ? 'early' : tier === 2 ? 'mid' : 'late';
+}
+
+/**
  * The weighted pool the shelf's **two held rows** are drawn from: the held items
  * and berries that turn a floor's stock around. It never holds a valuable (those
  * are what the player sells here), a Mega Stone, a **G-Max Stone** (the stone is

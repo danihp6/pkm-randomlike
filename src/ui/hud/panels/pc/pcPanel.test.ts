@@ -118,8 +118,13 @@ type FakeHost = Readonly<{
   opened: () => number;
 }>;
 
-/** The scene surface a card's receiver reads, with the writes counted. */
-function fakeHost(run: RunState, pane: 'box' | 'rip' = 'box'): FakeHost {
+/**
+ * The scene surface a card's receiver reads, with the writes counted. `sceneKey` is the
+ * room the card is mounted in: the PC's edit rights read it (`pcInCentre`), so a case
+ * that wants the Centre's gesture asks for `'Centre'` and the route's refusal keeps the
+ * default.
+ */
+function fakeHost(run: RunState, pane: 'box' | 'rip' = 'box', sceneKey = 'Route'): FakeHost {
   let current = run;
   const commits: RunState[] = [];
   let refreshed = 0;
@@ -143,7 +148,11 @@ function fakeHost(run: RunState, pane: 'box' | 'rip' = 'box'): FakeHost {
       detailOpen = open;
       opened += 1;
     },
-    scene: { scale: DESKTOP, events: { on: () => undefined, off: () => undefined } },
+    scene: {
+      scale: DESKTOP,
+      events: { on: () => undefined, off: () => undefined },
+      sys: { settings: { key: sceneKey } },
+    },
   } as unknown as RoutePanelHost;
   return { host, commits, refreshes: () => refreshed, opened: () => opened };
 }
@@ -358,7 +367,10 @@ const boxCard = (pane: 'box' | 'rip' = 'box'): FakeNode =>
   new FakeNode({ 'data-hud-panel': 'box', 'data-pane': pane });
 
 describe('the HUD member drag (the two cards’ one gesture)', () => {
-  function mount(run: RunState): Readonly<{
+  function mount(
+    run: RunState,
+    sceneKey: 'Centre' | 'Route' = 'Route',
+  ): Readonly<{
     host: RoutePanelHost;
     commits: readonly RunState[];
     layer: FakeNode;
@@ -369,39 +381,59 @@ describe('the HUD member drag (the two cards’ one gesture)', () => {
     const doc = new FakeNode();
     vi.stubGlobal('Element', FakeNode);
     vi.stubGlobal('document', doc);
-    const { host, commits } = fakeHost(run);
+    const { host, commits } = fakeHost(run, 'box', sceneKey);
     const dispose = installMemberDrag(host, layer as unknown as Element);
     return { host, commits, layer, doc, dispose };
   }
 
-  it('withdraws a box cell let go on the party card, once', () => {
-    const { host, commits, layer, doc, dispose } = mount(runWith(['a'], ['b', 'c']));
-    const card = boxCard();
-    const cell = new FakeNode({ 'data-hud-pc-cell': '1' }, card);
-    const target = partyCard();
+  it('withdraws a box cell let go on the party card once in a Centre, and never on a route', () => {
+    const centre = mount(runWith(['a'], ['b', 'c']), 'Centre');
+    const cell = new FakeNode({ 'data-hud-pc-cell': '1' }, boxCard());
 
-    layer.fire('pointerdown', cell);
-    doc.fire('pointerup', target);
+    centre.layer.fire('pointerdown', cell);
+    centre.doc.fire('pointerup', partyCard());
 
-    expect(commits).toHaveLength(1);
-    expect(host.run().party.map((entry) => entry.fighter.id)).toEqual(['a', 'c']);
-    expect(host.run().box.map((entry) => entry.fighter.id)).toEqual(['b']);
-    dispose();
-    expect(layer.count).toBe(0);
-    expect(doc.count).toBe(0);
+    expect(centre.commits).toHaveLength(1);
+    expect(centre.host.run().party.map((entry) => entry.fighter.id)).toEqual(['a', 'c']);
+    expect(centre.host.run().box.map((entry) => entry.fighter.id)).toEqual(['b']);
+    centre.dispose();
+    expect(centre.layer.count).toBe(0);
+    expect(centre.doc.count).toBe(0);
+
+    const route = mount(runWith(['a'], ['b', 'c']), 'Route');
+    const routeCell = new FakeNode({ 'data-hud-pc-cell': '1' }, boxCard());
+
+    route.layer.fire('pointerdown', routeCell);
+    route.doc.fire('pointerup', partyCard());
+
+    expect(route.commits).toHaveLength(0);
+    expect(route.host.run().party.map((entry) => entry.fighter.id)).toEqual(['a']);
+    expect(route.host.run().box.map((entry) => entry.fighter.id)).toEqual(['b', 'c']);
+    route.dispose();
   });
 
-  it('deposits a party row let go on the PC card, once', () => {
-    const { host, commits, layer, doc } = mount(runWith(['a', 'b']));
+  it('deposits a party row let go on the PC card once in a Centre, and never on a route', () => {
+    const centre = mount(runWith(['a', 'b']), 'Centre');
     const row = new FakeNode({ 'data-hud-party-member': 'b' }, partyCard());
-    const card = boxCard();
 
-    layer.fire('pointerdown', row);
-    doc.fire('pointerup', card);
+    centre.layer.fire('pointerdown', row);
+    centre.doc.fire('pointerup', boxCard());
 
-    expect(commits).toHaveLength(1);
-    expect(host.run().party.map((entry) => entry.fighter.id)).toEqual(['a']);
-    expect(host.run().box.map((entry) => entry.fighter.id)).toEqual(['b']);
+    expect(centre.commits).toHaveLength(1);
+    expect(centre.host.run().party.map((entry) => entry.fighter.id)).toEqual(['a']);
+    expect(centre.host.run().box.map((entry) => entry.fighter.id)).toEqual(['b']);
+    centre.dispose();
+
+    const route = mount(runWith(['a', 'b']), 'Route');
+    const routeRow = new FakeNode({ 'data-hud-party-member': 'b' }, partyCard());
+
+    route.layer.fire('pointerdown', routeRow);
+    route.doc.fire('pointerup', boxCard());
+
+    expect(route.commits).toHaveLength(0);
+    expect(route.host.run().party.map((entry) => entry.fighter.id)).toEqual(['a', 'b']);
+    expect(route.host.run().box).toEqual([]);
+    route.dispose();
   });
 
   it('moves nobody for a release on nothing, and forgets the drag', () => {
@@ -431,9 +463,8 @@ describe('the HUD member drag (the two cards’ one gesture)', () => {
     expect(host.run().box.map((entry) => entry.fighter.id)).toEqual(['b', 'c']);
   });
 
-  it('starts no drag on a locked cell, outside the floor’s entry room', () => {
-    const away = { ...runWith(['a'], ['b']), routeInMap: 2 };
-    const { host, commits, layer, doc } = mount(away);
+  it('starts no drag on a route, so a box cell cannot be picked up there', () => {
+    const { host, commits, layer, doc } = mount(runWith(['a'], ['b']));
     const cell = new FakeNode({ 'data-hud-pc-cell': '0' }, boxCard());
 
     layer.fire('pointerdown', cell);

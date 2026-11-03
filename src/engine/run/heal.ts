@@ -39,6 +39,15 @@ export function healParty(run: RunState): RunState {
 }
 
 /**
+ * The Centre's counter, and the laboratory's: party and box, HP and PP back to full,
+ * never a status cure and never a revival (D5). Returns the run untouched when there
+ * is nothing to heal.
+ */
+export function serviceHeal(run: RunState): RunState {
+  return needsHealing(run) ? restParty(run, false) : run;
+}
+
+/**
  * Adds Pokevial charges up to the cap, one per beaten trainer. A full meter (or
  * a non-positive amount) is a no-op, so a replay never overfills it.
  */

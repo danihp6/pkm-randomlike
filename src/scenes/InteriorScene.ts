@@ -7,6 +7,7 @@ import { interiorRoomKind, planInterior, type InteriorPlan } from '../engine/reg
 import { planRegion } from '../engine/region/plan';
 import { buildNodeMeshes } from '../engine/region/preload';
 import type { RunState } from '../engine/run';
+import { serviceHeal } from '../engine/run/heal';
 import { STARTER_LEVEL, takeStarter } from '../engine/run/prologue';
 import { starterOffer } from '../engine/run/starters';
 import { loadSave, storeRun, type Settings } from '../engine/save';
@@ -27,15 +28,17 @@ import { WorldWalker } from './walker';
 
 /**
  * The prologue's room (`docs/region-spec.md` §6): the town's **laboratory**, the one
- * interior a door opens onto today. A brand-new run starts here with no Pokémon at
- * all, the professor's pick (`04 Starter pick`, the shipped `starter` panel) hands
- * over the starter and the starting bag, and the town's exit stays shut until it
- * does (`canLeaveTown`, enforced by the pure travel seam).
+ * interior the town has — a city's Centre is `services.ts`. A brand-new run starts
+ * here with no Pokémon at all, the professor's pick (`04 Starter pick`, the shipped
+ * `starter` panel) hands over the starter and the starting bag, and the town's exit
+ * stays shut until it does (`canLeaveTown`, enforced by the pure travel seam). The
+ * room also **heals on entry**, the town's free rest (`serviceHeal`).
  *
  * It owns no rule of its own: the room is `planInterior`'s, the gift is
- * `run/prologue.ts`'s and the walk is the shared `WorldWalker`. Every other interior
- * key keeps today's fade-back — `regionScenes.ts` registers one key per module, so
- * generalising the interiors is a later batch's.
+ * `run/prologue.ts`'s, the heal is `run/heal.ts`'s and the walk is the shared
+ * `WorldWalker`. Every other interior key keeps today's fade-back — the folder
+ * registry registers one key per module, so generalising the rest is a later
+ * batch's.
  */
 
 export const regionSceneKey = 'Lab';
@@ -129,6 +132,7 @@ export class InteriorScene extends WorldScene {
 
     this.interior = interior;
     this.cityKey = interior.cityKey;
+    if (interior.kind === 'lab') this.run = this.healOnEntry(run);
 
     this.drawWorld({
       tiles: interior.tiles,
@@ -252,6 +256,17 @@ export class InteriorScene extends WorldScene {
     this.run = takeStarter(run, speciesId, STARTER_LEVEL);
     storeRun(browserStorage(), this.run);
     this.render();
+  }
+
+  /**
+   * The laboratory's **free entry heal** (`docs/region-spec.md` §6): the town has no
+   * Centre, so its one room rests the party and the box when the door opens — HP and
+   * PP, never a status cure and never a revival (`serviceHeal`, `D5`).
+   */
+  private healOnEntry(run: RunState): RunState {
+    const healed = serviceHeal(run);
+    storeRun(browserStorage(), healed);
+    return healed;
   }
 
   private buildPlayer(spawn: Tile): void {

@@ -304,9 +304,9 @@ export function createRun(init: RunInit): RunState {
  * they left by); it is kept when it is a real door of the room, else the
  * plan-derived arrival is used so a bad value never opens a wall onto nothing.
  *
- * Walking does not lock the PC: the box is editable in the floor's entry room on
- * **every** visit, so the rule is the room the run stands in, not where it has
- * been (`pcFullyEditable`, `docs/routes-spec.md` §6).
+ * Walking does not lock the PC: the box is editable **inside a Pokémon Centre**
+ * (`docs/region-spec.md` §6), and nowhere else, so the rule is the room the run
+ * stands in rather than where it has been (`pcFullyEditable`).
  *
  * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
  * `towerStreak`) are **not** touched here: the shipped floor scene still walks
@@ -633,26 +633,26 @@ export function useCapture(run: RunState): RunState {
 }
 
 /**
- * True in the floor's **entry room** on every visit, first or a return: the one
- * place the party and the PC may trade members (`docs/routes-spec.md` §6). The rule
- * is the room the run stands in — `planMap(...).entryRoom` is `0` — so walking out
- * and back reopens the box instead of locking it for the rest of the floor.
+ * True **inside a Pokémon Centre**, the only place the party and the PC may trade
+ * members (`docs/region-spec.md` §6). The flag belongs to the scene — it is the room
+ * the run stands in — so outside a Centre every box edit is refused, and a Centre
+ * allows it on every visit.
  */
-export function pcFullyEditable(run: RunState): boolean {
-  return run.routeInMap === 0;
+export function pcFullyEditable(run: RunState, inCentre = false): boolean {
+  void run;
+  return inCentre === true;
 }
 
-/** The same rule under the name the boxes call: the entry room, on every visit. */
-export function pcMemberEditable(run: RunState): boolean {
-  return pcFullyEditable(run);
+/** The same rule under the name the boxes call: a Centre's PC, and nowhere else. */
+export function pcMemberEditable(run: RunState, inCentre = false): boolean {
+  return pcFullyEditable(run, inCentre);
 }
 
 /**
  * Places a caught Pokémon, the classic way (D7): the party while it has room, else
- * the PC. A catch that lands in the box is withdrawable from the floor's entry room
- * like any other boxed member, and never from the room that took it unless that
- * room is the entry room (`pcMemberEditable`, `docs/routes-spec.md` §6). Pure, like
- * the rest of the run (D11).
+ * the PC. A catch that lands in the box is withdrawable from a Pokémon Centre like
+ * any other boxed member, and **only** there (`pcMemberEditable`,
+ * `docs/region-spec.md` §6). Pure, like the rest of the run (D11).
  */
 export function addCaughtPokemon(run: RunState, pokemon: RunPokemon): RunState {
   return addPokemon(run, pokemon);

@@ -1,5 +1,5 @@
 import { GMAX_STONE_IDS, buyPrice, getItem, isForSale, sellPrice } from '../data/items';
-import type { BandId } from '../data/run';
+import { bandForLevel, type BandId, type LevelBand } from '../data/run';
 import {
   SHOP_BALL_INFINITE,
   SHOP_BALL_PACK,
@@ -10,11 +10,12 @@ import {
   SHOP_TM,
   type ShopEntry,
 } from '../data/shop';
+import { bandForNode } from '../engine/run/levelCurve';
+import { nodeOf, planRegion } from '../engine/region/plan';
 import type { Rng } from '../engine/rng';
 import {
   addItem,
   addMoney,
-  bandForMap,
   consumeItem,
   isItemPicked,
   itemCount,
@@ -25,13 +26,14 @@ import {
 } from '../engine/run';
 
 /**
- * The **shop model** (`docs/maps-spec.md` §7, D33): what a floor's Mart stocks and
- * the pure trades against a run. It is Phaser-free, so the scene only renders the
- * rows this module builds and the economy is unit-tested headless. The stock is a
- * pure function of `(bandId, rng)`, so a fixed run always opens the same Mart. A
- * bought row is marked per floor in `pickedItems` and leaves that floor's shelf for
- * good — except the endless ball row (`SHOP_BALL_INFINITE`), which is never marked
- * and stays on the shelf; selling marks nothing, so the bag side is unchanged.
+ * The **shop model** (`docs/maps-spec.md` §7, `docs/region-spec.md` §6, D33): what a
+ * counter stocks and the pure trades against a run. It is Phaser-free, so the scene
+ * only renders the rows this module builds and the economy is unit-tested headless.
+ * The stock is a pure function of `(bandId, rng)`, so a fixed run always opens the
+ * same shelf. A bought row is marked per **node** in `pickedItems` and leaves that
+ * node's shelf for good — except the endless ball row (`SHOP_BALL_INFINITE`), which
+ * is never marked and stays on the shelf; selling marks nothing, so the bag side is
+ * unchanged.
  */
 
 /**
@@ -117,12 +119,22 @@ function weightedIndex(pool: readonly ShopEntry[], rng: Rng): number {
 export type ShopTrade = Readonly<{ run: RunState; ok: boolean; amount: number }>;
 
 /**
- * The `pickedItems` key a bought shop row marks: **one row, one floor**. The shelf is
- * a per-floor thing and `pickedItems` is already cleared when the run advances a map,
- * so a row is sold out on its own floor and back on the next one without a run field.
+ * The `pickedItems` key a bought shop row marks: **one row, one node**. The shelf is
+ * a node's own thing — a city's Centre keeps the shelf it opened with — and
+ * `shopRowKey('city:3', 'potion')` is `shop-city:3-potion`.
  */
-export function shopRowKey(mapIndex: number, itemId: string): string {
-  return `shop-${mapIndex}-${itemId}`;
+export function shopRowKey(nodeKey: string, itemId: string): string {
+  return `shop-${nodeKey}-${itemId}`;
+}
+
+/**
+ * The level band a node's shelf reads (`bandForNode`), the region's own anchor
+ * (`docs/region-spec.md` §3). A key the plan does not hold falls back to the band the
+ * run's compatibility cap reads, so a hand-built or retired key still stocks a shelf.
+ */
+function bandOfKey(nodeKey: string, seed: string, levelCap: number): LevelBand {
+  const node = nodeOf(planRegion(seed), nodeKey);
+  return node === undefined ? bandForLevel(levelCap) : bandForNode(node);
 }
 
 /** True when the slot carries the endless flag. */
@@ -133,26 +145,26 @@ export function isInfiniteSlot(slot: ShopSlot): boolean {
 /**
  * True when this slot never sells out: its own flag, or — for a caller that rebuilt
  * the slot from a rendered row's `(itemId, price, count)` and dropped the optional
- * flag, as the Mart card does — the band's ball pack while `SHOP_BALL_INFINITE` holds.
+ * flag, as the shop card does — the node's band's ball pack while `SHOP_BALL_INFINITE`
+ * holds.
  */
-function endlessSlot(slot: ShopSlot, mapIndex: number): boolean {
+function endlessSlot(slot: ShopSlot, band: BandId): boolean {
   if (isInfiniteSlot(slot)) return true;
-  return SHOP_BALL_INFINITE && SHOP_BALL_PACK[bandForMap(mapIndex).id].itemId === slot.itemId;
+  return SHOP_BALL_INFINITE && SHOP_BALL_PACK[band].itemId === slot.itemId;
 }
 
 /**
- * Buys one row's units when the run can afford it, and marks the row on its floor so
+ * Buys one row's units when the run can afford it, and marks the row on its node so
  * `buyRows` stops listing it. An endless row (`isInfiniteSlot`) spends the money and
  * adds the units but writes no mark, so it stays on the shelf. A row the run cannot
  * pay for is a no-op that marks nothing: a refused purchase leaves the shelf as it was.
  */
-export function buyItem(run: RunState, slot: ShopSlot, mapIndex: number = run.mapIndex): ShopTrade {
+export function buyItem(run: RunState, slot: ShopSlot, nodeKey: string = run.nodeKey): ShopTrade {
   if (run.money < slot.price) return { run, ok: false, amount: 0 };
+  const band = bandOfKey(nodeKey, run.seed, run.levelCap).id;
   const bought = addItem(spendMoney(run, slot.price), slot.itemId, slot.count);
   return {
-    run: endlessSlot(slot, mapIndex)
-      ? bought
-      : markItemPicked(bought, shopRowKey(mapIndex, slot.itemId)),
+    run: endlessSlot(slot, band) ? bought : markItemPicked(bought, shopRowKey(nodeKey, slot.itemId)),
     ok: true,
     amount: slot.price,
   };
@@ -214,21 +226,20 @@ const toRow = (run: RunState, slot: ShopSlot, infinite: boolean): ShopRow => {
 };
 
 /**
- * The buy rows still on the shelf: the stock without the rows this floor has already
- * sold, filtered **before** the rows are built so a row's index is the drawn index and
- * a purchase removes its own row on the next repaint. An endless row is never dropped.
- * Order is the stock's own.
+ * The buy rows still on the shelf: the stock without the rows this **node** has
+ * already sold, filtered **before** the rows are built so a row's index is the drawn
+ * index and a purchase removes its own row on the next repaint. An endless row is
+ * never dropped. Order is the stock's own.
  */
 export function buyRows(
   run: RunState,
   stock: readonly ShopSlot[],
-  mapIndex: number = run.mapIndex,
+  nodeKey: string = run.nodeKey,
 ): readonly ShopRow[] {
+  const band = bandOfKey(nodeKey, run.seed, run.levelCap).id;
   return stock
-    .filter(
-      (slot) => endlessSlot(slot, mapIndex) || !isItemPicked(run, shopRowKey(mapIndex, slot.itemId)),
-    )
-    .map((slot) => toRow(run, slot, endlessSlot(slot, mapIndex)));
+    .filter((slot) => endlessSlot(slot, band) || !isItemPicked(run, shopRowKey(nodeKey, slot.itemId)))
+    .map((slot) => toRow(run, slot, endlessSlot(slot, band)));
 }
 
 /** The sell rows: every sellable stack at its `sellPrice`, one unit at a time, in bag order. */

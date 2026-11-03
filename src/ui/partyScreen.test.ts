@@ -68,6 +68,15 @@ function feed(
   return inputs.reduce((state, input) => partyInput(state.run, state.ui, input), { run, ui });
 }
 
+/** The same reducer with the Centre's flag on: the only room a box edit is allowed in. */
+function feedCentre(
+  run: RunState,
+  ui: PartyUiState,
+  inputs: readonly PartyInput[],
+): { run: RunState; ui: PartyUiState } {
+  return inputs.reduce((state, input) => partyInput(state.run, state.ui, input, true), { run, ui });
+}
+
 describe('rows', () => {
   it('resolves names, HP and status for each member', () => {
     const hurt = {
@@ -173,7 +182,7 @@ describe('partyInput managing', () => {
 
   it('deposits a grabbed party member with right, cursor following it into the box', () => {
     const run = runWith(['a', 'b'], ['x']);
-    const moved = feed(run, initialPartyUi(), ['confirm', 'right']);
+    const moved = feedCentre(run, initialPartyUi(), ['confirm', 'right']);
     expect(moved.run.party.map((m) => m.fighter.id)).toEqual(['b']);
     expect(moved.run.box.map((m) => m.fighter.id)).toEqual(['x', 'a']);
     expect(moved.ui).toEqual({ pane: 'box', index: 1, grabbed: null });
@@ -181,14 +190,14 @@ describe('partyInput managing', () => {
 
   it('keeps the grab when the deposit is refused (last member)', () => {
     const run = runWith(['a']);
-    const moved = feed(run, initialPartyUi(), ['confirm', 'right']);
+    const moved = feedCentre(run, initialPartyUi(), ['confirm', 'right']);
     expect(moved.run).toBe(run);
     expect(moved.ui.grabbed).not.toBeNull();
   });
 
   it('withdraws a grabbed box member with left', () => {
     const run = runWith(['a'], ['x', 'y']);
-    const grabbed = feed(run, { pane: 'box', index: 1, grabbed: null }, ['confirm', 'left']);
+    const grabbed = feedCentre(run, { pane: 'box', index: 1, grabbed: null }, ['confirm', 'left']);
     expect(grabbed.run.party.map((m) => m.fighter.id)).toEqual(['a', 'y']);
     expect(grabbed.run.box.map((m) => m.fighter.id)).toEqual(['x']);
     expect(grabbed.ui).toEqual({ pane: 'party', index: 1, grabbed: null });
@@ -196,7 +205,7 @@ describe('partyInput managing', () => {
 
   it('keeps the grab when the party is full', () => {
     const run = runWith(['a', 'b', 'c', 'd', 'e', 'f'], ['x']);
-    const grabbed = feed(run, { pane: 'box', index: 0, grabbed: null }, ['confirm', 'left']);
+    const grabbed = feedCentre(run, { pane: 'box', index: 0, grabbed: null }, ['confirm', 'left']);
     expect(grabbed.run).toBe(run);
     expect(grabbed.ui.grabbed).not.toBeNull();
   });
@@ -217,51 +226,68 @@ describe('partyInput managing', () => {
   });
 });
 
-describe('PC editing: the entry room only', () => {
-  it('refuses a deposit and a withdraw outside the entry room, leaving the run alone', () => {
+describe('PC editing: inside a Centre only', () => {
+  it('refuses every box edit outside a Centre, leaving the run alone', () => {
     const entry = runWith(['a', 'b'], ['x']);
-    const away: RunState = { ...entry, routeInMap: 1 };
-    const picked = feed(away, initialPartyUi(), ['confirm']);
+    const picked = feed(entry, initialPartyUi(), ['confirm']);
     expect(picked.ui.grabbed).not.toBeNull();
     const deposit = partyInput(picked.run, picked.ui, 'right');
-    expect(deposit.run).toBe(away);
+    expect(deposit.run).toBe(entry);
     expect(deposit.ui.grabbed).not.toBeNull();
 
     const boxUi: PartyUiState = { pane: 'box', index: 0, grabbed: null };
-    expect(partyInput(away, boxUi, 'confirm').ui.grabbed).toBeNull();
-    expect(grabAt(away, boxUi, 'box', 0).run).toBe(away);
-    expect(grabAt(away, boxUi, 'box', 0).ui.grabbed).toBeNull();
-    expect(feed(away, boxUi, ['confirm', 'left']).run).toBe(away);
+    expect(partyInput(entry, boxUi, 'confirm').ui.grabbed).toBeNull();
+    expect(grabAt(entry, boxUi, 'box', 0).run).toBe(entry);
+    expect(grabAt(entry, boxUi, 'box', 0).ui.grabbed).toBeNull();
+    expect(feed(entry, boxUi, ['confirm', 'left']).run).toBe(entry);
+    // The flag is the scene's, not the run's: a hand-edited run cannot open it either.
+    const handEdited: RunState = { ...entry, routeInMap: 0 };
+    expect(feed(handEdited, boxUi, ['confirm', 'left']).run).toBe(handEdited);
   });
 
-  it('allows the whole across-swap in the entry room: party, box and back by id', () => {
+  it('moves a box member in the Centre and nowhere else', () => {
+    const run = runWith(['a', 'b'], ['x', 'y']);
+    const boxUi: PartyUiState = { pane: 'box', index: 1, grabbed: null };
+    expect(dropOnCard(run, { pane: 'box', index: 1 }, 'party')).toBe(run);
+    expect(dropOnCard(run, { pane: 'box', index: 1 }, 'party', false)).toBe(run);
+    const withdrawn = dropOnCard(run, { pane: 'box', index: 1 }, 'party', true);
+    expect(withdrawn.party.map((member) => member.fighter.id)).toEqual(['a', 'b', 'y']);
+    expect(withdrawn.box.map((member) => member.fighter.id)).toEqual(['x']);
+
+    const deposited = dropOnCard(run, { pane: 'party', index: 0 }, 'box', true);
+    expect(deposited.party.map((member) => member.fighter.id)).toEqual(['b']);
+    expect(deposited.box.map((member) => member.fighter.id)).toEqual(['x', 'y', 'a']);
+
+    expect(grabAt(run, boxUi, 'box', 1).ui.grabbed).toBeNull();
+    expect(grabAt(run, boxUi, 'box', 1, true).ui.grabbed).toEqual({ pane: 'box', origin: 1 });
+  });
+
+  it('allows the whole across-swap in the Centre: party, box and back by id', () => {
     const run = runWith(['a', 'b'], ['x']);
-    expect(run.routeInMap).toBe(0);
-    const deposited = feed(run, initialPartyUi(), ['confirm', 'right']);
+    const deposited = feedCentre(run, initialPartyUi(), ['confirm', 'right']);
     expect(deposited.run.party.map((member) => member.fighter.id)).toEqual(['b']);
     expect(deposited.run.box.map((member) => member.fighter.id)).toEqual(['x', 'a']);
 
-    const back = partyInput(deposited.run, deposited.ui, 'confirm');
+    const back = partyInput(deposited.run, deposited.ui, 'confirm', true);
     expect(back.ui.grabbed).toEqual({ pane: 'box', origin: 1 });
-    const withdrawn = partyInput(back.run, back.ui, 'left');
+    const withdrawn = partyInput(back.run, back.ui, 'left', true);
     expect(withdrawn.run.party.map((member) => member.fighter.id)).toEqual(['b', 'a']);
     expect(withdrawn.run.box.map((member) => member.fighter.id)).toEqual(['x']);
   });
 
-  it('allows a pointer swap in the entry room and refuses it one room away', () => {
+  it('allows a pointer swap in the Centre and refuses it outside', () => {
     const entry = runWith(['a'], ['x']);
-    const grabbed = grabAt(entry, { pane: 'box', index: 0, grabbed: null }, 'box', 0);
+    const grabbed = grabAt(entry, { pane: 'box', index: 0, grabbed: null }, 'box', 0, true);
     expect(grabbed.ui.grabbed).toEqual({ pane: 'box', origin: 0 });
-    expect(swapAcross(grabbed.run, grabbed.ui, 0).run.party.map((member) => member.fighter.id)).toEqual([
-      'x',
-    ]);
+    expect(
+      swapAcross(grabbed.run, grabbed.ui, 0, true).run.party.map((member) => member.fighter.id),
+    ).toEqual(['x']);
 
-    const away: RunState = { ...entry, routeInMap: 2 };
     const refused = { pane: 'box' as const, index: 0, grabbed: { pane: 'box' as const, origin: 0 } };
-    const noGrab = grabAt(away, { pane: 'box', index: 0, grabbed: null }, 'box', 0);
-    expect(noGrab.run).toBe(away);
+    const noGrab = grabAt(entry, { pane: 'box', index: 0, grabbed: null }, 'box', 0);
+    expect(noGrab.run).toBe(entry);
     expect(noGrab.ui.grabbed).toBeNull();
-    expect(swapAcross(away, refused, 0)).toEqual({ run: away, ui: refused });
+    expect(swapAcross(entry, refused, 0, false)).toEqual({ run: entry, ui: refused });
   });
 });
 
@@ -278,7 +304,7 @@ describe('pointer drag', () => {
 
   it('drags a box member within the box', () => {
     const run = runWith(['a'], ['x', 'y', 'z']);
-    const grabbed = grabAt(run, { pane: 'box', index: 2, grabbed: null }, 'box', 2);
+    const grabbed = grabAt(run, { pane: 'box', index: 2, grabbed: null }, 'box', 2, true);
     const moved = dragTo(grabbed.run, grabbed.ui, 0);
     expect(moved.run.box.map((m) => m.fighter.id)).toEqual(['z', 'x', 'y']);
   });
@@ -299,8 +325,8 @@ describe('pointer drag', () => {
 
   it('swaps a grabbed box member into a full party, cursor crossing over', () => {
     const run = runWith(['a', 'b', 'c', 'd', 'e', 'f'], ['x', 'y']);
-    const grabbed = grabAt(run, { pane: 'box', index: 1, grabbed: null }, 'box', 1);
-    const swapped = swapAcross(grabbed.run, grabbed.ui, 3);
+    const grabbed = grabAt(run, { pane: 'box', index: 1, grabbed: null }, 'box', 1, true);
+    const swapped = swapAcross(grabbed.run, grabbed.ui, 3, true);
     expect(swapped.run.party.map((m) => m.fighter.id)).toEqual(['a', 'b', 'c', 'y', 'e', 'f']);
     expect(swapped.run.box.map((m) => m.fighter.id)).toEqual(['x', 'd']);
     expect(swapped.ui).toEqual({ pane: 'party', index: 3, grabbed: null });
@@ -309,7 +335,7 @@ describe('pointer drag', () => {
   it('swaps a grabbed party member into the box', () => {
     const run = runWith(['a', 'b'], ['x', 'y']);
     const grabbed = grabAt(run, initialPartyUi(), 'party', 1);
-    const swapped = swapAcross(grabbed.run, grabbed.ui, 1);
+    const swapped = swapAcross(grabbed.run, grabbed.ui, 1, true);
     expect(swapped.run.party.map((m) => m.fighter.id)).toEqual(['a', 'y']);
     expect(swapped.run.box.map((m) => m.fighter.id)).toEqual(['x', 'b']);
     expect(swapped.ui).toEqual({ pane: 'box', index: 1, grabbed: null });
@@ -318,15 +344,15 @@ describe('pointer drag', () => {
   it('ignores a swap over an empty slot or with nothing grabbed', () => {
     const run = runWith(['a'], ['x']);
     const grabbed = grabAt(run, initialPartyUi(), 'party', 0);
-    expect(swapAcross(grabbed.run, grabbed.ui, 9)).toEqual({ run, ui: grabbed.ui });
-    expect(swapAcross(run, initialPartyUi(), 0)).toEqual({ run, ui: initialPartyUi() });
+    expect(swapAcross(grabbed.run, grabbed.ui, 9, true)).toEqual({ run, ui: grabbed.ui });
+    expect(swapAcross(run, initialPartyUi(), 0, true)).toEqual({ run, ui: initialPartyUi() });
   });
 });
 
 describe('a pointer drop on the other card', () => {
   it('withdraws a box member let go on the party card, once and at the end', () => {
     const run = runWith(['a'], ['x', 'y']);
-    const next = dropOnCard(run, { pane: 'box', index: 1 }, 'party');
+    const next = dropOnCard(run, { pane: 'box', index: 1 }, 'party', true);
     expect(next.party.map((m) => m.fighter.id)).toEqual(['a', 'y']);
     expect(next.box.map((m) => m.fighter.id)).toEqual(['x']);
     expect(next.party).toHaveLength(run.party.length + 1);
@@ -335,7 +361,7 @@ describe('a pointer drop on the other card', () => {
 
   it('deposits a party member let go on the PC card, once and at the end', () => {
     const run = runWith(['a', 'b'], ['x']);
-    const next = dropOnCard(run, { pane: 'party', index: 1 }, 'box');
+    const next = dropOnCard(run, { pane: 'party', index: 1 }, 'box', true);
     expect(next.party.map((m) => m.fighter.id)).toEqual(['a']);
     expect(next.box.map((m) => m.fighter.id)).toEqual(['x', 'b']);
     expect(next.party).toHaveLength(run.party.length - 1);
@@ -344,31 +370,31 @@ describe('a pointer drop on the other card', () => {
 
   it('moves nobody for a drop on the member’s own card or on nothing', () => {
     const run = runWith(['a', 'b'], ['x']);
-    expect(dropOnCard(run, { pane: 'box', index: 0 }, 'box')).toBe(run);
-    expect(dropOnCard(run, { pane: 'party', index: 1 }, 'party')).toBe(run);
-    expect(dropOnCard(run, { pane: 'box', index: 0 }, null)).toBe(run);
-    expect(dropOnCard(run, { pane: 'party', index: 0 }, null)).toBe(run);
-    expect(dropOnCard(run, null, 'party')).toBe(run);
+    expect(dropOnCard(run, { pane: 'box', index: 0 }, 'box', true)).toBe(run);
+    expect(dropOnCard(run, { pane: 'party', index: 1 }, 'party', true)).toBe(run);
+    expect(dropOnCard(run, { pane: 'box', index: 0 }, null, true)).toBe(run);
+    expect(dropOnCard(run, { pane: 'party', index: 0 }, null, true)).toBe(run);
+    expect(dropOnCard(run, null, 'party', true)).toBe(run);
   });
 
   it('moves nobody from the fallen’s pane', () => {
     const run = runWith(['a'], ['x'], ['d']);
-    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'party')).toBe(run);
-    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'box')).toBe(run);
+    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'party', true)).toBe(run);
+    expect(dropOnCard(run, { pane: 'rip', index: 0 }, 'box', true)).toBe(run);
   });
 
-  it('refuses both directions outside the floor’s entry room', () => {
-    const away = { ...runWith(['a'], ['x']), routeInMap: 3 };
-    expect(dropOnCard(away, { pane: 'box', index: 0 }, 'party')).toBe(away);
-    expect(dropOnCard(away, { pane: 'party', index: 0 }, 'box')).toBe(away);
+  it('refuses both directions outside a Centre', () => {
+    const run = runWith(['a'], ['x']);
+    expect(dropOnCard(run, { pane: 'box', index: 0 }, 'party')).toBe(run);
+    expect(dropOnCard(run, { pane: 'party', index: 0 }, 'box')).toBe(run);
   });
 
   it('refuses a withdrawal into a full party and a deposit of the last member', () => {
     const full = runWith(['a', 'b', 'c', 'd', 'e', 'f'], ['x']);
-    expect(dropOnCard(full, { pane: 'box', index: 0 }, 'party')).toBe(full);
-    expect(dropOnCard(full, { pane: 'party', index: 2 }, 'box')).toEqual(depositToBox(full, 2));
+    expect(dropOnCard(full, { pane: 'box', index: 0 }, 'party', true)).toBe(full);
+    expect(dropOnCard(full, { pane: 'party', index: 2 }, 'box', true)).toEqual(depositToBox(full, 2));
     const alone = runWith(['a'], ['x']);
-    expect(dropOnCard(alone, { pane: 'party', index: 0 }, 'box')).toBe(alone);
+    expect(dropOnCard(alone, { pane: 'party', index: 0 }, 'box', true)).toBe(alone);
   });
 });
 
@@ -403,14 +429,14 @@ describe('RIP', () => {
     const run = runWith(['a', 'b'], [], ['gone']);
     const picked = feed(run, initialPartyUi(), ['confirm']);
     expect(picked.ui.grabbed).not.toBeNull();
-    const moved = partyInput(picked.run, picked.ui, 'right');
+    const moved = partyInput(picked.run, picked.ui, 'right', true);
     expect(moved.run.box.map((entry) => entry.fighter.id)).toEqual(['a']);
     expect(moved.run.rip).toBe(run.rip);
     expect(moved.run.rip.map((entry) => entry.fighter.id)).toEqual(['gone']);
     expect(moved.ui.pane).toBe('box');
     // A drop straight on a dead member's slot refuses the swap and moves nothing.
     const onRip: PartyUiState = { pane: 'rip', index: 0, grabbed: { pane: 'party', origin: 1 } };
-    const swapped = swapAcross(run, onRip, 0);
+    const swapped = swapAcross(run, onRip, 0, true);
     expect(swapped.run).toBe(run);
     expect(swapped.ui).toBe(onRip);
   });

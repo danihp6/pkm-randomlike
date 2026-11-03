@@ -37,10 +37,17 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   pure travel rule (a settlement re-drawn in place, any other node handed to the scene its
   kind names). Its dev-only surface is `__pkmCity` with `debugCityState` and `placePlayer`.
 - `InteriorScene.ts` — the town's laboratory, the prologue's one room: the interior drawn
-  from `planInterior` on the interior tileset, the player on the shared walker, the
-  professor's starter pick mounted as the shipped `starter` panel, the run it leaves in the
-  save and the door back to the town. Its dev-only surface is `__pkmInterior` with
-  `debugInteriorState` and `placePlayer`.
+  from `planInterior` on the interior tileset, the player on the shared walker, the free
+  entry heal the town has instead of a Centre (`serviceHeal`), the professor's starter pick
+  mounted as the shipped `starter` panel, the run it leaves in the save and the door back
+  to the town. Its dev-only surface is `__pkmInterior` with `debugInteriorState` and
+  `placePlayer`.
+- `services.ts` — a city's **Pokémon Centre** (scene key `Centre`, `docs/region-spec.md`
+  §6): the same walked interior as the laboratory, with the counter that heals party and
+  box on entry (and again at its healing station), the PC that opens the shipped box card,
+  and the merchant that opens the shipped shop card stocked from the city's own shelf
+  (`shopBandForTier`). Its dev-only surface is `__pkmCentre` with `debugServicesState`,
+  `placePlayer`, `openCounter`, `openPc` and `openShop`.
 - `interior.test.ts` — the laboratory's headless half: the offer before and after the pick,
   the intent that takes it, and the scene's own registration.
 - `npcs.ts` — a node's NPCs drawn and opened.
@@ -55,11 +62,13 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   `interiorSceneKey`) over a fixed seed's `city:1`.
 - `regionScenes.ts` — the region node scenes' folder registry: a scene module that exports
   `regionSceneKey` and `regionSceneClass` is collected for `main.ts`'s scene list, so a new
-  city, gym or League needs no `main.ts` edit.
+  city, gym or League needs no `main.ts` edit. Its glob names `services.ts` as well as the
+  `*Scene.ts` files, so a room named for what it is (the Centre) is collected too.
 - `regionScenes.test.ts` — the registry's headless rules: a module with both markers is
   collected, one with one or none is skipped, a duplicate key throws naming both paths, and
-  the folder itself collects the city screen — plus the travel seam's single flight, where
-  two `travelToNode` calls started inside the preload window commit exactly one.
+  the folder itself collects the city screen and the Centre — plus the travel seam's single
+  flight, where two `travelToNode` calls started inside the preload window commit exactly
+  one.
 - `panels/` — the route's overlay panels: one module per panel, discovered by the
   scene's registry, so a new panel is a new file.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s

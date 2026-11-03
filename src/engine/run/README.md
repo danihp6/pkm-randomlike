@@ -9,7 +9,7 @@ seed (`D11`).
 ## Layout
 
 - `index.ts` — the barrel most of the engine and the scenes read the run through.
-- `state.ts` — the run itself: party, box, rip, bag, money, the per-floor marks and the summary counters.
+- `state.ts` — the run itself: party, box, rip, bag, money, the per-floor marks, the summary counters and the PC's rule (a box edit is allowed inside a Centre, nowhere else).
 - `state.test.ts` — the run transitions, the catch window and the member-id repair, headless.
 - `progression.ts` — the shared XP bar, levels, the member shape and the catches folded into the squad.
 - `progression.test.ts` — the level curve, the awards and every evolution/level-up event.
@@ -19,8 +19,8 @@ seed (`D11`).
 - `floors.test.ts` — the chain round trip over the finite and infinite modes.
 - `chain.ts` — what a route index plays as: route, mini-boss, boss or final boss.
 - `chain.test.ts` — the cadence in every mode and at every block boundary.
-- `heal.ts` — the Pokevial charges and the automatic drink, the heal stop and the party/box heal.
-- `heal.test.ts` — the charge economy, what makes the vial drink and what a heal never does (revive, D5).
+- `heal.ts` — the Pokevial charges and the automatic drink, the heal stop, the party/box heal and the Centre's counter (`serviceHeal`).
+- `heal.test.ts` — the charge economy, what makes the vial drink, what the counter rests and what a heal never does (cure a status, revive, D5).
 - `perms.ts` — permadeath: the fallen leave the run for good (D5).
 - `perms.test.ts` — the release order, the same-reference no-op and the RIP list.
 - `battleLink.ts` — the contract a route hands a battle and the payload the battle hands back.

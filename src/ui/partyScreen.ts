@@ -120,23 +120,27 @@ function memberAt(run: RunState, pane: PaneId, index: number): RunPokemon | unde
 }
 
 /**
- * True when a member may be picked up. The party always reorders; a **box**
- * member is only grabbable in the floor's **entry room**, where the PC is editable
- * (`pcMemberEditable`) — on every visit, first or a return
- * (`docs/routes-spec.md` §6). The **RIP** pane is never grabbed: the dead are
- * read-only (D5).
+ * True when a member may be picked up. The party always reorders; a **box** member is
+ * only grabbable **inside a Pokémon Centre**, where the PC is editable
+ * (`pcMemberEditable`) — on every visit (`docs/region-spec.md` §6). The **RIP** pane
+ * is never grabbed: the dead are read-only (D5).
  */
-function canGrab(run: RunState, pane: PaneId, index: number): boolean {
+function canGrab(run: RunState, pane: PaneId, index: number, inCentre: boolean): boolean {
   if (pane === 'rip') return false;
   const member = memberAt(run, pane, index);
   if (!member) return false;
-  return pane === 'party' || pcMemberEditable(run);
+  return pane === 'party' || pcMemberEditable(run, inCentre);
 }
 
 /** True when a grabbed member may cross between the party and the PC. */
-function canSwapAcross(run: RunState, pane: PaneId, member: RunPokemon | undefined): boolean {
+function canSwapAcross(
+  run: RunState,
+  pane: PaneId,
+  member: RunPokemon | undefined,
+  inCentre: boolean,
+): boolean {
   if (pane === 'rip') return false;
-  return member !== undefined && pcMemberEditable(run);
+  return member !== undefined && pcMemberEditable(run, inCentre);
 }
 
 function reorder(run: RunState, pane: PaneId, from: number, to: number): RunState {
@@ -157,8 +161,14 @@ export function windowStart(length: number, index: number, rows: number): number
  * moves it to the other pane when the rules allow it (`deposit`/`withdraw`), and
  * `cancel` restores it to where the grab started. With nothing grabbed the
  * cursor wraps, `left`/`right` cycle party → box → RIP and `confirm` starts a grab.
+ * `inCentre` is the room's own fact: only a Centre's card may move a box member.
  */
-export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): PartyInputResult {
+export function partyInput(
+  run: RunState,
+  ui: PartyUiState,
+  input: PartyInput,
+  inCentre = false,
+): PartyInputResult {
   const list = listOf(run, ui.pane);
 
   if (ui.grabbed) {
@@ -171,7 +181,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
     if (input === 'left' || input === 'right') {
       const toOther = pane === 'party' ? input === 'right' : input === 'left';
       if (!toOther) return { run, ui };
-      if (!canSwapAcross(run, pane, memberAt(run, pane, ui.index))) return { run, ui };
+      if (!canSwapAcross(run, pane, memberAt(run, pane, ui.index), inCentre)) return { run, ui };
       if (pane === 'party') {
         const next = depositToBox(run, ui.index);
         return next === run
@@ -205,7 +215,7 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
     };
   }
 
-  if (input === 'confirm' && list.length > 0 && canGrab(run, ui.pane, ui.index)) {
+  if (input === 'confirm' && list.length > 0 && canGrab(run, ui.pane, ui.index, inCentre)) {
     return { run, ui: { ...ui, grabbed: { pane: ui.pane, origin: ui.index } } };
   }
 
@@ -214,10 +224,17 @@ export function partyInput(run: RunState, ui: PartyUiState, input: PartyInput): 
 
 /**
  * A pointer press on `pane` at `index`: moves the cursor there and picks the
- * member up, so a drag can reorder it. An empty slot is a no-op.
+ * member up, so a drag can reorder it. An empty slot is a no-op, and so is a box
+ * cell outside a Centre (`inCentre`).
  */
-export function grabAt(run: RunState, ui: PartyUiState, pane: PaneId, index: number): PartyInputResult {
-  if (!canGrab(run, pane, index)) return { run, ui };
+export function grabAt(
+  run: RunState,
+  ui: PartyUiState,
+  pane: PaneId,
+  index: number,
+  inCentre = false,
+): PartyInputResult {
+  if (!canGrab(run, pane, index, inCentre)) return { run, ui };
   return { run, ui: { pane, index, grabbed: { pane, origin: index } } };
 }
 
@@ -250,16 +267,17 @@ export type DragPick = Readonly<{ pane: PaneId; index: number }>;
  * the crossing moves: a box member let go on the party card is **withdrawn** and a
  * party member let go on the PC card is **deposited**, each appended to the end of
  * its new pane, through the shipped `withdrawToParty` / `depositToBox`. A drop on
- * the member's own card, on the fallen's pane, on nothing, or anywhere outside the
- * floor's entry room (`pcMemberEditable`) moves nothing.
+ * the member's own card, on the fallen's pane, on nothing, or anywhere outside a
+ * Pokémon Centre (`inCentre`) moves nothing.
  */
 export function dropOnCard(
   run: RunState,
   drag: DragPick | null,
   card: 'party' | 'box' | null,
+  inCentre = false,
 ): RunState {
   if (drag === null || card === null || drag.pane === card) return run;
-  if (drag.pane === 'rip' || !pcMemberEditable(run)) return run;
+  if (drag.pane === 'rip' || !pcMemberEditable(run, inCentre)) return run;
   return drag.pane === 'box' ? withdrawToParty(run, drag.index) : depositToBox(run, drag.index);
 }
 
@@ -270,11 +288,18 @@ export function dropOnCard(
  * follows the moved member. A grab-less call, or a drop on a slot with no
  * member, is a no-op.
  */
-export function swapAcross(run: RunState, ui: PartyUiState, index: number): PartyInputResult {
+export function swapAcross(
+  run: RunState,
+  ui: PartyUiState,
+  index: number,
+  inCentre = false,
+): PartyInputResult {
   const grabbed = ui.grabbed;
   if (!grabbed) return { run, ui };
   if (grabbed.pane === 'rip' || ui.pane === 'rip') return { run, ui };
-  if (!canSwapAcross(run, grabbed.pane, memberAt(run, grabbed.pane, ui.index))) return { run, ui };
+  if (!canSwapAcross(run, grabbed.pane, memberAt(run, grabbed.pane, ui.index), inCentre)) {
+    return { run, ui };
+  }
   const toPane: PaneId = grabbed.pane === 'party' ? 'box' : 'party';
   if (!listOf(run, toPane)[index]) return { run, ui };
   const next =

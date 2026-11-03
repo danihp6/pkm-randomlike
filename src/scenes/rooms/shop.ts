@@ -75,7 +75,7 @@ export function openMart(host: RoomHost, stock?: MartStock): void {
   openShopCard(host, {
     title: t(title),
     mode: shopMode,
-    rows: buyRows(host.run, shopStock, host.run.mapIndex),
+    rows: buyRows(host.run, shopStock, host.run.nodeKey),
     scroll: shopScroll,
     selected: shopIndex,
     money: host.run.money,

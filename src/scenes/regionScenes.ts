@@ -2,8 +2,10 @@
  * The region node scenes' folder registry (`D47`'s shape, one folder over): a city,
  * a gym or the League registers itself by exporting `regionSceneKey` and
  * `regionSceneClass`, so a new node scene is a new file and `src/main.ts` is not
- * edited again. The collection rules are pure and unit-tested headless: this module
- * imports Phaser **not at all**, not even as a type.
+ * edited again. The glob names `services.ts` beside the `*Scene.ts` files, so a room
+ * whose file is named for what it is (the Centre) is collected too. The collection
+ * rules are pure and unit-tested headless: this module imports Phaser **not at all**,
+ * not even as a type.
  */
 
 /** What the registry reads off a scene module: both markers or neither. */
@@ -41,8 +43,8 @@ export function collectRegionScenes(
   return entries;
 }
 
-/** Every scene file in this folder, eagerly, so `REGION_SCENES` is a plain array. */
-const MODULES = import.meta.glob(['./*Scene.ts', '!./*.test.ts'], { eager: true });
+/** Every region scene file in this folder, eagerly, so `REGION_SCENES` is a plain array. */
+const MODULES = import.meta.glob(['./*Scene.ts', './services.ts', '!./*.test.ts'], { eager: true });
 
 /** Every region node scene in this folder, ready for `main.ts`'s `scene` array. */
 export const REGION_SCENES: readonly RegionSceneEntry[] = collectRegionScenes(MODULES);
