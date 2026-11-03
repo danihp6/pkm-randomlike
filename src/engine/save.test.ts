@@ -746,6 +746,7 @@ describe('the pre-v28 document', () => {
       seed: 'old-run',
       mode: 'finite',
       badges: 2,
+      towerStreak: 0,
       mapReached: 2,
       catches: 4,
       casualties: 1,
@@ -1524,6 +1525,7 @@ describe('the run history (Task-152)', () => {
     seed: 'seed-a',
     mode: 'finite',
     badges: 3,
+    towerStreak: 0,
     mapReached: 3,
     catches: 5,
     casualties: 2,
@@ -1634,7 +1636,7 @@ describe('the run history (Task-152)', () => {
     expect(encodeSave({ ...decodeSave(canonical) })).toBe(canonical);
     expect(JSON.parse(canonical).history).toEqual([FINISHED, WON]);
     expect(canonical).toContain(
-      '"history":[{"seed":"seed-a","mode":"finite","badges":3,"mapReached":3,"catches":5,"casualties":2,"playtimeMs":540000,"won":false,"endedAt":"2026-10-25T12:00:00.000Z","species":[{"speciesId":"pikachu","kos":7,"damage":412}]}',
+      '"history":[{"seed":"seed-a","mode":"finite","badges":3,"towerStreak":0,"mapReached":3,"catches":5,"casualties":2,"playtimeMs":540000,"won":false,"endedAt":"2026-10-25T12:00:00.000Z","species":[{"speciesId":"pikachu","kos":7,"damage":412}]}',
     );
   });
 
@@ -1677,6 +1679,19 @@ describe('the run history (Task-152)', () => {
     const decoded = document(historyDocument([floorsOnly]));
     expect(decoded.history).toEqual([]);
     expect(decoded.run).toEqual(sampleRun());
+  });
+
+  it('keeps the tower’s streak from the row it stored, and reads an absent one as none', () => {
+    const withStreak = document(historyDocument([{ ...FINISHED, towerStreak: 4 }]));
+    expect(withStreak.history).toHaveLength(1);
+    expect(withStreak.history[0].towerStreak).toBe(4);
+
+    const without: Record<string, unknown> = { ...FINISHED };
+    delete without.towerStreak;
+    const decoded = document(historyDocument([without]));
+    expect(decoded.history).toHaveLength(1);
+    expect(decoded.history[0].towerStreak).toBe(0);
+    expect(SAVE_VERSION).toBe(28);
   });
 
   it('reads the badge count as the record, and the floor figure with it', () => {
@@ -1891,6 +1906,7 @@ describe('storeHistory', () => {
     seed,
     mode: 'finite',
     badges: 2,
+    towerStreak: 0,
     mapReached: 2,
     catches: 1,
     casualties: 1,

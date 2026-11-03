@@ -33,6 +33,13 @@ export type RunHistoryRecord = Readonly<{
    */
   badges?: number;
   /**
+   * The tower's own streak, beside the record and apart from it (`D62`): how many
+   * tower fights the run won before it ended. Optional only because the shipped
+   * history fixtures build a record literal without it; the decoder fills 0 and
+   * `makeHistoryRecord` always writes it, exactly like `badges`.
+   */
+  towerStreak?: number;
+  /**
    * @deprecated compatibility figure the shipped stats card and the ranking still
    * read: it equals `badges`, so a card shows the badge count until the sweep.
    */
@@ -61,6 +68,8 @@ export type RunHistory = Readonly<{
    * counts beside the party and the box (`Task-217`).
    */
   rip: readonly RunPokemon[];
+  /** The streak the run ended on; `RunState` already satisfies this. */
+  towerStreak: number;
 }>;
 
 /**
@@ -118,6 +127,7 @@ export function makeHistoryRecord(
     seed: run.seed,
     mode: run.mode,
     badges,
+    towerStreak: Math.max(0, Math.floor(Number.isFinite(run.towerStreak) ? run.towerStreak : 0)),
     mapReached: Math.min(99, badges),
     catches: run.stats.catches,
     casualties: run.stats.casualties,

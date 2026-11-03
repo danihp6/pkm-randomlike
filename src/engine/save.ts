@@ -1180,6 +1180,7 @@ function parseHistoryRecord(value: unknown): RunHistoryRecord | null {
     seed: value.seed,
     mode: value.mode,
     badges: value.badges,
+    towerStreak: isInteger(value.towerStreak) && value.towerStreak >= 0 ? value.towerStreak : 0,
     // The compatibility figure reads as stored and falls back to the badge count.
     mapReached: isInteger(value.mapReached) && value.mapReached >= 0 ? value.mapReached : value.badges,
     catches: value.catches,
