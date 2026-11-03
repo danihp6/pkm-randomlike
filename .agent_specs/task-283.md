@@ -63,6 +63,7 @@
 - `src/ui/hud/commands.ts`
 - `src/ui/hud/commands.test.ts`
 - `src/ui/hud/panels/map/mapPanel.tsx`
+- `src/ui/hud/panels/map/map.css`
 - `src/ui/hud/panels/map/README.md`
 - `src/scenes/panels/map.ts`
 - `src/scenes/panels/types.ts`
@@ -205,6 +206,9 @@ protected onNodeArrived(key: string, spawn: Tile): void;
   toKey)` or `preload(seed, toKey)` (a `null` world is a `false`, no partial move),
   commits `this.run = result.run`, `persistRun()`, calls `transitionToNode(world,
   result.spawn)` and returns `true`.
+  **The in-flight guard is set before the first `await`, not after**: two presses
+  inside the preload window (~half a second on a cold node) must commit **one**
+  travel, never two runs for one transition. Clear it on every exit path.
 - `onNodeArrived(key, spawn)`: `movePlayerTo(spawn.x, spawn.y)` and play the node's
   music bed — `route-music` for `route`/`lateral`, `menu-music` for any settlement.
   This is the only place the two cues are chosen.
@@ -248,6 +252,16 @@ export function collectRegionScenes(modules: Readonly<Record<string, unknown>>):
   anything the travel seam may enter) registers itself by exporting the two markers
   and is collected by `regionScenes.ts`; the base seven stay in `main.ts`. Add the
   `regionScenes.ts` line to the file list.
+
+### TypeScript — the card's hit test (`mapPanel.tsx`, `map.css`)
+
+- The card's root is `pointer-events: none` (the HUD layer's rule), so a marker's
+  `onClick` never fires: `document.elementFromPoint` at a marker's centre answers the
+  canvas. A marker that dispatches a flight must be a real hit target —
+  `pointer-events: auto` and a pointer cursor on the marker itself, not on the card —
+  and `map.css`'s comment about the card being inert must say so. Measured: with the
+  card open, `getComputedStyle(marker).pointerEvents !== 'none'` and a **real** CDP
+  mouse click at the marker's centre flies.
 
 ### TypeScript — battle return (`BattleScene.ts` + `battleLink.ts`)
 
@@ -309,6 +323,9 @@ run the game (see the plan), never committed.
     is `'Gym'`, and a blank/whitespace key falls back to `'Route'`.
   - [ ] `[unit]` `reduceHudCommand({ type: 'node', key: 'city:1' })` is
     `{ kind: 'node', key: 'city:1' }` and a blank key is `null`.
+  - [ ] `[unit]` Two `travelToNode` calls started before the first one settles commit
+    exactly one travel (the guard is taken before the `await`); the second resolves
+    `false` and neither the run nor the fade count moves twice.
   - [ ] `[unit]` Nothing outside the exclusive paths was touched.
   - [ ] `[live]` At 1280×800 with the dev server up: boot a run, call
     `__pkmRoute.travelToNode('route:1', 'walk')` then
