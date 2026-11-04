@@ -335,7 +335,7 @@ describe('the card’s header readouts', () => {
     const levels = nodes(card.props.children).filter((node) => node.props['data-hud-party'] === 'level');
     expect(levels).toHaveLength(1);
     expect(levels[0]!.props.children).toBe(view.level.text);
-    expect(levels[0]!.props.children).toBe('Lv12');
+    expect(levels[0]!.props.children).toBe('LV 12');
     expect(levels[0]!.props.style).toStrictEqual({
       left: '32px',
       top: '16px',

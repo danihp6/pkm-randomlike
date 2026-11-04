@@ -332,6 +332,16 @@ describe('t / setLocale / getLocale', () => {
     expect(t('hud.missionsBadge', { badge: 3 })).toBe('Badge 3');
   });
 
+  it('renders both level keys in the board’s shape, and Spanish keeps its own', () => {
+    expect(t('common.level', { level: 36 })).toBe('LV 36');
+    expect(t('hud.level', { level: 36 })).toBe('LV 36');
+    expect(es['common.level']).toBe('Nv{level}');
+    expect(es['hud.level']).toBe('Nv{level}');
+    setLocale('es');
+    expect(t('common.level', { level: 36 })).toBe('Nv36');
+    expect(t('hud.level', { level: 36 })).toBe('Nv36');
+  });
+
   it('ignores extra params', () => {
     expect(t('hud.missionsBadge', { badge: 7, spare: 'unused' })).toBe('Badge 7');
   });
@@ -403,7 +413,8 @@ describe('the source table is the record', () => {
     );
     expect(en['notice.itemObtained']).toBe('Obtained {name}!');
     expect(en['party.rowLabel']).toBe('{name}  Lv{level}{status}');
-    expect(en['common.level']).toBe('Lv{level}');
+    expect(en['common.level']).toBe('LV {level}');
+    expect(en['hud.level']).toBe('LV {level}');
     expect(en['common.unknownPokemon']).toBe('A Pokemon');
   });
 

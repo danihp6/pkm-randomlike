@@ -72,7 +72,7 @@ These failed all four rules on `main` and were deleted from both tables: `menu.c
 `trade.controls`, `trade.leave`, `battle.panelName`, `battle.xp`. They are the old canvas screens'
 control hints, the settings screen's capture hints (the options panel draws its own), the mission
 line and its two card labels the rewritten missions card replaced, the evolution titles, the trade
-and reward windows' hints, and the battle panel's `Name Lv##` line with the XP label the route HUD
+and reward windows' hints, and the battle panel's `Name LV ##` line with the XP label the route HUD
 took over. The gate in index.test.ts reads this list back and asserts neither table carries one.
 
 ### Kept for Batch 125

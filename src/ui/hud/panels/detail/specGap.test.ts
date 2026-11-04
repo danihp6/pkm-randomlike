@@ -8,8 +8,8 @@ import { detailPanelBox, detailPanelView, type DetailPanelUi, type DetailPoolRow
 
 /**
  * The `03m Panels · pokemon moves` frame measured against the panel's own view model:
- * the adapter that answers for this slug, the copy it claims on the MOVES tab, the one
- * line it cannot claim, and the geometry that keeps the empty box claim honest.
+ * the adapter that answers for this slug, the copy it claims on the MOVES tab — the level
+ * line included — and the geometry that keeps the empty box claim honest.
  */
 
 const SPEC = screenSpec as ScreenSpec;
@@ -18,6 +18,7 @@ const DESKTOP = { width: 1280, height: 800 };
 /** The card's copy on the MOVES tab, in the card's own order and its own case. */
 const STRINGS: readonly string[] = [
   'CHARIZARD',
+  'LV 36',
   'FLAMETHROWER',
   'PP 15/15',
   'PWR 90',
@@ -73,7 +74,7 @@ describe('the 03m adapter', () => {
 
   it('emits the copy the card prints on the moves tab, in draw order', () => {
     expect(buildView(SPEC).strings).toStrictEqual(STRINGS);
-    expect(STRINGS).toHaveLength(18);
+    expect(STRINGS).toHaveLength(19);
   });
 
   it('prints nothing the board does not carry', () => {
@@ -96,15 +97,15 @@ describe('the 03m adapter', () => {
   });
 });
 
-describe('the level line the card cannot claim', () => {
-  it('types it without the space the board draws', () => {
-    expect(view().level).toBe('Lv36');
+describe('the level line the card claims', () => {
+  it('types it with the space the board draws', () => {
+    expect(view().level).toBe('LV 36');
     expect(textOf('detail lv')).toBe('LV 36');
-    expect(fold(view().level)).not.toBe(fold(textOf('detail lv')));
+    expect(fold(view().level)).toBe(fold(textOf('detail lv')));
   });
 
-  it('leaves it out of the claim rather than opening a string gap', () => {
-    expect(buildView(SPEC).strings).not.toContain(view().level);
+  it('keeps it in the claim without opening a string gap', () => {
+    expect(buildView(SPEC).strings).toContain(view().level);
     expect(gapFor(buildView(SPEC), SPEC).strings).toStrictEqual([]);
   });
 });
