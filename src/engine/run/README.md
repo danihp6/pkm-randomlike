@@ -13,10 +13,10 @@ seed (`D11`).
 - `state.test.ts` — the run transitions, the catch window and the member-id repair, headless.
 - `progression.ts` — the shared XP bar, levels, the member shape and the catches folded into the squad.
 - `progression.test.ts` — the level curve, the awards and every evolution/level-up event.
-- `levelCap.ts` — the per-map ceiling and its clamp.
+- `levelCap.ts` — the level clamp and the reached-cap predicate.
 - `levelCap.test.ts` — the clamp and the reached-cap predicate at the edges.
-- `floors.ts` — where a global route index falls in the map chain: position, band and cap.
-- `floors.test.ts` — the chain round trip over the finite and infinite modes.
+- `floors.ts` — a map's level window and band: the previous cap to its own, and the carver preview's own band.
+- `floors.test.ts` — the window at every finite map, past the tuned table and at a degenerate index.
 - `chain.ts` — what a route index plays as: route, mini-boss, boss or final boss.
 - `chain.test.ts` — the cadence in every mode and at every block boundary.
 - `heal.ts` — the Pokevial charges and the automatic drink, the heal stop, the party/box heal and the Centre's counter (`serviceHeal`).

@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../../data/biomes';
 import { GATES, GATE_KINDS, type GateKind } from '../../data/gates';
 import { getItem } from '../../data/items';
 import { ROUTE_LOOT } from '../../data/loot';
 import { SECRET_SHOP } from '../../data/shop';
+import { getBiome } from '../../data/biomes';
 import { TILESETS } from '../../data/tilesets';
 import { TRAINER_ARCHETYPE_IDS } from '../../data/trainers';
 import { isTmItemId } from '../../data/tms';
-import { planMap, roomView, specialRoom } from '../maps';
 import { createRun, createRunPokemon, partyHasType, type RunState } from '../run';
-import { bandForMap, routeIndexForRoom } from '../run/floors';
+import { bandForMap } from '../run/floors';
 import { sketchRoute, type RouteRequest, type RouteMap } from './index';
 import { secretShopGateOpen, secretShopSealId, secretShopStock } from './secretShop';
 
@@ -61,38 +60,41 @@ const PARTIES: Readonly<Record<GateKind, { open: readonly string[]; closed: stri
 };
 
 /**
- * The request `RouteScene.buildRoute` makes for a plan room: the room's own size,
+ * The request `RouteScene.buildRoute` makes for a leaf room: the room's own size,
  * opening set, biome layout and wall motif, its band's loot and the whole trainer
- * archetype list, role and `quiet`, plus the vault flag. Rebuilt here so the pinned
- * `mouth` and `pocket` are the ones the live scene carves.
+ * archetype list, plus the vault flag. The floor plan is gone, so the leaf the pinned
+ * literals were measured on is **frozen here** exactly as the plan handed it to the
+ * scene: a 30x30 dead-end with its single W door, the quiet wild role, the map 3 loot
+ * band and the route index the plan gave room 9.
  */
-function roomRequest(seed: string, mapIndex: number, roomId: number): RouteRequest {
-  const plan = planMap(seed, mapIndex);
-  const view = roomView(plan, roomId, false);
-  const biome = getBiome(view.biomeId);
+function roomRequest(seed: string, mapIndex: number): RouteRequest {
+  const biome = getBiome('forest');
   const pattern = TILESETS[biome.tilesetId].config.wallPattern;
   const wall = pattern
     ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
     : undefined;
-  const loot = ROUTE_LOOT[bandForMap(view.mapIndex).id];
+  const loot = ROUTE_LOOT[bandForMap(mapIndex).id];
   return {
     seed,
-    routeIndex: routeIndexForRoom(plan, view.roomId),
-    biomeId: view.biomeId,
+    routeIndex: FROZEN_ROUTE_INDEX,
+    biomeId: biome.id,
     layout: biome.layout,
-    openings: view.openings,
-    width: view.width,
-    height: view.height,
+    openings: [{ edge: 'W', role: 'entry' }],
+    width: 30,
+    height: 30,
     loot: loot.pool,
     hiddenChance: loot.hiddenChance,
     itemChance: loot.itemChance,
-    role: view.role,
+    role: 'wild',
     trainerArchetypes: TRAINER_ARCHETYPE_IDS,
     quiet: true,
     gate: 'sealed',
     ...(wall ? { wall } : {}),
   };
 }
+
+/** The route index the retired floor plan gave the pinned leaf's room. */
+const FROZEN_ROUTE_INDEX = 22;
 
 /** The cardinal from `from` to `to` (they are one step apart). */
 function directionFrom(from: { x: number; y: number }, to: { x: number; y: number }): string {
@@ -181,16 +183,8 @@ describe('the secret shop seal', () => {
 });
 
 describe('the pinned QA room', () => {
-  it('re-derives the seed’s leaf, its obstacle, its mouth and its pocket', () => {
-    const plan = planMap(SECRET_SHOP_QA.seed, SECRET_SHOP_QA.mapIndex);
-    const roomId = specialRoom(plan, 'secret-shop');
-    expect(roomId, `${SECRET_SHOP_QA.seed} floor ${SECRET_SHOP_QA.mapIndex}`).toBe(
-      SECRET_SHOP_QA.roomId,
-    );
-
-    const route: RouteMap = sketchRoute(
-      roomRequest(SECRET_SHOP_QA.seed, SECRET_SHOP_QA.mapIndex, SECRET_SHOP_QA.roomId),
-    );
+  it('re-derives the leaf’s obstacle, its mouth and its pocket', () => {
+    const route: RouteMap = sketchRoute(roomRequest(SECRET_SHOP_QA.seed, SECRET_SHOP_QA.mapIndex));
     const gate = route.gate;
     expect(gate, 'the room carves its vault').toBeDefined();
     expect(gate!.kind).toBe(SECRET_SHOP_QA.obstacle);
@@ -204,15 +198,5 @@ describe('the pinned QA room', () => {
     expect(mouth).toEqual(SECRET_SHOP_QA.mouth);
     expect(directionFrom(SECRET_SHOP_QA.mouth, seal)).toBe(SECRET_SHOP_QA.direction);
     expect({ x: seal.x + step.x, y: seal.y + step.y }).toEqual(SECRET_SHOP_QA.pocket);
-  });
-
-  it('keeps the pinned room a dead-end leaf, below the boss', () => {
-    const plan = planMap(SECRET_SHOP_QA.seed, SECRET_SHOP_QA.mapIndex);
-    const room = plan.rooms[SECRET_SHOP_QA.roomId];
-    expect(room.special).toBe('secret-shop');
-    expect(room.shape).toBe('dead-end');
-    expect(room.id).not.toBe(plan.entryRoom);
-    expect(room.id).not.toBe(plan.bossRoom);
-    expect(plan.links.filter(([a, b]) => a === room.id || b === room.id)).toHaveLength(1);
   });
 });

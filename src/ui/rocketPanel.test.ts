@@ -10,13 +10,12 @@ import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   overworldSpriteFrame,
 } from '../data/overworldSprites';
-import { planMap, roomView } from '../engine/maps';
 import type { Tile } from '../engine/grid';
 import type { RouteTrainer } from '../engine/routes';
 import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../engine/routes';
 import { addMoney, bandForMap, createRun, createRunPokemon, type RunState } from '../engine/run';
 import { t } from '../i18n';
-import type { RoomHost, RoomPanel } from '../scenes/rooms/types';
+import type { RoomHost, RoomPanel } from '../scenes/panels/types';
 import { loadSettings } from '../settings';
 import { casinoGruntTrainerId, casinoLockId, casinoSpinId } from './casino';
 import {
@@ -277,7 +276,7 @@ function harness(options: HostOptions = {}) {
     get run(): RunState {
       return run;
     },
-    view: roomView(planMap(SEED, MAP_INDEX), 0, false),
+    view: { mapIndex: MAP_INDEX, roomId: 0 },
     // The widened port (`D47`): the machine reads neither, so it needs a stand-in.
     route: () => sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' }),
     rebuildRoom: () => undefined,

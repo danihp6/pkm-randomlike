@@ -19,11 +19,10 @@ import { buyItem, buyRows, sellItem, sellRows, type ShopRow, type ShopSlot } fro
 import type { RoutePanelDescriptor } from './types';
 
 /**
- * The scene-side owner of the merchant's DOM card (`D49`). The stock rules, the cache
- * key and the room panel stay in `src/scenes/rooms/shop.ts`; this module paints the
- * card into the `#hud` layer from `src/ui/hud/panels/shop/` and is the **only** writer:
- * one press, one `ShopTrade`, one `commitRun`. It holds no `Rng` and no clock, so the
- * same node opens the same shelf.
+ * The scene-side owner of the merchant's DOM card (`D49`): the stock rules, the cache
+ * key and the panel itself, painted into the `#hud` layer from `src/ui/hud/panels/shop/`.
+ * It is the **only** writer: one press, one `ShopTrade`, one `commitRun`. It holds no
+ * `Rng` and no clock, so the same node opens the same shelf.
  */
 
 /**
@@ -96,7 +95,7 @@ function viewport(host: ShopCardHost): { width: number; height: number } {
  * count)` **and its endless flag**, so the rows the room rolled are the card's stock
  * for its session and a rebuilt ball row stays endless even when the shelf's band and
  * the node's band read different balls (a city's Centre stocks by its tier). The
- * room's cache stays in `rooms/shop.ts`; this is the one read the card needs.
+ * shelf's own cache stays in this module; this is the one read the card needs.
  */
 function stockOf(rows: readonly ShopRow[]): readonly ShopSlot[] {
   return rows.map((row) => ({
@@ -139,8 +138,8 @@ function setShopPaused(paused: boolean): void {
 }
 
 /**
- * Opens the Mart's DOM card: the view comes from `rooms/shop.ts` (its stock, its
- * title and the greeting), the mount from the `#hud` layer. A missing layer mounts
+ * Opens the Mart's DOM card: the view is the stock, the title and the greeting this
+ * module is handed, the mount comes from the `#hud` layer. A missing layer mounts
  * nothing, exactly as the shipped DOM panels guard it.
  */
 export function openShopCard(host: ShopCardHost, view: ShopInput): void {

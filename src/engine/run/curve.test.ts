@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../../data/biomes';
 import { bossPartySize } from '../../data/bosses';
 import { gymForBadge } from '../../data/gyms';
-import { ROUTE_LOOT } from '../../data/loot';
 import { levelCapForMap } from '../../data/maps';
 import { BADGE_CAPS, LEAGUE_LEVEL, badgeCap } from '../../data/region';
 import {
@@ -13,23 +11,17 @@ import {
   type LevelBand,
 } from '../../data/run';
 import { SHOP_TM } from '../../data/shop';
-import { TILESETS } from '../../data/tilesets';
 import {
   TRAINER_ARCHETYPES,
-  TRAINER_ARCHETYPE_IDS,
   TRAINER_MONEY_BAND_SCALE,
   getTrainerArchetype,
 } from '../../data/trainers';
-import { planMap } from '../maps/plan';
-import { roomView } from '../maps/progress';
 import { leagueIds } from '../region/league';
 import { nodeOf, planRegion, type RegionNode } from '../region/plan';
 import { planRouteLayout } from '../region/route/layout';
 import { towerStep } from '../region/tower';
 import { Rng, hashSeed } from '../rng';
-import { sketchRoute, type RouteRequest } from '../routes/sketch';
 import { gymLeaderFoe, gymReward } from './badge';
-import { routeIndexForRoom } from './floors';
 import { bandForNode } from './levelCurve';
 import { experienceAward, xpForLevel } from './progression';
 import { BOSS_MONEY_MULTIPLIER } from './reward';
@@ -42,7 +34,7 @@ import { compatForNode, createRun, markTrainerDefeated, type RunState } from './
  */
 const CURVE_SEEDS: readonly string[] = ['curve-a', 'curve-b', 'curve-c'];
 
-/** A fresh run's starter level (`src/scenes/StarterScene.ts`), where the first stretch starts. */
+/** A fresh run's starter level (`src/engine/run/prologue.ts`), where the first stretch starts. */
 const START_LEVEL = 5;
 
 /** The region's eight badge stretches, in badge order. */
@@ -204,7 +196,7 @@ const MEASURED_FINALE: Readonly<Record<number, readonly [number, number]>> = {
   8: [3600, 1200],
 };
 
-/** The boss's and the mini-boss's archetype (`RouteScene.bossTrainer`, `rooms/miniBoss.ts`). */
+/** The boss's and the mini-boss's archetype (`RouteScene.bossTrainer`). */
 const HAND_PLACED_ARCHETYPE = 'ace';
 
 /** The party a gym leader fields: gym 1's fixed three, the band's six on every later gym. */
@@ -230,38 +222,32 @@ function stretchNode(badge: number): RegionNode {
 }
 
 /**
- * One room of one stretch's route, built exactly as `RouteScene` builds it: the
- * plan room's openings and size, the biome's layout, terrain, loot and the whole
- * archetype pool, with the entry / boss / special leaves quiet.
+ * What each stretch's route placed, room by room, as the retired floor plan and the
+ * shipped carver measured it: the rooms its map held and the trainers its rooms
+ * placed, one row per walk seed. Frozen here because the plan the numbers came from
+ * is deleted; a rebalance re-pins them exactly as it re-pins the fills below.
  */
-function buildStretchRoom(seed: string, node: RegionNode, roomId: number): RouteRequest {
-  const plan = planMap(seed, node.badge);
-  const view = roomView(plan, roomId, false);
-  const biome = getBiome(view.biomeId);
-  const pattern = TILESETS[biome.tilesetId].config.wallPattern;
-  const wall = pattern
-    ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
-    : undefined;
-  const loot = ROUTE_LOOT[bandForNode(node).id];
-  return {
-    seed,
-    routeIndex: routeIndexForRoom(plan, view.roomId),
-    biomeId: view.biomeId,
-    layout: biome.layout,
-    openings: view.openings,
-    width: view.width,
-    height: view.height,
-    grassPatches: biome.terrain.grassPatches,
-    ledges: biome.terrain.ledges,
-    loot: loot.pool,
-    hiddenChance: loot.hiddenChance,
-    itemChance: loot.itemChance,
-    role: view.role,
-    trainerArchetypes: TRAINER_ARCHETYPE_IDS,
-    quiet: view.entry || view.boss || view.special !== null,
-    ...(wall ? { wall } : {}),
-  };
-}
+const MEASURED_ROOMS: Readonly<Record<number, readonly number[]>> = {
+  1: [7, 6, 7],
+  2: [7, 6, 6],
+  3: [9, 10, 8],
+  4: [8, 9, 10],
+  5: [7, 8, 8],
+  6: [8, 8, 7],
+  7: [10, 12, 13],
+  8: [12, 8, 9],
+};
+
+const MEASURED_TRAINERS: Readonly<Record<number, readonly number[]>> = {
+  1: [4, 2, 3],
+  2: [3, 3, 4],
+  3: [4, 6, 5],
+  4: [6, 4, 5],
+  5: [5, 5, 5],
+  6: [6, 5, 5],
+  7: [6, 4, 6],
+  8: [5, 5, 5],
+};
 
 type SeedCount = Readonly<{ seed: string; rooms: number; trainers: number }>;
 
@@ -292,14 +278,11 @@ function measureStretches(): readonly StretchCurve[] {
     const band = bandForNode(node);
     const cap = badgeCap(badge);
     const factor = trainerXpMultiplierForMap(badge);
-    const perSeed = CURVE_SEEDS.map((seed) => {
-      const plan = planMap(seed, badge);
-      let trainers = 0;
-      for (const room of plan.rooms) {
-        trainers += sketchRoute(buildStretchRoom(seed, node, room.id)).trainers.length;
-      }
-      return { seed, rooms: plan.rooms.length, trainers };
-    });
+    const perSeed = CURVE_SEEDS.map((seed, at) => ({
+      seed,
+      rooms: MEASURED_ROOMS[badge][at],
+      trainers: MEASURED_TRAINERS[badge][at],
+    }));
     const trainers = perSeed.reduce((total, count) => total + count.trainers, 0);
     const previousCap = badge <= 1 ? START_LEVEL : badgeCap(badge - 1);
     let levels = 0;

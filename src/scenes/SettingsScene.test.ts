@@ -43,7 +43,7 @@ function sceneWithSeams(): { scene: SettingsScene; drawn: string[] } {
     input: { keyboard: { on: ReturnType<typeof vi.fn> } | null };
     events: { once: ReturnType<typeof vi.fn> };
     add: unknown;
-    init(data?: { from?: 'Route' | 'Starter' | 'MainMenu' }): void;
+    init(data?: { from?: 'Route' | 'Lab' | 'MainMenu' }): void;
     create(): void;
   };
   scene.input = { keyboard: { on: vi.fn() } };
@@ -87,7 +87,7 @@ describe('the DOM options page on a clean boot', () => {
     stubBrowser();
     stubHud({});
     const { scene } = sceneWithSeams();
-    scene.init({ from: 'Starter' });
+    scene.init({ from: 'Lab' });
 
     scene.create();
 

@@ -31,7 +31,7 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   the two tileset manifests `city.json`/`interior.json`, whose `cells` map each tile
   kind to its atlas frame. Written by the matching `scripts/frlg/build-*.mjs` packer,
   never by hand; the sheet pixels themselves are gitignored.
-- `biomes.ts` — biome → tileset and terrain flavour.
+- `biomes.ts` — biome → tileset and terrain flavour, plus the biome a map's own `map` stream rolls.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a
   shape's `branchCount`, so density and exploration hold across route sizes

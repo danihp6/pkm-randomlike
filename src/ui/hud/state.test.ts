@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../../data/biomes';
+import { biomeForMap, getBiome } from '../../data/biomes';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
 import { barredMovesFor, legalMoveIndices } from '../../engine/battle/commands';
@@ -12,7 +12,6 @@ import {
 import { scriptedBattle } from '../../engine/battle/harness';
 import { createBattle, type BattleEvent, type BattleState } from '../../engine/battle/state';
 import { performSwitch } from '../../engine/battle/turn';
-import { biomeForMap } from '../../engine/maps/plan';
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
 import { missionMet } from '../../engine/run/missions';
 import { experienceFraction } from '../../engine/run/progression';

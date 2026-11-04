@@ -1,4 +1,4 @@
-import { getBiome, type BiomeId } from '../../data/biomes';
+import { biomeForMap, getBiome, type BiomeId } from '../../data/biomes';
 import { getMove, type MoveCategory } from '../../data/dex';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
@@ -23,7 +23,6 @@ import {
   type TerrainId,
   type WeatherId,
 } from '../../engine/battle/state';
-import { biomeForMap } from '../../engine/maps/plan';
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
 import { missionMet } from '../../engine/run/missions';
 import { experienceFraction } from '../../engine/run/progression';

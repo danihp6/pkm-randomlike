@@ -2,7 +2,6 @@ import { signal, type Signal } from '@preact/signals';
 import { getSpecies } from '../../data/dex/species';
 import type { KeybindAction } from '../../data/keybinds';
 import { portraitFor } from '../../data/portraits';
-import type { RoomView } from '../../engine/maps';
 import {
   canTrade,
   isItemPicked,
@@ -19,8 +18,7 @@ import {
   type TradeIntent,
   type TradePanelView,
 } from '../../ui/hud/panels/trade';
-import type { RoomHost, RoomPanel } from '../rooms/types';
-import type { RoutePanelDescriptor, RoutePanelHost } from './types';
+import type { RoomHost, RoomHostView, RoomPanel, RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
  * The trade card's scene-side owner (`D33`/`D47`/`D49`): the room's counter opens it,
@@ -44,7 +42,7 @@ const SCENE_SHUTDOWN = 'shutdown';
 /**
  * The hosts this card can open on: the room's own `RoomHost`, and the scene's
  * `RoutePanelHost` (the card's registry entry and the dev route's panel layer), which
- * has no room view — its room id then falls back to the route's own index.
+ * has no counter view — its room id then falls back to the route's own index.
  */
 export type TradeCardHost = RoomHost | RoutePanelHost;
 
@@ -75,7 +73,7 @@ function runOf(host: TradeCardHost): RunState {
 
 /** The room's stable identity: the view's own ids, or the route's index off a room. */
 function roomOf(host: TradeCardHost): Readonly<{ mapIndex: number; roomId: number }> {
-  const view = (host as { view?: RoomView }).view;
+  const view = (host as { view?: RoomHostView }).view;
   if (view !== undefined) return { mapIndex: view.mapIndex, roomId: view.roomId };
   // A node screen keeps no route: the counter a node opens trades on the node itself.
   return { mapIndex: host.route()?.routeIndex ?? 0, roomId: 0 };

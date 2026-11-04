@@ -300,7 +300,6 @@ function savedRun(): RunState {
 describe('the canvas chrome path', () => {
   const SCENES = [
     'MainMenuScene.ts',
-    'StarterScene.ts',
     'RouteScene.ts',
     'BattleScene.ts',
     'RunOverScene.ts',
@@ -396,6 +395,29 @@ describe('the RANKING row', () => {
     expect(mainMenuDrawnObjectCount(instance as unknown as Phaser.Scene)).toBe(0);
     expect(SOURCE).not.toContain(['DOM', 'HUD'].join('_'));
     expect(SOURCE).not.toContain('addFrlgText');
+  });
+});
+
+/** The reset chord restarts where NEW RUN does: the laboratory, never a removed scene. */
+describe('the reset chord', () => {
+  const ROUTE_SOURCE = readFileSync(
+    fileURLToPath(new URL('./RouteScene.ts', import.meta.url)),
+    'utf8',
+  );
+
+  it('restarts the run on the laboratory, the key NEW RUN starts', () => {
+    expect(ROUTE_SOURCE).toContain("this.scene.start('Lab', { seed: randomSeed() })");
+    expect(ROUTE_SOURCE).not.toContain('Starter');
+    expect(SOURCE).toContain("this.scene.start('Lab'");
+  });
+
+  it('clears the run before it restarts, so nothing carries over', () => {
+    const restartAt = ROUTE_SOURCE.indexOf('private restartRun(): void {');
+    const clearAt = ROUTE_SOURCE.indexOf('clearRun(browserStorage());');
+    const startAt = ROUTE_SOURCE.indexOf("this.scene.start('Lab'");
+    expect(restartAt).toBeGreaterThanOrEqual(0);
+    expect(clearAt).toBeGreaterThan(restartAt);
+    expect(startAt).toBeGreaterThan(clearAt);
   });
 });
 

@@ -5,7 +5,6 @@ import {
   type TrainerArchetype,
 } from '../../data/trainers';
 import type { Tile } from '../grid';
-import type { MapRoomRole } from '../maps/plan';
 import { isWalkable, type TileMap } from '../map';
 import { Rng, hashSeed } from '../rng';
 import type { TrainerRosterEntry } from '../run/battleLink';
@@ -17,6 +16,7 @@ import {
   type RouteMap,
   type RouteTrainer,
 } from './routeMap';
+import type { RouteRole } from './sketch';
 
 /**
  * Anything the player cannot cross - a wall, water or a ledge - blocks a sight
@@ -119,10 +119,10 @@ export type SpecialTrainerOptions = Readonly<{
   route: RouteMap;
   /** The run's seed. */
   seed: string;
-  /** The room's stable per-run index (`routeIndexForRoom(plan, roomId)`). */
+  /** The room's stable per-run index. */
   roomIndex: number;
-  /** The plan room's population role. Only `trainers` may field one. */
-  role: MapRoomRole;
+  /** The screen's population role. Only `trainers` may field one. */
+  role: RouteRole;
   /** True for the map's entry, its boss room and every special room. */
   quiet: boolean;
   /** `RunState.missionsCompleted`, the mission record's run-scoped counter. */

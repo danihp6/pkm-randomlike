@@ -2,10 +2,10 @@
  * The **puzzle** room's own table (`docs/maps-spec.md` §7, D47): the first floor
  * that may hang the leaf, the chance it does, and one row per switch sequence —
  * how many switches the room holds, the catalogue item a solve pays and the first
- * floor that may carry that row. Pure data: the plan rolls the leaf off its own
- * minted stream (`src/engine/maps/plan.ts`) and the room's layout and press rule
- * read the rows (`src/engine/routes/puzzle.ts`), so a re-tuned or added puzzle is
- * a row here and never an engine branch.
+ * floor that may carry that row. Pure data: the retired floor plan rolled the leaf
+ * off its own minted stream, and the row's layout and press rule read these rows
+ * (`src/engine/routes/puzzle.ts`), so a re-tuned or added puzzle is a row here and
+ * never an engine branch.
  */
 
 /**

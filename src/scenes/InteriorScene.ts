@@ -229,7 +229,7 @@ export class InteriorScene extends WorldScene {
 
   /**
    * The offer's one build: the same rules, no Phaser object, one panel in `#hud`,
-   * exactly as `StarterScene.createDom` mounts it. The panel prints only copy that
+   * exactly as the options panel mounts it. The panel prints only copy that
    * already exists: its own title, the cards, the share line and the starter blurb.
    */
   private createDom(): void {

@@ -2,7 +2,6 @@ import type { LootEntry } from '../../data/loot';
 import { branchCountForSize, terrainScaleForSize } from '../../data/mapSize';
 import { TRAINERS_PER_ROOM } from '../../data/population';
 import { isTmItemId } from '../../data/tms';
-import type { MapRoomRole } from '../maps/plan';
 import type { Tile } from '../grid';
 import { FLOOR, LEDGE, TALL_GRASS, WALL, isWalkable, type TileMap } from '../map';
 import { findPath } from '../pathfinding';
@@ -75,6 +74,9 @@ const CARDINALS: readonly Tile[] = [
   { x: 0, y: -1 },
 ];
 
+/** What a screen's population pass places: trainers, or the wild alone. */
+export type RouteRole = 'trainers' | 'wild';
+
 export type RouteRequest = Readonly<{
   seed: string;
   routeIndex: number;
@@ -120,12 +122,12 @@ export type RouteRequest = Readonly<{
   /** How far a trainer sees down its facing. Defaults to `DEFAULT_TRAINER_SIGHT`. */
   trainerSight?: number;
   /**
-   * The room's population role (`MapRoom.role`). `'wild'` places no trainers;
-   * `'trainers'` places `TRAINERS_PER_ROOM.min..max` of them. **Absent means
-   * `'trainers'`**, so a request that names no role — the dev generator, the frame
-   * importer, an engine test — keeps the shipped pass.
+   * The screen's population role. `'wild'` places no trainers; `'trainers'` places
+   * `TRAINERS_PER_ROOM.min..max` of them. **Absent means `'trainers'`**, so a
+   * request that names no role — the dev generator, the frame importer, an engine
+   * test — keeps the shipped pass.
    */
-  role?: MapRoomRole;
+  role?: RouteRole;
   /**
    * A **quiet** room: no tall grass, no ledges, no ground items and no trainers —
    * the map's entry room and its boss room (`docs/maps-spec.md` §2/§6). The
@@ -1390,7 +1392,7 @@ function chooseCrossFacing(
 
 /**
  * Places the route's trainers: one or two of them in a `trainers` room and none in
- * a `wild` one (`docs/maps-spec.md` §2, `MapRoom.role`). The room always guards its
+ * a `wild` one (`docs/routes-spec.md` §2). The room always guards its
  * main lane with one trainer; a second one stands by an optional pocket or, when no
  * pocket takes it, anywhere the network still has room. A trainer stands on floor
  * hugging a wall and looks down the open lane, and some cycle their facing on a
@@ -1413,7 +1415,7 @@ function placeTrainers(
   archetypes: readonly string[],
   sight: number,
   walkableTips: boolean,
-  role: MapRoomRole,
+  role: RouteRole,
   rng: Rng,
   sign?: Tile,
 ): RouteTrainer[] {

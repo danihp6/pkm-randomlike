@@ -24,8 +24,6 @@ functions with a co-located `*.test.ts` that `npm test` runs headless.
   `battle/mega.ts`, `battle/gmax.ts`, `battle/runAway.ts`, `battle/capture.ts`, `battle/ai.ts`,
   `battle/moveAudit.ts` (the headless move instrument and the ledger's reference table),
   `battle/movePower.ts` and the ported effect handlers in `battle/effects/` (`D16`).
-- `maps/` — the floor plan and its geometry: `maps/plan.ts` (the room grid and its links),
-  `maps/progress.ts` (boss and portal edges), `maps/route.ts` and `maps/streams.ts`.
 - `region/` — the region the run walks instead of a chain of floors: `region/plan.ts` (the
   whole world out of the run seed), `region/names.ts` (the settlement names) and
   `region/streams.ts` (the run seed's region and per-node streams), plus a folder each for

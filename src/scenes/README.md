@@ -16,9 +16,6 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   before the first scene runs.
 - `MainMenuScene.ts` — new run / continue, the run's seed and mode, and (on the DOM HUD) the
   STATS overlay over the run history.
-- `StarterScene.ts` — picks the starter pool and opens the seed prompt.
-- `StarterScene.test.ts` — the starter pick's headless test: a reroll draws its offer
-  through the seed helper and resets the cursor.
 - `WorldScene.ts` — the base every node scene extends: one map drawn as two culled tile
   layers, the world camera's bounds and zoom, the node preloaded off the worker and the one
   fade-and-swap transition that draws an already-preloaded node (`transitionToNode`,
@@ -79,9 +76,6 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   folder's `host.ts`, so a new panel is a new file. `host.ts` builds the same
   `RoutePanelHost` over any node scene, so the route's twelve cards and a node's seven
   (`NODE_PANEL_IDS`) need no scene code of their own.
-- `rooms/` — the special-room descriptors of the retired floor pipeline: one module per
-  room kind. No route screen mounts them any more — the route plays its region node's own
-  screens — and they go with the floor generator when it is swept.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
   bars and the capture sequence.
 - `BattleScene.test.ts` — the battle scene's headless test of its sprite-animation

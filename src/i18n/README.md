@@ -56,8 +56,8 @@ A key is **dead** when none of these hold in the tree as it is on `main`:
    `battle.stage.*`, `battle.log.*` and the other prefixes a template or a concatenation assembles;
 4. it appears in a non-test `src/**` file in any other form (a lookup table, an array, a `switch`).
 
-`src/scenes/RouteScene.ts` and `src/scenes/StarterScene.ts` are **excluded** from rules 1 and 4:
-Batch 125 deletes both screens, so the keys only they read stay until then and die with them.
+`src/scenes/RouteScene.ts` is **excluded** from rules 1 and 4: it is the shipped route screen
+and its prose is the one family a sweep reads by hand.
 Delete only a key that fails all four; when in doubt keep it and list it under **Kept** below. The
 node-aware `dev.*` block is the one exception a later sweep will meet: its call site is the region's
 debug menu, rewritten after it, so the block is pinned in the gate rather than in `src/` and must not

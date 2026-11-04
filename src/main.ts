@@ -14,7 +14,6 @@ import type { RoutePanelHost } from './scenes/panels/types';
 import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
 import { SettingsScene } from './scenes/SettingsScene';
-import { StarterScene } from './scenes/StarterScene';
 import { REGION_SCENES } from './scenes/regionScenes';
 import { WorldScene } from './scenes/WorldScene';
 import { browserStorage } from './storage';
@@ -44,7 +43,6 @@ export const config: Phaser.Types.Core.GameConfig = {
   scene: [
     BootScene,
     MainMenuScene,
-    StarterScene,
     RouteScene,
     BattleScene,
     RunOverScene,

@@ -14,7 +14,7 @@ import { DEFAULT_TRAINER_SIGHT } from '../engine/routes';
 import { bandForMap } from '../engine/run';
 import { t } from '../i18n';
 import { TRAINER_TEXTURE_KEY } from '../scenes/BootScene';
-import type { RoomHost, RoomPanel } from '../scenes/rooms/types';
+import type { RoomHost, RoomPanel } from '../scenes/panels/types';
 import { loadSettings } from '../settings';
 import { casinoGruntTrainerId, casinoSpin, type CasinoOutcome } from './casino';
 import {

@@ -147,7 +147,6 @@ import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
 import { RUN_STEP_MS, WALK_STEP_MS } from './walker';
 import { drawPoi } from './pois';
-import type { RoomPanel, RoomWildBattle } from './rooms/types';
 import { bagTextFieldFocused, typeInBagSearch } from './panels/bag';
 import {
   cancelNicknameEdit,
@@ -169,7 +168,12 @@ import {
   updateReset as updateResetOverlay,
 } from './panels/pause';
 import type { PanelSceneSource } from './panels/host';
-import type { RoutePanelHost, RoutePanelId } from './panels/types';
+import type {
+  RoomPanel,
+  RoomWildBattle,
+  RoutePanelHost,
+  RoutePanelId,
+} from './panels/types';
 
 /**
  * The cards this scene mounts: every panel of the folder. The route is the only
@@ -1024,7 +1028,7 @@ export class RouteScene extends WorldScene {
   private restartRun(): void {
     hideResetOverlay(this.panelHost);
     clearRun(browserStorage());
-    this.scene.start('Starter', { seed: randomSeed() });
+    this.scene.start('Lab', { seed: randomSeed() });
   }
 
   private movementMap(map: TileMap): TileMap {

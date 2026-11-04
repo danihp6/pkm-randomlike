@@ -5,14 +5,13 @@ import { restoreFighter } from '../battle/fighter';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
 import { BADGE_CAPS, REGION_COUNTS, badgeCap } from '../../data/region';
 import { evolutionBranches } from '../../data/dex/evolutions';
-import { MAP_EDGES, arrivalEdgeFor, linkedNeighbour, planMap } from '../maps/plan';
 import { planNodeContent } from '../region/content';
 import { nodeKey, planRegion } from '../region/plan';
-import { capForRoute } from './levelCap';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot, xpForLevel } from './progression';
 import { missionForMap, recordHpLost } from './missions';
 import {
+  MAP_EDGES,
   MAX_PARTY_SIZE,
   addCaughtPokemon,
   addFaints,
@@ -56,6 +55,7 @@ import {
   updatePokemon,
   useCapture,
   withdrawToParty,
+  type MapEdge,
   type RunState,
 } from './state';
 
@@ -83,7 +83,7 @@ describe('createRun', () => {
     expect(run.routeInMap).toBe(0);
     expect(run.discoveredRooms).toEqual([0]);
     expect(run.bossDefeated).toBe(false);
-    expect(run.levelCap).toBe(capForRoute('run-a', 1));
+    expect(run.levelCap).toBe(levelCapForMap(1));
     expect(run.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
@@ -143,7 +143,7 @@ describe('the node a run stands on', () => {
     expect(compat.mapIndex).toBe(1);
     expect(compat.routeIndex).toBe(1);
     expect(compat.routeInMap).toBe(0);
-    expect(compat.arrivalEdge).toBe(arrivalEdgeFor(planMap('run-a', 1), 0));
+    expect(compat.arrivalEdge).toBe('N');
     expect(compat.discoveredRooms).toEqual([0]);
     expect(compat.bossDefeated).toBe(false);
     expect(compat.levelCap).toBe(badgeCap(1));
@@ -177,9 +177,11 @@ describe('the node a run stands on', () => {
     }
   });
 
-  it('draws nothing from any stream: the same seed always reads the same node', () => {
+  it('draws nothing from any stream: a node reads its floor off the ladder alone', () => {
     expect(compatForNode('run-a', 'route:3')).toEqual(compatForNode('run-a', 'route:3'));
-    expect(compatForNode('run-a', 'route:3')).not.toEqual(compatForNode('run-b', 'route:3'));
+    // The floor aliases came from the ladder and a compass fallback, so the seed
+    // reaches them only through the region's own shape, never through a draw.
+    expect(compatForNode('run-a', 'route:3')).toEqual(compatForNode('run-b', 'route:3'));
   });
 
   it('leaves the node fields alone when the old floor scene walks a room or a floor', () => {
@@ -273,26 +275,22 @@ describe('advanceRoute', () => {
     expect(run.routeInMap).toBe(0);
   });
 
-  it('stores the arrival door it is given, and falls back when it is not a door', () => {
-    const plan = planMap('run-a', 1);
-    // The canonical arrival for room 1 is the plan-derived one.
+  it('stores the compass door it is given, and falls back when it is not one', () => {
     const base = createRun({ seed: 'run-a', starter });
-    expect(base.arrivalEdge).toBe(plan.entryEdge);
+    // A fresh run reads the compass fallback: a region node has no floor door.
+    expect(base.arrivalEdge).toBe('N');
 
-    // A real link edge of room 1 is accepted as the arrival.
-    const room = plan.rooms[1];
-    const linkEdge = MAP_EDGES.find((edge) => linkedNeighbour(plan, 1, edge) !== undefined)!;
-    const custom = advanceRoute(base, 1, linkEdge);
-    expect(custom.routeInMap).toBe(1);
-    expect(custom.arrivalEdge).toBe(linkEdge);
-    expect(room.openings.some((opening) => opening.edge === linkEdge)).toBe(true);
-
-    // A wall with no door falls back to the plan-derived arrival.
-    const wall = MAP_EDGES.find((edge) => linkedNeighbour(plan, 1, edge) === undefined);
-    if (wall) {
-      const fallback = advanceRoute(base, 1, wall);
-      expect(fallback.arrivalEdge).toBe(arrivalEdgeFor(plan, 1));
+    for (const edge of MAP_EDGES) {
+      const custom = advanceRoute(base, 1, edge);
+      expect(custom.routeInMap).toBe(1);
+      expect(custom.arrivalEdge).toBe(edge);
     }
+
+    // Anything that is not one of the four names reads the compass fallback.
+    const walked = advanceRoute(base, 1, 'E');
+    const junk = advanceRoute(walked, 2, 'X' as MapEdge);
+    expect(junk.arrivalEdge).toBe('N');
+    expect(advanceRoute(walked, 2).arrivalEdge).toBe('N');
   });
 });
 
@@ -304,7 +302,7 @@ describe('advanceMap', () => {
     expect(next.mapIndex).toBe(2);
     expect(next.routeIndex).toBe(run.routeIndex + 1);
     expect(next.routeInMap).toBe(0);
-    expect(next.arrivalEdge).toBe(planMap('run-a', 2).entryEdge);
+    expect(next.arrivalEdge).toBe('N');
     expect(next.discoveredRooms).toEqual([0]);
     expect(next.bossDefeated).toBe(false);
     expect(next.levelCap).toBe(levelCapForMap(2));

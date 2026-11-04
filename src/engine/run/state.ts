@@ -1,7 +1,6 @@
 import { normalizeId } from '../../data/dex';
 import { getItem } from '../../data/items';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
-import { arrivalEdgeFor, isArrivalEdge, planMap, type MapEdge } from '../maps/plan';
 import { nodeOf, planRegion } from '../region/plan';
 import type { BagCounts } from './battleLink';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
@@ -26,6 +25,14 @@ export const FIRST_ROUTE = 1;
 
 /** The starter map; a run's first floor is map 1 (docs/maps-spec.md §1). */
 export const FIRST_MAP = 1;
+
+/**
+ * The four compass doors a screen opens on. Cardinally ordered, so every derivation
+ * over an opening set is deterministic (`docs/routes-spec.md` §1).
+ */
+export type MapEdge = 'N' | 'E' | 'S' | 'W';
+
+export const MAP_EDGES: readonly MapEdge[] = ['N', 'E', 'S', 'W'];
 
 /** What the run summary counts: caught along the way, and lost for good (D5). */
 export type RunStats = Readonly<{
@@ -72,8 +79,8 @@ export function addFaints(run: RunState, faints: number): RunState {
  * carries the nodes it has entered, the badges it holds, the nodes whose single
  * catch is spent and the tower's own streak. The old floor fields
  * (`mapIndex`, `routeIndex`, `routeInMap`, `levelCap`, `discoveredRooms`,
- * `bossDefeated`) stay as the compatibility aliases the shipped floor scene still
- * reads, derived from `nodeKey` at creation, until the sweep deletes them.
+ * `bossDefeated`) stay as the deprecated aliases an old save still carries, derived
+ * from `nodeKey` at creation, until `[Task-304]` deletes them.
  */
 export type RunState = Readonly<{
   seed: string;
@@ -228,10 +235,10 @@ export type RunNodeCompat = Readonly<{
 }>;
 
 /**
- * The deprecated floor fields a node implies: the plan's chain position read as a
- * floor, so the shipped floor scene keeps drawing the right map while it walks
- * floors. A key the plan does not hold reads as the town, never an error, and the
- * function draws nothing from any Rng and reads no clock (D11).
+ * The deprecated floor fields a node implies: the region's chain position read as a
+ * floor, so an old save decodes the same position it was written with. A key the plan
+ * does not hold reads as the town, never an error, and the function draws nothing from
+ * any Rng and reads no clock (D11).
  */
 export function compatForNode(seed: string, key: string): RunNodeCompat {
   const plan = planRegion(seed);
@@ -244,7 +251,9 @@ export function compatForNode(seed: string, key: string): RunNodeCompat {
     mapIndex,
     routeIndex: Math.max(1, chainIndex + 1),
     routeInMap: 0,
-    arrivalEdge: arrivalEdgeFor(planMap(seed, mapIndex), 0),
+    // The compass door is the fallback a save with no readable edge lands on
+    // (`readArrivalEdge`); a region node has no floor room to derive one from.
+    arrivalEdge: 'N',
     discoveredRooms: [0],
     bossDefeated: false,
     levelCap: node.cap,
@@ -294,30 +303,27 @@ export function createRun(init: RunInit): RunState {
 }
 
 /**
- * Enters another room of the **same map** (`docs/maps-spec.md` §2): the global
- * counter steps, the room is marked **discovered** (D32) and the door the player
- * came through is stored. The floor's marks (beaten trainers, taken items, spent
- * captures) **stay** — revisiting a room rebuilds it identically and its content
- * does not respawn — and only the map advance clears them.
+ * Enters another screen of the region (`docs/region-spec.md` §4): the global counter
+ * steps, the room is marked **discovered** (D32) and the door the player came through
+ * is stored. The screen's marks (beaten trainers, taken items, spent captures) **stay**
+ * — revisiting a screen rebuilds it identically and its content does not respawn — and
+ * only the map advance clears them.
  *
- * `arrivalEdge` is the door the player arrives through (the opposite of the one
- * they left by); it is kept when it is a real door of the room, else the
- * plan-derived arrival is used so a bad value never opens a wall onto nothing.
+ * `arrivalEdge` is the door the player arrives through (the opposite of the one they
+ * left by); it is kept when it names one of the four compass doors, else it reads the
+ * `'N'` fallback, so a bad value never stores a door the screens cannot open.
  *
  * Walking does not lock the PC: the box is editable **inside a Pokémon Centre**
  * (`docs/region-spec.md` §6), and nowhere else, so the rule is the room the run
  * stands in rather than where it has been (`pcFullyEditable`).
  *
  * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
- * `towerStreak`) are **not** touched here: the shipped floor scene still walks
- * floors, and moving the run between nodes is the region scene's job.
+ * `towerStreak`) are **not** touched here: moving the run between nodes is the region
+ * scene's job (`travel`).
  */
 export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
   const room = Math.max(0, Math.floor(roomInMap));
-  const plan = planMap(run.seed, run.mapIndex);
-  const arrival = isArrivalEdge(plan, room, arrivalEdge)
-    ? (arrivalEdge as MapEdge)
-    : arrivalEdgeFor(plan, room);
+  const arrival = MAP_EDGES.find((edge) => edge === arrivalEdge) ?? 'N';
   return {
     ...run,
     routeIndex: run.routeIndex + 1,
@@ -328,33 +334,31 @@ export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: Map
 }
 
 /**
- * Steps through the map's portal onto the next floor (`docs/maps-spec.md` §6,
- * D31): the next map's entry room, a fresh discovery set and its own cap. This is
- * also the **heal stop** — HP/PP restored across the party and the box, never a
- * resurrection (D5) — while the old floor's marks go with it. The Pokevial's
- * charges **carry over** instead: only a boss or a beaten trainer tops the meter
- * up (`docs/routes-spec.md` §6). The floor being left is judged against its own
- * mission first, and the next floor is drawn its own (`docs/routes-spec.md` §4).
- * The NPC modifiers travel too, and the floor being left spends one of the forced
- * sky's floors (`decayModifiers`).
+ * Steps onto the next map (`docs/maps-spec.md` §6, D31): its first screen, a fresh
+ * discovery set and its own cap. This is also the **heal stop** — HP/PP restored
+ * across the party and the box, never a resurrection (D5) — while the old floor's
+ * marks go with it. The Pokevial's charges **carry over** instead: only a boss or a
+ * beaten trainer tops the meter up (`docs/routes-spec.md` §6). The floor being left is
+ * judged against its own mission first, and the next floor is drawn its own
+ * (`docs/routes-spec.md` §4). The NPC modifiers travel too, and the floor being left
+ * spends one of the forced sky's floors (`decayModifiers`).
  *
  * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
- * `towerStreak`) are **not** touched here: the shipped floor scene still walks
- * floors, and moving the run between nodes is the region scene's job.
+ * `towerStreak`) are **not** touched here: moving the run between nodes is the region
+ * scene's job (`travel`).
  */
 export function advanceMap(run: RunState): RunState {
   const mapIndex = run.mapIndex + 1;
   // The floor being left is judged before anything else, so a clean floor bumps the
   // run-long counter and the new floor starts from its own draw.
   const met = missionMet(run);
-  const plan = planMap(run.seed, mapIndex);
   const advanced: RunState = {
     ...run,
     routeIndex: run.routeIndex + 1,
     mapIndex,
-    routeInMap: plan.entryRoom,
-    arrivalEdge: plan.entryEdge,
-    discoveredRooms: [plan.entryRoom],
+    routeInMap: 0,
+    arrivalEdge: 'N',
+    discoveredRooms: [0],
     bossDefeated: false,
     levelCap: levelCapForMap(mapIndex),
     defeatedTrainers: [],

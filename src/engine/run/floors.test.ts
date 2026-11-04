@@ -1,17 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FINITE_MAPS } from '../../data/maps';
 import { LEVEL_BANDS, bandForLevel } from '../../data/run';
-import { planMap } from '../maps/plan';
-import {
-  bandForMap,
-  floorForRoute,
-  levelWindowForMap,
-  routeIndexForRoom,
-  runBand,
-} from './floors';
-import { capForRoute } from './levelCap';
-
-const SEEDS = ['floor-a', 'floor-b', 'floor-c'];
+import { bandForMap, levelWindowForMap, runBand } from './floors';
 
 describe('levelWindowForMap', () => {
   it('opens each finite floor at the previous cap and closes it at its own', () => {
@@ -45,63 +35,7 @@ describe('levelWindowForMap', () => {
   });
 });
 
-describe('floorForRoute', () => {
-  it('is a pure function of the seed and route index', () => {
-    expect(floorForRoute('floor-a', 7)).toEqual(floorForRoute('floor-a', 7));
-    expect(floorForRoute('floor-a', 7)).not.toEqual(floorForRoute('floor-a', 8));
-  });
-
-  it('lays the global route chain over the map chain', () => {
-    for (const seed of SEEDS) {
-      let routeIndex = 1;
-      for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
-        const plan = planMap(seed, mapIndex);
-        for (let room = 0; room < plan.rooms.length; room++) {
-          const position = floorForRoute(seed, routeIndex);
-          expect(position.mapIndex).toBe(mapIndex);
-          expect(position.roomInMap).toBe(room);
-          expect(position.roomCount).toBe(plan.rooms.length);
-          expect(position.minLevel).toBe(levelWindowForMap(mapIndex).minLevel);
-          expect(position.maxLevel).toBe(levelWindowForMap(mapIndex).maxLevel);
-          routeIndex += 1;
-        }
-      }
-    }
-  });
-
-  it('clamps a degenerate route index to the first room', () => {
-    expect(floorForRoute('floor-a', 0)).toEqual(floorForRoute('floor-a', 1));
-    expect(floorForRoute('floor-a', -5)).toEqual(floorForRoute('floor-a', 1));
-  });
-
-  it('keeps walking deeper maps past the tuned table', () => {
-    const deep = floorForRoute('floor-a', 500);
-    expect(deep.mapIndex).toBeGreaterThan(FINITE_MAPS);
-    expect(deep.minLevel).toBeGreaterThanOrEqual(levelWindowForMap(FINITE_MAPS).maxLevel);
-    expect(deep.minLevel).toBe(levelWindowForMap(deep.mapIndex).minLevel);
-    expect(deep.maxLevel).toBe(levelWindowForMap(deep.mapIndex).maxLevel);
-  });
-});
-
-describe('routeIndexForRoom', () => {
-  it('is the stable global index floorForRoute resolves back to the room', () => {
-    for (const seed of SEEDS) {
-      for (let mapIndex = 1; mapIndex <= 4; mapIndex++) {
-        const plan = planMap(seed, mapIndex);
-        for (const room of plan.rooms) {
-          const index = routeIndexForRoom(plan, room.id);
-          const position = floorForRoute(seed, index);
-          expect(position.mapIndex).toBe(mapIndex);
-          expect(position.roomInMap).toBe(room.id);
-          // Stable across calls, so a revisited room keeps its geometry.
-          expect(routeIndexForRoom(plan, room.id)).toBe(index);
-        }
-      }
-    }
-  });
-});
-
-describe('band and cap', () => {
+describe('bandForMap', () => {
   it('reads a band whose ends are the floor window', () => {
     const expectedIds = [
       'early',
@@ -127,14 +61,6 @@ describe('band and cap', () => {
       });
       expect(bandForMap(mapIndex).id, `map ${mapIndex}`).toBe(expectedIds[at]);
     });
-  });
-
-  it('caps a route at its map cap', () => {
-    for (const seed of SEEDS) {
-      const position = floorForRoute(seed, 1);
-      expect(capForRoute(seed, 1)).toBe(position.maxLevel);
-      expect(capForRoute(seed, 1)).toBe(levelWindowForMap(position.mapIndex).maxLevel);
-    }
   });
 });
 

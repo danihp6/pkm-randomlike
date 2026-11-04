@@ -15,14 +15,12 @@ import {
 import { ROOM_BATTLEFIELDS } from '../../data/battlefields';
 import type { Tile } from '../grid';
 import { isWalkable, mapFromSketch } from '../map';
-import { firstTrainerRoom, planMap } from '../maps';
 import type { RouteMap } from './routeMap';
 import { FACINGS, FACING_VECTORS, type Facing } from './routeMap';
 import { sketchRoute } from './sketch';
 import {
   chefTrade,
   effectiveNpcChance,
-  guaranteedNpc,
   medicHeal,
   npcBerryHarvest,
   npcForcedField,
@@ -161,73 +159,6 @@ describe('roomNpc', () => {
     const alone = roomNpc(SEED, 9, 2, PAIR);
     for (let roomIndex = 0; roomIndex < 9; roomIndex++) roomNpc(SEED, roomIndex, 2, PAIR);
     expect(roomNpc(SEED, 9, 2, PAIR)).toEqual(alone);
-  });
-});
-
-describe('guaranteedNpc', () => {
-  const MAP_SEEDS = ['npc-a', 'npc-b', 'npc-c', 'npc-d', 'npc-e', 'npc-f'];
-  const MERCHANT = getNpcRow('merchant');
-
-  it('places the merchant in the floor’s first trainer room from map 1 on', () => {
-    expect(MERCHANT).toBeDefined();
-    for (const seed of MAP_SEEDS) {
-      for (let mapIndex = 1; mapIndex <= 8; mapIndex++) {
-        const plan = planMap(seed, mapIndex);
-        const room = firstTrainerRoom(plan);
-        expect(room, `${seed} map ${mapIndex}`).toBeGreaterThanOrEqual(0);
-        expect(guaranteedNpc(plan, room, mapIndex), `${seed} map ${mapIndex}`).toBe(MERCHANT);
-        expect(plan.rooms[room].role, `${seed} map ${mapIndex} role`).toBe('trainers');
-      }
-    }
-  });
-
-  it('places the merchant on map 1 as well, the run’s first floor included', () => {
-    for (const seed of MAP_SEEDS) {
-      const plan = planMap(seed, 1);
-      const room = firstTrainerRoom(plan);
-      expect(plan.rooms[room].role, seed).toBe('trainers');
-      expect(guaranteedNpc(plan, room, 1), seed).toBe(MERCHANT);
-    }
-  });
-
-  it('answers null on every room but the first trainer room', () => {
-    const plan = planMap(MAP_SEEDS[0], 3);
-    const first = firstTrainerRoom(plan);
-    for (const room of plan.rooms) {
-      if (room.id === first) continue;
-      expect(guaranteedNpc(plan, room.id, 3), `room ${room.id}`).toBeNull();
-    }
-    expect(guaranteedNpc(plan, -1, 3)).toBeNull();
-    expect(guaranteedNpc(plan, plan.rooms.length, 3)).toBeNull();
-  });
-
-  it('reads no RNG and no run state: two calls answer the same row', () => {
-    const plan = planMap(MAP_SEEDS[1], 5);
-    const first = firstTrainerRoom(plan);
-    expect(guaranteedNpc(plan, first, 5)).toBe(guaranteedNpc(plan, first, 5));
-    expect(guaranteedNpc(planMap(MAP_SEEDS[1], 5), first, 5)).toBe(MERCHANT);
-  });
-
-  it('takes the first guaranteed row of the table, in table order', () => {
-    const later = row('medic', 0, 0, { guaranteedFromMap: 3 });
-    const sooner = row('merchant', 0, 0, { guaranteedFromMap: 1 });
-    const plan = planMap(MAP_SEEDS[2], 4);
-    const first = firstTrainerRoom(plan);
-    // Table order decides, not the smallest threshold: from map 3 on `medic` is the
-    // first eligible row of this table, though `merchant`'s gate opened two floors sooner.
-    expect(guaranteedNpc(plan, first, 4, [later, sooner])?.id).toBe('medic');
-    expect(guaranteedNpc(plan, first, 3, [later, sooner])?.id).toBe('medic');
-    expect(guaranteedNpc(plan, first, 2, [later, sooner])?.id).toBe('merchant');
-    expect(guaranteedNpc(plan, first, 1, [later, sooner])?.id).toBe('merchant');
-    expect(guaranteedNpc(plan, first, 1, [sooner, later])?.id).toBe('merchant');
-    expect(guaranteedNpc(plan, first, 3, [sooner, later])?.id).toBe('merchant');
-    expect(guaranteedNpc(plan, first, 4, [sooner, later])?.id).toBe('merchant');
-    // A table whose earliest gate opens on map 2 still answers null on map 1, which is
-    // the only way to reach the null path now that the shipped row opens on map 1.
-    const fromTwo = row('medic', 0, 0, { guaranteedFromMap: 2 });
-    expect(guaranteedNpc(plan, first, 1, [fromTwo])).toBeNull();
-    expect(guaranteedNpc(plan, first, 2, [fromTwo])?.id).toBe('medic');
-    expect(guaranteedNpc(plan, first, 4, [])).toBeNull();
   });
 });
 
