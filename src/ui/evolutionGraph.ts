@@ -8,7 +8,7 @@ import { t } from '../i18n';
  * one — a Mega and a Gigantamax (`D34`, `D44`). Those rows are inert: they are
  * never `ready`, never `current` and never change a member, so the route scene
  * draws them with the code it already has and only a species row is clickable.
- * Pure, like `mapView`: the route scene only places what this returns
+ * Pure, like `regionMap`: the route scene only places what this returns
  * (`docs/design-spec.md` §5).
  */
 export type FamilyNodeKind = 'species' | 'mega' | 'gmax';

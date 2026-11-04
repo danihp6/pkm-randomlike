@@ -10,7 +10,7 @@ export const en = {
   'menu.new': 'New run',
   'menu.options': 'Options',
 
-  // starter — StarterScene
+  // starter — the laboratory's starter pick (InteriorScene)
   'starter.title': 'Choose your starter',
   'starter.blurb': 'Your first Pokémon. Lose it and it is gone for good.',
   'starter.controls':

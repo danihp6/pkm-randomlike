@@ -63,9 +63,8 @@ export const ROOM_BATTLEFIELDS: readonly RoomBattlefield[] = [
 ];
 
 /**
- * The chance a room that fields regular trainers starts its battles under a
- * condition (about one such room in seven, so a floor usually holds one). The
- * same magnitude as the mega-stone leaf's 15% (`MEGA_STONE_CHANCE`,
- * `src/engine/maps/plan.ts`).
+ * The chance a route screen that fields regular trainers starts its battles under a
+ * condition (about one such screen in seven). The same magnitude as the mega-stone
+ * leaf's 15% before the floor plan retired.
  */
 export const ROOM_BATTLEFIELD_CHANCE: number = 0.15;

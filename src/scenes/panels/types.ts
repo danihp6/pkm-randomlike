@@ -1,14 +1,12 @@
 import type Phaser from 'phaser';
 import type { KeybindAction } from '../../data/keybinds';
 import type { HudLayout, HudPanelId } from '../../data/hudLayout';
-import type { MapPlan } from '../../engine/maps';
-import type { RouteMap, RouteTrainer } from '../../engine/routes/routeMap';
+import type { Tile } from '../../engine/grid';
+import type { Facing, RouteMap, RouteTrainer } from '../../engine/routes/routeMap';
 import type { RunState } from '../../engine/run/state';
 import type { Settings } from '../../engine/save';
 import type { Notice } from '../../ui/notice';
 import type { PartyUiState } from '../../ui/partyScreen';
-import type { RoomRegistry } from '../rooms/registry';
-import type { RoomPanel } from '../rooms/types';
 
 /**
  * The node screens' overlay-panel layer (`D47`'s shape, one folder over): one module
@@ -19,7 +17,100 @@ import type { RoomPanel } from '../rooms/types';
  *
  * Every panel is a **controller** (`D49` amended): it builds no HUD chrome of its own —
  * its card is DOM, and the folder's two canvas overlays are listed in this folder's README.
+ *
+ * The room-panel types a counter opens (the trade card, the Team Rocket machine and the
+ * minimap rewards) live in this module too: the node screens share one panel slot, so
+ * its **shape** is a panel concept, not a property of the road generator.
  */
+
+/** The route screen's own panel, owned by whatever opened it. */
+export type RoomPanel = Readonly<{
+  /** Every keybind action, while this panel is modal. Absent for a floating panel. */
+  handle?: (action: KeybindAction) => void;
+  /** `false` for a floating, non-modal panel. Omitted means modal (`true`). */
+  modal?: boolean;
+  /** Destroys the panel's own objects. Called by the scene, never by the panel. */
+  close(): void;
+}>;
+
+/** One wild battle a counter starts through the scene's own wild path. */
+export type RoomWildBattle = Readonly<{
+  speciesId: string;
+  level: number;
+  /** The battle's own entity key; the scene appends its own counter. */
+  key: string;
+}>;
+
+/** What the pointer was over when a counter's row was released. */
+export type RoomDrop =
+  | Readonly<{ onto: 'bag' }>
+  | Readonly<{ onto: 'member'; memberId: string }>
+  | Readonly<{ onto: 'party' }>
+  | Readonly<{ onto: 'none' }>;
+
+/** One row the scene drags: the counter starts it, the scene owns ghost and drop. */
+export type RoomRowDrag = Readonly<{
+  /** The item the row offers, or `null` for a mini-boss Pokémon row. */
+  itemId: string | null;
+  /** The row's own printed label; the Pokémon ghost draws this, never a sprite. */
+  label: string;
+  /** Screen-space pointer at the press. */
+  pointer: Readonly<{ x: number; y: number }>;
+  /** Called exactly once, on release, with the resolved target. */
+  onDrop: (drop: RoomDrop) => void;
+}>;
+
+/** Where a counter's host stands: the run's own position, as the panel reads it. */
+export type RoomHostView = Readonly<{
+  mapIndex: number;
+  roomId: number;
+}>;
+
+/**
+ * The hooks a counter (a Mart, the Team Rocket machine, the trade card) may use from
+ * the scene that opened it. It is read-only: a counter mutates the scene only through
+ * these methods.
+ */
+export type RoomHost = Readonly<{
+  /** The route scene itself: `add`, `scale`, `cameras`, `tweens`, `time`. */
+  scene: Phaser.Scene;
+  /** The run as the counter is opened. */
+  run: RunState;
+  /** The position the panel reads its band and its own ids from. */
+  view: RoomHostView;
+  /** The route the counter stands in, so a counter can read its own tiles. */
+  route(): RouteMap;
+  /** Redraws the current screen from its run without leaving it. */
+  rebuildRoom(): void;
+  /** The route's entry tile. */
+  entryTile(): Tile;
+  /** The counter tile this panel placed, or null. */
+  counterTile(): Tile | null;
+  /** The walkable tile farthest from the entry that no trainer or item owns. */
+  farthestRoomTile(): Tile | null;
+  /** The facing that looks from `from` towards `to`. */
+  facingFromTo(from: Tile, to: Tile): Facing;
+  /** True while the dev generator phases own the screen (no counter is drawn). */
+  generatorStepActive(): boolean;
+  /** Sets the scene's run, persists it and repaints the HUD (a Mart trade). */
+  commitRun(run: RunState): void;
+  /** Takes the keyboard off whichever HUD pane held it (before a modal panel). */
+  releaseHudKeyboard(): void;
+  /** Gives the keyboard to `panel` until `closePanel()`; the scene owns the slot. */
+  openPanel(panel: RoomPanel): void;
+  /** Tears the open panel down (screen change, battle, run over). */
+  closePanel(): void;
+  /** True while a counter's own panel owns the screen. */
+  panelOpen(): boolean;
+  /** Opens the menu battle against `trainer` through the scene's own trainer path. */
+  startTrainerBattle(trainer: RouteTrainer): void;
+  /** Opens a menu battle against one wild Pokémon through the scene's wild path. */
+  startWildBattle?: (encounter: RoomWildBattle) => void;
+  /** Floats one transient notice through the route HUD's own strip (`src/ui/notice.ts`). */
+  showNotice(notice: Notice): void;
+  /** Starts a row drag the scene owns. Optional so headless stubs need not fake it. */
+  beginRowDrag?: (drag: RoomRowDrag) => void;
+}>;
 
 /** The overlay panels, one descriptor each, in `order` sequence. */
 export type RoutePanelId =
@@ -96,10 +187,6 @@ export type RoutePanelHost = Readonly<{
   startTrainerBattle(trainer: RouteTrainer): void;
   /** The route on screen, so the header can name the biome it reads; null off a route. */
   route(): RouteMap | null;
-  /** The floor plan on screen, or null off a planned room (the dev tools). */
-  plan(): MapPlan | null;
-  /** Every special room kind's descriptor, for the minimap's own markers (`D47`). */
-  rooms(): RoomRegistry;
   /** Opens the Settings screen paused on top of the route (the pause menu's row). */
   openSettings(): void;
   /** Starts a brand-new run with a fresh seed (the pause menu's Reset row). */

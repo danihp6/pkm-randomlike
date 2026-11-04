@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../data/biomes';
-import { biomeForMap } from '../engine/maps/plan';
+import { biomeForMap, getBiome } from '../data/biomes';
 import { createRun, createRunPokemon, type RunState, type RunStats } from '../engine/run';
 import { en, es } from '../i18n';
 import {

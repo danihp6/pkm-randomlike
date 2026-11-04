@@ -75,9 +75,9 @@ export type TradeRefusal = 'used' | 'single-member' | 'missing-member';
 export type TradeRequest = Readonly<{
   /** The party member the player picked. The panel only offers party ids. */
   memberId: string;
-  /** The floor's index (`RoomView.mapIndex`). */
+  /** The map's index, as the counter's host reads it. */
   mapIndex: number;
-  /** The room's id inside the floor (`RoomView.roomId`). */
+  /** The counter's own id inside that map. */
   roomId: number;
 }>;
 

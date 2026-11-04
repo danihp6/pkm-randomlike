@@ -6,14 +6,6 @@ import { getMission } from '../data/missions';
 import { BADGE_CAPS } from '../data/region';
 import { ROOM_BATTLEFIELDS } from '../data/battlefields';
 import { isLocale, type Locale } from '../i18n';
-import {
-  MAP_EDGES,
-  arrivalEdgeFor,
-  isArrivalEdge,
-  planMap,
-  type MapEdge,
-  type MapPlan,
-} from './maps/plan';
 import { nodeOf, planRegion, type RegionPlan } from './region/plan';
 import type { AiLevel } from './battle/ai';
 import {
@@ -31,10 +23,12 @@ import { emptyModifiers, type RunModifiers } from './run/modifiers';
 import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import {
+  MAP_EDGES,
   compatForNode,
   dedupeMemberIds,
   emptyRunStats,
   type CompletedMission,
+  type MapEdge,
   type RunState,
   type RunStats,
 } from './run/state';
@@ -425,15 +419,13 @@ function highestMemberXp(run: Record<string, unknown>): number {
 }
 
 /**
- * Adds the arrival edge a v7 run lacks: the door `arrivalEdgeFor` derives for the
- * room it stands in, so an old run still spawns at a real door of that room.
+ * Adds the arrival edge a v7 run lacks. The field was derived from the floor plan
+ * that no longer exists, so a v7 document reads the same `'N'` compass fallback
+ * `readArrivalEdge` answers for a stored edge the screens do not open on.
  */
 function withArrivalEdge(run: Record<string, unknown>): Record<string, unknown> {
-  if (!isString(run.seed) || !isInteger(run.mapIndex) || run.mapIndex < 1) return run;
-  if (!isInteger(run.routeInMap) || run.routeInMap < 0) return run;
-  const plan = planMap(run.seed, run.mapIndex);
-  if (run.routeInMap >= plan.rooms.length) return run;
-  return { ...run, arrivalEdge: arrivalEdgeFor(plan, run.routeInMap) };
+  if (isString(run.arrivalEdge)) return run;
+  return { ...run, arrivalEdge: 'N' };
 }
 
 /**
@@ -952,13 +944,12 @@ function parseDiscoveredRooms(value: unknown, currentRoom: number): number[] {
 }
 
 /**
- * Reads a run's arrival edge: a known edge that is a real door of the room, else
- * the plan-derived arrival, so a hand-edited document cannot spawn the player on a
- * wall.
+ * Reads a run's arrival edge: one of the four compass doors, else the `'N'` fallback,
+ * so a hand-edited document cannot store a door the screens never open on. A floor
+ * room has no plan left to validate against — the region answers every door itself.
  */
-function readArrivalEdge(value: unknown, plan: MapPlan, roomId: number): MapEdge {
-  const edge = MAP_EDGES.find((candidate) => candidate === value);
-  return edge && isArrivalEdge(plan, roomId, edge) ? edge : arrivalEdgeFor(plan, roomId);
+function readArrivalEdge(value: unknown): MapEdge {
+  return MAP_EDGES.find((candidate) => candidate === value) ?? 'N';
 }
 
 /**
@@ -1016,16 +1007,12 @@ function parseRun(value: unknown): RunState | null {
   // document carries a usable one, else the node's own reading.
   const storedMapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : null;
   const mapIndex = storedMapIndex ?? compat.mapIndex;
-  const plan = planMap(value.seed, mapIndex);
-  const rawRoom =
+  const routeInMap =
     isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : compat.routeInMap;
-  // Clamp into the plan so a hand-edited save cannot point at a room that does
-  // not exist (`RoomView` would throw building it).
-  const routeInMap = Math.min(rawRoom, plan.rooms.length - 1);
   const routeIndex =
     isInteger(value.routeIndex) && value.routeIndex >= 1 ? value.routeIndex : compat.routeIndex;
   const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, routeInMap);
-  const arrivalEdge = readArrivalEdge(value.arrivalEdge, plan, routeInMap);
+  const arrivalEdge = readArrivalEdge(value.arrivalEdge);
 
   const defeatedTrainers = Array.isArray(value.defeatedTrainers)
     ? value.defeatedTrainers.filter((id): id is string => isString(id))

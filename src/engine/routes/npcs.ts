@@ -12,7 +12,6 @@ import {
 } from '../../data/npcs';
 import type { Tile } from '../grid';
 import { isWalkable, type TileMap } from '../map';
-import { firstTrainerRoom, type MapPlan } from '../maps/plan';
 import { Rng, hashSeed } from '../rng';
 import { healParty } from '../run/heal';
 import { partyHasAbility, partyHasMove, partyHasType } from '../run/party';
@@ -143,26 +142,6 @@ export function roomNpc(
   for (const entry of usable) {
     cumulative += entry.weight;
     if (cumulative > ticket) return { row: entry.row, roomIndex };
-  }
-  return null;
-}
-
-/**
- * The floor's guaranteed NPC for `roomIndex`, or null: the first row, in table
- * order, whose `guaranteedFromMap` is defined and `<= mapIndex`, when
- * `roomIndex === firstTrainerRoom(plan)`. Reads **no RNG** and no run state, so
- * the placement cannot move any other stream (`docs/maps-spec.md` §7).
- */
-export function guaranteedNpc(
-  plan: MapPlan,
-  roomIndex: number,
-  mapIndex: number,
-  rows: readonly NpcRow[] = NPC_ROWS,
-): NpcRow | null {
-  if (roomIndex !== firstTrainerRoom(plan)) return null;
-  for (const row of rows) {
-    if (row.guaranteedFromMap === undefined) continue;
-    if (row.guaranteedFromMap <= mapIndex) return row;
   }
   return null;
 }

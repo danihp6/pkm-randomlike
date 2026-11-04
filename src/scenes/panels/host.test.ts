@@ -44,8 +44,6 @@ const HOST_MEMBERS = [
   'startWildBattle',
   'startTrainerBattle',
   'route',
-  'plan',
-  'rooms',
   'openSettings',
   'restartRun',
   'flyToNode',
@@ -128,7 +126,7 @@ describe('createScenePanels over a scene that brings nothing but a run', () => {
     expect(Object.keys(host)).toEqual(HOST_MEMBERS);
   });
 
-  it('answers the total defaults a scene without a slot, route, plan or room set gets', () => {
+  it('answers the total defaults a scene without a slot or route gets', () => {
     const scene = stubScene();
     const { host } = createScenePanels({
       scene: sceneOf(scene),
@@ -142,9 +140,6 @@ describe('createScenePanels over a scene that brings nothing but a run', () => {
     expect(() => host.closePanel()).not.toThrow();
     expect(host.panelOpen()).toBe(false);
     expect(host.route()).toBeNull();
-    expect(host.plan()).toBeNull();
-    expect(host.rooms().byKind.size).toBe(0);
-    expect(host.rooms().byMarker.size).toBe(0);
     expect(host.ui()).toEqual(initialPartyUi());
     for (const action of [
       () => host.showNotice({ text: 'a', holdMs: 10 }),

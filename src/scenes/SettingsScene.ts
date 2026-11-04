@@ -23,7 +23,7 @@ import {
 import { keyNameOf, subscribeKeybinds } from '../input/input';
 import type { RouteScene } from './RouteScene';
 
-/** The scene key that opened the page: the route, the starter pick, or a node screen. */
+/** The scene key that opened the page: the route, the laboratory, or a node screen. */
 type Opener = string;
 
 /**
@@ -45,7 +45,7 @@ installOptionsPreview(typeof window === 'undefined' ? '' : window.location.searc
  * cursor and the capture, and the panel paints them and answers with a command.
  */
 export class SettingsScene extends Phaser.Scene {
-  private from: Opener = 'Starter';
+  private from: Opener = 'Lab';
   private settings!: Settings;
   private index = 0;
   /** While set, the next keydown outside the capture is bound to the row. */
@@ -65,7 +65,7 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   init(data?: { from?: Opener }): void {
-    this.from = data?.from ?? 'Starter';
+    this.from = data?.from ?? 'Lab';
     this.settings = loadSettings();
     this.index = 0;
     this.capturing = null;

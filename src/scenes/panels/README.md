@@ -14,8 +14,9 @@ missions, rewards, trade, detail and pause cards from the run they already carry
 
 ## Layout
 
-- `types.ts` — the port a panel mounts and reads through, the descriptor shape, the frozen
-  panel ids and the HUD metrics. A panel is a **controller**: it mounts its card into `#hud`,
+- `types.ts` — the port a panel mounts and reads through, the room-panel types a counter opens
+  (the trade card and the Team Rocket machine), the descriptor shape, the frozen panel ids and
+  the HUD metrics. A panel is a **controller**: it mounts its card into `#hud`,
   feeds it the view and forwards its intents. The HUD's windows, rows, texts and strip are
   DOM-only; the folder's two canvas overlays — the level-up/evolution popup and the reset
   ring, both listed under _The canvas residue_ below — are the only Phaser objects a panel
@@ -32,8 +33,8 @@ missions, rewards, trade, detail and pause cards from the run they already carry
 - `hud.ts` — the HUD's frame: the panel metrics, the open/collapsed state the quick keys and the
   chips toggle, each card's default dock, and the mounted edge chip strip. The drag, its clamp
   and the saved placement left with the canvas layer (`Task-208` owns their DOM parity).
-- `map.ts` — the route header, which is the floor minimap: its card in `#hud` and the open
-  flag that hides it behind another screen.
+- `map.ts` — the route header, which is the region map: its card in `#hud` and the open flag
+  that hides it behind another screen.
 - `party.ts` — the party card: the six rows, a press that opens the pressed member's detail
   window and never moves it, and the row reorder on a drop through `reorderParty`.
 - `bag.ts` — the bag card: pocket tabs, filter field, item grid, money row and its
@@ -56,7 +57,7 @@ missions, rewards, trade, detail and pause cards from the run they already carry
 - `pause.ts` — the pause menu card (the cursor, the two-press Reset and the keys) plus the
   hold-to-reset overlay, the folder's other canvas residue — see below.
 - `shop.ts` — the Mart's card: the stock's model, the tab, the scroll and the one writer of a
-  trade. The shelf rules stay in `rooms/shop.ts`.
+  trade, with the shelf rules in the same module.
 - `trade.ts` — the trade card: the selection, the line and the received member, with one
   `tradePokemon` call and one `commitRun` per landed trade.
 - `README.md` — this map.
@@ -77,12 +78,10 @@ their retirement — is follow-up `Task-208`, not assumed here:
 
 ## The port's additions over the spec's frozen list
 
-`RoutePanelHost` (`types.ts`) is the spec's frozen surface **plus** the five reads a panel
+`RoutePanelHost` (`types.ts`) is the spec's frozen surface **plus** the three reads a panel
 cannot compute on its own, treated as frozen from now on:
 
 - `route()` — the route on screen (null off a route), for the header's biome name.
-- `plan()` — the floor plan (or null off a planned room), for the minimap.
-- `rooms()` — the special rooms' descriptors, for the minimap's own markers (`D47`).
 - `openSettings()` — opens the Settings screen paused on top (the pause menu's row).
 - `restartRun()` — starts a fresh run (the pause menu's Reset row; the rule itself
   stays in the scene).

@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../../data/biomes';
 import { PUZZLES, puzzleRowsForMap } from '../../data/puzzles';
-import { TILESETS } from '../../data/tilesets';
 import type { Tile } from '../grid';
-import { planMap, roomView } from '../maps';
 import { FLOOR, isWalkable, mapFromSketch, type TileMap } from '../map';
 import { createRun, createRunPokemon, markItemPicked } from '../run';
-import { routeIndexForRoom } from '../run/floors';
 import {
   puzzleId,
   puzzleIsSolved,
@@ -58,25 +54,20 @@ function layoutOf(
 const SEEDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel'];
 const MAPS = [2, 3, 4, 5, 6, 7, 8];
 
-/** The request `RouteScene.buildRoute` makes for a plan room (quiet: a leaf). */
-function roomRequest(seed: string, mapIndex: number, roomId: number): RouteRequest {
-  const plan = planMap(seed, mapIndex);
-  const view = roomView(plan, roomId, false);
-  const biome = getBiome(view.biomeId);
-  const pattern = TILESETS[biome.tilesetId].config.wallPattern;
-  const wall = pattern
-    ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
-    : undefined;
+/**
+ * The request a puzzle leaf's room makes: a quiet 30x30 dead-end box with one door,
+ * named by the map's own index. The floor plan the leaf used to hang from is gone,
+ * so the room is synthesized; only the door count and the size matter to a row.
+ */
+function roomRequest(seed: string, mapIndex: number): RouteRequest {
   return {
     seed,
-    routeIndex: routeIndexForRoom(plan, view.roomId),
-    biomeId: view.biomeId,
-    layout: biome.layout,
-    openings: view.openings,
-    width: view.width,
-    height: view.height,
+    routeIndex: mapIndex,
+    biomeId: 'forest',
+    openings: [{ edge: 'S', role: 'entry' }],
+    width: 30,
+    height: 30,
     quiet: true,
-    ...(wall ? { wall } : {}),
   };
 }
 
@@ -164,28 +155,21 @@ describe('puzzleLayout', () => {
     }
   });
 
-  it('lays a shipped puzzle leaf’s room out inside its own route', () => {
-    let checked = 0;
+  it('lays a quiet leaf’s room out inside its own route', () => {
     for (const seed of SEEDS) {
       for (const mapIndex of MAPS) {
-        const plan = planMap(seed, mapIndex);
-        for (const room of plan.rooms) {
-          if (room.special !== 'puzzle') continue;
-          const route = sketchRoute(roomRequest(seed, mapIndex, room.id));
-          const layout = puzzleLayout(route, { seed, mapIndex, roomId: room.id });
-          const where = `${seed} map ${mapIndex} room ${room.id}`;
-          expect(layout, where).not.toBeNull();
-          const reached = reachableTiles(route.tiles, route.entry);
-          for (const tile of layout!.switches) {
-            expect(reached.has(`${tile.x},${tile.y}`), where).toBe(true);
-            expect(tile).not.toEqual(route.entry);
-          }
-          expect(layout!.switches).not.toContainEqual(layout!.reward);
-          checked += 1;
+        const route = sketchRoute(roomRequest(seed, mapIndex));
+        const layout = puzzleLayout(route, { seed, mapIndex, roomId: 1 });
+        const where = `${seed} map ${mapIndex}`;
+        expect(layout, where).not.toBeNull();
+        const reached = reachableTiles(route.tiles, route.entry);
+        for (const tile of layout!.switches) {
+          expect(reached.has(`${tile.x},${tile.y}`), where).toBe(true);
+          expect(tile).not.toEqual(route.entry);
         }
+        expect(layout!.switches).not.toContainEqual(layout!.reward);
       }
     }
-    expect(checked).toBeGreaterThan(0);
   }, 60_000);
 });
 

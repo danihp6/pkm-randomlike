@@ -59,7 +59,7 @@ describe('wildLevel', () => {
 });
 
 /**
- * A fresh run's starter level (`src/scenes/StarterScene.ts`): the squad level the
+ * A fresh run's starter level (`src/engine/run/prologue.ts`): the squad level the
  * first stretch is entered at. Every later stretch is entered at the previous one's
  * cap.
  *

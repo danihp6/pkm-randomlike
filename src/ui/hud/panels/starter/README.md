@@ -2,7 +2,7 @@
 
 The run opener as Preact over the `#hud` layer (`D49`): the title, the three cards with
 their type badges, the share line and the controls hint. The rule never lives here:
-`src/scenes/StarterScene.ts` keeps the seed roll, the cursor, the seed prompt and the run
+`src/scenes/InteriorScene.ts` keeps the seed roll, the cursor, the seed prompt and the run
 it starts, and this panel paints the view it is handed.
 
 ## Layout

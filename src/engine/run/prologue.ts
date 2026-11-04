@@ -12,7 +12,7 @@ import { addItem, createRun, nextMemberId, type RunState } from './state';
  * `emptyRun` nor `takeStarter` reads a clock or an Rng of its own.
  */
 
-/** The level the professor's starter arrives at (`StarterScene`'s own 5). */
+/** The level the professor's starter arrives at (the laboratory's own 5). */
 export const STARTER_LEVEL = 5;
 
 /** The prologue run: no starter taken yet and no member to field. */

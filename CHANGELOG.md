@@ -8,6 +8,22 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The floor modules are deleted.** `[Task-298]`, Batch 128: the region has no floors left in
+      the tree. Gone with their tests: `src/engine/maps/**` (the map plan, its progress, its route
+      streams and its carver input), the floor room descriptors in `src/scenes/rooms/**`, the floor
+      minimap `src/ui/mapView.ts`, `src/scenes/StarterScene.ts` (the laboratory prologue replaced it)
+      and the three dead helpers `floorForRoute`, `routeIndexForRoom` and `capForRoute`. What the
+      region still reads was re-homed rather than kept alive for the old layer: the node room-panel
+      types (`RoomHost`, `RoomPanel`, `RoomDrop`, `RoomWildBattle`) live in
+      `src/scenes/panels/types.ts`, the compass doors (`MapEdge`, `MAP_EDGES`) are validated by the
+      save decoder without a plan (a stored edge decodes, anything off the compass falls back to `N`),
+      and `pickBiome`/`biomeForMap` moved to `src/data/biomes.ts` keeping their exact stream key
+      `${seed}:map:<index>`, so a fixed seed reads the same biome. The reset chord now starts `Lab`
+      like a new run, and `SettingsScene` returns there; `bandForMap`, `levelWindowForMap`,
+      `clampToCap` and `reachedCap` stay. `SAVE_VERSION` stays **28**: no field, migration or stream
+      moved. `[unit]` the six greps are empty (and `RoomHost` lives only in its new home), 5973 tests
+      green over 339 files, `npm run build` clean. No browser pass was owed.
+
 - [x] **The Victory Road is a route.** `[Task-303]`, Batch 127: `city:8` leads east into
       `victory-road:1` and the node now draws and walks like the long final route it is, so the League
       is reachable on foot. One exported predicate, `isRouteKind` (`src/engine/region/route/layout.ts`),

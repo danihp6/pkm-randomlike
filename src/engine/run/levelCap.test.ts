@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { floorForRoute } from './floors';
-import { capForRoute, clampToCap, reachedCap } from './levelCap';
+import { clampToCap, reachedCap } from './levelCap';
 
 describe('level cap', () => {
-  it('reads the cap from the route map', () => {
-    expect(capForRoute('run-a', 1)).toBe(floorForRoute('run-a', 1).maxLevel);
-  });
-
   it('clamps a level into 1..cap', () => {
     expect(clampToCap(99, 5)).toBe(5);
     expect(clampToCap(3.9, 5)).toBe(3);

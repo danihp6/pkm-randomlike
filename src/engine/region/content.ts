@@ -33,7 +33,7 @@ export type PoiKind =
 export type ShopKind = 'mart';
 
 /**
- * Every POI a terminus can end on, in draw order: the nine the retired `MapRoomSpecial`
+ * Every POI a terminus can end on, in draw order: the nine the retired floor room kinds
  * named, spelled for a zone on a route.
  */
 export const POI_KINDS: readonly PoiKind[] = [

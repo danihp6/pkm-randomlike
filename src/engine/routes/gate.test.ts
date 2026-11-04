@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { getBiome } from '../../data/biomes';
 import { GATES, GATE_KINDS, type GateKind } from '../../data/gates';
-import { TILESETS } from '../../data/tilesets';
 import type { Tile } from '../grid';
-import { planMap, roomView } from '../maps';
 import { FLOOR, mapFromSketch, tileAt } from '../map';
 import { hashSeed, Rng } from '../rng';
-import { routeIndexForRoom } from '../run/floors';
 import {
   GATE_INSET,
   carveGatedVault,
@@ -79,38 +75,6 @@ function gatedRequest(seed: string, routeIndex: number, gate: 'sealed' | 'open')
     hiddenChance: 0.5,
     trainerArchetypes: ['youngster', 'lass'],
     gate,
-  };
-}
-
-/**
- * The request `RouteScene.buildRoute` makes for a plan room, with the vault flag:
- * the room's own size and opening set, its biome's layout and wall motif, and quiet
- * (every gated room is a special leaf, so it carries no grass, ledge or population).
- */
-function roomRequest(
-  seed: string,
-  mapIndex: number,
-  roomId: number,
-  gate: 'sealed' | 'open',
-): RouteRequest {
-  const plan = planMap(seed, mapIndex);
-  const view = roomView(plan, roomId, false);
-  const biome = getBiome(view.biomeId);
-  const pattern = TILESETS[biome.tilesetId].config.wallPattern;
-  const wall = pattern
-    ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
-    : undefined;
-  return {
-    seed,
-    routeIndex: routeIndexForRoom(plan, view.roomId),
-    biomeId: view.biomeId,
-    layout: biome.layout,
-    openings: view.openings,
-    width: view.width,
-    height: view.height,
-    quiet: true,
-    gate,
-    ...(wall ? { wall } : {}),
   };
 }
 
@@ -295,29 +259,6 @@ describe('a gated build', () => {
         expect(sealed.items.map((item) => tileKey(item.position))).not.toContain(tileKey(gate.pocket));
       }
     }
-  }, 60_000);
-
-  it('carves a vault in every real gated room the plans hang', () => {
-    let checked = 0;
-    for (const seed of SEEDS) {
-      for (const mapIndex of MAPS) {
-        const plan = planMap(seed, mapIndex);
-        for (const room of plan.rooms) {
-          if (room.special !== 'gated') continue;
-          const where = `${seed} map ${mapIndex} room ${room.id}`;
-          // The room the scene builds: no re-roll may throw and none may ship gateless.
-          const route = sketchRoute(roomRequest(seed, mapIndex, room.id, 'sealed'));
-          const gate = route.gate;
-          expect(gate, where).toBeDefined();
-          expect(tileAt(route.tiles, gate!.pocket), where).toBe(FLOOR);
-          expect(reachableTiles(route.tiles, route.entry).has(tileKey(gate!.pocket)), where).toBe(false);
-          checked += 1;
-        }
-      }
-    }
-    expect(checked).toBeGreaterThan(0);
-    // Not every floor hangs one (`GATED_CHANCE`), so the sample is always smaller.
-    expect(checked).toBeLessThan(SEEDS.length * MAPS.length);
   }, 60_000);
 
   it('draws the same vault every time the room is built', () => {

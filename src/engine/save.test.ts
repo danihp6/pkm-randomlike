@@ -5,7 +5,6 @@ import { levelCapForMap } from '../data/maps';
 import { BADGE_CAPS } from '../data/region';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { asDark } from './run/dark';
-import { planMap } from './maps/plan';
 import { nodeKey, planRegion } from './region/plan';
 import {
   addItem,
@@ -467,11 +466,23 @@ describe('run validation', () => {
     expect(decoded.run?.levelCap).toBe(compat.levelCap);
   });
 
-  it('clamps a room outside the plan to the floor', () => {
+  it('keeps a stored room number as the document wrote it', () => {
     const run = { ...sampleRun(), mapIndex: 1, routeInMap: 9999 };
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    const plan = planMap(run.seed, 1);
-    expect(decoded.run?.routeInMap).toBe(plan.rooms.length - 1);
+    expect(decoded.run?.routeInMap).toBe(9999);
+  });
+
+  it('keeps a stored arrival edge and falls back to N off the compass', () => {
+    const stored = { ...sampleRun(), arrivalEdge: 'E' };
+    expect(document(JSON.stringify({ version: SAVE_VERSION, run: stored })).run?.arrivalEdge).toBe(
+      'E',
+    );
+    for (const junk of ['X', '', 3, null, undefined, 'north']) {
+      const run = { ...sampleRun(), arrivalEdge: junk };
+      const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+      expect(decoded.run?.nodeKey, String(junk)).toBe(stored.nodeKey);
+      expect(decoded.run?.arrivalEdge, String(junk)).toBe('N');
+    }
   });
 
   it('keeps the members that parse and drops the ones that do not', () => {

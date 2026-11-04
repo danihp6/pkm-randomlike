@@ -1,5 +1,4 @@
-import { getBiome } from '../data/biomes';
-import { biomeForMap } from '../engine/maps/plan';
+import { biomeForMap, getBiome } from '../data/biomes';
 import { encodeRunShare, type RunState } from '../engine/run';
 import { t } from '../i18n';
 

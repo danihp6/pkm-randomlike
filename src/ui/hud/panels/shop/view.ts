@@ -2,7 +2,7 @@ import { t } from '../../../../i18n';
 import type { ShopRow } from '../../../shop';
 
 /**
- * The Mart's layout model (`D49`): the floating card `src/scenes/rooms/shop.ts`
+ * The Mart's layout model (`D49`): the floating card `src/scenes/panels/shop.ts`
  * draws in Phaser, measured as data. It mirrors the shipped card's own arithmetic
  * — the header band, the money line, the BUY / SELL tabs, the seven-row list window,
  * the message and the hint — so the Preact panel and the canvas card cannot drift.
@@ -67,7 +67,7 @@ export type ShopPanelView = Readonly<{
   close: Readonly<{ label: string; box: Rect }>;
 }>;
 
-/** The shipped card's own constants (`src/scenes/rooms/shop.ts`), pinned here. */
+/** The shipped card's own constants (`src/scenes/panels/shop.ts`), pinned here. */
 export const SHOP_PANEL_W = 640;
 export const SHOP_PANEL_H = 540;
 export const SHOP_HEADER_H = 44;

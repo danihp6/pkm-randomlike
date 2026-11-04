@@ -12,10 +12,7 @@ import { TERRAIN_TURNS } from '../battle/effects/terrain';
 import { WEATHER_TURNS } from '../battle/effects/weather';
 import { createFighter } from '../battle/fighter';
 import { createBattle, emptyFieldConditions, emptyRoomField, type BattleSetup } from '../battle/state';
-import { planMap } from '../maps/plan';
-import { roomView } from '../maps/progress';
 import { Rng, hashSeed } from '../rng';
-import { routeIndexForRoom } from '../run/floors';
 import {
   battlefieldSeeds,
   bossOpeningRoll,
@@ -27,7 +24,16 @@ import {
 } from './battlefield';
 
 const SEEDS: readonly string[] = ['dev-seed', 'battlefield-a', 'battlefield-b'];
-const PLAN_SEED = 'battlefield-test';
+
+/**
+ * The boss room's route index on each of the eight floors, as the retired floor plan
+ * gave it. Frozen so the pinned rolls below keep reading the very index the shipped
+ * floors rolled on.
+ */
+const BOSS_ROUTE_INDEX: Readonly<Record<string, readonly number[]>> = {
+  'dev-seed': [6, 13, 19, 28, 37, 52, 60, 71],
+  'pkm-64': [6, 13, 20, 28, 40, 52, 62, 69],
+};
 const KINDS: readonly RoomKind[] = ['trainer', 'boss', 'quiet'];
 
 const INDICES = Array.from({ length: 200 }, (_, i) => i + 1);
@@ -227,8 +233,8 @@ type BossPin = Readonly<{
 }>;
 
 /**
- * The banned-species leaf is one more room on a floor that hangs it, so
- * `routeIndexForRoom` shifts from map 4 on and the boss opening moves with it:
+ * The banned-species leaf is one more room on a floor that hangs it, so the boss room's
+ * route index shifts from map 4 on and the boss opening moves with it:
  * `dev-seed`'s maps 6 and 7 and `pkm-64`'s maps 7 and 8 were re-pinned by
  * Task-101 (maps 1-3 and every opening of map 4 or earlier are unchanged).
  *
@@ -238,7 +244,7 @@ type BossPin = Readonly<{
  */
 const BOSS_PINS: Readonly<Record<string, readonly BossPin[]>> = {
   // Re-pinned by Task-117: the slot machine's room retired, so a floor from map 2 on
-  // holds one room fewer and `routeIndexForRoom` shifts the boss's own roll again.
+  // holds one room fewer and the boss's own route index shifts again.
   'dev-seed': [
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
     { side: 'boss', battlefield: 'crit', boosts: { def: 1 } },
@@ -276,9 +282,9 @@ describe('bossOpeningRoll', () => {
 
   it('pins the boss opening of maps 1 to 8 for two fixed seeds', () => {
     for (const [seed, expected] of Object.entries(BOSS_PINS)) {
+      const indices = BOSS_ROUTE_INDEX[seed];
       const actual = expected.map((_, floor) => {
-        const plan = planMap(seed, floor + 1);
-        const opening = bossOpeningRoll(seed, routeIndexForRoom(plan, plan.bossRoom));
+        const opening = bossOpeningRoll(seed, indices[floor]);
         return { side: opening.side, battlefield: opening.battlefield.id, boosts: opening.boosts };
       });
       expect(actual, seed).toEqual(expected);
@@ -308,23 +314,6 @@ describe('roomKindOf', () => {
 
   it('rolls for every other regular room', () => {
     expect(roomKindOf({ entry: false, boss: false, special: null })).toBe('trainer');
-  });
-
-  it('reads a plan room exactly as the scene does', () => {
-    const plan = planMap(PLAN_SEED, 1);
-    const kindOf = (roomId: number) => roomKindOf(roomView(plan, roomId, false));
-    expect(kindOf(plan.entryRoom)).toBe('quiet');
-    expect(kindOf(plan.bossRoom)).toBe('boss');
-    expect(plan.rooms.map((room) => kindOf(room.id))).toContain('trainer');
-    for (const room of plan.rooms) {
-      const expected: RoomKind =
-        room.id === plan.bossRoom
-          ? 'boss'
-          : room.id === plan.entryRoom || room.special
-            ? 'quiet'
-            : 'trainer';
-      expect(kindOf(room.id)).toBe(expected);
-    }
   });
 });
 

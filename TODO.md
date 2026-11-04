@@ -12864,7 +12864,7 @@ exactly how the last attempt shipped nothing. Batches 129 and 130 are cut the sa
 
 **Hot files.** `src/main.ts`, and `src/scenes/RouteScene.ts` (one line: the reset chord). No other.
 
-- [ ] **[Task-298] The floor modules are deleted.** The map plan, the room grid and its descriptors, the
+- [x] **[Task-298] The floor modules are deleted.** The map plan, the room grid and its descriptors, the
       floor minimap, the starter screen and the three helpers no reader has left go, with their tests.
       The region's route screen stays: it is `src/scenes/RouteScene.ts` and since `[Task-302]` it draws
       the region's own screens (issue #125).

@@ -28,8 +28,7 @@ import {
 } from '../../ui/hud/panels/rewards';
 import { itemPickupNotice } from '../../ui/notice';
 import { pokemonRewardChoices, rewardChoices, rewardRows, type RewardRow } from '../../ui/rewards';
-import type { RoomDrop } from '../rooms/types';
-import type { RoutePanelDescriptor, RoutePanelHost } from './types';
+import type { RoomDrop, RoutePanelDescriptor, RoutePanelHost } from './types';
 
 /**
  * The mini-boss reward (`docs/maps-spec.md` §7, D33, D45): a beaten strong

@@ -13,7 +13,7 @@ export const es: Readonly<Record<TranslationKey, string>> = {
   'menu.new': 'Nueva partida',
   'menu.options': 'Ajustes',
 
-  // starter — StarterScene
+  // starter — the laboratory's starter pick (InteriorScene)
   'starter.title': 'Elige tu inicial',
   'starter.blurb': 'Tu primer Pokémon. Si lo pierdes, se va para siempre.',
   'starter.controls':

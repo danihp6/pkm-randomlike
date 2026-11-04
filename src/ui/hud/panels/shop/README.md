@@ -3,7 +3,7 @@
 The floor's merchant counter as Preact over the `#hud` layer (`D49`): the title, the
 money line, the BUY / SELL tabs, the seven-row stock list with its icon, name, price and
 owned count, the message line and the empty-stock label. The card is the **shipped**
-one — `src/scenes/rooms/shop.ts`'s 640 × 540 floating window, seven 44 px rows — painted
+one — `src/scenes/panels/shop.ts`'s 640 × 540 floating window, seven 44 px rows — painted
 with the board's tokens (radius 11, the 16 % hairline, the 4 % / 8 % row pair, 10 px
 body). The board's own `03d` shell (a search field, category chips and a 16-cell grid) is
 a different design and not this migration: the shipped card is the one that ships.

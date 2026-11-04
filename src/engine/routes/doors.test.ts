@@ -1,12 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { FLOOR, WALL, tileAt, type TileMap } from '../map';
-import { planMap, roomView } from '../maps';
 import { borderEdge, exitEdgeAt, openingBandCells } from './doors';
-import { SHAPES, type AccessEdge } from './layout';
+import { SHAPES, type Access, type AccessEdge } from './layout';
 import { sketchRoute } from './sketch';
 import { validateRoute } from './validate';
 
 const SEEDS = ['doors-a', 'doors-b', 'doors-c', 'doors-d'];
+
+const EDGES: readonly AccessEdge[] = ['N', 'E', 'S', 'W'];
+
+/** The opening sets a screen can carry: the entry on one edge, the exits on the rest. */
+function openingSets(): readonly (readonly Access[])[] {
+  const sets: Access[][] = [];
+  for (let mask = 0; mask < 1 << EDGES.length; mask++) {
+    const edges = EDGES.filter((_, index) => (mask & (1 << index)) !== 0);
+    if (edges.length < 2) continue;
+    sets.push(edges.map((edge, index) => ({ edge, role: index === 0 ? 'entry' : 'exit' })));
+  }
+  return sets;
+}
 
 describe('borderEdge', () => {
   it('names the border edge of a cell, and null off the border', () => {
@@ -101,23 +113,21 @@ describe('exitEdgeAt', () => {
   });
 });
 
-describe('exitEdgeAt on real room openings', () => {
+describe('exitEdgeAt on carved openings', () => {
   it('opens every declared opening’s whole band and nothing else', () => {
     for (const seed of SEEDS) {
-      for (let mapIndex = 1; mapIndex <= 6; mapIndex++) {
-        const plan = planMap(seed, mapIndex);
-        for (const room of plan.rooms) {
-          const view = roomView(plan, room.id, false);
+      for (const [at, openings] of openingSets().entries()) {
+        {
           const route = sketchRoute({
             seed,
-            routeIndex: 1,
-            biomeId: view.biomeId,
-            openings: view.openings,
-            width: view.width,
-            height: view.height,
+            routeIndex: at + 1,
+            biomeId: 'forest',
+            openings,
+            width: 30,
+            height: 30,
           });
-          const edges = view.openings.map((opening) => opening.edge);
-          const where = `${seed} map ${mapIndex} room ${room.id}`;
+          const edges = openings.map((opening) => opening.edge);
+          const where = `${seed} set ${at}`;
           for (let y = 0; y < route.height; y++) {
             for (let x = 0; x < route.width; x++) {
               const edge = borderEdge({ x, y }, route.width, route.height);
@@ -159,27 +169,28 @@ describe('exitEdgeAt on real room openings', () => {
 });
 
 describe('the border band of a fixed-seed room', () => {
-  it('opens the E band of doors-c map 4 room 3, whose (29,20) was a wall', () => {
+  it('opens the E band of the frozen doors-c room, whose (29,20) was a wall', () => {
     // Frozen on `main` (e4604c0) at the pre-task 31x30 room: its E opening sat at
     // (30,19) and the generator left the band cell (30,20) a WALL, so the two-cell
-    // door was one cell wide. Room 3 now takes its shape-derived 30x30 size
+    // door was one cell wide. The room now takes its shape-derived 30x30 size
     // ([Task-81]), which moves the same E band to (29,19)/(29,20); the second cell
-    // is still the coordinate the fix had to open.
+    // is still the coordinate the fix had to open. The opening set and the route
+    // set is the one the retired floor plan handed this room (E exit and S entry).
     const seed = 'doors-c';
-    const mapIndex = 4;
-    const roomId = 3;
     const anchor = { x: 29, y: 19 };
-    const plan = planMap(seed, mapIndex);
-    const view = roomView(plan, roomId, false);
+    const openings: readonly Access[] = [
+      { edge: 'E', role: 'exit' },
+      { edge: 'S', role: 'entry' },
+    ];
     const route = sketchRoute({
       seed,
       routeIndex: 1,
-      biomeId: view.biomeId,
-      openings: view.openings,
-      width: view.width,
-      height: view.height,
+      biomeId: 'forest',
+      openings,
+      width: 30,
+      height: 30,
     });
-    const edges = view.openings.map((opening) => opening.edge);
+    const edges = openings.map((opening) => opening.edge);
     expect(route.width).toBe(30);
     expect(route.height).toBe(30);
     expect(route.shape).toBe('bend');

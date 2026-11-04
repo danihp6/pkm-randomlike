@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { getBiome } from '../../../../data/biomes';
-import { biomeForMap } from '../../../../engine/maps/plan';
+import { biomeForMap, getBiome } from '../../../../data/biomes';
 import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../../../../engine/run';
 import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { DEFAULT_LOCALE, setLocale, t } from '../../../../i18n';

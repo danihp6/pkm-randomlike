@@ -20,7 +20,7 @@ import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { openNpcPanel } from '../ui/npcPanel';
 import type { PanelSceneSource } from './panels/host';
-import type { RoomPanel } from './rooms/types';
+import type { RoomPanel } from './panels/types';
 import { actorDepth, WorldScene, WORLD_TRANSITION_MS } from './WorldScene';
 import { drawCityNpcs, npcCardView } from './npcs';
 import { WorldWalker } from './walker';

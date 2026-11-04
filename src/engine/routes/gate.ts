@@ -28,7 +28,7 @@ const CARDINALS: readonly Tile[] = [
 export type GatedVaultOptions = Readonly<{
   /** The build's seed (`RouteRequest.seed`, never the debug `#rN` suffix). */
   seed: string;
-  /** The room's stable index (`routeIndexForRoom`), so the vault survives a revisit. */
+  /** The room's stable index, so the vault survives a revisit. */
   routeIndex: number;
   /** The route's entry: never the corridor's mouth. */
   entry: Tile;

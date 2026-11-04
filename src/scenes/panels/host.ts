@@ -1,7 +1,6 @@
 import type Phaser from 'phaser';
 import type { HudLayout, HudPanelId } from '../../data/hudLayout';
 import { HUD_PANEL_IDS } from '../../data/hudLayout';
-import type { MapPlan } from '../../engine/maps';
 import type { RouteMap, RouteTrainer } from '../../engine/routes/routeMap';
 import type { RunState } from '../../engine/run/state';
 import type { Settings } from '../../engine/save';
@@ -11,10 +10,8 @@ import { initialPartyUi, type PartyUiState } from '../../ui/partyScreen';
 // The folder path is spelled in full: this module is the one importer of the panel
 // registry, and a scene that reaches it is the drift this layer exists to remove.
 import { collectPanels, type PanelRegistry } from '../panels/registry';
-import type { RoomRegistry } from '../rooms/registry';
-import type { RoomPanel } from '../rooms/types';
 import { hudMetrics } from './hud';
-import type { RoutePanelDescriptor, RoutePanelHost, RoutePanelId } from './types';
+import type { RoomPanel, RoutePanelDescriptor, RoutePanelHost, RoutePanelId } from './types';
 
 /**
  * The panel layer of **every** node scene: the route's overlay cards, mounted over
@@ -58,8 +55,6 @@ export type PanelSceneSource = Readonly<{
   run(): RunState;
   settings(): Settings;
   route?(): RouteMap | null;
-  plan?(): MapPlan | null;
-  rooms?(): RoomRegistry;
   slot?: PanelRoomSlot;
   actions?: Partial<PanelActions>;
   /** The panel ids this scene mounts; omitted means all twelve, in registry order. */
@@ -95,9 +90,6 @@ export const NODE_PANEL_IDS: readonly RoutePanelId[] = [
 
 /** `Phaser.Scenes.Events.SHUTDOWN`, spelled out so this module never imports Phaser as a value. */
 const SCENE_SHUTDOWN = 'shutdown';
-
-/** The empty registry a scene without special rooms answers with. */
-const EMPTY_ROOMS: RoomRegistry = { byKind: new Map(), byMarker: new Map() };
 
 /** The slot of a scene that has none: every call is total and answers closed. */
 const NO_SLOT: PanelRoomSlot = {
@@ -196,8 +188,6 @@ export function createScenePanels(source: PanelSceneSource): ScenePanels {
     startWildBattle: (encounter) => actions.startWildBattle(encounter),
     startTrainerBattle: (trainer) => actions.startTrainerBattle(trainer),
     route: source.route ?? (() => null),
-    plan: source.plan ?? (() => null),
-    rooms: source.rooms ?? (() => EMPTY_ROOMS),
     openSettings: () => actions.openSettings(),
     restartRun: () => actions.restartRun(),
     flyToNode: (key) => actions.flyToNode(key),
