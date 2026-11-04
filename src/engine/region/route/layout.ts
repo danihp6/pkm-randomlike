@@ -2,7 +2,7 @@ import { biomeForRoute } from '../../../data/biomes';
 import { ROUTE_HEIGHTS, ROUTE_WIDTH } from '../../../data/region';
 import type { Tile } from '../../grid';
 import type { AccessEdge } from '../../routes/layout';
-import { nodeOf, type RegionPlan } from '../plan';
+import { nodeOf, type RegionNodeKind, type RegionPlan } from '../plan';
 import { nodeStreams } from '../streams';
 
 /**
@@ -48,6 +48,25 @@ const SCREEN_COUNTS: readonly (2 | 3 | 4)[] = [2, 3, 4];
 /** Every edge but the entry's: a tall map's other three sides, entry first. */
 const EXIT_EDGES: readonly AccessEdge[] = ['S', 'E', 'W'];
 
+/** The Victory Road leaves east into the League, so its one exit is `E`, then `S` and `W`. */
+const VICTORY_ROAD_EXIT_EDGES: readonly AccessEdge[] = ['E', 'S', 'W'];
+
+/** The Victory Road is always four screens: the gauntlet before the League is fixed. */
+const VICTORY_ROAD_SCREENS = 4;
+
+/**
+ * The kinds the route screen, the carver, the preload and the content pass treat as a
+ * route. The Victory Road is one: it is walked as screens off the same carver.
+ */
+export function isRouteKind(kind: string): boolean {
+  return kind === 'route' || kind === 'lateral' || kind === 'victory-road';
+}
+
+/** The edge order a kind opens its extra neighbours in. */
+function exitEdgesFor(kind: RegionNodeKind): readonly AccessEdge[] {
+  return kind === 'victory-road' ? VICTORY_ROAD_EXIT_EDGES : EXIT_EDGES;
+}
+
 /**
  * The route's screens, top to bottom. A screen starts every `SCREEN_HEIGHT` rows
  * and the **last one absorbs the remainder**: `ROUTE_HEIGHTS` are 3, 4 and 5
@@ -64,10 +83,6 @@ export function routeScreens(screens: 2 | 3 | 4): readonly RouteScreen[] {
     rows.push({ index, top, bottom: index === screens - 1 ? height - 1 : top + SCREEN_HEIGHT - 1 });
   }
   return rows;
-}
-
-function isRouteKind(kind: string): boolean {
-  return kind === 'route' || kind === 'lateral';
 }
 
 /**
@@ -87,21 +102,24 @@ function entryNeighbour(plan: RegionPlan, key: string, edges: readonly string[])
 /**
  * One opening per neighbour: the entry takes `N` because the chain order — not the
  * coarse map position — decides which long end is which, and every other neighbour
- * takes the next unused edge of `S`, `E`, `W` in `node.edges` order. A lateral has
- * a single neighbour, so it gets one `N` band and no exit at all: it is walked into
- * and back out of (`docs/region-spec.md` §1).
+ * takes the next unused edge of that kind's exit order (`S`, `E`, `W` on a route and
+ * a lateral, `E`, `S`, `W` on the Victory Road). A lateral has a single neighbour, so
+ * it gets one `N` band and no exit at all: it is walked into and back out of
+ * (`docs/region-spec.md` §1).
  */
 function routeOpenings(
   plan: RegionPlan,
   key: string,
+  kind: RegionNodeKind,
   edges: readonly string[],
 ): readonly RouteOpening[] {
   const entry = entryNeighbour(plan, key, edges);
   if (entry === undefined) return [];
   const openings: RouteOpening[] = [{ edge: 'N', role: 'entry', neighbourKey: entry }];
+  const exitEdges = exitEdgesFor(kind);
   const others = edges.filter((neighbour) => neighbour !== entry);
   others.forEach((neighbourKey, index) => {
-    const edge = EXIT_EDGES[index];
+    const edge = exitEdges[index];
     if (edge !== undefined) openings.push({ edge, role: 'exit', neighbourKey });
   });
   return openings;
@@ -112,7 +130,8 @@ function routeOpenings(
  * `layout` stream always yields: the screen count and the carve seed. The second is
  * not kept here — `map.ts` replays the same two draws to feed the carver — but it is
  * still taken, so forcing a height never moves it or any later draw on the stream
- * (`D11`).
+ * (`D11`). The Victory Road always uses four screens, but the draws are still taken
+ * in the same order, so its carve is a four-screen route's.
  */
 export function planRouteLayout(plan: RegionPlan, key: string, screens?: 2 | 3 | 4): RouteLayout {
   const node = nodeOf(plan, key);
@@ -126,7 +145,7 @@ export function planRouteLayout(plan: RegionPlan, key: string, screens?: 2 | 3 |
   const rng = nodeStreams(plan.seed, key).layout;
   const drawn = rng.int(2, 4) as 2 | 3 | 4;
   rng.int(0, 0x7fffffff);
-  const count = screens ?? drawn;
+  const count: 2 | 3 | 4 = screens ?? (node.kind === 'victory-road' ? VICTORY_ROAD_SCREENS : drawn);
 
   return {
     seed: plan.seed,
@@ -135,7 +154,7 @@ export function planRouteLayout(plan: RegionPlan, key: string, screens?: 2 | 3 |
     width: ROUTE_WIDTH,
     height: ROUTE_HEIGHTS[count - 2],
     screens: routeScreens(count),
-    openings: routeOpenings(plan, key, node.edges),
+    openings: routeOpenings(plan, key, node.kind, node.edges),
   };
 }
 

@@ -24,8 +24,9 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 - `streams.test.ts` — the stream keys, the replay and the fact no node's stream depends on
   another.
 - `content.ts` — what a node holds: its NPCs, its special NPCs, its grass, its shops, its
-  posted trainers and a lateral's point of interest, all off the node's `content` stream
-  (`planNodeContent`, `PoiKind`, `ShopKind`, `POI_KINDS`).
+  posted trainers (2-4 on every route kind, the Victory Road included) and a lateral's
+  point of interest, all off the node's `content` stream (`planNodeContent`, `PoiKind`,
+  `ShopKind`, `POI_KINDS`).
 - `content.test.ts` — the tier counts, the lateral-only POI, the replay and a fixed seed's
   content digest.
 - `encounters.ts` — a node's wild encounters: its band pool minus the run's exclusions, the
@@ -48,17 +49,18 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   lateral's POI, the content invariants (off the lane and the bands, per screen), the replay
   across two seeds, the travel seam's own spawn and the two refusals.
 - `preload.ts` — one node resolved to everything a scene draws and walks: the plan names it, its
-  own generator carves it, and it comes back as its tile map, its two frame meshes (the tiles'
-  and the floor under them) and its spawn. It also holds the worker's request and reply and the
-  resolver that answers one without throwing (`preloadNode`, `buildNodeMeshes`,
-  `answerNodeRequest`, `NodeWorld`, `NodeMeshes`).
+  own generator carves it (a route, a lateral and the Victory Road), and it comes back as its
+  tile map, its two frame meshes (the tiles' and the floor under them) and its spawn. It also
+  holds the worker's request and reply and the resolver that answers one without throwing
+  (`preloadNode`, `buildNodeMeshes`, `answerNodeRequest`, `NodeWorld`, `NodeMeshes`).
 - `preload.test.ts` — a fixed seed's route mesh against the generator's own `buildFrameMesh`, the
   settlement's spawn and tileset, the nulls (unknown key, malformed key, no generator yet) and the
   worker reply's shape.
 - `travel.ts` — the region's one travel seam: whether a run may walk an exit band (through the
   badge gate) or fly to a settlement it has visited (free, `D67`), and the next run state with its
-  refreshed compat fields, its missions' `enter-node` reset and spawn tile (`canTravel`, `travel`,
-  `TravelMode`, `TravelRefusal`, `TravelArrival`).
+  refreshed compat fields, its missions' `enter-node` reset and spawn tile — a settlement's own
+  spawn or a route kind's carver entry (`canTravel`, `travel`, `TravelMode`, `TravelRefusal`,
+  `TravelArrival`).
 - `travel.test.ts` — the walk's own spawn per kind, the gate and its badge, walking back, the
   flight's Centre/laboratory door, the unvisited and non-settlement refusals, the visited-once
   order, the stretch reset an accepted travel opens, the untouched run a refusal leaves and the

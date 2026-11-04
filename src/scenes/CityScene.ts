@@ -10,6 +10,7 @@ import { planNodeContent } from '../engine/region/content';
 import { markNpcUsed, nodeNpcs, npcUsed, useNpc, type PlacedNpc } from '../engine/region/npcs';
 import { nodeOf, planRegion, type RegionNodeKind, type RegionPlan } from '../engine/region/plan';
 import type { NodeWorld } from '../engine/region/preload';
+import { isRouteKind } from '../engine/region/route';
 import { travel } from '../engine/region/travel';
 import type { RunState } from '../engine/run';
 import { storeRun, type Settings } from '../engine/save';
@@ -462,7 +463,7 @@ export class CityScene extends WorldScene {
   /** The scene a neighbour of this kind is drawn by, or null while it has none. */
   private destinationScene(kind: RegionNodeKind): string | null {
     if (kind === 'town' || kind === 'city') return regionSceneKey;
-    if (kind === 'route' || kind === 'lateral') return 'Route';
+    if (isRouteKind(kind)) return 'Route';
     return null;
   }
 
