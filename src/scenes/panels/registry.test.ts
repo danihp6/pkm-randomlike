@@ -18,14 +18,14 @@ const SOURCES = import.meta.glob('./*.ts', {
   import: 'default',
 }) as Readonly<Record<string, string>>;
 
-/** The folder's modules, exactly the map `RouteScene`'s registry glob hands over. */
+/** The folder's modules, exactly the map `createPanels` hands the registry. */
 const MODULES = import.meta.glob(['./*.ts', '!./*.test.ts'], { eager: true }) as PanelModules;
 
 /** Every file of the folder that is not a test. */
 const PANEL_PATHS = Object.keys(SOURCES).filter((path) => !path.endsWith('.test.ts'));
 
-/** The folder's own shared modules: the port and the registry, neither a panel. */
-const SHARED_PATHS = ['./registry.ts', './types.ts'];
+/** The folder's own shared modules: the port, the registry and the host, none a panel. */
+const SHARED_PATHS = ['./registry.ts', './types.ts', './host.ts'];
 
 /** The panels the shipped descriptors claim, in `order` sequence. */
 const SHIPPED_IDS = [

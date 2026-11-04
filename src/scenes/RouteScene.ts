@@ -3,7 +3,7 @@ import { biomeForRoute, getBiome } from '../data/biomes';
 import { getMove, getSpecies, normalizeId, TYPE_NAMES } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
 import { PROP_SIGN_FRAME, PROP_SIGN_SIZE, PROP_SIGN_TEXTURE_KEY } from '../data/tilesets/props';
-import { HUD_PANEL_IDS, type HudPanelId } from '../data/hudLayout';
+import type { HudPanelId } from '../data/hudLayout';
 import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { getItem } from '../data/items';
 import {
@@ -206,7 +206,6 @@ import { buildNodeMeshes } from '../engine/region/preload';
 import { NODE_ENCOUNTER_CHANCE, nodeEncounterTable, nodeWildLevel } from '../engine/region/encounters';
 import { nodeOf, planRegion, type RegionNode, type RegionNodeKind } from '../engine/region/plan';
 import { travel, type TravelMode } from '../engine/region/travel';
-import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { addFrlgWindow } from '../ui/frlg';
 import {
   catchToPcNotice,
@@ -233,7 +232,7 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { playCue, playMusic } from '../audio/audio';
 import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking } from '../net/ranking';
-import { loadSettings, saveSettings } from '../settings';
+import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
@@ -262,9 +261,8 @@ import {
   pauseMenuOpenNow,
   updateReset as updateResetOverlay,
 } from './panels/pause';
-import { hudMetrics } from './panels/hud';
-import { collectPanels, type PanelRegistry } from './panels/registry';
-import type { HudMetrics, RoutePanelHost } from './panels/types';
+import type { PanelSceneSource } from './panels/host';
+import type { RoutePanelHost, RoutePanelId } from './panels/types';
 
 /**
  * Every special room kind's descriptor module (`D47`), discovered from the folder
@@ -274,14 +272,24 @@ import type { HudMetrics, RoutePanelHost } from './panels/types';
 const ROOM_MODULES = import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true });
 
 /**
- * Every route panel's descriptor module (`D47`'s shape, one folder over),
- * discovered from the folder itself: a new panel is a new file here and the scene
- * is not edited. The negative pattern keeps the folder's own tests out of the
- * browser bundle.
+ * The cards this scene mounts: every panel of the folder. The route is the only
+ * screen with a minimap, a floor HUD, a box and a notice strip, so it takes the
+ * twelve while a node screen takes `NODE_PANEL_IDS`.
  */
-const PANEL_MODULES = import.meta.glob(['./panels/*.ts', '!./panels/*.test.ts'], {
-  eager: true,
-});
+const ROUTE_PANEL_IDS: readonly RoutePanelId[] = [
+  'map',
+  'party',
+  'hud',
+  'bag',
+  'pc',
+  'notices',
+  'missions',
+  'rewards',
+  'shop',
+  'trade',
+  'pause',
+  'detail',
+];
 
 /**
  * Render depth of a room's condition filter: over the tiles, the actors and the tree
@@ -488,12 +496,6 @@ export class RouteScene extends WorldScene {
   private followerSpecies: string | null = null;
   /** The follower's own in-flight step, which trails the player's by one tile. */
   private followerTween: Phaser.Tweens.Tween | null = null;
-  /** The panel widths for this window, clamped to the screen (`hudMetrics`). */
-  private hud!: HudMetrics;
-  /** The HUD's party/box cursor; `ui()` in the panel port reads it. */
-  private hudUi: PartyUiState = initialPartyUi();
-  /** Which HUD cards are open, keyed by id. A quick key and the edge strip toggle them. */
-  private hudOpen = new Set<HudPanelId>();
   private searchKeyStamps = new Set<number>();
   private releaseRoot: Phaser.GameObjects.Container | null = null;
   private releaseQueue: ReleaseBeat[] = [];
@@ -518,10 +520,6 @@ export class RouteScene extends WorldScene {
   private npcBattle: Readonly<{ row: NpcRow; mapIndex: number; roomId: number }> | null = null;
   /** Every special room kind's descriptor, indexed once per scene (`D47`). */
   private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
-  /** The route's overlay panels, indexed once per scene (`D47`'s shape). */
-  private panels: PanelRegistry = collectPanels(PANEL_MODULES);
-  /** The port every panel descriptor draws through, built once per scene. */
-  private panelHost!: RoutePanelHost;
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
   private roomPanel: RoomPanel | null = null;
 
@@ -795,78 +793,49 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * The port a route panel mounts its card through (`D47`'s shape, one folder
-   * over): the scene's own surface, with the run, the settings and the HUD metrics
-   * read live so a panel always paints the current ones. A panel mutates the scene
-   * only through these methods, and never writes the run itself.
+   * The source the shared panel layer answers from (`./panels/host.ts`): the scene's
+   * own run, settings, route, plan and room registry, read live so a panel always
+   * paints the current ones; its room slot; and the layer's twelve cards. A panel
+   * mutates the scene only through these methods, and never writes the run itself.
    */
-  private buildPanelHost(): RoutePanelHost {
-    const scene = this;
+  protected override panelSource(): PanelSceneSource {
     return {
-      scene,
-      run: () => scene.run,
-      settings: () => scene.settings,
-      hudLayout: () => scene.settings.hudLayout,
-      setHudLayout: (layout) => {
-        scene.settings = { ...scene.settings, hudLayout: layout };
-        saveSettings(scene.settings);
-        scene.refreshHud();
+      scene: this,
+      run: () => this.run,
+      settings: () => this.settings,
+      route: () => this.route,
+      plan: () => this.plan,
+      rooms: () => this.roomRegistry,
+      slot: {
+        open: (panel) => this.openPanel(panel),
+        close: () => this.closePanel(),
+        isOpen: () => this.panelOpen(),
       },
-      hud: () => scene.hud,
-      hudCardOpen: (id) => scene.hudOpen.has(id),
-      setHudCardOpen: (id, open) => scene.setHudCardOpen(id, open),
-      ui: () => scene.hudUi,
-      setUi: (state) => {
-        scene.hudUi = state;
-      },
-      commitRun: (run) => scene.commitRun(run),
-      persistRun: () => scene.persistRun(),
-      refreshHud: () => scene.refreshHud(),
-      openPanel: (panel) => scene.openPanel(panel),
-      closePanel: () => scene.closePanel(),
-      panelOpen: () => scene.panelOpen(),
-      showNotice: (notice) => scene.showNotice(notice),
-      startWildBattle: (encounter) => scene.startRoomWildBattle(encounter),
-      startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
-      route: () => scene.route,
-      plan: () => scene.plan,
-      rooms: () => scene.roomRegistry,
-      openSettings: () => scene.openSettings(),
-      restartRun: () => scene.restartRun(),
-      flyToNode: (key) => {
-        void scene.travelToNode(key, 'fly');
+      actions: {
+        showNotice: (notice) => this.showNotice(notice),
+        startWildBattle: (encounter) => this.startRoomWildBattle(encounter),
+        startTrainerBattle: (trainer) => this.startTrainerBattle(trainer),
+        openSettings: () => this.openSettings(),
+        restartRun: () => this.restartRun(),
+        flyToNode: (key) => {
+          void this.travelToNode(key, 'fly');
+        },
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => this.persistRun(),
       },
     };
   }
 
-  /**
-   * A fresh save opens only PARTY (`src/data/hudLayout.ts`); this reads the stored
-   * collapsed flags once per build so an existing save keeps its own arrangement.
-   * The placement half of that record (the drag offset) left with the canvas layer.
-   */
-  private applyHudOpenState(): void {
-    const layout = this.settings.hudLayout;
-    this.hudOpen = new Set(HUD_PANEL_IDS.filter((id) => !layout[id].collapsed));
+  /** The route mounts every card the folder holds, not only a node's seven. */
+  protected override panelSelection(): readonly RoutePanelId[] {
+    return ROUTE_PANEL_IDS;
   }
 
-  /**
-   * Opens or collapses a HUD card: the quick keys, a bulk's key chip, the edge strip
-   * and a card's own frame chip all land here, and every card repaints from the new
-   * state. The new flag is persisted with the settings, so a reload keeps it; a pause
-   * never reaches this method.
-   */
-  private setHudCardOpen(id: HudPanelId, open: boolean): void {
-    const changed = open ? !this.hudOpen.has(id) : this.hudOpen.has(id);
-    if (!changed) return;
-    if (open) this.hudOpen.add(id);
-    else this.hudOpen.delete(id);
-    const layout = this.settings.hudLayout;
-    this.settings = {
-      ...this.settings,
-      hudLayout: { ...layout, [id]: { ...layout[id], collapsed: !open } },
-    };
-    saveSettings(this.settings);
-    this.refreshHud();
+  /** The port every card draws through; `create` mounts the layer before anything reads it. */
+  protected override get panelHost(): RoutePanelHost {
+    const host = this.panelLayer === null ? null : this.panelLayer.host;
+    if (host === null) throw new Error('route: the panel layer is not built');
+    return host;
   }
 
   /** Sets the scene's run, persists it and repaints the HUD (a Mart trade). */
@@ -1144,7 +1113,7 @@ export class RouteScene extends WorldScene {
     if (!this.buildingRoom) showAreaPanel(this.panelHost);
   }
 
-  create(): void {
+  override create(): void {
     if (!this.run) {
       this.run = createRun({
         seed: DEV_SEED,
@@ -1205,7 +1174,10 @@ export class RouteScene extends WorldScene {
     this.followerSpecies = null;
     this.followerTween = null;
     this.settings = loadSettings();
-    this.panelHost = this.buildPanelHost();
+    // The shared panel layer (the twelve cards) is mounted by the base scene's
+    // `create` before the first room exists; `buildRoom` and the room entries read
+    // `this.panelHost` from it.
+    super.create();
 
     this.buildRoom();
 
@@ -1270,9 +1242,6 @@ export class RouteScene extends WorldScene {
     this.input.on('gameout', () => {
       clearDetailInfo(this.panelHost);
     });
-    this.hud = hudMetrics(this.scale.width);
-    this.applyHudOpenState();
-    for (const panel of this.panels.all) panel.build(this.panelHost);
     // The touch pad lives on a screen-space root the zoomed world camera ignores.
     this.touch = createTouchControls(this, {
       onAction: (action) => this.handleAction(action),
@@ -1284,18 +1253,6 @@ export class RouteScene extends WorldScene {
       this.detachBack = listenForBack(() => this.onBackGesture());
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachBack?.());
     }
-    // A stopped scene hands every panel its own teardown, in build order, so each
-    // card is unmounted from `#hud` before the route goes away.
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      for (const panel of this.panels.all) panel.close?.(this.panelHost);
-    });
-    // The window can change size while the run is on screen: the HUD re-measures and
-    // every card rebuilds its view from the live scale, so no card keeps the rects
-    // the boot happened to see. One registration, dropped with the scene.
-    this.scale.on('resize', this.onResize, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.scale.off('resize', this.onResize, this);
-    });
     // A battle pauses the route mid-walk; drop the pad's held direction so the
     // player does not keep stepping the moment the route comes back, and give up
     // an in-progress nickname edit rather than resuming into a focused field.
@@ -1392,7 +1349,8 @@ export class RouteScene extends WorldScene {
    */
   private toggleHudPanel(id: HudPanelId): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot || pauseMenuOpenNow()) return;
-    this.setHudCardOpen(id, !this.hudOpen.has(id));
+    const host = this.panelHost;
+    host.setHudCardOpen(id, !host.hudCardOpen(id));
   }
 
   /** Resolves the movement keys from the shared map; re-run when it changes. */
@@ -1405,22 +1363,12 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * A window resize re-measures the HUD and repaints every card. Each panel's
-   * `refresh` rebuilds its view from the live `scale`, so no card needs a hook of
-   * its own and no card keeps the width the boot saw.
-   */
-  private onResize(): void {
-    this.hud = hudMetrics(this.scale.width);
-    this.refreshHud();
-  }
-
-  /**
-   * Repaints every panel from the run, in registry order, and keeps the party's
+   * Repaints every card from the run, in registry order, and keeps the party's
    * follower in step with its lead. One place decides the sequence, so a panel can
    * never paint out of order or half-way.
    */
   private refreshHud(): void {
-    for (const panel of this.panels.all) panel.refresh?.(this.panelHost);
+    this.panelLayer?.refresh();
     // The party's lead walks behind the player: a lead change loads its pair once
     // and rebuilds the follower, so nothing here runs per frame.
     this.refreshFollower();
@@ -2867,7 +2815,7 @@ export class RouteScene extends WorldScene {
    * and the fresh-run restart, so the scene applies what the menu asked for.
    */
   private handlePauseMenuAction(action: KeybindAction): void {
-    this.panels.byId.get('pause')?.key?.(this.panelHost, action);
+    this.panelLayer?.registry.byId.get('pause')?.key?.(this.panelHost, action);
   }
 
   /**

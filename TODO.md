@@ -12701,7 +12701,7 @@ and `src/main.ts`, the other two keys and two tests.
 **Hot files.** `src/main.ts` and each `src/scenes/*.ts` — `[Task-300]` holds all of them. No other
 hot file.
 
-- [ ] **[Task-300] The panels survive the region.** Every node scene mounts the HUD panel registry,
+- [x] **[Task-300] The panels survive the region.** Every node scene mounts the HUD panel registry,
       not only `RouteScene`: the host is built once over the shared scene surface, so a city, a gym,
       the League, an interior and the Centre draw the party, bag, missions, rewards, trade, detail
       and pause cards the region's nodes already produce.

@@ -11,8 +11,8 @@ import type { RoomRegistry } from '../rooms/registry';
 import type { RoomPanel } from '../rooms/types';
 
 /**
- * The route's overlay-panel layer (`D47`'s shape, one folder over): one module per
- * panel, discovered by `RouteScene`'s registry. A panel owns the card it mounts and
+ * The node screens' overlay-panel layer (`D47`'s shape, one folder over): one module
+ * per panel, discovered by the folder's `host.ts`. A panel owns the card it mounts and
  * how it reads; the scene owns the keyboard slot, the run and the route it hands
  * over. `Phaser` is a **type-only** import here, so the descriptor surface stays
  * testable headless.
@@ -21,9 +21,20 @@ import type { RoomPanel } from '../rooms/types';
  * its card is DOM, and the folder's two canvas overlays are listed in this folder's README.
  */
 
-/** The route's overlay panels, one descriptor each, in `order` sequence. */
+/** The overlay panels, one descriptor each, in `order` sequence. */
 export type RoutePanelId =
-  'map' | 'party' | 'hud' | 'bag' | 'pc' | 'notices' | 'missions' | 'rewards' | 'shop' | 'trade' | 'pause' | 'detail';
+  | 'map'
+  | 'party'
+  | 'hud'
+  | 'bag'
+  | 'pc'
+  | 'notices'
+  | 'missions'
+  | 'rewards'
+  | 'shop'
+  | 'trade'
+  | 'pause'
+  | 'detail';
 
 /** One panel: what it is, when it paints and what it owns. */
 export type RoutePanelDescriptor = Readonly<{
@@ -44,9 +55,10 @@ export type RoutePanelDescriptor = Readonly<{
 }>;
 
 /**
- * The hooks a panel descriptor may use from the scene. `RouteScene` satisfies it;
- * nothing else does. It is read-only: a panel mutates the scene only through these
- * methods, and reads the run through `run()` so a panel always sees the live one.
+ * The hooks a panel descriptor may use from the scene. Every node screen builds one
+ * through `createScenePanels`; nothing mounts by itself. It is read-only: a panel
+ * mutates the scene only through these methods, and reads the run through `run()` so
+ * a panel always sees the live one.
  */
 export type RoutePanelHost = Readonly<{
   /** The scene itself: `scale`, `cameras`, `time`, `tweens`, `input`. */
@@ -82,8 +94,8 @@ export type RoutePanelHost = Readonly<{
   /** The scene's own battle paths, for a panel that starts one. */
   startWildBattle(encounter: Readonly<{ speciesId: string; level: number; key: string }>): void;
   startTrainerBattle(trainer: RouteTrainer): void;
-  /** The route on screen, so the header can name the biome it reads. */
-  route(): RouteMap;
+  /** The route on screen, so the header can name the biome it reads; null off a route. */
+  route(): RouteMap | null;
   /** The floor plan on screen, or null off a planned room (the dev tools). */
   plan(): MapPlan | null;
   /** Every special room kind's descriptor, for the minimap's own markers (`D47`). */

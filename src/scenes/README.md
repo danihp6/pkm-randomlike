@@ -22,14 +22,17 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `WorldScene.ts` — the base every node scene extends: one map drawn as two culled tile
   layers, the world camera's bounds and zoom, the node preloaded off the worker and the one
   fade-and-swap transition that draws an already-preloaded node (`transitionToNode`,
-  `WORLD_ARRIVED`, `arrival`). It owns no run, no plan and no HUD, and is not registered in
-  `src/main.ts` (it is abstract and has no key).
+  `WORLD_ARRIVED`, `arrival`). Its `create` mounts the shared panel layer from the
+  subclass's `panelSource()` (a resize repaint and the unmount on shutdown), and it wires
+  nothing at all for a scene that answers `null`. It owns no run and no plan, and is not
+  registered in `src/main.ts` (it is abstract and has no key).
 - `RouteScene.ts` — the route itself: it extends `WorldScene` for the tile draw and the
   camera and keeps the player, tall grass, trainers, items, the room panel slot, the
   pointer dispatch, the run's battles and the touch controls. It also hosts the region's
   travel seam today (`travelToNode`, `onNodeArrived`, the dev-only `debugTravelState`) and
   hands a run that stands on a settlement to the city screen. Its overlay chrome (HUD
-  panels, notices, pause menu) is built by the panel layer below.
+  panels, notices, pause menu) is the shared layer from `panels/host.ts`; the route is the
+  one screen that mounts all twelve cards.
 - `CityScene.ts` — a settlement as a place you walk: the street grid, the buildings, their
   doors, the plaza, the grass corner and the exit bands drawn from the cached/preloaded
   node, the player spawned on the plan's own spawn and walked with the shared walker, a
@@ -69,8 +72,10 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   the folder itself collects the city screen and the Centre — plus the travel seam's single
   flight, where two `travelToNode` calls started inside the preload window commit exactly
   one.
-- `panels/` — the route's overlay panels: one module per panel, discovered by the
-  scene's registry, so a new panel is a new file.
+- `panels/` — the node screens' overlay panels: one module per panel, discovered by the
+  folder's `host.ts`, so a new panel is a new file. `host.ts` builds the same
+  `RoutePanelHost` over any node scene, so the route's twelve cards and a node's seven
+  (`NODE_PANEL_IDS`) need no scene code of their own.
 - `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
   registry, so a new room is a new file.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP

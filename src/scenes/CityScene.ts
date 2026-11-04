@@ -17,7 +17,9 @@ import { TILE_SIZE } from '../engine/tileset';
 import { actionKeys } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { openNpcPanel, type NpcPanel } from '../ui/npcPanel';
+import { openNpcPanel } from '../ui/npcPanel';
+import type { PanelSceneSource } from './panels/host';
+import type { RoomPanel } from './rooms/types';
 import { actorDepth, WorldScene, WORLD_TRANSITION_MS } from './WorldScene';
 import { drawCityNpcs, npcCardView } from './npcs';
 import { WorldWalker } from './walker';
@@ -113,7 +115,7 @@ export class CityScene extends WorldScene {
   private npcSprites: readonly Phaser.GameObjects.Sprite[] = [];
   /** The card on screen, or null; the one panel slot of the scene. */
   private card: Readonly<{ rowId: string; used: boolean }> | null = null;
-  private npcPanel: NpcPanel | null = null;
+  private npcPanel: RoomPanel | null = null;
   /** The keys the people are read from; one panel is open at a time. */
   private npcKeys: NpcKeySet | null = null;
 
@@ -131,7 +133,7 @@ export class CityScene extends WorldScene {
     this.handedSpawn = data?.spawn ? { x: data.spawn.x, y: data.spawn.y } : null;
   }
 
-  create(): void {
+  override create(): void {
     this.city = null;
     this.walker = null;
     this.playerSprite = null;
@@ -160,6 +162,7 @@ export class CityScene extends WorldScene {
       return;
     }
     this.city = planCity(plan, node.key);
+    super.create();
 
     const world = this.cachedWorld(run.seed, node.key);
     if (world !== null) {
@@ -180,7 +183,7 @@ export class CityScene extends WorldScene {
     const action = this.readNpcAction();
     const panel = this.npcPanel;
     if (panel !== null) {
-      if (action !== null) panel.handle(action);
+      if (action !== null) panel.handle?.(action);
       return;
     }
     const walker = this.walker;
@@ -315,7 +318,7 @@ export class CityScene extends WorldScene {
   }
 
   /** Gives the card the settlement's one panel slot; the scene closes it. */
-  private openPanel(panel: NpcPanel): void {
+  private openPanel(panel: RoomPanel): void {
     this.npcPanel = panel;
   }
 
@@ -331,6 +334,37 @@ export class CityScene extends WorldScene {
   private commitRun(run: RunState): void {
     this.run = run;
     this.persistRun();
+    this.panelLayer?.refresh();
+  }
+
+  /**
+   * The seven cards a settlement draws (`./panels/host.ts`): the run it already
+   * carries, the person card's one slot and the two writes it owns. It cannot fly and
+   * has nowhere to restart, so those two keep the host's no-op default.
+   */
+  protected override panelSource(): PanelSceneSource {
+    return {
+      scene: this,
+      run: () => this.run,
+      settings: () => this.settings,
+      slot: {
+        open: (panel) => this.openPanel(panel),
+        close: () => this.closePanel(),
+        isOpen: () => this.npcPanel !== null,
+      },
+      actions: {
+        openSettings: () => this.openSettings(),
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => this.persistRun(),
+      },
+    };
+  }
+
+  /** The pause card's Settings row: this settlement pauses under the options page. */
+  private openSettings(): void {
+    if (this.opening || this.travelling) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: regionSceneKey });
   }
 
   /**

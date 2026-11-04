@@ -23,7 +23,8 @@ import {
 import { keyNameOf, subscribeKeybinds } from '../input/input';
 import type { RouteScene } from './RouteScene';
 
-type Opener = 'Route' | 'Starter' | 'MainMenu';
+/** The scene key that opened the page: the route, the starter pick, or a node screen. */
+type Opener = string;
 
 /**
  * The fixture preview mounts on its own, even before the scene is ever opened, so

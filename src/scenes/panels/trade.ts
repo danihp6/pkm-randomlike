@@ -77,7 +77,8 @@ function runOf(host: TradeCardHost): RunState {
 function roomOf(host: TradeCardHost): Readonly<{ mapIndex: number; roomId: number }> {
   const view = (host as { view?: RoomView }).view;
   if (view !== undefined) return { mapIndex: view.mapIndex, roomId: view.roomId };
-  return { mapIndex: host.route().routeIndex, roomId: 0 };
+  // A node screen keeps no route: the counter a node opens trades on the node itself.
+  return { mapIndex: host.route()?.routeIndex ?? 0, roomId: 0 };
 }
 
 /** The name a member reads by: its nickname, else the dex name, else the id. */

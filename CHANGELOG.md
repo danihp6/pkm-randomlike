@@ -8,6 +8,19 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The panels survive the region.** `[Task-300]`, Batch 125: the HUD panel host leaves `RouteScene`
+      for `src/scenes/panels/host.ts` (`createScenePanels`, `createPanels`, `NODE_PANEL_IDS`), and
+      `WorldScene.create()` mounts the layer every node scene inherits. A city, a gym, an interior, the
+      Centre and the League draw the party, bag, missions, rewards, trade, detail and pause cards from
+      the run they already carry; the route keeps its twelve. A host without a room slot answers
+      `panelOpen() === false` and its `openPanel` is a no-op; `RoutePanelHost.route()` is nullable for
+      the scenes that have no route, `src/main.ts` resolves the active scene instead of the hard-coded
+      `'Route'` key, and `SettingsScene` resumes whichever scene key opened it. `[unit]` 5 criteria
+      (the 25-member port over a stub scene, the twelve ids and their orders, the registry grep),
+      6172 tests green; `[live]` over CDP at 1280×800 on a v28 save standing on `city:2`: the
+      `missions` panel answers with the city's own row («Talk to everyone here») and the `party` card
+      opens, and both still answer on `route:1`.
+
 - [x] **The debug menu knows nodes, not floors.** `[Task-296]`, Batch 124: the `?debug` overlay stops
       speaking floors. Its route tab draws the plan's node list (`readNodeContext`, one row per
       `RegionNode` with its key, kind, name and badge), teleports the live run through the shipped

@@ -23,6 +23,7 @@ import {
   type StarterIntent,
   type StarterView,
 } from '../ui/hud/panels/starter';
+import type { PanelSceneSource } from './panels/host';
 import { actorDepth, WORLD_TRANSITION_MS, WorldScene } from './WorldScene';
 import { WorldWalker } from './walker';
 
@@ -113,7 +114,7 @@ export class InteriorScene extends WorldScene {
     this.interiorKey = data?.interiorKey ?? LAB_INTERIOR_KEY;
   }
 
-  create(): void {
+  override create(): void {
     this.settings = loadSettings();
     this.exposeDebugScene();
 
@@ -133,6 +134,7 @@ export class InteriorScene extends WorldScene {
     this.interior = interior;
     this.cityKey = interior.cityKey;
     if (interior.kind === 'lab') this.run = this.healOnEntry(run);
+    super.create();
 
     this.drawWorld({
       tiles: interior.tiles,
@@ -154,6 +156,51 @@ export class InteriorScene extends WorldScene {
     const running = this.settings.alwaysRun || (this.runKey?.isDown ?? false);
     walker.update(delta, running);
     sprite.setDepth(actorDepth(sprite.y));
+  }
+
+  /**
+   * The seven cards an interior draws (`./panels/host.ts`): the run it carries and
+   * the two writes it owns. A laboratory opens no room card, cannot fly and has
+   * nowhere to restart, so those keep the host's own defaults.
+   */
+  protected override panelSource(): PanelSceneSource {
+    return {
+      scene: this,
+      run: () => this.liveRun(),
+      settings: () => this.settings,
+      actions: {
+        openSettings: () => this.openSettings(),
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => this.persistRun(),
+      },
+    };
+  }
+
+  /** The pause card's Settings row: this room pauses under the options page. */
+  private openSettings(): void {
+    if (this.leaving) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: regionSceneKey });
+  }
+
+  /** The live run, or a throw: `panelSource` is only read once the room resolved. */
+  private liveRun(): RunState {
+    const run = this.run;
+    if (run === null) throw new Error('the laboratory has no run');
+    return run;
+  }
+
+  /** Sets the scene's run, persists it and repaints the cards (a HUD write). */
+  private commitRun(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+    this.panelLayer?.refresh();
+  }
+
+  /** Writes the run to the slot the room resumed from. */
+  private persistRun(): void {
+    const run = this.run;
+    if (run !== null) storeRun(browserStorage(), run);
   }
 
   /** Dev only. */

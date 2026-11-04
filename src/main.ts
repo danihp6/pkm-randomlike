@@ -8,11 +8,15 @@ import { onLocaleChange } from './i18n';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
+import { LeagueScene } from './scenes/LeagueScene';
+import type { ScenePanels } from './scenes/panels/host';
+import type { RoutePanelHost } from './scenes/panels/types';
 import { RouteScene } from './scenes/RouteScene';
 import { RunOverScene } from './scenes/RunOverScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StarterScene } from './scenes/StarterScene';
 import { REGION_SCENES } from './scenes/regionScenes';
+import { WorldScene } from './scenes/WorldScene';
 import { browserStorage } from './storage';
 import { mountHud } from './ui/hud/mount';
 
@@ -60,19 +64,45 @@ mountHud(window.location.search);
 if (IS_DEVELOP) {
   void import('./dev/debugMenu').then(
     ({ changedRun, installDebugMenu, nodeContextFor, withTowerStreak, withVisitedNode }) => {
-      /**
-       * The live route scene, or null. The panel's own handlers reach it the same way
-       * every other dev tool does, so nothing above the gate knows about it.
-       */
-      const routeScene = (): RouteScene | null => game.scene.getScene('Route') as RouteScene | null;
+      /** The scene on top: whatever the player is looking at, of any kind. */
+      const liveScene = (): Phaser.Scene | null => game.scene.getScenes(true)[0] ?? null;
 
       /**
-       * Hands a save the panel just wrote to the live route, so its run and the save
-       * agree again. A stopped scene needs no restart: its next `create` reads the save.
+       * The route screen, when the route is the one on top. Every frame-map, generator
+       * and debug-party tool narrows the live scene this way, so a settlement's screen
+       * answers no route method instead of the route answering from its stopped slot.
+       */
+      const liveRoute = (): RouteScene | null => {
+        const scene = liveScene();
+        return scene instanceof RouteScene ? scene : null;
+      };
+
+      /**
+       * The panel host the live node screen mounted, or null. A city, a gym, a Centre
+       * and the League carry the same port the route does, so a dev tool reaches the
+       * run through it without knowing which screen is up.
+       */
+      const liveHost = (): RoutePanelHost | null => {
+        const scene = liveScene();
+        if (!(scene instanceof WorldScene) && !(scene instanceof LeagueScene)) return null;
+        const layer = (scene as unknown as { panelLayer: ScenePanels | null }).panelLayer;
+        return layer === null ? null : layer.host;
+      };
+
+      /**
+       * Hands a save the panel just wrote to the live screen, so its run and the save
+       * agree again. A screen the panel layer owns takes the run through its host; a
+       * stopped scene needs no restart: its next `create` reads the save.
        */
       const restartRoute = (run: RunState): void => {
-        const route = routeScene();
-        if (route?.scene.isActive()) route.scene.restart({ run });
+        const host = liveHost();
+        if (host !== null) {
+          host.commitRun(run);
+          return;
+        }
+        const scene = liveScene();
+        if (!(scene instanceof WorldScene) && !(scene instanceof LeagueScene)) return;
+        if (scene.scene.isActive()) scene.scene.restart({ run });
       };
 
       /** Reads the saved run, applies a pure rule, and writes only a changed value. */
@@ -89,75 +119,42 @@ if (IS_DEVELOP) {
 
       const handlers: DebugMenuHandlers = {
         onWildBattle: (speciesId, level) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.startDebugWildBattle(speciesId, level);
+          liveRoute()?.startDebugWildBattle(speciesId, level);
         },
-        onAddPokemon: (speciesId, level) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.addDebugPokemon(speciesId, level) ?? null;
-        },
+        onAddPokemon: (speciesId, level) => liveRoute()?.addDebugPokemon(speciesId, level) ?? null,
         onAddItem: (itemId, count) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.addDebugItem(itemId, count);
+          liveRoute()?.addDebugItem(itemId, count);
         },
-        readParty: () => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.debugParty() ?? [];
-        },
-        onSetSquadLevel: (level) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.setDebugSquadLevel(level) ?? false;
-        },
-        onEditPartyMember: (memberId, edit) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.editDebugPokemon(memberId, edit) ?? false;
-        },
-        onHealPartyMember: (memberId) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.healDebugPokemon(memberId) ?? false;
-        },
-        readRouteContext: () => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.debugRouteContext() ?? null;
-        },
+        readParty: () => liveRoute()?.debugParty() ?? [],
+        onSetSquadLevel: (level) => liveRoute()?.setDebugSquadLevel(level) ?? false,
+        onEditPartyMember: (memberId, edit) => liveRoute()?.editDebugPokemon(memberId, edit) ?? false,
+        onHealPartyMember: (memberId) => liveRoute()?.healDebugPokemon(memberId) ?? false,
+        readRouteContext: () => liveRoute()?.debugRouteContext() ?? null,
         onRegenerateRoute: (input) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.regenerateRoute(input);
+          liveRoute()?.regenerateRoute(input);
         },
         onTogglePassThrough: (enabled) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.setPassThrough(enabled);
+          liveRoute()?.setPassThrough(enabled);
         },
         onToggleHoverInspect: (enabled) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.setHoverInspect(enabled);
+          liveRoute()?.setHoverInspect(enabled);
         },
-        generatorStepInfo: () => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.generatorStepInfo() ?? null;
-        },
+        generatorStepInfo: () => liveRoute()?.generatorStepInfo() ?? null,
         stepGenerator: (delta) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.stepGenerator(delta);
+          liveRoute()?.stepGenerator(delta);
         },
         resetGeneratorStep: () => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.resetGeneratorStep();
+          liveRoute()?.resetGeneratorStep();
         },
-        exportFrameMap: () => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.exportFrameMap() ?? null;
-        },
-        importFrameMap: (text) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          return route?.importFrameMap(text) ?? { ok: false, error: 'no active route' };
-        },
+        exportFrameMap: () => liveRoute()?.exportFrameMap() ?? null,
+        importFrameMap: (text) =>
+          liveRoute()?.importFrameMap(text) ?? { ok: false, error: 'no active route' },
         readNodeContext: () => {
           const run = loadSave(browserStorage()).run;
           return run ? nodeContextFor(run) : null;
         },
         onTeleportNode: async (nodeKey) => {
-          const route = routeScene();
+          const route = liveRoute();
           if (!route || route.debugTravelState() === null) {
             return { ok: false, error: 'no active route' };
           }
@@ -168,12 +165,10 @@ if (IS_DEVELOP) {
         onMarkVisited: (nodeKey) => updateRun((run) => withVisitedNode(run, nodeKey)),
         onSetTowerStreak: (streak) => updateRun((run) => withTowerStreak(run, streak)),
         onToggleIgnoreEncounters: (enabled) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.setIgnoreEncounters(enabled);
+          liveRoute()?.setIgnoreEncounters(enabled);
         },
         onToggleIgnoreTrainers: (enabled) => {
-          const route = game.scene.getScene('Route') as RouteScene | null;
-          route?.setIgnoreTrainers(enabled);
+          liveRoute()?.setIgnoreTrainers(enabled);
         },
       };
 
