@@ -19,13 +19,27 @@ function tallied(base: RunPokemon, kos: number, damage: number, damageTaken: num
   return { ...base, kos, damage, damageTaken };
 }
 
-/** A run with a party, a box and a rip list, standing on route 5. */
+/** The nodes a run that walked five routes entered, in first-entry order. */
+const FIVE_ROUTES: readonly string[] = [
+  'town:1',
+  'route:1',
+  'city:1',
+  'route:2',
+  'lateral:1',
+  'city:2',
+  'route:3',
+  'city:3',
+  'route:4',
+];
+
+/** A run with a party, a box and a rip list, five routes in. */
 function endedRun(): RunState {
   const starter = member('charmander-1', 'charmander');
   const base = createRun({ seed: SEED, starter });
   return {
     ...base,
-    routeIndex: 5,
+    visitedNodes: FIVE_ROUTES,
+    nodeKey: 'route:4',
     stats: { catches: 9, casualties: 6 },
     party: [starter, member('pikachu-2', 'pikachu'), member('bulbasaur-3', 'bulbasaur')],
     box: [member('abra-4', 'abra')],

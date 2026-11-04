@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { restoreFighter } from '../battle/fighter';
 import { createRunPokemon, type RunPokemon } from '../run/progression';
-import { addPokemon, advanceMap, createRun, type RunState } from '../run/state';
+import { addPokemon, createRun, type RunState } from '../run/state';
 import { bossHealId, bossRoomHeal, bossRoomSealed } from './bossRoom';
 
 const starter = createRunPokemon({
@@ -88,12 +88,11 @@ describe('bossRoomHeal', () => {
     expect(bossRoomHeal(hurtRun(), 2)).toEqual(bossRoomHeal(hurtRun(), 2));
   });
 
-  it('heals again on the next floor, because advanceMap clears its mark', () => {
+  it('heals again on another node, because its mark is that node’s own', () => {
     const healed = bossRoomHeal(hurtRun(), 1);
-    const advanced = advanceMap(healed);
-    expect(advanced.pickedItems).not.toContain('boss-heal-1');
-    const next = bossRoomHeal(hurtAgain(advanced), advanced.mapIndex);
-    expect(next.pickedItems).toContain(bossHealId(advanced.mapIndex));
+    const next = bossRoomHeal(hurtAgain(healed), 2);
+    expect(next.pickedItems).toContain(bossHealId(1));
+    expect(next.pickedItems).toContain(bossHealId(2));
     expect(next.party[0].fighter.hp).toBe(starterMaxHp);
   });
 });

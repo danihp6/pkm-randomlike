@@ -3,7 +3,7 @@ import { LEAGUE } from '../../data/league';
 import { LEAGUE_LEVEL } from '../../data/region';
 import { createRunPokemon } from '../run/progression';
 import { markTrainerDefeated } from '../run/state';
-import { compatForNode, createRun, type RunState } from '../run/state';
+import { createRun, nodeEntry, type RunState } from '../run/state';
 import {
   leagueCleared,
   leagueEnter,
@@ -33,7 +33,7 @@ function leagueRun(seed = SEED): RunState {
     ...createRun({ seed, starter }),
     nodeKey: 'league:1',
     visitedNodes: ['league:1'],
-    ...compatForNode(seed, 'league:1'),
+    ...nodeEntry(seed, 'league:1'),
   };
 }
 

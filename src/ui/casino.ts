@@ -15,6 +15,7 @@ import {
   itemCount,
   markItemPicked,
   nextMemberId,
+  runNode,
   spendMoney,
   squadLevel,
   type RunState,
@@ -22,24 +23,24 @@ import {
 
 /**
  * The **slot machine**'s model (`docs/maps-spec.md` §7, D33/D47): one spin and the
- * Egg's hatch, both **pure functions of the run** (`D11`). The run seed, the floor,
- * the money and the floor's own spin marks are the whole input and the stream is
+ * Egg's hatch, both **pure functions of the run** (`D11`). The run seed, the node's
+ * badge, the money and the node's own spin marks are the whole input and the stream is
  * minted here, so a reloaded run continues the same sequence and no other stream in
  * the game moves. Phaser-free, so the Team Rocket NPC's panel
  * (`src/ui/rocketPanel.ts`) only renders and every rule is unit-tested headless.
  */
 
-/** The floor's spin counter id (`pickedItems`), one per spin: `casino-spin-<map>-<n>`. */
+/** The node's spin counter id (`pickedItems`), one per spin: `casino-spin-<badge>-<n>`. */
 export function casinoSpinId(mapIndex: number, index: number): string {
   return `casino-spin-${mapIndex}-${index}`;
 }
 
-/** The floor's machine lock (`pickedItems`): `casino-lock-<map>`. */
+/** The node's machine lock (`pickedItems`): `casino-lock-<badge>`. */
 export function casinoLockId(mapIndex: number): string {
   return `casino-lock-${mapIndex}`;
 }
 
-/** The grunt's stable trainer id (`defeatedTrainers`): `casino-grunt-<map>`. */
+/** The grunt's stable trainer id (`defeatedTrainers`): `casino-grunt-<badge>`. */
 export function casinoGruntTrainerId(mapIndex: number): string {
   return `casino-grunt-${mapIndex}`;
 }
@@ -58,7 +59,7 @@ export type CasinoSpin = Readonly<{
   outcome?: CasinoOutcome;
 }>;
 
-/** The prefix every spin mark of a floor shares, so the count is a plain filter. */
+/** The prefix every spin mark of a node shares, so the count is a plain filter. */
 const SPIN_PREFIX = 'casino-spin-';
 
 /**
@@ -93,7 +94,7 @@ export function casinoHeldPool(band: BandId): readonly string[] {
   return [];
 }
 
-/** How many spins this floor has already paid for: the id the next stream reads. */
+/** How many spins this node has already paid for: the id the next stream reads. */
 function spinCount(run: RunState, mapIndex: number): number {
   const prefix = `${SPIN_PREFIX}${mapIndex}-`;
   return run.pickedItems.filter((id) => id.startsWith(prefix)).length;
@@ -138,28 +139,28 @@ function prizeItemId(row: CasinoPrize, band: BandId, rng: Rng): string | null {
 }
 
 /**
- * One spin, as a **pure function of the run** (`D11`): `run.seed`, `run.mapIndex`,
- * the money and the floor's own spin marks are the whole input, and the stream is
+ * One spin, as a **pure function of the run** (`D11`): `run.seed`, the node's own
+ * badge, the money and the node's spin marks are the whole input, and the stream is
  * minted inside. Refused without spending when the machine is locked or the run
  * cannot afford the band's price; otherwise the price is spent, the spin is marked
  * and one outcome is rolled.
  */
 export function casinoSpin(run: RunState): CasinoSpin {
-  const mapIndex = run.mapIndex;
-  if (isItemPicked(run, casinoLockId(mapIndex))) return { run, ok: false, reason: 'locked' };
-  const band = bandForMap(mapIndex);
+  const badge = runNode(run).badge;
+  if (isItemPicked(run, casinoLockId(badge))) return { run, ok: false, reason: 'locked' };
+  const band = bandForMap(badge);
   const price = CASINO.price[band.id];
   if (run.money < price) return { run, ok: false, reason: 'no-money' };
 
-  const index = spinCount(run, mapIndex);
-  const rng = new Rng(hashSeed(`${run.seed}:casino:${mapIndex}:${index}`));
+  const index = spinCount(run, badge);
+  const rng = new Rng(hashSeed(`${run.seed}:casino:${badge}:${index}`));
   const battle = rng.next() < CASINO.battleChance;
-  let spun = markItemPicked(spendMoney(run, price), casinoSpinId(mapIndex, index));
+  let spun = markItemPicked(spendMoney(run, price), casinoSpinId(badge, index));
   if (battle) {
     // The lock is set the moment the battle triggers, so the machine is out of
-    // order for the rest of the floor even if the player flees the fight.
+    // order for the rest of the node even if the player flees the fight.
     return {
-      run: markItemPicked(spun, casinoLockId(mapIndex)),
+      run: markItemPicked(spun, casinoLockId(badge)),
       ok: true,
       outcome: { kind: 'battle' },
     };
@@ -180,7 +181,7 @@ export function casinoSpin(run: RunState): CasinoSpin {
 export type EggHatch = Readonly<{ run: RunState; member: RunPokemon }>;
 
 /**
- * Hatches **one** Egg on the floor advance, or null when the run holds none (or the
+ * Hatches **one** Egg on the node entry, or null when the run holds none (or the
  * band's pool resolves to nothing, in which case the Egg **stays** in the bag). One
  * Egg leaves the bag and one member is placed, exactly the shipped reward path:
  * `createRunPokemon({ id: nextMemberId(run), speciesId, level: squadLevel(run),
@@ -191,11 +192,11 @@ export type EggHatch = Readonly<{ run: RunState; member: RunPokemon }>;
  */
 export function hatchEgg(run: RunState): EggHatch | null {
   if (itemCount(run, EGG_ITEM_ID) <= 0) return null;
-  const mapIndex = run.mapIndex;
-  const band = bandForMap(mapIndex);
+  const badge = runNode(run).badge;
+  const band = bandForMap(badge);
   const pool = speciesPool(band, 'wild');
   if (pool.length === 0) return null;
-  const rng = new Rng(hashSeed(`${run.seed}:casino-egg:${mapIndex}`));
+  const rng = new Rng(hashSeed(`${run.seed}:casino-egg:${badge}`));
   const speciesId = pool[rng.int(0, pool.length - 1)];
   const level = squadLevel(run);
   const member = adoptAtLevel(

@@ -12912,7 +12912,7 @@ reader to the node it should have read is a task of its own, not a line in a swe
 
 **Hot files.** None of the serial four.
 
-- [ ] **[Task-304] The deprecated position fields go.** `RunState` loses `mapIndex`, `routeIndex` and
+- [x] **[Task-304] The deprecated position fields go.** `RunState` loses `mapIndex`, `routeIndex` and
       `routeInMap`, with the save's parse/encode branches, the `compatForNode` writer and every reader
       that kept them alive: the Continue row, the HUD's state reader, the Rocket panel, the casino and
       the dev menu read the run's node now.

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { biomeForMap, getBiome } from '../../../../data/biomes';
+import { nodeKey } from '../../../../engine/region/plan';
 import { createRun, createRunPokemon, type RunPokemon, type RunState } from '../../../../engine/run';
 import type { RunHistoryRecord } from '../../../../engine/run/history';
 import { DEFAULT_LOCALE, setLocale, t } from '../../../../i18n';
@@ -56,7 +57,7 @@ function member(id: string, speciesId: string, nickname?: string): RunPokemon {
   });
 }
 
-/** A run standing on map 3 with the four members the mobile frame names. */
+/** A run standing on badge 3's city with the four members the mobile frame names. */
 function savedRun(): RunState {
   const party = [
     member('charmander-1', 'charmander'),
@@ -64,7 +65,7 @@ function savedRun(): RunState {
     member('bulbasaur-3', 'bulbasaur'),
     member('gastly-4', 'gastly'),
   ];
-  return { ...createRun({ seed: SEED, starter: party[0]! }), mapIndex: 3, party };
+  return { ...createRun({ seed: SEED, starter: party[0]! }), nodeKey: nodeKey('city', 3), party };
 }
 
 function historyRecord(
@@ -457,10 +458,10 @@ describe('forLayout', () => {
   });
 });
 
-/** A run standing on map 1 with only the first `members` of the four. */
+/** A run standing on badge 1 with only the first `members` of the four. */
 function runOnMapOne(members = 4): RunState {
   const run = savedRun();
-  return { ...run, mapIndex: 1, party: run.party.slice(0, members) };
+  return { ...run, nodeKey: nodeKey('town', 1), party: run.party.slice(0, members) };
 }
 
 const VALUE_RIGHT = MAIN_MENU_BOARD.row.x + MAIN_MENU_BOARD.row.w - MAIN_MENU_VALUE_INSET;

@@ -4,10 +4,10 @@ import { STAT_IDS, getSpecies, type StatId } from '../../data/dex/species';
 import { SACRIFICE_REWARDS, TUTOR_MOVES } from '../../data/npcs';
 import { randomAbility } from '../battle/randomAbility';
 import { hashSeed, Rng } from '../rng';
-import { bandForMap } from './floors';
+import { bandForNode } from './levelCurve';
 import { MAX_MOVES, editRunPokemon, type RunPokemon } from './progression';
 import { speciesPool } from './pool';
-import { consumeItem, updatePokemon, type RunState } from './state';
+import { consumeItem, runNode, updatePokemon, type RunState } from './state';
 
 /**
  * The party-edit NPCs (`docs/maps-spec.md` §7, `docs/battle-spec.md` §7): one pure
@@ -132,7 +132,7 @@ function resolveSecondAbility(
 }
 
 function resolveSpecies(run: RunState, member: RunPokemon, rng: Rng): Resolved {
-  const pool = speciesPool(bandForMap(run.mapIndex), 'wild').filter(
+  const pool = speciesPool(bandForNode(runNode(run)), 'wild').filter(
     (speciesId) => speciesId !== member.fighter.speciesId,
   );
   if (pool.length === 0) return { ok: false, reason: 'no-species' };

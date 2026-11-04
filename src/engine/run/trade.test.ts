@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { statAtLevel } from '../../data/dex/natures';
 import { getSpecies } from '../../data/dex/species';
 import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
+import { nodeKey } from '../region/plan';
 import { bandForMap } from './floors';
 import { speciesPool } from './pool';
 import { createRunPokemon, type RunPokemon } from './progression';
@@ -25,7 +26,7 @@ function runWith(
   const created = createRun({ seed: SEED, starter: party[0] });
   return {
     ...created,
-    mapIndex: MAP_INDEX,
+    nodeKey: nodeKey('route', MAP_INDEX),
     levelCap: levelCapForMap(MAP_INDEX),
     party,
     box,
@@ -209,7 +210,7 @@ describe('the trade roll', () => {
     const created = createRun({ seed, starter: memberOf('caterpie', 'member-0') });
     const base: RunState = {
       ...created,
-      mapIndex: MAP_INDEX,
+      nodeKey: nodeKey('route', MAP_INDEX),
       levelCap: levelCapForMap(MAP_INDEX),
       party: [memberOf('caterpie', 'member-0'), memberOf('metapod', 'member-1')],
     };

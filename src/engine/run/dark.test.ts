@@ -40,7 +40,7 @@ describe('isDarkCatch', () => {
   it('marks between 4 % and 6 % of 10 000 catches, within a point of DARK_CHANCE', () => {
     let hits = 0;
     for (let i = 1; i <= 10000; i++) {
-      if (isDarkCatch(SEED, 1, 0, `catch-${i}`)) hits += 1;
+      if (isDarkCatch(SEED, 'route:1', `catch-${i}`)) hits += 1;
     }
     const share = hits / 10000;
     expect(share).toBeGreaterThanOrEqual(0.04);
@@ -48,20 +48,20 @@ describe('isDarkCatch', () => {
     expect(Math.abs(share - DARK_CHANCE)).toBeLessThanOrEqual(0.01);
   });
 
-  it('answers the same pinned seed, map, room and catch id the same way', () => {
-    expect(isDarkCatch(SEED, 1, 0, 'catch-8')).toBe(true);
-    expect(isDarkCatch(SEED, 1, 0, 'catch-18')).toBe(true);
-    expect(isDarkCatch(SEED, 1, 0, 'catch-1')).toBe(false);
-    expect(isDarkCatch(SEED, 1, 0, 'catch-2')).toBe(false);
+  it('answers the same pinned seed, node and catch id the same way', () => {
+    expect(isDarkCatch(SEED, 'route:1', 'catch-9')).toBe(true);
+    expect(isDarkCatch(SEED, 'route:1', 'catch-24')).toBe(true);
+    expect(isDarkCatch(SEED, 'route:1', 'catch-1')).toBe(false);
+    expect(isDarkCatch(SEED, 'route:1', 'catch-2')).toBe(false);
   });
 
   it('draws from a stream of its own, named by the catch', () => {
-    for (const catchId of ['catch-1', 'catch-8']) {
-      const own = new Rng(hashSeed(`${SEED}:dark:1:0:${catchId}`)).next() < DARK_CHANCE;
-      expect(isDarkCatch(SEED, 1, 0, catchId), catchId).toBe(own);
-      // The room and the map are part of the name, so another room reads another draw.
-      expect(isDarkCatch(SEED, 2, 0, catchId)).toBe(
-        new Rng(hashSeed(`${SEED}:dark:2:0:${catchId}`)).next() < DARK_CHANCE,
+    for (const catchId of ['catch-1', 'catch-9']) {
+      const own = new Rng(hashSeed(`${SEED}:dark:route:1:${catchId}`)).next() < DARK_CHANCE;
+      expect(isDarkCatch(SEED, 'route:1', catchId), catchId).toBe(own);
+      // The node is part of the name, so another node reads another draw.
+      expect(isDarkCatch(SEED, 'route:2', catchId)).toBe(
+        new Rng(hashSeed(`${SEED}:dark:route:2:${catchId}`)).next() < DARK_CHANCE,
       );
     }
   });

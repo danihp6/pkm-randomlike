@@ -43,13 +43,13 @@ export const SECRET_SHOP_QA = {
   direction: 'W',
 } as const;
 
-/** A run whose party is exactly the species the case needs, standing on map 3. */
+/** A run whose party is exactly the species the case needs. */
 function runWith(speciesIds: readonly string[]): RunState {
   const members = speciesIds.map((speciesId, index) =>
     createRunPokemon({ id: `member-${index}`, speciesId, level: 5, moves: ['tackle'] }),
   );
   const base = createRun({ seed: 'secret-shop', starter: members[0] });
-  return { ...base, mapIndex: 3, party: members };
+  return { ...base, party: members };
 }
 
 /** One member of each listed type, and one species that holds none of them. */

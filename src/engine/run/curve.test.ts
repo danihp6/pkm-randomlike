@@ -26,7 +26,7 @@ import { bandForNode } from './levelCurve';
 import { experienceAward, xpForLevel } from './progression';
 import { BOSS_MONEY_MULTIPLIER } from './reward';
 import { trainerRoster } from './roster';
-import { compatForNode, createRun, markTrainerDefeated, type RunState } from './state';
+import { createRun, markTrainerDefeated, nodeEntry, type RunState } from './state';
 
 /**
  * The three seeds the region's walk is sampled over. They are fixed, so every
@@ -323,7 +323,7 @@ function afterChampion(seed: string): RunState {
   let run: RunState = {
     ...createRun({ seed }),
     nodeKey: 'tower:1',
-    ...compatForNode(seed, 'tower:1'),
+    ...nodeEntry(seed, 'tower:1'),
   };
   for (const id of leagueIds()) run = markTrainerDefeated(run, id);
   return run;

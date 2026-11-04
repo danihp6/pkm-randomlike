@@ -47,11 +47,11 @@ export type BattleTrigger = WildTrigger | TrainerTrigger;
 /**
  * What the route hands the battle scene: the run-persistent party and bag, the
  * opponent, and the seed. The battle scene never rolls outside this seed, so
- * the same route inputs always replay the same battle (D11). `runSeed` and
- * `routeIndex` are also carried so anything the battle scene needs to draw that
- * lives outside the battle itself (the trainer sprite this battle represents,
- * Phase 8 O1) can be resolved with the same inputs the route used, without the
- * battle taking run state.
+ * the same route inputs always replay the same battle (D11). `runSeed` is also
+ * carried so anything the battle scene needs to draw that lives outside the
+ * battle itself (the trainer sprite this battle represents, Phase 8 O1) can be
+ * resolved with the same inputs the route used, without the battle taking run
+ * state.
  */
 export type BattleLaunch = Readonly<{
   trigger: BattleTrigger;
@@ -60,9 +60,8 @@ export type BattleLaunch = Readonly<{
   /** The squad's shared XP, so the battle can draw the general bar before any award. */
   xp: number;
   seed: number;
-  /** The run's seed and route, for art the battle resolves through the route. */
+  /** The run's seed, for art the battle resolves through the run. */
   runSeed: string;
-  routeIndex: number;
   /** False once the route's single capture has been spent. */
   canCapture: boolean;
   /** The run has caught nothing yet, so its next capture is certain (Task-48). */
@@ -131,9 +130,9 @@ export type BattleReturn = Readonly<{
   tallies?: readonly MemberTally[];
 }>;
 
-/** One battle's Rng seed, derived from the run seed, route and entity key. */
-export function battleSeed(runSeed: string, routeIndex: number, key: string): number {
-  return hashSeed(`${runSeed}:battle:${routeIndex}:${key}`);
+/** One battle's Rng seed, derived from the run seed, the node's badge and the entity key. */
+export function battleSeed(runSeed: string, position: number, key: string): number {
+  return hashSeed(`${runSeed}:battle:${position}:${key}`);
 }
 
 /**

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { cityMissionFor, randomMissions, STRETCH_MISSION_ID } from '../../data/missions';
 import { createRunPokemon } from '../run/progression';
-import { compatForNode, createRun, type RunState } from '../run/state';
+import { createRun, nodeEntry, type RunState } from '../run/state';
 import { activeMissions, advanceMissions, missionProgress, type ActiveMission } from './missions';
 import { nodeOf, planRegion, type RegionPlan } from './plan';
 
@@ -25,7 +25,7 @@ function runOn(key: string, seed = SEED): RunState {
     ...createRun({ seed, starter }),
     nodeKey: key,
     visitedNodes: [key],
-    ...compatForNode(seed, key),
+    ...nodeEntry(seed, key),
     hpLost: 0,
     floorCasualties: 0,
   };
@@ -111,7 +111,7 @@ describe('activeMissions', () => {
     const revisited: RunState = {
       ...visited,
       visitedNodes: ['town:1', 'route:1', 'city:1', 'route:2', 'city:1'],
-      ...compatForNode(SEED, 'city:1'),
+      ...nodeEntry(SEED, 'city:1'),
     };
     expect(stackOn(away)[0].status).toBe('active');
     expect(stackOn(revisited)).toStrictEqual(stackOn(visited));

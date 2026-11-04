@@ -20,7 +20,7 @@ import type { BattleReturn } from './battleLink';
 import { leaderLevel } from './levelCurve';
 import { createRunPokemon } from './progression';
 import { resolveBattle } from './resolve';
-import { compatForNode, createRun, itemCount, type RunState } from './state';
+import { createRun, itemCount, nodeEntry, type RunState } from './state';
 
 const SEED = 'task-285';
 const OTHER_SEED = 'task-285-b';
@@ -40,7 +40,7 @@ function runOn(key: string, seed = SEED): RunState {
     ...createRun({ seed, starter }),
     nodeKey: key,
     visitedNodes: [key],
-    ...compatForNode(seed, key),
+    ...nodeEntry(seed, key),
   };
 }
 
@@ -143,14 +143,14 @@ describe('grantBadge', () => {
       ...run,
       nodeKey: 'city:2',
       visitedNodes: [run.nodeKey, 'city:2'],
-      ...compatForNode(SEED, 'city:2'),
+      ...nodeEntry(SEED, 'city:2'),
     };
     run = grantBadge(run, 2);
     run = {
       ...run,
       nodeKey: 'city:3',
       visitedNodes: [run.nodeKey, 'city:3'],
-      ...compatForNode(SEED, 'city:3'),
+      ...nodeEntry(SEED, 'city:3'),
     };
     run = grantBadge(run, 3);
     expect(run.badges).toEqual([1, 2, 3]);
@@ -331,7 +331,7 @@ describe('the stretch completes with the badge', () => {
         ...first,
         nodeKey: 'city:2',
         visitedNodes: ['city:1', 'city:2'],
-        ...compatForNode(SEED, 'city:2'),
+        ...nodeEntry(SEED, 'city:2'),
       },
       2,
     );

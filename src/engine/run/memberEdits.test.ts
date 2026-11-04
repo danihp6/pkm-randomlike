@@ -19,10 +19,10 @@ import {
   type MemberEditContext,
   type MemberEditLine,
 } from './memberEdits';
-import { bandForMap } from './floors';
+import { bandForNode } from './levelCurve';
 import { speciesPool } from './pool';
 import { MAX_MOVES, createRunPokemon, memberAbilities, type RunPokemon } from './progression';
-import { addItem, createRun, itemCount, updatePokemon, type RunState } from './state';
+import { addItem, createRun, itemCount, runNode, updatePokemon, type RunState } from './state';
 
 const SEED = 'pkm-93';
 
@@ -265,7 +265,7 @@ describe('the member re-rolls', () => {
     const speciesId = (edit.line as Extract<MemberEditLine, { kind: 'species' }>).speciesId;
     expect(speciesId).not.toBe('charmander');
     expect(after.fighter.speciesId).toBe(speciesId);
-    expect(speciesPool(bandForMap(run.mapIndex), 'wild')).toContain(speciesId);
+    expect(speciesPool(bandForNode(runNode(run)), 'wild')).toContain(speciesId);
     expect({ ...after.fighter, speciesId: before.fighter.speciesId, hp: before.fighter.hp }).toEqual(
       before.fighter,
     );
@@ -293,7 +293,8 @@ describe('the member re-rolls', () => {
   });
 
   it('never draws the member current species', () => {
-    const pool = speciesPool(bandForMap(1), 'wild');
+    const plain = runWith([member('a')]);
+    const pool = speciesPool(bandForNode(runNode(plain)), 'wild');
     const current = pool[0];
     const run = runWith([member('a', current)]);
     expect(pool).toContain(current);

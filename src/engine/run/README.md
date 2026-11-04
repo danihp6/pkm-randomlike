@@ -9,13 +9,13 @@ seed (`D11`).
 ## Layout
 
 - `index.ts` — the barrel most of the engine and the scenes read the run through.
-- `state.ts` — the run itself: party, box, rip, bag, money, the per-floor marks, the summary counters and the PC's rule (a box edit is allowed inside a Centre, nowhere else).
+- `state.ts` — the run itself and the node it stands on: the four fields a node entry resets, the plan node the key resolves to, party, box, rip, bag, money, the node's marks, the summary counters and the PC's rule (a box edit is allowed inside a Centre, nowhere else).
 - `state.test.ts` — the run transitions, the catch window and the member-id repair, headless.
 - `progression.ts` — the shared XP bar, levels, the member shape and the catches folded into the squad.
 - `progression.test.ts` — the level curve, the awards and every evolution/level-up event.
 - `levelCap.ts` — the level clamp and the reached-cap predicate.
 - `levelCap.test.ts` — the clamp and the reached-cap predicate at the edges.
-- `floors.ts` — a map's level window and band: the previous cap to its own, and the carver preview's own band.
+- `floors.ts` — a badge's level window and band: the previous cap to its own, and the carver preview's own band.
 - `floors.test.ts` — the window at every finite map, past the tuned table and at a degenerate index.
 - `chain.ts` — what a route index plays as: route, mini-boss, boss or final boss.
 - `chain.test.ts` — the cadence in every mode and at every block boundary.

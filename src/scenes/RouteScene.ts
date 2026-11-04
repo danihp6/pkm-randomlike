@@ -1790,7 +1790,6 @@ export class RouteScene extends WorldScene {
       // a stable per-node number, so a node replays its own fights (D11).
       seed: battleSeed(this.run.seed, hashSeed(node.key), key),
       runSeed: this.run.seed,
-      routeIndex: hashSeed(node.key),
       canCapture: captureAllowed,
       firstCatch,
       // The difficulty the battle's AI reads from the launch (D46): the settings
@@ -2293,11 +2292,6 @@ export class RouteScene extends WorldScene {
       height: this.routeParams.height,
       passThrough: this.passThrough,
       hoverInspect: this.hoverInspect,
-      // The three deprecated numbers report node facts and are read by no panel: the
-      // route is the node's first and only map, and the "room" is the screen.
-      mapIndex: 0,
-      roomInMap: screenIndexOf(this.screens, this.player.y),
-      roomCount: this.screens.length,
       tile: { x: this.player.x, y: this.player.y },
       ignoreEncounters: this.ignoreEncounters,
       ignoreTrainers: this.ignoreTrainers,

@@ -6,8 +6,15 @@ import { createRunPokemon } from './progression';
 import { passiveMark, runPassives, type PassiveResult } from './passives';
 import { addItem, addPokemon, createRun, itemCount, type RunState } from './state';
 
-const ROOM_COUNT = 12;
-const MAPS = [1, 2, 3] as const;
+/** The node keys the pins walk: a town, three routes, a city and the Victory Road. */
+const NODES: readonly string[] = [
+  'town:1',
+  'route:1',
+  'city:1',
+  'route:2',
+  'lateral:1',
+  'victory-road:1',
+];
 
 function member(id: string, ability: string): ReturnType<typeof createRunPokemon> {
   return createRunPokemon({ id, speciesId: 'bulbasaur', level: 5, ability });
@@ -22,89 +29,54 @@ function runWith(seed: string, abilities: readonly string[]): RunState {
   return run;
 }
 
-function at(run: RunState, mapIndex: number, room: number): RunState {
-  return { ...run, mapIndex, routeInMap: room, pickedItems: [] };
+/** The run standing on `key` with the node's marks clear. */
+function onNode(run: RunState, key: string): RunState {
+  return { ...run, nodeKey: key, pickedItems: [] };
 }
 
 function rowFor(trigger: MapPassiveTrigger) {
   return MAP_PASSIVES.find((row) => row.trigger === trigger)!;
 }
 
-function payingRoom(run: RunState, trigger: MapPassiveTrigger): number | null {
-  for (let room = 0; room < ROOM_COUNT; room++) {
-    if (runPassives(at(run, 1, room), trigger).picks.length > 0) return room;
+/** The first node of the pin set that pays `trigger`, or null when none does. */
+function payingNode(run: RunState, trigger: MapPassiveTrigger): string | null {
+  for (const key of NODES) {
+    if (runPassives(onNode(run, key), trigger).picks.length > 0) return key;
   }
   return null;
 }
 
-// One string per (map, room), in maps 1-3 and rooms 0-11: `'-'` when neither
-// trigger paid, else each payment as `<trigger>:<ability>:<itemId>`, joined by `|`
-// in the rule's own order (`'room'` then `'win'`). Computed once from this build
-// for seed `pkm-111` with a party holding both abilities; it pins the two minted
-// streams (D11).
-const PASSIVE_PINS: readonly (readonly string[])[] = [
-  [
-    'room:pickup:pokeball|win:honeygather:leppaberry',
-    'win:honeygather:persimberry',
-    '-',
-    '-',
-    '-',
-    '-',
-    'win:honeygather:leppaberry',
-    'win:honeygather:persimberry',
-    'win:honeygather:leppaberry',
-    'room:pickup:stardust',
-    'room:pickup:antidote',
-    'win:honeygather:sitrusberry',
-  ],
-  [
-    'room:pickup:potion',
-    'room:pickup:pokeball|win:honeygather:persimberry',
-    'win:honeygather:persimberry',
-    'room:pickup:antidote',
-    'win:honeygather:persimberry',
-    'room:pickup:potion|win:honeygather:persimberry',
-    '-',
-    'room:pickup:potion|win:honeygather:sitrusberry',
-    '-',
-    '-',
-    '-',
-    'room:pickup:stardust|win:honeygather:sitrusberry',
-  ],
-  [
-    '-',
-    '-',
-    'room:pickup:potion',
-    'room:pickup:potion|win:honeygather:persimberry',
-    '-',
-    'room:pickup:potion|win:honeygather:leppaberry',
-    'room:pickup:potion',
-    'win:honeygather:sitrusberry',
-    'win:honeygather:persimberry',
-    'win:honeygather:sitrusberry',
-    'room:pickup:pokeball|win:honeygather:sitrusberry',
-    'win:honeygather:sitrusberry',
-  ],
+// One string per node, in NODES order: `'-'` when neither trigger paid, else each
+// payment as `<trigger>:<ability>:<itemId>`, joined by `|` in the rule's own order
+// (`'room'` then `'win'`). Computed once from this build for seed `pkm-111` with a
+// party holding both abilities; it pins the two minted streams (D11).
+const PASSIVE_PINS: readonly string[] = [
+  'room:pickup:potion|win:honeygather:sitrusberry',
+  '-',
+  'room:pickup:potion|win:honeygather:sitrusberry',
+  'win:honeygather:leppaberry',
+  'room:pickup:stardust',
+  'room:pickup:antidote|win:honeygather:persimberry',
 ];
 
 describe('passiveMark', () => {
-  it('names the row, the trigger, the floor and the room', () => {
-    expect(passiveMark('pickup', 'room', 2, 7)).toBe('passive-pickup-room-2-7');
-    expect(passiveMark('honeygather', 'win', 1, 0)).toBe('passive-honeygather-win-1-0');
+  it('names the row, the trigger and the node', () => {
+    expect(passiveMark('pickup', 'room', 'route:2')).toBe('passive-pickup-room-route:2');
+    expect(passiveMark('honeygather', 'win', 'town:1')).toBe('passive-honeygather-win-town:1');
   });
 });
 
 describe('runPassives', () => {
-  it('pays once on a room the pickup stream hits, then never again', () => {
+  it('pays once on a node the pickup stream hits, then never again', () => {
     const run = runWith('pkm-111', ['Pickup']);
-    const room = payingRoom(run, 'room');
-    expect(room).not.toBeNull();
+    const key = payingNode(run, 'room');
+    expect(key).not.toBeNull();
 
-    const before = at(run, 1, room!);
+    const before = onNode(run, key!);
     const { run: paid, picks } = runPassives(before, 'room');
     expect(picks).toHaveLength(1);
     const pick = picks[0];
-    expect(pick.mark).toBe(`passive-pickup-room-1-${room}`);
+    expect(pick.mark).toBe(`passive-pickup-room-${key}`);
     expect(pick.ability).toBe('pickup');
     expect(getAbility(pick.ability)?.id).toBe(pick.ability);
     expect(pick.trigger).toBe('room');
@@ -122,22 +94,22 @@ describe('runPassives', () => {
   it('pays nothing on a miss, on the other trigger, or off the party', () => {
     const pickupRun = runWith('pkm-111', ['Pickup']);
     const honeyRun = runWith('pkm-111', ['Honey Gather']);
-    const room = payingRoom(pickupRun, 'room')!;
-    let missed: number | null = null;
-    for (let candidate = 0; candidate < ROOM_COUNT; candidate++) {
-      if (candidate !== room && runPassives(at(pickupRun, 1, candidate), 'room').picks.length === 0) {
+    const key = payingNode(pickupRun, 'room')!;
+    let missed: string | null = null;
+    for (const candidate of NODES) {
+      if (candidate !== key && runPassives(onNode(pickupRun, candidate), 'room').picks.length === 0) {
         missed = candidate;
         break;
       }
     }
     expect(missed).not.toBeNull();
-    const missedRun = at(pickupRun, 1, missed!);
+    const missedRun = onNode(pickupRun, missed!);
     const result = runPassives(missedRun, 'room');
     expect(result.run).toBe(missedRun);
     expect(result.picks).toEqual([]);
 
-    expect(runPassives(at(pickupRun, 1, room), 'win').picks).toEqual([]);
-    expect(runPassives(at(honeyRun, 1, room), 'room').picks).toEqual([]);
+    expect(runPassives(onNode(pickupRun, key), 'win').picks).toEqual([]);
+    expect(runPassives(onNode(honeyRun, key), 'room').picks).toEqual([]);
   });
 
   it('never asks the box', () => {
@@ -145,18 +117,18 @@ describe('runPassives', () => {
     const boxed = member('boxed', 'Pickup');
     const base = createRun({ seed: 'pkm-111', starter: partyMember });
     let run: RunState = { ...base, box: [boxed] };
-    for (let room = 0; room < ROOM_COUNT; room++) {
-      expect(runPassives(at(run, 1, room), 'room').picks, String(room)).toEqual([]);
+    for (const key of NODES) {
+      expect(runPassives(onNode(run, key), 'room').picks, key).toEqual([]);
     }
     run = { ...run, party: [partyMember, boxed], box: [] };
-    expect(payingRoom(run, 'room')).not.toBeNull();
+    expect(payingNode(run, 'room')).not.toBeNull();
   });
 
   it('pays once per row even when two members hold the ability', () => {
     const run = runWith('pkm-111', ['Pickup', 'Pickup']);
     expect(run.party).toHaveLength(2);
-    const room = payingRoom(run, 'room')!;
-    const before = at(run, 1, room);
+    const key = payingNode(run, 'room')!;
+    const before = onNode(run, key);
     const { run: paid, picks } = runPassives(before, 'room');
     expect(picks).toHaveLength(1);
     expect(picks.filter((pick) => pick.ability === 'pickup')).toHaveLength(1);
@@ -170,24 +142,24 @@ describe('runPassives', () => {
       party: plain.party.map((entry) => ({ ...entry, secondAbility: 'Pickup' })),
     };
     expect(plain.party[0].fighter.ability).toBe('Blaze');
-    const room = payingRoom(granted, 'room');
-    expect(room).not.toBeNull();
-    const before = at(granted, 1, room!);
+    const key = payingNode(granted, 'room');
+    expect(key).not.toBeNull();
+    const before = onNode(granted, key!);
     const { run: paid, picks } = runPassives(before, 'room');
     expect(picks).toHaveLength(1);
     expect(picks[0].ability).toBe('pickup');
-    expect(picks[0].mark).toBe(`passive-pickup-room-1-${room}`);
+    expect(picks[0].mark).toBe(`passive-pickup-room-${key}`);
     expect(itemCount(paid, picks[0].itemId)).toBe(itemCount(before, picks[0].itemId) + 1);
-    // The draw is the row's own, so the same room pays the same item as a primary holder.
-    const primary = runPassives(at(runWith('pkm-111', ['Pickup']), 1, room!), 'room');
+    // The draw is the row's own, so the same node pays the same item as a primary holder.
+    const primary = runPassives(onNode(runWith('pkm-111', ['Pickup']), key!), 'room');
     expect(primary.picks[0].itemId).toBe(picks[0].itemId);
   });
 
   it('skips a blank or unknown ability without throwing', () => {
     const run = runWith('pkm-111', ['', 'Not An Ability']);
     for (const trigger of ['room', 'win'] as const) {
-      for (let room = 0; room < ROOM_COUNT; room++) {
-        const input = at(run, 1, room);
+      for (const key of NODES) {
+        const input = onNode(run, key);
         const result: PassiveResult = runPassives(input, trigger);
         expect(result.run).toBe(input);
         expect(result.picks).toEqual([]);
@@ -195,26 +167,26 @@ describe('runPassives', () => {
     }
   });
 
-  it('draws only from the row its (seed, floor, room, ability) mints', () => {
+  it('draws only from the row its (seed, node, ability) mints', () => {
     const one = runWith('pkm-111', ['Pickup']);
     const two = runWith('pkm-111', ['Pickup']);
     const picked: string[] = [];
-    for (let room = 0; room < ROOM_COUNT; room++) {
-      const a = runPassives(at(one, 1, room), 'room');
-      const b = runPassives(at(two, 1, room), 'room');
-      expect(b, String(room)).toEqual(a);
-      if (a.picks.length > 0) picked.push(String(room));
+    for (const key of NODES) {
+      const a = runPassives(onNode(one, key), 'room');
+      const b = runPassives(onNode(two, key), 'room');
+      expect(b, key).toEqual(a);
+      if (a.picks.length > 0) picked.push(key);
     }
     expect(picked.length).toBeGreaterThan(0);
-    expect(picked.length).toBeLessThan(ROOM_COUNT);
+    expect(picked.length).toBeLessThan(NODES.length);
   });
 
   it('ignores the rest of the run: an unrelated member, a bag row, money', () => {
     const run = runWith('pkm-111', ['Pickup']);
-    const room = payingRoom(run, 'room')!;
-    const untouched = runPassives(at(run, 1, room), 'room');
+    const key = payingNode(run, 'room')!;
+    const untouched = runPassives(onNode(run, key), 'room');
     const disturbed = {
-      ...at(run, 1, room),
+      ...onNode(run, key),
       box: [...run.box, member('unrelated', 'Blaze')],
       bag: addItem(run, 'oranberry', 3).bag,
       money: run.money + 10000,
@@ -227,28 +199,23 @@ describe('the fixed-seed pins (D11)', () => {
   it('reports the same payments on two equal runs', () => {
     const one = runWith('pkm-111', ['Pickup', 'Honey Gather']);
     const two = runWith('pkm-111', ['Pickup', 'Honey Gather']);
-    for (const mapIndex of MAPS) {
-      for (let room = 0; room < ROOM_COUNT; room++) {
-        const a = runPassives(at(one, mapIndex, room), 'room');
-        const b = runPassives(at(two, mapIndex, room), 'room');
-        expect(b, `${mapIndex}/${room}`).toEqual(a);
-      }
+    for (const key of NODES) {
+      const a = runPassives(onNode(one, key), 'room');
+      const b = runPassives(onNode(two, key), 'room');
+      expect(b, key).toEqual(a);
     }
   });
 
-  it('matches PASSIVE_PINS for seed pkm-111, maps 1-3, rooms 0-11', () => {
+  it('matches PASSIVE_PINS for seed pkm-111 over the pin nodes', () => {
     const run = runWith('pkm-111', ['Pickup', 'Honey Gather']);
-    const pins = MAPS.map((mapIndex) =>
-      Array.from({ length: ROOM_COUNT }, (_, room) => {
-        const start = at(run, mapIndex, room);
-        const folded = runPassives(start, 'room');
-        const won = runPassives(folded.run, 'win');
-        const picks = [...folded.picks, ...won.picks];
-        return picks.length === 0
-          ? '-'
-          : picks.map((pick) => `${pick.trigger}:${pick.ability}:${pick.itemId}`).join('|');
-      }),
-    );
+    const pins = NODES.map((key) => {
+      const folded = runPassives(onNode(run, key), 'room');
+      const won = runPassives(folded.run, 'win');
+      const picks = [...folded.picks, ...won.picks];
+      return picks.length === 0
+        ? '-'
+        : picks.map((pick) => `${pick.trigger}:${pick.ability}:${pick.itemId}`).join('|');
+    });
     expect(pins).toEqual(PASSIVE_PINS);
   });
 });

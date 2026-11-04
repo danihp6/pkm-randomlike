@@ -18,7 +18,6 @@ function launch(extra: Partial<BattleLaunch> = {}): BattleLaunch {
     xp: 0,
     seed: battleSeed('run-a', 3, 'grass:4,7:0'),
     runSeed: 'run-a',
-    routeIndex: 3,
     canCapture: true,
     firstCatch: false,
     aiLevel: 'normal',
@@ -31,7 +30,7 @@ describe('battleSeed', () => {
     expect(battleSeed('run-a', 3, 'grass:4,7:0')).toBe(battleSeed('run-a', 3, 'grass:4,7:0'));
   });
 
-  it('separates the seed across run seed, route and key', () => {
+  it('separates the seed across run seed, node badge and key', () => {
     const base = battleSeed('run-a', 3, 'grass:4,7:0');
     expect(battleSeed('run-b', 3, 'grass:4,7:0')).not.toBe(base);
     expect(battleSeed('run-a', 4, 'grass:4,7:0')).not.toBe(base);

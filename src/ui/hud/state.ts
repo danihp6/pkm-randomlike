@@ -1,4 +1,4 @@
-import { biomeForMap, getBiome, type BiomeId } from '../../data/biomes';
+import { biomeForRoute, getBiome, type BiomeId } from '../../data/biomes';
 import { getMove, type MoveCategory } from '../../data/dex';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
@@ -26,7 +26,7 @@ import {
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
 import { missionMet } from '../../engine/run/missions';
 import { experienceFraction } from '../../engine/run/progression';
-import { squadLevel, type RunMode, type RunState, type RunStats } from '../../engine/run/state';
+import { runNode, squadLevel, type RunMode, type RunState, type RunStats } from '../../engine/run/state';
 import { t } from '../../i18n';
 import { bagCategoryFor, bagCategoryForKind, type BagCategory } from '../bag';
 import { hpFraction, statusAbbreviation } from '../metrics';
@@ -47,12 +47,9 @@ export type HudBagRow = Readonly<{
 /** The floor's mission: its id, its display name and whether the floor has met it. */
 export type HudMission = Readonly<{ id: string; name: string; met: boolean }>;
 
-/** The route's own chrome: the header line, the shared XP bar and the Pokevial meter. */
+/** The node's own chrome: the header line, the shared XP bar and the Pokevial meter. */
 export type HudRoute = Readonly<{
   mode: RunMode;
-  mapIndex: number;
-  routeInMap: number;
-  routeIndex: number;
   biomeId: BiomeId;
   biomeName: string;
   levelCap: number;
@@ -224,16 +221,13 @@ function hudMission(run: RunState): HudMission | null {
 
 function projectRoute(run: RunState, notice: Notice | null): HudState {
   const level = squadLevel(run);
-  const biomeId = biomeForMap(run.seed, run.mapIndex);
+  const biomeId = biomeForRoute(runNode(run).id).id;
   return {
     party: run.party.map(hudPartyRow),
     bag: run.bag.map(hudBagRow),
     money: run.money,
     route: {
       mode: run.mode,
-      mapIndex: run.mapIndex,
-      routeInMap: run.routeInMap,
-      routeIndex: run.routeIndex,
       biomeId,
       biomeName: getBiome(biomeId).name,
       levelCap: run.levelCap,

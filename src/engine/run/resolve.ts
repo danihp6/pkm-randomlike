@@ -22,6 +22,7 @@ import {
   markTrainerDefeated,
   nextMemberId,
   recordCatch,
+  runNode,
   squadLevel,
   useCapture,
   type RunState,
@@ -84,7 +85,8 @@ export function resolveBattle(
     // The squad shares one bar, so the award is not split by party size.
     const amount = reward.enemyLevels.reduce(
       (total, level) =>
-        total + experienceAward(level, 1, reward.isTrainer, trainerXpMultiplierForMap(next.mapIndex)),
+        total +
+        experienceAward(level, 1, reward.isTrainer, trainerXpMultiplierForMap(runNode(next).badge)),
       0,
     );
     const grown = gainExperience(next, amount, next.seed);
@@ -98,9 +100,7 @@ export function resolveBattle(
     const catchId = nextMemberId(next);
     const keyed: RunPokemon = { ...base, fighter: { ...base.fighter, id: catchId } };
     const adopted = adoptAtLevel(keyed, squadLevel(next), next.seed);
-    const caught = isDarkCatch(next.seed, next.mapIndex, next.routeInMap, catchId)
-      ? asDark(adopted)
-      : adopted;
+    const caught = isDarkCatch(next.seed, next.nodeKey, catchId) ? asDark(adopted) : adopted;
     const placed = addCaughtPokemon(next, caught);
     // Read the placement back off the run, so it cannot disagree with the box.
     capture = {

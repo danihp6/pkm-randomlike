@@ -13,6 +13,7 @@ import {
 import type { Tile } from '../engine/grid';
 import type { RouteTrainer } from '../engine/routes';
 import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../engine/routes';
+import { nodeKey } from '../engine/region/plan';
 import { addMoney, bandForMap, createRun, createRunPokemon, type RunState } from '../engine/run';
 import { t } from '../i18n';
 import type { RoomHost, RoomPanel } from '../scenes/panels/types';
@@ -255,7 +256,7 @@ function baseRun(seed = SEED, money = 100_000): RunState {
     }),
     money,
   );
-  return { ...created, mapIndex: MAP_INDEX, levelCap: levelCapForMap(MAP_INDEX) };
+  return { ...created, nodeKey: nodeKey('route', MAP_INDEX), levelCap: levelCapForMap(MAP_INDEX) };
 }
 
 type HostOptions = Readonly<{ run?: RunState }>;
@@ -646,9 +647,9 @@ describe('the slot machine panel', () => {
     );
   });
 
-  it('prices the spin from the floor’s own band', () => {
+  it('prices the spin from the node’s own band', () => {
     TEXTS.length = 0;
-    const early: RunState = { ...baseRun(), mapIndex: 1, levelCap: levelCapForMap(1) };
+    const early: RunState = { ...baseRun(), nodeKey: nodeKey('route', 1), levelCap: levelCapForMap(1) };
     const test = harness({ run: early });
     openRocket(test.host, NPC);
     expect(CASINO.price.early).toBe(300);

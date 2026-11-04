@@ -30,7 +30,7 @@ function runWith(
       ? member
       : { ...member, secondAbility: secondAbilities[index] as string },
   );
-  return { ...base, mapIndex: 4, party: withSecond, ...overrides };
+  return { ...base, party: withSecond, ...overrides };
 }
 
 /** The two facts `advanceMap` writes that open the legendary branch. */

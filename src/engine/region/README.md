@@ -58,7 +58,7 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
   worker reply's shape.
 - `travel.ts` — the region's one travel seam: whether a run may walk an exit band (through the
   badge gate) or fly to a settlement it has visited (free, `D67`), and the next run state with its
-  refreshed compat fields, its missions' `enter-node` reset and spawn tile — a settlement's own
+  refreshed node-entry fields, its missions' `enter-node` reset and spawn tile — a settlement's own
   spawn or a route kind's carver entry (`canTravel`, `travel`, `TravelMode`, `TravelRefusal`,
   `TravelArrival`).
 - `travel.test.ts` — the walk's own spawn per kind, the gate and its badge, walking back, the

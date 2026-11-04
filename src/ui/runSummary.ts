@@ -1,5 +1,7 @@
-import { biomeForMap, getBiome } from '../data/biomes';
-import { encodeRunShare, type RunState } from '../engine/run';
+import { biomeForRoute } from '../data/biomes';
+import { parseNodeKey } from '../engine/region/plan';
+import { isRouteKind } from '../engine/region/route/layout';
+import { encodeRunShare, runNode, type RunState } from '../engine/run';
 import { t } from '../i18n';
 
 /**
@@ -43,11 +45,26 @@ export type RunSummary = Readonly<{
   share: string;
 }>;
 
+/**
+ * The route-kind nodes the run has entered: every key in `visitedNodes` whose own
+ * kind is a route (a main route, a lateral or the Victory Road). A key that is not
+ * a node key counts as none.
+ */
+function routesVisited(run: RunState): number {
+  let count = 0;
+  for (const key of run.visitedNodes) {
+    const parsed = parseNodeKey(key);
+    if (parsed !== null && isRouteKind(parsed.kind)) count += 1;
+  }
+  return count;
+}
+
 /** What the score screen reports: a win clears its route, a loss does not. */
 export function runSummary(run: RunState, won: boolean): RunSummary {
+  const routes = routesVisited(run);
   return {
     won,
-    routesCleared: won ? run.routeIndex : Math.max(0, run.routeIndex - 1),
+    routesCleared: won ? routes : Math.max(0, routes - 1),
     catches: run.stats.catches,
     casualties: run.stats.casualties,
     faints: recordedCount(run.stats.faints),
@@ -75,13 +92,14 @@ export function runSummaryLines(summary: RunSummary): string[] {
 }
 
 /**
- * The saved run's position for the main menu's Continue row: the map it stands on
- * and that map's biome, in the route HUD's own wording, so the menu and the HUD
- * can never disagree.
+ * The saved run's position for the main menu's Continue row: the badge of the node
+ * it stands on and that node's biome, in the route HUD's own wording, so the menu
+ * and the HUD can never disagree.
  */
 export function runPositionLabel(run: RunState): string {
+  const node = runNode(run);
   return t('route.mapTitle', {
-    map: run.mapIndex,
-    biome: getBiome(biomeForMap(run.seed, run.mapIndex)).name,
+    map: node.badge,
+    biome: biomeForRoute(node.id).name,
   });
 }

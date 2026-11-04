@@ -8,6 +8,28 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The deprecated position fields go.** `[Task-304]`, Batch 129: `RunState` has one position
+      again — its `nodeKey`. `mapIndex`, `routeIndex` and `routeInMap` are gone from the type, from
+      the save decoder/encoder and from every reader: `compatForNode` becomes `nodeEntry`, which
+      resets only the four fields the run still declares (`arrivalEdge`, `discoveredRooms`,
+      `bossDefeated`, `levelCap` = `node.cap`), and a new total `runNode(run)` answers the plan node
+      the run stands on. The dead `advanceRoute`/`advanceMap` helpers go with the fields. Readers ask
+      the node: the Continue row prints `Map <badge> · <biomeForRoute(node.id).name>` (the board's own
+      `row value CONTINUE` shape), the HUD projects the node's biome and cap, the Rocket panel and the
+      casino price from `bandForMap(node.badge)`, the reward room from `bandForNode(node)`, and the
+      battle, dark-catch and passive streams key on the node (its `badge` or its `nodeKey`) instead of
+      the retired numbers; the dev menu's three `@deprecated` room counters go with the debug route
+      context. `SAVE_VERSION` stays **28**: a v28 document that still carries the three numbers
+      decodes as if it did not, keeps its `nodeKey` and `arrivalEdge`, and no longer writes them back.
+      `[unit]` no `RunState` read of the three survives (52 hits, all documented carriers:
+      `CatchLocation`, `CompletedMission`, the room-panel view and the route carver), the v28 legacy
+      document loads and resolves its node, and 5 959 tests over 332 files are green with
+      `npm run build` clean; `[live]` over CDP at 1280×800 on a v28 save standing on `city:3`: the
+      Continue row read `Map 3 · Deep Forest`, the party header read `LV 23` = `badgeCap(3)` =
+      `bandForNode(node).maxLevel`, and the Rocket panel mounted on the live `City` scene priced its
+      spin at `CASINO.price[bandForMap(3).id]` = `mid` with the `mid` reel frames (the panel has no
+      in-game opener, issue #127).
+
 - [x] **The floor modules are deleted.** `[Task-298]`, Batch 128: the region has no floors left in
       the tree. Gone with their tests: `src/engine/maps/**` (the map plan, its progress, its route
       streams and its carver input), the floor room descriptors in `src/scenes/rooms/**`, the floor

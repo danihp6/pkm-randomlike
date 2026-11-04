@@ -3,7 +3,8 @@ import itemIcons from '../../data/anil/item-icons.json';
 import { ITEM_ICON_ATLAS_URL, ITEM_ICON_SIZE, itemIconFrame } from '../../data/itemIcons';
 import { getItem } from '../../data/items';
 import { ROUTE_LOOT } from '../../data/loot';
-import { bandForMap } from '../../engine/run';
+import { runNode } from '../../engine/run';
+import { bandForNode } from '../../engine/run/levelCurve';
 import {
   addItem,
   addPokemon,
@@ -96,15 +97,15 @@ export function openMiniBossReward(host: RoutePanelHost, onDone: () => void): vo
     return;
   }
   const run = host.run();
-  const band = bandForMap(run.mapIndex);
-  const rng = new Rng(hashSeed(`${run.seed}:reward:${run.mapIndex}`));
+  const band = bandForNode(runNode(run));
+  const rng = new Rng(hashSeed(`${run.seed}:reward:${run.nodeKey}`));
   const items = rewardChoices(ROUTE_LOOT[band.id].pool, MINI_BOSS_REWARD_CHOICES, rng);
   const pokemon = pokemonRewardChoices({
     pool: speciesPool(band, 'wild'),
     count: MINI_BOSS_REWARD_POKEMON_CHOICES,
     level: squadLevel(run),
     learnsetSeed: run.seed,
-    rng: new Rng(hashSeed(`${run.seed}:reward:${run.mapIndex}:pokemon`)),
+    rng: new Rng(hashSeed(`${run.seed}:reward:${run.nodeKey}:pokemon`)),
   });
   const rows = rewardRows(items, pokemon);
   if (rows.length === 0) {

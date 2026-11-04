@@ -1,7 +1,7 @@
 import type { Tile } from '../grid';
 import { exitGate } from '../run/gates';
 import { canLeaveTown } from '../run/prologue';
-import { compatForNode, type RunState } from '../run/state';
+import { nodeEntry, type RunState } from '../run/state';
 import { planCity } from './city';
 import { advanceMissions } from './missions';
 import { nodeOf, type RegionNode, type RegionPlan } from './plan';
@@ -39,7 +39,7 @@ export type TravelRefusal = Readonly<{
 
 export type TravelArrival = Readonly<{
   ok: true;
-  /** The run, standing on `key`, with its compat floor fields refreshed. */
+  /** The run, standing on `key`, with the four node-entry fields refreshed. */
   run: RunState;
   /** The node entered (`nodeKey`). */
   key: string;
@@ -141,7 +141,7 @@ export function travel(
   // so the stack resets where the run stands, not where it was (`docs/region-spec.md`
   // §7.10). A refusal never reaches here, so it still answers no run at all.
   const next = advanceMissions(
-    { ...run, nodeKey: toKey, visitedNodes, ...compatForNode(run.seed, toKey) },
+    { ...run, nodeKey: toKey, visitedNodes, ...nodeEntry(run.seed, toKey) },
     { kind: 'enter-node', nodeKey: toKey },
   );
   return {

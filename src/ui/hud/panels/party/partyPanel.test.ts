@@ -44,9 +44,6 @@ function member(id: string, overrides: Partial<HudPartyRow> = {}): HudPartyRow {
 
 const ROUTE: HudRoute = {
   mode: 'finite',
-  mapIndex: 1,
-  routeInMap: 0,
-  routeIndex: 3,
   biomeId: 'forest',
   biomeName: 'Forest',
   levelCap: 20,

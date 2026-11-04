@@ -39,9 +39,8 @@ export const DEBUG_ROUTE_HEIGHT = ROUTE_HEIGHT;
 
 /**
  * The live values the route panel pre-fills: the current route's base inputs plus
- * the derived biome/band and the read-only run mode. The floor, room and tile
- * fields are the old floor scene's compatibility aliases, still reported by the
- * scene; the panel no longer draws them.
+ * the derived biome/band and the read-only run mode. The node's own fields are the
+ * separate `DebugNodeContext`; the panel draws neither.
  */
 export type DebugRouteContext = Readonly<{
   seed: string;
@@ -56,12 +55,6 @@ export type DebugRouteContext = Readonly<{
   passThrough: boolean;
   /** Dev inspect: color the hovered cell and show its tile coordinates. */
   hoverInspect: boolean;
-  /** @deprecated the floor scene's counter, kept as the scene reports it. */
-  mapIndex: number;
-  /** @deprecated the floor scene's room, kept as the scene reports it. */
-  roomInMap: number;
-  /** @deprecated the floor scene's room count, kept as the scene reports it. */
-  roomCount: number;
   /** The player's tile. The scene always fills it; nullable only so the helper's clause-drop is defined. */
   tile: { x: number; y: number } | null;
   /** Dev only: while true the tall grass rolls no wild encounter. */
