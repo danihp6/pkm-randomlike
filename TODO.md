@@ -12861,18 +12861,23 @@ deprecated fields, so the sweep that removes them has to own those paths as well
 list). No other hot file.
 
 - [ ] **[Task-298] The floors are deleted.** Every module the region replaced goes, with its tests:
-      the map plan and its progress/route/streams, the room grid, the room descriptors, the old route
-      scene and its registry, the floor minimap, the floor-bound content tables that survived the
-      moves, `routeIndexForRoom` and `floorForRoute`, and the three deprecated position fields on
-      `RunState`.
+      the map plan and its progress/route/streams, the room grid and the room descriptors no scene
+      builds any more, the floor minimap, the floor-bound content tables that survived the moves,
+      `routeIndexForRoom` and `floorForRoute`, the starter screen whose reset chord opens the
+      laboratory instead, and the three deprecated position fields on `RunState`. The region's route
+      screen does **not** go: it is `src/scenes/RouteScene.ts`, and since `[Task-302]` it draws the
+      region's own screens (issue #125).
       **Measured:** `src/engine/maps/**` (plan, progress, route, streams), `src/scenes/rooms/**`,
-      `src/scenes/RouteScene.ts`, `src/ui/mapView.ts`, `src/engine/run/floors.ts`,
-      `levelCap.ts`, `src/engine/maps/streams.ts`, and `RunState.mapIndex/routeIndex/routeInMap` all
-      still exist after Batches 116-127 by design.
-      **Fix shape:** delete each module with its `*.test.ts`, remove the importers, drop the three
-      deprecated fields and their parse/encode branches, update every folder README the deletions
-      touch, and keep `npm run build` and `npm test` green (a deletion that leaves a dangling import
-      fails the gate).
+      `src/ui/mapView.ts`, `src/engine/run/floors.ts`, `levelCap.ts` and
+      `RunState.mapIndex/routeIndex/routeInMap` still exist after Batches 116-127 by design;
+      `src/scenes/StarterScene.ts` is reachable only from `RouteScene.restartRun()`
+      (`src/scenes/RouteScene.ts:1027`), which starts `'Starter'` where `MainMenuScene` starts `'Lab'`.
+      **Fix shape:** point `RouteScene.restartRun()` at `'Lab'` the way `MainMenuScene` starts a run,
+      then delete `StarterScene` with its test; delete each dead module with its `*.test.ts`, remove
+      the importers (the four `src/ui` readers and the dev menu's own field among them, issue #124),
+      drop the three deprecated fields and their parse/encode branches, update every folder README the
+      deletions touch, and keep `npm run build` and `npm test` green (a deletion that leaves a dangling
+      import fails the gate).
       **Docs:** `src/engine/README.md`, `src/scenes/README.md`, `src/ui/README.md`,
       `src/engine/run/README.md`, `src/data/README.md`.
       **Tests:** `[unit]` `grep -rn "planMap\|MapRoom\|routeIndexForRoom\|floorForRoute\|RoomHost"
@@ -12880,8 +12885,9 @@ list). No other hot file.
       `[unit]` the suite and the build are green. No browser pass is owed. Claims
       `src/engine/maps/**`, `src/engine/run/floors.ts`, `floors.test.ts`,
       `src/engine/run/levelCap.ts`, `levelCap.test.ts`, `src/engine/run/state.ts`, `state.test.ts`,
-      `src/engine/save.ts`, `save.test.ts`, `src/scenes/rooms/**`, `src/scenes/RouteScene.ts`,
-      `src/scenes/StarterScene.ts`, `StarterScene.test.ts`, `src/ui/mapView.ts`, `mapView.test.ts`,
+      `src/engine/save.ts`, `save.test.ts`, `src/scenes/rooms/**`, `src/scenes/RouteScene.ts` (one
+      line: the reset chord, nothing deleted), `src/scenes/StarterScene.ts`, `StarterScene.test.ts`,
+      `src/ui/mapView.ts`, `mapView.test.ts`,
       `src/ui/runSummary.ts`, `src/ui/hud/state.ts`, `src/ui/rocketPanel.ts`, `src/ui/casino.ts`,
       `src/dev/debugMenu.ts`, its test, `src/engine/region/travel.ts`, `travel.test.ts`, `src/main.ts`,
       `src/data/maps.ts`, `src/data/mapSize.ts`, `src/data/gates.ts`,
@@ -12892,8 +12898,13 @@ list). No other hot file.
       **Released `2026-11-04`:** the premise was false at `2406214` (issue #119) — `RouteScene` was
       the live `route`/`lateral` screen and still built floor rooms, so this list would have deleted
       the region's working screen and the compat fields `region/travel.ts:144` writes on every node
-      entry. `[Task-300]` gives the region its panel host and `[Task-302]` gives it its route screen;
-      with both merged the scene is dead and the sweep is true again.
+      entry. `[Task-300]` gives the region its panel host, `[Task-302]` gives it its route screen and
+      `[Task-303]` its Victory Road; with all three merged the rest of the list is true again, and the
+      route screen stays because it is the shipped one.
+      **Re-cut `2026-11-04` (issue #125):** `src/main.ts:48` registers `RouteScene` and
+      `CityScene.ts:465` starts it for every `isRouteKind` neighbour, so the sweep edits one line in it
+      (the reset chord) and deletes nothing there. `StarterScene.ts` is still reachable from that
+      chord, so it goes only after the chord points at `'Lab'`.
 
 - [ ] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
       `docs/routes-spec.md`, `docs/tech-decisions.md` and `docs/data-spec.md` stop describing floors
