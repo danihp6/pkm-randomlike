@@ -27,8 +27,8 @@ export function runBand(seed: string, routeIndex: number): LevelBand {
 }
 
 /**
- * The band of a map by its index, for callers that hold the run's explicit
- * position (`RunState.mapIndex`) instead of a global route index.
+ * The band of a map by its badge, for callers that hold the node the run stands on
+ * (`runNode(run).badge`) rather than a carver preview's global route index.
  */
 export function bandForMap(mapIndex: number): LevelBand {
   const window = levelWindowForMap(mapIndex);

@@ -1,12 +1,11 @@
 import { normalizeId } from '../../data/dex';
 import { getItem } from '../../data/items';
-import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
-import { nodeOf, planRegion } from '../region/plan';
+import { nodeOf, planRegion, type RegionNode } from '../region/plan';
 import type { BagCounts } from './battleLink';
-import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
+import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial } from './heal';
 import { clampToCap } from './levelCap';
-import { missionForMap, missionMet, type MissionProgress } from './missions';
-import { decayModifiers, emptyModifiers, type RunModifiers } from './modifiers';
+import { missionForMap, type MissionProgress } from './missions';
+import { emptyModifiers, type RunModifiers } from './modifiers';
 import {
   evolvePokemon,
   levelForXp,
@@ -68,40 +67,33 @@ export function addFaints(run: RunState, faints: number): RunState {
 }
 
 /**
- * The run: everything that survives a route. The party/box hold run members
+ * The run: everything that survives a node. The party/box hold run members
  * (battle snapshot + XP), the bag is the item stacks the scene passes to battle,
  * `money` is the Poké Dollars beat out of trainers, `defeatedTrainers` /
- * `pickedItems` / `capturedRooms` are the **per-floor** bookkeeping and `stats`
- * is the running score the end-of-run screen reports.
+ * `pickedItems` are the node's bookkeeping and `stats` is the running score the
+ * end-of-run screen reports.
  * Every helper here is pure and returns a new state (D11: no hidden randomness).
  *
- * A run stands on a **region node** (`nodeKey`, `docs/region-spec.md` §1): it
- * carries the nodes it has entered, the badges it holds, the nodes whose single
- * catch is spent and the tower's own streak. The old floor fields
- * (`mapIndex`, `routeIndex`, `routeInMap`, `levelCap`, `discoveredRooms`,
- * `bossDefeated`) stay as the deprecated aliases an old save still carries, derived
- * from `nodeKey` at creation, until `[Task-304]` deletes them.
+ * A run stands on a **region node** (`nodeKey`, `docs/region-spec.md` §1) and that
+ * key is its only position: it carries the nodes it has entered, the badges it
+ * holds, the nodes whose single catch is spent and the tower's own streak. A node
+ * entry resets the four fields `NodeEntry` names — the door the run arrived
+ * through, its discovered rooms, its boss flag and its level cap.
  */
 export type RunState = Readonly<{
   seed: string;
   /** @deprecated the endless run is retired; the record is the badge count. */
   mode: RunMode;
-  /** @deprecated the old floor scene's counter, derived from `nodeKey`; the sweep deletes it. */
-  routeIndex: number;
-  /** @deprecated the old floor scene's floor, derived from `nodeKey`; the sweep deletes it. */
-  mapIndex: number;
-  /** @deprecated the old floor scene's room, derived from `nodeKey`; the sweep deletes it. */
-  routeInMap: number;
   /**
    * The edge the current room was entered through (`docs/maps-spec.md` §2): the
    * scene spawns the player at that door, so leaving East always arrives West.
    */
   arrivalEdge: MapEdge;
-  /** Room ids of `mapIndex` entered so far (fog of discovery, D32). Resets per map. */
+  /** Room ids of the node entered so far (fog of discovery, D32). Resets per node. */
   discoveredRooms: readonly number[];
-  /** True once `mapIndex`'s boss has fallen, so its portal stays open (D31). Resets per map. */
+  /** True once the node's boss has fallen, so its portal stays open (D31). Resets per node. */
   bossDefeated: boolean;
-  /** @deprecated the old floor scene's cap, derived from `nodeKey`; the sweep deletes it. */
+  /** The level cap the node enforces (`node.cap`), reset on every node entry. */
   levelCap: number;
   /** The region node the run stands on: `nodeKey(kind, id)` of a `planRegion` node. */
   nodeKey: string;
@@ -147,54 +139,53 @@ export type RunState = Readonly<{
   rip: readonly RunPokemon[];
   /**
    * The species id of every **successful** catch, in catch order, deduped. A run-long
-   * fact: `advanceRoute` and `advanceMap` never clear it (unlike `defeatedTrainers`,
-   * `pickedItems`, `capturedRooms` and `bossDefeated`); only a fresh run
-   * starts it empty. A different fact from `rip` (the dead **members**) and from
-   * `stats.casualties`.
+   * fact: entering a node never clears it (unlike `defeatedTrainers`, `pickedItems`
+   * and `bossDefeated`); only a fresh run starts it empty. A different fact from
+   * `rip` (the dead **members**) and from `stats.casualties`.
    */
   caughtSpecies: readonly string[];
   /**
    * The candy colours this run has **tried**, in the order it tried them
-   * (`Task-103`). Run-long: `advanceRoute` and `advanceMap` never clear it; only a
-   * fresh run starts empty. A colour's own stat mapping is never stored — it is
-   * derived from the seed by `candyTreat`.
+   * (`Task-103`). Run-long: entering a node never clears it; only a fresh run
+   * starts empty. A colour's own stat mapping is never stored — it is derived from
+   * the seed by `candyTreat`.
    */
   discoveredCandy: readonly string[];
   bag: readonly BagCounts[];
   /**
    * Poké Dollars, earned only by beating trainers and spent in the shop
    * (`docs/maps-spec.md` §7, D33). A run starts with none and it carries across
-   * floors; a lost run carries nothing over (D5).
+   * nodes; a lost run carries nothing over (D5).
    */
   money: number;
-  /** Trainer ids already beaten on `mapIndex`. Resets per map, so revisits stay clear. */
+  /** Trainer ids already beaten on `nodeKey`. Resets per node, so revisits stay clear. */
   defeatedTrainers: readonly string[];
-  /** Ground-item ids already taken on `mapIndex`. Resets per map. */
+  /** Ground-item ids already taken on `nodeKey`. Resets per node. */
   pickedItems: readonly string[];
   /**
    * @deprecated the old floor scene's spent rooms: no rule reads or writes it since
-   * the capture rule became the node (`capturedNodes`), and the sweep deletes it.
-   * `advanceMap`/`advanceRoute` still reset it exactly as they did.
+   * the capture rule became the node (`capturedNodes`), and nothing resets it any
+   * more. Only a save carries it.
    */
   capturedRooms: readonly number[];
-  /** The floor's mission and whether the run has met it, or null on an old save. */
+  /** The node's mission and whether the run has met it, or null on an old save. */
   mission: MissionProgress | null;
-  /** How many missions this run has completed. Run-long: `advanceMap` never clears it. */
+  /** How many missions this run has completed. Run-long: entering a node never clears it. */
   missionsCompleted: number;
   /**
-   * The floors whose mission this run met, in the order it met them (oldest first).
-   * Run-long: `advanceRoute` and `advanceMap` never clear it; only a fresh run starts it
-   * empty, and it is appended where `missionsCompleted` steps so the two never disagree.
+   * The nodes whose mission this run met, in the order it met them (oldest first).
+   * Run-long: entering a node never clears it; only a fresh run starts it empty, and
+   * it is appended where `missionsCompleted` steps so the two never disagree.
    */
   completedMissions: readonly CompletedMission[];
-  /** HP the party lost on `mapIndex` — the `flawless` mission's progress. Resets per floor. */
+  /** HP the party lost on `nodeKey` — the `flawless` mission's progress. Resets per node. */
   hpLost: number;
-  /** `stats.casualties` when `mapIndex` was entered, so a death on this floor is visible. Resets per floor. */
+  /** `stats.casualties` when `nodeKey` was entered, so a death on this node is visible. Resets per node. */
   floorCasualties: number;
   /**
    * The facts the special NPCs leave behind (`docs/maps-spec.md` §7): the curse,
-   * the forced sky and the narrowed wild type. A run-long record: `advanceRoute`
-   * carries it and only `advanceMap` spends a floor of the forced sky.
+   * the forced sky and the narrowed wild type. A run-long record: entering a node
+   * carries it, and only `decayModifiers` spends a node of the forced sky.
    */
   modifiers: RunModifiers;
   stats: RunStats;
@@ -223,34 +214,28 @@ export type RunInit = Readonly<{
   startedAt?: string;
 }>;
 
-/** The deprecated floor fields a node implies: the plan's chain position read as a floor. */
-export type RunNodeCompat = Readonly<{
-  mapIndex: number;
-  routeIndex: number;
-  routeInMap: number;
+/** The four run fields a node entry resets; the run's position is `nodeKey` alone. */
+export type NodeEntry = Readonly<{
+  /** The compass door the run arrives through; a node has no room to derive one from. */
   arrivalEdge: MapEdge;
+  /** The rooms of the node discovered so far: only the entry room. */
   discoveredRooms: readonly number[];
+  /** The node's boss flag: a node entry starts with its boss standing. */
   bossDefeated: boolean;
+  /** `node.cap`, the level cap the node enforces. */
   levelCap: number;
 }>;
 
 /**
- * The deprecated floor fields a node implies: the region's chain position read as a
- * floor, so an old save decodes the same position it was written with. A key the plan
- * does not hold reads as the town, never an error, and the function draws nothing from
- * any Rng and reads no clock (D11).
+ * The four fields entering a node resets, read off the node the key names: its cap,
+ * a fresh discovery set, a closed boss and the compass fallback the screens open on.
+ * A key the plan does not hold reads as the town, never an error, and the function
+ * draws nothing from any Rng and reads no clock (D11).
  */
-export function compatForNode(seed: string, key: string): RunNodeCompat {
+export function nodeEntry(seed: string, key: string): NodeEntry {
   const plan = planRegion(seed);
   const node = nodeOf(plan, key) ?? nodeOf(plan, plan.townKey)!;
-  let chainIndex = plan.chain.indexOf(node.key);
-  if (chainIndex === -1) chainIndex = plan.chain.indexOf(node.lateralOf ?? '');
-  if (chainIndex === -1) chainIndex = 0;
-  const mapIndex = Math.min(FINITE_MAPS, Math.max(1, chainIndex + 1));
   return {
-    mapIndex,
-    routeIndex: Math.max(1, chainIndex + 1),
-    routeInMap: 0,
     // The compass door is the fallback a save with no readable edge lands on
     // (`readArrivalEdge`); a region node has no floor room to derive one from.
     arrivalEdge: 'N',
@@ -260,19 +245,26 @@ export function compatForNode(seed: string, key: string): RunNodeCompat {
   };
 }
 
+/**
+ * The plan node the run stands on: `nodeOf(planRegion(run.seed), run.nodeKey)`,
+ * falling back to the region's town so a stale or hand-edited key still answers a
+ * node. Total: never throws, draws nothing and reads no clock (D11).
+ */
+export function runNode(run: RunState): RegionNode {
+  const plan = planRegion(run.seed);
+  return nodeOf(plan, run.nodeKey) ?? nodeOf(plan, plan.townKey)!;
+}
+
 export function createRun(init: RunInit): RunState {
   const plan = planRegion(init.seed);
-  const compat = compatForNode(init.seed, plan.townKey);
+  const entry = nodeEntry(init.seed, plan.townKey);
   return {
     seed: init.seed,
     mode: init.mode ?? 'finite',
-    routeIndex: compat.routeIndex,
-    mapIndex: compat.mapIndex,
-    routeInMap: compat.routeInMap,
-    arrivalEdge: compat.arrivalEdge,
-    discoveredRooms: compat.discoveredRooms,
-    bossDefeated: compat.bossDefeated,
-    levelCap: compat.levelCap,
+    arrivalEdge: entry.arrivalEdge,
+    discoveredRooms: entry.discoveredRooms,
+    bossDefeated: entry.bossDefeated,
+    levelCap: entry.levelCap,
     nodeKey: plan.townKey,
     visitedNodes: [plan.townKey],
     badges: [],
@@ -302,82 +294,7 @@ export function createRun(init: RunInit): RunState {
   };
 }
 
-/**
- * Enters another screen of the region (`docs/region-spec.md` §4): the global counter
- * steps, the room is marked **discovered** (D32) and the door the player came through
- * is stored. The screen's marks (beaten trainers, taken items, spent captures) **stay**
- * — revisiting a screen rebuilds it identically and its content does not respawn — and
- * only the map advance clears them.
- *
- * `arrivalEdge` is the door the player arrives through (the opposite of the one they
- * left by); it is kept when it names one of the four compass doors, else it reads the
- * `'N'` fallback, so a bad value never stores a door the screens cannot open.
- *
- * Walking does not lock the PC: the box is editable **inside a Pokémon Centre**
- * (`docs/region-spec.md` §6), and nowhere else, so the rule is the room the run
- * stands in rather than where it has been (`pcFullyEditable`).
- *
- * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
- * `towerStreak`) are **not** touched here: moving the run between nodes is the region
- * scene's job (`travel`).
- */
-export function advanceRoute(run: RunState, roomInMap: number, arrivalEdge?: MapEdge): RunState {
-  const room = Math.max(0, Math.floor(roomInMap));
-  const arrival = MAP_EDGES.find((edge) => edge === arrivalEdge) ?? 'N';
-  return {
-    ...run,
-    routeIndex: run.routeIndex + 1,
-    routeInMap: room,
-    arrivalEdge: arrival,
-    discoveredRooms: discoverRoom(run.discoveredRooms, room),
-  };
-}
-
-/**
- * Steps onto the next map (`docs/maps-spec.md` §6, D31): its first screen, a fresh
- * discovery set and its own cap. This is also the **heal stop** — HP/PP restored
- * across the party and the box, never a resurrection (D5) — while the old floor's
- * marks go with it. The Pokevial's charges **carry over** instead: only a boss or a
- * beaten trainer tops the meter up (`docs/routes-spec.md` §6). The floor being left is
- * judged against its own mission first, and the next floor is drawn its own
- * (`docs/routes-spec.md` §4). The NPC modifiers travel too, and the floor being left
- * spends one of the forced sky's floors (`decayModifiers`).
- *
- * The node fields (`nodeKey`, `visitedNodes`, `badges`, `capturedNodes`,
- * `towerStreak`) are **not** touched here: moving the run between nodes is the region
- * scene's job (`travel`).
- */
-export function advanceMap(run: RunState): RunState {
-  const mapIndex = run.mapIndex + 1;
-  // The floor being left is judged before anything else, so a clean floor bumps the
-  // run-long counter and the new floor starts from its own draw.
-  const met = missionMet(run);
-  const advanced: RunState = {
-    ...run,
-    routeIndex: run.routeIndex + 1,
-    mapIndex,
-    routeInMap: 0,
-    arrivalEdge: 'N',
-    discoveredRooms: [0],
-    bossDefeated: false,
-    levelCap: levelCapForMap(mapIndex),
-    defeatedTrainers: [],
-    pickedItems: [],
-    capturedRooms: [],
-    mission: missionForMap(run.seed, mapIndex),
-    missionsCompleted: run.missionsCompleted + (met ? 1 : 0),
-    completedMissions:
-      met && run.mission !== null
-        ? [...run.completedMissions, { id: run.mission.id, mapIndex: run.mapIndex }]
-        : run.completedMissions,
-    hpLost: 0,
-    floorCasualties: run.stats.casualties,
-    modifiers: decayModifiers(run.modifiers),
-  };
-  return healParty(advanced);
-}
-
-/** True once a room of the current map has been entered (fog of discovery, D32). */
+/** True once a room of the current node has been entered (fog of discovery, D32). */
 export function isRoomDiscovered(run: RunState, roomId: number): boolean {
   return run.discoveredRooms.includes(roomId);
 }
@@ -392,7 +309,7 @@ export function markBossDefeated(run: RunState): RunState {
   return autoPokevial(fillPokevial({ ...run, bossDefeated: true }));
 }
 
-/** The squad's shared level: the run XP read through the medium-fast curve, capped per map. */
+/** The squad's shared level: the run XP read through the medium-fast curve, capped by the node. */
 export function squadLevel(run: RunState): number {
   return clampToCap(levelForXp(run.xp), run.levelCap);
 }
@@ -426,10 +343,6 @@ export function gainExperience(run: RunState, amount: number, learnsetSeed?: str
     run: { ...run, xp, party: run.party.map(levelMember), box: run.box.map(levelMember) },
     events,
   };
-}
-
-function discoverRoom(rooms: readonly number[], roomId: number): readonly number[] {
-  return rooms.includes(roomId) ? rooms : [...rooms, roomId];
 }
 
 /** Adds a Pokémon to the party, or to the box once the party is full (D7). */

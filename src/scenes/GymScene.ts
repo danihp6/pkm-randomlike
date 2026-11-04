@@ -30,7 +30,13 @@ import {
 } from '../engine/run/badge';
 import { battleSeed, type BattleLaunch, type BattleReturn } from '../engine/run/battleLink';
 import { resolveBattle } from '../engine/run/resolve';
-import { hasLivingParty, isTrainerDefeated, markItemPicked, type RunState } from '../engine/run/state';
+import {
+  hasLivingParty,
+  isTrainerDefeated,
+  markItemPicked,
+  runNode,
+  type RunState,
+} from '../engine/run/state';
 import { loadSave, storeRun, type Settings } from '../engine/save';
 import { TILE_SIZE } from '../engine/tileset';
 import { actionKeys, subscribeKeybinds } from '../input/input';
@@ -555,9 +561,8 @@ export class GymScene extends WorldScene {
       player: run.party.map((member) => member.fighter),
       bag: run.bag,
       xp: run.xp,
-      seed: battleSeed(run.seed, run.routeIndex, foe.id),
+      seed: battleSeed(run.seed, runNode(run).badge, foe.id),
       runSeed: run.seed,
-      routeIndex: run.routeIndex,
       // A gym is fought for its badge: no capture, no catch.
       canCapture: false,
       firstCatch: false,

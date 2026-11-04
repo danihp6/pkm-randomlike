@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STRETCH_MISSION_ID } from '../../data/missions';
 import { createRunPokemon } from '../run/progression';
 import { emptyRun, takeStarter } from '../run/prologue';
-import { compatForNode, createRun, type RunState } from '../run/state';
+import { createRun, nodeEntry, type RunState } from '../run/state';
 import { exitGate } from '../run/gates';
 import { planCity } from './city';
 import { activeMissions } from './missions';
@@ -28,7 +28,7 @@ function runAt(key: string, visited: readonly string[], badges: readonly number[
     nodeKey: key,
     visitedNodes: visited,
     badges,
-    ...compatForNode(SEED, key),
+    ...nodeEntry(SEED, key),
   };
 }
 
@@ -77,16 +77,15 @@ describe('travel', () => {
     expect(result.run.visitedNodes).toStrictEqual(['town:1', 'route:1']);
   });
 
-  it('walks onto a city at the settlement’s own spawn and refreshes its compat fields', () => {
+  it('walks onto a city at the settlement’s own spawn and refreshes its node-entry fields', () => {
     const run = runAt('route:1', ['town:1', 'route:1']);
     const result = travel(PLAN, run, 'city:1', 'walk');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.spawn).toStrictEqual(planCity(PLAN, 'city:1').spawn);
     expect(result.run.nodeKey).toBe('city:1');
-    expect(result.run.mapIndex).toBe(compatForNode(SEED, 'city:1').mapIndex);
-    expect(result.run.levelCap).toBe(compatForNode(SEED, 'city:1').levelCap);
-    expect(result.run.arrivalEdge).toBe(compatForNode(SEED, 'city:1').arrivalEdge);
+    expect(result.run.levelCap).toBe(nodeEntry(SEED, 'city:1').levelCap);
+    expect(result.run.arrivalEdge).toBe(nodeEntry(SEED, 'city:1').arrivalEdge);
     expect(result.run.badges).toStrictEqual(run.badges);
     expect(result.run.party).toBe(run.party);
   });
@@ -279,7 +278,7 @@ describe('the town’s door (Task-287)', () => {
       ...emptyRun(SEED),
       nodeKey: 'route:1',
       visitedNodes: ['town:1', 'route:1'],
-      ...compatForNode(SEED, 'route:1'),
+      ...nodeEntry(SEED, 'route:1'),
     };
     const back = travel(PLAN, stranded, 'town:1', 'walk');
     expect(back.ok).toBe(true);

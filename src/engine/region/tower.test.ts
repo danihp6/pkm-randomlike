@@ -4,13 +4,7 @@ import { TOWER } from '../../data/league';
 import { LEAGUE_LEVEL } from '../../data/region';
 import { releaseFainted } from '../run/perms';
 import { createRunPokemon } from '../run/progression';
-import {
-  compatForNode,
-  createRun,
-  hasLivingParty,
-  markTrainerDefeated,
-  type RunState,
-} from '../run/state';
+import { createRun, hasLivingParty, markTrainerDefeated, nodeEntry, type RunState } from '../run/state';
 import { nodeOf, planRegion } from './plan';
 import {
   towerHeal,
@@ -40,7 +34,7 @@ function towerRun(seed = SEED): RunState {
     ...createRun({ seed, starter }),
     nodeKey: TOWER_NODE_KEY,
     visitedNodes: [TOWER_NODE_KEY],
-    ...compatForNode(seed, TOWER_NODE_KEY),
+    ...nodeEntry(seed, TOWER_NODE_KEY),
   };
 }
 

@@ -68,7 +68,7 @@ describe('resolveBattle', () => {
       expect(factor, `map ${floor}`).not.toBe(1);
       const run = {
         ...createRun({ seed: 's', starter }),
-        mapIndex: floor,
+        nodeKey: nodeKey('route', floor),
         levelCap: levelCapForMap(floor),
       };
       const level = 10;
@@ -432,12 +432,12 @@ describe('the per-member usage counter', () => {
 describe('the dark catch (Task-154)', () => {
   const wildCaught = createRunPokemon({ id: 'wild', speciesId: 'sentret', level: 3 });
 
-  /** The first seed whose first catch answers `wanted` for the run's own map and room. */
+  /** The first seed whose first catch answers `wanted` on the run's own node. */
   function seedWhere(wanted: boolean): string {
     for (let i = 0; i < 400; i++) {
       const seed = `dark-${i}`;
       const run = createRun({ seed, starter });
-      if (isDarkCatch(run.seed, run.mapIndex, run.routeInMap, 'catch-1') === wanted) return seed;
+      if (isDarkCatch(run.seed, run.nodeKey, 'catch-1') === wanted) return seed;
     }
     throw new Error('no seed answered');
   }
@@ -479,7 +479,7 @@ describe('the dark catch (Task-154)', () => {
     const run = createRun({ seed, starter });
     const placed = catchUnder(seed);
     expect(placed.fighter.id).toBe('catch-1');
-    expect(isDarkCatch(seed, run.mapIndex, run.routeInMap, placed.fighter.id)).toBe(true);
+    expect(isDarkCatch(seed, run.nodeKey, placed.fighter.id)).toBe(true);
   });
 });
 

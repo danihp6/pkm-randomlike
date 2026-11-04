@@ -9,16 +9,11 @@ import type { RunPokemon } from './progression';
 
 /**
  * True when the wild caught under `catchId` is dark. Draws **only** from its own
- * stream, `hashSeed(`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}`)`, so no
- * draw any other rule makes can move.
+ * stream, `hashSeed(`${seed}:dark:${nodeKey}:${catchId}`)`, keyed on the node the
+ * catch happened on, so no draw any other rule makes can move.
  */
-export function isDarkCatch(
-  seed: string,
-  mapIndex: number,
-  routeInMap: number,
-  catchId: string,
-): boolean {
-  return new Rng(hashSeed(`${seed}:dark:${mapIndex}:${routeInMap}:${catchId}`)).next() < DARK_CHANCE;
+export function isDarkCatch(seed: string, nodeKey: string, catchId: string): boolean {
+  return new Rng(hashSeed(`${seed}:dark:${nodeKey}:${catchId}`)).next() < DARK_CHANCE;
 }
 
 /** The answer a pool too small to pair up gives; `asDark` reads it as "no grant". */

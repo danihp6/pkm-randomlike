@@ -11,7 +11,7 @@ import {
 import type { Tile } from '../engine/grid';
 import type { RouteTrainer } from '../engine/routes';
 import { DEFAULT_TRAINER_SIGHT } from '../engine/routes';
-import { bandForMap } from '../engine/run';
+import { bandForMap, runNode } from '../engine/run';
 import { t } from '../i18n';
 import { TRAINER_TEXTURE_KEY } from '../scenes/BootScene';
 import type { RoomHost, RoomPanel } from '../scenes/panels/types';
@@ -182,7 +182,7 @@ function buildCasinoPanel(host: RoomHost): void {
   const cardY = (height - CASINO_CARD_H) / 2;
   const left = cardX + CASINO_PAD;
   const right = cardX + CASINO_CARD_W - CASINO_PAD;
-  const band = bandForMap(host.run.mapIndex).id;
+  const band = bandForMap(runNode(host.run).badge).id;
   const children: Phaser.GameObjects.GameObject[] = [
     scene.add.rectangle(0, 0, width, height, 0x05070c, 0.72).setOrigin(0, 0),
     addFrlgWindow(scene, cardX, cardY, CASINO_CARD_W, CASINO_CARD_H),
@@ -296,7 +296,7 @@ function buildCasinoPanel(host: RoomHost): void {
 function refreshCasino(): void {
   const host = panelHost;
   if (!casinoRoot || !host) return;
-  const price = CASINO.price[bandForMap(host.run.mapIndex).id];
+  const price = CASINO.price[bandForMap(runNode(host.run).badge).id];
   casinoMoneyText.setText(t('casino.money', { amount: host.run.money }));
   casinoRows.forEach((row, i) => {
     const selected = !spinning && i === casinoIndex;
@@ -377,7 +377,7 @@ function spinCasino(host: RoomHost): void {
   casinoMessage = '';
   casinoIndex = 0;
   spinOutcome = outcome;
-  spinStrips = reelStrips(bandForMap(host.run.mapIndex).id, outcome);
+  spinStrips = reelStrips(bandForMap(runNode(host.run).badge).id, outcome);
   spinShown = new Array<number>(REEL_COUNT).fill(0);
   spinStopped = new Array<boolean>(REEL_COUNT).fill(false);
   spinStartedAt = scene.time.now;
@@ -479,7 +479,7 @@ function finishReveal(host: RoomHost): void {
  */
 export function rocketGrunt(host: RoomHost, tile: Tile): RouteTrainer {
   return {
-    id: casinoGruntTrainerId(host.view.mapIndex),
+    id: casinoGruntTrainerId(runNode(host.run).badge),
     position: tile,
     facing: host.facingFromTo(tile, host.entryTile()),
     sight: DEFAULT_TRAINER_SIGHT,

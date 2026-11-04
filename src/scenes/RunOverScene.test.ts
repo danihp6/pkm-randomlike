@@ -138,12 +138,11 @@ function mountedView(): RunOverView {
   return view as RunOverView;
 }
 
-/** A run that earned three badges and eleven tower wins, on floor 20 of the old scale. */
+/** A run that earned three badges and eleven tower wins. */
 function deepRun(): RunState {
   const run = lostRun();
   return {
     ...run,
-    routeIndex: 20,
     badges: [1, 2, 3],
     towerStreak: 11,
     stats: { catches: 9, casualties: 4, faints: 61 },
@@ -151,10 +150,9 @@ function deepRun(): RunState {
 }
 
 describe('runOverStatValues', () => {
-  it('reads the badge count, not the deprecated floor counter', () => {
+  it('reads the badge count', () => {
     const values = runOverStatValues(deepRun());
     expect(values[0]).toBe(3);
-    expect(values[0]).not.toBe(20);
   });
 
   it('reads the catches, the casualties and the tower’s streak', () => {

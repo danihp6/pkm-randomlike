@@ -1,7 +1,6 @@
 import { STAT_IDS, getMove, getSpecies, type StatId, type Stats } from '../data/dex';
 import { defaultHudLayout, parseHudLayout, type HudLayout } from '../data/hudLayout';
 import { DEFAULT_KEYBINDS, sanitizeKeybinds, type Keybinds } from '../data/keybinds';
-import { levelCapForMap } from '../data/maps';
 import { getMission } from '../data/missions';
 import { BADGE_CAPS } from '../data/region';
 import { ROOM_BATTLEFIELDS } from '../data/battlefields';
@@ -24,9 +23,9 @@ import { normalizeNickname } from './run/nickname';
 import { MAX_LEVEL, xpForLevel, type CatchLocation, type RunPokemon } from './run/progression';
 import {
   MAP_EDGES,
-  compatForNode,
   dedupeMemberIds,
   emptyRunStats,
+  nodeEntry,
   type CompletedMission,
   type MapEdge,
   type RunState,
@@ -155,8 +154,9 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * `routeIndex`; `6` moves a v6 run onto the v7 schema, which added the per-map
  * `bossDefeated` flag; `7` moves a v7 run onto the v8 schema, which added the
  * room's `arrivalEdge` (recovered from the plan, so an old run still spawns at a
- * real door); `8` moves a v8 run onto the v9 schema, which turned the per-route
- * `captureUsed` boolean into the per-floor `capturedRooms` list; `9` moves a v9
+ * real door); `8` moves a v8 run onto the v9 schema, whose per-floor
+ * `capturedRooms` list replaced the per-route `captureUsed` boolean (the run is
+ * discarded by the `27` step, so the step only bumps the version); `9` moves a v9
  * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
  * starts with a full vial); `10` moves a v10 run onto the v11 schema, which added
  * the PC-lock state (the floor-scoped list of the members swappable in the entry
@@ -248,10 +248,11 @@ export const SAVE_MIGRATIONS: Migrations = {
     version: 8,
     run: isRecord(document.run) ? withArrivalEdge(document.run) : document.run,
   }),
+  // The per-floor spent-capture rooms a v8 run lacked have no reader left: a run
+  // written before v28 is discarded by the `27` step, so only the version steps here.
   8: (document) => ({
     ...document,
     version: 9,
-    run: isRecord(document.run) ? withCapturedRooms(document.run) : document.run,
   }),
   9: (document) => ({
     ...document,
@@ -426,15 +427,6 @@ function highestMemberXp(run: Record<string, unknown>): number {
 function withArrivalEdge(run: Record<string, unknown>): Record<string, unknown> {
   if (isString(run.arrivalEdge)) return run;
   return { ...run, arrivalEdge: 'N' };
-}
-
-/**
- * Turns a v8 run's per-route `captureUsed` boolean into the v9 `capturedRooms`
- * list: the room it stood in if the capture was spent, no room otherwise.
- */
-function withCapturedRooms(run: Record<string, unknown>): Record<string, unknown> {
-  if (!isInteger(run.routeInMap) || run.routeInMap < 0) return run;
-  return { ...run, capturedRooms: run.captureUsed === true ? [run.routeInMap] : [] };
 }
 
 /**
@@ -999,19 +991,13 @@ function parseRun(value: unknown): RunState | null {
   // hand-edited or stale key never throws.
   const region = planRegion(value.seed);
   const nodeKey = isNodeKeyOf(region, value.nodeKey) ? (value.nodeKey as string) : region.townKey;
-  const compat = compatForNode(value.seed, nodeKey);
+  const entry = nodeEntry(value.seed, nodeKey);
   const visitedNodes = parseNodeKeys(value.visitedNodes, region, nodeKey);
   const capturedNodes = parseNodeKeys(value.capturedNodes, region);
 
-  // The floor fields are the old scene's compatibility aliases: kept when the
-  // document carries a usable one, else the node's own reading.
-  const storedMapIndex = isInteger(value.mapIndex) && value.mapIndex >= 1 ? value.mapIndex : null;
-  const mapIndex = storedMapIndex ?? compat.mapIndex;
-  const routeInMap =
-    isInteger(value.routeInMap) && value.routeInMap >= 0 ? value.routeInMap : compat.routeInMap;
-  const routeIndex =
-    isInteger(value.routeIndex) && value.routeIndex >= 1 ? value.routeIndex : compat.routeIndex;
-  const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, routeInMap);
+  // The run's position is its node: a document that still carries the retired floor
+  // numbers decodes as if it did not, and the cap is the node's own, never a stored one.
+  const discoveredRooms = parseDiscoveredRooms(value.discoveredRooms, 0);
   const arrivalEdge = readArrivalEdge(value.arrivalEdge);
 
   const defeatedTrainers = Array.isArray(value.defeatedTrainers)
@@ -1025,7 +1011,7 @@ function parseRun(value: unknown): RunState | null {
     ? value.pickedItems.filter((id): id is string => isString(id))
     : [];
 
-  const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, routeInMap);
+  const capturedRooms = parseCapturedRooms(value.capturedRooms, value.captureUsed, 0);
 
   // The retired PC-lock fields (`Task-179`) read as nothing: a document that still
   // carries them decodes exactly like one that does not, and neither is written back.
@@ -1059,15 +1045,12 @@ function parseRun(value: unknown): RunState | null {
   return dedupeMemberIds({
     seed: value.seed,
     mode: value.mode,
-    routeIndex,
-    mapIndex,
-    routeInMap,
     arrivalEdge,
     discoveredRooms,
     bossDefeated: value.bossDefeated === true,
-    // The cap is never trusted from the document, only derived from the floor the
-    // run stands on — or, when it carries no floor, from its node.
-    levelCap: storedMapIndex === null ? compat.levelCap : levelCapForMap(mapIndex),
+    // The cap is never trusted from the document, only read off the node the run
+    // stands on (`nodeEntry`).
+    levelCap: entry.levelCap,
     nodeKey,
     visitedNodes,
     badges: parseBadges(value.badges),

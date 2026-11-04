@@ -241,7 +241,7 @@ describe('PC editing: inside a Centre only', () => {
     expect(grabAt(entry, boxUi, 'box', 0).ui.grabbed).toBeNull();
     expect(feed(entry, boxUi, ['confirm', 'left']).run).toBe(entry);
     // The flag is the scene's, not the run's: a hand-edited run cannot open it either.
-    const handEdited: RunState = { ...entry, routeInMap: 0 };
+    const handEdited: RunState = { ...entry, discoveredRooms: [0, 1, 2] };
     expect(feed(handEdited, boxUi, ['confirm', 'left']).run).toBe(handEdited);
   });
 

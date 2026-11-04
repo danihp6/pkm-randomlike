@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { biomeForMap, getBiome } from '../data/biomes';
-import { createRun, createRunPokemon, type RunState, type RunStats } from '../engine/run';
+import { biomeForRoute } from '../data/biomes';
+import { nodeKey } from '../engine/region/plan';
+import { createRun, createRunPokemon, runNode, type RunState, type RunStats } from '../engine/run';
 import { en, es } from '../i18n';
 import {
   RUN_SUMMARY_EM_DASH,
@@ -17,17 +18,34 @@ const starter = createRunPokemon({
   moves: ['scratch'],
 });
 
+/** The nodes a run that walked `routes` main routes has entered, in order. */
+function routeChain(routes: number): string[] {
+  const keys: string[] = [nodeKey('town', 1)];
+  for (let index = 1; index <= routes; index += 1) {
+    keys.push(nodeKey('route', index));
+    if (index < routes) keys.push(nodeKey('city', index));
+  }
+  return keys;
+}
+
+/** A run whose visited nodes hold `routes` route-kind nodes. */
 function run(
-  routeIndex: number,
+  routes: number,
   stats: RunStats = { catches: 0, casualties: 0 },
   seed = 'seed-1',
 ): RunState {
-  return { ...createRun({ seed, starter }), routeIndex, stats };
+  const visitedNodes = routeChain(routes);
+  return {
+    ...createRun({ seed, starter }),
+    nodeKey: visitedNodes[visitedNodes.length - 1],
+    visitedNodes,
+    stats,
+  };
 }
 
-/** A run standing on the first room of `mapIndex`. */
-function onMap(mapIndex: number, seed = 'seed-1'): RunState {
-  return { ...createRun({ seed, starter }), mapIndex };
+/** A run standing on the route of `badge`. */
+function onBadge(badge: number, seed = 'seed-1'): RunState {
+  return { ...createRun({ seed, starter }), nodeKey: nodeKey('route', badge) };
 }
 
 describe('runSummary', () => {
@@ -142,38 +160,39 @@ describe('the run-over copy', () => {
 });
 
 describe('runPositionLabel', () => {
-  it('names the map and its biome in the route HUD wording', () => {
-    const state = onMap(3);
-    const biome = getBiome(biomeForMap(state.seed, 3));
+  it('names the node’s badge and its biome in the route HUD wording', () => {
+    const state = onBadge(3);
+    const node = runNode(state);
+    const biome = biomeForRoute(node.id);
+    expect(node.badge).toBe(3);
     expect(biome.name).toBe('Deep Forest');
-    expect(runPositionLabel(state)).toBe(`Map 3 · ${biome.name}`);
+    expect(runPositionLabel(state)).toBe(`Map ${node.badge} · ${biome.name}`);
     expect(runPositionLabel(state)).toBe('Map 3 · Deep Forest');
   });
 
   it('reports no route prefix and no room number', () => {
-    const label = runPositionLabel({ ...onMap(3), routeIndex: 7, routeInMap: 2 });
+    const label = runPositionLabel({ ...onBadge(3), visitedNodes: routeChain(7) });
     expect(label).toBe('Map 3 · Deep Forest');
     expect(label).not.toContain('Route');
     expect(label).not.toContain('7');
-    expect(label).not.toContain('2');
   });
 
-  it('reads the biome of its own map on the first floor', () => {
-    const state = onMap(1, 'another-seed');
-    expect(state.mapIndex).toBe(1);
-    expect(runPositionLabel(state)).toBe(`Map 1 · ${getBiome(biomeForMap(state.seed, 1)).name}`);
+  it('reads the biome of its own node on the first stretch', () => {
+    const state = onBadge(1, 'another-seed');
+    expect(runNode(state).badge).toBe(1);
+    expect(runPositionLabel(state)).toBe(`Map 1 · ${biomeForRoute(runNode(state).id).name}`);
     expect(runPositionLabel(state)).toBe('Map 1 · Deep Forest');
   });
 
   it('matches the route HUD title for the same run', () => {
-    const state = onMap(4, 'hud-parity');
-    expect(runPositionLabel(state)).toBe(
-      `Map ${state.mapIndex} · ${getBiome(biomeForMap(state.seed, state.mapIndex)).name}`,
-    );
+    const state = onBadge(4, 'hud-parity');
+    const node = runNode(state);
+    expect(runPositionLabel(state)).toBe(`Map ${node.badge} · ${biomeForRoute(node.id).name}`);
   });
 
-  it('keeps the biome the map plan rolls', () => {
-    const state = onMap(5, 'biome-parity');
-    expect(runPositionLabel(state)).toBe(`Map 5 · ${getBiome(biomeForMap(state.seed, 5)).name}`);
+  it('answers the same label for the same seed and node', () => {
+    expect(runPositionLabel(onBadge(5, 'biome-parity'))).toBe(
+      runPositionLabel(onBadge(5, 'biome-parity')),
+    );
   });
 });

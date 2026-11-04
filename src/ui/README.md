@@ -55,7 +55,7 @@ testable logic belongs in the computing half.
 - `capture.ts` — the capture beat's one clock: the engine's own wobble count, the throw/drop/wobble/break/settle timeline the tweens and the message box share, and the wait line's dots.
 - `shop.ts` — the Mart and the sell list: stock, prices and the pure trades against the run, and the row's own `draggable` flag.
 - `rewards.ts` — the item and anonymous-Pokémon choices a trainer or boss win offers, and the row model the floating reward card draws.
-- `runSummary.ts` — the run-over summary model and its lines.
+- `runSummary.ts` — the run-over summary model and its lines, and the Continue row's node label.
 - `permadeath.ts` — the release beats for the Pokémon the run lost.
 - `evolutionGraph.ts` — a species' family graph and the levels between its members.
 - `regionMap.ts` — the region map: the plan's node graph as one marker per node and one edge per pair, shifted so the graph starts at 0, 0, with the run's current and visited facts and the badge total off the ladder. The header card's only feeder (`docs/region-spec.md` §5).
@@ -68,7 +68,7 @@ testable logic belongs in the computing half.
 - `typeColors.ts` — the canon type colours.
 - `touchLayout.ts` — the pure geometry of the on-screen pad and A/B; `touchControls.ts` draws it.
 - `seedPrompt.ts` — the DOM seed/share prompt the starter screen opens.
-- `hud/state.ts` — the DOM HUD's one projection: the serialisable snapshot of the run and the battle (party, bag, money, route, battle, notice) and the single emit point a scene notifies.
+- `hud/state.ts` — the DOM HUD's one projection: the serialisable snapshot of the run and the battle (party, bag, money, the node's route chrome, battle, notice) and the single emit point a scene notifies.
 - `hud/commands.ts` — the HUD's command channel: the intents a panel can send and the reducer that maps them onto the action a key or pad press already produces.
 - `hud/specGap.ts` — the fidelity comparison (`D57`): a panel's view against its imported screen spec, as the boxes it misses, the boxes it moves by more than 1 px, the strings the board does not carry and the colours outside the spec's palette.
 - `hud/mount.ts` — the always-true `hudRequested` predicate (`?hud=dom` is only an alias) and the one-shot mount of the full-viewport `#hud` root, with its idempotent `dispose`.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { biomeForMap, getBiome } from '../../data/biomes';
+import { biomeForRoute, getBiome } from '../../data/biomes';
 import { getItem } from '../../data/items';
 import { getMission } from '../../data/missions';
 import { barredMovesFor, legalMoveIndices } from '../../engine/battle/commands';
@@ -15,7 +15,8 @@ import { performSwitch } from '../../engine/battle/turn';
 import { POKEVIAL_MAX_CHARGES } from '../../engine/run/heal';
 import { missionMet } from '../../engine/run/missions';
 import { experienceFraction } from '../../engine/run/progression';
-import { createRun, squadLevel, type RunState } from '../../engine/run/state';
+import { createRun, runNode, squadLevel, type RunState } from '../../engine/run/state';
+import { nodeKey } from '../../engine/region/plan';
 import { Rng } from '../../engine/rng';
 import { setLocale, t } from '../../i18n';
 import { battleFrames } from '../feed';
@@ -185,8 +186,7 @@ describe('projectHud on the route', () => {
     const run: RunState = {
       ...base,
       mode: 'infinite',
-      mapIndex: 2,
-      routeInMap: 3,
+      nodeKey: nodeKey('route', 2),
       levelCap: 12,
       xp: 250,
       pokevialCharges: 1,
@@ -209,10 +209,7 @@ describe('projectHud on the route', () => {
     expect(state.money).toBe(run.money);
     expect(state.notice).toBe(notice);
     expect(route.mode).toBe(run.mode);
-    expect(route.mapIndex).toBe(run.mapIndex);
-    expect(route.routeInMap).toBe(run.routeInMap);
-    expect(route.routeIndex).toBe(run.routeIndex);
-    expect(route.biomeId).toBe(biomeForMap(run.seed, run.mapIndex));
+    expect(route.biomeId).toBe(biomeForRoute(runNode(run).id).id);
     expect(route.biomeName).toBe(getBiome(route.biomeId).name);
     expect(route.levelCap).toBe(run.levelCap);
     expect(route.squadLevel).toBe(level);
@@ -241,6 +238,15 @@ describe('projectHud on the route', () => {
       { itemId: 'potion', name: 'Potion', count: 2, category: 'consumable' },
       { itemId: 'mystery', name: 'mystery', count: 1, category: null },
     ]);
+  });
+
+  it('reads the biome off the node the run stands on, for a fixed seed', () => {
+    const run: RunState = { ...freshRun(), nodeKey: nodeKey('city', 3) };
+    const node = runNode(run);
+    const route = projectHud({ screen: 'route', run, notice: null }).route!;
+    expect(node.badge).toBe(3);
+    expect(route.biomeId).toBe(biomeForRoute(node.id).id);
+    expect(route.biomeName).toBe(biomeForRoute(node.id).name);
   });
 
   it('copies every array it hands out', () => {

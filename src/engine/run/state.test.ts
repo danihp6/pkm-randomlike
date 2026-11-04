@@ -2,26 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { restoreFighter } from '../battle/fighter';
-import { FINITE_MAPS, levelCapForMap } from '../../data/maps';
-import { BADGE_CAPS, REGION_COUNTS, badgeCap } from '../../data/region';
+import { REGION_COUNTS } from '../../data/region';
 import { evolutionBranches } from '../../data/dex/evolutions';
 import { planNodeContent } from '../region/content';
-import { nodeKey, planRegion } from '../region/plan';
+import { nodeKey, nodeOf, planRegion } from '../region/plan';
 import { POKEVIAL_MAX_CHARGES, autoPokevial, fillPokevial, healParty } from './heal';
 import { createRunPokemon, runPokemonFromSnapshot, xpForLevel } from './progression';
-import { missionForMap, recordHpLost } from './missions';
+import { missionForMap } from './missions';
 import {
-  MAP_EDGES,
   MAX_PARTY_SIZE,
   addCaughtPokemon,
   addFaints,
   addItem,
   addMoney,
   addPokemon,
-  advanceMap,
-  advanceRoute,
   canCapture,
-  compatForNode,
   consumeItem,
   createRun,
   dedupeMemberIds,
@@ -33,7 +28,6 @@ import {
   gainExperience,
   hasLivingParty,
   isItemPicked,
-  isRoomDiscovered,
   isTrainerDefeated,
   itemCount,
   markBossDefeated,
@@ -43,11 +37,13 @@ import {
   moveInParty,
   moveMoves,
   nextMemberId,
+  nodeEntry,
   pcFullyEditable,
   pcMemberEditable,
   recordCatch,
   reorderParty,
   runFaints,
+  runNode,
   setParty,
   spendMoney,
   swapPartyBox,
@@ -55,7 +51,6 @@ import {
   updatePokemon,
   useCapture,
   withdrawToParty,
-  type MapEdge,
   type RunState,
 } from './state';
 
@@ -76,14 +71,11 @@ function withCatches(catches: number): ReturnType<typeof createRun> {
 }
 
 describe('createRun', () => {
-  it('starts on route 1 of map 1 with the starter and an empty box', () => {
+  it('starts on the town node with the starter and an empty box', () => {
     const run = createRun({ seed: 'run-a', starter });
-    expect(run.routeIndex).toBe(1);
-    expect(run.mapIndex).toBe(1);
-    expect(run.routeInMap).toBe(0);
     expect(run.discoveredRooms).toEqual([0]);
     expect(run.bossDefeated).toBe(false);
-    expect(run.levelCap).toBe(levelCapForMap(1));
+    expect(run.levelCap).toBe(nodeEntry('run-a', run.nodeKey).levelCap);
     expect(run.pokevialCharges).toBe(POKEVIAL_MAX_CHARGES);
     expect(run.party).toEqual([starter]);
     expect(run.box).toEqual([]);
@@ -125,76 +117,72 @@ describe('the node a run stands on', () => {
     expect(run.towerStreak).toBe(0);
   });
 
-  it('derives the deprecated floor fields from the town exactly as compatForNode does', () => {
+  it('creates the run on the town’s node entry', () => {
     const run = createRun({ seed: 'run-a', starter });
-    const compat = compatForNode('run-a', run.nodeKey);
-    expect(run.mapIndex).toBe(compat.mapIndex);
-    expect(run.routeIndex).toBe(compat.routeIndex);
-    expect(run.routeInMap).toBe(compat.routeInMap);
-    expect(run.arrivalEdge).toBe(compat.arrivalEdge);
-    expect(run.discoveredRooms).toEqual(compat.discoveredRooms);
-    expect(run.bossDefeated).toBe(compat.bossDefeated);
-    expect(run.levelCap).toBe(compat.levelCap);
+    const entry = nodeEntry('run-a', run.nodeKey);
+    expect(run.arrivalEdge).toBe(entry.arrivalEdge);
+    expect(run.discoveredRooms).toEqual(entry.discoveredRooms);
+    expect(run.bossDefeated).toBe(entry.bossDefeated);
+    expect(run.levelCap).toBe(entry.levelCap);
   });
 
-  it('reads a chain node as its own rung of the ladder', () => {
+  it('reads a node entry as its own rung of the ladder', () => {
     const plan = planRegion('run-a');
-    const compat = compatForNode('run-a', plan.townKey);
-    expect(compat.mapIndex).toBe(1);
-    expect(compat.routeIndex).toBe(1);
-    expect(compat.routeInMap).toBe(0);
-    expect(compat.arrivalEdge).toBe('N');
-    expect(compat.discoveredRooms).toEqual([0]);
-    expect(compat.bossDefeated).toBe(false);
-    expect(compat.levelCap).toBe(badgeCap(1));
+    const town = nodeEntry('run-a', plan.townKey);
+    expect(town.arrivalEdge).toBe('N');
+    expect(town.discoveredRooms).toEqual([0]);
+    expect(town.bossDefeated).toBe(false);
+    expect(town.levelCap).toBe(nodeOf(plan, plan.townKey)!.cap);
 
-    const firstRoute = compatForNode('run-a', nodeKey('route', 1));
-    expect(firstRoute.mapIndex).toBe(2);
-    expect(firstRoute.routeIndex).toBe(2);
-    expect(firstRoute.levelCap).toBe(badgeCap(1));
+    const firstRoute = nodeEntry('run-a', nodeKey('route', 1));
+    expect(firstRoute.levelCap).toBe(nodeOf(plan, nodeKey('route', 1))!.cap);
+    expect(firstRoute.levelCap).toBe(town.levelCap);
   });
 
-  it('reads a lateral off the main route it hangs from, and clamps the floor to the ladder', () => {
+  it('reads a lateral’s and the tower’s own cap', () => {
     const plan = planRegion('run-a');
     const lateral = plan.nodes.find((node) => node.kind === 'lateral');
     expect(lateral).toBeDefined();
-    const compat = compatForNode('run-a', lateral!.key);
-    const parent = plan.chain.indexOf(lateral!.lateralOf!);
-    expect(compat.mapIndex).toBe(Math.min(FINITE_MAPS, parent + 1));
-    expect(compat.routeIndex).toBe(parent + 1);
-    expect(compat.levelCap).toBe(lateral!.cap);
+    expect(nodeEntry('run-a', lateral!.key).levelCap).toBe(lateral!.cap);
 
-    const tower = compatForNode('run-a', nodeKey('tower', 1));
-    expect(tower.mapIndex).toBe(FINITE_MAPS);
-    expect(tower.routeIndex).toBe(plan.chain.length);
-    expect(tower.levelCap).toBe(badgeCap(BADGE_CAPS.length + 1));
+    const tower = nodeEntry('run-a', nodeKey('tower', 1));
+    expect(tower.levelCap).toBe(nodeOf(plan, nodeKey('tower', 1))!.cap);
   });
 
   it('reads an unknown key as the town, never an error', () => {
     const plan = planRegion('run-a');
     for (const key of ['', 'no-such-node', 'city:99', 'town:0']) {
-      expect(compatForNode('run-a', key)).toEqual(compatForNode('run-a', plan.townKey));
+      expect(nodeEntry('run-a', key)).toEqual(nodeEntry('run-a', plan.townKey));
     }
   });
 
-  it('draws nothing from any stream: a node reads its floor off the ladder alone', () => {
-    expect(compatForNode('run-a', 'route:3')).toEqual(compatForNode('run-a', 'route:3'));
-    // The floor aliases came from the ladder and a compass fallback, so the seed
-    // reaches them only through the region's own shape, never through a draw.
-    expect(compatForNode('run-a', 'route:3')).toEqual(compatForNode('run-b', 'route:3'));
+  it('draws nothing from any stream: a node entry reads the plan alone', () => {
+    expect(nodeEntry('run-a', 'route:3')).toEqual(nodeEntry('run-a', 'route:3'));
+    // A node's cap comes from the plan's own ladder, never from a draw.
+    expect(nodeEntry('run-a', 'route:3')).toEqual(nodeEntry('run-b', 'route:3'));
   });
 
-  it('leaves the node fields alone when the old floor scene walks a room or a floor', () => {
+  it('answers the plan node the run stands on, and the town for a stale key', () => {
+    const plan = planRegion('run-a');
     const run = createRun({ seed: 'run-a', starter });
-    const walked = advanceRoute(run, 1);
-    const floored = advanceMap(walked);
-    for (const next of [walked, floored]) {
-      expect(next.nodeKey).toBe(run.nodeKey);
-      expect(next.visitedNodes).toBe(run.visitedNodes);
-      expect(next.badges).toBe(run.badges);
-      expect(next.capturedNodes).toBe(run.capturedNodes);
-      expect(next.towerStreak).toBe(run.towerStreak);
-    }
+    expect(runNode(run)).toEqual(nodeOf(plan, plan.townKey));
+
+    const onRoute: RunState = { ...run, nodeKey: nodeKey('route', 2) };
+    expect(runNode(onRoute).badge).toBe(2);
+    expect(runNode(onRoute).cap).toBe(nodeOf(plan, nodeKey('route', 2))!.cap);
+
+    const stale: RunState = { ...run, nodeKey: 'city:99' };
+    expect(runNode(stale)).toEqual(nodeOf(plan, plan.townKey));
+  });
+
+  it('reads a node’s biome index and name off the node the run stands on', () => {
+    const plan = planRegion('run-a');
+    const run: RunState = { ...createRun({ seed: 'run-a', starter }), nodeKey: nodeKey('city', 3) };
+    const node = runNode(run);
+    expect(node.badge).toBe(3);
+    expect(node.id).toBe(3);
+    expect(node.key).toBe(nodeKey('city', 3));
+    expect(node.name).toBe(nodeOf(plan, node.key)!.name);
   });
 });
 
@@ -240,101 +228,6 @@ describe('money', () => {
   });
 });
 
-describe('advanceRoute', () => {
-  it('enters a room of the same map and keeps the floor marks and the node capture', () => {
-    let run = createRun({ seed: 'run-a', starter });
-    run = useCapture(run);
-    run = markTrainerDefeated(run, 'trainer-1-0');
-    run = markItemPicked(run, 'item-1-0');
-    const next = advanceRoute(run, 2);
-    expect(next.routeIndex).toBe(2);
-    expect(next.mapIndex).toBe(1);
-    expect(next.routeInMap).toBe(2);
-    expect(next.levelCap).toBe(run.levelCap);
-    expect(next.defeatedTrainers).toEqual(['trainer-1-0']);
-    expect(next.pickedItems).toEqual(['item-1-0']);
-    expect(next.capturedRooms).toEqual(run.capturedRooms);
-    expect(next.party).toBe(run.party);
-    // The capture is per node: every room of this node reads it spent, another node not.
-    expect(canCapture(next)).toBe(false);
-    expect(canCapture({ ...run, nodeKey: nodeKey('route', 2) })).toBe(true);
-  });
-
-  it('discovers each room once, even when it is re-entered', () => {
-    let run = advanceRoute(createRun({ seed: 'run-a', starter }), 1);
-    run = advanceRoute(run, 2);
-    run = advanceRoute(run, 1);
-    expect(run.routeInMap).toBe(1);
-    expect(run.discoveredRooms).toEqual([0, 1, 2]);
-    expect(isRoomDiscovered(run, 1)).toBe(true);
-    expect(isRoomDiscovered(run, 5)).toBe(false);
-  });
-
-  it('clamps a negative room to the entry', () => {
-    const run = advanceRoute(createRun({ seed: 'run-a', starter }), -3);
-    expect(run.routeInMap).toBe(0);
-  });
-
-  it('stores the compass door it is given, and falls back when it is not one', () => {
-    const base = createRun({ seed: 'run-a', starter });
-    // A fresh run reads the compass fallback: a region node has no floor door.
-    expect(base.arrivalEdge).toBe('N');
-
-    for (const edge of MAP_EDGES) {
-      const custom = advanceRoute(base, 1, edge);
-      expect(custom.routeInMap).toBe(1);
-      expect(custom.arrivalEdge).toBe(edge);
-    }
-
-    // Anything that is not one of the four names reads the compass fallback.
-    const walked = advanceRoute(base, 1, 'E');
-    const junk = advanceRoute(walked, 2, 'X' as MapEdge);
-    expect(junk.arrivalEdge).toBe('N');
-    expect(advanceRoute(walked, 2).arrivalEdge).toBe('N');
-  });
-});
-
-describe('advanceMap', () => {
-  it('opens the next floor on its entry room with a fresh discovery set and cap', () => {
-    let run = createRun({ seed: 'run-a', starter });
-    run = advanceRoute(run, 3);
-    const next = advanceMap(run);
-    expect(next.mapIndex).toBe(2);
-    expect(next.routeIndex).toBe(run.routeIndex + 1);
-    expect(next.routeInMap).toBe(0);
-    expect(next.arrivalEdge).toBe('N');
-    expect(next.discoveredRooms).toEqual([0]);
-    expect(next.bossDefeated).toBe(false);
-    expect(next.levelCap).toBe(levelCapForMap(2));
-    expect(next.capturedRooms).toEqual([]);
-    expect(next.defeatedTrainers).toEqual([]);
-    expect(next.pickedItems).toEqual([]);
-  });
-
-  it('heals HP and PP but never resurrects a fallen member', () => {
-    const hurt = {
-      ...starter,
-      fighter: {
-        ...starter.fighter,
-        hp: 1,
-        moves: starter.fighter.moves.map((slot) => ({ ...slot, pp: 0 })),
-      },
-    };
-    const faintedBase = createRunPokemon({ id: 'fainted', speciesId: 'sentret', level: 3 });
-    const dead = { ...faintedBase, fighter: { ...faintedBase.fighter, hp: 0 } };
-    const run = { ...createRun({ seed: 'run-a', starter: hurt }), box: [dead] };
-    const next = advanceMap(run);
-    expect(next.party[0].fighter.hp).toBe(starterMaxHp);
-    expect(next.party[0].fighter.moves.every((slot) => slot.pp === slot.maxPp)).toBe(true);
-    expect(next.box[0].fighter.hp).toBe(0);
-  });
-
-  it('carries the Pokevial charges over the floor change', () => {
-    const spent = { ...createRun({ seed: 'run-a', starter }), pokevialCharges: 1 };
-    expect(advanceMap(spent).pokevialCharges).toBe(1);
-  });
-});
-
 describe('the floor mission', () => {
   it('gives a fresh run map 1 its own mission and a clean floor', () => {
     const run = createRun({ seed: 'run-a', starter });
@@ -342,107 +235,7 @@ describe('the floor mission', () => {
     expect(run.missionsCompleted).toBe(0);
     expect(run.hpLost).toBe(0);
     expect(run.floorCasualties).toBe(0);
-  });
-
-  it('meets a clean floor and draws the next floor its own mission', () => {
-    const run = createRun({ seed: 'run-a', starter });
-    const next = advanceMap(run);
-    expect(next.missionsCompleted).toBe(1);
-    expect(next.mission).toEqual(missionForMap('run-a', 2));
-    expect(next.hpLost).toBe(0);
-    expect(next.floorCasualties).toBe(next.stats.casualties);
-  });
-
-  it('does not meet a floor that spent HP', () => {
-    const run = recordHpLost(createRun({ seed: 'run-a', starter }), 4);
-    const next = advanceMap(run);
-    expect(next.missionsCompleted).toBe(0);
-    expect(next.hpLost).toBe(0);
-  });
-
-  it('does not meet a floor that lost a member, and carries the new baseline', () => {
-    const base = createRun({ seed: 'run-a', starter });
-    const run = { ...base, stats: { ...base.stats, casualties: base.floorCasualties + 1 } };
-    const next = advanceMap(run);
-    expect(next.missionsCompleted).toBe(0);
-    expect(next.floorCasualties).toBe(run.stats.casualties);
-  });
-
-  it('carries the run-long counter across floors and never clears it', () => {
-    let run = createRun({ seed: 'run-a', starter });
-    run = advanceMap(run);
-    run = advanceMap(run);
-    expect(run.missionsCompleted).toBe(2);
-    expect(run.mission).toEqual(missionForMap('run-a', 3));
-  });
-
-  it('leaves all four fields alone on a room change', () => {
-    const run = recordHpLost(advanceMap(createRun({ seed: 'run-a', starter })), 2);
-    const next = advanceRoute(run, 2);
-    expect(next.mission).toBe(run.mission);
-    expect(next.missionsCompleted).toBe(run.missionsCompleted);
-    expect(next.hpLost).toBe(2);
-    expect(next.floorCasualties).toBe(run.floorCasualties);
-  });
-
-  it('starts the mission history empty on a fresh run', () => {
-    expect(createRun({ seed: 'run-a', starter }).completedMissions).toEqual([]);
-  });
-
-  it('records exactly the floors it met, oldest first, and nothing on a missed one', () => {
-    const first = missionForMap('run-a', 1);
-    let run = createRun({ seed: 'run-a', starter });
-    run = advanceMap(run);
-    run = advanceMap(recordHpLost(run, 3));
-    const third = run.mission;
-    run = advanceMap(run);
-    expect(run.completedMissions).toEqual([
-      { id: first.id, mapIndex: 1 },
-      { id: third?.id ?? '', mapIndex: 3 },
-    ]);
-  });
-
-  it('keeps the counter and the history the same length', () => {
-    let run = createRun({ seed: 'run-b', starter });
-    for (let floor = 0; floor < 3; floor++) run = advanceMap(run);
-    expect(run.completedMissions).toHaveLength(run.missionsCompleted);
-  });
-});
-
-describe('the run modifiers', () => {
-  it('starts a fresh run with the empty record', () => {
-    expect(createRun({ seed: 'run-a', starter }).modifiers).toEqual({
-      curse: false,
-      forcedField: null,
-      nextWildType: null,
-    });
-  });
-
-  it('carries the record untouched through a room change', () => {
-    const run: RunState = {
-      ...createRun({ seed: 'run-a', starter }),
-      modifiers: { curse: true, forcedField: { id: 'rain', floorsLeft: 2 }, nextWildType: 'bug' },
-    };
-    const next = advanceRoute(run, 1);
-    expect(next.modifiers).toBe(run.modifiers);
-  });
-
-  it('spends one floor of the forced sky on a floor change and keeps the rest', () => {
-    const run: RunState = {
-      ...createRun({ seed: 'run-a', starter }),
-      modifiers: { curse: true, forcedField: { id: 'rain', floorsLeft: 2 }, nextWildType: 'bug' },
-    };
-    const next = advanceMap(run);
-    expect(next.modifiers).toEqual({
-      curse: true,
-      forcedField: { id: 'rain', floorsLeft: 1 },
-      nextWildType: 'bug',
-    });
-    expect(advanceMap(next).modifiers).toEqual({
-      curse: true,
-      forcedField: null,
-      nextWildType: 'bug',
-    });
+    expect(run.completedMissions).toEqual([]);
   });
 });
 
@@ -452,14 +245,13 @@ describe('the fallen', () => {
     return { ...base, fighter: { ...base.fighter, hp: 0 } };
   };
 
-  it('a floor change and an automatic vial never touch the fallen', () => {
+  it('a heal and an automatic vial never touch the fallen', () => {
     const fallen = deadMember();
     const run = createRun({ seed: 'run-a', starter });
     const withFallen = { ...run, rip: [fallen] };
     const hurt = { ...starter, fighter: { ...starter.fighter, hp: 1 } };
     const wounded = { ...withFallen, party: [hurt, fallen] };
 
-    expect(advanceMap(withFallen).rip).toBe(withFallen.rip);
     expect(healParty(withFallen).rip).toBe(withFallen.rip);
     expect(fillPokevial({ ...withFallen, pokevialCharges: 0 }).rip).toBe(withFallen.rip);
     const drunk = autoPokevial(wounded);
@@ -470,13 +262,12 @@ describe('the fallen', () => {
 });
 
 describe('bossDefeated', () => {
-  it('marks the map boss once and survives a room change but not a new map', () => {
+  it('marks the node’s boss once, and a node entry starts with it standing', () => {
     const run = createRun({ seed: 'run-a', starter });
     const marked = markBossDefeated(run);
     expect(marked.bossDefeated).toBe(true);
     expect(markBossDefeated(marked)).toBe(marked);
-    expect(advanceRoute(marked, 1).bossDefeated).toBe(true);
-    expect(advanceMap(marked).bossDefeated).toBe(false);
+    expect(nodeEntry('run-a', nodeKey('route', 2)).bossDefeated).toBe(false);
   });
 
   it('fills the Pokevial to the cap when the boss falls', () => {
@@ -832,12 +623,12 @@ describe('capture and trainers', () => {
 });
 
 describe('caught species record', () => {
-  it('starts empty and survives a room and a floor change', () => {
+  it('starts empty and is carried onto another node', () => {
     const fresh = createRun({ seed: 'run-a', starter });
     expect(fresh.caughtSpecies).toEqual([]);
     const caught = recordCatch(fresh, 'pikachu');
-    expect(advanceRoute(caught, 1).caughtSpecies).toEqual(['pikachu']);
-    expect(advanceMap(caught).caughtSpecies).toEqual(['pikachu']);
+    const moved = { ...caught, nodeKey: nodeKey('route', 1) };
+    expect(moved.caughtSpecies).toEqual(['pikachu']);
   });
 
   it('records a species once while counting every catch', () => {
@@ -972,17 +763,14 @@ describe('PC editing rights', () => {
     expect(pcMemberEditable(run, true)).toBe(true);
   });
 
-  it('reads the room, not the run: no floor state opens the box', () => {
+  it('reads the room, not the run: no node state opens the box', () => {
     const entry = createRun({ seed: 'pc-a', starter });
-    expect(entry.routeInMap).toBe(0);
     expect(pcMemberEditable(entry)).toBe(false);
 
-    const away = advanceRoute(entry, 1);
+    const away: RunState = { ...entry, nodeKey: nodeKey('route', 1) };
     expect(pcMemberEditable(away)).toBe(false);
-    expect(pcMemberEditable(advanceMap(away))).toBe(false);
     // A Centre is a room the run walks into, so the same run opens it there.
     expect(pcMemberEditable(away, true)).toBe(true);
-    expect(pcMemberEditable(advanceMap(away), true)).toBe(true);
   });
 
   it('boxes a catch on a full party and withdraws it only inside a Centre', () => {
@@ -993,7 +781,7 @@ describe('PC editing rights', () => {
   });
 
   it('places a catch in the party first and only boxes it on a full party', () => {
-    const run = advanceRoute(createRun({ seed: 'pc-a', starter }), 1);
+    const run: RunState = { ...createRun({ seed: 'pc-a', starter }), nodeKey: nodeKey('route', 1) };
     const placed = addCaughtPokemon(run, caught());
     expect(placed.party.map((member) => member.fighter.id)).toEqual(['starter', 'catch']);
     expect(placed.box).toEqual([]);
@@ -1072,13 +860,15 @@ describe('the discovered candy colours (Task-103)', () => {
     expect(discoverCandy(blue, '')).toBe(blue);
   });
 
-  it('survives a room change and a floor change, unlike the floor marks', () => {
+  it('is carried onto another node, unlike the node’s own marks', () => {
     const discovered = discoverCandy(createRun({ seed: 'run-a', starter }), 'pink');
-    expect(advanceRoute(discovered, 1).discoveredCandy).toEqual(['pink']);
-    const nextFloor = advanceMap(discovered);
-    expect(nextFloor.mapIndex).toBe(2);
-    expect(nextFloor.discoveredCandy).toEqual(['pink']);
-    expect(nextFloor.caughtSpecies).toEqual(discovered.caughtSpecies);
+    const moved: RunState = {
+      ...discovered,
+      nodeKey: nodeKey('route', 2),
+      ...nodeEntry('run-a', nodeKey('route', 2)),
+    };
+    expect(moved.discoveredCandy).toEqual(['pink']);
+    expect(moved.caughtSpecies).toEqual(discovered.caughtSpecies);
   });
 });
 

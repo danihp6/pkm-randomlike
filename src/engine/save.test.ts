@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_KEYBINDS } from '../data/keybinds';
 import { defaultHudLayout } from '../data/hudLayout';
-import { levelCapForMap } from '../data/maps';
 import { BADGE_CAPS } from '../data/region';
 import { POKEVIAL_MAX_CHARGES } from './run/heal';
 import { asDark } from './run/dark';
@@ -10,10 +9,10 @@ import {
   addItem,
   addMoney,
   addPokemon,
-  compatForNode,
   createRun,
   createRunPokemon,
   markTrainerDefeated,
+  nodeEntry,
   useCapture,
   MAX_LEVEL,
   type RunState,
@@ -447,29 +446,54 @@ describe('settings validation', () => {
 });
 
 describe('run validation', () => {
-  it('recomputes the level cap from the map instead of trusting the save', () => {
-    const run = { ...sampleRun(), routeIndex: 12, mapIndex: 3, levelCap: 999 };
+  it('recomputes the level cap from the node instead of trusting the save', () => {
+    const run = { ...sampleRun(), nodeKey: nodeKey('city', 3), levelCap: 999 };
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    expect(decoded.run?.levelCap).toBe(levelCapForMap(3));
+    expect(decoded.run?.levelCap).toBe(nodeEntry(run.seed, run.nodeKey).levelCap);
+    expect(decoded.run?.levelCap).not.toBe(999);
   });
 
-  it('derives the map position and the discovery set from the node when the save lacks them', () => {
-    const run: Record<string, unknown> = { ...sampleRun(), routeIndex: 9 };
-    delete run.mapIndex;
-    delete run.routeInMap;
+  it('loads a v28 document that still carries the retired floor fields', () => {
+    const run: Record<string, unknown> = {
+      ...sampleRun(),
+      mapIndex: 3,
+      routeIndex: 9,
+      routeInMap: 4,
+      nodeKey: nodeKey('city', 3),
+      arrivalEdge: 'E',
+      levelCap: 999,
+      discoveredRooms: [0, 2],
+    };
+    const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
+    expect(decoded.run).not.toBeNull();
+    expect(decoded.run?.nodeKey).toBe(nodeKey('city', 3));
+    expect(decoded.run?.arrivalEdge).toBe('E');
+    expect(decoded.run?.discoveredRooms).toEqual([0, 2]);
+    expect(decoded.run?.levelCap).toBe(
+      nodeEntry(run.seed as string, run.nodeKey as string).levelCap,
+    );
+  });
+
+  it('derives the discovery set and the cap from the node when the save lacks them', () => {
+    const run: Record<string, unknown> = { ...sampleRun() };
     delete run.discoveredRooms;
+    delete run.levelCap;
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    const compat = compatForNode(run.seed as string, run.nodeKey as string);
-    expect(decoded.run?.mapIndex).toBe(compat.mapIndex);
-    expect(decoded.run?.routeInMap).toBe(compat.routeInMap);
-    expect(decoded.run?.discoveredRooms).toContain(compat.routeInMap);
-    expect(decoded.run?.levelCap).toBe(compat.levelCap);
+    const entry = nodeEntry(run.seed as string, run.nodeKey as string);
+    expect(decoded.run?.discoveredRooms).toEqual(entry.discoveredRooms);
+    expect(decoded.run?.arrivalEdge).toBe(entry.arrivalEdge);
+    expect(decoded.run?.levelCap).toBe(entry.levelCap);
   });
 
-  it('keeps a stored room number as the document wrote it', () => {
-    const run = { ...sampleRun(), mapIndex: 1, routeInMap: 9999 };
+  it('never writes the retired floor numbers back', () => {
+    const run = { ...sampleRun(), mapIndex: 3, routeIndex: 9, routeInMap: 4 };
     const decoded = document(JSON.stringify({ version: SAVE_VERSION, run }));
-    expect(decoded.run?.routeInMap).toBe(9999);
+    const rewritten = JSON.parse(encodeSave({ ...emptySave(), run: decoded.run })) as {
+      run: Record<string, unknown>;
+    };
+    for (const field of ['mapIndex', 'routeIndex', 'routeInMap']) {
+      expect(field in rewritten.run, field).toBe(false);
+    }
   });
 
   it('keeps a stored arrival edge and falls back to N off the compass', () => {

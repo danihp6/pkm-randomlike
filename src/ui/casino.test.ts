@@ -5,6 +5,7 @@ import { levelCapForMap } from '../data/maps';
 import { LEVEL_BANDS, type BandId } from '../data/run';
 import { SHOP_ROTATION } from '../data/shop';
 import { UNMODELLED_ITEMS } from '../engine/battle/effects/items';
+import { nodeKey } from '../engine/region/plan';
 import { hashSeed, Rng } from '../engine/rng';
 import {
   addItem,
@@ -12,6 +13,7 @@ import {
   bandForMap,
   createRun,
   createRunPokemon,
+  runNode,
   squadLevel,
   type RunState,
 } from '../engine/run';
@@ -49,7 +51,7 @@ function isModelled(itemId: string): boolean {
   return item !== undefined && item.consumed !== true && !UNMODELLED_ITEMS.includes(itemId);
 }
 
-/** The run every spin below reads: a starter at level 5 on map 5, with money. */
+/** The run every spin below reads: a starter at level 5 on badge 5's route, with money. */
 function baseRun(seed = SEED, mapIndex = MAP, money = 100_000): RunState {
   const created = addMoney(
     createRun({
@@ -63,12 +65,12 @@ function baseRun(seed = SEED, mapIndex = MAP, money = 100_000): RunState {
     }),
     money,
   );
-  return { ...created, mapIndex, levelCap: levelCapForMap(mapIndex) };
+  return { ...created, nodeKey: nodeKey('route', mapIndex), levelCap: levelCapForMap(mapIndex) };
 }
 
 /** The band's own price, so a moved price table fails this test too. */
 function priceFor(run: RunState): number {
-  return CASINO.price[bandForMap(run.mapIndex).id];
+  return CASINO.price[bandForMap(runNode(run).badge).id];
 }
 
 /** A band's total row weight, the denominator of its shares. */
@@ -165,9 +167,21 @@ describe('the casino shares', () => {
 });
 
 describe('casinoSpin', () => {
+  it('reads its band off the node the run stands on', () => {
+    const run = baseRun();
+    const node = runNode(run);
+    expect(node.badge).toBe(MAP);
+    expect(priceFor(run)).toBe(CASINO.price[bandForMap(node.badge).id]);
+
+    const moved: RunState = { ...run, nodeKey: nodeKey('route', 1) };
+    expect(runNode(moved).badge).toBe(1);
+    expect(priceFor(moved)).toBe(CASINO.price[bandForMap(runNode(moved).badge).id]);
+    expect(priceFor(moved)).not.toBe(priceFor(run));
+  });
+
   it('refuses a locked machine without spending, and returns the same run object', () => {
     const run = baseRun();
-    const locked: RunState = { ...run, pickedItems: [casinoLockId(run.mapIndex)] };
+    const locked: RunState = { ...run, pickedItems: [casinoLockId(runNode(run).badge)] };
     const spin = casinoSpin(locked);
     expect(spin.ok).toBe(false);
     expect(spin.reason).toBe('locked');
@@ -374,7 +388,7 @@ describe('hatchEgg', () => {
     expect(next.box).toHaveLength(0);
     expect(member.fighter.level).toBe(squadLevel(run));
     expect(member.fighter.id).toBe('catch-1');
-    expect(speciesPool(bandForMap(run.mapIndex), 'wild')).toContain(member.fighter.speciesId);
+    expect(speciesPool(bandForMap(runNode(run).badge), 'wild')).toContain(member.fighter.speciesId);
     expect(member.fighter.speciesId).toBe('obstagoon');
     // It is not a catch: no counter, no record, no room.
     expect(next.stats.catches).toBe(run.stats.catches);

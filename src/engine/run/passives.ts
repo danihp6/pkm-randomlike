@@ -32,25 +32,20 @@ export type PassiveResult = Readonly<{
 }>;
 
 /**
- * The stable per-floor mark of one row: `passive-<ability>-<trigger>-<mapIndex>-<roomId>`.
+ * The stable per-node mark of one row: `passive-<ability>-<trigger>-<nodeKey>`.
  * `ability` is the dex id (`getAbility`'s), so a display name can never leak in.
  */
-export function passiveMark(
-  ability: string,
-  trigger: MapPassiveTrigger,
-  mapIndex: number,
-  roomId: number,
-): string {
-  return `passive-${ability}-${trigger}-${mapIndex}-${roomId}`;
+export function passiveMark(ability: string, trigger: MapPassiveTrigger, nodeKey: string): string {
+  return `passive-${ability}-${trigger}-${nodeKey}`;
 }
 
 /**
  * Folds every `MAP_PASSIVES` row whose `trigger` matches and whose ability **the
  * party** holds. The box is never asked (`docs/routes-spec.md` §2). Each paying row
- * mints `${seed}:passive:${mapIndex}:${roomId}:${ability}`, rolls its chance and
- * then one item from its list, adds it with `addItem` and records its mark in
- * `pickedItems`, which `advanceMap` clears: a room pays each row at most once per
- * floor, and a revisit or a reload pays nothing.
+ * mints `${seed}:passive:${nodeKey}:${ability}`, rolls its chance and then one item
+ * from its list, adds it with `addItem` and records its mark in `pickedItems`, which
+ * a node entry clears: a node pays each row at most once, and a revisit or a reload
+ * pays nothing.
  */
 export function runPassives(run: RunState, trigger: MapPassiveTrigger): PassiveResult {
   const held = new Set<string>();
@@ -64,11 +59,9 @@ export function runPassives(run: RunState, trigger: MapPassiveTrigger): PassiveR
   let next = run;
   for (const row of mapPassivesFor(trigger)) {
     if (!held.has(row.ability)) continue;
-    const mark = passiveMark(row.ability, row.trigger, run.mapIndex, run.routeInMap);
+    const mark = passiveMark(row.ability, row.trigger, run.nodeKey);
     if (isItemPicked(next, mark)) continue;
-    const rng = new Rng(
-      hashSeed(`${run.seed}:passive:${run.mapIndex}:${run.routeInMap}:${row.ability}`),
-    );
+    const rng = new Rng(hashSeed(`${run.seed}:passive:${run.nodeKey}:${row.ability}`));
     if (rng.next() >= row.effect.chance) continue;
     const itemId = row.effect.itemIds[rng.int(0, row.effect.itemIds.length - 1)];
     next = markItemPicked(addItem(next, itemId), mark);
