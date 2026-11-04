@@ -52,6 +52,11 @@ Modifications:
 - `src/scenes/RouteScene.ts` (only `debugRouteContext()` and an import it frees)
 - `src/scenes/panels/rewards.ts`
 - `src/dev/debugMenu.ts` + `debugMenu.test.ts`
+- `src/engine/routes/bossRoom.test.ts`, `src/engine/routes/secretShop.test.ts`,
+  `src/engine/routes/staticSpecies.test.ts`, `src/scenes/RunOverScene.test.ts` —
+  **sanctioned after the dev pass**: these four *test* files imported or fixtured
+  the deleted helper/fields and `tsc` cannot compile without the one-line fixture
+  fix each. No production file outside the list may move.
 - `src/engine/run/README.md`, `src/engine/region/README.md`, `src/ui/README.md`
 
 If typechecking demands a file **not** in this list, stop and report it; do not edit
@@ -229,6 +234,11 @@ read the rest of the spec is not a criterion.
   `CatchLocation.mapIndex` and `CompletedMission.mapIndex` are different, stored
   concepts. This spec widens the path list to every real reader and scopes the grep
   to `RunState` reads; nothing else in the plan changes.
+- **Sanctioned deviations (Orchestrator, `2026-11-04`):** the four test files added
+  to the path list above; `RouteScene.startBattle` also loses its `routeIndex`
+  launch line (same file, the field is gone); `save.ts`'s migration step `8` stops
+  reading `run.routeInMap` because the `27` step already discards pre-v28 runs, so
+  the read was dead code and the only undocumented grep hit.
 - **For the next batch:** `[Task-299]` documents the region's vocabulary against a
   `RunState` that no longer carries a floor position; the phrase "the run's position
   is its node" is now literally true in the code, and `nodeEntry`/`runNode` are the
