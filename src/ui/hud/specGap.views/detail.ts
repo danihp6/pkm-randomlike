@@ -27,8 +27,8 @@ const FIXTURE = detailFixture as unknown as FixtureFile;
 /**
  * The member detail card's view, built exactly as the running panel builds it — the
  * fixture's own `detail`, `pool` and `ui` at 1280×800, its `tab` is the frame's `moves`
- * — narrowed to the copy the frame draws: the name, the four move cells' name / PP /
- * power / accuracy lines and the learnset search placeholder.
+ * — narrowed to the copy the frame draws: the name, the level line, the four move cells'
+ * name / PP / power / accuracy lines and the learnset search placeholder.
  *
  * **The card is not the board's card, box by box, so no box is claimed.**
  *
@@ -43,9 +43,10 @@ const FIXTURE = detailFixture as unknown as FixtureFile;
  * | `nickname field`, `nickname caret`, `type square fire/flying` | — | `view.nickname.box`, `view.types[].box` | follows the card |
  * | `stats panel`, `route screenshot` | — | — | the frame's painted scene and its stats overlay, not this card |
  *
- * The strings it does not claim: the level line, because the card types `Lv36`
- * (`common.level`) where the board draws `LV 36` — one space apart, so `gapFor`'s
- * case fold cannot reach it; the tab labels `STATS` / `MOVES` and the letters `S` and
+ * The strings it claims are those nineteen lines: the level line is `LV 36` on the card and
+ * on the board alike, so it is part of the claim rather than a gap beside it.
+ *
+ * The strings it does not claim: the tab labels `STATS` / `MOVES` and the letters `S` and
  * `X` (the card's own controls); the learnset band's eight names (`EMBER`… `GROWL`,
  * another family than the fixture's pool); and every label the board's card does not
  * print (`NATURE`, `ABILITY`, `HELD`, the hints).
@@ -58,7 +59,9 @@ export function buildView(spec: ScreenSpec): PanelView {
   const cells = view.moves.flatMap((move) => [move.name, move.pp, move.power, move.accuracy]);
   return {
     boxes: cardClaim(spec),
-    strings: [view.name, ...cells, view.search.placeholder].filter((line) => line !== ''),
+    strings: [view.name, view.level, ...cells, view.search.placeholder].filter(
+      (line) => line !== '',
+    ),
     colours: [],
   };
 }

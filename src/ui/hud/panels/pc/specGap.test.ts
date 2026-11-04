@@ -211,16 +211,16 @@ describe('what the view cannot claim', () => {
     expect(buildView(SPEC).boxes).toStrictEqual([]);
   });
 
-  it('prints the level without the board’s space, so the meta line is not claimed', () => {
+  it('prints the level with the board’s space but not its route, so the meta line is not claimed', () => {
     const first = view().cells[0]!;
     expect(first.name).toBe('PSYDUCK');
     expect(first.level).toBe(30);
-    expect(t('hud.level', { level: first.level })).toBe('Lv30');
+    expect(t('hud.level', { level: first.level })).toBe('LV 30');
     expect(textOf('rip meta 0')).toBe('LV 30 · ROUTE 3');
     expect(fold(t('hud.level', { level: first.level }))).not.toBe(fold(textOf('rip meta 0')));
     expect(first.hpText).toBe('0/92');
     const strings = buildView(SPEC).strings;
-    expect(strings).not.toContain('Lv30');
+    expect(strings).not.toContain('LV 30');
     expect(strings).not.toContain('0/92');
     expect(gapFor(buildView(SPEC), SPEC).strings).toStrictEqual([]);
   });

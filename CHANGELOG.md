@@ -8,6 +8,18 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The level line wears its space.** `[Task-301]`, Batch 125: `common.level` and `hud.level` read
+      `LV {level}` instead of `Lv{level}`, so the member detail card claims the line the board draws
+      (`03m`'s `detail lv` is `LV 36`) instead of skipping it: the adapter's claim goes from **18** to
+      **19** strings with `gapFor` still empty, and the PC cell's `LV 30 · ROUTE 3` stops being a
+      near-miss. `src/i18n/es.ts` keeps its own `Nv{level}` for both keys (`D43`: a locale overlays the
+      key, it does not mirror the English). The three merged assertions that pinned the old shape move
+      with it (`detail/specGap.test.ts`, `detail/fixture.test.ts`, `pc/specGap.test.ts`), and
+      `src/i18n/README.md` and `panels/detail/README.md` record the new shape. `[unit]` 5 criteria (both
+      keys in both locales, the 19-string claim, the PC card's empty gap, the suite and the build),
+      6160 tests green; `[live]` over CDP at 1280×800: the member card prints `LV 36` and no card opens
+      a gap.
+
 - [x] **The panels survive the region.** `[Task-300]`, Batch 125: the HUD panel host leaves `RouteScene`
       for `src/scenes/panels/host.ts` (`createScenePanels`, `createPanels`, `NODE_PANEL_IDS`), and
       `WorldScene.create()` mounts the layer every node scene inherits. A city, a gym, an interior, the

@@ -154,7 +154,7 @@ export const en = {
   'keybind.settings': 'Settings',
 
   // hud — RouteScene's HUD
-  'hud.level': 'Lv{level}',
+  'hud.level': 'LV {level}',
   'hud.xp': 'XP {xp}',
   'hud.money': 'MONEY',
   'hud.vial': 'POKEVIAL',
@@ -859,7 +859,7 @@ export const en = {
 
   // common — shared fallbacks
   'common.unknownPokemon': 'A Pokemon',
-  'common.level': 'Lv{level}',
+  'common.level': 'LV {level}',
 
   // dev — the dev panel and the route's dev-only hooks
   'dev.title': 'DEBUG · tools',

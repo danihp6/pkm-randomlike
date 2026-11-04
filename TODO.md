@@ -12732,7 +12732,7 @@ hot file.
       `src/scenes/panels/README.md`. *Dependencies:* the node scenes (Batch 121) and the panel
       registry (`D47`). *(Batch 125)*
 
-- [ ] **[Task-301] The level line wears its space.** The two level keys type `Lv36` where every frame
+- [x] **[Task-301] The level line wears its space.** The two level keys type `Lv36` where every frame
       draws `LV 36`, so the member detail card cannot claim its own level line and the PC cell misses
       its copy: one string shape in two keys, and the three merged assertions that pin the old shape.
       **Measured:** `src/i18n/en.ts:862` is `'common.level': 'Lv{level}'` and `:157` is

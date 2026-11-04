@@ -54,7 +54,7 @@ describe('the 03m fixture', () => {
   it('reproduces the frame header and its four move cards', () => {
     const view = detailPanelView(FIXTURE.detail, FIXTURE.pool, FIXTURE.ui, DESKTOP);
     expect(view.name).toBe('CHARIZARD');
-    expect(view.level).toBe('Lv36');
+    expect(view.level).toBe('LV 36');
     expect(view.moves.map((slot) => slot.name)).toEqual([
       'FLAMETHROWER',
       'AIR SLASH',

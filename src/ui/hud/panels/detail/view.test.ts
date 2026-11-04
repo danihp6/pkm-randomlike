@@ -422,7 +422,7 @@ describe('detailPanelView', () => {
   it('prints the header and the info lines as the panel does', () => {
     const view = detailPanelView(detailOf(), [], uiOf(), DESKTOP);
     expect(view.name).toBe('CHARIZARD');
-    expect(view.level).toBe('Lv36');
+    expect(view.level).toBe('LV 36');
     expect(view.statusLabel).toBeNull();
     expect(view.nature).toBe('NATURE  Adamant');
     expect(view.ability).toBe('ABILITY  Blaze');
