@@ -157,17 +157,19 @@ prices above:
   across stretches. It is never a duplicate of a row already on the shelf: the held
   pool holds no stone, exactly as it holds no Mega Stone. `sellPrice` halves it to
   4 000, so buying and reselling a stone loses 4 000 and opens no money loop.
-- The stock is rolled **once per stretch's route** from the run seed
-  (`${seed}:shop:${mapIndex}`) and never saved, so a Mart always reopens the same.
-- **A bought row leaves the shelf for the rest of the stretch** (`Task-178`). A
-  successful `buyItem` marks `shop-<mapIndex>-<itemId>` in the run's
-  `pickedItems` (already saved, already cleared by `advanceMap`), and `buyRows`
+- The stock is rolled **once per city** from the run seed
+  (`${seed}:shop:<cityKey>`, `src/scenes/services.ts`) at the band the city's **tier**
+  buys at, and never saved, so a Mart always reopens the same.
+- **A bought row leaves the shelf for the rest of the node** (`Task-178`). A
+  successful `buyItem` marks `shop-<nodeKey>-<itemId>` in the run's
+  `pickedItems` (`shopRowKey`, `src/ui/shop.ts`; already saved, already node-scoped),
+  and `buyRows`
   drops every marked row before it builds the list — so the 10× pack and the
   potion rung retire as completely as a held row, the mark names one row of one
-  stretch, and the next stretch's Mart stocks its own full shelf again. A refused
+  city, and another city's Mart stocks its own full shelf. A refused
   purchase (no money) marks nothing. Selling marks nothing: a marked item still
   sells from the bag, and a sale never restocks a row. No new run field and no
-  save-version step — the per-stretch bookkeeping the route already keeps carries
+  save-version step — the bookkeeping the run already keeps carries
   it.
 
 ## The trainer award

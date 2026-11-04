@@ -85,7 +85,7 @@ solved into `A(s)`, and every stretch's fill below sits inside the window.
 
 The **cap** is a stretch's only level anchor and the gym city's own `cap` in the plan
 (`node.cap`, `badgeCap(badge)` in `src/data/region.ts`); a fresh run's starter begins
-at level 5 (`START_LEVEL`, `src/scenes/StarterScene.ts`). A stretch's level window is
+at level 5 (`STARTER_LEVEL`, `src/engine/run/prologue.ts`). A stretch's level window is
 not stored: it opens at the previous stretch's cap and closes at this one
 (`bandForNode`, `src/engine/run/levelCurve.ts`), which is what the `Window` column
 below reads. `needed(s)` is the XP the squad still needs on stretch `s` if it capped
@@ -203,7 +203,8 @@ needs less per defeat, and the per-stretch factor is the last lever.
 The squad shares **one XP bar** (`D35`), so the budget is a stretch total, not a
 per-member figure, and nothing is split across participants (`participants` is 1 at
 the one call site, `resolveBattle` in `src/engine/run/resolve.ts`, which passes the
-stretch the battle was fought on — `next.mapIndex`, before `advanceMap` runs).
+stretch the battle was fought on — the **badge** of the node the run stands on,
+`runNode(next).badge`, read by `trainerXpMultiplierForMap`).
 
 ## Exceptions
 
@@ -308,11 +309,15 @@ rebuilds every room of every stretch's route the way `RouteScene` does, over the
 seeds above, measures `T̄(s)` and `A(s)`, and asserts the window per stretch. When this
 sheet and that test disagree, the test is right.
 
-Since the **gated** leaf's arrival the walk counts that leaf too: it rolls with a
-**20 %** chance from the plan's third row on (`src/engine/maps/plan.ts`), so it adds a
-door to the room it hangs from and shifts the stretches after it. The trainer counts
-themselves are bounded by `TRAINER_ROOMS_PER_MAP`, which is why a later stretch's
-count no longer follows its room count.
+Since the **gated** leaf's arrival the walk counted that leaf too: it rolled with a
+**20 %** chance from the plan's third row on, so it added a door to the room it hung
+from and shifted the stretches after it. The region retires that leaf and the plan
+that rolled it: a lateral is optional, its kind is the content pass's draw and a
+`vault` is one of nine points of interest (`docs/region-spec.md` §7.3, §7.8), so it
+adds no door and shifts no stretch. The trainer counts
+themselves were bounded by `TRAINER_ROOMS_PER_MAP`, which is why a later stretch's
+count no longer follows its room count; a region node's count is
+`planNodeContent(...).trainers` (2-4 on a route), not that table's.
 
 **Re-walked once more (Task-297).** This sheet was re-read end to end against the tree
 with `curve-a`, `curve-b` and `curve-c`: the band table, the caps, the `needed(s)`

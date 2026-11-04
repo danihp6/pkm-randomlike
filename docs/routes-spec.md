@@ -51,12 +51,13 @@ exits and the guaranteed lane all come out of a single carve
   tree interior with the lanes carved through it, and one biome's tileset for the whole
   map (`D10`).
 
-Everything §2 describes — one 20×20 **room** shaped by an opening set, with its own
-`pathWidth`, chamber and map-size tier — is the **legacy floor generator** the region
-replaces: it still ships and still builds the maps the old single-room pipeline asks
-for, but no region node reads it, and it is swept in **Batch 125**. Where the two
-sections disagree, this one is what a region route is and §2 is the pipeline being
-retired.
+Everything §2 describes — the carver's interior: its lane width, its centre chamber
+and its shaping off an opening set — is the shipped generator a region route is
+carved by (`generateRoute`, `src/engine/region/route/map.ts` hands the carver the
+whole node). The floor-era framing around it is gone: nothing carves one 20×20
+**room** per run position any more, and the request the carver takes is the node's
+one carve, with `routeIndex` fixed at `0` and the node's own `layout` stream
+minting the seed. Where §2 says "room", read the carver's interior rectangle.
 
 ## 2. Generation pipeline
 
@@ -81,12 +82,13 @@ retired.
    gap in the ring. An opening also keeps a clearance of the motif's footprint
    (`2 * cols`) from every map corner, so a corner tree is never bitten into a
    partial or one-tile piece.
-2. **Centre chamber**: a room with **no through-lane** — the map's **entry room**
-   and every `dead-end` leaf, i.e. a room with fewer than two openings — grows one
-   **centre chamber** from its own middle (`chamberFor` in
-   `src/engine/routes/layout.ts`; a room that knows it needs one forces it on with
-   `RouteRequest.chamber`, which the **boss room** takes while its sealed portal is
-   part of its opening set). `carveChamber` (`src/engine/routes/sketch.ts`) draws the
+2. **Centre chamber**: a carver interior with **no through-lane** — fewer than two
+   openings — grows one **centre chamber** from its own middle (`chamberFor` in
+   `src/engine/routes/layout.ts`; a request that knows it needs one forces it on with
+   `RouteRequest.chamber`). A region route never asks for one: its entry and its exits
+   are border bands and its shape carries a through-lane, so the chamber pass serves
+   the dev generator and the engine tests only. `carveChamber`
+   (`src/engine/routes/sketch.ts`) draws the
    radius once (`4` … `6`, clamped into the room's `wallMargin` box) and then one
    half-width per row on the room's own **`chamber` stream**, following
    `|dx| ≤ radius − |dy| + jitter(row)`; the **centre row always carries one extra
@@ -119,8 +121,8 @@ retired.
    with the map size** (`MAP_SIZE_TIERS` in `src/data/mapSize.ts`): the map's
    area in tiles falls in `small` (terrain ×1), `medium` (×2) or `large` (×3), so a
    bigger route carries proportionally more terrain without the count matching the
-   size pixel by pixel. Every route is at least **30x30**, so the smallest route
-   lands in `medium`. Both land on the carved floor **off the spine, the openings
+   size pixel by pixel. A region route is **60x120** at its smallest, so the
+   smallest one already lands in **large**. Both land on the carved floor **off the spine, the openings
    (their whole band) and the pockets** (a pocket is a loot spot, kept clear for its
    item). A grass
    patch is packed **against the walls**: it first stretches across a wall-to-wall
@@ -141,13 +143,15 @@ retired.
 5. **Population (trainers + ground items)**: a route places **trainers** and
    **one item at the far end of each optional path** (a `pocket`), drawn from the
    level band's weighted loot pool (`ROUTE_LOOT` in `src/data/loot.ts`) on the
-   `populate` stream. The room's **role** (`MapRoom.role`, `docs/maps-spec.md` §2)
-   decides the trainers: a `wild` room places **none** and spends no draw on them,
-   while a `trainers` room places **1-2** (`TRAINERS_PER_ROOM`), always including
+   `populate` stream. The request's **role** (`RouteRequest.role`) decides whether
+   the carver places any: a `wild` one places **none** and spends no draw on them,
+   while a `trainers` one places **1-2** (`TRAINERS_PER_ROOM`), always including
    **one on the main lane** and a second one by an optional pocket when one takes
-   it — and its first trainer may instead wear the room's **special** archetype
-   (the paragraph after the special NPC's, below). The count no longer follows the
-   route's size; a trainer stands on floor
+   it. A region node does not read this pass: its trainers are laid **per screen** by
+   `planRouteScreens` (`src/engine/region/routeScreens.ts`) off the node's own
+   `content` stream, `planNodeContent`'s count (2-4 on a route, a lateral and the
+   Victory Road) deciding how many and the `route-trainers` split drawing each
+   archetype (`docs/region-spec.md` §7.3, §7.12). A trainer stands on floor
    hugging a **solid** wall (never a walkable tree tip). On the **main lane** it
    looks down the lane; on an **optional path** it looks **across** it, wall to wall
    (a vertical path is watched horizontally and vice versa), so the sight closes
@@ -155,17 +159,14 @@ retired.
    straight cardinal line that stops at a wall, a ledge,
    water or another trainer, though a walkable tree tip is open), and some cycle
    their facing on a timer like a
-   "spinning" trainer. Two trainers never open a fight by sight at all: the **map
-   boss** and the **mini-boss** stand with their line still drawn and `aggro: false`
-   on the `RouteTrainer` record, so they are fought only by speaking to them
-   (`docs/maps-spec.md` §6). Placement never plugs a passage: a trainer is kept only
+   "spinning" trainer. Placement never plugs a passage: a trainer is kept only
    while every tile the entry could reach stays reachable with the trainers as
    blockers (ledges and water count as impassable), no two trainers stand in
    neighbouring tiles, and no trainer spawns watching — or able to spin and watch —
    the player's entry tile. A pocket a hazard sealed, or that is no longer
    walkable, is skipped, so loot is never stranded. An optional path holds an item
-   only with the band's `itemChance` probability (0.5 / 0.6 on the on-ramp's maps
-   1-2, 0.75 from map 3 on); when it does, the
+   only with the band's `itemChance` probability (0.5 / 0.6 in the `early` and
+   `low` bands, 0.75 from `mid` on); when it does, the
    item sits on the **deepest** tile of the branch, as far down the path as it can.
    The number of items also follows the route's **size** (a bigger map carves more
    optional paths), not its band. A pocket is kept clear of tall grass (an item
@@ -174,17 +175,16 @@ retired.
    (`TilesetConfig.hiddenItemFrame`) instead of a Poke Ball. A **TM** is unique to
    the run and to the route: the scene passes the bag's own TM ids as
    `lootExclude` (`ownedTmIds` in `src/engine/run/items.ts`), and a TM the route has
-   already placed is never drawn again, so neither a second room of the run nor a
+   already placed is never drawn again, so neither a second node of the run nor a
    second pocket of the same route can hand out the same Technical Machine twice —
    it is a reusable key the run never spends, so a second copy is dead weight.
    Every **other** item may repeat (a second Potion is legal), so the weighted pool
-   only moves for TM-bearing bands. Ids are stable
-   (`trainer-<routeIndex>-<n>`, `item-<routeIndex>-<n>`) and the draw order is the
-   deterministic `pockets` order. A **quiet** room — the map's entry room, its boss
-   room and its special rooms (mini-boss/mega-stone and the rest;
-   `docs/maps-spec.md` §2/§6/§7) — skips the terrain and population passes
-   entirely, so it holds no tall grass, ledges, items or trainers; only its lanes
-   are carved.
+   only moves for TM-bearing bands. A region node's ids are stable and node-scoped —
+   `trainer-<nodeKey>-<n>` and `item-<nodeKey>-<i>` (§7.12) — and the carver's own
+   draw order is the deterministic `pockets` order. A **quiet** request
+   (`RouteRequest.quiet`) skips the terrain and population passes entirely, so it
+   holds no tall grass, ledges, items or trainers; only its lanes are carved, and a
+   gym city's `GymScene` is where that interior's own fixtures live.
 6. **Validation pass**: `validateRoute` (`src/engine/routes/validate.ts`) reports a
    checklist instead of throwing, and its `ok` flag is what gates the reroll. It
    gates the exit flood-fill **with** the trainers in the way (`blockedByTrainers`)
@@ -203,23 +203,26 @@ retired.
    (8), then it throws rather than return a bad map. This validation is what makes
    the generator safe to call blind.
 
-**The boss door's sign is a fixture, not a pass.** The room whose opening links
-into the map's boss room carries **one static sign** (`bossSign` in
+**The carver's door sign is a fixture, not a pass.** A request that asks for one
+(`RouteRequest.signEdge`) gets **one static sign** (`bossSign` in
 `src/engine/routes/signs.ts`) on its approach side: one tile inward from that
 opening's own anchor, so it stands in the lane's mouth off the border band while
 the lane's other half still lets the door be walked through. The build places it
-from the plan and **no RNG** (`RouteRequest.signEdge`, which no other room passes):
-its cell joins the hazards' forbids exactly like the spine (no tall grass, no
-ledge, no trainer and no item may land on it) and `RouteMap.signs` is present only
-when one was drawn, so a route that asks for none is unchanged. The sign is
-**solid** — the route scene blocks its tile — and the interact key opens the room's
-NPC card with the `boss.sign` key as its title and an empty body; there is one per
-floor and nowhere else.
+and **no RNG**: its cell joins the hazards' forbids exactly like the spine (no tall
+grass, no ledge, no trainer and no item may land on it) and `RouteMap.signs` is
+present only when one was drawn, so a route that asks for none is unchanged. The
+sign is **solid** — the route scene blocks its tile — and the interact key opens the
+NPC card with the `boss.sign` key as its title and an empty body. No region node
+asks for one any more: the sign was the floor boss door's fixture, and a node has no
+boss door (`D59`). The prop itself still ships (`src/assets/frlg/sign.png`).
 
 Every build pass draws from its own `Rng` stream — `layout`, `terrain`, `populate`
 and `chamber` — all derived from `(seed, routeIndex, attempt)`
 (`src/engine/routes/streams.ts`), so `(seed, routeIndex)` fully determines the map
-and a reroll can never shift an earlier attempt. Adding a roll to the terrain pass
+and a reroll can never shift an earlier attempt. A region node hands the carver
+`routeIndex` `0` and a `seed` minted off the node's own `layout` stream
+(`carveSeedOf`, `src/engine/region/route/map.ts`), so the node's key is the identity
+and its carve replays alone (`D60`). Adding a roll to the terrain pass
 cannot move the path the layout pass already placed, and a chamber re-roll cannot
 move a lane.
 
@@ -232,26 +235,28 @@ them, blocks their tile, freezes the player while a spotter walks over and opens
 the menu battle, and hides a beaten one. The algorithm's rationale and its open
 questions are in `docs/route-generator.md`.
 
-The map size is an input: every route is at least **30x30** tiles at 24px, the
-map's size range rolls each room above that floor, and the floor's **entry room**
-and **boss room** are always exactly **30x30** (`docs/maps-spec.md` §1/§6). The
-camera follows the player, bounded to the generated map. The whole map is visible
-at once: there is no fog of war, like the originals (`D6`).
+The map size is an input: a region route is `ROUTE_WIDTH` (60) tiles wide and one of
+`ROUTE_HEIGHTS` (120, 160 or 200) tall at 24px (`src/data/region.ts`), the carver's
+opening set is its own node's edges, and its height is drawn once per node off the
+`layout` stream (`planRouteLayout`). The camera follows the player, bounded to the
+generated map. The whole map is visible at once: there is no fog of war, like the
+originals (`D6`).
 
 **Biome and shape.** Only the FireRed/LeafGreen **forest** biome is active
 (`BIOME_ORDER = ['forest']` in `src/data/biomes.ts`), so every route uses its
-tileset and encounter table. A route's **shape** — the set of openings that join
-it to its grid neighbours — is a first-class generator input: the registry in
+tileset and encounter table. A route's **shape** — the set of openings the carver
+joins — is a first-class generator input: the registry in
 `src/engine/routes/layout.ts` defines `dead-end` (1 opening, **no** branches and a
 centre chamber), `corridor` (2 opposite, no branches), `straight` (2 opposite,
 branchy), `bend` (2 adjacent), `tee` (3) and `cross` (4), each with its `openings`
 (an edge and a role) and
 the `links` the spine joins, and `RouteMap` carries an `entry`, a list of
 `exits`, the `spine` and the optional `branches`/`pockets`.
-The **biome, size and the opening set now come from the map plan**
-(`docs/maps-spec.md` §2–§3), so a route no longer rolls its own shape: the plan
-lays the rooms on a grid, joins them so every opening is the neighbour's opposite,
-and the opening set picks the shape. Every opening is placed on its edge and the
+The **biome and the opening set come from the node's own plan**
+(`planRouteLayout`, `src/engine/region/route/layout.ts`), so the carver does not
+roll its own shape: the layout names one band per neighbour, the entry neighbour
+takes the `N` long end and the rest take `S`, `E` and `W` in `edges` order, and
+`shapeForEdges` reads the shape off that opening set (§1). Every opening is placed on its edge and the
 guaranteed **spine** joins each
 `links` pair with cardinal, cost-guided corridors, so a `cross` leaves three exits
 and a `bend` runs an L. A multi-link shape routes every link through a shared
@@ -270,64 +275,63 @@ the visible lanes; the terrain pass and the population pass keep them clear and
 populate them (steps 4-5). The `hedges` and `maze` carvers stay parked in
 `src/engine/routes/sketch.ts` for later biomes (`D6`).
 
-**Map passives (room entry and a win).** A party member's **ability** also acts
+**Node passives (an entry and a win).** A party member's **ability** also acts
 outside battle. `src/data/passives.ts` holds `MAP_PASSIVES`: one row per
-`{ ability, trigger, effect }`, where `trigger` is `'room'` (the room is entered) or
-`'win'` (a battle in the room was won) and `effect` is that row's chance plus the
+`{ ability, trigger, effect }`, where `trigger` is `'room'` (the node is entered) or
+`'win'` (a battle in the node was won) and `effect` is that row's chance plus the
 catalogue ids it pays. `src/engine/run/passives.ts` is the whole rule: it reads the
 **party's** abilities (the box never counts) and, for every row whose trigger matches
 and whose ability the party holds, mints its own stream
-`${seed}:passive:${mapIndex}:${roomId}:${ability}`, rolls the row's chance and, on a
+`${seed}:passive:${nodeKey}:${ability}`, rolls the row's chance and, on a
 hit, one item from the row's list, adds it with `addItem` and records
-`passive-<ability>-<trigger>-<mapIndex>-<roomId>` in `pickedItems`, which
-`advanceMap` clears. A room therefore pays each row **at most once per floor**: a
-revisit and a reload pay nothing, the next floor pays again, and no stream the route,
-the plan or the encounter tables already read moves (`D11`). The route scene calls it
-once per trigger — at the end of a room transition (`transitionTo`, after the room is
-rebuilt and before the HUD refresh) and after a won battle's folds
+`passive-<ability>-<trigger>-${nodeKey}` (`passiveMark`) in `pickedItems`, which a
+node entry clears. A node therefore pays each row **at most once per node**: a
+revisit and a reload pay nothing, the next node pays again, and no stream the route,
+the plan or the encounter tables already read moves (`D11`). The scene calls it
+once per trigger — at the end of a node arrival (`onNodeArrived`, before the HUD
+refresh) and after a won battle's folds
 (`applyBattleResult`, before the save) — and floats the shipped
-`Obtained <item>!` notice for each payment. The two shipped rows are **Pickup** (a
-room entry) and **Honey Gather** (a win), the dex's out-of-battle item abilities
-(`docs/battle-spec.md` §11.1). The run's first room is not a room entry: the run
-begins standing in it.
+`Obtained <item>!` notice for each payment. The two shipped rows are **Pickup** (an
+entry) and **Honey Gather** (a win), the dex's out-of-battle item abilities
+(`docs/battle-spec.md` §11.1). The run's first node is not an entry: the run
+begins standing on it.
 
-**The special NPC is a per-room fixture, not a pass.** A regular `trainers` room may
-hold one special NPC (`docs/maps-spec.md` §7). It is placed **when the room is
-built**: the presence and row roll on the room's own `${seed}:npc:<roomId>` stream
-and the standing tile on `${seed}:npc:<roomId>:<npcId>:spot`, so no layout, terrain,
-population, validation or encounter stream moves and a fixed seed keeps every route
-it already generated. The spot prefers a free tile with at least one cardinally
-**unwalkable** neighbour and faces the NPC **away** from that wall — a wall on the
-north turns it `'S'`, its back to the wall and its front to the room, and the first
-wall in the N, E, S, W order wins on a corner — so the facing is **derived** from
-the chosen tile and never drawn: the stream keeps its single draw. A room whose free
-tiles are all open keeps today's pick, facing `'S'`. The scene rolls it once per room
-build (never in `update`), draws it through a resting trainer's pose
+**The special NPC is a node fixture, not a pass.** A settlement may hold one or two
+special NPCs, and its content pass decides how many and which rows
+(`docs/region-spec.md` §7.3, §7.7). It is placed **when the node is built**:
+`nodeNpcs` (`src/engine/region/npcs.ts`) splits its own stream off the node's
+`content` one (`nodeStreams(seed, key).content.split('npcs')`), so no layout,
+encounter or loot draw moves and a fixed seed keeps every settlement it already
+built. A **special's** presence is one draw of its own,
+`Rng(hashSeed(`${seed}:node:${key}:npc-special:${rowId}`))`, so it can never be
+moved by how many people the node holds. The standing tile prefers a free tile with
+at least one cardinally **unwalkable** neighbour and faces the NPC **away** from that
+wall — a wall on the north turns it `'S'`, its back to the wall and its front to the
+settlement, and the first wall in the N, E, S, W order wins on a corner — so the
+facing is **derived** from the chosen tile and never drawn. A node whose free tiles
+are all open keeps the pick, facing `'S'`. The scene places the people once per node
+(never in `update`), draws each through a resting trainer's pose
 (`trainerFacingPose`) and blocks its tile; the interact key opens the one NPC card.
-`NPC_ROWS` ships sixteen rows (`src/data/npcs.ts`): the merchant,
+`NPC_ROWS` ships its rows (`src/data/npcs.ts`): the merchant,
 the **Team Rocket** grunt that opens the slot machine's panel, the five edit rows and
 the sacrifice, the four run-modifier rows and the four item-and-battle rows (the
 medic, the chef, the berry tree and the Mega Stone keeper).
 
-**The special trainer is an archetype override, not a pass.** A regular `trainers`
-room may hold **at most one** special trainer, never in the map's entry room, its
-boss room or a special room: its **first** trainer may instead wear a set-piece
-archetype (`SPECIAL_ARCHETYPES` and the `SPECIAL_TRAINER_ROWS` spawn table in
-`src/data/trainers.ts`). It is placed **when the room is built**: one presence
-roll and then the weighted row pick, in that order, on the room's own
-`Rng(hashSeed(`${seed}:special-trainer:<roomIndex>`))` stream, where `roomIndex`
-is the same stable per-room index (`routeIndexForRoom(plan, roomId)`) the room's
-route is generated from. The drawn row **replaces the room's first trainer's
-archetype**, keeping its `id`, tile, facing, sight and spin, so the population
-count, its pose rules and the reachability guard are untouched and the body is
-never added twice: a `trainers` room still fields 1-2 trainers. Three rows ship —
+**A special trainer is an archetype override, not a pass.** A route's trainer may
+instead wear a set-piece archetype (`SPECIAL_ARCHETYPES` and the
+`SPECIAL_TRAINER_ROWS` spawn table in `src/data/trainers.ts`). The region's own
+archetype draw is `planRouteScreens`': it lays trainer `j` of the node's count on
+screen `j % screens` and draws the archetype off the node's `route-trainers` stream
+split, so the pick replays alone (`docs/region-spec.md` §7.12). The drawn row keeps
+its `id`, tile, facing, sight and spin, so the population count and the reachability
+guard are untouched and the body is never added twice. Three rows ship —
 the **ninja** (0.1), the **Impostor** trainer (0.08) and the **secret battle**
 (0.2, gated on `RunState.missionsCompleted >= 1`, so it only joins the draw once
-the run has met a floor mission) — so a `trainers` room has an **18 %** chance of a
-special trainer before that first mission and **38 %** after it. The ninja's
+the run has met a mission) — so a route's trainer has an **18 %** chance of a
+special one before that first mission and **38 %** after it. The ninja's
 `sightMode: 'invisible'` hides **only its sprite** while the player is more than
 one tile away; its line of sight is unchanged, so it still spots the player and
-opens the battle, and the sprite is re-painted after every step, every room
+opens the battle, and the sprite is re-painted after every step, every node
 rebuild and the debug teleport (and forced on screen the moment it starts its
 chase). The Impostor's `forcedAbility: 'Imposter'` is stamped on **every member of
 its roster** and bypasses the run's ability roll, and its `reward` pays one
@@ -336,16 +340,18 @@ marks the trainer beaten. The roll reads its own stream, so no layout, terrain,
 populate, item, validation or encounter stream moves and a fixed seed keeps every
 route it already generated.
 
-**A special leaf's own content is placed by its room descriptor, not by a pass.** A
-leaf that needs no new tile value and no second carve — the **puzzle** room's row of
-switches and the ground item its solve pays — is laid out **when the room is built**,
-by the descriptor (`src/scenes/rooms/puzzle.ts`) through `src/engine/routes/puzzle.ts`,
-from the route's own tiles and the room's own minted streams
-(`${seed}:puzzle:<map>:<roomId>:row|sites|order`). No build pass in
+**A point of interest's own content is placed by its row, not by a pass.** A kind
+that needs no new tile value and no second carve — the **puzzle**'s row of switches
+and the ground item its solve pays — is laid out **when the node is built**, from
+the route's own tiles and the node's own minted streams
+(`${seed}:puzzle:<nodeKey>:row|sites|order`). No build pass in
 `src/engine/routes/sketch.ts` and no `RouteRequest` field is involved, so every route
-the floor already generated, every trainer and item it already placed and every
-encounter stream stay exactly where they were, and a fixed seed keeps the room's
-switches, its reward tile and its press order identical on every visit.
+the run already generated, every trainer and item it already placed and every
+encounter stream stay exactly where they were, and a fixed seed keeps the row's
+switches, its reward tile and its press order identical on every visit. The kind a
+lateral ends on is the content pass's draw, and `src/data/pois.ts` is the row table
+(`docs/region-spec.md` §7.8); the engine module that mints the switches still ships
+(`src/engine/routes/puzzle.ts`) and no scene mounts it yet.
 
 ## 3. Wild encounters
 
@@ -370,32 +376,33 @@ switches, its reward tile and its press order identical on every visit.
   the player owns.
 - The roll uses the route RNG, so walking the same grass in the same order
   produces the same encounters.
-- The **magician's type** (`RunState.modifiers.nextWildType`, `docs/maps-spec.md` §7)
-  narrows the band's table before the draw and is consumed by the next wild encounter
+- The **magician's type** (`RunState.modifiers.nextWildType`,
+  `docs/region-spec.md` §7.7) narrows the band's table before the draw and is consumed by the next wild encounter
   that actually rolls: a step that rolls nothing keeps it. A type no species of the
   band carries falls back to the whole band, so a narrowed table is never empty.
-- The **berry tree's** wild is a **second wild source**, not grass: its own
-  `${seed}:npc:<roomId>:<npcId>:wild` stream, the room's live table (so the
-  magician's type and the held-species exclusions still apply), the same
-  `rollWildLevel` and floor cap, `BERRY_TREE_ENEMY_BOOSTS` on the enemy lead and
-  `noFlee`; it spends the room's single capture exactly like a grass step.
+- The **berry tree's** wild is a **second wild source**, not grass: its own stream,
+  the node's live table (so the magician's type and the held-species exclusions still
+  apply), the same wild level rule and the node's cap, `BERRY_TREE_ENEMY_BOOSTS` on
+  the enemy lead and `noFlee`; it spends the node's single capture exactly like a
+  grass step.
 - A wild encounter's **level** is `clamp(floor(squadLevel(run) × fraction), 1, cap)`
   — `fraction` is one draw on the encounter stream in `[0.60, 0.75)` and `cap` is
-  the floor's `maxLevel` (`WILD_LEVEL_FRACTION`, `wildLevel`, `rollWildLevel`;
-  `src/data/wildLevels.ts`, `src/engine/routes/encounters.ts`). The seed fixes the
+  the node's `cap` (`WILD_LEVEL_FRACTION`, `wildLevel`, `nodeWildLevel`;
+  `src/data/wildLevels.ts`, `src/engine/run/levelCurve.ts`,
+  `docs/region-spec.md` §7.9). The seed fixes the
   draw, not the level, so the same grass on a stronger squad fields a stronger wild
   (D11/D17 amended). The table is the band the **squad's level** falls in
-  (`bandForLevel(squadLevel(run))`), resolved when the room's encounter stream is
-  built.
+  (`bandForLevel(squadLevel(run))`), read when the node's encounter table is built.
 - Only the species and level are rolled. Stats, types and evolutions come from
   the species; the moveset and ability are rolled separately when the Pokémon is
   built (`D17`).
-- A successful catch spends the room's single capture (`RunState.capturedRooms`).
-  A room's capture is spent the moment its **first wild battle starts**, whatever
-  the outcome: catching the Pokémon, defeating it or running away all close the
-  room's window, so **only the first wild Pokémon that appears can ever be caught**
-  there. Once spent, the **minimap marks the room** with a Poké Ball and the BALL
-  command is disabled for any later encounter in the room.
+- A successful catch spends the **node's** single capture (`RunState.capturedNodes`,
+  `useCapture`). A node's capture is spent the moment its **first wild battle
+  starts**, whatever the outcome: catching the Pokémon, defeating it or running away
+  all close the node's window, so **only the first wild Pokémon that appears can ever
+  be caught** there. Once spent, the BALL command is disabled for any later
+  encounter on that node, and walking away and back changes nothing
+  (`docs/region-spec.md` §7.9).
 - **The run's very first catch is certain** (`docs/battle-spec.md` §6): while
   `RunState.stats.catches === 0`, every capture attempt is an outright success
   whatever the species, the target's HP, the ball or its status, so the party can
@@ -403,16 +410,16 @@ switches, its reward tile and its press order identical on every visit.
 - When a catch leaves the party still **full**, a **capture screen** opens: the
   caught Pokémon's stats sit beside the party so the player can compare, then
   **swap it for a party member** (the replaced member goes to the PC) or **send it
-  to the PC**. A catch that lands in the box is then withdrawable **only** in the
-  floor's entry room, exactly like any other boxed member
-  (`docs/routes-spec.md` §6) — never in the room that took it unless that room is
-  the entry room — and its STATS tab shows the biome and route it was caught in.
-- The **static species** of a static leaf (`docs/maps-spec.md` §7) is fought through
-  the same wild path but is **not** drawn from the wild table — its species comes
-  from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary variant) minus the
-  evolution lines the run already **holds** (`docs/maps-spec.md` §7), so
-  `WILD_BANNED_TAGS` and `speciesPool` are unchanged and the room's capture rule is
-  the shipped one: the battle that starts spends it.
+  to the PC**. A catch that lands in the box is then withdrawable **only** inside a
+  Centre (or the town's laboratory), exactly like any other boxed member (§6) — never
+  out on a route, in a gym or in a house — and its STATS tab shows the biome and the
+  node it was caught on.
+- The **static species** of a `static` point of interest (`docs/region-spec.md` §7.8)
+  is fought through the same wild path but is **not** drawn from the wild table — its
+  species comes from `STATIC_SPECIES` (or `LEGENDARY_SPECIES` on the legendary
+  variant) minus the evolution lines the run already **holds**, so `WILD_BANNED_TAGS`
+  and `speciesPool` are unchanged and the node's capture rule is the shipped one: the
+  battle that starts spends it.
 
 ## 4. Run structure
 
@@ -438,7 +445,7 @@ town:1 -> route:1 -> city:1 -> ... -> route:8 -> city:8 -> victory-road:1 -> lea
   seam above.
 - **A node's stretch is what the badges set**: the cap is the only level anchor (`D29`,
   `docs/region-spec.md` §3), so every roster, wild encounter and reward reads the node's
-  band (`bandForNode`) rather than a floor's.
+  band (`bandForNode`) rather than a stored range.
 - **The run ends** when the last living Pokémon falls (`D5`): nothing carries over and a
   fresh run starts from a fresh seed. The tower behind the Champion is the endless node —
   every fight there is one more rung (`src/engine/region/tower.ts`) — and the League is
@@ -446,87 +453,91 @@ town:1 -> route:1 -> city:1 -> ... -> route:8 -> city:8 -> victory-road:1 -> lea
 
 ## 5. Difficulty bands
 
-- Each **map** has one level anchor: its **cap** (`levelCapForMap`). The floor's
-  band is the **window derived from the caps** — it opens at the previous floor's
-  cap and closes at this one (`levelWindowForMap`, `docs/maps-spec.md` §5) — so the
-  band's `maxLevel` **is** the map's cap and clamps XP gain (`docs/battle-spec.md`
-  §7). The per-route band is gone, and no room has a working level: the map's window
-  **is** the band (`bandForMap`, `bandForLevel`).
+- A **node** has one level anchor: its **cap**, `badgeCap(node.badge)`
+  (`BADGE_CAPS = [9, 16, 23, 30, 37, 43, 49, 55]`, `src/data/region.ts`), and badge 9
+  — the Victory Road, the League and the tower — reads `LEAGUE_LEVEL` (60). The
+  node's band is the **window derived from the caps**: it opens at the **previous**
+  badge's cap and closes at its own (`bandForNode`, `src/engine/run/levelCurve.ts`,
+  `docs/region-spec.md` §3), and that window's `maxLevel` is the cap that clamps XP
+  gain (`docs/battle-spec.md` §7). No node stores a level range.
 - Each trainer archetype is presentation and reward only (identity, sprites,
-  money); it no longer carries a species list. Every roster draws from the floor's
+  money); it no longer carries a species list. Every roster draws from the node's
   **BST pool** (`speciesPool`, `src/engine/run/pool.ts`, `D39`), which varies only
   by the band's BST window and the roster's bans, and the wild table from the
   **squad's own** band (`bandForLevel(squadLevel(run))`); the party size grows with
   the band (`band`'s `trainerSize`). A wild's level is a fraction of the live squad
-  level (60-75 %), floored and clamped to the floor's cap, and is never drawn from
-  the map's range. The three **set-piece** rows (`ninja`, `impostor`, `secret`)
-  live in `SPECIAL_ARCHETYPES`, so the route never rolls them; an archetype's
-  `sightMode` is its route **sprite's** draw mode, not its `sight`, and its
-  `forcedAbility` is the ability **name** its whole roster starts with, bypassing
+  level (60-75 %), floored and clamped to the node's cap, and is never drawn from
+  the band's window. The three **set-piece** rows (`ninja`, `impostor`, `secret`)
+  live in `SPECIAL_ARCHETYPES`, so a route never rolls them as ordinary rows; an
+  archetype's `sightMode` is its route **sprite's** draw mode, not its `sight`, and
+  its `forcedAbility` is the ability **name** its whole roster starts with, bypassing
   `D17`'s roll for that roster only; its `reward` is a bag item paid with a first
   win through `addItem`, on top of the money the band still scales. The secret
   row's gate reads the mission record's run-scoped counter,
   `RunState.missionsCompleted`.
 - The wild table bans legendary and mythical species; a trainer roster may field
-  them in the bands their BST lands in. A **boss** (map boss and mini-boss) fields
-  the **upper half** of its band's BST window, one step above the floor's regular
-  trainers.
-- A trainer roster is generated deterministically from the route seed and the
-  map's band, and never exceeds the map's level cap. A **regular** trainer's level
-  is a percentage of the **live squad level** (`squadLevel`, D35) by its own party
-  size — 100 / 90 / 80 / 70 % for 1 / 2 / 3 / 4 members, floored and clamped to the
-  floor's cap (`TRAINER_LEVEL_PERCENT` and `trainerLevel`,
-  `src/data/trainerLevels.ts`, `docs/maps-spec.md` §5) — so the seed fixes the
-  species picks while the level follows the player (D11/D17 amended). The **boss**
-  and the **mini-boss** keep the level draw they shipped with (the boss at the
-  map's cap). Trainers are placed by the population pass (step 4): the floor's plan
-  tags each regular room `trainers` or `wild`, and a `trainers` room fields 1-2 of
-  them — one on the main lane and a second by a pocket — while a `wild` room holds
-  none, so the count follows the floor's composition, not the room's size
-  (`docs/maps-spec.md` §2).
-- The map's **farthest room from the entry** fields the boss at the map's
-  `maxLevel`, a fixed party of **six** (**three** on map 1, `src/data/bosses.ts`).
-- The floor's **population** comes from its composition: exactly
-  `trainerRoomsForMap(mapIndex)` of its regular rooms are `trainers` rooms (2 on
-  maps 1-2, 3 on maps 3-5, 4 on maps 6-8, up to 6 past the table) and each fields
-  1-2 trainers, so maps 1-2 read as a walkable start without thinning the count by
-  band (`TRAINER_ROOMS_PER_MAP`, `src/data/population.ts`).
+  them in the bands their BST lands in. The gym leader — and the League's five rows —
+  field the **upper half** of their band's BST window, one step above the stretch's
+  regular trainers.
+- A trainer roster is generated deterministically from the node's seed and its
+  band, and never exceeds the node's cap. A **regular** trainer's member is
+  `trainerLevel(cap, gymDistance, partySize)` = `cap − gymDistance × factor`, with
+  the factor **1 / 0.9 / 0.8** for a party of **1 / 2 / 3**
+  (`TRAINER_SIZE_FACTOR`, `trainerSizeFactor`, `src/data/trainerLevels.ts`;
+  `src/engine/run/levelCurve.ts`; `D66`), floored and clamped to `1..cap` — so the
+  seed fixes the species picks while the level follows the ladder, and
+  `RosterOptions.node` is the one call that reads it. A roster posted without it keeps
+  the shipped `TRAINER_LEVEL_PERCENT` model (`trainerLevel(squadLevel, size, cap)`)
+  for the dev generator. Trainers are laid by the node's own pass (§2, step 5):
+  `planNodeContent` counts them and `planRouteScreens` posts them per screen.
+- The **gym leader** sits at the cap (`leaderLevel`), and its party and its tenth-of-a-
+  chance double are the `GYMS` row's (`src/data/gyms.ts`); the League's four Elite
+  Four rows and the Champion are `LEAGUE`'s, every one at `LEAGUE_LEVEL`
+  (`src/data/league.ts`, `docs/region-spec.md` §3, §7.6). Neither draws a level.
+- A node's **trainer count** is the content pass's: `2..4` on a route, a lateral and
+  the Victory Road, `1..2` / `2..3` / `3..4` by tier on a city, none on the town, the
+  League and the tower (`docs/region-spec.md` §7.3). The retired per-map trainer-room
+  table (`TRAINER_ROOMS_PER_MAP`, `src/data/population.ts`) bounds nothing a node
+  posts; only the carver's own `trainers` request still reads
+  `TRAINERS_PER_ROOM`.
 
 ## 6. Healing stops
 
-Between two routes the player gets a healing stop (a resting point): HP and PP
-restored, no resurrection. The stop no longer opens a screen; the party and the
-PC box are managed from the route HUD.
+A **city's Centre** is the run's resting point: its counter rests the party **and**
+the box — HP and PP back to full — and never cures a status and never resurrects
+(`docs/region-spec.md` §6). The **town** has no Centre and its laboratory heals on
+entry instead, and the **League** heals between its five fights. A **route has no
+service at all**. The party and the PC box are managed from the route HUD.
 
 **The PC (the HUD's BOX window) is always viewable, but swapping between the
-party and the PC is locked** except in one window (`docs/maps-spec.md` §7):
+party and the PC is locked** except inside a Centre (`inCentre`,
+`pcFullyEditable` / `pcMemberEditable`, `src/engine/run/state.ts`):
 
-- in the floor's **entry room** the PC is fully editable, on **every** visit — the
-  first one and any return — so a player can rearrange the party and the box
-  before setting off and again on the way back. Anywhere else on the floor both
+- inside a **Centre** — or the town's laboratory — the PC is fully editable, on
+  **every** visit — the first one and any return — so a player can rearrange the
+  party and the box before setting off and again on the way back. Anywhere else both
   directions are refused: a party member cannot be sent to the box and a boxed
   member cannot be withdrawn. A catch that lands in the PC while the party is full
   — the engine places the catch itself, party first, PC second — is therefore
-  withdrawable **only** from the entry room, never from the room that took it
-  unless that room is the entry room; a new floor opens its own entry room.
+  withdrawable **only** from a Centre, never from the route that took it.
 
 A boxed member the player cannot swap reads as **locked** (a dim veil on its
 cell), and reordering the party within itself stays free. A catch that goes to
 the PC says so in a **transient notice** at the top of the screen — one line,
 dismissed by itself, taking no key and blocking no movement.
 
-- The HUD carries the floor's own **mission** as its **MISSIONS card** (`D58`): the
-  card the old line lived in became a panel with its own chip, drag and saved slot,
-  the floor's row with its progress first and the floors already met under it,
-  newest first. Meeting a mission raises one transient notice through the
-  same module (one message at a time, no key, no block). The static leaf floats its
-  refusal line when its seal does not yield to the party (`docs/maps-spec.md` §7),
-  and a legendary leaf floats one more line on entry.
-- Entering a **room** raises the **area banner**: a boxed card under the notice
+- The HUD carries the node's **mission stack** as its **MISSIONS card** (`D58`,
+  `D68`): the card the old line lived in became a panel with its own chip, drag and
+  saved slot, drawing the stretch row, its city's fixed row and the random row a
+  city's NPC offers, in that fixed order (`docs/region-spec.md` §7.10). Meeting a
+  mission raises one transient notice through the
+  same module (one message at a time, no key, no block). A `static` point of
+  interest floats its refusal line when its seal does not yield to the party, and a
+  `legendary` one floats one more line on entry.
+- Entering a **node** raises the **area banner**: a boxed card under the notice
   strip that names the biome the run has walked into (`Deep Forest`), holds 3 s and
   dismisses itself — it takes no key and blocks nothing. It comes up on **every**
-  room entry, not only when the floor changes, while the boss room's rebuild as its
-  portal opens is the same room and raises none. The name is the biome's own, so it
+  node entry, not only when the biome changes. The name is the biome's own, so it
   stays English in every locale (`D43`).
 
 A **consumable** rides the same drag: a heal or a status cure dropped from the bag
@@ -535,16 +546,16 @@ below max, or a primary status the item cures — and is a silent no-op otherwis
 consumption, no notice, never an equipped item). The rule is pure run state in
 `src/engine/run/items.ts`; the HUD only calls it.
 
-A member can also leave the run **on purpose**, in the **trade** room
-(`docs/maps-spec.md` §7) — the one place outside a battle where a member is
-removed. It is the player's choice, the room asks once, the given member is gone
+A member can also leave the run **on purpose**, at a **trade** point of interest
+(`docs/region-spec.md` §7.8) — the one place outside a battle where a member is
+removed. It is the player's choice, the counter asks once, the given member is gone
 for good and is not counted as a casualty (no RIP entry, no release beat), and the
 return joins at the squad's level exactly as a catch does. A single-member party is
 refused, because a run cannot hold no party.
 
-A member can be **edited** by a special NPC (`docs/maps-spec.md` §7): the tutor, the
+A member can be **edited** by a special NPC (`docs/region-spec.md` §7.7): the tutor, the
 nature, ability and IV readers and the species swapper each edit one **party**
-member the card asks for, and a row without `repeatable` answers **once per floor**.
+member the card asks for, and a row without `repeatable` answers **once per node**.
 A tutored move lives in the MOVES tab's band, tagged `Tutor`, until it is equipped
 again, so an unequip never loses it.
 
@@ -561,16 +572,16 @@ hidden — and the tab reads `RIP` in every locale, so it carries no key. A page
 tab, and the wheel over the window, page **whichever list the window is
 showing**; the keyboard's `left`/`right` cycle party → PC → RIP.
 
-Each floor also carries a **Pokevial**: a single bar in the party window's
+A run also carries a **Pokevial**: a single bar in the party window's
 header (top-right), its fill climbing through three colour stages with
 **POKEVIAL** written inside (no charge count). Pressing it **only when the bar is
 full** applies a heal on the spot — HP and PP restored across the party **and**
 the PC box and a primary status cured, though never a resurrection — and empties
-the meter, so the player can rest mid-floor and shake off a poison or a burn
-without walking back to a stop. Each charge is earned by **beating a trainer**
-(one each, up to the cap of three) and a floor's **boss** fills the bar to the
-top; the meter **carries over** from one floor to the next, so only a fresh run
-starts it full. The pointer only reads as a click over a full bar.
+the meter, so the player can rest on a route and shake off a poison or a burn
+without walking back to a Centre. Each charge is earned by **beating a trainer**
+(one each, up to the cap of three); the meter **carries over** from one node to
+the next, so only a fresh run starts it full (`src/engine/run/heal.ts`). The
+pointer only reads as a click over a full bar.
 
 Ground items sit on the route's pockets (step 4), nudged onto the most
 wall-hugging tile their lane opened so an item rests against walls (a corner
@@ -581,9 +592,9 @@ block, so the player can walk over it and take it underfoot. Either
 way the **interact key** (`E` by default) takes it, adding it to the run's bag,
 marking it in `RunState.pickedItems` (so a reload does not respawn it) and raising
 the route's **transient notice** — the run's own `Obtained <name>!` line, naming
-the item and dismissing itself, exactly the way a boxed catch does. Picked ids
-reset when the route advances. The route HUD still shows the run's bag as FRLG
-item icons.
+the item and dismissing itself, exactly the way a boxed catch does. Picked ids are
+node-scoped, so a node's own marks replay alone and a revisit does not respawn them.
+The route HUD still shows the run's bag as FRLG item icons.
 
 The **reset** key (`R` by default) is a run-level affordance: holding it fades
 the whole screen out under a small filling ring; releasing before it fills fades

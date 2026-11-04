@@ -55,6 +55,14 @@ band  = BandForRoute(routeIndex)    # level band, trainerSize, loot tier
 shape = Shapes[Pick(rngs.layout)]   # straight | bend | cross (see below)
 ```
 
+> **Shipped, region era.** The biome and the band no longer come from `routeIndex`:
+> `planRouteLayout` (`src/engine/region/route/layout.ts`) reads `biomeForRoute(node.id)`
+> and the region hands the carver `routeIndex` `0` with a `seed` minted off the node's
+> own `layout` stream, while the band a node reads is `bandForNode(node)`
+> (`docs/region-spec.md` §3). The shape comes from the node's own opening set rather
+> than from `rngs.layout`, so `Shapes[Pick(...)]` is the draft's answer and the plan's
+> is the shipped one. What survives unchanged is the separation of streams.
+
 ### Shapes and access points
 
 A route's **shape** decides where the player enters and leaves and how the paths
@@ -129,7 +137,7 @@ reachable: Set<Point>               # FloodFill(tiles, entry), computed after te
 | `grassPatches`, `ledges` | `src/data/biomes.ts` | terrain flavour (base counts) |
 | map-size tiers (`small`/`medium`/`large`: terrain scale, branch bonus) | `src/data/mapSize.ts` | terrain multiplier and extra optional paths as the map grows |
 | `trainerSize`, `minLevel`, `maxLevel` | `src/data/run.ts` | population and levels |
-| trainer rooms per floor (`TRAINER_ROOMS_PER_MAP`, `TRAINER_ROOMS_MAX`, `TRAINERS_PER_ROOM`) | `src/data/population.ts` | how many of a floor's regular rooms hold trainers, and how many each holds |
+| `TRAINERS_PER_ROOM` | `src/data/population.ts` | how many trainers one `trainers` request places; the retired `TRAINER_ROOMS_PER_MAP`/`TRAINER_ROOMS_MAX` pair beside it bounds nothing a region node posts (its count is `planNodeContent(...).trainers`) |
 | loot `pool` / `hiddenChance` | `src/data/loot.ts` | item contents and how often one hides |
 | wild species | `src/engine/run/pool.ts` (`speciesPool`, D39) | the band's BST pool, legendaries/mythicals banned |
 
@@ -318,16 +326,19 @@ horizontally and a horizontal one vertically — and it never stares down its ow
 axis. One of them always guards the main lane and the second stands by an optional
 path's pocket when one takes it.
 
-The count comes from the room's **role** (`MapRoom.role`, `docs/maps-spec.md` §2):
-the floor's plan tags exactly `trainerRoomsForMap(mapIndex)` of its regular rooms
-`trainers` (`TRAINER_ROOMS_PER_MAP`: 2 on maps 1-2, 3 on maps 3-5, 4 on maps 6-8,
-one more every two maps past the table up to `TRAINER_ROOMS_MAX = 6`) and every
-other room `wild`. A `wild` room places **no trainer and spends no draw** on them;
-a `trainers` room places **1-2** (`TRAINERS_PER_ROOM`), drawn **after** the spine
-guard, so the guard's own draws never move for a fixed seed and the count no longer
-follows the room's size. A request that names no role is treated as `'trainers'`,
-which keeps the dev generator, the frame importer and the engine tests on the
-shipped pass. Placement never plugs a passage: a candidate is kept only while the
+The carver's count comes from the request's **role** (`RouteRequest.role`): a
+`wild` interior places **no trainer and spends no draw** on them; a `trainers` one
+places **1-2** (`TRAINERS_PER_ROOM`, `src/data/population.ts`), drawn **after** the
+spine guard, so the guard's own draws never move for a fixed seed and the count no
+longer follows the interior's size. A request that names no role is treated as
+`'trainers'`, which keeps the dev generator, the frame importer and the engine tests
+on the shipped pass. **No region node reads this pass**: a route's trainers are laid
+per screen by `planRouteScreens` (`src/engine/region/routeScreens.ts`), the count is
+`planNodeContent(...).trainers` (2-4 on a route, a lateral and the Victory Road) and
+each archetype is one draw off the node's own `content` stream split
+(`route-trainers`), so a node replays alone (`docs/region-spec.md` §7.3, §7.12).
+The retired per-map trainer-room table (`TRAINER_ROOMS_PER_MAP`) bounds nothing a
+node posts. Placement never plugs a passage: a candidate is kept only while the
 entry still reaches **every** tile it could before, with ledges and water counting
 as impassable, so no lane, branch or pocket is cut off. Two trainers never stand in
 neighbouring tiles, and no trainer spawns already watching — or able to spin and
@@ -335,9 +346,8 @@ watch — the tile the player arrives on. Some trainers cycle their facing on a 
 (a "spinning" trainer) so their line turns with them.
 
 The lane guard holds **when the population pass was asked for trainers**: the
-request carries a non-empty archetype pool, the room is not `quiet` (the map's
-entry, boss and special rooms, `docs/maps-spec.md` §2/§6/§7, ship no trainer
-legitimately) and its role is not `'wild'`. A route the pass was asked to guard
+request carries a non-empty archetype pool, it is not `quiet` (a `RouteRequest` that
+asks to be emptied ships no trainer legitimately) and its role is not `'wild'`. A route the pass was asked to guard
 that holds no trainer is
 reported by `validateRoute`'s `missingLaneGuard` (`'no-trainers'`) and re-rolled
 by `sketchRoute` inside `MAX_ATTEMPTS = 8` (`wantsTrainers` is the single
@@ -347,7 +357,7 @@ stream.
 
 ```
 PlaceTrainers(tiles, entry, exits, spine, branches, pockets, role, rng):
-    if len(archetypes) == 0 or role != "trainers": return []   # a wild room draws nothing
+    if len(archetypes) == 0 or role != "trainers": return []   # a wild carve draws nothing
     chosen = Set()
     reach  = ReachableTiles(tiles, entry)      # ledges/water impassable
     candidates = floor tiles hugging a solid wall, off the entry/exits/pockets,
@@ -419,8 +429,9 @@ to a prop frame (`D18`). The generator owns placement, not pixels.
 
 ### 3.7 Gated vault
 
-A room the caller asked for a **gated** vault (`RouteRequest.gate === 'sealed' |
-'open'`, `docs/maps-spec.md` §7) gets one extra pass, after the terrain pass and
+A carve the caller asked for a **gated** vault (`RouteRequest.gate === 'sealed' |
+'open'`, the `vault` point of interest a lateral's terminus can end on,
+`docs/region-spec.md` §7.8) gets one extra pass, after the terrain pass and
 **before** the population pass, so no trainer and no ground item can ever stand in
 the vault. It is a pure carve (`carveGatedVault`, `src/engine/routes/gate.ts`) with
 no side effect beyond the two cells it returns:
@@ -555,8 +566,8 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
 - **No plugging:** a trainer never cuts off a tile (lane, branch or pocket); the
   trainer-free fill keeps every reachable tile reachable (ledges/water impassable).
 - **Stable ids:** `trainer-<route>-<i>`, `item-<route>-<i>`.
-- **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input (30x30 minimum; entry/boss rooms always 30x30)
-  (single screen, camera follow, `padMap` margin - D26; no fog - D6).
+- **Bounds:** openings sit on the map border (gaps in the tree ring); the map size is an input, and a region route is 60 wide and one of 120/160/200 tall (`ROUTE_WIDTH`/`ROUTE_HEIGHTS`, three screens at most)
+  (camera follow, `padMap` margin - D26; no fog - D6).
 
 ## 6. Decisions taken (from the first draft's review)
 
@@ -581,13 +592,16 @@ lane, a branch or a pocket either, and ledges and water count as impassable.
   allowed? (Affects how much of the map is "content".)
 - **O-R2 - Guarded pockets.** May an optional trainer stand on a branch to a
   pocket (risk/reward), as long as the spine stays clear?
-- **O-R3 - Final boss.** Should the finite run's last route use a fixed,
-  hand-shaped arena instead of the same open-field generator?
-- **O-R4 - Which opening is the entry.** *Resolved (D30, `docs/maps-spec.md`).*
-  A map's first room enters from a **random edge** and rooms join by **opposite**
-  openings, so the floor reads as one connected path; the previous chain rule no
-  longer applies.
+- **O-R3 - Final boss.** *Resolved (`D59`).* There is no final boss route: the last
+  stretch's city leads into the Victory Road, the League's five fights and the tower,
+  and the Victory Road is carved by this same generator, four screens of the forest
+  (`docs/region-spec.md` §7.13).
+- **O-R4 - Which opening is the entry.** *Resolved (`docs/region-spec.md` §1,
+  `D60`).* The plan decides it: a node's entry neighbour — the node before it on the
+  chain, a lateral's parent — always takes the `N` long end, and the remaining
+  neighbours take `S`, `E` and `W` in `edges` order. Chain order, not map position,
+  decides which end is which.
 - **O-R5 - Field gates.** Cut/Rock Smash-style **field-move** gates stay out of
   scope unless the design adopts a key/flag gate instead of an HM. A **type** gate
-  (the gated reward room, `docs/maps-spec.md` §7) is not one of these: it asks the
-  party's types, not a move, so it neither adopts nor closes this row.
+  (the `vault` point of interest, `docs/region-spec.md` §7.8) is not one of these: it
+  asks the party's types, not a move, so it neither adopts nor closes this row.

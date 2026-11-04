@@ -193,15 +193,16 @@ Numbers this walk found off the curve and **left alone**, with the path that wou
 have to move and the batch it belongs to. Each one is a road for the next pass, not a
 verdict on the tree.
 
-1. **A route node is drawn from a compat map index, not from its own cap.**
-   `compatForNode` (`src/engine/run/state.ts`) derives `mapIndex` from the node's
-   chain position, so `route:1` is sketched off the chain's second plan and `route:8`
-   off the eighth's. The walk above prices stretch `b` off the plan whose **cap is**
-   `badgeCap(b)` (asserted equal in `curve.test.ts`), which is the ladder's own.
-   Measured cost: badge 1 would post the second plan's 3.33 trainers instead of 3.00,
-   and its fill would read `0.75 × 3.33 × 335.38 / 604 = 1.39` — above the window's
-   ceiling. **Move:** `compatForNode` and the scene's map-index lookup. **Owner:** the
-   region route population pass.
+1. **A route node was drawn from a compat map index, not from its own cap.**
+   *(Resolved by `Task-304`.)* The walk found that a scene-side compatibility helper —
+   `compatForNode` — derived a floor index from the node's chain position, so `route:1`
+   was sketched off the chain's second plan and `route:8` off the eighth's. The walk
+   above prices stretch `b` off the plan whose **cap is** `badgeCap(b)` (asserted equal
+   in `curve.test.ts`), which is the ladder's own. Measured cost: badge 1 would post
+   the second plan's 3.33 trainers instead of 3.00, and its fill would read
+   `0.75 × 3.33 × 335.38 / 604 = 1.39` — above the window's ceiling. **Resolved:**
+   `Task-304` deleted the deprecated position fields and the helper with them, so a
+   route node is carved off its own badge and the cost above is historical.
 2. **The region's route places no trainers of its own.**
    `generateRoute` (`src/engine/region/route/map.ts`) passes no `trainerArchetypes`
    and `sketchRoute` posts none without them, while `planNodeContent(...).trainers`
@@ -222,8 +223,9 @@ verdict on the tree.
    loudly, but the duplicate stays. **Move:** retire `MAP_TUNING[*].cap` behind the
    ladder. **Owner:** the data-close batch.
 5. **`TRAINER_XP_PER_MAP` is still named and keyed as a map table.** Its eight rows
-   are one per stretch now, but the name and `trainerXpMultiplierForMap`'s `mapIndex`
-   still read as a map. **Move:** `src/data/run.ts` and its call sites. **Owner:** the
+   are one per stretch now, and the call site hands `trainerXpMultiplierForMap` the
+   node's **badge**, but the name and the parameter still read as a floor index.
+   **Move:** `src/data/run.ts` and its call sites. **Owner:** the
    data-close batch.
 6. **The tower's party size lives in engine code.** `src/engine/region/tower.ts`
    hard-codes `TOWER_PARTY_SIZE = 5`, and its own comment says the region's size table

@@ -34,7 +34,7 @@ Phaser scene only renders state and forwards choices.
 | **Pokémon** | Swap the active Pokémon for another in the party; costs the turn. |
 | **Run** | Wild battles only. Seeded roll against the classic odds; trainer battles refuse. A wild whose launch carries `noFlee` refuses too, and its row draws disabled. |
 
-The **no-heal room** (`docs/maps-spec.md` §7) narrows the first two rows **for the
+The **no-heal zone** (a lateral's point of interest, `docs/region-spec.md` §7.8) narrows the first two rows **for the
 player only**: the **Bag** is refused (`No items can be used in this room.`, its row
 drawn disabled) and the moves in `BARRED_HEALING_MOVES` (`src/data/noHeal.ts`) are
 refused with `That move cannot be used in this room.` while at least one other move
@@ -44,7 +44,7 @@ enemy's side, its AI, its own healing moves, the abilities, the held items, the
 residual heals and every other command are untouched, and the gate rejects before
 any roll, so the battle RNG does not move.
 
-The **banned-species room** (`docs/maps-spec.md` §7) narrows the **Pokémon** row
+The **banned-species zone** (`docs/region-spec.md` §7.8) narrows the **Pokémon** row
 **for the player only**: the launch carries `bannedSpecies` — the species of the
 run's most-used party member, read by `bannedSpeciesOf` (`src/engine/routes/bannedRoom.ts`)
 off each member's `battlesUsed` counter — into `BattleSetup` and `BattleState`. The
@@ -340,16 +340,16 @@ Room**, **Wonder Room**, **Fairy Lock**, **Mud Sport** and **Water Sport** on th
 field. Each carries a turn count ticked in the residual pass
 (`src/engine/battle/effects/conditions.ts`).
 
-A battle can also **begin** under a condition the room it started in carries
-(`docs/maps-spec.md` §6/§7, `ROOM_BATTLEFIELDS` in `src/data/battlefields.ts`).
+A battle can also **begin** under a condition the zone it started in carries
+(`docs/region-spec.md` §7.8, `ROOM_BATTLEFIELDS` in `src/data/battlefields.ts`).
 `createBattle` seeds the weather, the terrain and the
 field conditions (and fog, below) from its own setup, at each rule's canonical
 duration — `WEATHER_TURNS`, `TERRAIN_TURNS`, `FIELD_CONDITION_TURNS` — so the
 battle's own counters are the only writers afterwards. A setup that names **none**
 of them produces exactly the pre-seeding state, so every other launch is untouched.
-The **boss room** always begins under one of the two openings of `BOSS_OPENINGS`
-(`docs/maps-spec.md` §6): its arena row seeds the condition like any other, and the
-row's `boosts` land on the enemy's **lead** alone, through
+A gym's arena always begins under one of the two openings of `BOSS_OPENINGS`
+(`docs/region-spec.md` §3, §7.4): its arena row seeds the condition like any other,
+and the row's `boosts` land on the enemy's **lead** alone, through
 `BattleSetup.enemyBoosts`.
 
 **Dense fog** is one such condition, and a **field condition, never a weather**: it
@@ -386,9 +386,9 @@ weather and terrain for the same reason: it is the AI's deterministic comparison
 never a roll.
 
 Two facts a **special NPC** can leave on the run ride into the battle start
-(`docs/maps-spec.md` §7). A **forced field** the run carries (`RunState.modifiers`)
-replaces the room's rolled condition and spends one floor per `advanceMap`, so the
-same sky covers the floors it still has. The **curse** is one Attack stage down on
+(`docs/region-spec.md` §7.7). A **forced field** the run carries
+(`RunState.modifiers`) replaces the zone's rolled condition and is spent by the
+battle it starts, so the same sky covers the fights it still has. The **curse** is one Attack stage down on
 the enemy's lead (`BattleSetup.enemyBoosts`, applied once after the fighters exist
 and with no event logged) and is spent by the battle it starts.
 
@@ -513,7 +513,7 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   distinct slot, exactly like a sacrifice's grant. The pair comes off the catch's own
   stream, `hashSeed(\`dark-abilities:${catchId}:${speciesId}\`)`, so it advances no
   other draw and a fixed run seed rebuilds the same pair; `isDarkCatch`'s roll is its
-  own stream too, minted from `(seed, mapIndex, routeInMap, catchId)` at the catch, and
+  own stream too, minted from `${seed}:dark:${nodeKey}:${catchId}` at the catch, and
   `asDark` is applied **after** the catch is adopted at the squad's level, so the level
   rebuild cannot drop the slots it writes. A dark member carries **no type-chart rule
   of its own**: it hits and is hit through the chart like every other member.
@@ -577,11 +577,11 @@ theirs, `RunState.capturedRooms`, not a per-battle counter).
   bar lives on the run (`RunState.xp`), not on a member, and
   the award is not split by party size (the squad is one unit). The whole
   progression is RNG-free (D11).
-- Trainer rosters are generated at the route's level band, never above the cap,
-  with two exceptions the floor injects on top of the route: the **boss** fields
-  a fixed six (three on map 1) at the map's `maxLevel`, and the **mini-boss** a
-  fixed three (two on map 1) at band levels (`src/data/bosses.ts`,
-  `bossPartySize`; `docs/maps-spec.md` §6/§7), and the foe's HP card draws one
+- Trainer rosters are generated at the node's level band, never above its cap: a
+  regular trainer's member is `trainerLevel(cap, gymDistance, partySize)`
+  (`docs/region-spec.md` §3, `D66`), the **gym leader** sits at the cap and its
+  party is the `GYMS` row's (`src/data/gyms.ts`), and the League's five rows are
+  `LEAGUE`'s (`src/data/league.ts`). The foe's HP card draws one
   ball per **fielded** member (a fainted one included), so the row counts the
   party the trainer fielded.
 
@@ -631,8 +631,8 @@ moves. The rules:
 ## 9. Mega Evolution
 
 A Pokémon that holds its **Mega Stone** may Mega Evolve **once per battle**; this
-is the mechanic the mega-stone room's stones feed (`D34`, `docs/maps-spec.md`
-§7).
+is the mechanic a Mega Stone from the ground loot or a `secret-shop` shelf feeds
+(`D34`, `docs/region-spec.md` §7.8).
 
 - The control is a **MEGA** button in the command menu, offered only while the
   active Pokémon holds the stone that matches its species and has not Mega
@@ -873,16 +873,15 @@ hand-placed fight stays single. The engine half is the
   change; an emptied or fainted slot asks for a `switch` when a reserve exists.
   Mega Evolution and Gigantamax stay once per side per battle across both slots,
   never once per slot.
-- **Data.** `BOSS_PARTY[kind]` carries `doubleChance`: a probability in `0..1` that
-  this kind's fight fields two actives per side — **25 %** for the boss (`3/6`
-  members) and **10 %** for the mini-boss (`2/3`). `bossIsDouble(kind, seed,
-  mapIndex, routeKey)` answers the roll from its own stream,
-  `${seed}:double:<kind>:<mapIndex>:<routeKey>`, created inside the call and never
-  shared, so no existing draw moves and a replay rebuilds the same answer (D11);
-  the caller passes the room's own key, `room:<roomId>`, so the same floor answers
-  the same way on every visit and from a reload. `bossPartySize` is unchanged, and
-  a `doubleChance` of `0` or `1` is legal and makes the roll constant. The battle
-  screen that reads the flag is the screen task's, not this rule's.
+- **Data.** A gym row carries `doubleChance`: a probability in `0..1` that its fight
+  fields two actives per side — **10 %** from badge 2 on and `0` on badge 1
+  (`src/data/gyms.ts`). `bossIsDouble(kind, seed, map, routeKey)` in
+  `src/data/bosses.ts` is the retired floor fights' own roll, off its own stream,
+  `${seed}:double:<kind>:<map>:<routeKey}`, created inside the call and never
+  shared, so no existing draw moves and a replay rebuilds the same answer (D11).
+  A region fight does not roll one yet: `GYMS[*].doubleChance` is the door and no
+  scene reads it, so `BattleLaunch.double` stays `false` on every live launch. The
+  battle screen that reads the flag is the screen task's, not this rule's.
 - **Out of scope.** Full Showdown doubles: friend guard, Helping Hand, redirection,
   spread damage reduction, per-slot side conditions and two Megas or two
   Gigantamaxes.
