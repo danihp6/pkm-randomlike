@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import type { KeybindAction } from '../data/keybinds';
-import type { HudPanelId, HudLayout } from '../data/hudLayout';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
 import { shopBandForTier } from '../data/shop';
 import { FRLG_INTERIOR_TILESET } from '../data/tilesets/interior';
@@ -19,13 +18,10 @@ import { t } from '../i18n';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
-import { initialPartyUi, type PartyUiState } from '../ui/partyScreen';
 import { buildShop, buyRows, type ShopSlot } from '../ui/shop';
-import { descriptor as detailPanel, refreshDetail } from './panels/detail';
-import { hudMetrics } from './panels/hud';
+import type { PanelSceneSource } from './panels/host';
 import { descriptor as pcPanel, openPcPanel, refreshPcPanel } from './panels/pc';
 import { closeShopCard, openShopCard, type ShopCardHost } from './panels/shop';
-import type { RoutePanelHost } from './panels/types';
 import { actorDepth, WORLD_TRANSITION_MS, WorldScene } from './WorldScene';
 import { WorldWalker } from './walker';
 
@@ -104,17 +100,11 @@ export class ServicesScene extends WorldScene {
   private stock: readonly ShopSlot[] = [];
   /** The shelf's own stream key. */
   private stockKey = '';
-  /** The panel host the two cards read the run through, built once. */
-  private panelHostValue: RoutePanelHost | null = null;
   /** What the two cards trade against: the live run, the one writer and the ✕. */
   private shopHostValue: ShopCardHost | null = null;
-  /** The HUD's cursor state: the box card's selection, no party card behind it. */
-  private uiState: PartyUiState = initialPartyUi();
-  /** The cards this scene has opened; the cards' own `open` flag reads it. */
-  private readonly openCards = new Set<HudPanelId>();
   /** True while the merchant's card owns the surface. */
   private shopOpen = false;
-  /** True once the PC box and the detail window are mounted. */
+  /** True once the box card is mounted on this scene. */
   private pcMounted = false;
 
   constructor() {
@@ -130,10 +120,7 @@ export class ServicesScene extends WorldScene {
     this.healed = false;
     this.stock = [];
     this.stockKey = '';
-    this.panelHostValue = null;
     this.shopHostValue = null;
-    this.uiState = initialPartyUi();
-    this.openCards.clear();
     this.shopOpen = false;
     this.pcMounted = false;
 
@@ -148,7 +135,7 @@ export class ServicesScene extends WorldScene {
     this.interiorKey = data?.interiorKey ?? CENTRE_INTERIOR_KEY;
   }
 
-  create(): void {
+  override create(): void {
     this.settings = loadSettings();
     this.exposeDebugScene();
 
@@ -169,6 +156,7 @@ export class ServicesScene extends WorldScene {
     this.cityKey = interior.cityKey;
     this.run = this.healOnEntry(run);
     this.stock = this.rollStock(run);
+    super.create();
 
     this.drawWorld({
       tiles: interior.tiles,
@@ -214,14 +202,11 @@ export class ServicesScene extends WorldScene {
     this.commitRun(serviceHeal(run));
   }
 
-  /** The box card, and the member detail window behind it. */
+  /** The box card, over the detail window the panel layer already mounted. */
   openPc(): void {
-    if (this.run === null) return;
-    const host = this.panelHost();
-    if (!this.pcMounted) {
-      this.pcMounted = true;
-      detailPanel.build(host);
-    }
+    const host = this.panelHost;
+    if (this.run === null || host === null) return;
+    this.pcMounted = true;
     openPcPanel(host);
   }
 
@@ -356,11 +341,11 @@ export class ServicesScene extends WorldScene {
     this.refreshCards();
   }
 
-  /** Repaints whichever card this scene has mounted; nothing before the first open. */
+  /** Repaints every card of the layer, and the box card when it is mounted. */
   private refreshCards(): void {
-    const host = this.panelHost();
-    refreshPcPanel(host);
-    refreshDetail(host);
+    this.panelLayer?.refresh();
+    const host = this.panelHost;
+    if (host !== null) refreshPcPanel(host);
   }
 
   private closePanel(): void {
@@ -369,55 +354,34 @@ export class ServicesScene extends WorldScene {
   }
 
   /**
-   * The panel host a route hands its cards, rebuilt here for a scene that is not a
-   * route: the run, the one writer and the HUD's own state are real; the route-only
-   * hooks (its minimap, its battles, its restart) have nothing to answer.
+   * The seven cards a Centre draws (`./panels/host.ts`): the run it carries, the
+   * merchant's one card slot and the two writes it owns. The box card is the eighth
+   * and is mounted on demand (`openPc`), so the layer does not name it; the Centre
+   * cannot fly and has nowhere to restart, so those keep the host's defaults.
    */
-  private panelHost(): RoutePanelHost {
-    const existing = this.panelHostValue;
-    if (existing !== null) return existing;
-    const scene = this;
-    const host: RoutePanelHost = {
-      scene,
-      run: () => scene.liveRun(),
-      settings: () => scene.settings,
-      hudLayout: () => scene.settings.hudLayout,
-      setHudLayout: (layout: HudLayout) => {
-        scene.settings = { ...scene.settings, hudLayout: layout };
+  protected override panelSource(): PanelSceneSource {
+    return {
+      scene: this,
+      run: () => this.liveRun(),
+      settings: () => this.settings,
+      slot: {
+        open: () => undefined,
+        close: () => this.closePanel(),
+        isOpen: () => this.shopOpen,
       },
-      hud: () => hudMetrics(scene.scale.width),
-      hudCardOpen: (id) => scene.openCards.has(id),
-      setHudCardOpen: (id, open) => {
-        if (open) scene.openCards.add(id);
-        else scene.openCards.delete(id);
-        scene.refreshCards();
+      actions: {
+        openSettings: () => this.openSettings(),
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => storeRun(browserStorage(), this.liveRun()),
       },
-      ui: () => scene.uiState,
-      setUi: (state) => {
-        scene.uiState = state;
-      },
-      commitRun: (run) => scene.commitRun(run),
-      persistRun: () => storeRun(browserStorage(), scene.liveRun()),
-      refreshHud: () => scene.refreshCards(),
-      openPanel: () => undefined,
-      closePanel: () => scene.closePanel(),
-      panelOpen: () => scene.shopOpen,
-      showNotice: () => undefined,
-      startWildBattle: () => undefined,
-      startTrainerBattle: () => undefined,
-      route: () => {
-        throw new Error('a Centre is not a route');
-      },
-      plan: () => null,
-      rooms: () => {
-        throw new Error('a Centre is not a route');
-      },
-      openSettings: () => undefined,
-      restartRun: () => undefined,
-      flyToNode: () => undefined,
     };
-    this.panelHostValue = host;
-    return host;
+  }
+
+  /** The pause card's Settings row: the Centre pauses under the options page. */
+  private openSettings(): void {
+    if (this.leaving) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: regionSceneKey });
   }
 
   /** What the merchant's card trades against: the live run, the writer and its ✕. */
@@ -443,15 +407,14 @@ export class ServicesScene extends WorldScene {
     return run;
   }
 
-  /** Drops both cards and their `#hud` mounts; the scene is going away. */
+  /** Drops the two cards the layer does not own; the scene is going away. */
   private teardownCards(): void {
     closeShopCard();
     this.shopOpen = false;
     if (!this.pcMounted) return;
     this.pcMounted = false;
-    const host = this.panelHost();
-    detailPanel.close?.(host);
-    pcPanel.close?.(host);
+    const host = this.panelHost;
+    if (host !== null) pcPanel.close?.(host);
   }
 
   /** Dev only: the browser pass reaches this scene by name, as it does the city's. */

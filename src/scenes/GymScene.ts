@@ -37,6 +37,7 @@ import { actionKeys, subscribeKeybinds } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { TRAINER_TEXTURE_KEY } from './BootScene';
+import type { PanelSceneSource } from './panels/host';
 import { actorDepth, WORLD_TRANSITION_MS, WorldScene } from './WorldScene';
 import { RUN_STEP_MS, WALK_STEP_MS, WorldWalker, type MoveDirection } from './walker';
 
@@ -176,7 +177,7 @@ export class GymScene extends WorldScene {
     this.cityKey = data?.cityKey ?? run.nodeKey;
   }
 
-  create(): void {
+  override create(): void {
     this.settings = loadSettings();
     this.exposeDebugScene();
 
@@ -198,6 +199,7 @@ export class GymScene extends WorldScene {
     this.plan = plan;
     this.gym = gym;
     this.cityKey = gym.cityKey;
+    super.create();
 
     this.drawWorld({
       tiles: gym.interior.tiles,
@@ -240,6 +242,45 @@ export class GymScene extends WorldScene {
       walker.update(delta, running);
     }
     sprite.setDepth(actorDepth(sprite.y));
+  }
+
+  /**
+   * The seven cards a gym draws (`./panels/host.ts`): the run it carries and the two
+   * writes it owns. A gym opens no room card, cannot fly and has nowhere to restart,
+   * so those keep the host's own defaults.
+   */
+  protected override panelSource(): PanelSceneSource {
+    return {
+      scene: this,
+      run: () => this.liveRun(),
+      settings: () => this.settings,
+      actions: {
+        openSettings: () => this.openSettings(),
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => this.persistRun(),
+      },
+    };
+  }
+
+  /** The pause card's Settings row: this gym pauses under the options page. */
+  private openSettings(): void {
+    if (this.foe !== null || this.leaving) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: regionSceneKey });
+  }
+
+  /** The live run, or a throw: `panelSource` is only read once the plan resolved. */
+  private liveRun(): RunState {
+    const run = this.run;
+    if (run === null) throw new Error('the gym has no run');
+    return run;
+  }
+
+  /** Sets the scene's run, persists it and repaints the cards (a HUD write). */
+  private commitRun(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+    this.panelLayer?.refresh();
   }
 
   /** Called by `BattleScene` before it stops: folds the fight and marks what it left. */

@@ -33,7 +33,7 @@ import {
   type BattleReturn,
   type RunState,
 } from '../engine/run';
-import { loadSave, storeRun } from '../engine/save';
+import { loadSave, storeRun, type Settings } from '../engine/save';
 import { subscribeKeybinds } from '../input/input';
 import { playCue, playMusic } from '../audio/audio';
 import { loadSettings } from '../settings';
@@ -41,6 +41,7 @@ import { browserStorage } from '../storage';
 import { t } from '../i18n';
 import { addFrlgWindow, FRLG_ACCENT, FRLG_MUTED, FRLG_SURFACE } from '../ui/frlg';
 import { addFrlgText, FRLG_INK } from '../ui/frlgFont';
+import { createScenePanels, type ScenePanels } from './panels/host';
 
 /**
  * The League (`docs/region-spec.md` §7.6) and the endless tower behind it (§7.11),
@@ -100,6 +101,10 @@ export class LeagueScene extends Phaser.Scene {
   private healed = 0;
   /** Everything `paint` drew, so a repaint can drop it. */
   private painted: Phaser.GameObjects.GameObject[] = [];
+  /** The settings the cards read; read once per entry, like every node scene. */
+  private settings!: Settings;
+  /** The shared panel layer the League mounted once its run was healed. */
+  private panelLayer: ScenePanels | null = null;
 
   constructor() {
     super(regionSceneKey);
@@ -134,16 +139,18 @@ export class LeagueScene extends Phaser.Scene {
     if (this.run !== incoming) this.healed += 1;
     this.persistRun();
 
+    this.settings = loadSettings();
+    this.mountPanels();
     this.paint();
     playMusic(this, 'menu-music');
     // The battle above took the music channel; the League takes it back between
     // two fights, exactly as the route does.
     this.events.on(Phaser.Scenes.Events.RESUME, this.takeMusicBack, this);
     subscribeKeybinds(this, ({ action }) => this.handleAction(action));
-    this.scale.on('resize', this.paint, this);
+    this.scale.on('resize', this.onResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME, this.takeMusicBack, this);
-      this.scale.off('resize', this.paint, this);
+      this.scale.off('resize', this.onResize, this);
       for (const object of this.painted) object.destroy();
       this.painted = [];
     });
@@ -285,6 +292,58 @@ export class LeagueScene extends Phaser.Scene {
   /** Called when a battle folds the League back on screen: the bed returns. */
   private takeMusicBack(): void {
     playMusic(this, 'menu-music');
+  }
+
+  /**
+   * The seven cards a node scene draws (`./panels/host.ts`), built here because the
+   * League is a screen of its own and not a `WorldScene`: the healed run, the two
+   * writes it owns and no room card. The cards unmount with the scene.
+   */
+  private mountPanels(): void {
+    const layer = createScenePanels({
+      scene: this,
+      run: () => this.liveRun(),
+      settings: () => this.settings,
+      actions: {
+        openSettings: () => this.openSettings(),
+        commitRun: (run) => this.commitRun(run),
+        persistRun: () => this.persistRun(),
+      },
+    });
+    this.panelLayer = layer;
+    layer.build();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.panelLayer === null) return;
+      this.panelLayer.close();
+      this.panelLayer = null;
+    });
+  }
+
+  /** A window resize repaints the canvas panel and every card over it. */
+  private onResize(): void {
+    this.paint();
+    this.panelLayer?.refresh();
+  }
+
+  /** The pause card's Settings row: the League pauses under the options page. */
+  private openSettings(): void {
+    if (this.foe !== null || this.towerFoe !== null || this.leaving) return;
+    this.scene.pause();
+    this.scene.launch('Settings', { from: regionSceneKey });
+  }
+
+  /** Sets the scene's run, persists it and repaints the cards (a HUD write). */
+  private commitRun(run: RunState): void {
+    this.run = run;
+    this.persistRun();
+    this.panelLayer?.refresh();
+  }
+
+  /** The live run, or a throw: the layer is only built once the run is healed. */
+  private liveRun(): RunState {
+    const run = this.run;
+    if (run === null) throw new Error('the League has no run');
+    return run;
   }
 
   /** Writes the run to the save slot, so a reload resumes the chain it is on. */

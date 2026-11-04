@@ -8,6 +8,13 @@ import { TILE_SIZE } from '../engine/tileset';
 import { prefersTouchControls } from '../input/device';
 import type { WorldLayers } from '../render/tilemapLayer';
 import { buildWorldLayers, destroyWorldLayers } from '../render/tilemapLayer';
+import {
+  createScenePanels,
+  NODE_PANEL_IDS,
+  type PanelSceneSource,
+  type ScenePanels,
+} from './panels/host';
+import type { RoutePanelHost, RoutePanelId } from './panels/types';
 
 /** The one transition's length: the fade out, then the fade in. */
 export const WORLD_TRANSITION_MS = 200;
@@ -57,11 +64,16 @@ type PendingNode = Readonly<{
 
 /**
  * The base every node scene extends (route, city, gym, League): it owns the tile
- * draw, the camera's bounds and the node preload, and nothing else. It holds no
- * run, no plan and no HUD - a subclass draws its own actors over the layers and
- * keeps its own rules.
+ * draw, the camera's bounds, the node preload and the shared panel layer. It holds
+ * no run, no plan and no HUD state of its own - a subclass draws its own actors over
+ * the layers, hands `panelSource` the run it carries and keeps its own rules.
  */
 export abstract class WorldScene extends Phaser.Scene {
+  /**
+   * The shared panel layer this scene mounted, or null (and nothing is drawn). A
+   * subclass that answers `null` from `panelSource` gets no layer and no listener.
+   */
+  protected panelLayer: ScenePanels | null = null;
   private layers: WorldLayers | null = null;
   private meshes: NodeMeshes | null = null;
   private bounds: Readonly<{ width: number; height: number }> = { width: 0, height: 0 };
@@ -77,6 +89,53 @@ export abstract class WorldScene extends Phaser.Scene {
 
   constructor(key: string) {
     super(key);
+  }
+
+  /**
+   * The panels a node scene mounts: the seven a settlement produces, unless the
+   * subclass names its own set (the route keeps all twelve).
+   */
+  protected panelSelection(): readonly RoutePanelId[] {
+    return NODE_PANEL_IDS;
+  }
+
+  /**
+   * The source the host answers from. The base default mounts nothing: a subclass
+   * that stands a run on screen overrides it with that run, its card slot and the
+   * writes it owns.
+   */
+  protected panelSource(): PanelSceneSource | null {
+    return null;
+  }
+
+  /** The cards' port, or null for a scene that mounted no layer. */
+  protected get panelHost(): RoutePanelHost | null {
+    return this.panelLayer === null ? null : this.panelLayer.host;
+  }
+
+  /**
+   * Builds the shared panel layer from `panelSource()`, mounts it and wires the two
+   * listeners that keep it alive: a window resize repaints every card from the live
+   * scale, and the scene's shutdown unmounts them. A scene with no source gets no
+   * layer and registers nothing.
+   */
+  create(): void {
+    this.panelLayer = null;
+    const source = this.panelSource();
+    if (source === null) return;
+    const layer = createScenePanels({ ...source, panels: this.panelSelection() });
+    this.panelLayer = layer;
+    layer.build();
+    const onResize = (): void => {
+      if (this.panelLayer !== null) this.panelLayer.refresh();
+    };
+    const onShutdown = (): void => {
+      this.scale.off('resize', onResize);
+      this.events.off(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
+      if (this.panelLayer !== null) this.panelLayer.close();
+    };
+    this.scale.on('resize', onResize);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
   }
 
   /** The underlay layer of the map on screen, or null before the first draw. */

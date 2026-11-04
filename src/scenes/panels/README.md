@@ -1,12 +1,16 @@
-# `src/scenes/panels/` — the route's overlay panels
+# `src/scenes/panels/` — the node screens' overlay panels
 
-One module per route panel, discovered by `RouteScene`'s registry from this folder
-itself (`D47`'s shape, one folder over): a new panel is a new file here and the scene
-is not edited. Each module exports a single `descriptor` whose `id` is its own file
-name and whose `order` is its build/z slot; the scene owns the keyboard slot, the run
-and the route, and hands them over through `RoutePanelHost` (`types.ts`). The folder
-imports Phaser **type-only**, so it loads in a headless test, and never imports the
-scene.
+One module per overlay panel, discovered by this folder's `host.ts` (`D47`'s shape,
+one folder over): a new panel is a new file here and no scene is edited. Each module
+exports a single `descriptor` whose `id` is its own file name and whose `order` is its
+build/z slot; the scene owns the keyboard slot, the run and the route, and hands them
+over through `RoutePanelHost` (`types.ts`). The folder imports Phaser **type-only**, so
+it loads in a headless test, and never imports a scene.
+
+The layer is **scene-agnostic**: `createScenePanels` builds the port over any node
+screen, so a city, a gym, a laboratory, a Centre and the League draw the party, bag,
+missions, rewards, trade, detail and pause cards from the run they already carry
+(`NODE_PANEL_IDS`), while the route keeps all twelve.
 
 ## Layout
 
@@ -19,6 +23,12 @@ scene.
 - `registry.ts` — collects the folder's `descriptor` exports, keyed by id and sorted
   by `order`; it throws on a duplicate id or a duplicate order.
 - `registry.test.ts` — the collection rules and the folder's own module convention.
+- `host.ts` — the shared panel layer: the folder's one `import.meta.glob`, the port
+  every card draws through, the HUD's transient state (cursor, open/collapsed flags,
+  the persisted layout) and the build/refresh/close sequence of the selected cards.
+  It never mounts by itself and holds no scene.
+- `host.test.ts` — the port's frozen member list and total defaults, the twelve-card
+  collection, a node scene's seven, and the build/refresh/close order.
 - `hud.ts` — the HUD's frame: the panel metrics, the open/collapsed state the quick keys and the
   chips toggle, each card's default dock, and the mounted edge chip strip. The drag, its clamp
   and the saved placement left with the canvas layer (`Task-208` owns their DOM parity).
@@ -70,7 +80,7 @@ their retirement — is follow-up `Task-208`, not assumed here:
 `RoutePanelHost` (`types.ts`) is the spec's frozen surface **plus** the five reads a panel
 cannot compute on its own, treated as frozen from now on:
 
-- `route()` — the route on screen, for the header's biome name.
+- `route()` — the route on screen (null off a route), for the header's biome name.
 - `plan()` — the floor plan (or null off a planned room), for the minimap.
 - `rooms()` — the special rooms' descriptors, for the minimap's own markers (`D47`).
 - `openSettings()` — opens the Settings screen paused on top (the pause menu's row).
@@ -81,17 +91,17 @@ cannot compute on its own, treated as frozen from now on:
 it is open and the quick keys plus the chip strip write it, so no panel keeps a second copy
 of that state.
 
-`close` is optional on every descriptor and the scene walks it with `panel.close?.()`.
-Eight of the eleven cards dispose their mount there; `rewards`, `shop` and `trade` ship no
-`close` and are torn down by their own room timers (`closeMiniBossReward`, `closeShopCard`,
-`closeTradeCard`), which the scene does not own.
+`close` is optional on every descriptor and the layer walks it with `panel.close?.()`,
+in reverse `order`, once. Eight of the eleven cards dispose their mount there; `rewards`,
+`shop` and `trade` ship no `close` and are torn down by their own room timers
+(`closeMiniBossReward`, `closeShopCard`, `closeTradeCard`), which the scene does not own.
 
 ## Rules
 
 1. A panel is a new file exporting exactly one `descriptor`; adding one needs no edit
-   to `RouteScene` and no edit to the other panels.
-2. A panel reaches the scene only through `RoutePanelHost`; it never imports
-   `RouteScene` and never writes the run (`commitRun` is the scene's).
+   to `host.ts`, to a scene or to the other panels.
+2. A panel reaches the scene only through `RoutePanelHost`; it never imports a scene
+   and never writes the run (`commitRun` is the scene's).
 3. A panel keeps its own state at module scope, the way the room layer does.
 4. Phaser is a **type-only** import. A panel paints through the Preact mount it is handed,
    never through `host.scene.add`; the two overlays named above are the only place a scene
