@@ -12948,7 +12948,7 @@ runner, the same budget as its neighbours.
 
 **Hot files.** None: `docs/*.md` only.
 
-- [ ] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
+- [x] **[Task-299] The docs close in the region's vocabulary.** `docs/design-spec.md`,
       `docs/routes-spec.md`, `docs/tech-decisions.md` and `docs/data-spec.md` stop describing floors
       and describe what shipped, with the new `D##` complete and no dead reference left.
       **Measured:** `docs/design-spec.md` §2 describes the run as eight maps plus infinite mode;

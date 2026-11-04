@@ -14,7 +14,7 @@ value, never by art:
 | --- | --- | --- | --- |
 | 0 | `FLOOR` | yes | plain ground |
 | 1 | `WALL` | no | rock/tree/building wall; also the route border |
-| 2 | `EXIT` | yes | route exits are floor positions for now (unused tile); no art yet (draws ground, §6) |
+| 2 | `EXIT` | yes | a route's exit position (unused tile since the region's exit bands); no art yet (draws ground, §6) |
 | 3 | `TRAP` | yes | hazard, cave-flavoured |
 | 4 | `CHEST` | yes | loot |
 | 5 | `ITEM` | yes | floor item |
@@ -68,8 +68,8 @@ Every biome ships two images:
   ledge lip has no dark-ground variant, so it is re-grounded onto the field's floor
   (`overFill` keys its light sheet background and fills it with the floor). Frames
   `49`/`50` — the two dead wall-shape slots (`wallPattern` wins every wall, so the
-  autotiler never draws them) — now carry the **bush** and **rock** seals of the
-  gated reward room (`FRLG_OBSTACLE_BUSH`/`FRLG_OBSTACLE_ROCK`), re-grounded the way
+  autotiler never draws them) — now carry the **bush** and **rock** seals of a
+  `vault` point of interest (`FRLG_OBSTACLE_BUSH`/`FRLG_OBSTACLE_ROCK`), re-grounded the way
   the ledge lip is: the bush is the tree bank's lower-leaves cell keyed against the
   field's floor, the boulder is the cave bank's rock body keyed against the **cave**
   floor it is drawn on. The third seal, the pond, draws through the shipped `WATER`
@@ -127,8 +127,8 @@ type TilesetConfig = {
 
 ## 2b. The city and interior atlases
 
-A **city** and an **interior** are not biomes: they are the two region fields a map's
-non-route rooms draw, and each ships its own 4x13 sheet of 16px cells (64x208) plus
+A **city** and an **interior** are not biomes: they are the two region fields a
+settlement and its buildings draw, and each ships its own 4x13 sheet of 16px cells (64x208) plus
 a committed manifest, all written by `scripts/frlg/build-region-tilesets.mjs`:
 
 | Tileset | sheet | manifest | kinds (kind → map value → frame) |

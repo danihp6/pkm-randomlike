@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The docs close in the region's vocabulary.** `[Task-299]`, Batch 130: the
+      eleven specs the floor sweep left behind now describe the shipped region. The
+      run's chain is `town → route 1 → city 1 → … → city 8 → Victory Road → League →
+      tower` in `docs/design-spec.md` §2, §6 and §7, a route is one node of the plan
+      with two to four screens and its laterals in `docs/routes-spec.md` §1, the
+      passives, trainer and vault rules key on `nodeKey`/`node.cap`/`gymDistance`, and
+      `docs/data-spec.md` rows the shipped data modules in node vocabulary. The
+      `docs/maps-spec.md` pointer is gone from every spec, including
+      `docs/battle-spec.md` and the three `docs/balance/` sheets, and every `src/`
+      path the eleven name exists. `docs/tech-decisions.md` gains the missing
+      `D63`-`D68` (the mesh/worker tilemap, the DOM region map, the forward-only
+      guard, badge/distance/party-size levels, free flight at visited settlements,
+      missions as a stack) and marks `D8`, `D9`, `D28`-`D33` and `D47` **superseded**
+      with a pointer to their replacement instead of deleting them. `[unit]` the
+      retired-vocabulary grep, the `src/` path check and the `docs/` pointer check all
+      print nothing, and the suite is unchanged at 5 959 tests over 332 files with
+      `npm run build` clean. No browser pass was owed.
+
 - [x] **The deprecated position fields go.** `[Task-304]`, Batch 129: `RunState` has one position
       again — its `nodeKey`. `mapIndex`, `routeIndex` and `routeInMap` are gone from the type, from
       the save decoder/encoder and from every reader: `compatForNode` becomes `nodeEntry`, which

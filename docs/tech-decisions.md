@@ -60,13 +60,19 @@ visible from the start, so trainers and items are read off the map itself.
 
 Six active, the rest in the box. Swapping is a battle command.
 
-## D8 — Run structure: routes, mini-boss, boss, final boss, plus infinite mode *(decided)*
+## D8 — Run structure: routes, mini-boss, boss, final boss, plus an endless tail *(decided)*
+
+**Superseded** by `D59` (the region's chain: town, eight gym cities, the Victory
+Road, the League and the endless tower).
 
 Finite chain by default with a mini-boss cadence, a boss closing each block and a
-final boss; infinite mode reuses the generator without the finish line. Exact
+final boss; an endless tail reuses the generator without the finish line. Exact
 cadences are data (`src/data/run.ts`), not code.
 
 ## D9 — Classic XP and levels, with a per-route cap *(decided)*
+
+**Superseded** by `D66` (a node's cap, its distance to the leader and the party
+size are the whole level rule).
 
 Pokémon gain XP, level up and evolve; the route's level cap clamps gain so the
 next route is always a step up and grinding is impossible. Evolution blocked by
@@ -129,7 +135,7 @@ sprites), and the art pipeline scripts (`scripts/legacy-art/`). What does not
 carry over: its Canvas renderer (we render in Phaser), its grid-based combat, its
 non-permadeath save model, and its TypeScript style (we use the workspace's).
 
-## D15 — No `src/core`; `src/engine` is the only logic root *(decided)*
+## D15 — No separate `core` root; `src/engine` is the only logic root *(decided)*
 
 The donor split logic across `core/`, `entities/` and `generators/`. We keep one
 `src/engine/` with domain subfolders (`battle/`, `routes/`, `dex/`) so the "no
@@ -499,6 +505,8 @@ picks the shiny atlas.
 
 ## D28 — A map groups routes of one biome *(decided)*
 
+**Superseded** by `D59` (a node carries its own biome, cap and screens).
+
 The run's chain is now a chain of **maps**, and a map is a **graph of routes**
 (rooms) laid out on a coarse grid — Binding of Isaac's floors with rooms. A map
 owns the three things that used to be rolled per route: the **biome**, the
@@ -510,17 +518,23 @@ maps) and D26 (the layout style is per map, not per route).
 
 ## D29 — Map composition is rolled from per-map ranges *(decided)*
 
-Everything a map is comes from one `map` stream keyed `(seed, "map", mapIndex)`,
-so a plan is a pure function of the seed and the map index (D11). The biome is
-picked from `BIOME_ORDER`, **never repeating the previous map's**; the room count
-and each room's **width and height** (rolled independently) come from inclusive
-**ranges** in `src/data/maps.ts`; the size range **grows with the map index**, so
-later floors are bigger, and `MAP_TUNING_STEP` keeps growing past the last tuned
-row for infinite mode. Retuning a run is a data edit, never a generator edit. The
-player's cap is the map's `maxLevel` (`levelCapForMap`), generalising the
-per-route cap of D9.
+**Superseded** by `D66` (the cap is the only level anchor and the level rules read
+it) and `D59` (the region, whose nodes are planned instead of rolled).
+
+Everything a map is comes from one `map` stream keyed `(seed, "map", the map
+index)`, so a plan is a pure function of the seed and the map index (D11). The
+biome is picked from `BIOME_ORDER`, **never repeating the previous map's**; the
+room count and each room's **width and height** (rolled independently) come from
+inclusive **ranges** in `src/data/maps.ts`; the size range **grows with the map
+index**, so later floors are bigger, and `MAP_TUNING_STEP` keeps growing past the
+last tuned row for an endless tail. Retuning a run is a data edit, never a
+generator edit. The player's cap is the map's `maxLevel` (`levelCapForMap`),
+generalising the per-route cap of D9.
 
 ### D29 — addendum: the cap is the only level anchor *(decided)*
+
+**Superseded** by `D66` (the rule, read off a node's `cap` and `gymDistance`) and
+`D59` (the region).
 
 Once a wild's level and a regular trainer's level both follow the **live squad**
 (D11/D17 amended), a floor has exactly one level anchor left: its **cap**.
@@ -537,6 +551,9 @@ pinned to the cap by its caller.
 
 ## D30 — The map is a closed room graph on a grid *(decided)*
 
+**Superseded** by `D59` (a node is one mesh pair, not a graph of rooms) and `D60`
+(its identity is `nodeKey`, not a room's index).
+
 A map is a Binding of Isaac-style floor: rooms sit on a coarse **grid of cells**
 and a door on one room's wall lines up with the neighbour's **opposite** door
 (leave East → enter West). Each room is still played on its own screen (camera
@@ -550,41 +567,53 @@ the openings; the route builder no longer rolls a shape on its own.
 
 ### D30 — addendum: a floor tags each regular room's population role
 
+**Superseded** by `D59` (the content pass counts a node's trainers) and `D60`.
+
 A route's trainer count used to be emergent — one guard on the main lane, one per
 filled pocket and the map-size tier's bonus, thinned per band — so a floor fielded
-5-21 trainers and no floor had a designed composition. A floor now **tags each of
-its regular rooms with a role**, `'trainers'` or `'wild'`: exactly
-`trainerRoomsForMap(mapIndex)` of them are `'trainers'` (2 on map 1 rising to 4 on
-maps 6-8, one more every two maps past the table up to 6) and every other room is
-`'wild'`, while the entry, the boss and every special leaf are always `'wild'`. The
-population pass places **1-2 trainers in a `trainers` room and none in a `wild`
-one** (`TRAINERS_PER_ROOM`, `src/data/population.ts`), so the room's size no longer
-changes the count. The role draws are **appended after the last special draw** of
-the `map` stream, so a fixed seed's floor — biome, count, topology, ids, sizes and
-specials — does not move; the pass reads `MapRoom.role` / `RoomView.role` and never
-re-derives it (`docs/route-generator.md` §3.4).
+5-21 trainers and no floor had a designed composition. A floor then **tagged each
+of its regular rooms with a role**, `'trainers'` or `'wild'`: exactly the row
+`TRAINER_ROOMS_PER_MAP` read (`src/data/population.ts`) were `'trainers'` — two
+from the first floor, four on the late ones, one more every two floors past the
+table up to `TRAINER_ROOMS_MAX = 6` — and every other room was `'wild'`, while
+the entry, the boss and every special leaf were always `'wild'`. The population
+pass placed **1-2 trainers in a `trainers` room and none in a `wild` one**
+(`TRAINERS_PER_ROOM`), so the room's size no longer changes the count. The role
+draws are **appended after the last special draw** of the `map` stream, so a fixed
+seed's floor — biome, count, topology, ids, sizes and specials — does not move;
+the pass reads the plan's `role` and never re-derives it (`docs/route-generator.md`
+§3.4).
 
 ## D31 — The map boss seals the exit and opens the portal *(decided)*
+
+**Superseded** by `D65` (the guard gates only the way forward out of a city) and
+`D59`.
 
 The **room farthest from the entry** (graph distance) fields the map's **boss**, a
 fixed themed trainer at the map's `maxLevel`. Its onward opening is **sealed**
 while the boss stands; once it falls a **portal** opens and stepping through it
 advances to the next map (heal stop intact: HP/PP only, never a resurrection). A
-finite run's last map holds the **final boss** and no portal, so clearing it wins
-the run; infinite mode reopens the portal forever. This is the map's gate, on top
-of the room cadence of D8.
+finite run's last map holds the **final boss** and no onward door, so clearing it
+wins the run; the endless tail reopens the way forever. This is the map's gate, on
+top of the room cadence of D8.
 
 ## D32 — The route HUD shows the map with fog of discovery *(decided)*
 
-The route HUD's header grows into a **minimap of the floor**, exactly the
-Binding of Isaac minimap: a **grid of room cells**, each room drawn at its grid
-position from its `size` and shape with its openings on the matching walls, the
-current room highlighted, the boss room marked and the portal flagged. Rooms that
-have not been **discovered** (entered) yet — and the links to them — stay hidden,
-so the floor reveals itself as the run advances. The pure layout and the reveal
-filter live in `src/ui/mapView.ts`; `RouteScene` only draws it.
+**Superseded** by `D64` (the region map is a DOM straight-line graph, with every
+settlement visible from the first frame).
+
+The route HUD's header grew into a **minimap of the floor**, exactly the Binding
+of Isaac minimap: a **grid of room cells**, each room drawn at its grid position
+from its `size` and shape with its openings on the matching walls, the current
+room highlighted, the boss room marked and the onward door flagged. Rooms that
+have not been **discovered** (entered) yet — and the links to them — stayed
+hidden, so the floor revealed itself as the run advanced. The pure layout and the
+reveal filter lived in the floor's own view module; `RouteScene` only drew it.
 
 ## D33 — Special rooms and the Poké Dollar economy *(decided)*
+
+**Superseded** by `D59` (the Mart survives as each city's merchant, and `D68` is
+where a node's missions live).
 
 Beyond its K regular rooms, a Binding of Isaac floor can hold **special rooms**:
 extra `dead-end` leaves that carry **only their own content** — a guaranteed
@@ -1017,53 +1046,54 @@ telegraphing the enemy's choice — is deliberately **not** built here.
 
 ## D47 — A special room kind is a descriptor module; the route keeps one auto-discovered registry *(decided)*
 
-Every **special room kind** (`MapRoomSpecial`: `shop`, `mini-boss`, `mega-stone`, and every
-kind a later task adds) used to be code inside `RouteScene.ts`. It is now one **descriptor
-module** under `src/scenes/rooms/`, and the scene keeps **one registry** of them, built from
-the folder itself with `import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true })`
-— the negative pattern keeps the folder's tests out of the bundle. `collectDescriptors` takes
-that module map and collects every module that exports a named `descriptor` whose `kind` is a
-string; any other module (`types.ts`, `registry.ts`, a helper) is skipped silently, so the
-folder may hold non-descriptor files. Two descriptors that claim one kind **throw**, naming both
-module paths in module-map key order, so a duplicated room kind fails loudly at scene start
-rather than silently dropping one. Both indexes (`byKind` and `byMarker`) are built once and
+**Superseded** by `D59`: the room registry and the descriptor modules were deleted
+with the floors, and a lateral's point of interest is data now
+(`src/data/pois.ts`, `src/engine/region/pois.ts`).
+
+Every **special room kind** (the shop, the mini-boss, the mega-stone room, and every
+kind a later task adds) used to be code inside `RouteScene.ts`. It became one **descriptor
+module** under the deleted `rooms/` folder, and the scene kept **one registry** of them,
+built from the folder itself with
+`import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true })`
+— the negative pattern kept the folder's tests out of the bundle. `collectDescriptors` took
+that module map and collected every module that exports a named `descriptor` whose `kind` is a
+string; any other module (`types.ts`, `registry.ts`, a helper) was skipped silently, so the
+folder could hold non-descriptor files. Two descriptors that claimed one kind **threw**, naming both
+module paths in module-map key order, so a duplicated room kind failed loudly at scene start
+rather than silently dropping one. Both indexes (`byKind` and `byMarker`) were built once and
 never mutated.
 
-A `RoomDescriptor` is data plus four optional hooks: `fixture(host)` is the room's content
+A `RoomDescriptor` was data plus four optional hooks: `fixture(host)` was the room's content
 (trainers appended after the map boss's own entry, ground items, and the counter tile the
-movement block and the interact key read), `interact(host, tile)` is the interact key while the
-player faces a tile — `true` means the room consumed it — `drawFixture(host)` draws the room's
+movement block and the interact key read), `interact(host, tile)` was the interact key while the
+player faced a tile — `true` meant the room consumed it — `drawFixture(host)` drew the room's
 own fixture sprite where the scene draws entities, and `drawMarker(graphics, cx, cy, radius)`
-draws the room's minimap glyph. A room reaches the scene only through **`RoomHost`**, a
-read-only port whose members are the room's `view`, the live `run`, the entry/counter/farthest
+drew the room's minimap glyph. A room reached the scene only through **`RoomHost`**, a
+read-only port whose members were the room's `view`, the live `run`, the entry/counter/farthest
 tiles, the facing helper, the dev-generator flag, `commitRun`, `releaseHudKeyboard`,
 `openPanel` / `closePanel` / `panelOpen` and the scene's own `add`/`scale`/`cameras`.
-`RouteScene` satisfies it; nothing else does, and the descriptor modules never import a scene.
-`Phaser` is a **type-only** import in `types.ts`, and `registry.ts` imports Phaser not at all,
-so the whole layer is unit-tested headless — including the Mart window, which drives a stub
+`RouteScene` satisfied it; nothing else did, and the descriptor modules never imported a scene.
+`Phaser` was a **type-only** import in `types.ts`, and `registry.ts` imported Phaser not at all,
+so the whole layer was unit-tested headless — including the Mart window, which drove a stub
 scene.
 
-**The plan's data stays the plan's.** `MapRoomSpecial` is still what `src/engine/maps/plan.ts`
-rolls and what the run's rooms carry; the **marker the minimap draws** comes from the
-descriptor (`byMarker`), so the map's glyph vocabulary lives beside the room that draws it.
-`src/ui/mapView.ts` keeps `MapRoomMarker = MapRoomSpecial` untouched, and its geometry — the
-bands, the centring, the door midpoints and the fog — is unchanged.
+**The plan's data stayed the plan's.** The room kind was what the floor's plan rolled and what
+the run's rooms carried; the **marker the minimap drew** came from the descriptor (`byMarker`),
+so the map's glyph vocabulary lived beside the room that drew it. The floor's view module kept
+the marker type untouched, and its geometry — the bands, the centring, the door midpoints and
+the fog — was unchanged. The region's own map is `src/ui/regionMap.ts` (`D64`), which draws the
+plan's nodes and no room glyph at all.
 
-**The scene owns the keyboard slot, not the panel.** `RouteScene.roomPanel` holds the open
-`RoomPanel` (or nothing); the scene's action handler gives it every key first, the pointer
+**The scene owns the keyboard slot, not the panel.** `RouteScene.roomPanel` held the open
+`RoomPanel` (or nothing); the scene's action handler gave it every key first, the pointer
 guards read `panelOpen()`, and the panel's `close()` — called by the scene, never by the panel
-— destroys the objects the room built. The shop room's own state (its stock, tab, cursor and
-the row objects it repaints) lives in its module, as does the counter tile it declares; the
-scene keeps the tile so movement can still block on it. No room's behaviour, price, key, tile,
-marker or RNG draw moved with the code: the mini-boss and the mega-stone place no roll of their
-own (their ids are `miniBossTrainerId(mapIndex)` / `megaStoneItemId(mapIndex)`), the stone
-still draws off `${run.seed}:mega:${mapIndex}` and the shop's shelves still off
-`${run.seed}:shop:${run.mapIndex}` through `buildShop`.
-
-**A new room is a new file** in `src/scenes/rooms/` exporting `descriptor`, plus its own
-`MapRoomSpecial` value in `src/engine/maps/plan.ts` — the scene and the registry need no edit. Hooks a later room needs and does not have yet (starting a
-battle, adding an item, spending money, hooking `advanceMap`) are `RouteScene` edits that task
-must claim.
+— destroyed the objects the room built. The Shop room's own state (its stock, tab, cursor and
+the row objects it repainted) lived in its module, as did the counter tile it declared; the
+scene kept the tile so movement could still block on it. The room's behaviour, price, key, tile,
+marker and RNG draw did not move with the code: the mini-boss and the mega-stone room placed
+no roll of their own (their ids were minted from the floor's plan), and the Shop's shelf came
+out of `buildShop` (`src/ui/shop.ts`), which still rolls a shelf — the region's merchant now
+rolls each city's own off `${seed}:shop:<cityKey>` (`docs/region-spec.md` §6).
 
 ## D48 — An NPC member edit is one pure run transaction, and its two member words are optional *(decided)*
 
@@ -1072,14 +1102,14 @@ module, `src/engine/run/memberEdits.ts`, and each is a single pure transaction o
 takes the `RunState` plus the member (or, for the sacrifice, the run alone), draws only from its
 own `:npc:` stream and answers either the new run with a `MemberEditLine` or the **same run
 reference** with a refusal reason. The scene owns no rule: it opens the shipped card, passes the
-chosen member and commits `ok.run` with the floor's use mark in one write.
+chosen member and commits `ok.run` with the node's use mark in one write.
 
 **Per-operation substreams, minted inside the function.** Every draw is
 `Rng(hashSeed(`${seed}:npc:${roomIndex}:${npcId}:<op>`))`, the family `npcSpot` already uses:
 `nature`, `ability`, `second-ability`, `ivs`, `species`, and the sacrifice's three-draw stream
 `sacrifice` (the stack, the member, the reward row) followed by `sacrifice:<op>` for the reward it
-drew, so a reward that cannot resolve costs nothing. No map, layout, encounter, roster, passive,
-casino or battle draw moves, and the same `(seed, mapIndex, roomIndex, npcId)` always yields the
+drew, so a reward that cannot resolve costs nothing. No layout, encounter, roster, passive,
+casino or battle draw moves, and the same `(seed, roomIndex, npcId)` always yields the
 same edit — a reload can neither re-roll one nor lose one.
 
 **The two new member words are optional-on-the-wire.** `RunPokemon.taughtMoves` and
@@ -1502,21 +1532,29 @@ the committed board with no token at all.
 `src/ui/hud/panels/missions/` its DOM card. It hangs in the shared `PanelFrame`, so its chip, its
 drag, its clamp and its offset are the kit's and no second chrome exists.
 
+**What the card draws now.** The card is live and was never superseded: it draws the mission
+**stack** of the node the run stands on (`D68`) instead of a single row, one row per mission in
+`activeMissions`' order, each carrying its `scopeKey` as the DOM hook and its derived status. The
+`completedMissions` rows it reads are keyed by **badge**, not by a floor, and the panel ships with
+`RunState.missionsCompleted` untouched (`docs/region-spec.md` §7.10).
+
 **Which answer this supersedes.** `[Task-194]`'s first answer was a **canvas pane**, because that is
 what a route panel was when it was parked. `[Task-200]` retired the canvas panel layer, so the card
 is DOM like every other; the saved slot, the chip and the clamp are unchanged by that retirement.
 
 **The list.** The run records the missions it met: `RunState.completedMissions` is a list of
-`{ id, mapIndex }` appended in `advanceMap` at the same place `missionsCompleted` steps, so the
-counter and the list's length are the same number for every run that starts after `SAVE_VERSION` 27.
-`missionsCompleted` stays: the special NPCs' gate and the trainer rows read the number, and the list
-is the history, not a second counter. The card prints the floor the run stands on first (with its
-`HP lost {hp}` progress) and then the met floors, newest first, capped at six rows.
+`{ id, … }` rows — the second, numeric field keeps the floor era's name in the type, but its value
+is the **badge** the row was met on — appended in `advanceMissions` at the same place
+`missionsCompleted` steps, so the counter and the list's length are the same number for every run
+that starts after `SAVE_VERSION` 27. `missionsCompleted` stays: the special NPCs' gate and the
+trainer rows read the number, and the list is the history, not a second counter. The card prints
+the node the run stands on first (with its `HP lost {hp}` progress, on the stretch row) and then
+the met rows, newest first, capped at six rows.
 
 **The migration.** `26 -> 27` seeds `completedMissions: []` and never reconstructs a pre-v27 run's met
-floors from `missionsCompleted`: the counter says how many, not which floors or which rows, so a
+rows from `missionsCompleted`: the counter says how many, not which nodes or which rows, so a
 reconstruction would invent history. The decoder drops a row it cannot trust (a missing id or a
-negative floor) instead of repairing it, and it does **not** filter the list against
+negative badge) instead of repairing it, and it does **not** filter the list against
 `MISSION_TABLE` - the history may name a row the table has since lost.
 
 **The one card without a strip badge.** The strip draws a badge for the four `STRIP_CHIP_ORDER`
@@ -1566,8 +1604,8 @@ it, so a node replays alone when it is walked back into, and appending a node ca
 whatever the region around it has grown to.
 
 **What it supersedes.** The per-map stream family of `D29`/`D30`: a floor's plan was keyed by the
-map index, and a room inside it by `routeIndexForRoom` — a running sum of every earlier floor's
-room count — so a floor that grew moved every room after it. That global route prefix retires with
+map index, and a room inside it by a running sum of every earlier floor's room count — the retired
+global route prefix — so a floor that grew moved every room after it. That prefix retires with
 the floors, and a node's key is minted where the node is.
 
 ## D61 — The save cuts to v28 with no migration *(decided)*
@@ -1577,11 +1615,12 @@ written before v28 decodes with its **run discarded**, while its settings and it
 untouched. No migration code ships, because nothing is in production — no released build wrote a
 v27 save that a player would lose.
 
-**What it supersedes.** The floor-shaped save: `mapIndex`, `routeIndex`, `routeInMap`,
-`discoveredRooms`, `capturedRooms` and the cached per-map `levelCap` as the run's position and
-progress. A v28 run stands on a `nodeKey`, with `visitedNodes`, `badges` and `capturedNodes`; the
-old fields stay as deprecated compatibility fields the shipped scene still reads, derived from the
-plan, until the sweep deletes them.
+**What it supersedes.** The floor-shaped save: the map index, the route index, the route's position
+inside its map, `discoveredRooms`, `capturedRooms` and the cached per-map `levelCap` as the run's
+position and progress. A v28 run stands on a `nodeKey`, with `visitedNodes`, `badges` and
+`capturedNodes`. The old position fields shipped beside the key for one phase as deprecated
+compatibility fields the old scene still read; the sweep that closed the region deleted them, so
+nothing derived from them is read or written any more (`docs/region-spec.md` §8).
 
 ## D62 — The record is the badges, and the tower's streak is apart *(decided)*
 
@@ -1593,3 +1632,123 @@ achievement, and winning the region is another.
 **What it supersedes.** The floor-shaped record: `RunHistoryRecord`'s `mapReached` — the deepest
 map a run reached — with the run's `mode` beside it. The history keeps one number per run, and that
 number is the badges.
+
+## D63 — A node is one precomputed mesh pair, drawn by one `Tilemap`, generated in a worker *(decided)*
+
+**Decision.** A node's map is generated **once**, off the main thread, as two `FrameMesh`es: the
+ground underlay every cell stands on and the tiles drawn over it. The whole rule is the pure
+`preloadNode(seed, key)` (`src/engine/region/preload.ts`), which answers a `NodeWorld` — the
+node's tiles, its mesh pair, its spawn tile and its own atlas — or `null` for a kind with no
+carver yet
+(the League and the tower); `NodeMeshes`, `NodeRequest` and `NodeReply` are that module's other
+exports, and `answerNodeRequest` is the worker's end of the wire. `src/render/tilemapLayer.ts`
+turns the pair into **one** `Phaser.Tilemaps.Tilemap` with **two** culled `TilemapLayer`s, never
+one `Image` per cell. `src/scenes/WorldScene.ts` owns the worker
+(`new Worker(new URL('../workers/nodeWorker.ts', import.meta.url), …)`), asks it once per
+`${seed}:${key}` and caches the answer, and `src/workers/nodeWorker.ts` is the other end; a worker
+that cannot start settles the request with `null`, which the scene draws as a logged no-op rather
+than a throw.
+
+**Why.** A route is two to four screens of one carve and a city is up to 90x90 tiles: a node that
+was rebuilt per entry would pay the generator on every door and every band, and a scene of
+per-cell images would pay a draw call each. One preload and one tilemap make a revisit and a
+reload the same cost as the first frame, and the mesh pair keeps the engine's frame resolution
+(`D10`) on the pure side, where it is tested headless.
+
+**What it supersedes.** The floor's per-room scene build — one room scene per room, rebuilt as the
+run walked from room to room — whose scenes were deleted with the floors (`D59`).
+
+## D64 — The region map is a DOM straight-line graph, not a floor minimap *(decided)*
+
+**Decision.** The header card draws `plan.nodes` as markers on the plan's own grid cells, joined
+by straight edges: **every settlement is visible from the first frame**, the visited ones are
+marked, the current one blinks, and the routes are not clickable. The pure model is
+`src/ui/regionMap.ts` (`regionMapView` answering a `RegionMapView` of `RegionNodeMarker`s and its
+edges); the DOM card is `src/ui/hud/panels/map/` and the frame it is measured against is
+`design/screens/03o-panels-map-routes.json` (`03o Panels · map routes`).
+
+**Why.** A region's topology is the whole world and the player needs it from the first frame — a
+route hangs off a route, a lateral terminates, and a city's place in the badge order is the map's
+meaning. Nothing is discovered, so no fog and no reveal filter is owed, and a straight-line graph
+of named markers says more than a grid of room cells ever could.
+
+**What it supersedes.** `D32`'s floor minimap: the grid of discovered room cells and the reveal
+filter that hid them, which was drawn by a view module the sweep deleted.
+
+## D65 — The guard gates only the way forward *(decided)*
+
+**Decision.** Leaving a **city** by its main-chain forward edge asks that city's badge; a step
+**back** and a **lateral** are never gates; the **town**'s forward door belongs to the prologue
+(`canLeaveTown`), not to the guard. `exitGate(plan, fromKey, toKey, badges)` is pure and total and
+reads the badge list, never a `RunState`, so a caller can ask about a walk it has not committed to
+yet; it answers `{ badge, open }` or `null` for an edge that is not a gate at all, and
+`nextBadge(plan, key)` names the badge a node's way forward asks for
+(`src/engine/run/gates.ts`). The walk applies all of it in `travel` (`src/engine/region/travel.ts`),
+which answers a refusal reason and touches nothing when it refuses.
+
+**Why.** The badge is what a city's gym hands over (`grantBadge`, `src/engine/run/badge.ts`), so
+the number a gate reads is the number the gym appended and no second gate has to be invented. A
+gate that also closed the way back would trap a run behind a fight it cannot win yet, so a step
+back and every lateral edge answer `null`.
+
+**What it supersedes.** `D31`'s sealed exit: the boss room sealing its onward opening, and a
+portal opening when the boss fell. A gate is a predicate over the plan now, not a tile the scene
+unlocks, and the way into the stretch past a city is its badge and nothing else.
+
+## D66 — Levels come from the badge, the distance to the leader and the party size *(decided)*
+
+**Decision.** A node stores no level range: its **cap** is the only anchor,
+`badgeCap(badge)` over `BADGE_CAPS = [9, 16, 23, 30, 37, 43, 49, 55]`
+(`src/data/region.ts`), badge 9 being the League's (`LEAGUE_LEVEL` = 60). A regular trainer's
+member is `trainerLevel(cap, gymDistance, partySize)` = `cap − gymDistance × factor`, with the
+factor **1 / 0.9 / 0.8** for a party of **1 / 2 / 3** (`TRAINER_SIZE_FACTOR` in
+`src/data/trainerLevels.ts`), floored and clamped to `1..cap`; the gym leader sits at the cap
+(`leaderLevel`); a wild is 60-75 % of the live squad (`wildLevel`, `WILD_LEVEL_FRACTION`); a
+node's band runs from the previous badge's cap to its own (`bandForNode`). All of them are pure,
+in `src/engine/run/levelCurve.ts`, and none of them draws but the wild's single `next()`.
+
+**Why.** Tying a trainer's level to the **distance** from the gym that closes its stretch, rather
+than to a stored range, means one row of data per badge moves the whole ladder, and a party that
+grew pays more per step back — so the fight in front of the leader stays the fight the cap
+describes. The seed still fixes every **draw** (species, forme, Mega Stone); it no longer fixes a
+level.
+
+**What it supersedes.** `D9`'s per-route cap and `D29`'s per-map ranges, with `D29`'s addendum: the
+cap is read off the plan's node instead of a floor's tuning row.
+
+## D67 — Flight is free from the region map, at visited settlements *(decided)*
+
+**Decision.** Outside battle, a press on a **visited settlement** flies there, ignoring the badge
+gate. A flight lands on that settlement's **Centre door** — the **laboratory**'s door in the town,
+which has no Centre — and not on the walk spawn, which is what an arrival through an exit band
+uses. Refusals are named and total: `same-node`, `no-such-node`, `not-neighbour`, `gate`,
+`unvisited`, `not-settlement`, and the town's prologue refusal (`prologue`, asked only of a walk
+that starts in the town), and a refusal touches nothing — no run field, no save write, no map
+rebuild (`src/engine/region/travel.ts`, `docs/region-spec.md` §5).
+
+**Why.** A region is 28 to 36 nodes: walking a stretch back to a Centre it already unlocked is
+dead time, and the map is the one screen that can skip it. Landing on the door rather than the
+spawn is what makes a flight useful — the player arrives at the service they flew for — while a
+walk in through a band still arrives on the settlement's own spawn.
+
+## D68 — Missions are a stack *(decided)*
+
+**Decision.** Every node the run stands on exposes, in a fixed order, its **stretch's automatic
+mission** (lose no Pokémon until the leader of the badge stretch falls), its **city's fixed
+mission** when the node is a city, and **one random row** one of that city's NPCs offers, drawn
+once per city and seed off `random:<nodeKey>`'s own stream
+(`Rng(hashSeed(`${seed}:mission:random:<nodeKey>`))`). Every status is **derived** from facts the
+run already persists — `completedMissions`, `stats.casualties`, `floorCasualties` — so the stack
+adds no save field and no `SAVE_VERSION` step, and its one draw moves no
+`plan`/`layout`/`content`/battle draw. The catalogue is `STACK_MISSIONS`
+(`src/data/missions.ts`) and the whole rule is `src/engine/region/missions.ts`; the card that draws
+it is `src/ui/hud/panels/missions/` (`D58`).
+
+**Why.** A mission is a property of where the run stands, not of a floor it once walked: a stretch
+pays for getting to its leader without a loss, a city pays for its own row, and an NPC's offer is
+the node's third row. Deriving every status keeps the stack out of the save entirely, so a
+revisit, a reload and a new build read the same three rows and write nothing.
+
+**What it supersedes.** The floor mission: one `MISSION_TABLE` row rolled per floor off a map
+stream, judged when the run took the portal, and one `completedMissions` entry per floor walked.
+

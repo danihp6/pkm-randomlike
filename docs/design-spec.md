@@ -14,7 +14,7 @@ carries over.
 ## 2. The run
 
 - The game opens on a **main menu**: **New run**, **Continue** (only when the save
-  holds a run with a living party, and it shows the map it stands on, that map's
+  holds a run with a living party, and it shows the node it stands on, that node's
   biome and the party's own portraits — the CONTINUE row paints one portrait cell per
   member, in party order, and only an unnamed species falls back to an empty box),
   **Options** (the settings screen), **STATS** (the stats and ranking screen) and
@@ -31,14 +31,14 @@ carries over.
   the canvas fallback keeps its three. The
   records footer under the menu prints
   three **live** figures — **WINS** (every finished run won), **MAX ELITE STRIKE** (the
-  deepest floor a finite run reached) and **MONTHLY MAX STRIKE** (the deepest floor a
-  finite run reached in the current UTC month, that month printed under the figure) —
-  as `0` on a fresh profile, never blank; an infinite run raises neither strike. The
+  most **badges** a finite run held) and **MONTHLY MAX STRIKE** (that same figure over
+  the current UTC month, that month printed under the figure) —
+  as `0` on a fresh profile, never blank; an endless run raises neither strike. The
   build stamps its own version line `v<version> · PHASE <phase>` bottom-right; it is
   build metadata, so it is not translated while the three labels are keys. The window
   behind the title is a **live route** — a route generated from a fresh random seed on
   every boot (never the run's),
-  drawn with the first map's biome tileset, with two or three Pokémon wandering it: each
+  drawn with the route's biome tileset, with two or three Pokémon wandering it: each
   one walks a **stride** of two to four tiles along one heading in a single **600 ms**
   tick, then stands a beat of 0.9–1.6 s drawn from its own stream while the panel slides
   it one tile per **200 ms** along that stride, drawn as its committed overworld pair
@@ -59,31 +59,39 @@ carries over.
   screen, where there is no keyboard to bind; keyboard, click and touch all drive
   the screen. The tileset is not a preference: a route always renders its biome's
   own (`D10`).
-- A run is a chain of **maps** (floors), and a map is a **graph of routes**
-  (rooms) laid out on a grid — Binding of Isaac's floors with rooms. Each route
-  is a small top-down map: walls/trees, tall grass, trainers, items, openings. A
-  map shares one **biome**, one **level range** and its route **sizes**; it is
-  connected and closed into at least one cycle.
-- Rooms join through openings: leaving by one edge enters the neighbour by the
-  **opposite** edge, and a door lines up with the neighbour's. The **entry room**
-  has no outward door — the run starts you at its **centre** — and the floor's
-  farthest room is a **dead-end boss room** (one door, no tall grass, no regular
-  trainers; a fixed party of **six**, **three** on map 1); beating its boss opens
-  the **portal** to the next map
-  (`docs/maps-spec.md`).
-- A room with a single opening is a **dead-end** room; a straight two-opening
-  passage is the **corridor** shape. Both carry the usual trainers, items and
-  tall grass.
-- The chain is fixed-length by default: a finite run walks **eight maps**
-  (`FINITE_MAPS`), and the levels climb **2 → 55** — the first floor is **2–9**,
-  the cap a level-5 starter lives under. Maps 1-2 are the on-ramp: they field
-  **two trainer rooms** where the late floors field four
-  (`src/data/population.ts`), and no floor hangs a shop leaf: the Mart is the
-  floor's guaranteed merchant NPC on every floor, map 1 included. Each map's boss closes it and
-  opens the **portal** to the next, and the **last map's final boss** wins the
-  run. An **infinite mode** reuses the same
-  generator without the finish line.
-- A run is defined by one **seed**: the starter screen shows it as a share
+- A run is one **region** (`docs/region-spec.md` §1): a procedurally named
+  starting **town**, then **eight gym cities** in badge order, with one long
+  **main route** of **two to four screens** and **one or two optional laterals**
+  between each pair, and the **Victory Road**, the **League** and the endless
+  **tower** behind the Champion. The chain is
+  `town → route 1 → city 1 → … → route 8 → city 8 → Victory Road → League → tower`
+  — **20 chain nodes**, 28 to 36 with the laterals — and the run stands on exactly
+  one **node** at a time.
+- A node is one **kind** of place: the `town`, a gym `city`, a `route`, a
+  `lateral` (an optional detour that hangs off a route and terminates), the
+  `victory-road`, the `league` and the `tower`. Every node of a stretch carries
+  that stretch's **cap** and no level range of its own: the badge is what the
+  levels read (`D66`, §4). A route is two to four screens of **one** biome, walked
+  as one continuous map with no transition between its screens
+  (`docs/routes-spec.md` §1).
+- The town is the prologue's: it holds one **laboratory**, which heals on entry for
+  free, and one house, and its forward door stays shut until the starter is taken
+  (`canLeaveTown`). A **city** holds a gym, a Pokémon Centre — the counter, the PC
+  and the merchant — and, from badge 3, a casino. The **League** heals between its
+  five fights and sells nothing. **A route has no service at all**
+  (`docs/region-spec.md` §6).
+- The badge is the gate: leaving a city by its main-chain forward edge asks that
+  city's badge, a step back and a lateral ask nothing, and the badge a gym pays is
+  the very number the exit reads (`exitGate`, `D65`, `docs/region-spec.md` §4). A
+  **flight** from the region map reaches any settlement the run has already
+  visited, ignoring the gate, and lands on that settlement's Centre door (`D67`).
+- The chain is fixed: the town, **eight** gym cities and **eight** main routes,
+  the Victory Road, the League and the tower. The ladder climbs the eight gyms'
+  caps — **9, 16, 23, 30, 37, 43, 49, 55** — and the League sits at **60**
+  (`BADGE_CAPS`, `LEAGUE_LEVEL`, `D66`); the tower is endless by design, its
+  streak's rung deciding every fight after the Champion. Winning the region is
+  beating the Champion, and past the tower there is no ending but the party's.
+- A run is defined by one **seed**: the starter pick shows it as a share
   string and `S` opens a prompt to type a seed or paste a friend's share string,
   so the same seed always plays the same run (`D11`, `D21`). The share string
   carries the seed and the mode, not the progress, so a shared run starts on
@@ -92,10 +100,12 @@ carries over.
   and nothing else, the mode is kept, and the share line follows the seed it just
   drew. `reset` keeps its name and moves to `Backspace`, so `R` answers `reroll`
   alone.
-- Beating a map's boss opens its **portal** and steps the run into the next map,
-  with a healing stop in between (heals HP and PP, never resurrects).
+- Beating a city's gym opens the way on: the badge is appended to the run, the
+  next stretch's cap takes over and the guard lets the forward edge through. A
+  Centre or the town's laboratory rests the party and the box (HP and PP, never a
+  status, never a resurrection), and a route gives nothing back.
 - Losing every Pokémon in the party ends the run: the run writes **one** record to
-  the history — its seed, the floor reached, the catches, the casualties, the
+  the history — its seed, the **badges** it held, the catches, the casualties, the
   playtime counted from the instant it began, and the per-species KOs and damage its
   battles produced — so STATS lists it from then on. The per-species table counts
   **every** member that earned a KO or damage, the **fallen included**: the RIP keeps
@@ -130,7 +140,8 @@ carries over.
   index 0 opens the next battle the drop decides who leads; an HP bar's fill
   starts at the track's **left edge**, so a full bar paints edge to edge and a
   fractional one starts flush. Crossing between the two panels is allowed **only
-  in the floor's entry room**, on every visit (`docs/routes-spec.md` §6):
+  inside a Centre** — the counter, the PC and the merchant, or the town's
+  laboratory — on every visit (`docs/region-spec.md` §6):
   everywhere else both directions are refused and the boxed members read as
   locked — a locked cell still takes the press for its own data panel, and it is
   only the drag it does not start. That **detail panel** (its own window) carries
@@ -192,14 +203,14 @@ carries over.
   the way, dismissed with any key or a click — a level-up that crossed no move
   raises no panel at all. The party is never left empty and
   the box is never required to be full.
-- A member can also be **edited by a special NPC** (`docs/maps-spec.md` §7): a
+- A member can also be **edited by a special NPC** (`docs/region-spec.md` §7.7): a
   **tutor** teaches one move of its six, and the move waits in the MOVES tab's band
   tagged `Tutor` — equipped the same way as a level-up one, and back in the band
   after an unequip; a **nature**, **ability** or **IV** reader re-rolls that one
-  fact; and a **species swapper** trades the body for another of the floor's wild
+  fact; and a **species swapper** trades the body for another of the node's wild
   pool, keeping level, moves, abilities, IVs/EVs, held item, status and nickname.
   The sacrifice pays one whole bag stack for one of four of those rows. Every row is
-  one use per floor unless it is `repeatable`, and two member words persist in the
+  one use per node unless it is `repeatable`, and two member words persist in the
   save: `taughtMoves` and `secondAbility`, both written only when they carry
   something.
 - A member can be **named**: the name row on the STATS tab **is** an editable field
@@ -252,8 +263,8 @@ carries over.
   is full** rests the whole party **and** the PC box on the spot — HP and PP back
   to full and a primary status cured, though never a resurrection (D5) — and
   **empties** the meter. A charge is earned by beating a trainer (one each, up to
-  the cap) and a floor's **boss** fills the bar to the top; the meter **carries
-  over** between floors, and only a fresh run starts it full.
+  the cap), and the meter **carries over** between nodes, so only a fresh run
+  starts it full.
 - The HUD panels — the route header, PARTY, the bag, the PC BOX and the member
   detail window — are one card each in the same frame, and each card shows its own
   **icon** at its top-left: 26 × 26, the panel's initial. The icon is both the
@@ -281,23 +292,17 @@ carries over.
   **always on screen** — a quick key opens one panel, it does not show or hide the
   HUD — and a fresh save opens **only PARTY**, every other panel collapsed to its
   icon.
-- The route **header is the floor minimap**: the map name over a Binding of Isaac-
-  style grid of the rooms **discovered** so far, each drawn from the room's own
-  width/height, its openings on the matching walls and a link drawn once **both**
-  its ends are known. The current room, the boss, the open portal and any special
-  room carry their own mark; a room stays hidden until it is entered
-  (`docs/maps-spec.md` §8).
-- Entering a **room** raises an **area banner**: a boxed card under the notice strip
+- The route **header is the region map**: the plan's nodes drawn as straight-line
+  markers on the plan's own grid — every **settlement** visible from the first
+  frame, the visited ones marked and the current one blinking — with the routes not
+  clickable and a press on a visited settlement flying there (`D64`, `D67`,
+  `docs/region-spec.md` §5). The pure model is `src/ui/regionMap.ts`.
+- Entering a **node** raises an **area banner**: a boxed card under the notice strip
   that names the biome the run has walked into (`Deep Forest`), holding 3 s
   before it dismisses itself. It takes no key, blocks no movement and leaves the
-  notice strip where it is; it is raised on **every** room
-  entry (not only when the floor changes), and the boss room's rebuild as its
-  portal opens is not a room entry and raises none. The name is the biome's own,
+  notice strip where it is; it is raised on **every** node
+  entry, not only when the stretch's biome changes. The name is the biome's own,
   so it reads the same in every locale (`D43`).
-- A **special room's** own content — the fixture it places, the window it opens and the
-  marker the minimap draws for it — comes from that room's **descriptor module**
-  (`src/scenes/rooms/`); the route keeps **one auto-discovered registry** of them, so a
-  new room kind is a new file and not a scene edit (`D47`).
 - The **Mart** and the **mini-boss reward** are **floating cards** drawn above the
   HUD, not modal windows: each is moved by its own header and closed from its own
   drawn ✕, neither takes a key (the quick keys, the pause menu and the arrows keep
@@ -314,12 +319,13 @@ carries over.
   stack as full-width rows so the offer never runs off the screen. Each card shows
   the portrait, the name and the **type badges** (the selected portrait bobs
   gently); a type the FRLG badge sheet lacks (Fairy) falls back to its name.
-- One capture per room of a floor, the classic way: weaken a wild Pokémon, throw a
-  ball, it either clicks or breaks out. A room that spent its capture stays spent
-  if you walk back into it; a different room of the floor can still catch.
+- One capture per **node**, the classic way: weaken a wild Pokémon, throw a
+  ball, it either clicks or breaks out. A node that spent its capture stays spent
+  if you walk back into it, and every room of that node reads the same answer
+  (`docs/region-spec.md` §7.9).
 - A caught wild can be **dark** — one in twenty catches (`DARK_CHANCE`,
   `src/data/run.ts`), rolled once at the catch from a stream of its own so the same
-  run seed, map, room and catch id always answer the same way. A dark member fields
+  run seed, node and catch id always answer the same way. A dark member fields
   **two abilities rolled from the whole implemented pool**, never the same one twice,
   as its primary and its **second** slot, so both work in battle; its portrait cell
   wears the mark — the violet hairline (`#8b5cf6`) over a near-black cell — and the
@@ -339,8 +345,8 @@ Full rules in `docs/battle-spec.md`. In short:
 - The **whole squad — party and PC — shares one level and one XP bar**: XP fills
   a single bar, the **route HUD**'s own one — the battle's HP panels draw no XP
   row — everyone levels together, and a catch joins at that level. A
-  **level cap per map** (the map's `maxLevel`) keeps power coming from play, not
-  grinding.
+  **level cap per node** (the node's `cap`, `badgeCap(node.badge)`) keeps power
+  coming from play, not grinding (`D66`, `docs/region-spec.md` §3).
 - Wild battles can be fled; trainer battles cannot. Fleeing is one press: RUN
   attempts the escape at once, with no yes/no prompt.
 - A battle **opens with an entry beat**: one black-out fade covers the
@@ -434,7 +440,9 @@ Full rules in `docs/battle-spec.md`. In short:
   (`src/ui/feed.ts`), so a Spanish run reads its action log in Spanish while the log
   itself, and every fixed seed, stays language-free.
 
-- The map boss's battle — and only it — is the engine's **double battle** on
+- A gym's **double battle** — the tenth-of-a-chance double a `GYMS` row declares, 0 on
+  badge 1, launched through `BattleLaunch.double` (no scene rolls the row yet) — is the
+  engine's **double battle** on
   screen (`docs/battle-spec.md` §12): two actives per side, so the foe's platform
   carries **two** enemy sprites with **two** HP windows above them and the player's
   side shows **two** panels stacked, the second beside the shipped one (or above it
@@ -446,8 +454,8 @@ Full rules in `docs/battle-spec.md`. In short:
   shipped ▶ cursor marks one live foe and `left`/`right` (or a click on either foe)
   move it before `confirm` sends the legal `target` command; a spread or status move
   submits as it always has, with no cursor. The entry beat sends the second lead out
-  after the first (one extra `sendout`), and a wild battle, a regular trainer, the
-  mini-boss and every special room's set piece keep the shipped one-active screen,
+  after the first (one extra `sendout`), and a wild battle, a regular trainer and
+  every League row keep the shipped one-active screen,
   command flow and beat.
 
 ## 5. The route
@@ -465,14 +473,17 @@ Full rules in `docs/battle-spec.md`. In short:
   route. Some look around on a timer, so their line turns with them and can catch
   you even while you stand still. A trainer never spawns already watching the tile
   you arrive on, never stands next to another, and never blocks a passage.
-- An **opening** joins the room to its neighbour: leaving by one edge enters the
-  neighbour by the **opposite** edge, so the floor reads as one connected map. A
-  room's shape follows from its openings: one opening is a **dead-end**, two
-  opposite a **corridor** (a passage with no branches), two adjacent a `bend`,
-  three a T and four a crossing.
-- The **room farthest from the entry holds the boss** at the map's `maxLevel`.
-  Its onward opening is sealed until the boss falls; then a **portal** opens and
-  steps the run into the next map.
+- An **opening** joins the route to its neighbour: leaving by one border band enters
+  the neighbour at its own band, and both are cut at the carver's lane width, so the
+  region reads as one connected walk (`docs/routes-spec.md` §1). A **lateral** has one
+  band only — it is walked into and back out of.
+- A **gym city** is walked as one street-grid map with a Centre, a gym, a laboratory (the
+  town's) and a casino (from badge 3), plus its grass corner; a **route** is one
+  continuous two-to-four-screen carve with its own tall grass, trainers and ground
+  loot (`docs/region-spec.md` §7.1, §7.12).
+- **The eighth badge's city leads into the Victory Road**, four screens of the forest
+  with its exit east into the League; the League plays its five fights in a row and
+  hands the Champion's door to the tower (`docs/region-spec.md` §7.6, §7.13).
 - Tilesets are **swappable per route** so the same map code renders a wood, a
   cave, a desert or a beach without touching the generator
   (`docs/tileset-spec.md`).
@@ -487,17 +498,21 @@ Full rules in `docs/battle-spec.md`. In short:
 ## 6. What a run looks like
 
 ```
-starter pick -> map 1: route 1 -> route 2 -> ... -> boss -> portal
-  -> map 2: route 1 -> ... -> boss -> portal -> ... -> final boss -> run won
+starter pick (the town's laboratory)
+  -> town -> route 1 -> city 1 (gym 1, badge 1) -> route 2 -> city 2 -> ...
+  -> route 8 -> city 8 (gym 8, badge 8) -> Victory Road -> League -> Champion
+  -> tower (endless)
 ```
 
-A finite run walks **eight maps** (`FINITE_MAPS`), the levels climbing **2 → 55**
-— one tuned row per map (`src/data/maps.ts`) — and the **last map's final boss**
-wins it.
+A run walks the **eight** badge stretches in order — the caps climb **9, 16, 23, 30,
+37, 43, 49, 55**, and the League sits at **60** (`BADGE_CAPS`, `LEAGUE_LEVEL`,
+`D66`) — beats the Champion at the League's last row, and may then walk into the
+endless **tower** behind it. A **lateral** hangs off a main route and pays a point of
+interest; walking it is optional and never part of the chain.
 
-Rewards between rooms are the run's only economy: catch, items, money and the PC
+Rewards between nodes are the run's only economy: catch, items, money and the PC
 box are where the player's power comes from. A run ends on a score screen, win or
-loss: routes cleared, Pokémon caught, Pokémon lost, the enemies the run fainted
+loss: the routes cleared, Pokémon caught, Pokémon lost, the enemies the run fainted
 and, member by member, the KOs it scored and the damage it dealt and took, plus
 the seed that reproduces the run, as the raw seed and as the share string someone
 else could play (`src/ui/runSummary.ts`, `D21`). Both a win and a loss end on the
@@ -508,90 +523,93 @@ save written before the counters existed) prints the em dash, never a zero. Both
 cards carry the TOTALS / POKEMON tabs and the same board geometry at every width
 — the phone defeat card is not a shorter, tab-less variant.
 
-## 7. Special rooms & money
+## 7. Points of interest & money
 
-Besides its regular rooms, a floor can hold **special rooms** — extra dead-end
-leaves with only their own content (`docs/maps-spec.md` §7):
+A **lateral** is optional, and its terminus ends on one **point of interest**: the
+kind is the content pass's own draw (`docs/region-spec.md` §7.3, §7.8), one 7×5 zone
+at the end of the spur, and the nine kinds are `POI_ROWS` in `src/data/pois.ts`:
+`vault`, `miniboss`, `trade`, `no-heal`, `static`, `secret-shop`, `banned`,
+`puzzle` and `legendary`. A row that has a retired room table under it references
+that table rather than copying it, and no odds or counters are invented there.
 
-- the **Mart**, carried by the floor's **merchant** special NPC (one per floor, the
-  on-ramp's first floor included, selling the shipped early band's stock with the
-  money the run has): the merchant stands in the floor's first trainer room and its
-  `TRADE` row opens a **Pokémon Mart-style shop panel in the HUD**, which closes
-  back onto the route and can be opened again on the same floor;
-- a **mini-boss** room (50% chance): one strong trainer fielding a fixed party of
-  **three** (**two** on map 1) that, when beaten, offers **one window of six
-  rows**: three **items** and three **Pokémon presented only by their highest stat
-  and their nature**, so the choice is a real gamble;
-- a **mega-stone** room (15% chance, only from map 3 on): a random **Mega Stone**
-  item, which lets its holder **Mega Evolve once per battle**;
-- a **gated** room (20% chance, only from map 3 on): a one-tile **vault** behind a
-  bush, a rock or a pond, holding one ordinary ground item. The interact key opens
-  it when **any party member has the obstacle's type** — Bug or Grass / Rock or
-  Fighting / Water — so the party the run built is the key, and the opening lasts
-  the rest of the floor.
-- a **static-species** room (25% chance, only from map 3 on): a one-tile **vault**
-  behind a bush, a rock or a pond, just like the gated room, but the party property
-  that opens it is either a **type** (Bug or Grass, Rock or Fighting) or an
-  **ability** (the pond yields to Water Absorb, Swift Swim or Storm Drain), and the
-  far side holds **one Pokémon** — the first stage of a pseudo-legendary line, at
-  the squad's level — fought and caught as a normal wild, so the room's single
-  capture is spent. While the run has completed **exactly one** floor mission and the
-  floor it stands on is map 4 or later and flawless, the same room may hold a
-  **legendary** instead (25%), so a run gets at most one floor of them.
-- a **secret-shop** room (20% chance, only from map 3 on): the same one-tile
-  **vault** behind a bush, a rock or a pond, opened by a party member of the
-  obstacle's **type**; behind it a **counter** whose interact key opens the Mart card
-  on the room's **own fixed shelf** — four held items (Leftovers, Life Orb, Choice
-  Band, Focus Sash) and two TMs (Swords Dance, Shadow Ball) at catalogue price, the
-  late-band gear the Mart withholds, so a run that finds the leaf can buy it early.
-- a **special NPC** in a regular trainer room, at most one: the **merchant** (the
-  row that ships) and, later, a medic, an exorcist, a berry tree. It stands on a
-  free tile as an ordinary overworld sprite and blocks it; the interact key opens
-  **one modal card** — the NPC's name as its title, one paragraph, a column of at
-  most six choices and a `LEAVE` row — the same shell every NPC uses. A chosen row
-  is recorded for the rest of the floor, so a revisit knows it was taken; the
-  merchant is the floor's one **guaranteed** NPC (on every floor, map 1 included,
-  in the floor's first trainer room, never rolled) and its `TRADE` row opens the Mart instead of
-  recording a use. The **Team Rocket grunt** is the second row that carries a room's
-  content: rolled from map 2 on (3 % per trainer room, +3 points a floor), it stands
-  in a trainer room and its one row opens the **slot machine** — a cabinet with
-  **three reels** whose faces are the band's own prizes and, on the fight, the
-  grunt's Rocket icon. One spin costs the floor band's price and pays an item, an
-  **Egg** (an ordinary bag item that hatches into a new party member at the squad's
-  level when the run takes the portal) or the **battle against the grunt** — which
-  locks the machine for the rest of the floor. The outcome is **booked before the
-  reels turn**, so the spin is a reveal, never a re-roll, and `SPIN` / `LEAVE`
-  answer the pointer as well as the keys. It is the run's one money-for-anything
-  gamble, and no room holds it any more.
-- a **special trainer** in a regular trainer room, at most one per room and
-  replacing that room's first trainer rather than standing beside it, with three
-  faces: the **ninja** (its sprite is hidden until the player stands adjacent, but
-  it watches its lane and opens the battle all the same), the **Impostor** trainer
-  (its whole team starts with the Imposter ability, and beating it pays an
-  **Ability Shield**) and the **secret battle** (it only joins the draw once the
-  run has met a floor mission, `missionsCompleted >= 1`). The three chances are
-  `ninja` 0.1, `impostor` 0.08 and `secret` 0.2: 18 % of trainer rooms field one
-  before the run's first met mission, 38 % afterwards.
+- a **vault** ends on one obstacle — a bush, a rock or a pond — holding one
+  ordinary ground item. The interact key opens it when **any party member has the
+  obstacle's type** — Bug or Grass / Rock or Fighting / Water — so the party the
+  run built is the key, and one seed's region is sealed with the same obstacle at
+  every vault (`regionVaultGate`).
+- a **mini-boss** is one strong trainer whose roster is the trainer engine's, and
+  **beating it** offers **one window of six rows**: three **items** and three
+  **Pokémon presented only by their highest stat and their nature**, so the choice
+  is a real gamble;
+- a **puzzle** ends on the puzzle stack's row (the ice room's run of switches), and
+  its solve pays one ground item;
+- a **static** ends on **one Pokémon** — the first stage of a pseudo-legendary line,
+  drawn for the whole region off `pois:statics` — fought and caught as a normal
+  wild, so the node's single capture is spent; a **legendary** is the same zone with
+  a legendary species (`pois:legendary:<key>`);
+- a **secret-shop** ends on a **counter** whose interact key opens a shop card on the
+  node's **own fixed shelf** — four held items (Leftovers, Life Orb, Choice Band,
+  Focus Sash) and two TMs (Swords Dance, Shadow Ball) at catalogue price, the
+  late-band gear the city shelf withholds, so a run that finds the spur can buy it
+  early;
+- a **no-heal** zone refuses the bag in any battle begun inside it (a named list of
+  barred healing moves), and a **banned** zone bans the species it names;
+- a **trade** is where a member can leave the run on purpose and one joins at the
+  squad's level (`src/engine/run/trade.ts`).
 
-Every floor is also given one **mission**, shown in the HUD's **MISSIONS card** — a
-panel like the party's, with its own chip, its drag and its saved slot (`D58`): the
-floor's row with its progress on top, then every floor the run already met, newest
-first. The one
-kind that ships is `flawless`: leave the floor having lost **no HP** and without a
-casualty. Meeting it bumps a **run-long counter**, and its reward is a **special
-room** — a reward row the room tasks hang off a completed mission — so a floor the
-run leaves untouched pays, and the mission is judged when the run takes the portal
-(`docs/routes-spec.md` §4).
+A settlement is not empty: its **NPCs** are the content pass's — `2..3` generic
+rows in a tier-1 city, `4..6` in a tier-2 one and `7..10` in a tier-3 one, one in the
+starting town — plus one or two **specials**. A special stands on a free tile as an
+ordinary overworld sprite and blocks it; the interact key opens **one modal card** —
+the NPC's name as its title, one paragraph, a column of at most six choices and a
+`LEAVE` row — the same shell every NPC uses. A chosen row is recorded for the rest
+of the **node**, so a revisit knows it was taken. The **merchant** is the one that
+sells: it stands in the city's **Centre** beside the counter and its `TRADE` row
+opens a **Pokémon Mart-style shop panel in the HUD**, which closes back onto the
+settlement and can be opened again on the same node. The **Team Rocket grunt** is
+the second row that carries its own content: it stands in a settlement and its one
+row opens the **slot machine** — a cabinet with **three reels** whose faces are the
+band's own prizes and, on the fight, the grunt's Rocket icon. One spin costs the
+band's price and pays an item, an **Egg** (an ordinary bag item that hatches into a
+new party member at the squad's level when the run next enters a node) or the
+**battle against the grunt** — which locks the machine for the rest of the node.
+The outcome is **booked before the reels turn**, so the spin is a reveal, never a
+re-roll, and `SPIN` / `LEAVE` answer the pointer as well as the keys. It is the
+run's one money-for-anything gamble.
+
+A **special trainer** stands in a route's trainer slot, at most one per node and
+replacing that node's first trainer rather than standing beside it, with three
+faces: the **ninja** (its sprite is hidden until the player stands adjacent, but
+it watches its lane and opens the battle all the same), the **Impostor** trainer
+(its whole team starts with the Imposter ability, and beating it pays an
+**Ability Shield**) and the **secret battle** (it only joins the draw once the
+run has met a mission, `missionsCompleted >= 1`). The three chances are
+`ninja` 0.1, `impostor` 0.08 and `secret` 0.2: 18 % of a route's trainer slots field
+one before the run's first met mission, 38 % afterwards.
+
+Every node is also given a **mission stack**, shown in the HUD's **MISSIONS card** —
+a panel like the party's, with its own chip, its drag and its saved slot (`D58`,
+`D68`): the stretch's row with its progress on top, then the city's fixed row and the
+random row one of that city's NPCs offers, in that fixed order
+(`docs/region-spec.md` §7.10). The stretch row is `flawless`'s successor: lose **no
+Pokémon** before the stretch's leader falls. Every status is
+derived from what the run already saves, so the card writes nothing, and a badge
+that is refused records nothing.
 
 **Money** is Poké Dollars, earned **only** by defeating trainers — a **fixed base
 plus a random jitter** each, from its archetype/band — and the run starts with
-none, so the economy stays tight (Binding of Isaac-style). The shop always stocks
+none, so the economy stays tight (Binding of Isaac-style). A city's shelf is rolled
+**once per city** off `${seed}:shop:<cityKey>`, at the band the city's **tier** buys
+at (tier 1 `early`, 2 `mid`, 3 `late`/`end`), so the eight cities stock three
+shelves (`shopBandForTier`, `src/data/shop.ts`). The shop always stocks
 the same **four rows** — a **10× pack** of the band's own ball at half the
 catalogue price, the band's **potion rung**, and **two** held items from the
 band's weighted pool at their catalogue price — with the band's **one TM**
 — and, at `late` and `end` only, its **one G-Max Stone** — appended after them,
 and buys any item at `sellPrice`, but only the **valuables**
-(Nugget, Pearl, …) that turn up in the ground-item loot are worth real money. The
+(Nugget, Pearl, …) that turn up in the ground-item loot are worth real money. A
+bought row is marked per **node** (`shopRowKey(nodeKey, itemId)`), so one city's
+sold-out row never touches another's, and the ball row stays endless. The
 run's money shows in the HUD's **bag panel**.
 
 ## 8. Settings
@@ -726,7 +744,7 @@ the route HUD changed.
 | Battle switch grid and its detail | `BattleScene.renderPartyGrid` | `up`/`down`, `confirm`, `cancel`, `run` toggles the ability ⓘ; the cursor **visits** a dimmed row (a fainted member, or one already on the field) instead of hopping over it, and `confirm` declines it | keyboard (new) |
 | Battle back control | `BattleScene.onCancel` | `cancel` | keyboard |
 | Main menu rows | `MainMenuScene` | `up`/`down`/`confirm`/`settings` (with the STATS overlay open, only `cancel`, and it closes the overlay) | keyboard |
-| Starter cards and seed prompt | `StarterScene` | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt, `R` rerolls the offer from a fresh seed | keyboard |
+| Starter cards and seed prompt | the lab's starter panel (`src/ui/hud/panels/starter/`) | `left`/`right`/`confirm`/`cancel`, `S` opens the prompt, `R` rerolls the offer from a fresh seed | keyboard |
 | Settings rows and volume | `SettingsScene` | arrows, `confirm`, `cancel`; volume steps with `left`/`right` | keyboard |
 | Run-over screen | `RunOverScene` | `confirm` | keyboard |
 | Boot | `BootScene` | no input | keyboard |

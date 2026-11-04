@@ -101,7 +101,7 @@ packed by `scripts/frlg/build-overworld-sprites.mjs` into
 `src/data/frlg/overworld.json`, read through `src/data/overworldSprites.ts` (D24),
 so a trainer stands on the resting pose of its facing and walks toward a player it
 spots. The same atlas carries the slot machine's `rocket` grunt — an NPC of its own
-since `Task-117` — and the ten special NPCs the rooms place — `merchant`, `chef`,
+since `Task-117` — and the ten special NPCs a node can place — `merchant`, `chef`,
 `magician`, `exorcist`, `weather-man`, `sacrifice`, `medic`, `iv-judge`,
 `berry-tree`, `ninja` — for 21 rows in all. Six
 of those borrow a shipped class because the decomp has no class by that name
@@ -387,7 +387,7 @@ not be redistributed.
   swapped without code.
 - Routes and dungeons match the original FireRed/LeafGreen look for their biome
   (Viridian Forest, Mt. Moon, Seafoam...): the generator follows the tileset's
-  style, not a generic room layout (`docs/routes-spec.md` §2).
+  style, not a generic layout (`docs/routes-spec.md` §2).
 - Chalk-drawn UI is not a thing here; this project's UI is the classic Pokémon
   frame, now the drawn chrome (`src/assets/ui/**` through `addFrlgWindow`) with
   the derived bitmap glyph set (`ui/font.png` through `addFrlgText`), so menus,
