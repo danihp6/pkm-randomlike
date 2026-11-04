@@ -155,7 +155,10 @@ rest of the spec is not a criterion.
   - Every criterion is `[unit]`: this task changes no pixel and no beat, and the entry
     itself owes **no browser pass**, so QA runs none. Say so in the report.
 - **Acceptance criteria:**
-  - [ ] `[unit]` `grep -rn "planMap\|MapRoom\|routeIndexForRoom\|floorForRoute\|capForRoute\|RoomHost" src` returns nothing.
+  - [ ] `[unit]` `grep -rn "planMap\|MapRoom\|routeIndexForRoom\|floorForRoute\|capForRoute" src`
+        returns nothing, and `grep -rn "RoomHost" src` finds it **only** in its re-homed home
+        (`src/scenes/panels/types.ts`, its declaration) and its importers — never under
+        `src/scenes/rooms/`, which no longer exists.
   - [ ] `[unit]` `grep -rn "scenes/rooms\|ui/mapView\|StarterScene" src` finds only the
         re-homed type import paths if any survive, and **no** `StarterScene` reference.
   - [ ] `[unit]` The reset chord starts `'Lab'`: a unit test drives
