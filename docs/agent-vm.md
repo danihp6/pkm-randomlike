@@ -95,9 +95,9 @@ tail -f ~/pkm-agent/cycles.ndjson
 ```
 
 The guards are the Actions loop's guards, kept deliberately: an empty backlog parks with
-one issue a day, three red cycles park the loop, `AGENT_DAILY_CYCLES` caps the day when
-set, and the window is a belt under the brake — a stale `on` cannot start a cycle past
-its end. `brake.sh` is the only writer of that state.
+one issue a day, three red cycles park the loop, and the window is a belt under the brake
+— a stale `on` cannot start a cycle past its end. `brake.sh` is the only writer of that
+state.
 
 ## What actually differs from the workflow
 
