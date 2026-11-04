@@ -264,7 +264,7 @@ trainers — is rolled per node off that node's `content` stream by `planNodeCon
 (`[Task-277]`, Batch 119) and drawn by the scene tasks. Its subsections are written by
 the tasks that ship each piece: `§7.1` the city plan, `§7.2` the interior list, `§7.3`
 node content, `§7.4` the gym's puzzle, `§7.5` the city screen, `§7.6` the League and
-`§7.10` the missions' schema, §7.11 the tower.
+`§7.10` the missions' schema, `§7.11` the tower and `§7.12` the route screen.
 
 ### 7.1 The city plan
 
@@ -689,6 +689,44 @@ plays the tower as its own endless mode — the entry heal, the next rung off th
 streak, the heal after a win and the wipe that ends the run — and `RunOverScene` draws
 the defeat card with the badge count and the streak. The run ends only when its party
 does, so there is no victory state: every ending is the defeat card.
+
+### 7.12 The route screen
+
+A route node is walked as the two-to-four vertical **screens** its own plan already
+generated (`docs/routes-spec.md` §1): `planRouteScreens`
+(`src/engine/region/routeScreens.ts`) is the whole seam. It takes the node's one carve
+(`generateRoute`) and returns, in one answer, the node's route in both shipped shapes,
+one `RouteScreenPlan` per screen and the lateral's point of interest; a key that is not
+a `route` or a `lateral` is refused with `not a route node: <key>` (the Victory Road, the
+League and the tower have no generator yet, so no screen can enter them).
+
+- **The screens** are contiguous row bands of the one carve, so a seam is no transition:
+  a step from a screen's last row lands on the next screen's first row, and the screen
+  index is re-derived from the player's row every time it is asked. Screen 0's spawn is
+  the carver's `entry` — the tile `travel`'s `walkSpawn` answers too, so the seam and the
+  screen cannot disagree — and every other screen spawns on the smallest column that is
+  walkable on its first row **and** on the row above it, preferring the lane, so the seam
+  can always be crossed.
+- **Bands** belong to exactly one screen, the one holding their first cell. Pressing
+  outward while standing on a band cell hands the run to `travel` (§4): the last screen's
+  `S`/`E`/`W` band goes on to the next node, screen 0's `N` band goes back to the parent,
+  and a lateral leaves by its only band because it has none of its own. Standing on a band
+  is only true once a step has landed there (or a dev teleport placed the walker), so a
+  spawn on the entry band never bounces back out.
+- **Content is laid per screen** off the node's own streams (`D60`): `planNodeContent`
+  counts the trainers, trainer `j` stands on screen `j % screens`, and at most one ground
+  item of the node's loot band is placed per screen from screen 1 on, keyed
+  `item-<key>-<i>`. **Nothing is placed on the lane, on a band or inside the lateral's POI
+  zone**, which is what keeps the carver's guaranteed walkable way end to end clear. A
+  screen whose only walkable cells are the lane's therefore loses its trainer slot and is
+  not re-tried on another screen: that is the generator's terrain, not a lost draw.
+- **The scene reads no floor.** Every value it draws and walks comes from that seam: its
+  tileset is the route biome's, its grass and shiny streams are keyed by the node
+  (`` `${seed}:encounters:${key}` `` and `` `${seed}:shiny:${key}` ``), its trainer roster
+  by the node and the trainer, its battle seed by `hashSeed(nodeKey)`, its band by
+  `bandForNode`, and a catch's detail line prints the node's badge and the screen it
+  happened on. The run's three deprecated floor fields are still written by `travel` for
+  the panels that read them and are read by no route code.
 
 ## 8. The save's v28 rules and the record
 
