@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { biomeForRoute } from '../../../data/biomes';
 import { ROUTE_HEIGHTS, ROUTE_WIDTH } from '../../../data/region';
-import { planRegion, type RegionNode, type RegionPlan } from '../plan';
-import { planRouteLayout, routeScreens, SCREEN_HEIGHT, spineSegments } from './layout';
+import { nodeOf, planRegion, type RegionNode, type RegionPlan } from '../plan';
+import { isRouteKind, planRouteLayout, routeScreens, SCREEN_HEIGHT, spineSegments } from './layout';
 import { generateRoute } from './map';
 
 const SEEDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel'];
@@ -139,5 +139,86 @@ describe('region route layout', () => {
     expect(() => planRouteLayout(plan, 'nope:1')).toThrow(/^not a route node: nope:1$/);
     expect(() => planRouteLayout(plan, 'town:1')).toThrow(/^not a route node: town:1$/);
     expect(() => planRouteLayout(plan, 'route:1', 5 as unknown as 2)).toThrow(/^bad screen count: 5$/);
+  });
+});
+
+describe('isRouteKind', () => {
+  it('answers yes for the three kinds the route screen walks and no for every other', () => {
+    expect(isRouteKind('route')).toBe(true);
+    expect(isRouteKind('lateral')).toBe(true);
+    expect(isRouteKind('victory-road')).toBe(true);
+    for (const kind of ['town', 'city', 'league', 'tower', 'route ', '']) {
+      expect(isRouteKind(kind), kind).toBe(false);
+    }
+  });
+});
+
+describe('the Victory Road layout', () => {
+  const ROAD_SEEDS = ['alpha', 'task-303'];
+
+  it('answers four contiguous screens of the forest, entered from the city and left east', () => {
+    for (const seed of ROAD_SEEDS) {
+      const plan = planRegion(seed);
+      const node = nodeOf(plan, 'victory-road:1');
+      expect(node, seed).toBeDefined();
+      if (node === undefined) return;
+      const layout = planRouteLayout(plan, node.key);
+      expect(layout.key, seed).toBe('victory-road:1');
+      expect(layout.seed, seed).toBe(seed);
+      expect(layout.width, seed).toBe(ROUTE_WIDTH);
+      expect(layout.height, seed).toBe(ROUTE_HEIGHTS[2]);
+      expect(layout.screens.length, seed).toBe(4);
+      expect(layout.biomeId, seed).toBe(biomeForRoute(node.id).id);
+      expect(layout.biomeId, seed).toBe('forest');
+      layout.screens.forEach((screen, index) => {
+        expect(screen.index, seed).toBe(index);
+        expect(screen.top, seed).toBe(index * SCREEN_HEIGHT);
+        if (index > 0) expect(screen.top, seed).toBe(layout.screens[index - 1].bottom + 1);
+      });
+      expect(layout.screens[3].bottom, seed).toBe(199);
+      expect(layout.openings, seed).toEqual([
+        { edge: 'N', role: 'entry', neighbourKey: 'city:8' },
+        { edge: 'E', role: 'exit', neighbourKey: 'league:1' },
+      ]);
+    }
+  });
+
+  it('takes the same two draws as any route, so its carve is a four-screen route’s', () => {
+    const plan = planRegion('alpha');
+    const rolled = planRouteLayout(plan, 'victory-road:1');
+    expect(planRouteLayout(plan, 'victory-road:1', 3).screens).toEqual(routeScreens(3));
+    expect(planRouteLayout(plan, 'victory-road:1', 4).screens).toEqual(rolled.screens);
+    expect(generateRoute(plan, 'victory-road:1')).toEqual(generateRoute(plan, 'victory-road:1', 4));
+  });
+
+  it('leaves every other kind’s openings and height exactly where they were', () => {
+    const plan = planRegion('task-303');
+    const layout = (key: string) => planRouteLayout(plan, key);
+
+    expect(layout('route:1').openings).toEqual([
+      { edge: 'N', role: 'entry', neighbourKey: 'town:1' },
+      { edge: 'S', role: 'exit', neighbourKey: 'city:1' },
+      { edge: 'E', role: 'exit', neighbourKey: 'lateral:1' },
+    ]);
+    expect(layout('route:1').height).toBe(ROUTE_HEIGHTS[0]);
+    expect(layout('route:3').openings).toEqual([
+      { edge: 'N', role: 'entry', neighbourKey: 'city:2' },
+      { edge: 'S', role: 'exit', neighbourKey: 'city:3' },
+      { edge: 'E', role: 'exit', neighbourKey: 'lateral:3' },
+      { edge: 'W', role: 'exit', neighbourKey: 'lateral:4' },
+    ]);
+    expect(layout('route:3').height).toBe(ROUTE_HEIGHTS[2]);
+    expect(layout('lateral:1').openings).toEqual([
+      { edge: 'N', role: 'entry', neighbourKey: 'route:1' },
+    ]);
+    expect(layout('lateral:1').height).toBe(ROUTE_HEIGHTS[2]);
+
+    const bravo = planRegion('alpha');
+    expect(planRouteLayout(bravo, 'route:8').openings).toEqual([
+      { edge: 'N', role: 'entry', neighbourKey: 'city:7' },
+      { edge: 'S', role: 'exit', neighbourKey: 'city:8' },
+      { edge: 'E', role: 'exit', neighbourKey: 'lateral:14' },
+    ]);
+    expect(planRouteLayout(bravo, 'route:8').height).toBe(ROUTE_HEIGHTS[1]);
   });
 });

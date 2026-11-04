@@ -113,6 +113,7 @@ import { buildNodeMeshes } from '../engine/region/preload';
 import { NODE_ENCOUNTER_CHANCE, nodeEncounterTable, nodeWildLevel } from '../engine/region/encounters';
 import { nodeOf, planRegion, type RegionNode, type RegionNodeKind } from '../engine/region/plan';
 import { poiBattleRules, type NodePoi } from '../engine/region/pois';
+import { isRouteKind } from '../engine/region/route';
 import {
   bandAt,
   planRouteScreens,
@@ -192,6 +193,15 @@ const ROUTE_PANEL_IDS: readonly RoutePanelId[] = [
 
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
+
+/**
+ * The kinds whose own scene plays them and which have no map to walk: the League and
+ * the endless tower. Every other kind is drawn by this scene or by the city screen.
+ */
+const SCENE_ONLY_SCENES: Readonly<Partial<Record<RegionNodeKind, string>>> = {
+  league: 'League',
+  tower: 'League',
+};
 
 /** The band direction a held move key pushes toward, for the route's exit rule. */
 const OUTWARD: Readonly<Record<AccessEdge, MoveKey>> = {
@@ -418,7 +428,19 @@ export class RouteScene extends WorldScene {
     this.travelling = true;
     try {
       const world = this.cachedWorld(seed, toKey) ?? (await this.preload(seed, toKey));
-      if (world === null) return false;
+      if (world === null) {
+        // The League and the tower have no carver, so no map can be swapped in: they
+        // are handed to their own scene exactly as `onNodeArrived` hands a drawn world
+        // over, and the run is committed first so that scene reads the node it entered.
+        const target = nodeOf(planRegion(seed), toKey);
+        const sceneKey = target === undefined ? null : (SCENE_ONLY_SCENES[target.kind] ?? null);
+        if (sceneKey === null || this.scene.manager.getScene(sceneKey) === null) return false;
+        this.run = result.run;
+        this.travelCommits += 1;
+        this.persistRun();
+        this.scene.start(sceneKey, { run: this.run, spawn: result.spawn });
+        return true;
+      }
 
       this.run = result.run;
       this.travelCommits += 1;
@@ -438,9 +460,9 @@ export class RouteScene extends WorldScene {
   /**
    * The base scene swapped the map and hands the spawn over: rebuild the node's own
    * screens, content and entities from the seam, place the player on `spawn` and play
-   * the node's own bed — the route's theme on a route and a lateral, the menu theme in
-   * a settlement. A settlement the region offers a scene of its own is handed over
-   * instead of drawn here.
+   * the node's own bed — the route's theme on a route, a lateral and the Victory Road,
+   * the menu theme in a settlement. A settlement the region offers a scene of its own
+   * is handed over instead of drawn here.
    */
   protected override onNodeArrived(key: string, spawn: Tile): void {
     const node = nodeOf(planRegion(this.run.seed), key);
@@ -464,7 +486,7 @@ export class RouteScene extends WorldScene {
     this.showPassivePickups(picks);
     this.refreshHud();
     showAreaPanel(this.panelHost);
-    const route = node?.kind === 'route' || node?.kind === 'lateral';
+    const route = node !== undefined && isRouteKind(node.kind);
     playMusic(this, route ? 'route-music' : 'menu-music');
   }
 
@@ -476,9 +498,7 @@ export class RouteScene extends WorldScene {
    */
   private arrivalSceneFor(kind: RegionNodeKind): string | null {
     if (kind === 'town' || kind === 'city') return 'City';
-    if (kind === 'league') return 'League';
-    if (kind === 'tower') return 'League';
-    return null;
+    return SCENE_ONLY_SCENES[kind] ?? null;
   }
 
   /**
@@ -497,15 +517,15 @@ export class RouteScene extends WorldScene {
    * Builds the node on screen from the one seam (`docs/region-spec.md` §7.12): the
    * plan names the node, `planRouteScreens` cuts its own carve into screens and
    * populates them, and the scene takes every value it draws and walks from that
-   * one answer. A node with no screens — the Victory Road, the League, the tower —
-   * is warned once and draws nothing, the way `CityScene` degrades.
+   * one answer. A node with no screens — the League and the tower — is warned once
+   * and draws nothing, the way `CityScene` degrades.
    */
   private buildNode(): boolean {
     const plan = planRegion(this.run.seed);
     const node = nodeOf(plan, this.run.nodeKey);
     this.screens = [];
     this.poi = null;
-    if (node === undefined || (node.kind !== 'route' && node.kind !== 'lateral')) {
+    if (node === undefined || !isRouteKind(node.kind)) {
       console.warn(`route: no screens for ${this.run.nodeKey}`);
       return false;
     }

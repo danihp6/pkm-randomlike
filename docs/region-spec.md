@@ -264,7 +264,8 @@ trainers — is rolled per node off that node's `content` stream by `planNodeCon
 (`[Task-277]`, Batch 119) and drawn by the scene tasks. Its subsections are written by
 the tasks that ship each piece: `§7.1` the city plan, `§7.2` the interior list, `§7.3`
 node content, `§7.4` the gym's puzzle, `§7.5` the city screen, `§7.6` the League and
-`§7.10` the missions' schema, `§7.11` the tower and `§7.12` the route screen.
+`§7.10` the missions' schema, `§7.11` the tower, `§7.12` the route screen and `§7.13`
+the Victory Road.
 
 ### 7.1 The city plan
 
@@ -345,16 +346,16 @@ The draws come off `nodeStreams(seed, key).content` and off nothing else, in **o
 order** — the generic NPC count, each generic id, the special count, each special id, the
 trainer count, the POI kind **last** — so a later pass may append a draw without moving an
 earlier one (`D60`), and walking back into a node replays it exactly (`D11`). A kind that
-holds none of a row takes no draw for it, so the town, the Victory Road, the League and the
-tower leave the stream where the previous row left it.
+holds none of a row takes no draw for it, so the town, the League and the tower leave the
+stream where the previous row left it.
 
 | field | rule |
 | --- | --- |
 | `npcs` | a `city` draws `2..3` / `4..6` / `7..10` by its own tier — tier 1, 2, 3; every other kind is passed tier 1 and draws `2..3`, except the **town**, which stands exactly one (`NPC_ROWS[0].id`) with no draw at all |
 | `specials` | a `city` draws one or two; every other kind stands none and takes no draw. The per-NPC probability is not rolled here — the row's `chance` stays `src/data/npcs.ts`'s |
-| `grass` | `true` for `town`, `city`, `route` and `lateral` (the settlement's grass corner, the route's tall grass); `false` for `victory-road`, `league` and `tower`. No draw |
+| `grass` | `true` for `town`, `city`, `route`, `lateral` and `victory-road` (the settlement's grass corner, a route kind's tall grass); `false` for `league` and `tower`. No draw |
 | `shops` | `['mart']` for a `city`, `[]` for every other kind. No draw |
-| `trainers` | a `city` draws `1..2` / `2..3` / `3..4` by tier; a `route` or a `lateral` draws `2..4`; the `town`, the `victory-road`, the `league` and the `tower` post none and take no draw |
+| `trainers` | a `city` draws `1..2` / `2..3` / `3..4` by tier; a `route`, a `lateral` and the `victory-road` draw `2..4`; the `town`, the `league` and the `tower` post none and take no draw |
 | `poi` | a node whose `lateralOf` is not `null` draws one of `POI_KINDS`; a main-chain node has `null` and takes no draw |
 
 Both ID lists are drawn **without replacement**, in `NPC_ROWS` order, off a fresh copy of the
@@ -697,8 +698,9 @@ generated (`docs/routes-spec.md` §1): `planRouteScreens`
 (`src/engine/region/routeScreens.ts`) is the whole seam. It takes the node's one carve
 (`generateRoute`) and returns, in one answer, the node's route in both shipped shapes,
 one `RouteScreenPlan` per screen and the lateral's point of interest; a key that is not
-a `route` or a `lateral` is refused with `not a route node: <key>` (the Victory Road, the
-League and the tower have no generator yet, so no screen can enter them).
+a route kind — `route`, `lateral` or `victory-road` — is refused with
+`not a route node: <key>` (the League and the tower have no generator yet, so no screen
+can enter them).
 
 - **The screens** are contiguous row bands of the one carve, so a seam is no transition:
   a step from a screen's last row lands on the next screen's first row, and the screen
@@ -727,6 +729,38 @@ League and the tower have no generator yet, so no screen can enter them).
   `bandForNode`, and a catch's detail line prints the node's badge and the screen it
   happened on. The run's three deprecated floor fields are still written by `travel` for
   the panels that read them and are read by no route code.
+
+### 7.13 The Victory Road
+
+The eighth badge's city leads east into `victory-road:1`, the plan's one node between
+`city:8` and `league:1` (§1). It is a **route**: `isRouteKind`
+(`src/engine/region/route/layout.ts`) is the one predicate every kind test on the route
+path asks — the layout gate, `preload`'s route branch, `travel`'s `walkSpawn`, the content
+pass's trainer and grass rules and the two scene gates — and it answers `true` for
+`route`, `lateral` and `victory-road`, `false` for every other kind.
+
+- **Geometry.** `planRouteLayout` gives it four screens of the forest — `ROUTE_HEIGHTS[2]`,
+  60x200, contiguous with the last screen ending on row 199 — and the two draws its
+  `layout` stream always yields, the screen count and then the carve seed, are still taken
+  in that order, so forcing the fourth screen moves no draw and the carve stays a
+  four-screen route's.
+- **Openings.** Its entry is the chain's own predecessor, `city:8`, on `N`, and its one
+  exit is `league:1` on `E`: the Victory Road's exit order is `E`, `S`, `W`, where a route
+  and a lateral keep `S`, `E`, `W` and every other node's openings are unchanged.
+- **Content.** It is a main-chain node, so it takes no POI draw; its `content` stream rolls
+  the route's `2..4` trainers after the NPC and special rows, and it holds its own tall
+  grass (`grass: true`). The screen pass lays those trainers per screen off the lane and
+  the bands like any other route's (§7.12).
+- **The League on foot.** `travel` walks the run out of `city:8` only while badge 8 is held
+  (the city's own gate, §4) and lands it on the carver's entry; walking back is never
+  gated, and the `E` band's walk on to `league:1` is accepted, so the League is reached on
+  foot. The League and the tower are the only nodes left with no carver and no
+  `NodeWorld`.
+- **The screens.** `planRouteScreens` needs no special case: it delegates to
+  `generateRoute` and answers four screens, screen 0 spawning on the carver's `entry`.
+  The route screen draws and walks the Victory Road exactly as it does a route (§7.12);
+  the screen holding the `E` band is the one holding its first cell, which the carver's
+  own draw decides.
 
 ## 8. The save's v28 rules and the record
 

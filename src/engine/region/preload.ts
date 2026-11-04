@@ -8,7 +8,7 @@ import { resolveGroundFrame } from '../tileFrames';
 import type { TilesetConfig } from '../tileset';
 import { planCity } from './city';
 import { nodeOf, parseNodeKey, planRegion, type RegionNodeKind, type RegionPlan } from './plan';
-import { generateRoute } from './route';
+import { generateRoute, isRouteKind } from './route';
 
 /** The two meshes one map draws: the floor under every cell, and the tile over it. */
 export type NodeMeshes = Readonly<{ ground: FrameMesh; overlay: FrameMesh }>;
@@ -100,7 +100,7 @@ function resolveNode(seed: string, key: string): NodeResolution {
   const plan = planRegion(seed);
   const node = nodeOf(plan, key);
   if (node === undefined) return { ok: false, error: `no node ${key}` };
-  if (node.kind === 'route' || node.kind === 'lateral') return routeWorld(plan, key, node.kind);
+  if (isRouteKind(node.kind)) return routeWorld(plan, key, node.kind);
   if (node.kind === 'town' || node.kind === 'city') return settlementWorld(plan, key, node.kind);
   return { ok: false, error: `no generator for ${key}` };
 }

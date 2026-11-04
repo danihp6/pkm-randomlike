@@ -12814,7 +12814,7 @@ justified: it owns `route/layout.ts`, `preload.ts`, `travel.ts` and `content.ts`
 **Hot files.** None of the serial four. `src/engine/region/travel.ts` is the shared one, and it belongs
 to `[Task-303]` here and to `[Task-298]` in Batch 128, never to both.
 
-- [ ] **[Task-303] The Victory Road is a route.** The eighth badge's city leads east into a node that
+- [x] **[Task-303] The Victory Road is a route.** The eighth badge's city leads east into a node that
       accepts the walk and draws nothing. The task makes it the long final route it is: four screens
       carved off its own streams, its entry out of `city:8`, its exit into `league:1`, and the content a
       route carries, so the League can be reached on foot.

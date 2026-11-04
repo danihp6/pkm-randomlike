@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NPC_ROWS } from '../../data/npcs';
 import { planNodeContent, POI_KINDS, type NodeContent } from './content';
 import { planRegion, type RegionPlan } from './plan';
+import { planRouteScreens } from './routeScreens';
 
 const SEEDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel'];
 
@@ -91,11 +92,11 @@ describe('node content counts', () => {
       const plan = planRegion(seed);
       for (const node of plan.nodes) {
         const trainers = contentOf(plan, node.key).trainers;
-        if (node.kind === 'town' || node.kind === 'victory-road' || node.kind === 'league') {
+        if (node.kind === 'town' || node.kind === 'league') {
           expect(trainers, `${seed} ${node.key}`).toBe(0);
         } else if (node.kind === 'tower') {
           expect(trainers, `${seed} ${node.key}`).toBe(0);
-        } else if (node.kind === 'route' || node.kind === 'lateral') {
+        } else if (node.kind === 'route' || node.kind === 'lateral' || node.kind === 'victory-road') {
           expect(trainers, `${seed} ${node.key}`).toBeGreaterThanOrEqual(2);
           expect(trainers, `${seed} ${node.key}`).toBeLessThanOrEqual(4);
         } else {
@@ -131,15 +132,15 @@ describe('node content place', () => {
     }
   });
 
-  it('holds grass on the settlements and the routes, and none on the last three', () => {
+  it('holds grass on the settlements and every route kind, and none on the last two', () => {
     for (const seed of SEEDS) {
       const plan = planRegion(seed);
       const lateral = plan.nodes.find((node) => node.kind === 'lateral');
       expect(lateral, seed).toBeDefined();
-      for (const key of [plan.townKey, 'city:1', 'route:1', lateral?.key ?? '']) {
+      for (const key of [plan.townKey, 'city:1', 'route:1', lateral?.key ?? '', 'victory-road:1']) {
         expect(contentOf(plan, key).grass, `${seed} ${key}`).toBe(true);
       }
-      for (const key of ['victory-road:1', 'league:1', 'tower:1']) {
+      for (const key of ['league:1', 'tower:1']) {
         expect(contentOf(plan, key).grass, `${seed} ${key}`).toBe(false);
       }
     }
@@ -206,7 +207,7 @@ city:7|chef,tutor,species,nature,ability,iv-judge,exorcist,medic,berry-tree,weat
 route:8|medic,species,chef||-|g||t3
 lateral:14|nature,medic||trade|g||t4
 city:8|iv-judge,species,tutor,exorcist,type-gate,sacrifice,rocket,mega-stone,ability|berry-tree,ability|-|g|mart|t4
-victory-road:1|ability,rocket,tutor||-|-||t0
+victory-road:1|ability,rocket,tutor||-|g||t2
 league:1|merchant,mega-stone,nature||-|-||t0
 tower:1|rocket,berry-tree,tutor||-|-||t0`);
   });
@@ -217,5 +218,37 @@ describe('node content refuses', () => {
     const plan = planRegion('alpha');
     expect(() => planNodeContent(plan, 'nope:1', 1)).toThrow('unknown node: nope:1');
     expect(() => planNodeContent(plan, 'city:9', 3)).toThrow('unknown node: city:9');
+  });
+});
+
+describe('the Victory Road’s content (Task-303)', () => {
+  it('rolls two to four trainers over its own tall grass, the same on a second call', () => {
+    for (const seed of SEEDS) {
+      const plan = planRegion(seed);
+      const first = planNodeContent(plan, 'victory-road:1', 1);
+      expect(first.grass, seed).toBe(true);
+      expect(first.poi, seed).toBeNull();
+      expect(first.specials, seed).toEqual([]);
+      expect(first.shops, seed).toEqual([]);
+      expect(first.trainers, seed).toBeGreaterThanOrEqual(2);
+      expect(first.trainers, seed).toBeLessThanOrEqual(4);
+      expect(planNodeContent(plan, 'victory-road:1', 1), seed).toEqual(first);
+    }
+  });
+
+  it('posts exactly that many trainers on the screens, off the lane and the bands', () => {
+    const plan = planRegion('alpha');
+    const content = planNodeContent(plan, 'victory-road:1', 1);
+    const planned = planRouteScreens(plan, 'victory-road:1');
+    expect(planned.screens).toHaveLength(4);
+    expect(planned.route.trainers).toHaveLength(content.trainers);
+
+    const key = (tile: { x: number; y: number }): string => `${tile.x},${tile.y}`;
+    const lane = new Set(planned.route.spine.map(key));
+    const bands = new Set(planned.route.bands.flatMap((band) => band.tiles.map(key)));
+    for (const trainer of planned.route.trainers) {
+      expect(lane.has(key(trainer.position)), trainer.id).toBe(false);
+      expect(bands.has(key(trainer.position)), trainer.id).toBe(false);
+    }
   });
 });

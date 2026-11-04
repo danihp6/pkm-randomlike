@@ -8,6 +8,7 @@ import { planCity } from './city';
 import { activeMissions } from './missions';
 import { planRegion } from './plan';
 import { generateRoute } from './route';
+import { planRouteScreens } from './routeScreens';
 import { canTravel, travel } from './travel';
 
 const SEED = 'task-283';
@@ -295,5 +296,62 @@ describe('the town’s door (Task-287)', () => {
       reason: 'gate',
       badge: gate!.badge,
     });
+  });
+});
+
+describe('the Victory Road walk (Task-303)', () => {
+  const EIGHT = [1, 2, 3, 4, 5, 6, 7, 8];
+  const SEVEN = [1, 2, 3, 4, 5, 6, 7];
+  const ROAD = 'victory-road:1';
+
+  /** The chain up to the eighth city, so the run's own history reads in travel order. */
+  function roadHistory(): readonly string[] {
+    return [...PLAN.chain.slice(0, PLAN.chain.indexOf('city:8') + 1)];
+  }
+
+  it('walks out of the eighth city onto the carver’s entry once badge 8 is held', () => {
+    const run = runAt('city:8', roadHistory(), EIGHT);
+    const result = travel(PLAN, run, ROAD, 'walk');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const entry = generateRoute(PLAN, ROAD).entry;
+    expect(result.key).toBe(ROAD);
+    expect(result.mode).toBe('walk');
+    expect(result.spawn).toStrictEqual(entry);
+    expect(result.spawn).toStrictEqual(planRouteScreens(PLAN, ROAD).screens[0].spawn);
+    expect(result.spawn).not.toStrictEqual({ x: 0, y: 0 });
+    expect(result.run.nodeKey).toBe(ROAD);
+    expect(result.run.visitedNodes).toStrictEqual([...roadHistory(), ROAD]);
+    expect(travel(PLAN, run, ROAD, 'walk')).toStrictEqual(result);
+  });
+
+  it('refuses that walk before the eighth badge, naming it', () => {
+    const run = runAt('city:8', roadHistory(), SEVEN);
+    expect(travel(PLAN, run, ROAD, 'walk')).toStrictEqual({
+      ok: false,
+      reason: 'gate',
+      badge: 8,
+    });
+    expect(canTravel(PLAN, run, ROAD, 'walk')).toStrictEqual(travel(PLAN, run, ROAD, 'walk'));
+  });
+
+  it('walks back from the road into the eighth city', () => {
+    const run = runAt(ROAD, [...roadHistory(), ROAD], EIGHT);
+    const back = travel(PLAN, run, 'city:8', 'walk');
+    expect(back.ok).toBe(true);
+    if (!back.ok) return;
+    expect(back.key).toBe('city:8');
+    expect(back.spawn).toStrictEqual(planCity(PLAN, 'city:8').spawn);
+    expect(back.run.nodeKey).toBe('city:8');
+  });
+
+  it('walks on into the League, which no scene carves but the rule still reaches', () => {
+    const run = runAt(ROAD, [...roadHistory(), ROAD], EIGHT);
+    const on = travel(PLAN, run, 'league:1', 'walk');
+    expect(on.ok).toBe(true);
+    if (!on.ok) return;
+    expect(on.key).toBe('league:1');
+    expect(on.run.nodeKey).toBe('league:1');
   });
 });

@@ -8,6 +8,24 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The Victory Road is a route.** `[Task-303]`, Batch 127: `city:8` leads east into
+      `victory-road:1` and the node now draws and walks like the long final route it is, so the League
+      is reachable on foot. One exported predicate, `isRouteKind` (`src/engine/region/route/layout.ts`),
+      answers for `route`, `lateral` and `victory-road` at every kind gate — the carver's layout,
+      `preload`'s route branch, `travel.walkSpawn`, `content`'s trainer and grass sets and the two scene
+      gates (`RouteScene.buildNode`, `CityScene.destinationScene`). The road is fixed at four screens
+      (`ROUTE_HEIGHTS[2]`, 60×200) without moving a draw, its entry is the `N` band out of `city:8` and
+      its one exit the `E` band into `league:1` (the kind's own exit order, `E` first); its content
+      rolls `2..4` trainers and tall grass off its own `content` stream. `docs/region-spec.md` §7.3,
+      §7.12 and the new §7.13 record it. `[unit]` 347 files, 6195 tests green and `npm run build`
+      clean (the other 61 route/lateral nodes' openings and heights are pinned unchanged);
+      `[live]` over CDP at 1280×800 on a v28 run standing on `city:8` with eight badges: the `E` band
+      enters `victory-road:1` (live `Route` scene, `debugRouteScreen()` reports 4 screens with the last
+      at rows 120-199, index 0, `N` entry `city:8`, `E` exit `league:1`), 74 walk presses cross to
+      index 1, and the `E` band hands the run to `league:1`, whose scene opens on the first League
+      battle; the canvas reads 1 024 000/1 024 000 non-black pixels with four flat placeholder colours
+      (this clone carries no packed atlas).
+
 - [x] **A route plays its own screens.** `[Task-302]`, Batch 126: `RouteScene` stops building a
       legacy floor room and draws the region's own route instead. A new pure seam,
       `src/engine/region/routeScreens.ts` (`planRouteScreens`, `screenIndexOf`, `bandAt`,

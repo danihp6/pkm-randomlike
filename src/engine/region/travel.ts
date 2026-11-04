@@ -5,7 +5,7 @@ import { compatForNode, type RunState } from '../run/state';
 import { planCity } from './city';
 import { advanceMissions } from './missions';
 import { nodeOf, type RegionNode, type RegionPlan } from './plan';
-import { generateRoute } from './route';
+import { generateRoute, isRouteKind } from './route';
 
 /**
  * The region's one travel seam (`docs/region-spec.md` §4, §5 and `D67`): whether a run
@@ -70,14 +70,14 @@ function settlementDoor(plan: RegionPlan, key: string): Tile {
 
 /**
  * Where a walk in through an exit band lands: the settlement's own spawn, or the
- * carver's entry for a route and a lateral — the same tile `preloadNode` reports as
- * `NodeWorld.spawn`. The Victory Road, the League and the tower have no carver yet,
- * so no scene can draw them either (`preloadNode` answers null) and the scene refuses
- * that walk; the origin stands in for the tile no map will place.
+ * carver's entry for a route, a lateral and the Victory Road — the same tile
+ * `preloadNode` reports as `NodeWorld.spawn`. The League and the tower have no carver
+ * yet, so no scene can draw them either (`preloadNode` answers null) and the scene
+ * refuses that walk; the origin stands in for the tile no map will place.
  */
 function walkSpawn(plan: RegionPlan, node: RegionNode): Tile {
   if (isSettlement(node)) return { ...planCity(plan, node.key).spawn };
-  if (node.kind === 'route' || node.kind === 'lateral') {
+  if (isRouteKind(node.kind)) {
     return { ...generateRoute(plan, node.key).entry };
   }
   return { x: 0, y: 0 };

@@ -1,6 +1,7 @@
 import { NPC_ROWS } from '../../data/npcs';
 import type { Rng } from '../rng';
 import { nodeOf, type RegionNodeKind, type RegionPlan } from './plan';
+import { isRouteKind } from './route/layout';
 import { nodeStreams } from './streams';
 
 /**
@@ -87,16 +88,11 @@ const TIER_TRAINER_COUNTS: Readonly<Record<1 | 2 | 3, Range>> = {
   3: [3, 4],
 };
 
-/** A route — main or lateral — posts this many trainers. */
+/** A route — main, lateral or the Victory Road — posts this many trainers. */
 const ROUTE_TRAINER_COUNT: Range = [2, 4];
 
-/** The kinds that roll wild encounters: a settlement's grass corner, a route's tall grass. */
-const GRASS_KINDS: ReadonlySet<RegionNodeKind> = new Set<RegionNodeKind>([
-  'town',
-  'city',
-  'route',
-  'lateral',
-]);
+/** The settlement kinds that roll wild encounters through their grass corner. */
+const GRASS_KINDS: ReadonlySet<RegionNodeKind> = new Set<RegionNodeKind>(['town', 'city']);
 
 function drawFromPool(rng: Rng, count: number): { npcId: string }[] {
   const pool = NPC_ROWS.map((row) => row.id);
@@ -126,7 +122,7 @@ function drawTrainers(rng: Rng, kind: RegionNodeKind, tier: 1 | 2 | 3): number {
     const [min, max] = TIER_TRAINER_COUNTS[tier];
     return rng.int(min, max);
   }
-  if (kind === 'route' || kind === 'lateral') {
+  if (isRouteKind(kind)) {
     const [min, max] = ROUTE_TRAINER_COUNT;
     return rng.int(min, max);
   }
@@ -152,7 +148,7 @@ export function planNodeContent(plan: RegionPlan, key: string, tier: 1 | 2 | 3):
     npcs,
     specials,
     poi,
-    grass: GRASS_KINDS.has(node.kind),
+    grass: GRASS_KINDS.has(node.kind) || isRouteKind(node.kind),
     shops: node.kind === 'city' ? ['mart'] : [],
     trainers,
   };
