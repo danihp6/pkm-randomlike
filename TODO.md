@@ -33,12 +33,14 @@ laterals** per stretch, the **Victory Road**, the **League** and the **tower** b
 Nothing already shipped is rewritten by this paragraph: Phases 0-23 stay as they are, the panel wave
 keeps its own backlog, and the open work that assumed rooms or floors is **frozen** with a `[!]` and
 its reason in the item (`[Task-256]` is the only one today — its `StarterScene` is what the
-laboratory's first room replaces). The phase is **Batches 116-127** — `113`, `114` and `115` are
+laboratory's first room replaces). The phase is **Batches 116-128** — `113`, `114` and `115` are
 already bound to the panel wave's last rows, so the region's batches take the next labels and
-no ID moves — and **`[Task-264]` to `[Task-302]`**, in backlog order. The tail was **re-cut on
-`2026-11-04`**, on the two issues the last cycles filed: Batch 125 ports the HUD panel host to the
-region's scenes (#118) and pays the level-line copy defect, Batch 126 builds the region's own route
-screen (#119), and the sweep and the docs close move behind them to Batch 127. Three rules bind the whole
+no ID moves — and **`[Task-264]` to `[Task-303]`**, in backlog order. The tail was **re-cut twice on
+`2026-11-04`**. The first cut, on the two issues the last cycles filed, gave Batch 125 the HUD panel
+host (#118) and the level-line copy defect, Batch 126 the region's own route screen (#119), and moved
+the sweep behind them. The second, on what those cycles then found, puts the **Victory Road** in
+Batch 127 — the node accepted the walk and drew nothing (#123) — and widens Batch 128's sweep with
+every reader of the deprecated fields (#124). Three rules bind the whole
 phase. **Identity:** `nodeKey = <kind>:<id>` is the only name a piece of the world has, and every
 node owns one stream family, `${seed}:node:<key>:…`; `routeIndexForRoom` and the global route prefix
 retire with the floors. **Persistence:** the save steps **27 → 28 with no migration** — the run in
@@ -71,7 +73,8 @@ eight-city region, the Victory Road and the tower do. The phase's shape:
 | 124 | the shell: i18n, the debug menu, the balance/regression pass | 3 |
 | 125 | the panels survive the region: the HUD host moves to the node scenes, and the level line wears its space | 2 |
 | 126 | the region's own route screen: a route plays its 2-4 screens, off `planMap` | 1 |
-| 127 | the sweep: the floor modules die, the docs close | 2 |
+| 127 | the Victory Road is a route: its own 2-4 screens, cars and exits | 1 |
+| 128 | the sweep: the floor modules die, the docs close | 2 |
 
 **Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
 Batch 6b and Batch 7 are
@@ -11686,7 +11689,7 @@ battle.
 **What dies with the floors, and when.** `MapPlan`/`MapRoom`/`planMap`, `MapRoomSpecial`, sealed
 portals, the floor minimap, the finite/infinite mode pair, `StarterScene`, the `mapIndex`/`routeIndex`
 pair and `routeIndexForRoom`'s global prefix all go. They do not all go in one task: each batch's
-tasks delete the module they replace, and **Batch 127** sweeps what is left, module by module, with
+tasks delete the module they replace, and **Batch 128** sweeps what is left, module by module, with
 the criterion that a grep finds no live import. The intermediate batches keep the old fields and the
 old scene alive on purpose — a 3 900-line scene cannot be rewritten in the same task that changes the
 save schema, and `npm run build` must stay green at every merge — so `RunState` keeps `mapIndex`,
@@ -11899,7 +11902,7 @@ dangling-reference criterion is **narrowed to the files it owns**: `docs/maps-sp
 ≈90 further references in `docs/design-spec.md`, `docs/routes-spec.md`, `docs/battle-spec.md`,
 `docs/route-generator.md`, `docs/balance/*.md`, `docs/data-spec.md`, `src/**` comments, `TODO.md` and
 `CHANGELOG.md`, and those die with `[Task-298]` (the floor modules) and `[Task-299]` (the docs
-close) in Batch 127 — the item as written could not have been done inside its own four paths.
+close) in Batch 128 — the item as written could not have been done inside its own four paths.
 `[Task-271]`'s `[live]` keeps its wording but states its method: no scene draws a city or an
 interior until Batch 118/120, so the pass reads the atlas the running game loaded
 (`tiles:city` / `tiles:interior`) and paints the 20×20 grid from it in-page with `getImageData`.
@@ -11976,7 +11979,7 @@ so the honest split, if a later cycle wants one, is "packer + manifests + blanks
       **Tests:** `[unit]` `docs/maps-spec.md` no longer exists and none of the four files this task
       owns (`AGENTS.md`, `docs/region-spec.md`, `docs/tech-decisions.md`, `.prettierignore`) links to
       it — the ≈90 references left in the other docs and in `src/**` are `[Task-298]`'s and
-      `[Task-299]`'s (Batch 127); `[unit]` every module `[Task-268]` names is named in the spec;
+      `[Task-299]`'s (Batch 128); `[unit]` every module `[Task-268]` names is named in the spec;
       `[unit]` `D59`-`D62` exist and `npm test` is green (no code changed). No browser pass is owed.
       Claims `docs/region-spec.md`, `docs/maps-spec.md` (deleted), `docs/tech-decisions.md`,
       `AGENTS.md` and `.prettierignore`. *Dependencies:* none. *(Batch 117)*
@@ -12799,13 +12802,60 @@ justified and the reason is recorded here.
       `src/scenes/README.md`. *Dependencies:* the route generator (`[Task-272]`), the node seam
       (`[Task-283]`), the node content (`[Task-289]`) and the panel host (`[Task-300]`). *(Batch 126)*
 
-### Batch 127 - the sweep and the close
+### Batch 127 - the Victory Road is a route
+
+**The one.** Issue #123: the chain walks `city:8` straight into `victory-road:1`, the travel is
+accepted, and no generator claims the kind — the node draws nothing and the League behind it is
+unreachable on foot. It is unplanned work (the carver's `isRouteKind` never learned the kind), and it
+cannot wait behind the sweep: `[Task-298]` deletes the last screen that could ever draw it. One task is
+justified: it owns `route/layout.ts`, `preload.ts`, `travel.ts` and `content.ts`, and `[Task-298]` edits
+`travel.ts` too, so the two cannot share a batch.
+
+**Hot files.** None of the serial four. `src/engine/region/travel.ts` is the shared one, and it belongs
+to `[Task-303]` here and to `[Task-298]` in Batch 128, never to both.
+
+- [ ] **[Task-303] The Victory Road is a route.** The eighth badge's city leads east into a node that
+      accepts the walk and draws nothing. The task makes it the long final route it is: four screens
+      carved off its own streams, its entry out of `city:8`, its exit into `league:1`, and the content a
+      route carries, so the League can be reached on foot.
+      **Measured:** `src/engine/region/route/layout.ts:69` `isRouteKind` accepts only `route` and
+      `lateral`, so `planRouteLayout` throws `not a route node: victory-road:1` (`:119`);
+      `src/engine/region/preload.ts:103-105` answers `no generator for victory-road:1`, and
+      `preload.test.ts:73` pins that `null`; `src/engine/region/travel.ts:74-85` hands back the `{0, 0}`
+      spawn for it and `resolveTravel` raises no refusal; `src/engine/region/plan.ts:240` puts it in the
+      chain between `city:8` and `league:1` with `LEAGUE_BADGE`; `src/engine/region/content.ts:129` posts
+      trainers only on `route`/`lateral`; `docs/region-spec.md` calls it one Victory Road and the
+      chain's last long route.
+      **Fix shape:** teach every kind test on the route path that `victory-road` is a route —
+      `isRouteKind`, `preload`'s route branch, `travel.walkSpawn` and `content`'s trainer and grass
+      sets — with its screen count **fixed at four** (`ROUTE_HEIGHTS[2]`) as the plan's long final
+      route, the biome from `biomeForRoute(node.id)` as any route takes it, its entry opening `N` out of
+      `city:8` and its exit `E` into `league:1`; `preload.test.ts`'s pinned `null` flips to a world.
+      **Docs:** `docs/region-spec.md` §7's node chapter gains the Victory Road subsection (screens,
+      content, entry and exit).
+      **Tests:** `[unit]` `planRouteLayout` on `victory-road:1` yields four screens whose height is
+      `ROUTE_HEIGHTS[2]`, an `N` entry naming `city:8` and an `E` exit naming `league:1`; `[unit]`
+      `preloadNode` for the key returns a world of that height; `[unit]` `walkSpawn` answers the entry
+      column and not `{0, 0}`; `[unit]` its content rolls the trainers its own stream names and the same
+      on a re-read; `[unit]` the suite and the build are green. `[live]` at 1280×800 on a v28 save with
+      eight badges standing on `city:8`: walking east enters `victory-road:1`, the canvas draws its
+      first screen (tilemap 60×240, index 0), a step down crosses to index 1, and the last screen's `E`
+      band lands on `league:1`. Claims `src/engine/region/route/layout.ts`, `layout.test.ts`,
+      `src/engine/region/route/map.ts` (only if its carver gates on the kind),
+      `src/engine/region/preload.ts`, `preload.test.ts`, `src/engine/region/travel.ts`,
+      `travel.test.ts`, `src/engine/region/content.ts`, `content.test.ts`, `docs/region-spec.md` §7 and
+      `src/engine/region/README.md`. *Dependencies:* the route carver (`[Task-272]`), the route screen
+      (`[Task-302]`) and the node plan (`[Task-268]`). *(Batch 127)*
+
+### Batch 128 - the sweep and the close
 
 **The two.** The phase promised incremental deletion, and this is where what is left goes: the floor
 modules, the room content, the old scene and its registry, and the dead fields. The doc task then
 closes the three specs in the new vocabulary. Two tasks is the floor of the rule and it is justified:
 both claim `src/main.ts`'s neighbourhood and the READMEs, and every other path this batch could have
-carried is already deleted by one of them.
+carried is already deleted by one of them. Issue #124 is the reason its claims grew: four `src/ui`
+files, the dev menu's own field and `region/travel.ts`'s `compatForNode` writer still read the three
+deprecated fields, so the sweep that removes them has to own those paths as well.
 
 **Hot files.** `src/main.ts` (`[Task-298]`, deleting `StarterScene` and `RouteScene` from the scene
 list). No other hot file.
@@ -12818,7 +12868,7 @@ list). No other hot file.
       **Measured:** `src/engine/maps/**` (plan, progress, route, streams), `src/scenes/rooms/**`,
       `src/scenes/RouteScene.ts`, `src/ui/mapView.ts`, `src/engine/run/floors.ts`,
       `levelCap.ts`, `src/engine/maps/streams.ts`, and `RunState.mapIndex/routeIndex/routeInMap` all
-      still exist after Batches 116-124 by design.
+      still exist after Batches 116-127 by design.
       **Fix shape:** delete each module with its `*.test.ts`, remove the importers, drop the three
       deprecated fields and their parse/encode branches, update every folder README the deletions
       touch, and keep `npm run build` and `npm test` green (a deletion that leaves a dangling import
@@ -12832,10 +12882,13 @@ list). No other hot file.
       `src/engine/run/levelCap.ts`, `levelCap.test.ts`, `src/engine/run/state.ts`, `state.test.ts`,
       `src/engine/save.ts`, `save.test.ts`, `src/scenes/rooms/**`, `src/scenes/RouteScene.ts`,
       `src/scenes/StarterScene.ts`, `StarterScene.test.ts`, `src/ui/mapView.ts`, `mapView.test.ts`,
-      `src/main.ts`, `src/data/maps.ts`, `src/data/mapSize.ts`, `src/data/gates.ts`,
+      `src/ui/runSummary.ts`, `src/ui/hud/state.ts`, `src/ui/rocketPanel.ts`, `src/ui/casino.ts`,
+      `src/dev/debugMenu.ts`, its test, `src/engine/region/travel.ts`, `travel.test.ts`, `src/main.ts`,
+      `src/data/maps.ts`, `src/data/mapSize.ts`, `src/data/gates.ts`,
       `src/data/noHeal.ts`, `src/data/bannedRoom.ts` and the five
-      folder READMEs. *Dependencies:* the sweep's two prerequisites, `[Task-300]` (panels) and
-      `[Task-302]` (the route screen), plus every batch before it. *(Batch 127)*
+      folder READMEs. *Dependencies:* the sweep's three prerequisites, `[Task-300]` (panels),
+      `[Task-302]` (the route screen) and `[Task-303]` (the Victory Road, which owns `travel.ts`
+      first), plus every batch before it. *(Batch 128)*
       **Released `2026-11-04`:** the premise was false at `2406214` (issue #119) — `RouteScene` was
       the live `route`/`lateral` screen and still built floor rooms, so this list would have deleted
       the region's working screen and the compat fields `region/travel.ts:144` writes on every node
@@ -12858,7 +12911,7 @@ list). No other hot file.
       points to its replacement. No browser pass is owed. Claims `docs/design-spec.md`,
       `docs/routes-spec.md`, `docs/tech-decisions.md`, `docs/data-spec.md`,
       `docs/route-generator.md`, `docs/art-direction.md` and `docs/tileset-spec.md`.
-      *Dependencies:* the sweep ([Task-298], Batch 127) and every batch before it. *(Batch 127)*
+      *Dependencies:* the sweep ([Task-298], Batch 128) and every batch before it. *(Batch 128)*
       **Released `2026-11-04`:** waits on the sweep only, as the dependency line says.
 
 ## Bugs
