@@ -27,6 +27,26 @@ exits and the guaranteed lane all come out of a single carve
   that lane crosses every screen, so the route is walkable end to end by following
   floor. The terrain (tall grass, ledges) never blocks it, and no walkable cell sits off
   the lane and its branches.
+- **The screens.** The walk plays the map as its `SCREEN_HEIGHT` (40) row bands: screen
+  `i` holds the rows `i*40 … i*40+39` and the last one absorbs the remainder
+  (`routeScreens`, `src/engine/region/route/layout.ts`). The screens are contiguous, so
+  a seam is no transition and no rebuild: a step from a screen's last row lands on the
+  next screen's first row, which means a walker crosses **downwards**, never eastward.
+  Each screen spawns on the lane column of its own first row — the column the seam can
+  actually be crossed at — and screen 0's spawn is the carver's own `entry`, so the
+  travel seam and the screen agree on the tile. Content is laid per screen by
+  `planRouteScreens` (`src/engine/region/routeScreens.ts`): trainer `j` of the node's
+  own count stands on screen `j % screens`, and at most one ground item is placed per
+  screen from screen 1 on. Nothing is placed on the lane, on a band or inside a
+  lateral's point of interest, so the guaranteed walkable way end to end can never be
+  blocked (`docs/region-spec.md` §7.12).
+- **The way out.** A band belongs to exactly one screen. Pressing outward while standing
+  on a band cell hands the run to the region's travel seam (`travel`, §4 below): the
+  last screen's `S`/`E`/`W` band goes on to the next region node, the `N` band of
+  screen 0 goes back to the parent, and a lateral leaves by its only band because it
+  has no exit. A tile is only "on a band" once a step has landed there (or a debug
+  teleport placed the walker), so a spawn on the entry band never bounces straight back
+  out.
 - **The map.** A one-tile ring of trees/rock along the border but for the bands, a solid
   tree interior with the lanes carved through it, and one biome's tileset for the whole
   map (`D10`).
@@ -396,31 +416,33 @@ switches, its reward tile and its press order identical on every visit.
 
 ## 4. Run structure
 
-A run walks a chain of **maps** (`docs/maps-spec.md`); each map is a Binding of
-Isaac-style floor — a grid of rooms sharing a biome and a level range, closed into
-at least one cycle — and the **room farthest from the entry** holds the boss that
-opens the portal to the next map:
+A run is one **region** (`docs/region-spec.md` §1): the starting town, one long route
+per badge stretch, the eight gym cities in badge order, the optional laterals, the
+Victory Road, the League and the tower behind the Champion. The run stands on exactly
+one node at a time (`RunState.nodeKey`) and moves between neighbours through the single
+travel seam (`travel`, `src/engine/region/travel.ts`):
 
 ```
-map:  rooms 1..K-1    regular rooms (wild encounters, items, trainers)
-      farthest room   the map boss (its max level) -> portal
-run:  map 1 -> map 2 -> ... -> final map (final boss ends a finite run)
+town:1 -> route:1 -> city:1 -> ... -> route:8 -> city:8 -> victory-road:1 -> league:1 -> tower:1
+                     \-> lateral:n   (optional: one or two per stretch)
 ```
 
-- Finite mode: the chain has a fixed length and the final boss ends it.
-- Infinite mode: same generator, no final boss; the maps keep climbing and the
-  run ends only when the party is wiped.
-- Every floor carries **one mission**: chosen deterministically from the run seed
-  when the floor is built (its own stream, so no route, roster or encounter draw
-  moves), it is evaluated when the run takes the portal. Meeting it bumps a
-  **run-long counter** and appends `{ id, mapIndex }` to the run's
-  `completedMissions` history (the floor being left, oldest first), and pays a
-  **fixed reward row** (`{ kind: 'room' }` today,
-  read by the special-room tasks); the first kind is `flawless` — leave the floor
-  having lost **no HP** and without a casualty.
-- The older mini-boss/boss cadence (`RUN_CHAIN` in `src/data/run.ts`) is folded
-  into the map boss; the route kinds are re-derived from the map plan
-  (`docs/maps-spec.md` §3).
+- **Walking** enters a neighbour the plan names as an edge (`RegionNode.edges`), and
+  only a main-chain step **forward out of a city** is gated: the gym's badge opens the
+  way on, while a lateral and a step back answer no gate, so walking back always works
+  (`canTravel`). The town's door is the prologue's and opens once the starter is taken.
+- **Flying** reaches a settlement the run has already visited, from anywhere, and costs
+  nothing — a visited settlement behind a closed gate is legal (`D67`).
+- **A route node is played as its own screens** (§1): the walker crosses the seams of
+  its one carve with no transition, and only a border band hands the run back to the
+  seam above.
+- **A node's stretch is what the badges set**: the cap is the only level anchor (`D29`,
+  `docs/region-spec.md` §3), so every roster, wild encounter and reward reads the node's
+  band (`bandForNode`) rather than a floor's.
+- **The run ends** when the last living Pokémon falls (`D5`): nothing carries over and a
+  fresh run starts from a fresh seed. The tower behind the Champion is the endless node —
+  every fight there is one more rung (`src/engine/region/tower.ts`) — and the League is
+  cleared once the Champion has fallen.
 
 ## 5. Difficulty bands
 

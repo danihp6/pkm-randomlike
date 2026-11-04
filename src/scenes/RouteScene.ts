@@ -1,18 +1,10 @@
 import Phaser from 'phaser';
 import { biomeForRoute, getBiome } from '../data/biomes';
-import { getMove, getSpecies, normalizeId, TYPE_NAMES } from '../data/dex';
+import { getSpecies } from '../data/dex';
 import { GROUND_ITEM_TEXTURE_KEY } from '../data/groundItemSprite';
-import { PROP_SIGN_FRAME, PROP_SIGN_SIZE, PROP_SIGN_TEXTURE_KEY } from '../data/tilesets/props';
 import type { HudPanelId } from '../data/hudLayout';
-import { FINITE_MAPS, levelCapForMap } from '../data/maps';
 import { getItem } from '../data/items';
-import {
-  BERRY_TREE_ENEMY_BOOSTS,
-  CURSE_ENEMY_BOOST,
-  NPC_ROWS,
-  TUTOR_MOVES,
-  type NpcRow,
-} from '../data/npcs';
+import { CURSE_ENEMY_BOOST } from '../data/npcs';
 import { keyLabel, type KeybindAction } from '../data/keybinds';
 import { PORTRAIT_TEXTURE_KEY, portraitFor } from '../data/portraits';
 import {
@@ -25,14 +17,7 @@ import { pokemonOverworldSheet, type PokemonOverworldSheet } from '../data/pokem
 import { playerWalkAnimKey, playerWalkTimeScale } from '../render/playerAnim';
 import { followerAnimKey, followerAnims, followerFit } from '../render/pokemonFollower';
 import { ROUTE_LOOT } from '../data/loot';
-import {
-  ROOM_BATTLEFIELDS,
-  type RoomBattlefield,
-  type RoomConditionId,
-  type RoomConditionKind,
-} from '../data/battlefields';
 import type { MapPassiveTrigger } from '../data/passives';
-import { bossIsDouble, bossPartySize, type BossPartyKind } from '../data/bosses';
 import {
   OVERWORLD_SPRITE_TEXTURE_KEY,
   OVERWORLD_SPRITE_WIDTH,
@@ -52,15 +37,10 @@ import type {
 } from '../dev/debugMenu';
 import { type BoostId, type FighterInput } from '../engine/battle';
 import {
-  BOSS_MONEY_MULTIPLIER,
-  MAX_MOVES,
-  addItem,
   addFaints,
+  addItem,
   addPokemon,
   adoptAtLevel,
-  advanceMap,
-  advanceRoute,
-  bandForMap,
   battleSeed,
   canCapture,
   createRun,
@@ -70,11 +50,9 @@ import {
   hasLivingParty,
   isItemPicked,
   isTrainerDefeated,
-  markBossDefeated,
   markItemPicked,
   memberById,
   resolveBattle,
-  routeIndexForRoom,
   runBand,
   squadLevel,
   trainerMoney,
@@ -92,80 +70,28 @@ import {
   type RunPokemon,
   type RunState,
 } from '../engine/run';
-import {
-  rerollAbility,
-  rerollIvs,
-  rerollNature,
-  sacrifice,
-  swapSpecies,
-  teachMove,
-  type MemberEdit,
-  type MemberEditLine,
-  type MemberEditRefusal,
-} from '../engine/run/memberEdits';
 import { ownedTmIds } from '../engine/run/items';
-import { battleHpLoss, missionCompletedBy, missionForMap, recordHpLost } from '../engine/run/missions';
-import {
-  FORCED_FIELD_FLOORS,
-  forcedFieldId,
-  withCurse,
-  withForcedField,
-  withNextWildType,
-  withoutCurse,
-  withoutNextWildType,
-  type RunModifiers,
-} from '../engine/run/modifiers';
-import { livingTeamTypes, partyHasType } from '../engine/run/party';
+import { bandForNode } from '../engine/run/levelCurve';
+import { battleHpLoss, recordHpLost } from '../engine/run/missions';
+import { forcedFieldId, withoutCurse, withoutNextWildType } from '../engine/run/modifiers';
+import { livingTeamTypes } from '../engine/run/party';
 import { wildExclusions } from '../engine/run/pool';
 import { runPassives, type PassivePickup } from '../engine/run/passives';
 import { TILESETS, type TilesetId, tilesetTextureKey } from '../data/tilesets';
 import type { Tile } from '../engine/grid';
-import {
-  FLOOR,
-  TALL_GRASS,
-  WALL,
-  isWalkable,
-  mapPixelSize,
-  mapSize,
-  resolveMove,
-  type TileMap,
-} from '../engine/map';
+import { FLOOR, TALL_GRASS, isWalkable, mapSize, resolveMove, type TileMap } from '../engine/map';
 import { hashSeed, randomSeed, Rng } from '../engine/rng';
 import { clearRun, loadSave, storeHistory, storeRun, type Settings } from '../engine/save';
 import { emptyEndLog, endRun, type RunEndLog, type RunHistoryRecord } from '../engine/run/history';
 import {
-  DEFAULT_SHAPE,
-  DEFAULT_TRAINER_SIGHT,
   RouteEncounters,
-  bannedSpeciesOf,
-  borderEdge,
-  bossChamberTile,
-  chefTrade,
-  exitEdgeAt,
-  gateId,
-  guaranteedNpc,
-  medicHeal,
-  npcBerryHarvest,
-  npcForcedField,
-  npcPrize,
-  npcRequirementMet,
-  npcSpot,
-  npcTrainerId,
-  npcTreeWild,
-  npcUseId,
-  npcWildType,
-  rollWildLevel,
-  roomNpc,
-  secretShopSealId,
   seesPlayer,
   sketchRoute,
   sketchRouteSteps,
-  specialTrainerFor,
-  staticGateId,
   trainerAt,
   trainerHidden,
   withForcedAbility,
-  type ChefTradeRefusal,
+  type AccessEdge,
   type Facing,
   type RouteItem,
   type RouteMap,
@@ -174,25 +100,6 @@ import {
   type RouteStep,
   type RouteTrainer,
 } from '../engine/routes';
-import {
-  bossOpeningRoll,
-  roomBattlefield,
-  roomKindOf,
-  type BossOpeningRoll,
-} from '../engine/routes/battlefield';
-import { bossRoomHeal, bossRoomSealed } from '../engine/routes/bossRoom';
-import {
-  OPPOSITE_EDGE,
-  bossTrainerId,
-  isFinalMap,
-  miniBossTrainerId,
-  planMap,
-  roomAcross,
-  roomView,
-  type MapEdge,
-  type MapPlan,
-  type RoomView,
-} from '../engine/maps';
 import { TILE_SIZE } from '../engine/tileset';
 import {
   grassRustleFrames,
@@ -205,16 +112,17 @@ import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from 
 import { buildNodeMeshes } from '../engine/region/preload';
 import { NODE_ENCOUNTER_CHANCE, nodeEncounterTable, nodeWildLevel } from '../engine/region/encounters';
 import { nodeOf, planRegion, type RegionNode, type RegionNodeKind } from '../engine/region/plan';
+import { poiBattleRules, type NodePoi } from '../engine/region/pois';
+import {
+  bandAt,
+  planRouteScreens,
+  screenIndexOf,
+  type RouteNodePlan,
+  type RouteScreenPlan,
+} from '../engine/region/routeScreens';
 import { travel, type TravelMode } from '../engine/region/travel';
 import { addFrlgWindow } from '../ui/frlg';
-import {
-  catchToPcNotice,
-  eggHatchNotice,
-  itemPickupNotice,
-  missionCompleteNotice,
-  type Notice,
-} from '../ui/notice';
-import { hatchEgg } from '../ui/casino';
+import { catchToPcNotice, itemPickupNotice, type Notice } from '../ui/notice';
 import { levelUpBeats, type LevelUpBeat } from '../ui/beats';
 import {
   RELEASE_HOLD_MS,
@@ -223,23 +131,22 @@ import {
   type ReleaseBeat,
 } from '../ui/permadeath';
 import { FRLG_INK, addFrlgText } from '../ui/frlgFont';
-import { openNpcPanel, NPC_MAX_CHOICES, type NpcPanelView } from '../ui/npcPanel';
-import { openRocket } from '../ui/rocketPanel';
 import { FRLG_ACCENT, FRLG_MUTED } from '../ui/frlg';
 import { createTouchControls, type TouchControls } from '../ui/touchControls';
-import { t, type TranslationKey } from '../i18n';
+import { t } from '../i18n';
 import { actionKeys, subscribeKeybinds } from '../input/input';
 import { listenForBack } from '../input/backButton';
 import { playCue, playMusic } from '../audio/audio';
 import { buildRankingEntry, loadRankingEndpoint, rankingDeviceId, submitRanking } from '../net/ranking';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
+import type { RoomBattlefield } from '../data/battlefields';
+import { ROOM_BATTLEFIELDS } from '../data/battlefields';
 import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
 import { RUN_STEP_MS, WALK_STEP_MS } from './walker';
-import { collectDescriptors, type RoomRegistry } from './rooms/registry';
-import { openMart } from './rooms/shop';
-import type { RoomDescriptor, RoomHost, RoomPanel, RoomWildBattle } from './rooms/types';
+import { drawPoi } from './pois';
+import type { RoomPanel, RoomWildBattle } from './rooms/types';
 import { bagTextFieldFocused, typeInBagSearch } from './panels/bag';
 import {
   cancelNicknameEdit,
@@ -253,7 +160,6 @@ import {
   typeInNickname,
 } from './panels/detail';
 import { showAreaPanel, showNotice as showPanelNotice } from './panels/notices';
-import { closeMiniBossReward as closeRewardCard, openMiniBossReward } from './panels/rewards';
 import {
   closePauseMenu,
   hideResetOverlay,
@@ -263,13 +169,6 @@ import {
 } from './panels/pause';
 import type { PanelSceneSource } from './panels/host';
 import type { RoutePanelHost, RoutePanelId } from './panels/types';
-
-/**
- * Every special room kind's descriptor module (`D47`), discovered from the folder
- * itself: a new room is a new file here and the scene is not edited. The negative
- * pattern keeps the folder's own tests out of the browser bundle.
- */
-const ROOM_MODULES = import.meta.glob(['./rooms/*.ts', '!./rooms/*.test.ts'], { eager: true });
 
 /**
  * The cards this scene mounts: every panel of the folder. The route is the only
@@ -291,18 +190,20 @@ const ROUTE_PANEL_IDS: readonly RoutePanelId[] = [
   'detail',
 ];
 
-/**
- * Render depth of a room's condition filter: over the tiles, the actors and the tree
- * tips, under the dev hover marker (30) and the HUD (150).
- */
-const BATTLEFIELD_DEPTH = 25;
-
 /** The four directions, in the order the update loop tests them. */
 type MoveKey = 'up' | 'down' | 'left' | 'right';
 
+/** The band direction a held move key pushes toward, for the route's exit rule. */
+const OUTWARD: Readonly<Record<AccessEdge, MoveKey>> = {
+  N: 'up',
+  S: 'down',
+  W: 'left',
+  E: 'right',
+};
+
 /** One frame of the player's own tall-grass rustle, in ms. */
 const GRASS_STEP_MS = 70;
-/** Over the actor band (`ACTOR_DEPTH` + foot-y step, 491-497), under the battlefield filter (25). */
+/** Over the actor band (`ACTOR_DEPTH` + foot-y step, 491-497), under the dev hover marker (30). */
 const GRASS_STEP_DEPTH = 10;
 
 /** How long a "spinning" trainer holds a facing before it turns to the next. */
@@ -332,9 +233,6 @@ type TrainerSpriteEntry = {
   spriteKey: string | null;
 };
 
-/** The room's special NPC (`docs/maps-spec.md` §7): the row it rolled, its tile and the way it looks. */
-type RoomNpc = Readonly<{ row: NpcRow; tile: Tile; facing: Facing }>;
-
 /** What one battle launch adds beyond the trigger: the guardian's boosts and its no-flee rule. */
 type BattleExtras = Readonly<{
   noFlee?: boolean;
@@ -352,39 +250,12 @@ type RouteParams = Readonly<{
   height: number;
   grassPatches: number;
   ledges: number;
-  /** The plan-driven room (normal play); absent for the dev generator/import tools. */
-  room?: RoomView;
 }>;
-
-/** How `transitionTo` places the player after the rebuild. */
-type TransitionOptions = Readonly<{ keepPosition?: boolean }>;
 
 function clampInt(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.floor(value)));
 }
-
-/** "serious" -> "Serious", for the nature line. */
-function capitalize(text: string): string {
-  return text.length === 0 ? text : text[0].toUpperCase() + text.slice(1);
-}
-
-/** The line an NPC card prints when a member edit refuses, by reason. */
-const NPC_REFUSALS: Readonly<Record<MemberEditRefusal, TranslationKey>> = {
-  'no-member': 'npc.refused.noMember',
-  'no-slots': 'npc.refused.noSlots',
-  'no-bag': 'npc.refused.noBag',
-  'no-species': 'npc.refused.noSpecies',
-  'no-ability': 'npc.refused.noAbility',
-  'not-a-tutor-move': 'npc.refused.notTutorMove',
-};
-
-/** The line the chef's card prints when its trade refuses, by reason. */
-const CHEF_REFUSALS: Readonly<Record<ChefTradeRefusal, TranslationKey>> = {
-  'no-member': 'npc.refused.noMember',
-  'already-held': 'npc.chef.alreadyHeld',
-  'no-berries': 'npc.chef.noBerries',
-};
 
 /** True when `tile` is inside the playable map (the border included). */
 function inBounds(map: TileMap, tile: Tile): boolean {
@@ -410,11 +281,12 @@ const DEMO_RESERVE: FighterInput = {
 
 const DEMO_BAG: readonly BagCounts[] = [];
 
-/** One dev wild roll: what the room's live stream handed out on a step. */
+/** One dev wild roll: what the node's live stream handed out on a step. */
 export type DebugWildRoll = Readonly<{ speciesId: string; level: number; shiny: boolean }>;
 
 export class RouteScene extends WorldScene {
-  private route!: RouteMap;
+  /** The node's route in both shipped shapes, so one object serves every seam. */
+  private route!: RouteNodePlan['route'];
   private map!: TileMap;
   /** `map` for movement: a tree's walkable tip is passable even though it draws as wall. */
   private moveMap!: TileMap;
@@ -445,15 +317,17 @@ export class RouteScene extends WorldScene {
   /** The inputs behind the route on screen; the debug reroll rebuilds from it. */
   private routeParams!: RouteParams;
   private run!: RunState;
-  /** The floor plan and the room it is playing, for map navigation and the portal. */
-  private plan: MapPlan | null = null;
-  private room: RoomView | null = null;
-  /** The condition the room on screen rolled, or null when it rolled none. */
-  private battlefield: RoomBattlefield | null = null;
-  /** The boss room's opening (arena and the boss lead's stages), or null outside it. */
-  private bossOpening: BossOpeningRoll | null = null;
-  /** The room's condition filter (one tinted rectangle over the room), or null. */
-  private battlefieldOverlay: Phaser.GameObjects.Rectangle | null = null;
+  /** The screens of the route on screen, top to bottom; empty while a dev preview draws. */
+  private screens: readonly RouteScreenPlan[] = [];
+  /** The lateral's point of interest, or null on a main-chain route and on a preview. */
+  private poi: NodePoi | null = null;
+  /**
+   * False while the player was just placed and true once a step has landed, so
+   * standing on a border band never bounces a fresh spawn straight back out.
+   */
+  private bandArmed = false;
+  /** True once a node's screens are built and drawn; false for a node with none. */
+  private nodeBuilt = false;
   private settings!: Settings;
   private passThrough = false;
   private hoverInspect = false;
@@ -504,22 +378,6 @@ export class RouteScene extends WorldScene {
   private releaseArmed = false;
   private releasePortrait!: Phaser.GameObjects.Image;
   private releaseText!: Phaser.GameObjects.BitmapText;
-  /**
-   * True while `buildRoom` rebuilds the scene. A `buildRoute` runs `applyRoute`,
-   * which raises the area panel for the dev frame-map import; inside a room build
-   * the greeting belongs to the room entry itself (`create` / `transitionTo`), or
-   * the boss-fall rebuild and the gate's rebuild would greet a room the run never
-   * left.
-   */
-  private buildingRoom = false;
-
-  /** The counter tile the room's own fixture placed, or null in a room without one. */
-  private shopCounter: Tile | null = null;
-  private npc: RoomNpc | null = null;
-  /** The NPC battle in flight, so its win can pay the row's prize. Cleared on the return. */
-  private npcBattle: Readonly<{ row: NpcRow; mapIndex: number; roomId: number }> | null = null;
-  /** Every special room kind's descriptor, indexed once per scene (`D47`). */
-  private roomRegistry: RoomRegistry = collectDescriptors(ROOM_MODULES);
   /** The room's own panel while it owns the keyboard, or null; the scene owns the slot. */
   private roomPanel: RoomPanel | null = null;
 
@@ -578,10 +436,11 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * The base scene swapped the map and hands the spawn over: place the player there
-   * and play the node's own bed — the route's theme on a route and a lateral, the
-   * menu theme in a settlement. A settlement the region offers a scene of its own is
-   * handed over instead of drawn here.
+   * The base scene swapped the map and hands the spawn over: rebuild the node's own
+   * screens, content and entities from the seam, place the player on `spawn` and play
+   * the node's own bed — the route's theme on a route and a lateral, the menu theme in
+   * a settlement. A settlement the region offers a scene of its own is handed over
+   * instead of drawn here.
    */
   protected override onNodeArrived(key: string, spawn: Tile): void {
     const node = nodeOf(planRegion(this.run.seed), key);
@@ -593,7 +452,18 @@ export class RouteScene extends WorldScene {
       this.scene.start(arrivalScene, { run: this.run, spawn });
       return;
     }
+    this.stopWalking();
+    this.closePanel();
+    this.clearRouteSprites();
+    if (!this.buildNode()) return;
+    this.drawRoute();
+    this.nodeBuilt = true;
     this.movePlayerTo(spawn.x, spawn.y);
+    this.refreshTrainerVisibility();
+    const picks = this.applyMapPassives('room');
+    this.showPassivePickups(picks);
+    this.refreshHud();
+    showAreaPanel(this.panelHost);
     const route = node?.kind === 'route' || node?.kind === 'lateral';
     playMusic(this, route ? 'route-music' : 'menu-music');
   }
@@ -614,8 +484,9 @@ export class RouteScene extends WorldScene {
   /**
    * The region node the run stands on: the plan's node for its `nodeKey`, or the
    * starting town when a hand-edited save names one the plan does not hold. The
-   * grass table and the wild level are the node's, so every room of one node rolls
-   * the same pool and spends the same single catch (`docs/region-spec.md` §7.9).
+   * grass table, the wild level and the band are the node's, so every screen of one
+   * node rolls the same pool and spends the same single catch
+   * (`docs/region-spec.md` §7.9).
    */
   private regionNode(): RegionNode {
     const plan = planRegion(this.run.seed);
@@ -623,180 +494,85 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * Builds the run's current room from the map plan and points the scene at it:
-   * its plan size and opening set, the biome's terrain and — in the boss room —
-   * the map boss. The dev generator and the frame-map importer build a route
-   * directly instead, without a room, so they keep the rolled shape.
+   * Builds the node on screen from the one seam (`docs/region-spec.md` §7.12): the
+   * plan names the node, `planRouteScreens` cuts its own carve into screens and
+   * populates them, and the scene takes every value it draws and walks from that
+   * one answer. A node with no screens — the Victory Road, the League, the tower —
+   * is warned once and draws nothing, the way `CityScene` degrades.
    */
-  private buildRoom(): void {
-    const plan = planMap(this.run.seed, this.run.mapIndex);
-    const view = roomView(plan, this.run.routeInMap, this.portalOpen(), this.run.arrivalEdge);
-    this.plan = plan;
-    this.room = view;
-    const biome = getBiome(view.biomeId);
-    // The room's geometry, trainers and loot seed off a **stable** per-room
-    // index, not the run's moving counter, so walking back into a room shows the
-    // same room (`docs/maps-spec.md` §9). The room's battle condition reads the
-    // same index, so it too is the same on every visit.
-    const roomIndex = routeIndexForRoom(plan, view.roomId);
-    // The boss room always takes one of its two openings (`BOSS_OPENINGS`) and heals
-    // the party and the box once per floor; every other room rolls at
-    // `ROOM_BATTLEFIELD_CHANCE` or not at all. Both branches assign the opening, so no
-    // stale boss stage survives a room change.
-    const kind = roomKindOf(view);
-    if (kind === 'boss') {
-      const opening = bossOpeningRoll(this.run.seed, roomIndex);
-      this.battlefield = opening.battlefield;
-      this.bossOpening = opening;
-      const healed = bossRoomHeal(this.run, view.mapIndex);
-      if (healed !== this.run) {
-        this.run = healed;
-        this.persistRun();
-      }
-    } else {
-      this.battlefield = roomBattlefield(this.run.seed, roomIndex, kind);
-      this.bossOpening = null;
+  private buildNode(): boolean {
+    const plan = planRegion(this.run.seed);
+    const node = nodeOf(plan, this.run.nodeKey);
+    this.screens = [];
+    this.poi = null;
+    if (node === undefined || (node.kind !== 'route' && node.kind !== 'lateral')) {
+      console.warn(`route: no screens for ${this.run.nodeKey}`);
+      return false;
     }
-    this.buildingRoom = true;
-    this.buildRoute({
+    const planned = planRouteScreens(plan, node.key);
+    const route = planned.route;
+    const biome = getBiome(route.biomeId);
+    this.screens = planned.screens;
+    this.poi = planned.poi;
+    this.tilesetId = biome.tilesetId;
+    // The grass rolls the **node**, never a room (`src/engine/region/encounters.ts`),
+    // and its stream is keyed by the node key, so walking back replays it (D11).
+    this.encounters = new RouteEncounters(
+      nodeEncounterTable(node, this.run),
+      new Rng(hashSeed(`${this.run.seed}:encounters:${node.key}`)),
+      (rng) => nodeWildLevel(node, this.run, rng),
+      NODE_ENCOUNTER_CHANCE,
+      new Rng(hashSeed(`${this.run.seed}:shiny:${node.key}`)),
+      undefined,
+      this.run.modifiers.nextWildType,
+    );
+    this.routeParams = {
       seed: this.run.seed,
-      routeIndex: roomIndex,
-      shape: DEFAULT_SHAPE,
-      width: view.width,
-      height: view.height,
+      routeIndex: node.id,
+      shape: 'straight',
+      width: route.width,
+      height: route.height,
       grassPatches: biome.terrain.grassPatches,
       ledges: biome.terrain.ledges,
-      room: view,
-    });
-    this.buildingRoom = false;
-    if (view.boss && !this.run.bossDefeated) {
-      const boss = this.bossTrainer(view);
-      if (boss) this.route = { ...this.route, trainers: [...this.route.trainers, boss] };
-    }
-    // A special room injects its own content, off stable ids, so a revisit rebuilds
-    // it identically and a beaten mini-boss stays beaten (`docs/maps-spec.md` §7).
-    // The room's own descriptor places it; the counter is cleared first, so a room
-    // without one leaves nothing of the last room's behind (`D47`).
-    this.shopCounter = null;
-    const fixture = this.specialDescriptor()?.fixture?.(this.roomHost());
-    if (fixture?.trainers) {
-      this.route = { ...this.route, trainers: [...this.route.trainers, ...fixture.trainers] };
-    }
-    if (fixture?.items) {
-      this.route = { ...this.route, items: [...this.route.items, ...fixture.items] };
-    }
-    if (fixture && 'counter' in fixture) this.shopCounter = fixture.counter ?? null;
-    // A room's own line rides the strip once its fixture is in place (the no-heal
-    // leaf announces its rule this way).
-    if (fixture?.notice) this.showNotice(fixture.notice);
-    this.placeSpecialTrainer(roomIndex);
-    this.rollRoomNpc();
-    // Last: the filter needs `this.map`, which `buildRoute` → `applyRoute` sets.
-    this.buildBattlefieldOverlay();
-  }
-
-  /**
-   * Overrides the room's first trainer with a special trainer when this room's own roll
-   * draws one (`docs/routes-spec.md` §2). Once per build, from `buildRoom`, **before**
-   * `rollRoomNpc()`; reads its own stream, so the room's route, trainers, items and the
-   * floor's NPC do not move.
-   */
-  private placeSpecialTrainer(roomIndex: number): void {
-    const room = this.room;
-    if (!room) return;
-    const trainer = specialTrainerFor({
-      route: this.route,
-      seed: this.run.seed,
-      roomIndex,
-      role: room.role,
-      quiet: room.entry || room.boss || room.special !== null,
-      missionsCompleted: this.run.missionsCompleted,
-    });
-    if (!trainer) return;
-    this.route = {
-      ...this.route,
-      trainers: this.route.trainers.map((entry) => (entry.id === trainer.id ? trainer : entry)),
     };
+    this.applyRoute(route, route);
+    return true;
+  }
+
+  /** Draws everything the node on screen holds, over its two tile layers. */
+  private drawRoute(): void {
+    this.drawTiles();
+    this.drawEntities();
+    this.drawItems();
+    this.drawTrainers();
+    this.drawPointOfInterest();
+  }
+
+  /** The tile the player stands on: the arrival's own spawn, else screen 0's. */
+  private spawnTile(): Tile {
+    const arrival = this.arrival();
+    if (arrival !== null && arrival.key === this.run.nodeKey) return { ...arrival.spawn };
+    const first = this.screens[0];
+    return first === undefined ? { x: 1, y: 1 } : { ...first.spawn };
   }
 
   /**
-   * Places the room's special NPC (`docs/maps-spec.md` §7): at most one, only in a
-   * regular `trainers` room and once per build — never in `update`. The floor's
-   * **guaranteed** row is tried first (a placement, not a roll: it reads the plan and
-   * no RNG), then the rolled rows on the room's own stream, so no route, trainer,
-   * item or battle draw moves. A row whose art the packed sheet lacks is dropped
-   * whole: no sprite, no block and no interact, and no second room is tried.
+   * Draws the lateral's point of interest and its zone with the other entities, so
+   * `clearRouteSprites` takes them down with the rest of the node's content.
    */
-  private rollRoomNpc(): void {
-    this.npc = null;
-    const room = this.room;
-    if (!room || room.special !== null || room.role !== 'trainers') return;
-    if (this.generatorStepIndex !== null) return;
-    const eligible = NPC_ROWS.filter((row) => npcRequirementMet(this.run, row.requires));
-    const guaranteed = guaranteedNpc(this.plan!, room.roomId, room.mapIndex);
-    const placement = guaranteed
-      ? { row: guaranteed, roomIndex: room.roomId }
-      : roomNpc(this.run.seed, room.roomId, room.mapIndex, eligible);
-    if (!placement) return;
-    const spot = npcSpot(this.route, room.roomId, this.run.seed, placement.row.id);
-    if (!spot) return;
-    if (overworldSpriteFrame(placement.row.spriteKey) === null) return;
-    this.npc = { row: placement.row, tile: spot.tile, facing: spot.facing };
-  }
-
-  /** The descriptor for the room on screen, or null when it has none (`D47`). */
-  private specialDescriptor(): RoomDescriptor | null {
-    const kind = this.room?.special;
-    return kind ? (this.roomRegistry.byKind.get(kind) ?? null) : null;
-  }
-
-  /** The plan room on screen; `buildRoom` sets it before any descriptor runs. */
-  private get view(): RoomView {
-    const room = this.room;
-    if (!room) throw new Error('route scene has no plan room');
-    return room;
-  }
-
-  /**
-   * The port a room descriptor draws through (`D47`): the scene's own surface, with
-   * `run` and `view` read live so a trade the panel commits is visible to its next
-   * call. The room mutates the scene only through these methods.
-   */
-  private roomHost(): RoomHost {
-    const scene = this;
-    return {
-      scene,
-      get run(): RunState {
-        return scene.run;
-      },
-      get view(): RoomView {
-        return scene.view;
-      },
-      route: () => scene.route,
-      rebuildRoom: () => scene.rebuildRoom(),
-      entryTile: () => scene.route.entry,
-      counterTile: () => scene.shopCounter,
-      farthestRoomTile: () => scene.farthestRoomTile(),
-      facingFromTo: (from, to) => scene.facingFromTo(from, to),
-      generatorStepActive: () => scene.generatorStepIndex !== null,
-      commitRun: (run) => scene.commitRun(run),
-      // The room port still names this hook; no HUD pane holds the keyboard since
-      // the route HUD went pointer-first (D45), so there is nothing to release.
-      releaseHudKeyboard: () => undefined,
-      openPanel: (panel) => scene.openPanel(panel),
-      closePanel: () => scene.closePanel(),
-      panelOpen: () => scene.panelOpen(),
-      startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
-      startWildBattle: (encounter) => scene.startRoomWildBattle(encounter),
-      showNotice: (notice) => scene.showNotice(notice),
-    };
+  private drawPointOfInterest(): void {
+    const poi = this.poi;
+    if (poi === null || this.generatorStepIndex !== null) return;
+    for (const object of drawPoi(this, this.route, poi, TILE_SIZE)) {
+      this.entitySprites.push(object);
+    }
   }
 
   /**
    * The source the shared panel layer answers from (`./panels/host.ts`): the scene's
-   * own run, settings, route, plan and room registry, read live so a panel always
-   * paints the current ones; its room slot; and the layer's twelve cards. A panel
-   * mutates the scene only through these methods, and never writes the run itself.
+   * own run, settings and route, read live so a panel always paints the current ones;
+   * its panel slot; and the layer's twelve cards. A panel mutates the scene only
+   * through these methods, and never writes the run itself.
    */
   protected override panelSource(): PanelSceneSource {
     return {
@@ -804,8 +580,6 @@ export class RouteScene extends WorldScene {
       run: () => this.run,
       settings: () => this.settings,
       route: () => this.route,
-      plan: () => this.plan,
-      rooms: () => this.roomRegistry,
       slot: {
         open: (panel) => this.openPanel(panel),
         close: () => this.closePanel(),
@@ -846,7 +620,7 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * Folds the room's map passives for `trigger` into the run
+   * Folds the map passives for `trigger` into the run
    * (`src/engine/run/passives.ts`, `docs/routes-spec.md` §2). Silent — no save, no
    * repaint — when nothing paid, which the rule reports by returning the same run.
    */
@@ -877,240 +651,72 @@ export class RouteScene extends WorldScene {
     panel?.close();
   }
 
-  /** True while a room's own panel owns the screen. */
+  /** True while a panel owns the screen. */
   private panelOpen(): boolean {
     return this.roomPanel !== null;
   }
 
-  /** True while a room panel is **modal**: a floating one never gates the route. */
+  /** True while a panel is **modal**: a floating one never gates the route. */
   private modalPanelOpen(): boolean {
     return this.roomPanel !== null && this.roomPanel.modal !== false;
   }
 
   /**
-   * Paints the room's battle condition as one tinted rectangle over the whole room.
-   * The filter is static — the roll and the paint happen once per room build — and
-   * the world camera keeps it while the pinned HUD camera ignores it.
-   */
-  private buildBattlefieldOverlay(): void {
-    if (this.battlefieldOverlay) {
-      this.battlefieldOverlay.destroy();
-      this.battlefieldOverlay = null;
-    }
-    if (!this.battlefield || !this.map) return;
-    const size = mapPixelSize(this.map, TILE_SIZE);
-    const overlay = this.add
-      .rectangle(0, 0, size.width, size.height, this.battlefield.tint, this.battlefield.alpha)
-      .setOrigin(0, 0)
-      .setDepth(BATTLEFIELD_DEPTH);
-    this.battlefieldOverlay = overlay;
-  }
-
-  /** The portal is open once the map's boss has fallen, except on the final map (D31). */
-  private portalOpen(): boolean {
-    return this.run.bossDefeated && !isFinalMap(this.run.mode, this.run.mapIndex);
-  }
-
-  /**
-   * The map boss: a themed `ace` trainer standing in the room's centre chamber
-   * (its tile farthest from the door), fielding a fixed six-member party (three on
-   * map 1) at the map's `maxLevel`. It falls back to the room's farthest walkable
-   * tile when the room carved no chamber. It stands only while the map's boss is
-   * alive, so the portal stays sealed until it falls.
-   */
-  private bossTrainer(view: RoomView): RouteTrainer | null {
-    const position = bossChamberTile(this.route) ?? this.farthestRoomTile();
-    if (!position) return null;
-    return {
-      id: bossTrainerId(view.mapIndex),
-      position,
-      facing: this.facingFromTo(position, this.route.entry),
-      sight: DEFAULT_TRAINER_SIGHT,
-      archetypeId: 'ace',
-      aggro: false,
-    };
-  }
-
-  /**
-   * The walkable tile farthest (BFS) from the room entry, skipping tiles a
-   * trainer or a visible item already owns; null when only the entry is free.
-   */
-  private farthestRoomTile(): Tile | null {
-    const from = this.route.entry;
-    const occupied = new Set<string>();
-    for (const trainer of this.route.trainers)
-      occupied.add(`${trainer.position.x},${trainer.position.y}`);
-    for (const item of this.route.items) occupied.add(`${item.position.x},${item.position.y}`);
-    const startKey = `${from.x},${from.y}`;
-    const seen = new Set<string>([startKey]);
-    const queue: Tile[] = [{ ...from }];
-    let farthest: Tile | null = null;
-    const deltas: readonly Tile[] = [
-      { x: 1, y: 0 },
-      { x: -1, y: 0 },
-      { x: 0, y: 1 },
-      { x: 0, y: -1 },
-    ];
-    for (let head = 0; head < queue.length; head++) {
-      const current = queue[head];
-      if (`${current.x},${current.y}` !== startKey && !occupied.has(`${current.x},${current.y}`)) {
-        farthest = current;
-      }
-      for (const delta of deltas) {
-        const next = { x: current.x + delta.x, y: current.y + delta.y };
-        const key = `${next.x},${next.y}`;
-        if (seen.has(key) || !isWalkable(this.moveMap, next)) continue;
-        seen.add(key);
-        queue.push(next);
-      }
-    }
-    return farthest;
-  }
-
-  /** The cardinal direction from `from` to `to` (the boss faces the door it guards). */
-  private facingFromTo(from: Tile, to: Tile): Facing {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    if (dx === 0 && dy === 0) return 'S';
-    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
-    return dy > 0 ? 'S' : 'N';
-  }
-
-  /**
-   * Builds the route for `params` (plus the debug reroll `attempt`) and points
-   * the scene at it: map, render tiles, tileset and the encounter stream.
-   * `create`, a room change and the debug "regenerate" all go through here so
-   * they cannot drift.
+   * Builds the free-standing carver preview for `params` (plus the debug reroll
+   * `attempt`) and points the scene at it. It is the dev generator's and the frame
+   * importer's own map, not a region node: it carves a rolled shape, so it goes
+   * through the shipped `sketchRoute` unchanged.
    */
   private buildRoute(params: RouteParams, attempt = 0): void {
-    const biome = params.room ? getBiome(params.room.biomeId) : biomeForRoute(params.routeIndex);
+    const biome = biomeForRoute(params.routeIndex);
     const seed = attempt > 0 ? `${params.seed}#r${attempt}` : params.seed;
     this.routeParams = params;
-    // The room that links into the boss room carries its sign (`docs/routes-spec.md`
-    // §2). The edge is derived from the plan, never from the arrival's role, so the
-    // sign's cell is the same whichever door the player walked in through.
-    const signEdge = this.bossLinkEdge(params.room);
     const pattern = TILESETS[biome.tilesetId].config.wallPattern;
     const wall = pattern
       ? { cols: pattern.cols, minHeight: Math.max(2, pattern.rows.length - 2) }
       : undefined;
-    const band = params.room
-      ? bandForMap(params.room.mapIndex)
-      : runBand(this.run.seed, params.routeIndex);
-    const loot = ROUTE_LOOT[band.id];
+    const loot = ROUTE_LOOT[runBand(this.run.seed, params.routeIndex).id];
     const request: RouteRequest = {
       seed,
       routeIndex: params.routeIndex,
       biomeId: biome.id,
       layout: biome.layout,
-      ...(params.room
-        ? { openings: params.room.openings, width: params.room.width, height: params.room.height }
-        : { shape: params.shape, width: params.width, height: params.height }),
+      shape: params.shape,
+      width: params.width,
+      height: params.height,
       grassPatches: params.grassPatches,
       ledges: params.ledges,
       loot: loot.pool,
       lootExclude: ownedTmIds(this.run),
       hiddenChance: loot.hiddenChance,
       itemChance: loot.itemChance,
-      ...(params.room ? { role: params.room.role } : {}),
       trainerArchetypes: TRAINER_ARCHETYPE_IDS,
-      // The map's entry, boss and special rooms are **quiet**: no tall grass, no
-      // ledges, no ground items and no trainers. The entry and boss are quiet
-      // (`docs/maps-spec.md` §2/§6) and a special carries only its own content
-      // (§7).
-      quiet: params.room ? params.room.entry || params.room.boss || params.room.special !== null : false,
-      // The boss room is a two-door line (its link plus the sealed portal), so its
-      // centre chamber is asked for explicitly; the entry room and every leaf read
-      // theirs off the opening set (`docs/maps-spec.md` §2/§6).
-      ...(params.room?.boss === true ? { chamber: true } : {}),
-      ...(signEdge ? { signEdge } : {}),
-      // The gated room's vault is sealed until the floor's own mark says otherwise, so a
-      // revisit and a reload draw exactly what the run has (`docs/maps-spec.md` §7). The
-      // static and secret-shop leaves carve the same vault and read their own records.
-      ...(params.room?.special === 'gated' ||
-      params.room?.special === 'static' ||
-      params.room?.special === 'secret-shop'
-        ? {
-            gate: isItemPicked(
-              this.run,
-              params.room.special === 'gated'
-                ? gateId(params.room.mapIndex, params.room.roomId)
-                : params.room.special === 'static'
-                  ? staticGateId(params.room.mapIndex, params.room.roomId)
-                  : secretShopSealId(params.room.mapIndex, params.room.roomId),
-            )
-              ? 'open'
-              : 'sealed',
-          }
-        : {}),
       ...(wall ? { wall } : {}),
     };
     const route = sketchRoute(request);
     this.generatorSteps = IS_DEVELOP ? sketchRouteSteps(request) : [];
-    this.applyRoute(route, params.room ?? null);
+    this.applyRoute(route);
   }
 
   /**
-   * The edge of `room` whose opening leads into the boss room, or undefined when
-   * the room on screen has none: the boss room itself, the floor's entry, every
-   * leaf and every route built without a plan (the dev generator, a frame-map
-   * import). It walks **every** opening, the boss room's portal included — the
-   * portal's `roomAcross` is undefined, so only a real link can match — and never
-   * filters by `role === 'exit'`: the role belongs to the arrival and flips when
-   * the player walks in from the boss room, while the sign's cell must not.
-   */
-  private bossLinkEdge(room: RoomView | undefined): MapEdge | undefined {
-    const plan = this.plan;
-    if (!room || !plan) return undefined;
-    for (const opening of room.openings) {
-      if (roomAcross(plan, room.roomId, opening.edge) === plan.bossRoom) return opening.edge;
-    }
-    return undefined;
-  }
-
-  /**
-   * Points the scene at an already-built route: its tiles become the live and
-   * render maps, and the tileset and encounter stream follow the route's biome.
-   * Both `buildRoute` and the debug frame-map import go through here so they
-   * cannot drift. `view` is the plan room on screen (null for an imported map or
-   * the dev generator), which carries the room's band and the boss portal.
+   * Points the scene at an already-built route: its tiles become the live and render
+   * maps and the tileset follows the route's biome. `buildNode` (the region node) and
+   * the two dev tools (the carver preview and a frame-map import) go through here so
+   * they cannot drift.
    *
-   * The grass rolls the **node** the run stands on, never the room's band
-   * (`src/engine/region/encounters.ts`, `docs/region-spec.md` §7.9): the table is
-   * the node's own stretch pool and the level is the squad's share clamped to the
-   * node's cap, so the catch rule and the wild rule cannot disagree.
+   * `nodeRoute` is the seam's own answer for a region node; a dev preview has no
+   * bands and no screens, so it is widened to the same shape with empty ones.
+   *
+   * The grass stream is **not** built here: it is the node's, so `buildNode` sets it
+   * before this call and a dev preview leaves the last node's stream alone.
    */
-  private applyRoute(route: RouteMap, view: RoomView | null = null): void {
-    // The boss room's portal is carved from the start but sealed until the boss
-    // falls, so the room looks the same before and after it opens.
-    if (view?.boss && !view.portalOpen && view.portalEdge) {
-      route = this.sealEdge(route, view.portalEdge);
-    }
-    this.route = route;
+  private applyRoute(route: RouteMap, nodeRoute?: RouteNodePlan['route']): void {
+    this.route = nodeRoute ?? { ...route, key: this.run.nodeKey, screens: [], bands: [] };
     this.map = route.tiles;
     this.renderTiles = this.map;
     this.generatorStepIndex = null;
-    const biome = getBiome(route.biomeId);
-    const node = this.regionNode();
-    this.tilesetId = biome.tilesetId;
+    this.tilesetId = getBiome(route.biomeId).tilesetId;
     this.moveMap = this.movementMap(this.map);
-    this.encounters = new RouteEncounters(
-      nodeEncounterTable(node, this.run),
-      new Rng(hashSeed(`${route.seed}:encounters:${route.routeIndex}`)),
-      (rng) => nodeWildLevel(node, this.run, rng),
-      NODE_ENCOUNTER_CHANCE,
-      // Shinies roll on their own stream, so they never shift the encounter
-      // sequence a fixed seed already produced.
-      new Rng(hashSeed(`${route.seed}:shiny:${route.routeIndex}`)),
-      // The node's table already dropped the run's exclusions, so the live set starts
-      // empty; `applyBattleResult` refreshes it after every catch.
-      undefined,
-      // The magician's type, so a room rebuilt from a save still obeys it.
-      this.run.modifiers.nextWildType,
-    );
-    // The dev frame-map import reaches this seam on its own (it builds no room);
-    // a route built for a room is greeted once by the room entry that asked for it.
-    if (!this.buildingRoom) showAreaPanel(this.panelHost);
   }
 
   override create(): void {
@@ -1165,28 +771,25 @@ export class RouteScene extends WorldScene {
     this.releaseWait = null;
     this.releaseArmed = false;
     this.roomPanel = null;
-    this.shopCounter = null;
-    this.npc = null;
     this.facing = 'down';
     this.walkTween = null;
     this.followerSprite = null;
     this.followerSheet = null;
     this.followerSpecies = null;
     this.followerTween = null;
+    this.nodeBuilt = false;
+    this.bandArmed = false;
     this.settings = loadSettings();
     // The shared panel layer (the twelve cards) is mounted by the base scene's
-    // `create` before the first room exists; `buildRoom` and the room entries read
+    // `create` before the node exists; `buildNode` and the node arrivals read
     // `this.panelHost` from it.
     super.create();
 
-    this.buildRoom();
+    if (!this.buildNode()) return;
 
-    this.drawTiles();
-    this.drawEntities();
-    this.drawItems();
-    this.drawTrainers();
-    this.drawRoomFixture();
-    this.player = { ...this.route.entry };
+    this.drawRoute();
+    this.nodeBuilt = true;
+    this.player = this.spawnTile();
     this.playerSprite = this.add
       .sprite(0, 0, PLAYER_SPRITE_TEXTURE_KEY, playerSpriteFrame('down'))
       .setOrigin(0.5, 1)
@@ -1266,8 +869,8 @@ export class RouteScene extends WorldScene {
       playMusic(this, 'route-music');
     });
     this.refreshHud();
-    // The first room's greeting: the `applyRoute` of `buildRoom` ran before the
-    // panel existed, so the banner is raised here instead.
+    // The node's greeting: the banner is raised once per node entry, here in
+    // `create` and in `onNodeArrived`, never inside `applyRoute`.
     showAreaPanel(this.panelHost);
     refreshDetail(this.panelHost);
     playMusic(this, 'route-music');
@@ -1404,20 +1007,6 @@ export class RouteScene extends WorldScene {
     this.scene.start('Starter', { seed: randomSeed() });
   }
 
-  /**
-   * Returns `route` with its border opening on `edge` walled off, used to keep the
-   * boss room's portal **sealed** until the boss falls. The interior lane that led
-   * to it stays, ending at the solid border.
-   */
-  private sealEdge(route: RouteMap, edge: MapEdge): RouteMap {
-    const tiles = route.tiles.map((row, y) =>
-      row.map((value, x) =>
-        borderEdge({ x, y }, route.width, route.height) === edge && value === FLOOR ? WALL : value,
-      ),
-    );
-    return { ...route, tiles };
-  }
-
   private movementMap(map: TileMap): TileMap {
     const config = TILESETS[this.tilesetId].config;
     const tips = treeTipKeys(map, config);
@@ -1433,8 +1022,8 @@ export class RouteScene extends WorldScene {
 
   /**
    * Draws the map on screen as the base scene's two culled layers. Every caller
-   * (`create`, `transitionTo`, `rebuildRoom`, the frame-map import and the dev
-   * generator step) keeps calling it after it changed `renderTiles`.
+   * (`create`, `onNodeArrived`, the frame-map import and the dev generator step)
+   * keeps calling it after it changed `renderTiles`.
    */
   private drawTiles(): void {
     const meshes = buildNodeMeshes(this.renderTiles, TILESETS[this.tilesetId].config);
@@ -1485,8 +1074,8 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * Draws the ground items on the route's pockets. A visible item is the FRLG
-   * Poke Ball, like the originals; a hidden one is the biome's own floor patch
+   * Draws the ground items the node placed on its own screens. A visible item is the
+   * FRLG Poke Ball, like the originals; a hidden one is the biome's own floor patch
    * (`hiddenItemFrame`), drawn exactly as the ground under it — same texture,
    * same cell, same scale — so only its frame gives it away up close. Items
    * already taken stay hidden. Only the live route has items, so a dev generator
@@ -1518,28 +1107,6 @@ export class RouteScene extends WorldScene {
       this.entitySprites.push(sprite);
       created.push(sprite);
     }
-    // The signs ride the same draw pass as the items on purpose: `drawItems` is the
-    // last draw every rebuild runs (`create`, `transitionTo`, `rebuildRoom` and the
-    // two debug rebuilds), so ending it here keeps the sign on screen everywhere.
-    this.drawSigns();
-  }
-
-  /**
-   * Draws the room's static signs (`docs/routes-spec.md` §2) on their cells: the
-   * boss door's sign is one image of the 16x16 FRLG prop, scaled up to the 24px
-   * world tile. A dev generator phase draws none, the same way it draws no items.
-   */
-  private drawSigns(): void {
-    if (this.generatorStepIndex !== null) return;
-    const created: Phaser.GameObjects.GameObject[] = [];
-    for (const sign of this.route.signs ?? []) {
-      const sprite = this.add
-        .image(this.centerX(sign.x), this.centerY(sign.y), PROP_SIGN_TEXTURE_KEY, PROP_SIGN_FRAME)
-        .setScale(TILE_SIZE / PROP_SIGN_SIZE)
-        .setDepth(5);
-      this.entitySprites.push(sprite);
-      created.push(sprite);
-    }
   }
 
   /**
@@ -1553,7 +1120,6 @@ export class RouteScene extends WorldScene {
     if (this.generatorStepIndex !== null) return;
     const created: Phaser.GameObjects.GameObject[] = [];
     for (const trainer of this.route.trainers) this.drawTrainer(trainer, created);
-    this.drawRoomNpc(created);
   }
 
   /** Draws one trainer's sprite (the body of `drawTrainers`' loop), booking it into `created`. */
@@ -1603,44 +1169,6 @@ export class RouteScene extends WorldScene {
     }
   }
 
-  /**
-   * Draws the room's special NPC on its own free tile, off the packed overworld
-   * atlas exactly as a trainer sprite is drawn, posed by its facing so its back is
-   * to the wall. It never joins `trainerSprites`: it has no sight, no spin, no chase
-   * and no roster.
-   */
-  private drawRoomNpc(created: Phaser.GameObjects.GameObject[]): void {
-    const npc = this.npc;
-    if (!npc) return;
-    const pose = trainerFacingPose(npc.facing);
-    const frame = overworldSpriteFrame(npc.row.spriteKey, pose.facing);
-    if (frame === null) return;
-    const footY = this.centerY(npc.tile.y) + TILE_SIZE / 2;
-    const sprite = this.add
-      .sprite(this.centerX(npc.tile.x), footY, OVERWORLD_SPRITE_TEXTURE_KEY, frame)
-      .setOrigin(0.5, 1)
-      .setScale(TILE_SIZE / OVERWORLD_SPRITE_WIDTH)
-      .setFlipX(pose.flipX)
-      .setDepth(actorDepth(footY));
-    this.entitySprites.push(sprite);
-    created.push(sprite);
-  }
-
-  /**
-   * Draws the room's own fixture, whatever kind it is (`D47`): the room's
-   * descriptor creates the objects, and the scene books them into the route's
-   * teardown list and keeps the pinned HUD camera off them.
-   */
-  private drawRoomFixture(): void {
-    const descriptor = this.specialDescriptor();
-    if (!descriptor?.drawFixture) return;
-    const before = this.children.list.length;
-    descriptor.drawFixture(this.roomHost());
-    const created = this.children.list.slice(before);
-    if (created.length === 0) return;
-    for (const sprite of created) this.entitySprites.push(sprite);
-  }
-
   /** Poses a resting trainer: the facing's idle frame, flipped for the right side. */
   private faceTrainerSprite(entry: TrainerSpriteEntry, facing: Facing): void {
     const pose = trainerFacingPose(facing);
@@ -1663,11 +1191,13 @@ export class RouteScene extends WorldScene {
   /** Snaps the sprite to a tile, without a step. */
   private movePlayerTo(x: number, y: number): void {
     this.player = { x, y };
+    // A placement is not a step: the band rule waits for the next landed step.
+    this.bandArmed = false;
     // The 16x32 FRLG frame stands with its feet on the tile's bottom edge, the
     // same placement the route's trainers use.
     this.playerSprite.setPosition(this.centerX(x), this.centerY(y) + TILE_SIZE / 2);
     this.playerSprite.setDepth(actorDepth(this.playerSprite.y));
-    // A snap (a room change, a debug teleport) leaves the follower on the player's
+    // A snap (a node arrival, a debug teleport) leaves the follower on the player's
     // own tile; it only trails once a step is taken.
     this.placeFollower(this.player.x, this.player.y);
     this.refreshGrassStep();
@@ -1756,7 +1286,7 @@ export class RouteScene extends WorldScene {
         this.walkTween = null;
         this.player = { x: to.x, y: to.y };
         this.refreshGrassStep();
-        this.onTileEntered(direction);
+        this.onTileEntered();
       },
     });
     // The follower trails by exactly one tile: it steps onto the tile the player is
@@ -1893,12 +1423,13 @@ export class RouteScene extends WorldScene {
     if (this.anims.exists(key)) sprite.play(key, true);
   }
 
-  private onTileEntered(direction: MoveKey): void {
+  private onTileEntered(): void {
+    // A landed step arms the band rule: standing on a border band and pressing
+    // outward hands the run back to the region's travel seam.
+    this.bandArmed = true;
     // A step re-paints the hidden archetypes' sprites before anything else: a
     // battle this step opens must not leave them drawn.
     this.refreshTrainerVisibility();
-    // A door on the border changes room (or steps through the open portal).
-    if (this.tryLeaveRoom(direction)) return;
     const grassy = isGrassStepTile(this.map, this.player.x, this.player.y, this.grassTipKeys);
     if (grassy && !this.ignoreEncounters) {
       // A step that lands in the grass plays the field's own rustle once.
@@ -1926,127 +1457,6 @@ export class RouteScene extends WorldScene {
     // Stepping into a trainer's cone makes it walk over and start the battle.
     const spotter = this.trainerSpotted();
     if (spotter) this.beginChase(spotter);
-  }
-
-  /**
-   * Leaving the room through a door (`docs/maps-spec.md` §2): a link enters the
-   * grid neighbour by its opposite edge (`advanceRoute`), and the boss room's
-   * open portal crosses to the next map (`advanceMap`, with its heal stop). Only a
-   * step taken **toward** the border counts, so walking along the gap of a wide
-   * opening (or spawning on it) never bounces back. The arrival door counts too,
-   * so a room can always be walked back. The dev generator/import tools have no
-   * plan, so they never transition.
-   */
-  private tryLeaveRoom(direction: MoveKey): boolean {
-    const room = this.room;
-    const plan = this.plan;
-    if (!room || !plan) return false;
-    const edge = this.doorEdgeAt(this.player, direction);
-    if (!edge) return false;
-    // The boss room's only door is the way in, and it stays barred while the boss
-    // stands (`docs/maps-spec.md` §6): the step is not a room change, so nothing is
-    // committed, persisted or re-rolled.
-    if (bossRoomSealed(room.boss, this.run.bossDefeated)) return false;
-    if (room.portalEdge !== null && room.portalOpen && edge === room.portalEdge) {
-      const before = this.run;
-      const advanced = advanceMap(before);
-      const hatch = hatchEgg(advanced);
-      const afterAdvance = hatch ? hatch.run : advanced;
-      this.transitionTo(afterAdvance);
-      const met = missionCompletedBy(before, afterAdvance);
-      // One notice at a time, and the hatch is the rarer beat.
-      if (hatch) this.showNotice(eggHatchNotice(this.memberName(hatch.member)));
-      else if (met) this.showNotice(missionCompleteNotice(t(met.nameKey)));
-      return true;
-    }
-    const next = roomAcross(plan, room.roomId, edge);
-    if (next === undefined) return false;
-    // Leave by `edge`, arrive by its opposite (`docs/maps-spec.md` §2).
-    this.transitionTo(advanceRoute(this.run, next, OPPOSITE_EDGE[edge]));
-    return true;
-  }
-
-  /**
-   * The map edge a **door** cell exits through: a passable tile of the room's
-   * opening on that edge (an opening is a gap a couple of tiles wide, so the player
-   * can leave from any of its cells), when the step that landed on it was taken
-   * toward that border. A wall, a decorative tree tip on the border or a step
-   * along the gap is not a door. Null for a non-border cell.
-   */
-  private doorEdgeAt(tile: Tile, direction: MoveKey): MapEdge | null {
-    const approach = MOVE_STEP[direction];
-    const approachEdge = approach.x > 0 ? 'E' : approach.x < 0 ? 'W' : approach.y > 0 ? 'S' : 'N';
-    const room = this.room;
-    if (room) {
-      const edges = room.openings.map((opening) => opening.edge);
-      return exitEdgeAt(this.map, this.route.width, this.route.height, edges, tile, approachEdge);
-    }
-    // No plan (the dev generator/import tools): the seeded tiles are the only guide.
-    const edge = borderEdge(tile, this.route.width, this.route.height);
-    if (!edge || edge !== approachEdge) return null;
-    const isDoor =
-      (this.route.entry.x === tile.x && this.route.entry.y === tile.y) ||
-      this.route.exits.some((exit) => exit.x === tile.x && exit.y === tile.y);
-    return isDoor ? edge : null;
-  }
-
-  /**
-   * Rebuilds the scene for the room the run just entered: build the plan room,
-   * redraw its tiles, items and trainers and spawn the player on its entry tile.
-   * The run's state already carries the new map position.
-   */
-  private transitionTo(run: RunState, options?: TransitionOptions): void {
-    const fromRoom = this.room;
-    const fromMap = this.run.mapIndex;
-    const tile = { x: this.player.x, y: this.player.y };
-    this.run = run;
-    this.persistRun();
-    this.stopWalking();
-    this.closePanel();
-    // The reward card is floating, so a player who walks out with it up must not
-    // carry it into the next room; closing runs its stored callback exactly once.
-    this.closeMiniBossReward();
-    this.clearRouteSprites();
-    this.buildRoom();
-    this.drawTiles();
-    this.drawEntities();
-    this.drawItems();
-    this.drawTrainers();
-    this.drawRoomFixture();
-    this.player = options?.keepPosition === true ? tile : { ...this.route.entry };
-    this.movePlayerTo(this.player.x, this.player.y);
-    this.refreshTrainerVisibility();
-    const picks = this.applyMapPassives('room');
-    this.showPassivePickups(picks);
-    this.refreshHud();
-    // One room entry, one banner: the boss-fall rebuild is the same room with its
-    // portal now open, so it greets nobody, while every door and the portal do.
-    const entered = !fromRoom || fromMap !== this.run.mapIndex || fromRoom.roomId !== this.room?.roomId;
-    if (entered) showAreaPanel(this.panelHost);
-  }
-
-  /**
-   * Redraws the room it is standing in after the run changed something the build reads
-   * (the gate's opening): the room's build re-reads the `gate` flag, the player keeps
-   * their tile and the room's **live** encounter sequence is carried over, so reopening
-   * a seal can never restart the room's grass rolls.
-   */
-  private rebuildRoom(): void {
-    if (!this.room) return;
-    const tile = { x: this.player.x, y: this.player.y };
-    const encounters = this.encounters;
-    this.clearRouteSprites();
-    this.buildRoom();
-    this.encounters = encounters;
-    this.drawTiles();
-    this.drawEntities();
-    this.drawItems();
-    this.drawTrainers();
-    this.drawRoomFixture();
-    this.player = tile;
-    this.movePlayerTo(tile.x, tile.y);
-    this.refreshTrainerVisibility();
-    this.refreshHud();
   }
 
   /**
@@ -2086,21 +1496,6 @@ export class RouteScene extends WorldScene {
   private liveTrainerAt(tile: Tile): RouteTrainer | undefined {
     const trainer = trainerAt(this.route, tile);
     return trainer && !isTrainerDefeated(this.run, trainer.id) ? trainer : undefined;
-  }
-
-  /** True when `tile` is the counter a room's fixture placed (a blocking fixture). */
-  private shopCounterAt(tile: Tile): boolean {
-    return this.shopCounter !== null && tile.x === this.shopCounter.x && tile.y === this.shopCounter.y;
-  }
-
-  /** True when the room's live special NPC stands on `tile`, so it blocks like an object. */
-  private npcBlocks(tile: Tile): boolean {
-    return this.npc !== null && tile.x === this.npc.tile.x && tile.y === this.npc.tile.y;
-  }
-
-  /** True when a static sign stands on `tile`, so it blocks like a fixture. */
-  private signBlocks(tile: Tile): boolean {
-    return (this.route.signs ?? []).some((sign) => sign.x === tile.x && sign.y === tile.y);
   }
 
   /**
@@ -2175,7 +1570,7 @@ export class RouteScene extends WorldScene {
         continue;
       }
       if (!inBounds(this.moveMap, next) || !isWalkable(this.moveMap, next)) continue;
-      if (this.itemBlocks(next) || this.signBlocks(next)) continue;
+      if (this.itemBlocks(next)) continue;
       if (this.liveTrainerAt(next) || (next.x === target.x && next.y === target.y)) continue;
       return next;
     }
@@ -2200,58 +1595,33 @@ export class RouteScene extends WorldScene {
     this.startTrainerBattle(chase.entry.trainer);
   }
 
-  /** Opens the menu battle against a trainer, with a roster seeded for that id. */
+  /** Opens the menu battle against a trainer, with a roster seeded for that node. */
   private startTrainerBattle(trainer: RouteTrainer): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     if (isTrainerDefeated(this.run, trainer.id)) return;
     const archetype = getTrainerArchetype(trainer.archetypeId);
     if (!archetype) return;
-    const band = this.room
-      ? bandForMap(this.room.mapIndex)
-      : runBand(this.run.seed, this.route.routeIndex);
-    const mapIndex = this.room ? this.room.mapIndex : null;
-    const isBoss = mapIndex !== null && trainer.id === bossTrainerId(mapIndex);
-    const isMiniBoss = mapIndex !== null && trainer.id === miniBossTrainerId(mapIndex);
-    const kind: BossPartyKind | null = isBoss ? 'boss' : isMiniBoss ? 'miniboss' : null;
-    // The map boss fields a fixed max-level party (six, three on map 1) and the
-    // mini-boss a fixed band-level party (three, two on map 1), both allowed a Mega
-    // Stone; a regular trainer keeps its band's size (`src/data/bosses.ts`).
-    const rosterBand = isBoss ? { ...band, minLevel: band.maxLevel } : band;
-    const key =
-      isBoss && this.room
-        ? `${this.run.seed}:boss:${this.room.mapIndex}`
-        : isMiniBoss && this.room
-          ? `${this.run.seed}:miniboss:${this.room.mapIndex}`
-          : `${this.run.seed}:trainer:${this.route.routeIndex}:${trainer.id}`;
-    const roster = trainerRoster(rosterBand, new Rng(hashSeed(key)), trainer.id, {
-      allowMega: isBoss || isMiniBoss || archetype.carriesMega === true,
-      boss: isBoss || isMiniBoss,
-      ...(kind !== null && mapIndex !== null ? { count: bossPartySize(kind, mapIndex) } : {}),
+    // The roster is the node's band and its cap (`bandForNode`, `docs/region-spec.md`
+    // §3), keyed by the node and the trainer, so a node replays its own roster (D11).
+    const node = this.regionNode();
+    const band = bandForNode(node);
+    const key = `${this.run.seed}:trainer:${node.key}:${trainer.id}`;
+    const roster = trainerRoster(band, new Rng(hashSeed(key)), trainer.id, {
+      allowMega: archetype.carriesMega === true,
       // A regular trainer's level is a percentage of the live squad level by its own
-      // party size, capped at the floor's ceiling (`docs/maps-spec.md` §5, D35); the
-      // boss and the mini-boss keep the band draw they shipped with.
-      ...(kind === null
-        ? { levelFor: (size: number) => trainerLevel(squadLevel(this.run), size, band.maxLevel) }
-        : {}),
+      // party size, capped at the node's ceiling (`docs/maps-spec.md` §5, D35).
+      levelFor: (size: number) => trainerLevel(squadLevel(this.run), size, band.maxLevel),
     });
-    const roomKey = this.room ? `room:${this.room.roomId}` : '';
-    this.startBattle(
-      {
-        kind: 'trainer',
-        trainerId: trainer.id,
-        trainerName: archetype.name,
-        roster: withForcedAbility(roster, archetype),
-        archetypeId: archetype.id,
-      },
-      {
-        ...(kind !== null && mapIndex !== null
-          ? { double: bossIsDouble(kind, this.run.seed, mapIndex, roomKey) }
-          : {}),
-      },
-    );
+    this.startBattle({
+      kind: 'trainer',
+      trainerId: trainer.id,
+      trainerName: archetype.name,
+      roster: withForcedAbility(roster, archetype),
+      archetypeId: archetype.id,
+    });
   }
 
-  /** Opens a room's own wild battle through the shipped wild path (`startBattle`). */
+  /** Opens a wild battle a panel asked for through the shipped wild path (`startBattle`). */
   private startRoomWildBattle(encounter: RoomWildBattle): void {
     this.startBattle({
       kind: 'wild',
@@ -2259,22 +1629,6 @@ export class RouteScene extends WorldScene {
       level: encounter.level,
       key: encounter.key,
     });
-  }
-
-  /** Fields the row's own trainer where the NPC stands (the Mega Stone keeper). */
-  private startNpcBattle(row: NpcRow, mapIndex: number, roomId: number): void {
-    const battle = row.battle;
-    const tile = this.npc?.tile;
-    if (!battle || !tile) return;
-    this.npcBattle = { row, mapIndex, roomId };
-    this.startTrainerBattle({
-      id: npcTrainerId(mapIndex, roomId, row.id),
-      position: tile,
-      facing: 'S',
-      sight: DEFAULT_TRAINER_SIGHT,
-      archetypeId: battle.archetypeId,
-    });
-    if (!this.pendingBattle) this.npcBattle = null;
   }
 
   /**
@@ -2286,13 +1640,6 @@ export class RouteScene extends WorldScene {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     const step = MOVE_STEP[this.facingDir];
     const ahead = { x: this.player.x + step.x, y: this.player.y + step.y };
-    // A room that answers the interact key (a casino machine, a trade counter)
-    // consumes it first.
-    if (this.specialDescriptor()?.interact?.(this.roomHost(), ahead) === true) return;
-    // The room's own special NPC answers next, before any trainer's sight.
-    if (this.talkToNpc(ahead)) return;
-    // The boss door's sign answers next, and its card carries no choice (`LEAVE`).
-    if (this.talkToSign(ahead) || this.talkToSign(this.player)) return;
     // Talking to a trainer it is facing also opens the battle, like the originals.
     const trainer = this.liveTrainerAt(ahead);
     if (trainer) {
@@ -2300,444 +1647,6 @@ export class RouteScene extends WorldScene {
       return;
     }
     if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
-  }
-
-  /**
-   * Opens the special NPC's card when the player faces it, consuming the key.
-   * False when no NPC stands there, so the key falls through to the trainer and
-   * the ground-item checks unchanged.
-   */
-  private talkToNpc(tile: Tile): boolean {
-    const npc = this.npc;
-    if (!npc || npc.tile.x !== tile.x || npc.tile.y !== tile.y) return false;
-    if (!this.panelOpen()) this.openNpcCard(npc);
-    return true;
-  }
-
-  /**
-   * Opens a static sign's card when the player faces it (or stands on it, which the
-   * blocker already prevents), consuming the key. The card is the NPC card with no
-   * choice: its title is the sign's own i18n key resolved **now**, so a locale
-   * switch shows the new string. False when no sign stands there, so the key falls
-   * through to the trainer and the ground-item checks unchanged.
-   */
-  private talkToSign(tile: Tile): boolean {
-    const sign = (this.route.signs ?? []).find(
-      (candidate) => candidate.x === tile.x && candidate.y === tile.y,
-    );
-    if (!sign) return false;
-    if (!this.panelOpen()) {
-      this.openNpcCardView({ title: t(sign.text as TranslationKey), paragraph: '' });
-    }
-    return true;
-  }
-
-  /**
-   * Opens one NPC's card: its name, its greeting and its own rows plus `LEAVE`.
-   * A one-shot row already used on this floor prints `npc.used` instead and offers
-   * no choices, so only `LEAVE` remains; a `repeatable` row (the merchant) always
-   * answers again. The **Team Rocket** grunt is the exception: it raises no card at
-   * all and opens its slot machine straight away, so the interact key is one press.
-   */
-  private openNpcCard(npc: RoomNpc): void {
-    const room = this.room;
-    if (!room) return;
-    if (npc.row.id === 'rocket') {
-      openRocket(this.roomHost(), npc.tile);
-      return;
-    }
-    const used =
-      npc.row.repeatable !== true &&
-      isItemPicked(this.run, npcUseId(room.mapIndex, room.roomId, npc.row.id));
-    const choices = used
-      ? []
-      : (npc.row.choices ?? []).map((choice) => ({ id: choice.id, label: t(choice.label) }));
-    this.openNpcCardView(
-      {
-        title: t(npc.row.nameKey),
-        paragraph: used ? t('npc.used') : t(npc.row.greetingKey),
-        choices,
-      },
-      (choiceId) => this.chooseNpc(npc.row, room.mapIndex, room.roomId, choiceId),
-    );
-  }
-
-  /**
-   * Opens one `npcPanel` card and keeps the scene's keyboard slot coherent: the
-   * shell closes itself after firing a choice, and on `LEAVE` or `cancel` it closes
-   * without one, so the slot is cleared on those too (`close()` is idempotent).
-   */
-  private openNpcCardView(view: NpcPanelView, onChoose?: (id: string) => void): void {
-    let chosen = false;
-    const panel = openNpcPanel(this, view, (id) => {
-      chosen = true;
-      onChoose?.(id);
-    });
-    this.openPanel({
-      handle: (action) => {
-        chosen = false;
-        panel.handle(action);
-        if (!chosen && (action === 'confirm' || action === 'interact' || action === 'cancel')) {
-          this.closePanel();
-        }
-      },
-      close: () => panel.close(),
-    });
-  }
-
-  /**
-   * Resolves the row the card accepted (`docs/maps-spec.md` §7). The **merchant**
-   * opens the Mart and marks no use, so the merchant is there for the rest of the
-   * floor; the **Team Rocket** grunt never reaches this switch, because its machine
-   * opens straight from `openNpcCard`; the tutor opens its move card, the four
-   * re-rolls open the member card and the sacrifice draws its own member. The four
-   * run-modifier rows each commit one fact — the curse, the forced sky, the narrowed
-   * wild type or the gate's item — beside their use mark. Every other row records
-   * `npc-<mapIndex>-<roomId>-<id>` in `pickedItems`, which `advanceMap` clears, so a
-   * revisit and a reload know the card was taken.
-   */
-  private chooseNpc(row: NpcRow, mapIndex: number, roomId: number, _choiceId: string): void {
-    switch (row.id) {
-      case 'merchant':
-        this.closePanel();
-        openMart(this.roomHost());
-        return;
-      case 'tutor':
-        this.closePanel();
-        this.openTutorMoves(row, mapIndex, roomId);
-        return;
-      case 'nature':
-      case 'ability':
-      case 'iv-judge':
-      case 'species':
-        this.closePanel();
-        this.openMemberCard(row, mapIndex, roomId, null);
-        return;
-      case 'sacrifice':
-        this.closePanel();
-        this.applyMemberEdit(row, mapIndex, roomId, sacrifice(this.run, this.npcContext(row, roomId)));
-        return;
-      case 'exorcist':
-        this.commitNpcModifiers(
-          row,
-          mapIndex,
-          roomId,
-          withCurse(this.run.modifiers),
-          t('npc.exorcist.done'),
-        );
-        return;
-      case 'weather-man': {
-        const field = npcForcedField(this.run.seed, roomId, row.id);
-        this.commitNpcModifiers(
-          row,
-          mapIndex,
-          roomId,
-          withForcedField(this.run.modifiers, field.id),
-          t('npc.weather.done', { floors: FORCED_FIELD_FLOORS }),
-        );
-        return;
-      }
-      case 'magician': {
-        const typeId = npcWildType(this.run.seed, roomId, row.id);
-        // The room on screen obeys the new type at once, so the card's promise is
-        // true before the next room rebuild reads the saved modifier.
-        this.encounters.setTypeFilter(typeId);
-        this.commitNpcModifiers(
-          row,
-          mapIndex,
-          roomId,
-          withNextWildType(this.run.modifiers, typeId),
-          t('npc.magician.done', { type: this.typeName(typeId) }),
-        );
-        return;
-      }
-      case 'type-gate': {
-        const grant = row.grant;
-        if (!grant) return;
-        if (!partyHasType(this.run, grant.types)) {
-          this.showNpcResult(row, t('npc.gate.refused'));
-          return;
-        }
-        this.commitNpcResult(
-          row,
-          mapIndex,
-          roomId,
-          addItem(this.run, grant.itemId, 1),
-          t('npc.gate.granted', { item: getItem(grant.itemId)?.name ?? grant.itemId }),
-        );
-        return;
-      }
-      case 'medic': {
-        const healed = medicHeal(this.run, mapIndex, roomId);
-        this.closePanel();
-        this.commitRun(healed);
-        this.showNpcResult(row, t('npc.medic.done'));
-        return;
-      }
-      case 'chef':
-        this.closePanel();
-        this.openMemberCard(row, mapIndex, roomId, null);
-        return;
-      case 'berry-tree': {
-        const berries = npcBerryHarvest(this.run.seed, roomId, row.id);
-        let run = this.run;
-        for (const berry of berries) run = addItem(run, berry);
-        run = markItemPicked(run, npcUseId(mapIndex, roomId, row.id));
-        this.closePanel();
-        this.commitRun(run);
-        const band = bandForMap(mapIndex);
-        const wild = npcTreeWild(run.seed, roomId, row.id, this.encounters.currentTable(), (rng) =>
-          rollWildLevel(rng, squadLevel(run), band.maxLevel),
-        );
-        if (wild) {
-          this.startBattle(
-            {
-              kind: 'wild',
-              speciesId: wild.speciesId,
-              level: wild.level,
-              shiny: wild.shiny,
-              key: `npc:${roomId}:${row.id}`,
-            },
-            { noFlee: true, enemyBoosts: BERRY_TREE_ENEMY_BOOSTS },
-          );
-        }
-        return;
-      }
-      case 'mega-stone':
-        this.closePanel();
-        this.startNpcBattle(row, mapIndex, roomId);
-        return;
-      default:
-        this.commitRun(markItemPicked(this.run, npcUseId(mapIndex, roomId, row.id)));
-        this.closePanel();
-    }
-  }
-
-  /** The room's own stream context, shared by every member-edit operation. */
-  private npcContext(row: NpcRow, roomId: number): Readonly<{ roomIndex: number; npcId: string }> {
-    return { roomIndex: roomId, npcId: row.id };
-  }
-
-  /** The tutor's move card: `TUTOR_MOVES` in table order, each name from the dex. */
-  private openTutorMoves(row: NpcRow, mapIndex: number, roomId: number): void {
-    this.openNpcCardView(
-      {
-        title: t(row.nameKey),
-        paragraph: t(row.greetingKey),
-        choices: TUTOR_MOVES.map((moveId) => ({
-          id: moveId,
-          label: getMove(moveId)?.name ?? moveId,
-        })),
-      },
-      (moveId) => {
-        this.closePanel();
-        this.openMemberCard(row, mapIndex, roomId, moveId);
-      },
-    );
-  }
-
-  /**
-   * The member card: the party only (never the box), one row per member. `moveId`
-   * is the tutored move the tutor carried here; the other rows ignore it.
-   */
-  private openMemberCard(row: NpcRow, mapIndex: number, roomId: number, moveId: string | null): void {
-    const members = this.run.party.slice(0, NPC_MAX_CHOICES);
-    this.openNpcCardView(
-      {
-        title: t(row.nameKey),
-        paragraph: t('npc.pickMember'),
-        choices: members.map((member) => ({
-          id: member.fighter.id,
-          label: t('party.rowLabel', {
-            name: this.memberName(member),
-            level: member.fighter.level,
-            status: '',
-          }),
-        })),
-      },
-      (memberId) => {
-        this.closePanel();
-        this.chooseMember(row, mapIndex, roomId, memberId, moveId);
-      },
-    );
-  }
-
-  /**
-   * Applies the row's edit to the picked member, or opens the tutor's slot card
-   * first when the member already holds four moves.
-   */
-  private chooseMember(
-    row: NpcRow,
-    mapIndex: number,
-    roomId: number,
-    memberId: string,
-    moveId: string | null,
-  ): void {
-    const ctx = this.npcContext(row, roomId);
-    const member = this.run.party.find((entry) => entry.fighter.id === memberId);
-    if (!member) return;
-    switch (row.id) {
-      case 'tutor': {
-        const move = moveId ?? '';
-        if (member.fighter.moves.length >= MAX_MOVES) {
-          this.openSlotCard(row, mapIndex, roomId, memberId, move);
-          return;
-        }
-        this.applyMemberEdit(row, mapIndex, roomId, teachMove(this.run, memberId, move, null));
-        return;
-      }
-      case 'nature':
-        this.applyMemberEdit(row, mapIndex, roomId, rerollNature(this.run, memberId, ctx));
-        return;
-      case 'ability':
-        this.applyMemberEdit(row, mapIndex, roomId, rerollAbility(this.run, memberId, ctx));
-        return;
-      case 'iv-judge':
-        this.applyMemberEdit(row, mapIndex, roomId, rerollIvs(this.run, memberId, ctx));
-        return;
-      case 'species':
-        this.applyMemberEdit(row, mapIndex, roomId, swapSpecies(this.run, memberId, ctx));
-        return;
-      case 'chef': {
-        const trade = chefTrade(this.run, memberId);
-        if (!trade.ok) {
-          this.showNpcResult(row, t(CHEF_REFUSALS[trade.reason]));
-          return;
-        }
-        const holder = this.memberById(trade.memberId);
-        const name = holder ? this.memberName(holder) : t('common.unknownPokemon');
-        this.commitRun(markItemPicked(trade.run, npcUseId(mapIndex, roomId, row.id)));
-        this.showNpcResult(
-          row,
-          t('npc.chef.done', { name, item: getItem(trade.dishId)?.name ?? trade.dishId }),
-        );
-        return;
-      }
-      default:
-        return;
-    }
-  }
-
-  /** The tutor's four rows, when the member must forget one to hold the new move. */
-  private openSlotCard(
-    row: NpcRow,
-    mapIndex: number,
-    roomId: number,
-    memberId: string,
-    moveId: string,
-  ): void {
-    const member = this.run.party.find((entry) => entry.fighter.id === memberId);
-    if (!member) return;
-    const slots = member.fighter.moves.slice(0, MAX_MOVES);
-    this.openNpcCardView(
-      {
-        title: t(row.nameKey),
-        paragraph: t('npc.pickSlot'),
-        choices: slots.map((slot, index) => ({
-          id: String(index),
-          label: getMove(slot.moveId)?.name ?? slot.moveId,
-        })),
-      },
-      (choiceId) => {
-        this.closePanel();
-        const slot = Number.parseInt(choiceId, 10);
-        this.applyMemberEdit(
-          row,
-          mapIndex,
-          roomId,
-          teachMove(this.run, memberId, moveId, Number.isInteger(slot) ? slot : null),
-        );
-      },
-    );
-  }
-
-  /**
-   * Commits a successful edit **plus** its use mark in one write, marks nothing on a
-   * refusal, and prints the result or the refusal on the row's card.
-   */
-  private applyMemberEdit(row: NpcRow, mapIndex: number, roomId: number, edit: MemberEdit): void {
-    if (!edit.ok) {
-      this.showNpcResult(row, t(NPC_REFUSALS[edit.reason]));
-      return;
-    }
-    const edited = this.memberById(edit.memberId);
-    const name = edited ? this.memberName(edited) : t('common.unknownPokemon');
-    this.commitRun(markItemPicked(edit.run, npcUseId(mapIndex, roomId, row.id)));
-    this.showNpcResult(row, this.memberEditParagraph(edit.line, name));
-  }
-
-  /** The result card: the row's name as its title and one line, no choices. */
-  private showNpcResult(row: NpcRow, paragraph: string): void {
-    this.openNpcCardView({ title: t(row.nameKey), paragraph, choices: [] });
-  }
-
-  /**
-   * Commits one run fact **plus** its use mark in one write and prints the row's
-   * result card, so a modifier row leaves exactly one run write behind on its floor.
-   */
-  private commitNpcResult(
-    row: NpcRow,
-    mapIndex: number,
-    roomId: number,
-    run: RunState,
-    paragraph: string,
-  ): void {
-    this.commitRun(markItemPicked(run, npcUseId(mapIndex, roomId, row.id)));
-    this.showNpcResult(row, paragraph);
-  }
-
-  /** The same commit, for a row whose one fact is the run's `modifiers` record. */
-  private commitNpcModifiers(
-    row: NpcRow,
-    mapIndex: number,
-    roomId: number,
-    modifiers: RunModifiers,
-    paragraph: string,
-  ): void {
-    this.commitNpcResult(row, mapIndex, roomId, { ...this.run, modifiers }, paragraph);
-  }
-
-  /** The dex's own English name for a normalized type id, or the id itself. */
-  private typeName(typeId: string): string {
-    return TYPE_NAMES.find((name) => normalizeId(name) === typeId) ?? typeId;
-  }
-
-  /** The party or box member `memberId` names, in the run **before** the edit. */
-  private memberById(memberId: string): RunPokemon | undefined {
-    return (
-      this.run.party.find((entry) => entry.fighter.id === memberId) ??
-      this.run.box.find((entry) => entry.fighter.id === memberId)
-    );
-  }
-
-  /** One `MemberEditLine` as the sentence the result card prints; names come from the dex. */
-  private memberEditParagraph(line: MemberEditLine, name: string): string {
-    switch (line.kind) {
-      case 'tutor':
-        return t('npc.result.tutor', {
-          name,
-          move: getMove(line.moveId)?.name ?? line.moveId,
-        });
-      case 'nature':
-        return t('npc.result.nature', { name, nature: capitalize(line.nature) });
-      case 'ability':
-        return t('npc.result.ability', { name, ability: line.ability });
-      case 'secondAbility':
-        return t('npc.result.secondAbility', { name, ability: line.ability });
-      case 'ivs':
-        return t('npc.result.ivs', { name });
-      case 'species':
-        return t('npc.result.species', {
-          name,
-          species: getSpecies(line.speciesId)?.name ?? line.speciesId,
-        });
-      case 'sacrifice':
-        return t('npc.result.sacrifice', {
-          name,
-          item: getItem(line.itemId)?.name ?? line.itemId,
-          result: this.memberEditParagraph(line.reward, name),
-        });
-    }
   }
 
   /**
@@ -2834,6 +1743,7 @@ export class RouteScene extends WorldScene {
   private startBattle(trigger: BattleTrigger, extras: BattleExtras = {}): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
     this.battleCounter += 1;
+    const node = this.regionNode();
     const key =
       trigger.kind === 'wild' ? `${trigger.key}:${this.battleCounter}` : `trainer:${trigger.trainerId}`;
     // The node's one catch is spent the moment its **first wild battle** starts,
@@ -2852,42 +1762,37 @@ export class RouteScene extends WorldScene {
       player: this.run.party.map((member) => member.fighter),
       xp: this.run.xp,
       bag: this.run.bag,
-      seed: battleSeed(this.run.seed, this.run.routeIndex, key),
+      // Both battle figures are the **node's**, never a room's: `hashSeed(nodeKey)` is
+      // a stable per-node number, so a node replays its own fights (D11).
+      seed: battleSeed(this.run.seed, hashSeed(node.key), key),
       runSeed: this.run.seed,
-      routeIndex: this.run.routeIndex,
+      routeIndex: hashSeed(node.key),
       canCapture: captureAllowed,
       firstCatch,
       // The difficulty the battle's AI reads from the launch (D46): the settings
       // are re-read whenever the options screen closes, so a change reaches the
       // next battle.
       aiLevel: this.settings.aiLevel,
-      // The room's own condition, so every battle that starts here — trainers,
-      // the boss and wilds alike — begins under it (`docs/maps-spec.md` §7). A sky
-      // the weather man pinned replaces it for the floors it still covers.
-      battlefield: this.forcedBattlefield() ?? this.battlefield,
-      // The no-heal leaf's rule rides the launch too, so its trainer's battle and
-      // any dev wild opened in the room both carry it.
-      noHeal: this.room?.special === 'no-heal',
-      // Whether this fight fields two actives per side is the fight's own roll
-      // (`src/data/bosses.ts`), carried here through `BattleExtras`; every other
-      // room's battles stay single.
+      // A sky the weather man pinned still covers the nodes it was bought for.
+      battlefield: this.forcedBattlefield(),
+      // The lateral's point of interest rules the fight it holds (`pois.ts`): the
+      // no-heal terminus bars the Bag and healing moves for it.
+      noHeal: poiBattleRules(this.poi ? [this.poi] : [], this.player).noHeal,
+      // The fight's own roll (`src/data/bosses.ts`) carried through `BattleExtras`;
+      // every other battle stays single.
       ...(extras.double === true ? { double: true } : {}),
-      // The banned-species leaf's rule rides the launch the same way: every battle
-      // the room opens bars the party's most-used species from being sent out.
-      bannedSpecies: this.room?.special === 'banned' ? bannedSpeciesOf(this.run) : null,
       // The living party's repeated types (§13): a type needs two living holders.
       teamTypes: livingTeamTypes(this.run),
       // The berry tree's guardian forbids the flight (`runAway.ts`), unless an
       // escape effect (Run Away, the Smoke Ball) grants it.
       ...(extras.noFlee ? { noFlee: true } : {}),
-      // The exorcist's hex, the boss room's opening and the guardian's own boost are
-      // separate data rows on purpose: their keys never collide (atk, spe and def),
-      // so the spread needs no arithmetic.
-      ...(extras.enemyBoosts || this.bossOpening || this.run.modifiers.curse
+      // The exorcist's hex and the guardian's own boost are separate data rows on
+      // purpose: their keys never collide (atk, spe and def), so the spread needs no
+      // arithmetic.
+      ...(extras.enemyBoosts || this.run.modifiers.curse
         ? {
             enemyBoosts: {
               ...(extras.enemyBoosts ?? {}),
-              ...(this.bossOpening?.boosts ?? {}),
               ...(this.run.modifiers.curse ? CURSE_ENEMY_BOOST : {}),
             },
           }
@@ -2921,28 +1826,6 @@ export class RouteScene extends WorldScene {
     if (!IS_DEVELOP || this.gameOver || this.pendingBattle || this.releaseRoot || !this.scene.isActive())
       return;
     this.startBattle({ kind: 'wild', speciesId, level, key: `debug:${speciesId}` });
-  }
-
-  /**
-   * Dev only: the condition filter the route is drawing for the room on screen — the
-   * row it was rolled from and the tint/alpha the live overlay itself was painted
-   * with — or null when the room rolled no condition.
-   */
-  debugBattlefieldOverlay(): Readonly<{
-    id: RoomConditionId;
-    kind: RoomConditionKind;
-    tint: number;
-    alpha: number;
-    visible: boolean;
-  }> | null {
-    if (!IS_DEVELOP || !this.battlefield || !this.battlefieldOverlay) return null;
-    return {
-      id: this.battlefield.id,
-      kind: this.battlefield.kind,
-      tint: this.battlefieldOverlay.fillColor,
-      alpha: this.battlefieldOverlay.fillAlpha,
-      visible: this.battlefieldOverlay.visible,
-    };
   }
 
   /**
@@ -3018,9 +1901,9 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * Dev only: rolls `count` wild encounters off the room's live stream, skipping
+   * Dev only: rolls `count` wild encounters off the node's live stream, skipping
    * the chance misses and advancing that stream. Returns them in roll order, or
-   * nothing with no live run, a finished run or no room on screen.
+   * nothing with no live run, a finished run or no node on screen.
    */
   debugRollWildEncounters(count = 1): readonly DebugWildRoll[] {
     if (!IS_DEVELOP || !this.run || this.gameOver || !this.encounters) return [];
@@ -3103,10 +1986,12 @@ export class RouteScene extends WorldScene {
     // before the fold, because the fold swaps the snapshots.
     const hpLoss = battleHpLoss(this.run, result.player);
     const { run, released, capture, events } = resolveBattle(this.run, result, reward, {
+      // The detail card prints `Map <badge> · <biome> · Route <screen+1>`: the badge is
+      // the node's, the screen is the one the catch happened on.
       catchLocation: {
         biomeId: this.route.biomeId,
-        mapIndex: this.run.mapIndex,
-        routeInMap: this.run.routeInMap,
+        mapIndex: this.regionNode().badge,
+        routeInMap: screenIndexOf(this.screens, this.player.y),
       },
     });
     this.run = run;
@@ -3114,45 +1999,10 @@ export class RouteScene extends WorldScene {
     // The node's capture was already spent when the wild battle started
     // (`startBattle`); this keeps it spent even if a path ever skips that.
     if (pending.trigger.kind === 'wild') this.run = useCapture(this.run);
-    // A catch narrows this room's table at once: the room is NOT rebuilt (`applyRoute`
+    // A catch narrows this node's table at once: the node is NOT rebuilt (`buildNode`
     // would restart its encounter stream), only the live exclusion is re-read.
     this.encounters.setExclusions(wildExclusions(this.run));
 
-    // The keeper's stone is paid **here**, never at battle start, so a lost or
-    // reloaded battle pays nothing and a later talk finds the card spent.
-    const npc = this.npcBattle;
-    this.npcBattle = null;
-    let npcPrizeId: string | null = null;
-    if (
-      npc &&
-      pending.trigger.kind === 'trainer' &&
-      pending.trigger.trainerId === npcTrainerId(npc.mapIndex, npc.roomId, npc.row.id) &&
-      result.outcome === 'win'
-    ) {
-      const prize = npcPrize(this.run.seed, npc.roomId, npc.row.id, npc.row.battle?.prizeIds ?? []);
-      if (prize) {
-        this.run = markItemPicked(
-          addItem(this.run, prize),
-          npcUseId(npc.mapIndex, npc.roomId, npc.row.id),
-        );
-        npcPrizeId = prize;
-      }
-    }
-
-    const bossId = this.room?.boss === true ? bossTrainerId(this.room.mapIndex) : null;
-    const wonBoss =
-      bossId !== null &&
-      pending.trigger.kind === 'trainer' &&
-      pending.trigger.trainerId === bossId &&
-      isTrainerDefeated(this.run, bossId);
-    if (wonBoss) this.run = markBossDefeated(this.run);
-    // Beating the floor's mini-boss earns the item choice just below.
-    const miniBossId = this.room?.special === 'mini-boss' ? miniBossTrainerId(this.room.mapIndex) : null;
-    const wonMiniBoss =
-      miniBossId !== null &&
-      pending.trigger.kind === 'trainer' &&
-      pending.trigger.trainerId === miniBossId &&
-      isTrainerDefeated(this.run, miniBossId);
     const won = result.outcome === 'win' || result.outcome === 'capture';
     const picks = won ? this.applyMapPassives('win') : [];
     this.persistRun();
@@ -3172,22 +2022,6 @@ export class RouteScene extends WorldScene {
         this.endRun(false);
         return;
       }
-      if (wonBoss) {
-        // The final boss ends a finite run; every other map opens its portal, so
-        // rebuild the room with the new door and let the player walk through.
-        if (isFinalMap(this.run.mode, this.run.mapIndex)) {
-          this.endRun(true);
-          return;
-        }
-        this.transitionTo(this.run, { keepPosition: true });
-        return;
-      }
-      if (wonMiniBoss) {
-        openMiniBossReward(this.panelHost, () =>
-          this.playLevelUp(levelUpBeats(before, this.run.party, events)),
-        );
-        return;
-      }
       this.playLevelUp(levelUpBeats(before, this.run.party, events));
     };
 
@@ -3195,7 +2029,6 @@ export class RouteScene extends WorldScene {
       // Raised inside the callback, so a permadeath overlay and the notice never
       // share the screen, and it never delays `finish()`.
       this.showPassivePickups(picks);
-      if (npcPrizeId) this.showNotice(itemPickupNotice(getItem(npcPrizeId)?.name ?? npcPrizeId));
       if (capture?.toPc) this.showNotice(catchToPcNotice(this.memberName(capture.member)));
       finish();
     });
@@ -3271,11 +2104,6 @@ export class RouteScene extends WorldScene {
     this.gameOver = true;
     this.endRun(won);
     return true;
-  }
-
-  /** Tears down the reward card and runs its callback (the level-up beat). */
-  private closeMiniBossReward(): void {
-    closeRewardCard();
   }
 
   /**
@@ -3378,21 +2206,15 @@ export class RouteScene extends WorldScene {
 
   private rewardFor(trigger: BattleTrigger): BattleReward {
     if (trigger.kind === 'wild') return { enemyLevels: [trigger.level], isTrainer: false };
-    // A beaten trainer drops Poké Dollars: its archetype's base + jitter, scaled
-    // by the map's band and tripled for the floor boss (`docs/maps-spec.md` §7,
-    // D33). The roll is keyed by the run, map and trainer, so a replay pays the
-    // same (D11).
+    // A beaten trainer drops Poké Dollars: its archetype's base + jitter, scaled by
+    // the node's band (`docs/region-spec.md` §3, D33). The roll is keyed by the run,
+    // the node and the trainer, so a replay pays the same (D11).
     const archetype = trigger.archetypeId ? getTrainerArchetype(trigger.archetypeId) : undefined;
     let money: number | undefined;
     if (archetype) {
-      const isBoss = trigger.trainerId === bossTrainerId(this.run.mapIndex);
-      const rng = new Rng(hashSeed(`${this.run.seed}:money:${this.run.mapIndex}:${trigger.trainerId}`));
-      money = trainerMoney(
-        archetype,
-        bandForMap(this.run.mapIndex),
-        rng,
-        isBoss ? BOSS_MONEY_MULTIPLIER : 1,
-      );
+      const node = this.regionNode();
+      const rng = new Rng(hashSeed(`${this.run.seed}:money:${node.key}:${trigger.trainerId}`));
+      money = trainerMoney(archetype, bandForNode(node), rng);
     }
     return {
       enemyLevels: trigger.roster.map((entry) => entry.level),
@@ -3423,15 +2245,9 @@ export class RouteScene extends WorldScene {
     this.entitySprites = [];
     this.itemSprites = [];
     this.trainerSprites = [];
-    this.npc = null;
     this.trainerSpinIndex.clear();
     this.trainerFacing.clear();
     this.chase = null;
-    if (this.battlefieldOverlay) {
-      this.battlefieldOverlay.destroy();
-      this.battlefieldOverlay = null;
-    }
-    this.battlefield = null;
     this.clearHoverInspect();
   }
 
@@ -3441,27 +2257,69 @@ export class RouteScene extends WorldScene {
    */
   debugRouteContext(): DebugRouteContext | null {
     if (!IS_DEVELOP || !this.run || !this.routeParams || !this.scene.isActive()) return null;
+    const node = this.regionNode();
     return {
       seed: this.routeParams.seed,
       routeIndex: this.routeParams.routeIndex,
       mode: this.run.mode,
-      biomeName: this.room
-        ? getBiome(this.room.biomeId).name
-        : biomeForRoute(this.routeParams.routeIndex).name,
-      bandName: this.room
-        ? bandForMap(this.room.mapIndex).name
-        : runBand(this.run.seed, this.routeParams.routeIndex).name,
+      biomeName: getBiome(this.route.biomeId).name,
+      bandName: bandForNode(node).name,
       shape: this.routeParams.shape,
       width: this.routeParams.width,
       height: this.routeParams.height,
       passThrough: this.passThrough,
       hoverInspect: this.hoverInspect,
-      mapIndex: this.run.mapIndex,
-      roomInMap: this.run.routeInMap,
-      roomCount: this.room ? this.room.roomCount : 0,
+      // The three deprecated numbers report node facts and are read by no panel: the
+      // route is the node's first and only map, and the "room" is the screen.
+      mapIndex: 0,
+      roomInMap: screenIndexOf(this.screens, this.player.y),
+      roomCount: this.screens.length,
       tile: { x: this.player.x, y: this.player.y },
       ignoreEncounters: this.ignoreEncounters,
       ignoreTrainers: this.ignoreTrainers,
+    };
+  }
+
+  /**
+   * Dev only: the route node on screen, its screens and the screen the player stands
+   * on, as plain data. Null when not developing, when the scene is not active, or
+   * while a dev preview (generator step or frame-map import) is on screen.
+   */
+  debugRouteScreen(): Readonly<{
+    nodeKey: string;
+    index: number;
+    tile: { x: number; y: number };
+    screens: readonly Readonly<{
+      index: number;
+      top: number;
+      bottom: number;
+      spawn: { x: number; y: number };
+      bands: readonly Readonly<{
+        edge: 'N' | 'E' | 'S' | 'W';
+        role: 'entry' | 'exit';
+        neighbourKey: string;
+        tiles: readonly { x: number; y: number }[];
+      }>[];
+    }>[];
+  }> | null {
+    if (!IS_DEVELOP || !this.run || !this.scene.isActive()) return null;
+    if (this.screens.length === 0) return null;
+    return {
+      nodeKey: this.run.nodeKey,
+      index: screenIndexOf(this.screens, this.player.y),
+      tile: { x: this.player.x, y: this.player.y },
+      screens: this.screens.map((screen) => ({
+        index: screen.index,
+        top: screen.top,
+        bottom: screen.bottom,
+        spawn: { x: screen.spawn.x, y: screen.spawn.y },
+        bands: (screen.entry === null ? screen.exits : [screen.entry, ...screen.exits]).map((band) => ({
+          edge: band.edge,
+          role: band.role,
+          neighbourKey: band.neighbourKey,
+          tiles: band.tiles.map((tile) => ({ x: tile.x, y: tile.y })),
+        })),
+      })),
     };
   }
 
@@ -3511,7 +2369,7 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * Dev only: swaps the room's first undefeated trainer's archetype and redraws just that
+   * Dev only: swaps the first undefeated trainer's archetype and redraws just that
    * sprite (`IS_DEVELOP` only). False with no trainer or an unknown id.
    */
   debugOverrideTrainer(archetypeId: string): boolean {
@@ -3670,11 +2528,10 @@ export class RouteScene extends WorldScene {
     };
     const attempt = Math.max(0, Math.floor(input.attempt));
 
-    // The dev generator builds a rolled shape, not a plan room: no map doors.
-    this.room = null;
-    this.plan = null;
-    this.shopCounter = null;
-    this.npc = null;
+    // The dev generator builds a rolled shape, not a region node: it owns no screens
+    // and no point of interest, so the seam's band rule stays inert on its preview.
+    this.screens = [];
+    this.poi = null;
     this.stopWalking();
     this.clearRouteSprites();
     this.buildRoute(params, attempt);
@@ -3682,69 +2539,15 @@ export class RouteScene extends WorldScene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawRoomFixture();
     this.player = { ...this.route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
   }
 
   /**
-   * Debug only: moves the run to `mapIndex`, clamped to the run's map range and
-   * built exactly as `advanceMap` builds a new floor — except that it does **not**
-   * heal (that is the map transition's own reward) and it resets the destination
-   * floor's bookkeeping even when that floor is the one the run is already on.
-   */
-  teleportToFloor(mapIndex: number): DebugTeleportResult {
-    if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
-      return { ok: false, error: t('dev.error.noRoute') };
-    }
-    const requested = Number.isFinite(mapIndex) ? Math.floor(mapIndex) : this.run.mapIndex;
-    const floor =
-      this.run.mode === 'finite'
-        ? Math.max(1, Math.min(FINITE_MAPS, requested))
-        : Math.max(1, requested);
-    const plan = planMap(this.run.seed, floor);
-    const run: RunState = {
-      ...this.run,
-      routeIndex: this.run.routeIndex + 1,
-      mapIndex: floor,
-      routeInMap: plan.entryRoom,
-      arrivalEdge: plan.entryEdge,
-      discoveredRooms: [plan.entryRoom],
-      bossDefeated: false,
-      levelCap: levelCapForMap(floor),
-      defeatedTrainers: [],
-      pickedItems: [],
-      capturedRooms: [],
-      mission: missionForMap(this.run.seed, floor),
-      hpLost: 0,
-      floorCasualties: this.run.stats.casualties,
-    };
-    this.transitionTo(run);
-    return { ok: true };
-  }
-
-  /**
-   * Debug only: moves the run to a room of the current floor, clamped to the
-   * plan. No arrival edge is passed, so `advanceRoute` derives a real door and the
-   * destination is a room reached through one.
-   */
-  teleportToRoom(roomInMap: number): DebugTeleportResult {
-    if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
-      return { ok: false, error: t('dev.error.noRoute') };
-    }
-    const plan = this.plan;
-    if (!plan) return { ok: false, error: t('dev.error.noFloorPlan') };
-    const requested = Number.isFinite(roomInMap) ? Math.floor(roomInMap) : this.run.routeInMap;
-    const room = Math.max(0, Math.min(plan.rooms.length - 1, requested));
-    this.transitionTo(advanceRoute(this.run, room));
-    return { ok: true };
-  }
-
-  /**
-   * Debug only: moves the player onto a tile of the current room, clamped to the
-   * map. A solid tile is refused — the player would be stuck in it (tick *Pass
-   * through obstacles* first). A teleport is a position change, not a step: it
-   * rolls no encounter and runs no sight check on arrival.
+   * Debug only: moves the player onto a tile of the map on screen, clamped to it. A
+   * solid tile is refused — the player would be stuck in it (tick *Pass through
+   * obstacles* first). A teleport is a position change, not a step: it rolls no
+   * encounter and runs no sight check on arrival, and it arms the band rule.
    */
   teleportToTile(x: number, y: number): DebugTeleportResult {
     if (!IS_DEVELOP || !this.run || this.gameOver || !this.scene.isActive()) {
@@ -3762,6 +2565,9 @@ export class RouteScene extends WorldScene {
     // and run `onTileEntered` there.
     this.stopWalking();
     this.movePlayerTo(tile.x, tile.y);
+    // A teleport is a landed placement for the band rule, so a browser pass can stand
+    // on a band and press outward without walking onto it first.
+    this.bandArmed = true;
     // A teleport runs no sight check; it only re-paints the sprites' visibility.
     this.refreshTrainerVisibility();
     this.refreshHud();
@@ -3797,10 +2603,8 @@ export class RouteScene extends WorldScene {
     }
     this.stopWalking();
     this.clearRouteSprites();
-    this.room = null;
-    this.plan = null;
-    this.shopCounter = null;
-    this.npc = null;
+    this.screens = [];
+    this.poi = null;
     const route = routeFromFrameMapExport(exported);
     this.generatorSteps = [];
     this.applyRoute(route);
@@ -3818,7 +2622,6 @@ export class RouteScene extends WorldScene {
     this.drawEntities();
     this.drawItems();
     this.drawTrainers();
-    this.drawRoomFixture();
     this.player = { ...route.entry };
     this.movePlayerTo(this.player.x, this.player.y);
     return { ok: true };
@@ -3828,6 +2631,7 @@ export class RouteScene extends WorldScene {
     // The hold-to-reset runs whatever the route is doing (a battle pauses the
     // scene, so it never fires behind another screen).
     this.updateReset(delta);
+    if (!this.nodeBuilt) return;
     this.updateTrainerSpins(time);
     // The player sorts against the trainers by its foot row every frame, so the
     // depth follows a step in flight instead of snapping when it lands.
@@ -3849,6 +2653,15 @@ export class RouteScene extends WorldScene {
       this.settleMovement();
       return;
     }
+    // The route's whole exit rule: a landed step onto a border band plus the key that
+    // pushes outward hands the run back to the region's travel seam, before any step
+    // is resolved. A fresh spawn never bounces, because the flag is only armed by a
+    // landed step or a debug teleport.
+    const band = this.bandArmed ? bandAt(this.screens, this.player) : null;
+    if (band !== null && OUTWARD[band.edge] === direction) {
+      void this.travelToNode(band.neighbourKey, 'walk');
+      return;
+    }
     // A step is still sliding; the next one starts when it lands.
     if (this.walkTween) return;
     const step = MOVE_STEP[direction];
@@ -3859,17 +2672,10 @@ export class RouteScene extends WorldScene {
       return;
     }
     const result = resolveMove(this.moveMap, this.player, step);
-    // A visible ground item, a live trainer or the room's special NPC blocks its
-    // tile, like an object in the originals: the item is taken with the interact
-    // key and the trainer is talked to. A hidden item can be walked over.
-    if (
-      !result ||
-      this.itemBlocks(result.to) ||
-      this.liveTrainerAt(result.to) ||
-      this.shopCounterAt(result.to) ||
-      this.npcBlocks(result.to) ||
-      this.signBlocks(result.to)
-    ) {
+    // A visible ground item or a live trainer blocks its tile, like an object in the
+    // originals: the item is taken with the interact key and the trainer is talked
+    // to. A hidden item can be walked over.
+    if (!result || this.itemBlocks(result.to) || this.liveTrainerAt(result.to)) {
       this.faceIdle(direction);
       return;
     }

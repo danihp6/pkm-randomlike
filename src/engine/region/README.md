@@ -39,6 +39,14 @@ no Phaser, no DOM, no clock — and every random draw comes off the run seed (`D
 - `npcs.test.ts` — the placements of a pinned seed, the tier bands, the replay and the free
   tiles, and the once rule (the medic's heal and the chef's trade).
 - `pois.ts` — the POI a lateral's terminus ends on and the zone rect a battle reads.
+- `routeScreens.ts` — a route node as the screen that walks it: the node's one carve cut
+  into its two-to-four vertical screens, each screen's spawn tile and border bands, and the
+  content it holds (trainers, ground items, a lateral's POI), off the node's own streams
+  (`planRouteScreens`, `screenIndexOf`, `bandAt`, `RouteScreenPlan`, `RouteNodePlan`).
+- `routeScreens.test.ts` — a pinned seed's screen stack, its contiguous seams and crossable
+  spawn columns, the band stack carried exactly once, the pinned three-screen geometry, the
+  lateral's POI, the content invariants (off the lane and the bands, per screen), the replay
+  across two seeds, the travel seam's own spawn and the two refusals.
 - `preload.ts` — one node resolved to everything a scene draws and walks: the plan names it, its
   own generator carves it, and it comes back as its tile map, its two frame meshes (the tiles'
   and the floor under them) and its spawn. It also holds the worker's request and reply and the

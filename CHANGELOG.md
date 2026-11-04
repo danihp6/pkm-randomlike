@@ -8,6 +8,23 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A route plays its own screens.** `[Task-302]`, Batch 126: `RouteScene` stops building a
+      legacy floor room and draws the region's own route instead. A new pure seam,
+      `src/engine/region/routeScreens.ts` (`planRouteScreens`, `screenIndexOf`, `bandAt`,
+      `RouteScreenPlan`, `RouteNodePlan`), turns a `route`/`lateral` node into its 2-4 vertical
+      screens, each with its spawn, its border bands and its content (the node's trainers, the loot
+      band's ground items, the lateral's POI and zone), all off the node's own streams; the scene
+      builds from that seam, crossing a seam a row at a time, and a step outward on a band hands the
+      run back through the shipped travel seam. The room machinery (`buildRoom`, `planMap`,
+      `roomView`, `routeIndexForRoom`, the boss/portal and room-NPC paths) and the scene's reads of
+      `run.mapIndex`/`routeIndex`/`routeInMap` are gone; battles, capture, items, grass, trainers,
+      HUD, save and the travel seam are unchanged. `docs/routes-spec.md` §1/§4 and
+      `docs/region-spec.md` §7.12 record it. `[unit]` 12 test groups, 6184 tests green, build clean;
+      `[live]` over CDP at 1280×800 on a saved run standing on `route:1`: the first screen is live
+      (tilemap 60×160, index 0, spawn `{51,0}`), a step down from `(48,39)` lands on `(48,40)` at
+      index 1, the last screen's `S` band `(42,159)` returns to `city:1`, and the HUD, wild state and
+      travel state agree with the scene's tile.
+
 - [x] **The level line wears its space.** `[Task-301]`, Batch 125: `common.level` and `hud.level` read
       `LV {level}` instead of `Lv{level}`, so the member detail card claims the line the board draws
       (`03m`'s `detail lv` is `LV 36`) instead of skipping it: the adapter's claim goes from **18** to

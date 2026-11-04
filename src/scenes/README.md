@@ -27,12 +27,15 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   nothing at all for a scene that answers `null`. It owns no run and no plan, and is not
   registered in `src/main.ts` (it is abstract and has no key).
 - `RouteScene.ts` — the route itself: it extends `WorldScene` for the tile draw and the
-  camera and keeps the player, tall grass, trainers, items, the room panel slot, the
-  pointer dispatch, the run's battles and the touch controls. It also hosts the region's
-  travel seam today (`travelToNode`, `onNodeArrived`, the dev-only `debugTravelState`) and
-  hands a run that stands on a settlement to the city screen. Its overlay chrome (HUD
-  panels, notices, pause menu) is the shared layer from `panels/host.ts`; the route is the
-  one screen that mounts all twelve cards.
+  camera and keeps the player, tall grass, trainers, items, the panel slot, the pointer
+  dispatch, the run's battles and the touch controls. It builds the node on screen from one
+  seam — `planRouteScreens` cuts the node's carve into its two-to-four vertical screens, each
+  with its spawn, its border bands and its content — so a seam is a plain step and pressing
+  outward on a band hands the run to the region's travel seam (`travelToNode`,
+  `onNodeArrived`, the dev-only `debugTravelState` and `debugRouteScreen`). It also hands a
+  run that stands on a settlement to the city screen. Its overlay chrome (HUD panels,
+  notices, pause menu) is the shared layer from `panels/host.ts`; the route is the one screen
+  that mounts all twelve cards.
 - `CityScene.ts` — a settlement as a place you walk: the street grid, the buildings, their
   doors, the plaza, the grass corner and the exit bands drawn from the cached/preloaded
   node, the player spawned on the plan's own spawn and walked with the shared walker, a
@@ -76,8 +79,9 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   folder's `host.ts`, so a new panel is a new file. `host.ts` builds the same
   `RoutePanelHost` over any node scene, so the route's twelve cards and a node's seven
   (`NODE_PANEL_IDS`) need no scene code of their own.
-- `rooms/` — the special-room descriptors: one module per room kind, discovered by `RouteScene`'s
-  registry, so a new room is a new file.
+- `rooms/` — the special-room descriptors of the retired floor pipeline: one module per
+  room kind. No route screen mounts them any more — the route plays its region node's own
+  screens — and they go with the floor generator when it is swept.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
   bars and the capture sequence.
 - `BattleScene.test.ts` — the battle scene's headless test of its sprite-animation

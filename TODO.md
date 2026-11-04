@@ -12764,7 +12764,7 @@ justified and the reason is recorded here.
 
 **Hot files.** `src/scenes/RouteScene.ts` — `[Task-302]`'s. No other hot file.
 
-- [ ] **[Task-302] A route plays its own screens.** `RouteScene` stops building floor rooms: a
+- [x] **[Task-302] A route plays its own screens.** `RouteScene` stops building floor rooms: a
       `route` or `lateral` node plays the 2-4 screens the region's plan gives it — tall grass,
       trainers, POIs and their zones per screen — walks east into the next screen and returns to the
       region through the node's exit band, and the three deprecated position fields lose their last
