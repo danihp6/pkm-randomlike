@@ -16,6 +16,8 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   before the first scene runs.
 - `MainMenuScene.ts` — new run / continue, the run's seed and mode, and (on the DOM HUD) the
   STATS overlay over the run history.
+- `MainMenuScene.test.ts` — the menu's headless half: the preview seed drawn once, the view
+  the panel reads, the footer's three figures, the RANKING row and the reset chord.
 - `WorldScene.ts` — the base every node scene extends: one map drawn as two culled tile
   layers, the world camera's bounds and zoom, the node preloaded off the worker and the one
   fade-and-swap transition that draws an already-preloaded node (`transitionToNode`,
@@ -54,7 +56,11 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `interior.test.ts` — the laboratory's headless half: the offer before and after the pick,
   the intent that takes it, and the scene's own registration.
 - `npcs.ts` — a node's NPCs drawn and opened.
+- `npcs.test.ts` — the settlement's people, headless: the frame a body draws for its facing
+  and what its card says, spent or not, in the caller's locale.
 - `pois.ts` — a route's POI drawn and triggered.
+- `pois.test.ts` — a route's points of interest, headless: a tile rect in pixels, the marker's
+  centre, and the two shapes the draw lays above the tile layers.
 - `walker.ts` — the one tile walker the node scenes share: `canWalkStep` (walkable and
   corner-cut aware), the shared `WALK_STEP_MS` / `RUN_STEP_MS` cadence and `WorldWalker`,
   which slides a scene's own sprite one cell per step on the run's movement keys, plays the
@@ -81,7 +87,11 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
 - `BattleScene.test.ts` — the battle scene's headless test of its sprite-animation
   frame selection.
 - `RunOverScene.ts` — the run summary when the last Pokémon falls.
+- `RunOverScene.test.ts` — the score screen's headless half: the figures it reads off a lost
+  run, the one mount and its armed delay, and the card's lack of a victory state.
 - `SettingsScene.ts` — text speed, volume, always-run, transparent HUD, reduced flashing and every key rebind.
+- `SettingsScene.test.ts` — the options page's headless half: the one mount on a clean boot,
+  the key router left on the keyboard and the mount that bails without a HUD layer.
 
 ## Rules
 
