@@ -12997,7 +12997,7 @@ autopilot brake over cycles that later ran and shipped, and are closed as stale.
 `[live]` lines of #115 need a browser, not a dev: they stay open on purpose and are recorded in
 their issues.
 
-- [ ] **[Task-305] The counters a node stands open their cards.** `openRocket` and `openTradeCard`
+- [x] **[Task-305] The counters a node stands open their cards.** `openRocket` and `openTradeCard`
       have no caller in `src/`, so the settlement's `rocket` person opens a card that marks itself
       spent and nothing more, and a lateral whose point of interest is `trade` draws its zone and
       opens nothing: the `03h` slot machine and the `03i`/`03j` trade card cannot be reached by

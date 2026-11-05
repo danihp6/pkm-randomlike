@@ -8,6 +8,29 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The counters a node stands open their cards.** `[Task-305]`, Batch 131: two panels the
+      region has been placing since the floors retired had no opener in `src/` at all.
+      `openRocket` opened the `03h` slot machine only from tests, because the casino room that used
+      to call it died with the floor layer, and `CityScene.openNpcCard` gave the `rocket` person a
+      generic card that marked itself spent — so the machine was unreachable by walking. The trade
+      card had the same hole: `openTradeCard`'s only caller was the retired trade room, while
+      `'trade'` sat among the nine `POI_KINDS` and `docs/region-spec.md` §7.8 already promised its
+      counter. Now a settlement's `rocket` row opens `openRocket` directly (a narrow `RocketHost`
+      the scene builds, still satisfied structurally by `RoomHost`) and a lateral whose POI is
+      `trade` opens `openTradeCard` from `tryInteract` when the player stands inside the zone,
+      answering again on a second visit. Both decisions are pure seams in `src/scenes/npcs.ts`
+      (`npcCounterOf`, `poiCounterOf`), and a row whose entry is `repeatable: true` is never marked
+      spent (`npcStaysOpen`, `markNpcVisit`) — which also stops the merchant from closing for good
+      after its first card. The settlement gained the battle path the Rocket grunt needs, reusing
+      the route's roster, band, seed and reward rules with no new balance value. `[unit]` the suite
+      is green (6 045 tests over 339 files on the merge tree) with `npm run build` clean; `[live]`
+      at 1280×800 the measured walks hold: seed `qa-288` on `city:1`, the machine paints
+      `GIRAR ¥300` (`CASINO.price.early`), one spin takes 100 000 → 99 700 and writes
+      `casino-spin-1-0`, and it reopens with no `npc.used`; on `lateral:6` of seed `qa305-0`,
+      `[data-hud-panel="trade"]` is null before the key, mounts the `03i` pick card after it,
+      unmounts on close and mounts again, writing no mark. The other eight POI kinds stay inert and
+      are named as a follow-up.
+
 - [x] **The docs close in the region's vocabulary.** `[Task-299]`, Batch 130: the
       eleven specs the floor sweep left behind now describe the shipped region. The
       run's chain is `town → route 1 → city 1 → … → city 8 → Victory Road → League →
