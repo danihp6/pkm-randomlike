@@ -13018,12 +13018,15 @@ their issues.
       and the counter answers again on a second visit (it is a counter, not a one-shot). Put the two
       decisions behind pure functions in `src/scenes/npcs.ts` — `npcCounterOf(rowId)` answering
       `'rocket'` or `'card'`, `poiCounterOf(kind)` answering `'trade'` or `null` — so the branch is
-      measured headless and the scene only routes. Do not touch the chef's berries-for-dish trade,
-      which is `chefTrade`'s and already resolves.
+      measured headless and the scene only routes. A row whose `NPC_ROWS` entry is
+      `repeatable: true` is **never** marked spent (the merchant and the rocket are the two), so a
+      counter keeps answering instead of printing `npc.used` after one visit. Do not touch the chef's
+      berries-for-dish trade, which is `chefTrade`'s and already resolves.
       **Docs:** `docs/region-spec.md` §7.7 (the `rocket` row's line) and §7.8 (the trade counter's),
       one sentence each saying the scene opens it.
       **Tests:** `[unit]` `npcCounterOf('rocket') === 'rocket'` and every other `NPC_ROWS` id is
       `'card'`; `[unit]` `poiCounterOf('trade') === 'trade'` and every other `PoiKind` is `null`;
+      `[unit]` a repeatable row is never marked spent and a non-repeatable one is, over `NPC_ROWS`;
       `[unit]` `CityScene.ts` names `openRocket` and `RouteScene.ts` names `openTradeCard` (a source
       pin, the shape `BattleScene.test.ts` already uses); `[unit]` the suite and the build are green.
       `[live]` at 1280×800 on a v28 save standing on the settlement that places `rocket`: the
