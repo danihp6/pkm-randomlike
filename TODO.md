@@ -42,7 +42,11 @@ moved the sweep behind them. The second, on what those cycles then found, put th
 Batch 127 — the node accepted the walk and drew nothing (#123) — and widened the sweep with every
 reader of the deprecated fields (#124). The third, after the run's OIDC token killed both devs of a
 two-task batch at `15:27:06Z` (62 minutes after sign-in), cuts the last three tasks **one per batch**
-(128, 129, 130), because a dev on any of them needs a whole runner. Three rules bind the whole
+(128, 129, 130), because a dev on any of them needs a whole runner. The fourth, on
+`2026-11-05`, reads the open GitHub issues once Batch 130 is merged and gives **Batch 131** the
+three that are the tree's own: the two counters whose opener retired with the floors (#127, #104),
+the curve's frozen measurement (#126) and the folder map that lost five rows (#115). Three rules
+bind the whole
 phase. **Identity:** `nodeKey = <kind>:<id>` is the only name a piece of the world has, and every
 node owns one stream family, `${seed}:node:<key>:…`; `routeIndexForRoom` and the global route prefix
 retire with the floors. **Persistence:** the save steps **27 → 28 with no migration** — the run in
@@ -79,6 +83,7 @@ eight-city region, the Victory Road and the tower do. The phase's shape:
 | 128 | the floor modules go: the map plan, the rooms, the minimap and the starter screen | 1 |
 | 129 | the deprecated position fields go, and their five readers with them | 1 |
 | 130 | the docs close in the region's vocabulary | 1 |
+| 131 | the issues close: the node's counters open their cards, the curve measures the route screens again, and the folder map is whole | 3 |
 
 **Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
 Batch 6b and Batch 7 are
@@ -12601,6 +12606,9 @@ the victory screen.
       walk of the chain in badge order never needs a badge the player does not hold. `[live]` at
       1280×800 a debug teleport walks town → city 8 → Victory Road → League and every gate opens in
       order.
+      **Released `2026-11-03`:** its `[live]` line is **deferred to [Task-296]**, not measured —
+      the debug teleport it walks through is that task's, so the walk is read off Task-296's
+      shipped node list (issue #115, item 1). The gate rule itself is `[unit]`-green.
       Claims `src/engine/region/plan.ts`, `plan.test.ts`, `src/data/region.ts`,
       `src/data/region.test.ts`, `src/engine/region/README.md` and `docs/region-spec.md` §1.
       *Dependencies:* all three generators (Batch 118), the gate (Batch 119), the city and gym scenes
@@ -12967,6 +12975,104 @@ runner, the same budget as its neighbours.
       *Dependencies:* the two sweeps ([Task-298] in Batch 128, [Task-304] in Batch 129) and every
       batch before it. *(Batch 130)*
       **Released `2026-11-04`:** waits on the sweep only, as the dependency line says.
+
+### Batch 131 - the issues close
+
+**The three.** The `2026-11-05` review of the open issues: two are defects the region has been
+carrying since the floors retired — the `rocket` counter's opener and the trade card's both lived in
+a room that no longer exists, so both panels are unreachable by walking — one is a measurement the
+floor sweep froze into two literal tables, and one is a folder map that lost five rows. Nothing here
+invents a rule: `docs/region-spec.md` §7.7 already promises that a special's effect "belongs to its
+own scene" and §7.8 that a `trade`'s counter is `src/engine/run/trade.ts`'s rule, so both scene
+tasks close a gap against the spec, they do not design one.
+
+**Hot files.** `src/scenes/CityScene.ts` and `src/scenes/RouteScene.ts` are [Task-305]'s and nobody
+else claims a scene, `package.json`, `src/main.ts` or `vite.config.ts`. `src/scenes/README.md` is
+[Task-307]'s, which is why [Task-305] must add no file to that folder.
+
+**Not in this batch.** #113 (the HUD's dead keys in a city) and #114 (the run-over tallies) shipped
+in Task-300 and Task-181 and are closed with their evidence. #103, #105, #106, #107 and #116 are the
+autopilot brake over cycles that later ran and shipped, and are closed as stale. #17, #21 and the
+`[live]` lines of #115 need a browser, not a dev: they stay open on purpose and are recorded in
+their issues.
+
+- [ ] **[Task-305] The counters a node stands open their cards.** `openRocket` and `openTradeCard`
+      have no caller in `src/`, so the settlement's `rocket` person opens a card that marks itself
+      spent and nothing more, and a lateral whose point of interest is `trade` draws its zone and
+      opens nothing: the `03h` slot machine and the `03i`/`03j` trade card cannot be reached by
+      playing, only by mounting them in a test.
+      **Measured:** `grep -rn openRocket src` answers `src/ui/rocketPanel.ts:109` and its own test
+      and nothing else; `grep -rn openTradeCard src` answers only
+      `src/scenes/panels/trade.ts:175`. `src/scenes/CityScene.ts:288` `openNpcCard` opens the generic
+      card for **every** row, and `:314` `chooseNpc` sends a `needs-scene` row through
+      `markNpcUsed` and closes, so the `rocket` row (`src/data/npcs.ts:129`, choice-less on purpose —
+      "the interact key opens the machine straight away") reaches neither the machine nor a choice.
+      Both are placed, not dead data: `src/engine/region/npcs.test.ts:85` puts `rocket` on `city:1`
+      and `docs/region-spec.md`'s table rows it at `(15, 27)` for the seed `qa-288`; `POI_KINDS`
+      (`src/engine/region/content.ts:24`) lists `'trade'` and `RouteScene.drawPointOfInterest` draws
+      its zone (`RouteScene.ts:587`).
+      **Fix shape:** in a settlement, a `rocket` row's interact opens `openRocket` **directly**, with
+      a `RoomHost` built from the scene and the tile the player faced — no card, and the visit still
+      marks the use so a reload answers `npc.used`; on a route, a lateral whose POI is `trade` opens
+      `openTradeCard` with the scene's `RoutePanelHost` when the player interacts inside the zone,
+      and the counter answers again on a second visit (it is a counter, not a one-shot). Put the two
+      decisions behind pure functions in `src/scenes/npcs.ts` — `npcCounterOf(rowId)` answering
+      `'rocket'` or `'card'`, `poiCounterOf(kind)` answering `'trade'` or `null` — so the branch is
+      measured headless and the scene only routes. Do not touch the chef's berries-for-dish trade,
+      which is `chefTrade`'s and already resolves.
+      **Docs:** `docs/region-spec.md` §7.7 (the `rocket` row's line) and §7.8 (the trade counter's),
+      one sentence each saying the scene opens it.
+      **Tests:** `[unit]` `npcCounterOf('rocket') === 'rocket'` and every other `NPC_ROWS` id is
+      `'card'`; `[unit]` `poiCounterOf('trade') === 'trade'` and every other `PoiKind` is `null`;
+      `[unit]` `CityScene.ts` names `openRocket` and `RouteScene.ts` names `openTradeCard` (a source
+      pin, the shape `BattleScene.test.ts` already uses); `[unit]` the suite and the build are green.
+      `[live]` at 1280×800 on a v28 save standing on the settlement that places `rocket`: the
+      interact key paints `SPIN` and the `casino.money` amount, and one spin debits the run's money;
+      on a lateral whose POI is `trade`, the interact key mounts `[data-hud-panel="trade"]` with its
+      pick card, and closing it and pressing again reopens it. Claims `src/scenes/CityScene.ts`,
+      `src/scenes/RouteScene.ts`, `src/scenes/npcs.ts`, `src/scenes/npcs.test.ts` and
+      `docs/region-spec.md`. *Dependencies:* the shared panel host (Batch 125) and the node content
+      (Batch 123). *(Batch 131)*
+
+- [ ] **[Task-306] The curve measures the region's route screens again.** The fill test stopped
+      measuring what the carver places: when the floor plan died, its live measurement was replaced
+      by two frozen tables and `measureStretches()` no longer calls a generator at all, while its own
+      docstring still promises "the shipped room generator".
+      **Measured:** `src/engine/run/curve.test.ts:224-250` holds `MEASURED_ROOMS` and
+      `MEASURED_TRAINERS`, one row per walk seed, filled by hand; `measureStretches()`
+      (`:252` onward) reads them instead of a plan. The shipped carver is
+      `src/engine/region/routeScreens.ts:160` `planRouteScreens(plan, key, screens?)`, which answers a
+      `RouteNodePlan` with its screens and their trainers, and `curve.test.ts:215` already builds
+      `LADDER = planRegion(CURVE_SEEDS[0])`. The `MEASURED_FILL` docstring (`:224`) still says the
+      trainer count "is the one the stretch's route places through the shipped room generator".
+      `src/engine/save.ts:156` still says v7→v8 recovers `arrivalEdge` "from the plan", while `:429`
+      returns the country `'N'`.
+      **Fix shape:** measure each stretch through `planRouteScreens(LADDER, 'route:<badge>')` — the
+      screens it plans and the trainers it posts — delete `MEASURED_ROOMS` and `MEASURED_TRAINERS`,
+      re-pin the expected numbers against the **live** generator so a change in what the carver
+      places fails the test, and correct the docstring to say what the numbers are measured from.
+      Correct the `save.ts` sentence to say the field falls back to `'N'`, and leave
+      `compatForNode`'s seed-independence exactly as shipped (the docstring must not claim a seed it
+      no longer reads).
+      **Docs:** `docs/balance/campaign.md`, the row that names how the stretch's fill is measured.
+      **Tests:** `[unit]` no frozen literal table remains and the measurement calls
+      `planRouteScreens`; `[unit]` every stretch's measured trainers still clear the cap the test
+      names; `[unit]` the suite and the build are green. No browser pass is owed. Claims
+      `src/engine/run/curve.test.ts`, `src/engine/save.ts` and `docs/balance/campaign.md`.
+      *Dependencies:* the region's own route screen (Batch 126). *(Batch 131)*
+
+- [ ] **[Task-307] The folder map is whole.** `src/scenes/README.md` rows four of the nine
+      `*.test.ts` files the folder holds, so the one document that maps the folder is wrong about
+      half of it.
+      **Measured:** the folder holds `BattleScene.test.ts`, `interior.test.ts`,
+      `MainMenuScene.test.ts`, `npcs.test.ts`, `pois.test.ts`, `regionScenes.test.ts`,
+      `RunOverScene.test.ts`, `SettingsScene.test.ts` and `walker.test.ts`; the README's test block
+      names `interior`, `walker`, `regionScenes` and `BattleScene` and no other.
+      **Fix shape:** one role line per missing file, in the folder's existing voice, next to the four
+      that are already there; no other section moves and no path is renamed.
+      **Docs:** itself. **Tests:** `[unit]` every `*.test.ts` under `src/scenes` has exactly one line
+      in `src/scenes/README.md` and every path the README names exists. No browser pass is owed.
+      Claims `src/scenes/README.md`. *Dependencies:* none. *(Batch 131)*
 
 ## Bugs
 
