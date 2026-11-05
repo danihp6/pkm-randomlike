@@ -75,12 +75,15 @@ which that test asserts too.
 ## 2. The budget check
 
 The rule the tree is solved against: **beating 75 % of a stretch's regular trainers
-pays for that stretch's level cap.** The method is one line — the same simulation
-`src/engine/run/curve.test.ts` runs: it rebuilds every room of the stretch's route the
-way `RouteScene` does, over `curve-a`, `curve-b` and `curve-c`, sums the trainers
-those rooms post (`T̄(s)`, quiet leaves counting zero), prices one at the stretch's
-band and its factor (`A(s)`, below), and reads
-`fill = 0.75 × T̄(s) × A(s) / needed(s)`.
+pays for that stretch's level cap.** The method is one line — the same test
+`src/engine/run/curve.test.ts` runs: it plans every stretch's route through the
+region's one carver, `planRouteScreens`, over `curve-a`, `curve-b` and `curve-c`,
+reads the screens it plans and the trainers it posts on them (pinned as
+`MEASURED_CARVE`), prices one at the stretch's band and its factor (`A(s)`, below), and
+reads `fill = 0.75 × T̄(s) × A(s) / needed(s)`. The table below is the ladder's
+**solve** — `T̄(s)` = 3.00-5.33 — while the carver posts 2-4 trainers a route
+(`ROUTE_TRAINER_COUNT`), so its own fill is measured in that test as
+`MEASURED_CARVER_FILL` and the population pass that closes the gap is §5's second row.
 
 | badge | trainers per seed (rooms) | `T̄(s)` | factor |    `A(s)` | `0.75 × T̄ × A` | `needed(s)` | fill |
 | ----: | ------------------------- | -----: | -----: | --------: | -------------: | ----------: | ---: |

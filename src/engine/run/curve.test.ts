@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { bossPartySize } from '../../data/bosses';
 import { gymForBadge } from '../../data/gyms';
 import { levelCapForMap } from '../../data/maps';
@@ -17,8 +17,8 @@ import {
   getTrainerArchetype,
 } from '../../data/trainers';
 import { leagueIds } from '../region/league';
-import { nodeOf, planRegion, type RegionNode } from '../region/plan';
-import { planRouteLayout } from '../region/route/layout';
+import { nodeOf, planRegion, type RegionNode, type RegionPlan } from '../region/plan';
+import { planRouteScreens } from '../region/routeScreens';
 import { towerStep } from '../region/tower';
 import { Rng, hashSeed } from '../rng';
 import { gymLeaderFoe, gymReward } from './badge';
@@ -41,8 +41,9 @@ const START_LEVEL = 5;
 const BADGES: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8];
 
 /**
- * The fill each stretch measured with the shipped per-stretch factors, two
- * decimals per row. A re-pin records the new column; an unmotivated move fails here.
+ * The fill each stretch is solved to with the shipped per-stretch factors, two
+ * decimals per row — the number the ladder's rule is written on. A re-pin records the
+ * new column; an unmotivated move fails here.
  *
  * Every stretch is solved to about 1.25 with its own factor, so no stretch needs a
  * shared band's exception: the three `end` stretches do not share a rate.
@@ -61,13 +62,22 @@ const BADGES: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8];
  * **Re-pinned by Task-297 onto the region's ladder.** The walk is the region's eight
  * **stretches**, not eight floors: every row reads its badge, its cap (`badgeCap`)
  * and its band (`bandForNode(route:<badge>)` — the previous stretch's cap up to this
- * one's) off `planRegion`, and the XP its cap costs off `xpForLevel`. The trainer
- * count is still the one the stretch's route places through the shipped room
- * generator, which is where `RouteScene` posts a regular trainer today;
- * `docs/balance/campaign.md` owns the open rows that will replace it. No figure
+ * one's) off `planRegion`, and the XP its cap costs off `xpForLevel`. No figure
  * moved: the ladder's caps are the old floor caps (`levelCapForMap(badge) ===
  * badgeCap(badge)`, asserted below), so this re-pin records the same walk in the
  * region's vocabulary.
+ *
+ * **Re-read by Task-306 against the carver.** The count is no longer a frozen table
+ * standing in for a generator: `measureStretches` plans every stretch through the
+ * region's one carver, `planRouteScreens`, and reads the screens it plans and the
+ * trainers it posts live (`MEASURED_CARVE`). This column stays the **solve** the
+ * ladder's rule is written on — `MEASURED_SOLVED_TRAINERS` at the stretch's `A(s)` —
+ * because the carver posts 2-4 trainers a route (`ROUTE_TRAINER_COUNT`) where the
+ * retired floor plan posted 3.00-5.33, so the carver's own fill
+ * (`MEASURED_CARVER_FILL`) lands at 0.60-1.11 and `docs/balance/campaign.md` §5's
+ * second row owns the population pass that closes the gap. The window below is held
+ * against this column, the solved one; the carver's is pinned beside it so a change
+ * in what the carver places fails this suite instead of drifting.
  */
 const MEASURED_FILL: Readonly<Record<number, number>> = {
   1: 1.25,
@@ -83,6 +93,45 @@ const MEASURED_FILL: Readonly<Record<number, number>> = {
 /** The window a stretch's fill has to land inside: 75 % of its trainers must pay its cap. */
 const MIN_FILL = 1.05;
 const MAX_FILL = 1.5;
+
+/**
+ * `T̄(s)` the ladder's fill and money are solved against, two decimals: the retired
+ * floor plan's count (`docs/balance/campaign.md` §2's column), kept as the one root
+ * that arithmetic is written on. Written as the exact mean of that plan's per-seed
+ * counts — `3, 3, 4` is `10 / 3`, `6, 5, 5` is `16 / 3` — so the derived fill and
+ * money match the sheet to the cent. The region's carver posts its own count, read
+ * live in `MEASURED_CARVE`; the two are not the same yet (§5's second row).
+ */
+const MEASURED_SOLVED_TRAINERS: Readonly<Record<number, number>> = {
+  1: 3,
+  2: 10 / 3,
+  3: 5,
+  4: 5,
+  5: 5,
+  6: 16 / 3,
+  7: 16 / 3,
+  8: 5,
+};
+
+/**
+ * What the carver's own trainers would pay of each stretch's cap,
+ * `0.75 × T̄(carver) × A(s) / needed(s)`, two decimals per row, measured live off
+ * `planRouteScreens`. Seven of the eight rows sit under the window above: the carver
+ * posts 2-4 trainers a route where the ladder is solved against 3.00-5.33, and
+ * `docs/balance/campaign.md` §5's second row owns the population pass that closes the
+ * gap. Pinned so a change in what the carver places moves it, and the gap is measured
+ * rather than assumed.
+ */
+const MEASURED_CARVER_FILL: Readonly<Record<number, number>> = {
+  1: 1.11,
+  2: 0.91,
+  3: 0.71,
+  4: 0.67,
+  5: 0.7,
+  6: 0.6,
+  7: 0.78,
+  8: 0.83,
+};
 
 /**
  * The finale's award as a multiple of the XP the stretch's cap costs, two decimals.
@@ -114,18 +163,6 @@ const MEASURED_BOSS: Readonly<Record<number, readonly [award: number, party: num
   6: [2053, 6],
   7: [3188, 6],
   8: [4301, 6],
-};
-
-/** The screens each stretch's main route stacks, per walk seed (`planRouteLayout`). */
-const MEASURED_SCREENS: Readonly<Record<number, readonly number[]>> = {
-  1: [4, 3, 4],
-  2: [3, 3, 3],
-  3: [3, 2, 4],
-  4: [3, 4, 3],
-  5: [2, 3, 4],
-  6: [2, 4, 2],
-  7: [2, 4, 2],
-  8: [3, 3, 2],
 };
 
 /**
@@ -222,34 +259,32 @@ function stretchNode(badge: number): RegionNode {
 }
 
 /**
- * What each stretch's route placed, room by room, as the retired floor plan and the
- * shipped carver measured it: the rooms its map held and the trainers its rooms
- * placed, one row per walk seed. Frozen here because the plan the numbers came from
- * is deleted; a rebalance re-pins them exactly as it re-pins the fills below.
+ * What the region's carver answers for each stretch's main route, one row per walk
+ * seed: the screens `planRouteScreens` plans and the trainers it posts on them, read
+ * live by `measureStretches` and pinned here. A change in what the carver places
+ * fails this table; nothing here is copied out of a plan that no longer exists.
  */
-const MEASURED_ROOMS: Readonly<Record<number, readonly number[]>> = {
-  1: [7, 6, 7],
-  2: [7, 6, 6],
-  3: [9, 10, 8],
-  4: [8, 9, 10],
-  5: [7, 8, 8],
-  6: [8, 8, 7],
-  7: [10, 12, 13],
-  8: [12, 8, 9],
+const MEASURED_CARVE: Readonly<
+  Record<number, readonly [screens: readonly number[], trainers: readonly number[]]>
+> = {
+  1: [[4, 3, 4], [4, 2, 2]],
+  2: [[3, 3, 3], [2, 2, 4]],
+  3: [[3, 2, 4], [2, 4, 2]],
+  4: [[3, 4, 3], [2, 3, 3]],
+  5: [[2, 3, 4], [3, 3, 3]],
+  6: [[2, 4, 2], [3, 4, 2]],
+  7: [[2, 4, 2], [4, 3, 3]],
+  8: [[3, 3, 2], [3, 3, 4]],
 };
 
-const MEASURED_TRAINERS: Readonly<Record<number, readonly number[]>> = {
-  1: [4, 2, 3],
-  2: [3, 3, 4],
-  3: [4, 6, 5],
-  4: [6, 4, 5],
-  5: [5, 5, 5],
-  6: [6, 5, 5],
-  7: [6, 4, 6],
-  8: [5, 5, 5],
-};
-
-type SeedCount = Readonly<{ seed: string; rooms: number; trainers: number }>;
+/** One stretch's main route as the carver answered it under one walk seed. */
+type CarvedRoute = Readonly<{
+  seed: string;
+  /** `planRouteScreens(...).screens.length`, the screens it plans. */
+  screens: number;
+  /** `planRouteScreens(...).route.trainers.length`, the trainers it posts on them. */
+  trainers: number;
+}>;
 
 type StretchCurve = Readonly<{
   badge: number;
@@ -257,19 +292,34 @@ type StretchCurve = Readonly<{
   band: LevelBand;
   /** The cap the stretch enforces: `badgeCap(badge)`. */
   cap: number;
-  /** Trainers each seed's route places, summed over its rooms (quiet rooms count zero). */
-  perSeed: readonly SeedCount[];
-  /** `T̄(s)`: the mean stretch total over the seed sample. */
+  /** The carver's answer for this stretch, one row per walk seed. */
+  carved: readonly CarvedRoute[];
+  /** `T̄(s)`: the mean trainers the carver posts over the sample. */
   meanTrainers: number;
   /** `A(s)`: the mean XP one trainer of the stretch awards. */
   award: number;
   /** `needed(s)`: the XP the squad still needs to reach the stretch's cap. */
   needed: number;
-  /** `0.75 × T̄(s) × A(s)`, the budget the window measures. */
+  /** `0.75 × T̄(s) × A(s)` on the carver's own count. */
+  carverBudget: number;
+  /** `carverBudget / needed`. */
+  carverFill: number;
+  /** `0.75 × T̄(s) × A(s)` on the count the ladder is solved against. */
   budget: number;
   /** `budget / needed`. */
   fill: number;
 }>;
+
+/** The region under one walk seed, with the first one's plan reused as the ladder. */
+function planFor(seed: string): RegionPlan {
+  return seed === CURVE_SEEDS[0] ? LADDER : planRegion(seed);
+}
+
+/** Plans one stretch's route through the region's carver, under one walk seed. */
+function carveRoute(seed: string, key: string): CarvedRoute {
+  const planned = planRouteScreens(planFor(seed), key);
+  return { seed, screens: planned.screens.length, trainers: planned.route.trainers.length };
+}
 
 /** Walks the region's eight stretches the way a run does, and measures each one. */
 function measureStretches(): readonly StretchCurve[] {
@@ -278,12 +328,8 @@ function measureStretches(): readonly StretchCurve[] {
     const band = bandForNode(node);
     const cap = badgeCap(badge);
     const factor = trainerXpMultiplierForMap(badge);
-    const perSeed = CURVE_SEEDS.map((seed, at) => ({
-      seed,
-      rooms: MEASURED_ROOMS[badge][at],
-      trainers: MEASURED_TRAINERS[badge][at],
-    }));
-    const trainers = perSeed.reduce((total, count) => total + count.trainers, 0);
+    const carved = CURVE_SEEDS.map((seed) => carveRoute(seed, node.key));
+    const trainers = carved.reduce((total, row) => total + row.trainers, 0);
     const previousCap = badge <= 1 ? START_LEVEL : badgeCap(badge - 1);
     let levels = 0;
     let awards = 0;
@@ -294,16 +340,19 @@ function measureStretches(): readonly StretchCurve[] {
     const meanTrainers = trainers / CURVE_SEEDS.length;
     const award = band.trainerSize * (awards / levels);
     const needed = xpForLevel(cap) - xpForLevel(previousCap);
-    const budget = 0.75 * meanTrainers * award;
+    const carverBudget = 0.75 * meanTrainers * award;
+    const budget = 0.75 * MEASURED_SOLVED_TRAINERS[badge] * award;
     return {
       badge,
       node,
       band,
       cap,
-      perSeed,
+      carved,
       meanTrainers,
       award,
       needed,
+      carverBudget,
+      carverFill: carverBudget / needed,
       budget,
       fill: budget / needed,
     };
@@ -317,6 +366,14 @@ function stretches(): readonly StretchCurve[] {
   walked ??= measureStretches();
   return walked;
 }
+
+/**
+ * The walk plans eight stretches through the carver under three seeds, which is a
+ * second or two of geometry; it is built once here so no test's own budget pays for it.
+ */
+beforeAll(() => {
+  stretches();
+}, 120_000);
 
 /** A run standing on the Champion's far side, where the tower's door is open. */
 function afterChampion(seed: string): RunState {
@@ -389,17 +446,25 @@ describe('stretch trainer curve', () => {
     }
   });
 
-  it('stacks every main route two to four screens, one count per walk seed', () => {
-    for (const badge of BADGES) {
-      const screens = CURVE_SEEDS.map(
-        (seed) => planRouteLayout(planRegion(seed), `route:${badge}`).screens.length,
-      );
-      expect(screens, `stretch ${badge}`).toEqual(MEASURED_SCREENS[badge]);
+  it('stacks every main route two to four screens, as the carver plans them', () => {
+    for (const stretch of stretches()) {
+      const screens = stretch.carved.map((row) => row.screens);
+      expect(screens, `stretch ${stretch.badge}`).toEqual(MEASURED_CARVE[stretch.badge][0]);
       for (const count of screens) {
-        expect([2, 3, 4], `stretch ${badge} screens`).toContain(count);
+        expect([2, 3, 4], `stretch ${stretch.badge} screens`).toContain(count);
       }
     }
-  });
+  }, 120_000);
+
+  it('posts the trainers the carver places, one count per walk seed', () => {
+    for (const stretch of stretches()) {
+      const trainers = stretch.carved.map((row) => row.trainers);
+      expect(trainers, `stretch ${stretch.badge}`).toEqual(MEASURED_CARVE[stretch.badge][1]);
+      for (const row of stretch.carved) {
+        expect(row.trainers, `stretch ${stretch.badge} ${row.seed} trainers`).toBeGreaterThan(0);
+      }
+    }
+  }, 120_000);
 
   it('splits the whole campaign into its eight steps, with nothing double-counted', () => {
     const walked = stretches();
@@ -416,13 +481,14 @@ describe('stretch trainer curve', () => {
       expect(Number.isFinite(stretch.budget), `${label} budget`).toBe(true);
       expect(stretch.budget, `${label} budget`).toBeGreaterThan(0);
       expect(stretch.meanTrainers, `${label} places trainers`).toBeGreaterThan(0);
-      for (const count of stretch.perSeed) {
-        expect(count.rooms, `${label} ${count.seed} rooms`).toBeGreaterThan(0);
-        expect(count.trainers, `${label} ${count.seed} trainers`).toBeGreaterThan(0);
-      }
+      expect(stretch.carverBudget, `${label} carver budget`).toBeGreaterThan(0);
       expect(stretch.fill, `${label} fill`).toBeGreaterThanOrEqual(MIN_FILL);
       expect(stretch.fill, `${label} fill`).toBeLessThanOrEqual(MAX_FILL);
       expect(stretch.fill, `${label} fill`).toBeCloseTo(MEASURED_FILL[stretch.badge], 2);
+      expect(stretch.carverFill, `${label} carver fill`).toBeCloseTo(
+        MEASURED_CARVER_FILL[stretch.badge],
+        2,
+      );
     }
   }, 120_000);
 
@@ -459,7 +525,7 @@ describe('stretch economy', () => {
 
   it('pays a whole stretch T̄(s) × the mean award', () => {
     for (const stretch of stretches()) {
-      const money = stretch.meanTrainers * meanTrainerMoney(stretch.band);
+      const money = MEASURED_SOLVED_TRAINERS[stretch.badge] * meanTrainerMoney(stretch.band);
       expect(money, `stretch ${stretch.badge} money`).toBeCloseTo(MEASURED_MONEY[stretch.badge], 2);
     }
   });
