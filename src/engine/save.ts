@@ -153,12 +153,13 @@ export type Migrations = Readonly<Record<number, Migration | undefined>>;
  * (`mapIndex`, `routeInMap`) and the discovery set, recovered from the global
  * `routeIndex`; `6` moves a v6 run onto the v7 schema, which added the per-map
  * `bossDefeated` flag; `7` moves a v7 run onto the v8 schema, which added the
- * room's `arrivalEdge` (recovered from the plan, so an old run still spawns at a
- * real door); `8` moves a v8 run onto the v9 schema, whose per-floor
- * `capturedRooms` list replaced the per-route `captureUsed` boolean (the run is
- * discarded by the `27` step, so the step only bumps the version); `9` moves a v9
- * run onto the v10 schema, which added the `pokevialCharges` counter (an old run
- * starts with a full vial); `10` moves a v10 run onto the v11 schema, which added
+ * room's `arrivalEdge` (a v7 run carries none, so it starts on the `'N'` compass
+ * fallback the decoder answers for a door the screens do not open on); `8` moves a
+ * v8 run onto the v9 schema, whose per-floor `capturedRooms` list replaced the
+ * per-route `captureUsed` boolean (the run is discarded by the `27` step, so the
+ * step only bumps the version); `9` moves a v9 run onto the v10 schema, which added
+ * the `pokevialCharges` counter (an old run starts with a full vial); `10` moves a
+ * v10 run onto the v11 schema, which added
  * the PC-lock state (the floor-scoped list of the members swappable in the entry
  * room), an old run starting unlocked only in its entry room; `11` moves a v11
  * settings onto the v12 schema, which
