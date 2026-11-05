@@ -53,6 +53,12 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   and the merchant that opens the shipped shop card stocked from the city's own shelf
   (`shopBandForTier`). Its dev-only surface is `__pkmCentre` with `debugServicesState`,
   `placePlayer`, `openCounter`, `openPc` and `openShop`.
+- `GymScene.ts` — a gym as a place you walk: the city's four rooms drawn from the cached
+  node on the interior tileset, the player on the shared walker, the ice room's own floor
+  deciding each press, the room's trainer and the leader opened as ordinary battles and
+  folded back through the shipped resolve, the badge the leader's win hands over, the solved
+  mark the run keeps and the door back to the city. Its dev-only surface is `__pkmGym` with
+  `debugGymState`, `placePlayer` and `stepDirection`.
 - `interior.test.ts` — the laboratory's headless half: the offer before and after the pick,
   the intent that takes it, and the scene's own registration.
 - `npcs.ts` — a node's NPCs drawn and opened.
@@ -82,6 +88,11 @@ dex is reached only through a typed accessor in `src/data/`, never by importing 
   folder's `host.ts`, so a new panel is a new file. `host.ts` builds the same
   `RoutePanelHost` over any node scene, so the route's twelve cards and a node's seven
   (`NODE_PANEL_IDS`) need no scene code of their own.
+- `LeagueScene.ts` — the League and the endless tower behind it as one screen of two modes:
+  the entry heal that never revives, the Elite Four and the Champion fought as one chain that
+  rests the squad after every win, the tower's next rung read off the run's own streak, the
+  drawn rows over one panel and the single exit the Champion's fall opens. Its dev-only
+  surface is `__pkmLeague` with `debugLeagueState` and `exitToTower`.
 - `BattleScene.ts` — the menu battle: fight / bag / switch / run, the message box, the HP
   bars and the capture sequence.
 - `BattleScene.test.ts` — the battle scene's headless test of its sprite-animation
