@@ -2,27 +2,46 @@ import Phaser from 'phaser';
 import { playMusic } from '../audio/audio';
 import type { KeybindAction } from '../data/keybinds';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
+import { getTrainerArchetype } from '../data/trainers';
+import { trainerLevel } from '../data/trainerLevels';
 import { IS_DEVELOP } from '../dev/env';
 import type { Tile } from '../engine/grid';
 import type { CityBuilding, CityExitBand, CityPlan } from '../engine/region/city/plan';
 import { planCity } from '../engine/region/city/plan';
 import { planNodeContent } from '../engine/region/content';
-import { markNpcUsed, nodeNpcs, npcUsed, useNpc, type PlacedNpc } from '../engine/region/npcs';
+import { nodeNpcs, npcUsed, useNpc, type PlacedNpc } from '../engine/region/npcs';
 import { nodeOf, planRegion, type RegionNodeKind, type RegionPlan } from '../engine/region/plan';
 import type { NodeWorld } from '../engine/region/preload';
 import { isRouteKind } from '../engine/region/route';
 import { travel } from '../engine/region/travel';
-import type { RunState } from '../engine/run';
+import { hashSeed, Rng } from '../engine/rng';
+import {
+  battleSeed,
+  hasLivingParty,
+  isTrainerDefeated,
+  resolveBattle,
+  squadLevel,
+  trainerMoney,
+  trainerRoster,
+  type BattleLaunch,
+  type BattleReturn,
+  type BattleReward,
+  type RunState,
+  type TrainerTrigger,
+} from '../engine/run';
+import { bandForNode } from '../engine/run/levelCurve';
 import { storeRun, type Settings } from '../engine/save';
+import { withForcedAbility, type Facing, type RouteTrainer } from '../engine/routes';
 import { TILE_SIZE } from '../engine/tileset';
 import { actionKeys } from '../input/input';
 import { loadSettings } from '../settings';
 import { browserStorage } from '../storage';
 import { openNpcPanel } from '../ui/npcPanel';
+import { openRocket, type RocketHost } from '../ui/rocketPanel';
 import type { PanelSceneSource } from './panels/host';
 import type { RoomPanel } from './panels/types';
 import { actorDepth, WorldScene, WORLD_TRANSITION_MS } from './WorldScene';
-import { drawCityNpcs, npcCardView } from './npcs';
+import { drawCityNpcs, markNpcVisit, npcCardView, npcCounterOf } from './npcs';
 import { WorldWalker } from './walker';
 
 /**
@@ -31,12 +50,22 @@ import { WorldWalker } from './walker';
  * scene's two layers, the player spawned on the plan's own spawn and walked on the
  * run's movement keys, and the three things a settlement tile can do — a **door**
  * opens the interior its key names, an **exit band** walks to the neighbour
- * through the pure travel rule, and a **person** (§7.7) opens its own card.
+ * through the pure travel rule, and a **person** (§7.7) opens its own counter.
  *
  * It owns no rule: every walk decision is `map.ts`'s, every exit is `travel.ts`'s,
- * every wall, door and band is `planCity`'s and every body, line and use mark is
- * `src/engine/region/npcs.ts`'s.
+ * every wall, door and band is `planCity`'s, every body, line and use mark is
+ * `src/engine/region/npcs.ts`'s, and which person opens a machine rather than a card
+ * is `npcCounterOf`'s (`./npcs`).
  */
+
+/** The facing that looks from `from` towards `to`, on the walker's own precedence. */
+function facingFrom(from: Tile, to: Tile): Facing {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 0 && dy === 0) return 'S';
+  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
+  return dy > 0 ? 'S' : 'N';
+}
 
 /** What the debug/dev browser pass reads. */
 export type CityDebugState = Readonly<{
@@ -119,6 +148,10 @@ export class CityScene extends WorldScene {
   private npcPanel: RoomPanel | null = null;
   /** The keys the people are read from; one panel is open at a time. */
   private npcKeys: NpcKeySet | null = null;
+  /** The placement whose machine is open, so closing its window writes the use mark. */
+  private counterPlacement: PlacedNpc | null = null;
+  /** The battle a machine opened, or null while the settlement is not under one. */
+  private pendingBattle: BattleLaunch | null = null;
 
   constructor() {
     super('City');
@@ -146,6 +179,8 @@ export class CityScene extends WorldScene {
     this.npcSprites = [];
     this.card = null;
     this.npcPanel = null;
+    this.counterPlacement = null;
+    this.pendingBattle = null;
     this.settings = loadSettings();
     this.refreshRunKey();
     this.refreshNpcKeys();
@@ -194,7 +229,7 @@ export class CityScene extends WorldScene {
     if (action === 'confirm' || action === 'interact') {
       const npc = this.npcAt(walker.tile);
       if (npc !== null) {
-        this.openNpcCard(npc);
+        this.openPerson(npc);
         return;
       }
     }
@@ -281,6 +316,58 @@ export class CityScene extends WorldScene {
   }
 
   /**
+   * What a person's interact opens, in the one order the counters are decided in:
+   * the Team Rocket grunt's slot machine straight away (`npcCounterOf`), every other
+   * row its own card.
+   */
+  private openPerson(placed: PlacedNpc): void {
+    if (npcCounterOf(placed.rowId) === 'rocket') {
+      this.openMachine(placed);
+      return;
+    }
+    this.openNpcCard(placed);
+  }
+
+  /**
+   * Opens the slot machine on the grunt's own tile (`src/ui/rocketPanel.ts`): no card
+   * is built for the row. The machine's one-shot record is its own `casino-lock-*`
+   * mark, and the row is `repeatable`, so closing its window writes no placement mark
+   * (`closePanel`) and every visit opens it again.
+   */
+  private openMachine(placed: PlacedNpc): void {
+    if (this.npcPanel !== null) return;
+    this.counterPlacement = placed;
+    openRocket(this.rocketHost(), placed.tile);
+  }
+
+  /**
+   * The machine's own port (`RocketHost`): this settlement's live run, its one panel
+   * slot, its battle path, and the tile the player stands on so the grunt faces it.
+   * A settlement has no HUD pane that takes the keyboard, so `releaseHudKeyboard` is
+   * the port's total no-op.
+   */
+  private rocketHost(): RocketHost {
+    const scene = this;
+    return {
+      scene,
+      get run(): RunState {
+        return scene.run;
+      },
+      commitRun: (run) => scene.commitRun(run),
+      openPanel: (panel) => scene.openPanel(panel),
+      closePanel: () => scene.closePanel(),
+      panelOpen: () => scene.npcPanel !== null,
+      releaseHudKeyboard: () => undefined,
+      startTrainerBattle: (trainer) => scene.startTrainerBattle(trainer),
+      entryTile: () => {
+        const tile = scene.walker?.tile;
+        return tile === undefined ? { x: 0, y: 0 } : { x: tile.x, y: tile.y };
+      },
+      facingFromTo: (from, to) => facingFrom(from, to),
+    };
+  }
+
+  /**
    * Opens one person's card through the scene's one panel slot: its name, its line
    * and, when it has anything left, its own rows plus `LEAVE` (`openNpcCardView`'s
    * bookkeeping, so a confirm that fired a choice closes the card once).
@@ -309,12 +396,13 @@ export class CityScene extends WorldScene {
   /**
    * Resolves the row the card accepted. The **medic** heals and the **chef** trades
    * here; every other special's effect belongs to its own scene, so the card only
-   * marks the placement spent, and a reopened card prints `npc.used`.
+   * writes the visit's mark, and a reopened card prints `npc.used` — unless the row is
+   * one that stays open (`npcStaysOpen`, the merchant's and the grunt's).
    */
   private chooseNpc(placed: PlacedNpc, _choiceId: string): void {
     const use = useNpc(this.run, placed);
     if (use.ok) this.commitRun(use.run);
-    else if (use.reason === 'needs-scene') this.commitRun(markNpcUsed(this.run, placed));
+    else if (use.reason === 'needs-scene') this.markVisit(placed);
     this.closePanel();
   }
 
@@ -323,12 +411,26 @@ export class CityScene extends WorldScene {
     this.npcPanel = panel;
   }
 
-  /** Tears the card down and clears the debug state's own record of it. */
+  /**
+   * Tears the counter down, and writes the visit's mark first (`§7.7`) for a row that
+   * owes one: a one-shot row reads `npc.used` on the next visit, while a row that stays
+   * open (`npcStaysOpen`) keeps no mark and answers again — the machine's own
+   * `casino-lock-*` is the record that closes it, not the placement.
+   */
   private closePanel(): void {
     const panel = this.npcPanel;
+    const placement = this.counterPlacement;
     this.npcPanel = null;
+    this.counterPlacement = null;
     this.card = null;
     panel?.close();
+    if (placement !== null) this.markVisit(placement);
+  }
+
+  /** Writes the mark a visit owes, and nothing at all for a row that stays open. */
+  private markVisit(placed: PlacedNpc): void {
+    const marked = markNpcVisit(this.run, placed);
+    if (marked !== this.run) this.commitRun(marked);
   }
 
   /** Sets the scene's run and persists it, so a use mark survives a reload. */
@@ -336,6 +438,89 @@ export class CityScene extends WorldScene {
     this.run = run;
     this.persistRun();
     this.panelLayer?.refresh();
+  }
+
+  /**
+   * Pauses the settlement and rolls the grunt's fight on top of it, the way the road
+   * opens a posted trainer: the node's own band, a roster keyed by the node and the
+   * trainer (so it replays, D11), and the run's party, bag and money rules. No new
+   * table and no new draw — `trainerRoster`, `trainerMoney` and `bandForNode` are the
+   * same rules a route's trainer reads.
+   */
+  private startTrainerBattle(trainer: RouteTrainer): void {
+    if (this.pendingBattle !== null || this.opening || this.travelling) return;
+    if (isTrainerDefeated(this.run, trainer.id)) return;
+    const archetype = getTrainerArchetype(trainer.archetypeId);
+    if (archetype === undefined) return;
+    const node = nodeOf(planRegion(this.run.seed), this.run.nodeKey);
+    if (node === undefined) return;
+
+    const band = bandForNode(node);
+    const roster = trainerRoster(
+      band,
+      new Rng(hashSeed(`${this.run.seed}:trainer:${node.key}:${trainer.id}`)),
+      trainer.id,
+      {
+        allowMega: archetype.carriesMega === true,
+        levelFor: (size) => trainerLevel(squadLevel(this.run), size, band.maxLevel),
+      },
+    );
+    const launch: BattleLaunch = {
+      trigger: {
+        kind: 'trainer',
+        trainerId: trainer.id,
+        trainerName: archetype.name,
+        roster: withForcedAbility(roster, archetype),
+        archetypeId: archetype.id,
+      },
+      player: this.run.party.map((member) => member.fighter),
+      bag: this.run.bag,
+      xp: this.run.xp,
+      seed: battleSeed(this.run.seed, hashSeed(node.key), `trainer:${trainer.id}`),
+      runSeed: this.run.seed,
+      // A counter's fight is a trainer's: the run's one catch is never at stake here.
+      canCapture: false,
+      firstCatch: false,
+      aiLevel: this.settings.aiLevel,
+      returnScene: regionSceneKey,
+    };
+    this.pendingBattle = launch;
+    this.scene.pause();
+    this.scene.launch('Battle', launch);
+  }
+
+  /** Called by `BattleScene` before it stops: folds the grunt's fight back into the run. */
+  applyBattleResult(result: BattleReturn): void {
+    const pending = this.pendingBattle;
+    this.pendingBattle = null;
+    if (pending === null || pending.trigger.kind !== 'trainer') return;
+    const trigger = pending.trigger;
+    this.run = resolveBattle(this.run, result, this.rewardFor(trigger)).run;
+    this.persistRun();
+    this.panelLayer?.refresh();
+    if (!hasLivingParty(this.run)) this.scene.start('RunOver', { run: this.run, won: false });
+  }
+
+  /**
+   * What a won counter fight pays: its archetype's base money and item at the node's
+   * band, rolled off the run, the node and the trainer so a replay pays the same.
+   */
+  private rewardFor(trigger: TrainerTrigger): BattleReward {
+    const archetype =
+      trigger.archetypeId === undefined ? undefined : getTrainerArchetype(trigger.archetypeId);
+    const node = nodeOf(planRegion(this.run.seed), this.run.nodeKey);
+    let money: number | undefined;
+    if (archetype !== undefined && node !== undefined) {
+      const rng = new Rng(hashSeed(`${this.run.seed}:money:${node.key}:${trigger.trainerId}`));
+      money = trainerMoney(archetype, bandForNode(node), rng);
+    }
+    return {
+      enemyLevels: trigger.roster.map((entry) => entry.level),
+      isTrainer: true,
+      trainerId: trigger.trainerId,
+      ...(money !== undefined ? { money } : {}),
+      ...(archetype?.reward !== undefined ? { item: archetype.reward } : {}),
+    };
   }
 
   /**
@@ -380,7 +565,7 @@ export class CityScene extends WorldScene {
     if (city === null) return;
     const npc = this.npcAt(tile);
     if (npc !== null) {
-      this.openNpcCard(npc);
+      this.openPerson(npc);
       return;
     }
     const building = doorAt(city, tile);
@@ -536,11 +721,11 @@ export class CityScene extends WorldScene {
     };
   }
 
-  /** Dev only: opens the card of the person with that placement id, as the interact key does. */
+  /** Dev only: opens the counter of the person with that placement id, as the interact key does. */
   talkTo(id: string): void {
     const placed = this.npcs.find((npc) => npc.id === id);
     if (placed === undefined) return;
-    this.openNpcCard(placed);
+    this.openPerson(placed);
   }
 
   /** Dev only: stands the player on `tile` and lets that tile's own rule answer. */

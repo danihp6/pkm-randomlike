@@ -508,7 +508,9 @@ walkable, else north, else east, else west — and never drawn.
 
 A person is spent **once per node**: its card writes `npc-<nodeKey>-<n>-<rowId>` (the
 placement id plus the row it stands, `npcUseId`) into `RunState.pickedItems`, which is
-node-scoped, so a revisit and a reload print `npc.used` and offer no choice. Two effects
+node-scoped, so a revisit and a reload print `npc.used` and offer no choice. A row the table
+marks `repeatable` is never marked at all (`npcStaysOpen`, `src/scenes/npcs.ts`), so the
+merchant's Mart and the Rocket grunt's machine answer every visit. Two effects
 resolve headless: the **medic** heals the party and the box (`healParty`, no status cure and
 no revival, D5) and the **chef** trades three berries for its dish (`chefTrade`); both mark
 the use. Every other special's effect belongs to its own scene — the card answers
@@ -519,7 +521,11 @@ the use. Every other special's effect belongs to its own scene — the card answ
 draw both call the pass once), draws one overworld sprite per body exactly as the route draws
 a room's NPC, and opens the card on the interact key — a landed step on a person's tile opens
 it before the door and exit-band rules, and the step itself is unchanged: the tile stays
-walkable. For the seed `qa-288` the placements are exactly:
+walkable. The one exception is the **Rocket** row: `npcCounterOf` (`src/scenes/npcs.ts`)
+names it a counter, so the interact key opens the slot machine itself (`openRocket`,
+`src/ui/rocketPanel.ts`) on the grunt's own tile instead of raising a card, and the row's
+own `repeatable` keeps it answering every visit. For the seed `qa-288` the
+placements are exactly:
 
 | node | index | id | kind | rowId | x | y |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -580,6 +586,11 @@ the zone's outline and its marker above the tile layers and returns what it crea
 owns no rule, starts nothing and registers no scene; the scene that mounts it is the
 world's (`WorldScene`), which is where the zone is drawn and the rules are folded into a
 launch.
+
+A zone's counter is its kind's: `poiCounterOf` (`src/scenes/npcs.ts`) answers `'trade'`
+for the `trade` kind and `null` for the other eight, and `RouteScene`'s interact key opens
+`openTradeCard` when the player stands on the zone and faces it (`inPoiRect(poiRect(route),
+tile)`), marking nothing spent so a second press reopens the card.
 
 ### 7.9 A node's catch and its wilds
 

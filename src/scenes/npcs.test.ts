@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 vi.mock('phaser', () => {
   class Scene {
@@ -14,11 +16,21 @@ vi.mock('phaser', () => {
   };
 });
 
-import { SPECIAL_NPCS, specialNpcRow } from '../data/npcs';
+import { NPC_ROWS, SPECIAL_NPCS, specialNpcRow } from '../data/npcs';
 import { OVERWORLD_SPRITE_KEYS, overworldSpriteFrame } from '../data/overworldSprites';
-import type { PlacedNpc } from '../engine/region/npcs';
+import { POI_KINDS } from '../engine/region/content';
+import { npcUsed, type PlacedNpc } from '../engine/region/npcs';
+import { createRun, createRunPokemon, type RunState } from '../engine/run';
 import { setLocale, t } from '../i18n';
-import { npcCardView, npcFrameOf } from './npcs';
+import {
+  markNpcVisit,
+  npcCardView,
+  npcCounterOf,
+  npcFrameOf,
+  npcStaysOpen,
+  poiCounterOf,
+} from './npcs';
+
 
 /**
  * The settlement people's draw and copy (`docs/region-spec.md` §7.7). The scene
@@ -113,5 +125,161 @@ describe('npcCardView', () => {
     expect(view.paragraph).toBe(t('npc.medic.greeting'));
     expect(view.choices).toEqual([{ id: 'heal', label: 'CURAR' }]);
     expect(npcCardView(passerby(), true).paragraph).toBe(t('npc.used'));
+  });
+});
+
+/**
+ * The two **counters** the region places but nothing opened (`docs/region-spec.md`
+ * §7.7 and §7.8, `Task-305`): which person opens the slot machine and which zone
+ * opens the trade card. Both are pure lookups, so each scene only routes — and that
+ * route is pinned off the two sources the way `BattleScene.test.ts` pins its seams.
+ */
+
+/** One method body off a scene's source: from its signature to its closing brace. */
+function methodBody(source: string, signature: string): string {
+  const start = source.indexOf(signature);
+  expect(start).toBeGreaterThan(-1);
+  const end = source.indexOf('\n  }\n', start);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
+const CITY_SOURCE = readFileSync(fileURLToPath(new URL('./CityScene.ts', import.meta.url)), 'utf8');
+const ROUTE_SOURCE = readFileSync(fileURLToPath(new URL('./RouteScene.ts', import.meta.url)), 'utf8');
+
+describe('npcCounterOf', () => {
+  it('answers the machine for the Team Rocket row', () => {
+    expect(npcCounterOf('rocket')).toBe('rocket');
+  });
+
+  it('answers the generic card for every other row the table holds', () => {
+    for (const row of NPC_ROWS) {
+      if (row.id === 'rocket') continue;
+      expect(npcCounterOf(row.id), row.id).toBe('card');
+    }
+  });
+
+  it('answers the card for an id no table holds, so a stale save reads as one', () => {
+    expect(npcCounterOf('')).toBe('card');
+    expect(npcCounterOf('no-such-row')).toBe('card');
+  });
+});
+
+describe('poiCounterOf', () => {
+  it('answers the trade card for the trade kind', () => {
+    expect(poiCounterOf('trade')).toBe('trade');
+  });
+
+  it('answers nothing for the other eight kinds, which stay drawn and inert', () => {
+    const others = POI_KINDS.filter((kind) => kind !== 'trade');
+    expect(others).toHaveLength(8);
+    for (const kind of others) expect(poiCounterOf(kind), kind).toBeNull();
+  });
+});
+
+describe('the settlement counter’s route', () => {
+  it('opens the machine for the row npcCounterOf names a counter, and no card', () => {
+    const body = methodBody(CITY_SOURCE, '  private openPerson(placed: PlacedNpc): void {');
+    expect(body).toContain("if (npcCounterOf(placed.rowId) === 'rocket') {");
+    expect(body).toContain('this.openMachine(placed);');
+    expect(body.indexOf('this.openMachine(placed);')).toBeLessThan(
+      body.indexOf('this.openNpcCard(placed);'),
+    );
+  });
+
+  it('reaches that branch from the interact key, a landed step and the dev talk', () => {
+    expect(CITY_SOURCE.match(/this\.openPerson\(/g)).toHaveLength(3);
+    expect(CITY_SOURCE).not.toContain('this.openNpcCard(npc)');
+  });
+
+  it('hands the machine the scene’s live run and the tile the player faces', () => {
+    const body = methodBody(CITY_SOURCE, '  private rocketHost(): RocketHost {');
+    expect(body).toContain('get run(): RunState {');
+    expect(body).toContain('return scene.run;');
+    expect(body).toContain('entryTile: () => {');
+    expect(CITY_SOURCE).toContain('openRocket(this.rocketHost(), placed.tile);');
+  });
+
+  it('marks the visit when the machine’s window closes, through the row’s own rule', () => {
+    const body = methodBody(CITY_SOURCE, '  private closePanel(): void {');
+    expect(body).toContain('if (placement !== null) this.markVisit(placement);');
+    const mark = methodBody(CITY_SOURCE, '  private markVisit(placed: PlacedNpc): void {');
+    expect(mark).toContain('markNpcVisit(this.run, placed)');
+    expect(CITY_SOURCE).not.toContain('markNpcUsed(');
+  });
+});
+
+describe('the route counter’s route', () => {  it('opens the trade card only for the trade kind, inside the zone', () => {
+    const body = methodBody(ROUTE_SOURCE, '  private openPoiCounter(tile: Tile): void {');
+    expect(body).toContain("poiCounterOf(poi.kind) !== 'trade'");
+    expect(body).toContain('inPoiRect(poiRect(this.route), tile)');
+    expect(body).toContain('openTradeCard(this.panelHost);');
+  });
+
+  it('answers the interact key off the faced tile, after the ground items', () => {
+    const body = methodBody(ROUTE_SOURCE, '  private tryInteract(): void {');
+    expect(body).toContain('this.openPoiCounter(ahead);');
+    expect(body.indexOf('this.collectItemAt(ahead)')).toBeLessThan(
+      body.indexOf('this.openPoiCounter(ahead)'),
+    );
+    expect(ROUTE_SOURCE.match(/openTradeCard\(/g)).toHaveLength(1);
+  });
+});
+
+/**
+ * Who answers again (`docs/region-spec.md` §7.7). A row the data marks `repeatable`
+ * is never written into the run's marks, so its card keeps its own line and its
+ * counter reopens — the merchant's Mart and the Rocket grunt's machine.
+ */
+
+/** A fresh run with one starter: the run the visit marks are written on. */
+function baseRun(): RunState {
+  return createRun({
+    seed: 'task-305',
+    starter: createRunPokemon({
+      id: 'starter',
+      speciesId: 'charmander',
+      level: 5,
+      moves: ['scratch'],
+    }),
+  });
+}
+
+describe('npcStaysOpen', () => {
+  it('answers true for exactly the two rows the table marks repeatable', () => {
+    const open = NPC_ROWS.filter((row) => npcStaysOpen(row.id)).map((row) => row.id);
+    expect(open).toEqual(['merchant', 'rocket']);
+    expect(open.every((id) => specialNpcRow(id)?.repeatable === true)).toBe(true);
+  });
+
+  it('answers false for every other row and for an id no table holds', () => {
+    const closed = NPC_ROWS.filter((row) => !npcStaysOpen(row.id));
+    expect(closed).toHaveLength(NPC_ROWS.length - 2);
+    for (const row of closed) expect(npcStaysOpen(row.id), row.id).toBe(false);
+    expect(npcStaysOpen('no-such-row')).toBe(false);
+  });
+});
+
+describe('markNpcVisit', () => {
+  it('leaves a repeatable row open, so its card prints its own line again', () => {
+    const placed = placedOf('merchant');
+    const run = markNpcVisit(baseRun(), placed);
+    expect(npcUsed(run, placed)).toBe(false);
+    const view = npcCardView(placed, npcUsed(run, placed));
+    expect(view.paragraph).toBe(t('npc.merchant.greeting'));
+    expect(view.paragraph).not.toBe(t('npc.used'));
+  });
+
+  it('writes the mark on a one-shot row, so its card prints npc.used', () => {
+    const placed = placedOf('iv-judge');
+    const run = markNpcVisit(baseRun(), placed);
+    expect(npcUsed(run, placed)).toBe(true);
+    expect(npcCardView(placed, npcUsed(run, placed)).paragraph).toBe(t('npc.used'));
+  });
+
+  it('leaves the run alone for a repeatable row, so nothing is written on a visit', () => {
+    const run = baseRun();
+    expect(markNpcVisit(run, placedOf('rocket'))).toBe(run);
+    expect(markNpcVisit(run, placedOf('medic'))).not.toBe(run);
   });
 });

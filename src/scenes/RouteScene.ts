@@ -112,7 +112,7 @@ import { parseFrameMapExport, routeFromFrameMapExport, serializeFrameMap } from 
 import { buildNodeMeshes } from '../engine/region/preload';
 import { NODE_ENCOUNTER_CHANCE, nodeEncounterTable, nodeWildLevel } from '../engine/region/encounters';
 import { nodeOf, planRegion, type RegionNode, type RegionNodeKind } from '../engine/region/plan';
-import { poiBattleRules, type NodePoi } from '../engine/region/pois';
+import { inPoiRect, poiBattleRules, poiRect, type NodePoi } from '../engine/region/pois';
 import { isRouteKind } from '../engine/region/route';
 import {
   bandAt,
@@ -147,6 +147,7 @@ import { GRASS_TEXTURE_KEY, TRAINER_TEXTURE_KEY } from './BootScene';
 import { actorDepth, WorldScene, WORLD_ARRIVED } from './WorldScene';
 import { RUN_STEP_MS, WALK_STEP_MS } from './walker';
 import { drawPoi } from './pois';
+import { poiCounterOf } from './npcs';
 import { bagTextFieldFocused, typeInBagSearch } from './panels/bag';
 import {
   cancelNicknameEdit,
@@ -160,6 +161,7 @@ import {
   typeInNickname,
 } from './panels/detail';
 import { showAreaPanel, showNotice as showPanelNotice } from './panels/notices';
+import { openTradeCard } from './panels/trade';
 import {
   closePauseMenu,
   hideResetOverlay,
@@ -1656,9 +1658,10 @@ export class RouteScene extends WorldScene {
   }
 
   /**
-   * The interact key (`E` by default): take the ground item the player faces, or
-   * the one underfoot. Hidden items show only a faint sparkle, so this is how
-   * they are found. Ignored while a battle or a beat owns the screen.
+   * The interact key (`E` by default): take the ground item the player faces, or the
+   * one underfoot; a zone of a point of interest on the facing tile opens its own
+   * counter when that kind has one. Hidden items show only a faint sparkle, so this
+   * is how they are found. Ignored while a battle or a beat owns the screen.
    */
   private tryInteract(): void {
     if (this.gameOver || this.pendingBattle || this.releaseRoot) return;
@@ -1670,7 +1673,23 @@ export class RouteScene extends WorldScene {
       this.startTrainerBattle(trainer);
       return;
     }
-    if (!this.collectItemAt(ahead)) this.collectItemAt(this.player);
+    if (this.collectItemAt(ahead)) return;
+    if (this.collectItemAt(this.player)) return;
+    this.openPoiCounter(ahead);
+  }
+
+  /**
+   * Opens the counter a point of interest's zone holds (`docs/region-spec.md` §7.8):
+   * a `trade` terminus answers its card while the player stands on its zone, and every
+   * other kind stays inert. It marks nothing spent — a second press reopens the card —
+   * and it yields while any other counter owns the panel slot.
+   */
+  private openPoiCounter(tile: Tile): void {
+    const poi = this.poi;
+    if (poi === null || poiCounterOf(poi.kind) !== 'trade') return;
+    if (!inPoiRect(poiRect(this.route), tile)) return;
+    if (this.panelOpen()) return;
+    openTradeCard(this.panelHost);
   }
 
   /**
