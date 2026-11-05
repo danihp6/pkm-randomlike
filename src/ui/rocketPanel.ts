@@ -9,12 +9,12 @@ import {
   overworldSpriteFrame,
 } from '../data/overworldSprites';
 import type { Tile } from '../engine/grid';
-import type { RouteTrainer } from '../engine/routes';
 import { DEFAULT_TRAINER_SIGHT } from '../engine/routes';
-import { bandForMap, runNode } from '../engine/run';
+import type { Facing, RouteTrainer } from '../engine/routes';
+import { bandForMap, runNode, type RunState } from '../engine/run';
 import { t } from '../i18n';
 import { TRAINER_TEXTURE_KEY } from '../scenes/BootScene';
-import type { RoomHost, RoomPanel } from '../scenes/panels/types';
+import type { RoomPanel } from '../scenes/panels/types';
 import { loadSettings } from '../settings';
 import { casinoGruntTrainerId, casinoSpin, type CasinoOutcome } from './casino';
 import {
@@ -49,7 +49,8 @@ import { FRLG_INK, addFrlgText } from './frlgFont';
 
 /**
  * The **slot machine**'s panel (`docs/maps-spec.md` §7, D33, D47): the Team Rocket
- * NPC's own window, opened from the NPC card's one row. The window is the machine
+ * NPC's own window, opened by the person `npcCounterOf` names a counter — the row the
+ * interact key calls `openRocket` on. The window is the machine
  * itself — a cabinet with three reels whose faces are the band's drawn prizes, or
  * the grunt's Rocket icon when the booked outcome is the fight. `SPIN` and `LEAVE`
  * answer the keys and the pointer. The whole model is `src/ui/casino.ts` (the spin)
@@ -68,13 +69,33 @@ const CASINO_ROW_TOP = REEL_BAND_TOP + REEL_H + 16;
 /** The Rocket grunt's own red, the placeholder reel face's tint. */
 const CASINO_GRUNT_COLOUR = 0xc0392b;
 
+/**
+ * The port the machine actually reads, narrowed from `RoomHost` (`Task-305`): a
+ * settlement places the grunt too and has no route, no counter tile and no room to
+ * rebuild, so it opens the machine with this and `RoomHost` satisfies it structurally.
+ */
+export type RocketHost = Readonly<{
+  scene: Phaser.Scene;
+  run: RunState;
+  commitRun(run: RunState): void;
+  openPanel(panel: RoomPanel): void;
+  closePanel(): void;
+  panelOpen(): boolean;
+  releaseHudKeyboard(): void;
+  startTrainerBattle(trainer: RouteTrainer): void;
+  /** The tile the player faces; the grunt stands on it. */
+  entryTile(): Tile;
+  /** The facing that looks from `from` towards `to`. */
+  facingFromTo(from: Tile, to: Tile): Facing;
+}>;
+
 type CasinoRowObjects = {
   highlight: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.BitmapText;
 };
 
 /** The host the open machine belongs to, or null while no window is up. */
-let panelHost: RoomHost | null = null;
+let panelHost: RocketHost | null = null;
 /** The NPC's own tile, where the grunt the machine serves is fought. */
 let machineTile: Tile | null = null;
 /** The window: its root, the row objects it repaints and the line under them. */
@@ -106,7 +127,7 @@ let spinTimers: Phaser.Time.TimerEvent[] = [];
  * machine opens too — that is where the `out of order` line lives; it is the spin
  * the model refuses, not the window.
  */
-export function openRocket(host: RoomHost, tile: Tile): void {
+export function openRocket(host: RocketHost, tile: Tile): void {
   if (host.panelOpen()) return;
   clearSpinTimers();
   spinning = false;
@@ -175,7 +196,7 @@ function paintFace(reel: number, face: ReelFace): void {
 }
 
 /** Builds the window's static frame: the cabinet, its three clipped reels and the rows. */
-function buildCasinoPanel(host: RoomHost): void {
+function buildCasinoPanel(host: RocketHost): void {
   const scene = host.scene;
   const { width, height } = scene.scale;
   const cardX = (width - CASINO_CARD_W) / 2;
@@ -308,7 +329,7 @@ function refreshCasino(): void {
 }
 
 /** The window's keys: move the cursor, spin/leave on `E`, close on `Q`. */
-function handleCasinoAction(host: RoomHost, action: KeybindAction): void {
+function handleCasinoAction(host: RocketHost, action: KeybindAction): void {
   if (spinning) {
     if (action === 'confirm' || action === 'interact') skipReveal(host);
     return;
@@ -338,7 +359,7 @@ function moveCasino(delta: number): void {
 }
 
 /** A row's own press: while a reveal runs it is the skip, otherwise it takes the row. */
-function pressRow(host: RoomHost, index: number): void {
+function pressRow(host: RocketHost, index: number): void {
   if (spinning) {
     skipReveal(host);
     return;
@@ -349,7 +370,7 @@ function pressRow(host: RoomHost, index: number): void {
 }
 
 /** Takes the highlighted row: the spin pays, the leave row closes. */
-function activateCasinoRow(host: RoomHost): void {
+function activateCasinoRow(host: RocketHost): void {
   if (casinoIndex !== 0) {
     host.closePanel();
     return;
@@ -363,7 +384,7 @@ function activateCasinoRow(host: RoomHost): void {
  * are laid over the freshly booked run. A refusal paints its reason and leaves no
  * timer and no committed run behind.
  */
-function spinCasino(host: RoomHost): void {
+function spinCasino(host: RocketHost): void {
   if (spinning) return;
   const spin = casinoSpin(host.run);
   if (!spin.ok || !spin.outcome) {
@@ -400,7 +421,7 @@ function spinCasino(host: RoomHost): void {
 }
 
 /** One tick of the reveal: each unstoppered reel steps only when its face changes. */
-function tickReveal(host: RoomHost): void {
+function tickReveal(host: RocketHost): void {
   if (!spinning || !casinoRoot) return;
   const elapsed = host.scene.time.now - spinStartedAt;
   for (let reel = 0; reel < REEL_COUNT; reel++) {
@@ -413,7 +434,7 @@ function tickReveal(host: RoomHost): void {
 }
 
 /** One reel's stop: it freezes on the outcome, and the last stop ends the reveal. */
-function stopReel(host: RoomHost, reel: number): void {
+function stopReel(host: RocketHost, reel: number): void {
   if (!spinning || !casinoRoot) return;
   const strip = spinStrips[reel];
   if (!strip) return;
@@ -425,7 +446,7 @@ function stopReel(host: RoomHost, reel: number): void {
 }
 
 /** The skip: every reel freezes on the booked face and the reveal ends at once. */
-function skipReveal(host: RoomHost): void {
+function skipReveal(host: RocketHost): void {
   if (!spinning) return;
   clearSpinTimers();
   if (spinOutcome) {
@@ -443,7 +464,7 @@ function skipReveal(host: RoomHost): void {
  * Ends the reveal: an item or the Egg names what the bag just gained, the fight
  * closes the window **before** the battle opens, exactly the shipped grunt path.
  */
-function finishReveal(host: RoomHost): void {
+function finishReveal(host: RocketHost): void {
   if (!spinning) return;
   spinning = false;
   clearSpinTimers();
@@ -477,7 +498,7 @@ function finishReveal(host: RoomHost): void {
  * `startTrainerBattle` re-checks `isTrainerDefeated`, so a beaten grunt cannot be
  * fought twice on a floor.
  */
-export function rocketGrunt(host: RoomHost, tile: Tile): RouteTrainer {
+export function rocketGrunt(host: RocketHost, tile: Tile): RouteTrainer {
   return {
     id: casinoGruntTrainerId(runNode(host.run).badge),
     position: tile,

@@ -11,7 +11,7 @@ import {
   overworldSpriteFrame,
 } from '../data/overworldSprites';
 import type { Tile } from '../engine/grid';
-import type { RouteTrainer } from '../engine/routes';
+import type { Facing, RouteTrainer } from '../engine/routes';
 import { DEFAULT_TRAINER_SIGHT, sketchRoute } from '../engine/routes';
 import { nodeKey } from '../engine/region/plan';
 import { addMoney, bandForMap, createRun, createRunPokemon, type RunState } from '../engine/run';
@@ -32,7 +32,7 @@ import {
   reelStopAt,
   type ReelFace,
 } from './casinoReels';
-import { openRocket, rocketGrunt } from './rocketPanel';
+import { openRocket, rocketGrunt, type RocketHost } from './rocketPanel';
 
 /**
  * The scene's texture-key module builds textures with Phaser, which a headless test
@@ -62,7 +62,7 @@ type FakeCall = Readonly<{ name: string; args: readonly unknown[] }>;
 const DRAWN: FakeCall[] = [];
 const TEXTS: string[] = [];
 /** Every host a test opened, so the shared module state is closed between tests. */
-const HOSTS: RoomHost[] = [];
+const HOSTS: RocketHost[] = [];
 
 afterEach(() => {
   for (const host of [...HOSTS].reverse()) {
@@ -259,9 +259,9 @@ function baseRun(seed = SEED, money = 100_000): RunState {
   return { ...created, nodeKey: nodeKey('route', MAP_INDEX), levelCap: levelCapForMap(MAP_INDEX) };
 }
 
-type HostOptions = Readonly<{ run?: RunState }>;
+type HostOptions = Readonly<{ run?: RunState; narrow?: boolean }>;
 
-/** A recording `RoomHost`: it answers fixed tiles and books every call it is given. */
+/** A recording host: it answers fixed tiles and books every call it is given. */
 function harness(options: HostOptions = {}) {
   const calls: FakeCall[] = [];
   const record = (name: string, ...args: unknown[]): void => {
@@ -272,33 +272,16 @@ function harness(options: HostOptions = {}) {
   let committed: RunState | null = null;
   let trainer: RouteTrainer | null = null;
   const fake = fakeScene();
-  const host: RoomHost = {
+  /** What every host shape answers, whichever port it is used through. */
+  const shared = {
     scene: fake.scene,
-    get run(): RunState {
-      return run;
-    },
-    view: { mapIndex: MAP_INDEX, roomId: 0 },
-    // The widened port (`D47`): the machine reads neither, so it needs a stand-in.
-    route: () => sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' }),
-    rebuildRoom: () => undefined,
-    entryTile: () => ENTRY,
-    counterTile: () => null,
-    farthestRoomTile: () => NPC,
-    generatorStepActive: () => false,
-    facingFromTo: (from, to) => {
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      if (dx === 0 && dy === 0) return 'S';
-      if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
-      return dy > 0 ? 'S' : 'N';
-    },
-    commitRun: (next) => {
+    commitRun: (next: RunState) => {
       record('commitRun', next);
       committed = next;
       run = next;
     },
     releaseHudKeyboard: () => record('releaseHudKeyboard'),
-    openPanel: (next) => {
+    openPanel: (next: RoomPanel) => {
       record('openPanel');
       panel = next;
     },
@@ -309,12 +292,41 @@ function harness(options: HostOptions = {}) {
       open?.close();
     },
     panelOpen: () => panel !== null,
-    startTrainerBattle: (next) => {
+    startTrainerBattle: (next: RouteTrainer) => {
       record('startTrainerBattle', next);
       trainer = next;
     },
+    entryTile: () => ENTRY,
+    facingFromTo: (from: Tile, to: Tile): Facing => {
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      if (dx === 0 && dy === 0) return 'S';
+      if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'E' : 'W';
+      return dy > 0 ? 'S' : 'N';
+    },
+  };
+  /** The room's own widened port (`D47`), which the machine reads through too. */
+  const roomHost: RoomHost = {
+    ...shared,
+    get run(): RunState {
+      return run;
+    },
+    view: { mapIndex: MAP_INDEX, roomId: 0 },
+    route: () => sketchRoute({ seed: SEED, routeIndex: MAP_INDEX, biomeId: 'forest' }),
+    rebuildRoom: () => undefined,
+    counterTile: () => null,
+    farthestRoomTile: () => NPC,
+    generatorStepActive: () => false,
     showNotice: (notice) => record('showNotice', notice),
   };
+  /** The machine's own narrow port: no route, no counter tile, no room to rebuild. */
+  const rocketHost: RocketHost = {
+    ...shared,
+    get run(): RunState {
+      return run;
+    },
+  };
+  const host: RocketHost = options.narrow === true ? rocketHost : roomHost;
   HOSTS.push(host);
   return {
     host,
@@ -659,6 +671,24 @@ describe('the slot machine panel', () => {
   it('is a panel, not a room: the module exports no descriptor', async () => {
     const module = (await import('./rocketPanel')) as Readonly<Record<string, unknown>>;
     expect(Object.keys(module).sort()).toEqual(['openRocket', 'rocketGrunt']);
+  });
+
+  it('opens on a settlement’s narrow host, which has no route and no counter tile', () => {
+    TEXTS.length = 0;
+    const test = harness({ narrow: true });
+    expect('route' in test.host).toBe(false);
+    expect('counterTile' in test.host).toBe(false);
+    openRocket(test.host, NPC);
+    expect(TEXTS).toEqual([`MONEY  ¥100000`, `SPIN  ¥${CASINO.price[BAND]}`, 'LEAVE', '']);
+    expect(test.reels()).toHaveLength(REEL_COUNT);
+    test.reels().forEach((image, reel) => expectFace(image, reelRestFace(BAND, reel)));
+
+    // The machine still spins, commits and pays on that same host.
+    test.panel()?.handle?.('confirm');
+    expect(test.committed()!.money).toBe(98_000);
+    expect(test.committed()!.pickedItems).toEqual([casinoSpinId(MAP_INDEX, 0)]);
+    expect(test.fake.timers).toHaveLength(4);
+    expect(test.host.panelOpen()).toBe(true);
   });
 
   it('opens nothing while a panel is already up, and nothing is rebuilt', () => {
