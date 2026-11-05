@@ -84,6 +84,7 @@ eight-city region, the Victory Road and the tower do. The phase's shape:
 | 129 | the deprecated position fields go, and their five readers with them | 1 |
 | 130 | the docs close in the region's vocabulary | 1 |
 | 131 | the issues close: the node's counters open their cards, the curve measures the route screens again, and the folder map is whole | 3 |
+| 132 | the routes are as full as the ladder assumes: the carver's trainer roll against the fill window (frozen until the human picks the knob, #128) | 1 |
 
 **Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
 Batch 6b and Batch 7 are
@@ -13076,6 +13077,46 @@ their issues.
       **Docs:** itself. **Tests:** `[unit]` every `*.test.ts` under `src/scenes` has exactly one line
       in `src/scenes/README.md` and every path the README names exists. No browser pass is owed.
       Claims `src/scenes/README.md`. *Dependencies:* none. *(Batch 131)*
+
+### Batch 132 - the routes are as full as the ladder assumes
+
+**The one.** Task-306 put the curve back on a live measurement and the live measurement
+answers a number the sheet did not: the carver posts **2-4** trainers a route
+(`ROUTE_TRAINER_COUNT`, `src/engine/region/content.ts`) while the ladder is solved against
+**3.00-5.33**, so the carver's own fill is 1.11 / 0.91 / 0.71 / 0.67 / 0.70 / 0.60 / 0.78 /
+0.83 and seven of the eight stretches sit under `MIN_FILL = 1.05`; the eighth cannot reach it
+with a four-trainer ceiling at all. Three knobs exist (raise the roll, re-solve the window,
+or accept the gap) and picking one is the human's, not a dev's, so the task is an entry only
+until that answer arrives. It is filed with its numbers in #128.
+
+**Hot files.** None while it is frozen.
+
+- [!] **[Task-308] The routes are as full as the ladder assumes.** The carver's trainer roll,
+      the fill window and the level solve disagree, and the live curve measurement now proves
+      it: seven of eight stretches are under-filled.
+      **BLOCKED: waits on the human's pick of the three knobs (#128, `2026-11-05`).** The
+      numbers and the three shapes are in #128; the recommended one is to raise
+      `ROUTE_TRAINER_COUNT` from `[2, 4]` to a band that reaches the solve, because `cap`,
+      `trainerXp` and `trainerMoney` are already built on the ladder and the roll is the only
+      piece out of line.
+      **Measured:** `src/engine/run/curve.test.ts` pins both sides today —
+      `MEASURED_SOLVED_TRAINERS` (the solve, exact fractions) and `MEASURED_CARVE` /
+      `MEASURED_CARVER_FILL` (what the carver posts) — so whatever is chosen shows up as a
+      failing expectation rather than a drift. `docs/balance/campaign.md` §2 carries the method
+      sentence and §5 row 2 already names the gap.
+      **Fix shape:** once the knob is chosen, move **one** of: `ROUTE_TRAINER_COUNT`
+      (`src/engine/region/content.ts`), the fill window in `src/engine/run/curve.ts`, or the
+      solve itself; re-pin `MEASURED_CARVE` / `MEASURED_CARVER_FILL` and the sheet's `T̄(s)`
+      and trainer-money columns in the same push, and leave the other two knobs untouched.
+      **Docs:** `docs/balance/campaign.md` (§1 trainer money, §2 `T̄(s)` and fill, §4 trainers)
+      and §5 row 2 retired.
+      **Tests:** `[unit]` every stretch's carver fill lands inside `[MIN_FILL, MAX_FILL]`;
+      `[unit]` the sheet's `T̄(s)` equals the measured one to the cent; `[unit]` the suite and
+      the build are green. No browser pass is owed. Claims whichever of
+      `src/engine/region/content.ts`, `src/engine/run/curve.ts` or `src/data/region.ts` the
+      chosen knob lives in, plus `src/engine/run/curve.test.ts` and
+      `docs/balance/campaign.md`. *Dependencies:* the live measurement (Batch 131) and the
+      human's answer. *(Batch 132)*
 
 ## Bugs
 
