@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --testTimeout=20000",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "prettier --check .",

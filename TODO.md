@@ -13038,7 +13038,7 @@ their issues.
       `docs/region-spec.md`. *Dependencies:* the shared panel host (Batch 125) and the node content
       (Batch 123). *(Batch 131)*
 
-- [ ] **[Task-306] The curve measures the region's route screens again.** The fill test stopped
+- [x] **[Task-306] The curve measures the region's route screens again.** The fill test stopped
       measuring what the carver places: when the floor plan died, its live measurement was replaced
       by two frozen tables and `measureStretches()` no longer calls a generator at all, while its own
       docstring still promises "the shipped room generator".

@@ -8,6 +8,31 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The curve measures the route screens again.** `[Task-306]`, Batch 131: the fill test had
+      stopped measuring what the carver places — when the floor plan died its live walk was replaced
+      by two hand-frozen tables (`MEASURED_ROOMS`, `MEASURED_TRAINERS`) and `measureStretches()`
+      called no generator at all, while its docstring still promised "the shipped room generator".
+      It plans every stretch through `planRouteScreens(LADDER, 'route:<badge>')` again, for the three
+      seeds the file already pinned, and pins what the carver posts (`MEASURED_CARVE`, the screens and
+      trainers per seed) beside the ladder's solve (`MEASURED_SOLVED_TRAINERS`, exact fractions, so
+      fill and money still reproduce the sheets to the cent). The mutation proof holds:
+      `index < content.trainers` → `index <= content.trainers` fails the suite at
+      `stretch 1: expected [5,3,3] to deeply equal [4,2,2]` and at the fill band, then reverts. The
+      two documentation drifts are corrected — `src/engine/save.ts`'s v7→v8 comment says the absent
+      `arrivalEdge` starts on the `'N'` fallback instead of "recovered from the plan" (comment lines
+      only), and `compatForNode`'s seed-independence stays as shipped. `[unit]` 6 046 tests over 339
+      files green with `npm run build` clean. No browser pass was owed. **The live walk paid for
+      itself:** the carver posts 2-4 trainers a route against the ladder's solved 3.00-5.33, so seven
+      of the eight stretches sit under `MIN_FILL = 1.05` — filed as #128 and frozen into
+      `[Task-308]` (Batch 132) for the human to pick the knob. No balance number was moved here.
+
+- [x] **Gate hygiene: the suite's ceiling is a runner budget.** No task ID: a gate fix found while
+      merging Batch 131. A full run of 339 files under load pushed four suites (`signs`, `dark`,
+      `assets/pokemon`, `scripts/design/import`) past Vitest's 5 s default **by load, not by logic**,
+      and a red gate reads as "do not merge". `npm test` now runs `vitest run --testTimeout=20000` —
+      one flag in `package.json`, no rule touched: a test that is actually wrong still fails on its
+      assertion. Filed as #129 by the Task-306 QA, which caught two such passes out of three.
+
 - [x] **The counters a node stands open their cards.** `[Task-305]`, Batch 131: two panels the
       region has been placing since the floors retired had no opener in `src/` at all.
       `openRocket` opened the `03h` slot machine only from tests, because the casino room that used
