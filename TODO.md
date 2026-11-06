@@ -13065,7 +13065,7 @@ their issues.
       `src/engine/run/curve.test.ts`, `src/engine/save.ts` and `docs/balance/campaign.md`.
       *Dependencies:* the region's own route screen (Batch 126). *(Batch 131)*
 
-- [ ] **[Task-307] The folder map is whole.** `src/scenes/README.md` rows four of the nine
+- [x] **[Task-307] The folder map is whole.** `src/scenes/README.md` rows four of the nine
       `*.test.ts` files the folder holds, so the one document that maps the folder is wrong about
       half of it.
       **Measured:** the folder holds `BattleScene.test.ts`, `interior.test.ts`,

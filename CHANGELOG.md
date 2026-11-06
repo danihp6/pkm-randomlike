@@ -8,6 +8,16 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The folder map is whole.** `[Task-307]`, Batch 131: `src/scenes/README.md` mapped 18 of the
+      folder's 25 files — four of its nine `*.test.ts` files and neither `GymScene.ts` nor
+      `LeagueScene.ts`. It now carries one row per file: the five missing test halves
+      (`MainMenuScene`, `npcs`, `pois`, `RunOverScene`, `SettingsScene`) and the two region scenes
+      (the gym's four rooms, its trainer, leader and badge; the League and tower as one screen of two
+      modes), each in the block's existing voice and in subject order. Insertion only — 21 lines
+      added, none removed, no prose rewritten, no path renamed. `[unit]` all 25 files answer exactly
+      one row and every backticked path the README names exists; the suite is unchanged at 6 046
+      tests over 339 files with `npm run build` clean. No browser pass was owed.
+
 - [x] **The curve measures the route screens again.** `[Task-306]`, Batch 131: the fill test had
       stopped measuring what the carver places — when the floor plan died its live walk was replaced
       by two hand-frozen tables (`MEASURED_ROOMS`, `MEASURED_TRAINERS`) and `measureStretches()`
