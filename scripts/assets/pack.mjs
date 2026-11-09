@@ -103,8 +103,8 @@ const STEPS = [
   {
     name: 'frlg type icons',
     script: 'scripts/frlg/build-type-icons.mjs',
-    needs: requires(['anil/Graphics/UI/types.png']),
-    args: (p) => [p('anil/Graphics/UI/types.png')],
+    needs: requires(['anil/Graphics/UI/types_mini.png']),
+    args: (p) => [p('anil/Graphics/UI/types_mini.png')],
   },
   {
     name: 'frlg status icons',

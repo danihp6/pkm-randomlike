@@ -201,8 +201,8 @@ in a **24 px square that ends on the cell's own right padding edge**, at the cel
 square is the whole column, so nothing prints right-aligned and `PHYSICAL` / `SPECIAL` / `STATUS` are never
 drawn as words. A box that merely avoids its neighbour is not enough — the retired text column shipped 48 px
 wide against a 56 px label and the string ran under the button it shared the row with; the glyph cannot
-spill, because the frame is FIT into its square (32×14 becomes 24×10.5) and clipped to the frame's own band,
-so a badge never paints the rows above or below it. A wide cell narrower than the 52 px the glyph's square
+spill, because the frame is FIT into its square (the 24×24 type glyph fills it exactly; the 32×14 category
+becomes 24×10.5) and clipped to the frame's own band, so a badge never paints the rows above or below it. A wide cell narrower than the 52 px the glyph's square
 and the cell's two paddings need — the 222 px cell at 1280×800 is the narrowest one shipped — gives the name
 what is left of it, and the move card is where its whole text stays readable; the phone card's 119 px cell
 takes the compact geometry below.
@@ -320,20 +320,22 @@ figure.
 
 **The move icons.** A move's type and category are drawn from the two packed atlases and never as words:
 `move chip N` / `move category N` is a **24×24 box** with an `IMAGE` fill, `scaleMode: FIT`, so the frame
-is contained and centred (32×14 becomes 24×10.5 in that square). The background is the **whole atlas
-scaled**, moved by the frame's column and row and **clipped to the frame's own band**, so a badge never
-paints the rows above or below it; `moveIcons.tsx` carries that arithmetic (`spriteBox`) and the two
-resolvers. The frames, read from the two manifests:
+is contained and centred (the type glyph is the atlas's own 24×24 square and fills that box; the 32×14
+category becomes 24×10.5 in it). The background is the **whole atlas scaled**, moved by the frame's column
+and row and **clipped to the frame's own band**, so a badge never paints the rows above or below it;
+`moveIcons.tsx` carries that arithmetic (`spriteBox`) and the two resolvers. The frames, read from the
+two manifests:
 
 | badge                            | frames                                                                                                                                                                                                    | grid                              |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| type (`type-icons.png`)          | 19, dex order: normal 0, fighting 1, flying 2, poison 3, ground 4, rock 5, bug 6, ghost 7, steel 8, unknown 9, fire 10, water 11, grass 12, electric 13, psychic 14, ice 15, dragon 16, dark 17, fairy 18 | 4 columns × 5 rows, 32×14 a frame |
+| type (`type-icons.png`)          | 19, dex order: normal 0, fighting 1, flying 2, poison 3, ground 4, rock 5, bug 6, ghost 7, steel 8, unknown 9, fire 10, water 11, grass 12, electric 13, psychic 14, ice 15, dragon 16, dark 17, fairy 18 | 19 columns × 1 row, 24×24 a frame |
 | category (`move-categories.png`) | Physical 0, Special 1, Status 2                                                                                                                                                                           | 1 row of 3, 32×14 a frame         |
 
 They are painted in the battle's four cells (`typeBox` / `categoryBox`), in the battle's description
 card head, in the detail panel's four move cells and — the type badge alone, since a pool row carries no
-category — in the detail's learnset pool row. A name the atlas does not carry falls back to the word,
-never to an empty box.
+category — in the detail's learnset pool row; the starter pick paints the type glyph alone, one per
+measured 24×24 `.starter__badge` cell, so a card's type row is glyphs and no word. A type the atlas does
+not carry falls back to the word, never to an empty box.
 
 ## 7. What this analysis changes in the plan
 

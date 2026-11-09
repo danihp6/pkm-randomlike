@@ -85,6 +85,8 @@ eight-city region, the Victory Road and the tower do. The phase's shape:
 | 130 | the docs close in the region's vocabulary | 1 |
 | 131 | the issues close: the node's counters open their cards, the curve measures the route screens again, and the folder map is whole | 3 |
 | 132 | the routes are as full as the ladder assumes: the carver's trainer roll against the fill window (frozen until the human picks the knob, #128) | 1 |
+| 133 | the starter pick's icons and its way out: the Añil type badges, the picker's release and Continue's prologue | 2 |
+| 134 | the city wears its houses: whole-house sprites from the buildings compendium over the plan's footprints | 1 |
 
 **Batch 5, Batch 5b, Batch 5c, Batch 5cb, Batch 5d, Batch 5e, Batch 5eb, Batch 5f, Batch 6,
 Batch 6b and Batch 7 are
@@ -13118,12 +13120,238 @@ until that answer arrives. It is filed with its numbers in #128.
       `docs/balance/campaign.md`. *Dependencies:* the live measurement (Batch 131) and the
       human's answer. *(Batch 132)*
 
+### Batch 133 - the starter pick's icons and its way out
+
+**The two.** The `2026-11-09` play report has two halves. The starter cards draw the kit's
+**word chip** where frame `04` draws the **Añil type glyph**, and the atlas the game packs is
+the wrong Añil sheet: `scripts/frlg/build-type-icons.mjs` reads `Graphics/UI/types.png` (the
+64×24 **long badge** with the type's name) and freezes it into 32×14 frames, while the
+prototype — frame `04`'s 24×24 boxes and `03m`'s 20×20 move cells — draws
+`Graphics/UI/types_mini.png`'s 19 **24×24 glyphs**. The same atlas feeds the move cells, so
+the repack fixes both. And picking a card leaves the pick's full-screen layer over the room,
+so the game looks frozen. The report's reload-and-Continue lands on a black map: in this
+checkout the map cause was the missing `src/assets/frlg/city.png` and
+`src/assets/frlg/interior.png` (both gitignored, both rebuilt by
+`node scripts/frlg/build-region-tilesets.mjs <tileset.png> <tileset-2.png>`), whose blank
+placeholders `packedAtlasUrl` falls back to — the code half is Continue's prologue, which
+starts `Route` and so skips the laboratory. Nothing here invents a rule:
+`docs/art-direction.md` already names the Añil badge as the type art and
+`docs/region-spec.md` §6 already says the professor hands the starter in the laboratory.
+
+**Hot files.** `scripts/frlg/build-type-icons.mjs`, `scripts/assets/pack.mjs`,
+`src/data/frlg/type-icons.json`, `src/data/typeIcons.ts`, `src/ui/moveGrid.ts`,
+`src/ui/hud/panels/starter/starterPanel.tsx` and `starter.css` are [Task-309]'s;
+`src/scenes/InteriorScene.ts` and `src/scenes/MainMenuScene.ts` are [Task-310]'s. No other
+hot file: `package.json`, `src/main.ts`, `vite.config.ts` and every other
+`src/scenes/*.ts` are untouched, and the two tasks share no path.
+
+- [x] **[Task-309] The type badges are Añil's mini glyphs.** The starter cards draw a word
+      chip and the move cells draw Añil's **long** badge, because the packer reads
+      `Graphics/UI/types.png`; frame `04` and frame `03m` draw the 24×24 **glyphs** of
+      `Graphics/UI/types_mini.png`.
+      **Measured:** `design/screens/04-starter-pick.json` boxes `6:1443`-`6:1446` are
+      24×24 (GRASS, POISON, FIRE, WATER) and `design/exports/04-starter-pick.png` draws the
+      square glyphs; `03m`'s `learnset type *` boxes are 20×20 and its move cells the same
+      glyphs. `scripts/frlg/build-type-icons.mjs:3-12,21-28,39` reads
+      `anil/Graphics/UI/types.png` (64×532: one column of 64×24 long badges, 28 px pitch) and
+      scales each into a 32×14 frame, 4 columns × 5 rows
+      (`src/data/frlg/type-icons.json`), which is what `src/assets/frlg/type-icons.png`
+      holds. The Añil store also carries `Graphics/UI/types_mini.png` (456×24: 19 cells of
+      24×24 in dex order, `???` between Steel and Fire), the sheet the board uses.
+      `src/data/typeIcons.ts:11-27` exposes the manifest's width/height, and every consumer
+      reads them: `src/scenes/BootScene.ts:58,118-119` cuts the spritesheet,
+      `src/ui/moveGrid.ts:15,414,451-470` scales and stacks it,
+      `src/ui/hud/kit/moveIcons.tsx:106-111` paints it in a 24 px box, and
+      `src/ui/hud/panels/starter/starterPanel.tsx:90-95` still uses the word `TypeBadge`.
+      **Fix shape:** repoint `build-type-icons.mjs` at `types_mini.png`, write **19 frames
+      of 24×24** in one row (19 columns × 1 row; no blank 20th cell), and keep the frame
+      order and the `types` map exactly; the new sheet is a **horizontal** strip of 19 cells
+      (the old one is a vertical column), so the source cursor becomes `x = index * 24, y = 0`
+      and the bounds check reads the width, not the height. Update
+      `scripts/assets/pack.mjs:103-108` to require
+      and pass `anil/Graphics/UI/types_mini.png`; regenerate
+      `src/assets/frlg/type-icons.png`, `src/data/frlg/type-icons.json` and the committed
+      blank `src/assets/placeholders/frlg/type-icons.png` (`node scripts/assets/build-placeholders.mjs
+      frlg/type-icons.png`, so a clone without the store still slices the new 456×24 grid);
+      update `typeIcons.ts`'s comment to 24×24. Then move the two consumers onto the square
+      glyph:
+      the starter panel swaps `TypeBadge` for `MoveTypeBadge` inside the existing
+      `data-hud-starter-badge` wrapper and `starter.css` points its 24×24 cell at
+      `.kit-move-type` (no padding, no text clip); `moveGrid` draws the 24×24 frame at the
+      design's 20×20 scale and re-stacks the category glyph, the name and the PP/PWR lines
+      so nothing overlaps (`iconScale`, the `+22`/`+24` offsets and `iconW` are the knobs).
+      Keep `MoveTypeBadge`'s word fallback for a type the atlas lacks and leave `TypeBadge`
+      itself untouched.
+      **Docs:** `docs/art-direction.md` (the type-badge paragraph: `types_mini.png`, 19
+      cells of 24×24, not `types.png` at 64×24/32×14), `docs/hud-fidelity.md` §330's atlas
+      row (19 × 1, 24×24) and `src/ui/hud/panels/starter/README.md` (the `TypeBadge` row and
+      rule 5).
+      **Tests:** `[unit]` `TYPE_ICON_W`/`TYPE_ICON_H` are 24 and the manifest is 19 × 1 with
+      every dex type plus Fairy non-empty (the existing `typeIcons.test.ts` re-pinned);
+      `[unit]` the starter panel names `MoveTypeBadge` and no longer names `TypeBadge` (a
+      source pin); `[unit]` the move grid's type icon box and category offset are the
+      measured 20×20 stack (a geometry pin, no overlap); `[unit]` a type the atlas lacks
+      still answers the word chip; `[unit]` the suite and the build are green. `[live]` at
+      1280×800 on a new run: the three starter cards draw the Añil GRASS/POISON, FIRE and
+      WATER glyphs in the frame's 24×24 cells, and `03m`'s four move cells draw the same
+      square glyphs above their category glyph with no clipped word and no overlap.
+      Claims `scripts/frlg/build-type-icons.mjs`, `scripts/assets/pack.mjs`,
+      `src/data/frlg/type-icons.json` (generated), `src/assets/frlg/type-icons.png`
+      (generated, gitignored), `src/assets/placeholders/frlg/type-icons.png` (the committed
+      blank), `src/data/typeIcons.ts`, `src/data/typeIcons.test.ts`,
+      `src/ui/hud/panels/starter/starterPanel.tsx`, `starter.css`, `starter/README.md`,
+      `src/ui/hud/panels/starter/starterPanel.test.ts` (new), `src/ui/moveGrid.ts`,
+      `docs/art-direction.md` and `docs/hud-fidelity.md` (the atlas row). *Dependencies:*
+      the Añil store's `types_mini.png` and the starter pick (`[Task-287]`). *(Batch 133)*
+
+- [ ] **[Task-310] The laboratory hands the starter by hand, and Continue reopens it.**
+      The picker mounts itself over the room the moment the laboratory opens, so a new run
+      never sees the room; after a pick it stays as an opaque layer with an empty offer; the
+      lab has no table or Poké Balls to walk up to; and a reload's Continue starts `Route`
+      for a run that has not taken its starter, stranding it in the town with no Pokémon and
+      the exit shut.
+      **Measured:** `InteriorScene.create` ends with `this.createDom()` (`:148`, `:235-242`),
+      which mounts the full-screen picker before the player can walk; `planInterior`'s lab
+      branch (`src/engine/region/interior/plan.ts:150-152`) only pushes a `professor` slot on
+      a free floor tile — no counter and no ball tiles — and `InteriorScene` draws neither
+      slot; `confirm()` (`:299-306`) persists the starter and calls `this.render()`, and
+      `labStarterOffer` answers `[]` after `starterTaken` (`:66-69`), so `StarterPanel`
+      (`starterPanel.tsx:63-108`) still draws `.starter`, `position: fixed; inset: 0`, opaque
+      (`--starter-screen: #0b1017`, `starter.css:13-50`) and `pointer-events: auto` (`:48`),
+      while the handle only drops on `SHUTDOWN` (`:241`). On the menu side,
+      `MainMenuScene.choose()`'s continue is `this.scene.start('Route', { run: this.run })`
+      (`:326-327`), and `hasLivingParty` answers true for a prologue (`state.ts:458-460`), so
+      Continue is offered before the starter; `RouteScene.create` hands a settlement to
+      `City` (`:764-773`) and `canLeaveTown` keeps the town shut (`prologue.ts:53-55`).
+      **Fix shape:** give the lab a **table**: `planSmallRoom`'s lab branch stamps a
+      three-cell `COUNTER` run on the furniture row and carries the three ball tiles (a
+      `starter` slot or a `balls: readonly Tile[]` field; the professor keeps a side tile),
+      with the pure table helper tested in `plan.test.ts`. `InteriorScene` stops mounting the
+      picker in `create`; it draws the three `itemIconFrame('pokeball')` sprites on the
+      counter (`src/data/itemIcons.ts`, already packed), adds the `interact`/`confirm` and
+      `cancel` keys, and when the player stands next to a ball tile and presses the key it
+      mounts the existing `starter` panel (`openStarter()`), freezing the walker while it is
+      open. `choose` takes the starter and `disposePanel()`; `cancel` drops the panel without
+      a gift, so the player can walk away and come back. `confirm()` no longer re-renders an
+      empty offer. `MainMenuScene.choose()` routes Continue through `isPrologue(run)` to
+      `'Lab'` with the same payload NEW RUN builds (`{ run, cityKey:
+      planRegion(run.seed).townKey, interiorKey: 'lab' }`); every other run keeps `'Route'`,
+      whose settlement redirect is already the region's rule. Keep the `[Task-309]` files out
+      of this diff.
+      **Docs:** `docs/region-spec.md` §6 (the table, the three balls and the interaction;
+      Continue reopens the laboratory) and `docs/design-spec.md`'s starter-pick paragraph if
+      it still says the panel opens on entry.
+      **Tests:** `[unit]` the lab plan stamps a three-cell counter and three ball tiles, and
+      the entry still resolves; `[unit]` `create` mounts no panel and the interaction does;
+      `[unit]` `choose` disposes and keeps the starter, `cancel` disposes without a gift;
+      `[unit]` Continue on a prologue starts `'Lab'` with `cityKey: 'town:1'` and
+      `interiorKey: 'lab'`, and on a starter-taken run still starts `'Route'`; `[unit]` the
+      suite and the build are green. `[live]` at 1280×800 with the packed atlases: NEW RUN
+      stands in the laboratory with the table and three Poké Balls, the player walks up and
+      the interact key opens the picker with the three portraits, a card takes the starter
+      and the panel goes, `Esc`/cancel drops it, and reload + Continue reopens the laboratory
+      (or the town after the starter). Claims `src/engine/region/interior/plan.ts`,
+      `plan.test.ts`, `src/scenes/InteriorScene.ts`, `src/scenes/interior.test.ts`,
+      `src/scenes/MainMenuScene.ts`, `src/scenes/MainMenuScene.test.ts`,
+      `docs/region-spec.md` §6 and `docs/design-spec.md` (the starter paragraph).
+      *Dependencies:* the starter pick (`[Task-287]`), the node scenes (`[Task-300]`) and the
+      item atlas (shipped). *(Batch 133)*
+
+### Batch 134 - the city wears its houses
+
+**The one.** The `2026-11-09` city report: every building is the same 5×4 block of one
+`WALL` frame and one `ROOF` frame, because the city atlas carries exactly one crop of each
+(`scripts/frlg/build-region-tilesets.mjs:52-61`) and `docs/tileset-spec.md` §2b freezes "one
+frame per kind is the whole contract"; §6 already lists the shape as open ("a building's
+front is a flat `WALL`/`ROOF` block, with no door surround, awning or edge-aware roof
+line"). The source store carries `frlg/tileset-1.png` (1096×1090, the buildings
+compendium) that no packer reads. This batch composes whole-house sprites from it and draws
+them over the footprints the plan already emits; the map values stay the collision rule.
+
+**Hot files.** `src/scenes/CityScene.ts` and `src/scenes/BootScene.ts` are [Task-311]'s; no
+other hot file. `package.json`, `src/main.ts`, `vite.config.ts` and every other
+`src/scenes/*.ts` are untouched.
+
+- [ ] **[Task-311] A city's buildings are whole houses.** Every settlement's buildings are
+      the same flat block: one `WALL` frame and one `ROOF` frame repeated over a 5×4
+      footprint, so a city reads as a grid of identical grey rectangles.
+      **Measured:** `src/engine/region/city/plan.ts:83-86,156-164` draws each building as a
+      5-wide, 4-tall `ROOF` block with one `DOOR` in the front row;
+      `src/data/tilesets/city.ts:36-45` maps `WALL`→frame 4 and `ROOF`→frame 5, one frame
+      each; `scripts/frlg/build-region-tilesets.mjs:52-61` crops one wall at `(56,212)` and
+      one roof at `(30,168)` from `frlg/tileset.png`; `docs/tileset-spec.md:147-150` says one
+      frame per kind is the contract and `:335-336` lists the building's shape as open. The
+      store's `frlg/tileset-1.png` (1096×1090, "buildings compendium, not autotile-ready",
+      `docs/art-direction.md:69`) is unread by any packer.
+      **Fix shape:** add a **building atlas** of whole houses, composed from
+      `frlg/tileset-1.png` at a 5-wide frame whose height fits the block (the compendium's
+      houses are 4-6 tiles tall, so `BUILDING_HEIGHT` may grow from 4 to 6): 3-4 sprites with
+      transparent backgrounds, one per `BuildingKind` (`centre`, `gym`, `lab`, `house`,
+      `casino`), each carrying its own door column. The plan **re-orients the front to the
+      block's bottom edge** (the compendium's houses face south; `drawBuilding` today puts
+      the door on the top row), anchors the footprint at `block.y + BLOCK - height`, and
+      gains the variant/door column (`CityBuilding.sprite` and the door at that sprite's
+      column) so a rebuild keeps the same house. A new
+      `scripts/frlg/build-city-buildings.mjs` (called by `scripts/assets/pack.mjs` after the
+      region tilesets, with `frlg/tileset-1.png` as its source) writes
+      `src/assets/frlg/city-buildings.png` + `src/data/frlg/city-buildings.json`; a new
+      `src/data/tilesets/cityBuildings.ts` exposes the texture key, the frame size the
+      packer writes and `buildingFrameFor(kind, index)` with a stable house variant.
+      `CityScene` draws the sprite over the footprint (a decal
+      above the tile layer, below the player, the sign prop's rule) and keeps the map's
+      `WALL`/`ROOF`/`DOOR` values as the collision/fallback. `BootScene` loads the atlas.
+      The city's plain `wall`/`roof`/`door` frames stay for a hand-authored fixture and a
+      clone without the pack (the placeholder).
+      **Docs:** `docs/tileset-spec.md` §2b (the building atlas row) and §6 (the shape is now
+      closed), `docs/art-direction.md` (the `tileset-1.png` source and the composed sheet),
+      `docs/region-spec.md` §7.1 (a building draws its own house).
+      **Tests:** `[unit]` `buildingFrameFor` answers a frame for every `BuildingKind` and a
+      stable variant for a fixed seed; `[unit]` the plan's door column is the chosen sprite's
+      door column and a fixed seed re-pins; `[unit]` `CityScene` names the building atlas and
+      draws it over the building rect (a source pin); `[unit]` a city with the placeholder
+      still draws the flat tiles; `[unit]` the suite and the build are green. `[live]` at
+      1280×800 in the starting town and city 1: the buildings are distinct houses with roofs,
+      walls, windows and a door aligned to the walkable `DOOR`, and the player enters each
+      one. Claims `scripts/frlg/build-city-buildings.mjs` (new), `scripts/assets/pack.mjs`,
+      `src/assets/frlg/city-buildings.png` (generated, gitignored),
+      `src/data/frlg/city-buildings.json` (generated),
+      `src/assets/placeholders/frlg/city-buildings.png` (the committed blank),
+      `src/data/tilesets/cityBuildings.ts` (new), its test,
+      `src/engine/region/city/plan.ts`, `plan.test.ts`, `src/scenes/CityScene.ts`,
+      `src/scenes/BootScene.ts` and the three docs. *Dependencies:* the region tilesets
+      (Batch 117-118) and the city screen (`[Task-300]`). *(Batch 134)*
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
 finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
 the combined tree.
+
+**A starter-pick report (`2026-11-09`), triaged into Batch 133.** «Al escoger inicial se
+queda en la pantalla congelada; al recargar y darle a continuar aparece en una ruta como
+negra rota.» Two separate causes, both bound: the pick's full-screen layer never unmounts
+after `takeStarter` (the code half of `[Task-310]`), and the black map is this checkout's
+missing `src/assets/frlg/city.png` and `src/assets/frlg/interior.png`, which made
+`packedAtlasUrl` fall back to the blank placeholders — they are gitignored and were packed
+here with `node scripts/frlg/build-region-tilesets.mjs sprite-sources/frlg/tileset.png
+sprite-sources/frlg/tileset-2.png`, so no code owns that half. The report also names the
+type badges the starter cards draw as words where the prototype draws Añil's glyphs: the
+packer reads `types.png` (the long badges) where the board uses `types_mini.png` (the 24×24
+glyphs), so `[Task-309]` repacks the atlas and moves the starter cards and the move cells
+onto it. Both tasks are cut in Batch 133, and the Continue half of `[Task-310]` is the
+prologue's soft-lock (`MainMenuScene` starts `Route`, which hands the town to `City` with no
+starter and the exit shut). The same report asks for the laboratory to stand the three Poké
+Balls on a table and open the picker on **interaction**, not on entry: that is `[Task-310]`'s
+other half, and it is why the task also carries the table and the ball slots.
+
+**A city report (`2026-11-09`), triaged into Batch 134.** «Los edificios no tienen sprite de
+edificio, son todo como el mismo tile.» It is the known open shape, not a regression:
+`docs/tileset-spec.md` §2b freezes one frame per kind and §6 already lists the flat
+`WALL`/`ROOF` front as the thing still open, while the store carries the
+`frlg/tileset-1.png` buildings compendium no packer reads. `[Task-311]` composes whole-house
+sprites from it and draws them over the plan's footprints; the map values stay the
+collision rule.
 
 **A one-space copy defect, found by Batch 107's adapter (`2026-11-01`), registered without an ID.**
 `src/i18n/en.ts` line 857 is `'common.level': 'Lv{level}'`, so the member detail card types `Lv36`

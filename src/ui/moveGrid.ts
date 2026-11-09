@@ -12,12 +12,8 @@ import {
   FRLG_WINDOW_PADDING,
 } from './frlg';
 import { typeColor } from './typeColors';
-import { TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W, typeIconFrame } from '../data/typeIcons';
-import {
-  MOVE_CATEGORY_ICON_W,
-  MOVE_CATEGORY_TEXTURE_KEY,
-  categoryIconFrame,
-} from '../data/moveCategoryIcons';
+import { TYPE_ICON_TEXTURE_KEY, typeIconFrame } from '../data/typeIcons';
+import { MOVE_CATEGORY_TEXTURE_KEY, categoryIconFrame } from '../data/moveCategoryIcons';
 import { STATUS_ICON_TEXTURE_KEY, statusIconFrame } from '../data/statusIcons';
 import { InfoPopup, type InfoPopupBadge, type InfoPopupChip, type InfoPopupContent } from './infoPopup';
 import { t } from '../i18n';
@@ -103,8 +99,39 @@ const CELL_NARROW = 220;
 const STAT_COL = 66;
 /** The gap between the info anchor (a cell's top) and the description window. */
 const POPUP_GAP = 8;
-/** The category badge is 32x14; 1.5x reads clearly beside the 16px cell text. */
-const CATEGORY_ICON_SCALE = 1.5;
+/** One body line of a cell's text at the 16 px cell size (`FRLG_LINE_HEIGHT` at half). */
+const CELL_LINE_H = 16;
+
+/**
+ * One move cell's icon column and the text column beside it, in the cell's own
+ * pixels (the caller adds `CELL_PAD` / `CELL_TOP`). The type glyph is the Añil
+ * 24x24 square, the category glyph its own 32x14 frame, and both are drawn at
+ * `scale`; the stack reserves a full 24 px square for each, so the type glyph's
+ * bottom is the category's top and the stat line starts under both.
+ */
+export type MoveGridIconLayout = Readonly<{
+  /** The sprite scale the type and category glyphs share. */
+  scale: number;
+  /** The type glyph's y offset from the cell's top. */
+  typeY: number;
+  /** The category glyph's y offset from the cell's top. */
+  categoryY: number;
+  /** The PP/PWR/ACC line's y offset from the cell's top. */
+  statY: number;
+  /** The name's x offset from the cell's left, past the glyph. */
+  nameX: number;
+}>;
+
+/**
+ * The glyph geometry of one cell. The wide cell is tall enough for the design's
+ * own 24 px glyph and one stat line; the narrow one (the phone's 151 px) is not,
+ * so it draws the glyph at three quarters and gives PP a row of its own with
+ * PWR/ACC on the one under it.
+ */
+export function moveGridIconLayout(narrow: boolean): MoveGridIconLayout {
+  if (narrow) return { scale: 0.75, typeY: 4, categoryY: 24, statY: 44, nameX: 26 };
+  return { scale: 1, typeY: 0, categoryY: 24, statY: 48, nameX: 30 };
+}
 
 /** Green when a stat line reads above its base, red when below, ink when level. */
 const STAT_UP = FRLG_POSITIVE;
@@ -408,10 +435,9 @@ export class MoveGrid {
     this.cellRects = moveGridCellRects(options);
     const first = this.cellRects[0];
     const narrow = first !== undefined && first.w < CELL_NARROW;
-    // The type badge matches the category badge in size, so the two read as one
-    // stacked column; the name starts past it.
-    const iconScale = narrow ? 1.25 : CATEGORY_ICON_SCALE;
-    const iconW = Math.round(TYPE_ICON_W * iconScale);
+    // The two glyphs share one scale and stack in the cell's icon column; the
+    // name and the stat lines start past it (moveGridIconLayout).
+    const icon = moveGridIconLayout(narrow);
     const count = this.cellRects.length;
 
     for (let i = 0; i < GRID_CELLS; i++) {
@@ -437,8 +463,8 @@ export class MoveGrid {
       }
       const alpha = cell.enabled ? 1 : 0.4;
 
-      const nameX = rect.x + CELL_PAD + iconW + (narrow ? 2 : 6);
-      const nameRight = rect.x + rect.w - CELL_PAD - INFO_SIZE - 6 - (narrow ? 0 : STAT_COL);
+      const nameX = rect.x + CELL_PAD + icon.nameX;
+      const nameRight = rect.x + rect.w - CELL_PAD - INFO_SIZE - 6;
       this.names[i]
         .setText(cell.name)
         .setAlpha(alpha)
@@ -453,8 +479,8 @@ export class MoveGrid {
         this.typeIcons[i]
           .setFrame(typeFrame)
           .setAlpha(alpha)
-          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + (narrow ? 1 : 0))
-          .setScale(iconScale)
+          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + icon.typeY)
+          .setScale(icon.scale)
           .setVisible(true);
       } else {
         this.typeIcons[i].setVisible(false);
@@ -465,18 +491,18 @@ export class MoveGrid {
         this.categoryIcons[i]
           .setFrame(categoryFrame)
           .setAlpha(alpha)
-          .setScale(iconScale)
-          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + (narrow ? 20 : 22))
+          .setScale(icon.scale)
+          .setPosition(rect.x + CELL_PAD, rect.y + CELL_TOP + icon.categoryY)
           .setVisible(true);
       } else {
         this.categoryIcons[i].setVisible(false);
       }
 
-      const catW = MOVE_CATEGORY_ICON_W * iconScale;
+      const statY = rect.y + CELL_TOP + icon.statY;
       this.ppTexts[i]
         .setText(t('move.pp', { pp: cell.pp, max: cell.maxPp }))
         .setAlpha(alpha)
-        .setPosition(rect.x + CELL_PAD + catW + 6, rect.y + CELL_TOP + (narrow ? 22 : 24))
+        .setPosition(nameX, statY)
         .setVisible(true);
 
       this.powerTexts[i]
@@ -485,8 +511,8 @@ export class MoveGrid {
         .setAlpha(alpha)
         .setOrigin(narrow ? 0 : 1, 0)
         .setPosition(
-          narrow ? rect.x + CELL_PAD : rect.x + rect.w - CELL_PAD - INFO_SIZE - 6,
-          narrow ? rect.y + CELL_TOP + 44 : rect.y + CELL_TOP,
+          narrow ? nameX : rect.x + rect.w - CELL_PAD - STAT_COL,
+          narrow ? statY + CELL_LINE_H : statY,
         )
         .setVisible(true);
 
@@ -495,10 +521,7 @@ export class MoveGrid {
         .setTint(accuracyTint(cell))
         .setAlpha(alpha)
         .setOrigin(1, 0)
-        .setPosition(
-          narrow ? rect.x + rect.w - CELL_PAD : rect.x + rect.w - CELL_PAD - INFO_SIZE - 6,
-          narrow ? rect.y + CELL_TOP + 44 : rect.y + CELL_TOP + 22,
-        )
+        .setPosition(rect.x + rect.w - CELL_PAD, narrow ? statY + CELL_LINE_H : statY)
         .setVisible(true);
 
       const buttonX = rect.x + rect.w - CELL_PAD - INFO_SIZE / 2;

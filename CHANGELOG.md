@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The type badges are Añil's mini glyphs.** `[Task-309]`, Batch 133: the game packed
+      Añil's long `Graphics/UI/types.png` badges (64×24 into 32×14 frames) while the board draws
+      `Graphics/UI/types_mini.png`'s nineteen 24×24 glyphs, so the starter cards and the move cells
+      wore the wrong art. The packer now reads the horizontal mini sheet at 1:1 into a 456×24 atlas
+      (19 columns × 1 row), the committed blank is regenerated, the starter cards swap their word
+      chip for the kit's `MoveTypeBadge`, and the move grid's type/category stack is a pure
+      `moveGridIconLayout` (the glyphs never overlap and the name clears them). `[unit]` the suite
+      is green (5 987 passed) with `npm run build` clean; `[live]` at 1280×800 the starter badges
+      are 24×24 `kit-move-type` glyphs with no text and the `03m` cells stack the type above the
+      category with zero overlap.
+
 - [x] **The folder map is whole.** `[Task-307]`, Batch 131: `src/scenes/README.md` mapped 18 of the
       folder's 25 files — four of its nine `*.test.ts` files and neither `GymScene.ts` nor
       `LeagueScene.ts`. It now carries one row per file: the five missing test halves

@@ -9,7 +9,8 @@ it starts, and this panel paints the view it is handed.
 
 - `view.ts` — the panel's value model: `liveStarterView` (the pool's cards from the dex, the clamped cursor, the `encodeRunShare` share line and the scene's hint), `fixtureStarterView` (the frame's own copy and its structural guards), both boards' rects through `starterBoard`, the breakpoint and the two slugs.
 - `view.test.ts` — the live cards in pool order, their dex names/numbers/types and atlas cells, the cursor clamp, the share line, the hint and the purity check, headless.
-- `starterPanel.tsx` — the panel itself: the title, one button card per species with its kit `Panel` skin, portrait drawn from the view's crop, name and `TypeBadge` row, the share line and the hint.
+- `starterPanel.tsx` — the panel itself: the title, one button card per species with its kit `Panel` skin, portrait drawn from the view's crop, name and `MoveTypeBadge` glyph row, the share line and the hint.
+- `starterPanel.test.ts` — the card's 24 × 24 type cell on the source: the panel draws the kit's Añil glyph and never the word chip, and the stylesheet boxes `.starter__badge > .kit-move-type`.
 - `starter.css` — the frames' measured geometry and paint, one scoped custom property per board value, plus the phone column.
 - `mount.tsx` — `mountStarter`: renders the panel into a host element, repaints it on `update`, and returns the handle the scene disposes; the `StarterIntent` union its gestures emit.
 - `preview.ts` — `starterPreviewRequested` and `installStarterPreview`: the frame's panel behind `?hud=dom&hudFixture=<slug>`.

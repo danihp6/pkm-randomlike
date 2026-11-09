@@ -41,16 +41,16 @@ function paintedRect(sprite: MoveIconSprite, box: number): readonly [number, num
 }
 
 describe('moveTypeSprite', () => {
-  it('resolves every type the atlas carries to its own frame, in the 4 x 5 grid', () => {
+  it('resolves every type the atlas carries to its own frame, in the 19 x 1 strip', () => {
     expect(TYPES.length).toBe(19);
     for (const [type, frame] of TYPES) {
       expect(moveTypeSprite(type), type).toStrictEqual({
         url: moveTypeSprite(type)!.url,
         frame,
-        w: 32,
-        h: 14,
-        cols: 4,
-        rows: 5,
+        w: 24,
+        h: 24,
+        cols: 19,
+        rows: 1,
       });
       expect(moveTypeSprite(type)!.url).toMatch(/type-icons/);
     }
@@ -97,10 +97,10 @@ describe('spriteBox', () => {
   it('lays the whole packed atlas out, never one frame', () => {
     const fire = moveTypeSprite('fire')!;
     const style = spriteBox(fire);
-    expect(pair(style.backgroundSize)).toStrictEqual([96, 52.5]);
+    expect(pair(style.backgroundSize)).toStrictEqual([456, 24]);
     const [x, y] = pair(style.backgroundPosition);
-    expect(x).toBeCloseTo(-48, 2);
-    expect(y).toBeCloseTo(-14.25, 2);
+    expect(x).toBeCloseTo(-240, 2);
+    expect(y).toBeCloseTo(0, 2);
     expect(style.backgroundImage).toBe(`url("${fire.url}")`);
     expect(style.backgroundRepeat).toBe('no-repeat');
     expect(style.imageRendering).toBe('pixelated');
@@ -124,22 +124,21 @@ describe('spriteBox', () => {
       expect(y + h, type).toBeLessThanOrEqual(MOVE_ICON_BOX + 0.01);
     }
     const [x, y, w, h] = paintedRect(moveTypeSprite('psychic')!, MOVE_ICON_BOX);
-    expect([x, y, w, h]).toStrictEqual([0, 6.75, 24, 10.5]);
+    expect([x, y, w, h]).toStrictEqual([0, 0, 24, 24]);
   });
 
   it('clips the band to the frame, so no neighbouring row shows through', () => {
-    for (const sprite of [moveTypeSprite('fire')!, moveCategorySprite('Status')!]) {
-      expect(spriteBox(sprite).clipPath).toBe('inset(6.75px 0px)');
-      expect(inset(spriteBox(sprite).clipPath)).toStrictEqual([6.75, 0]);
-    }
-    expect(spriteBox(moveTypeSprite('psychic')!).clipPath).toBe('inset(6.75px 0px)');
+    expect(spriteBox(moveTypeSprite('fire')!).clipPath).toBe('inset(0px 0px)');
+    expect(spriteBox(moveTypeSprite('psychic')!).clipPath).toBe('inset(0px 0px)');
+    expect(spriteBox(moveCategorySprite('Status')!).clipPath).toBe('inset(6.75px 0px)');
+    expect(inset(spriteBox(moveCategorySprite('Status')!).clipPath)).toStrictEqual([6.75, 0]);
   });
 
   it('scales the band and the clip with the box it is drawn in', () => {
     const sprite = moveTypeSprite('fire')!;
-    expect(pair(spriteBox(sprite, 48).backgroundSize)).toStrictEqual([192, 105]);
-    expect(pair(spriteBox(sprite, 48).backgroundPosition)).toStrictEqual([-96, -28.5]);
-    expect(spriteBox(sprite, 48).clipPath).toBe('inset(13.5px 0px)');
+    expect(pair(spriteBox(sprite, 48).backgroundSize)).toStrictEqual([912, 48]);
+    expect(pair(spriteBox(sprite, 48).backgroundPosition)).toStrictEqual([-480, 0]);
+    expect(spriteBox(sprite, 48).clipPath).toBe('inset(0px 0px)');
     expect(spriteBox(sprite).clipPath).toBe(spriteBox(sprite, MOVE_ICON_BOX).clipPath);
   });
 });

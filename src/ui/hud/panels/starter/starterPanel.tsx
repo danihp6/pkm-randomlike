@@ -1,6 +1,6 @@
 import type { CSSProperties, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { Panel, TypeBadge } from '../../kit';
+import { MoveTypeBadge, Panel } from '../../kit';
 import { portraitBackground, type PortraitCrop } from '../../portrait';
 import type { StarterIntent } from './mount';
 import { STARTER_NARROW_QUERY, type StarterView } from './view';
@@ -90,7 +90,7 @@ export function StarterPanel(props: StarterPanelProps): JSX.Element {
                 <span class="starter__badges">
                   {card.types.map((type) => (
                     <span key={type} class="starter__badge" data-hud-starter-badge={type}>
-                      <TypeBadge type={type} />
+                      <MoveTypeBadge type={type} />
                     </span>
                   ))}
                 </span>

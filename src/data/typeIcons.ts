@@ -9,13 +9,14 @@ const TYPE_ATLASES = import.meta.glob('../assets/frlg/type-icons.png', {
 }) as Readonly<Record<string, string>>;
 
 /**
- * The Añil type badges (the 18 types in dex order, the "???" slot and Fairy),
+ * The Añil type glyphs (the 18 types in dex order, the "???" slot and Fairy),
  * packed into `src/assets/frlg/type-icons.png` by
  * `scripts/frlg/build-type-icons.mjs` from the fangame Pokémon Añil's own
- * `Graphics/UI/types.png`, at 32x14 frames. The starter cards draw one per type.
- * Añil ships a Fairy badge, so every type the dex lists resolves; only a name the
- * atlas lacks returns null and the UI falls back to a text chip. Local-only art —
- * see `docs/art-direction.md`.
+ * `Graphics/UI/types_mini.png`: one horizontal strip of 19 square 24x24 cells,
+ * copied 1:1. The starter cards and the move cells draw one per type in the
+ * board's own 24x24 square. Añil ships a Fairy glyph, so every type the dex lists
+ * resolves; only a name the atlas lacks returns null and the UI falls back to a
+ * text chip. Local-only art — see `docs/art-direction.md`.
  */
 export const TYPE_ICON_ATLAS_URL = packedAtlasUrl(
   TYPE_ATLASES,

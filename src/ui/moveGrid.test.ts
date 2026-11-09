@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { TYPE_ICON_H, TYPE_ICON_W } from '../data/typeIcons';
 import {
   isEmptySlot,
   moveGridCellRects,
+  moveGridIconLayout,
   moveGridIndexAt,
   moveGridInfoAt,
   padMoveGridCells,
@@ -146,6 +148,43 @@ describe('moveGridIndexAt', () => {
     expect(moveGridIndexAt(padded, (first.x + first.w + second.x) / 2, first.y + first.h / 2)).toBe(
       null,
     );
+  });
+});
+
+describe('moveGridIconLayout', () => {
+  const cases: readonly (readonly [string, boolean])[] = [
+    ['the desk cell', false],
+    ['the phone cell', true],
+  ];
+
+  for (const [name, narrow] of cases) {
+    it(`stacks both glyphs and the stat line without overlap in ${name}`, () => {
+      const layout = moveGridIconLayout(narrow);
+      expect(layout.scale).toBeGreaterThan(0);
+      expect(layout.typeY + TYPE_ICON_H * layout.scale).toBeLessThanOrEqual(layout.categoryY);
+      expect(layout.categoryY + 24 * layout.scale).toBeLessThanOrEqual(layout.statY);
+      expect(layout.nameX).toBeGreaterThanOrEqual(TYPE_ICON_W * layout.scale);
+    });
+  }
+
+  it('pins the desk cell to the design s own 24 px glyph and one stat line', () => {
+    expect(moveGridIconLayout(false)).toStrictEqual({
+      scale: 1,
+      typeY: 0,
+      categoryY: 24,
+      statY: 48,
+      nameX: 30,
+    });
+  });
+
+  it('pins the phone cell to the smaller glyph, with the stats on two rows', () => {
+    expect(moveGridIconLayout(true)).toStrictEqual({
+      scale: 0.75,
+      typeY: 4,
+      categoryY: 24,
+      statY: 44,
+      nameX: 26,
+    });
   });
 });
 

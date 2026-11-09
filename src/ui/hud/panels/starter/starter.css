@@ -211,18 +211,13 @@
   height: 24px;
 }
 
-.starter__badge > .kit-type {
+/* 04 · type GRASS / type POISON: the Añil 24 × 24 glyph, one per measured cell */
+.starter__badge > .kit-move-type {
   position: absolute;
   inset: 0;
   width: 24px;
   height: 24px;
-  padding: 0 2px;
-  overflow: hidden;
-  justify-content: center;
   border-radius: 0;
-  font-size: var(--hud-type-tag-size);
-  line-height: var(--hud-type-tag-line);
-  text-align: center;
 }
 
 /* 04 · share line */

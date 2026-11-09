@@ -1,8 +1,8 @@
 {
-  "width": 32,
-  "height": 14,
-  "cols": 4,
-  "rows": 5,
+  "width": 24,
+  "height": 24,
+  "cols": 19,
+  "rows": 1,
   "frames": [
     "normal",
     "fighting",
@@ -22,8 +22,7 @@
     "ice",
     "dragon",
     "dark",
-    "fairy",
-    ""
+    "fairy"
   ],
   "types": {
     "normal": 0,
