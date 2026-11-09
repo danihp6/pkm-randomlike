@@ -6,7 +6,7 @@ import { hashSeed } from '../../rng';
 import { reachableTiles } from '../../routes/validate';
 import { resolveTileFrame } from '../../tileFrames';
 import { planRegion, type RegionPlan } from '../plan';
-import { interiorRoomKind, planInterior, type InteriorPlan } from './plan';
+import { interiorRoomKind, nextToStarterBalls, planInterior, type InteriorPlan } from './plan';
 
 const KEYS: readonly string[] = ['centre', 'gym', 'lab', 'house:1', 'house:2', 'casino'];
 
@@ -114,6 +114,49 @@ describe('interior plan rooms', () => {
     expect(tileAt(centre.tiles, heal ?? { x: -1, y: -1 })).not.toBe(FLOOR);
   });
 
+  it('stamps the laboratory’s three-ball table beside the professor', () => {
+    const lab = room('lab');
+    const balls = lab.starterBalls ?? [];
+
+    expect(balls).toHaveLength(3);
+    expect(new Set(balls.map((ball) => ball.y)).size).toBe(1);
+    expect(balls.map((ball) => ball.x)).toEqual([...balls.map((ball) => ball.x)].sort((a, b) => a - b));
+    for (const ball of balls) expect(tileAt(lab.tiles, ball), `${ball.x},${ball.y}`).toBe(COUNTER);
+    const counters = cellsWhere(lab, COUNTER);
+    expect(counters).toHaveLength(3);
+    expect(counters.map((cell) => `${cell.x},${cell.y}`)).toEqual(
+      balls.map((ball) => `${ball.x},${ball.y}`),
+    );
+
+    const professor = lab.slots.find((slot) => slot.role === 'professor')?.tile;
+    expect(professor).toBeDefined();
+    expect(professor?.y).toBe(balls[0].y);
+    expect(balls.some((ball) => ball.x === professor?.x && ball.y === professor?.y)).toBe(false);
+    expect(Math.abs((professor?.x ?? 0) - balls[1].x)).toBe(4);
+
+    for (const key of ['centre', 'gym', 'house:1', 'house:2', 'casino']) {
+      expect(room(key).starterBalls, key).toBeUndefined();
+    }
+  });
+
+  it('accepts only the tiles that share an edge with the laboratory’s table', () => {
+    const lab = room('lab');
+    const balls = lab.starterBalls ?? [];
+    const middle = balls[1];
+    const first = balls[0];
+    const last = balls[2];
+
+    expect(middle).toBeDefined();
+    expect(nextToStarterBalls({ x: middle.x, y: middle.y + 1 }, lab)).toBe(true);
+    expect(nextToStarterBalls({ x: middle.x, y: middle.y - 1 }, lab)).toBe(true);
+    expect(nextToStarterBalls({ x: first.x - 1, y: first.y }, lab)).toBe(true);
+    expect(nextToStarterBalls({ x: last.x + 1, y: last.y }, lab)).toBe(true);
+    expect(nextToStarterBalls({ x: middle.x, y: middle.y + 2 }, lab)).toBe(false);
+    expect(nextToStarterBalls({ x: first.x - 1, y: first.y + 1 }, lab)).toBe(false);
+    expect(nextToStarterBalls(lab.entry, lab)).toBe(false);
+    expect(nextToStarterBalls({ x: middle.x, y: middle.y + 1 }, room('centre'))).toBe(false);
+  });
+
   it("joins the gym's four rooms in order, one door between each pair", () => {
     const gym = room('gym');
     const rooms = gym.rooms ?? [];
@@ -194,7 +237,7 @@ describe('interior plan rooms', () => {
     expect(KEYS.map((key) => digest(planInterior(plan, key, 'city:3')))).toEqual([
       '24x18|centre|8,17|city:3|heal@12,4|pc@18,4||1bod26e',
       '40x40|gym|12,39|city:3|trainer@29,10|leader@10,29|entrance:0,0:-|trainer:19,0:19,10|puzzle:19,19:29,19|leader:0,19:19,29|12f4x1e',
-      '24x18|lab|10,17|city:3|professor@12,4||196jblm',
+      '24x18|lab|10,17|city:3|professor@8,4||1wp8r1g',
       '24x18|house|20,17|city:3|npc@12,4||1toe53',
       '24x18|house|2,17|city:3|npc@12,4||1csnidy',
       '24x18|casino|15,17|city:3|cabinet@12,4||1bbdro5',

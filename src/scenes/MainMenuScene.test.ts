@@ -50,6 +50,7 @@ import type { MainMenuIntent, MainMenuView } from '../ui/hud/panels/main-menu';
 import { menuVersionLabel } from '../ui/hud/panels/main-menu';
 import type { RunHistoryRecord } from '../engine/run/history';
 import { createRun, createRunPokemon, type RunState } from '../engine/run';
+import { emptyRun } from '../engine/run/prologue';
 import { t } from '../i18n';
 import type { RankingBoard } from '../net/ranking';
 import type { StatsMode, StatsView } from '../ui/hud/panels/stats';
@@ -400,10 +401,7 @@ describe('the RANKING row', () => {
 
 /** The reset chord restarts where NEW RUN does: the laboratory, never a removed scene. */
 describe('the reset chord', () => {
-  const ROUTE_SOURCE = readFileSync(
-    fileURLToPath(new URL('./RouteScene.ts', import.meta.url)),
-    'utf8',
-  );
+  const ROUTE_SOURCE = readFileSync(fileURLToPath(new URL('./RouteScene.ts', import.meta.url)), 'utf8');
 
   it('restarts the run on the laboratory, the key NEW RUN starts', () => {
     expect(ROUTE_SOURCE).toContain("this.scene.start('Lab', { seed: randomSeed() })");
@@ -465,5 +463,49 @@ describe('the new-run seam (Task-287)', () => {
     expect(data.run.party).toEqual([]);
     expect(data.run.starterTaken).toBe(false);
     expect(data.run.nodeKey).toBe('town:1');
+  });
+});
+
+/** Continue's on-ramp: a prologue run reopens the laboratory, a taken one the road. */
+describe('the continue seam (Task-310)', () => {
+  function startsFor(run: RunState): { key: string; data?: unknown }[] {
+    stubDocument(null);
+    const starts: { key: string; data?: unknown }[] = [];
+    const instance = scene();
+    instance.run = run;
+    instance.items = ['continue', 'new', 'options'];
+    instance.index = 0;
+    instance.scene = {
+      start: (key: string, data?: unknown): void => {
+        starts.push({ key, data });
+      },
+    };
+    instance.choose();
+    return starts;
+  }
+
+  it('reopens the laboratory while the run has not taken its starter', () => {
+    const starts = startsFor(emptyRun('pkm-310'));
+
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.key).toBe('Lab');
+    const data = starts[0]!.data as {
+      run: RunState;
+      cityKey: string;
+      interiorKey: string;
+    };
+    expect(data.cityKey).toBe('town:1');
+    expect(data.interiorKey).toBe('lab');
+    expect(data.run.starterTaken).toBe(false);
+    expect(data.run.party).toEqual([]);
+  });
+
+  it('starts the route once the starter is taken', () => {
+    const run = savedRun();
+    const starts = startsFor(run);
+
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.key).toBe('Route');
+    expect((starts[0]!.data as { run: RunState }).run).toBe(run);
   });
 });

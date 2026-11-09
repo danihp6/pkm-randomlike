@@ -3,7 +3,7 @@ import { playMusic } from '../audio/audio';
 import type { KeybindAction } from '../data/keybinds';
 import type { RunHistoryRecord } from '../engine/run/history';
 import { hasLivingParty, type RunState } from '../engine/run';
-import { emptyRun } from '../engine/run/prologue';
+import { emptyRun, isPrologue } from '../engine/run/prologue';
 import { planRegion } from '../engine/region/plan';
 import { randomSeed } from '../engine/rng';
 import { loadSave, storeRun, type Settings } from '../engine/save';
@@ -59,8 +59,9 @@ export function mainMenuDrawnObjectCount(_scene: Phaser.Scene): number {
  *
  * A new run is written to the save as it starts, because it is a legal prologue
  * document: no party, `starterTaken: false`, standing in the town
- * (`src/engine/run/prologue.ts`). The starter is picked in `Lab`, and the town's exit
- * stays shut until it is.
+ * (`src/engine/run/prologue.ts`). The starter is picked in `Lab`, at the room's
+ * table, and the town's exit stays shut until it is; a **continue** on a run that
+ * has not taken its starter therefore reopens the laboratory, never the road.
  *
  * Keyboard and mouse both pick a row, and the shared keybind map drives it so a
  * rebind reaches it too.
@@ -323,9 +324,22 @@ export class MainMenuScene extends Phaser.Scene {
 
   private choose(): void {
     switch (this.items[this.index]) {
-      case 'continue':
-        if (this.run) this.scene.start('Route', { run: this.run });
+      case 'continue': {
+        const run = this.run;
+        if (run === null) return;
+        // A saved run that has not taken its starter is still the prologue: it
+        // reopens the laboratory, not the road (`docs/region-spec.md` §6).
+        if (isPrologue(run)) {
+          this.scene.start('Lab', {
+            run,
+            cityKey: planRegion(run.seed).townKey,
+            interiorKey: 'lab',
+          });
+        } else {
+          this.scene.start('Route', { run });
+        }
         return;
+      }
       case 'new': {
         // A brand-new run starts inside the town's laboratory with no Pokémon at
         // all: the professor hands over the starter there, and the town's exit stays
