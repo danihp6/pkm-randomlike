@@ -270,17 +270,18 @@ type badge or chip the dark `FRLG_BADGE_INK`. The glyph shapes are the rip's: a
 different typeface would need a licensed/open font asset plus a rasteriser, which
 is a task of its own.
 
-The **type badges** now come from Pokémon Añil rather than this FRLG sheet: the
-fangame's `Graphics/UI/types.png` is one column of 19 badges — the 18 types in dex
-order with the "???" slot between Steel and Fire, then Fairy — that
-`scripts/frlg/build-type-icons.mjs` nearest-neighbour scales into the frozen 32x14
-frames of `src/assets/frlg/type-icons.png`, with the frame map in
+The **type glyphs** now come from Pokémon Añil rather than this FRLG sheet: the
+fangame's `Graphics/UI/types_mini.png` is one horizontal strip of 19 24×24 glyphs —
+the 18 types in dex order with the "???" slot between Steel and Fire, then Fairy —
+that `scripts/frlg/build-type-icons.mjs` copies 1:1 into
+`src/assets/frlg/type-icons.png` (456×24, a 19 × 1 atlas), with the frame map in
 `src/data/frlg/type-icons.json`, read through `src/data/typeIcons.ts`. The packer
 takes the sheet path (`node scripts/frlg/build-type-icons.mjs
-<anil>/Graphics/UI/types.png`, or `npm run data:frlg:icons`). Every type the dex
-lists has a badge now, Fairy included, so the text-chip fallback is dead for real
+<anil>/Graphics/UI/types_mini.png`, or `npm run data:frlg:icons`). Every type the dex
+lists has a glyph now, Fairy included, so the text-chip fallback is dead for real
 types. Añil's "???" slot is a flat blue placeholder with no glyph; the `unknown`
-frame is packed but nothing draws it.
+frame is packed but nothing draws it. A glyph is drawn in the board's own 24 px
+square and its cell is the art's own pixel size, so no scale can soften it.
 
 The **status badges** (SLP / PSN / BRN / PAR / FRZ, plus the FNT and PKRS spares)
 come from the same fangame's `Graphics/UI/statuses.png`, one column of seven 44x16
