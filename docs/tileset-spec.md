@@ -161,18 +161,23 @@ atlas**, not a field: `src/assets/frlg/city-buildings.png` is 320x96 — four fr
 | frame | kind | source | door column |
 | --- | --- | --- | --- |
 | 0 | `centre` | the P.C. (red roof, `P.C.` sign) | 2 |
-| 1 | `gym` | the green-roofed two-storey building | 2 |
+| 1 | `gym` | the orange-roofed building with the arched entrance | 2 |
 | 2 | `lab` | the tan-roofed house with the arched door | 2 |
-| 3 | `house` | the blue-roofed `SHOP` house | 2 |
+| 3 | `house` | the green-roofed house with the blue door | 2 |
 
 The manifest is the only source of the frame numbers: `CITY_BUILDING_SPRITES` reads it,
 `buildingFrameFor(kind, index)` answers the frames a kind carries (wrapped by `index`,
 so a second house variant is one manifest row and one `HOUSES` row) and the first
 house for a kind the sheet does not carry, and the plan's `CityBuilding.sprite` is one
-of those indices. The packer crops each house whole — its own roof top to its front
-wall's foot, centred so the house's door lands on its manifest column — keeps the
-crop's own alpha, repairs the compendium's 1px transparent cell separators, scales
-nearest-neighbour to the frame and refuses a flat crop (fewer than 3 opaque colours, or
+of those indices. The frame is a **decal over a 5x6 block of `ROOF`**, so it has to
+cover every pixel of its 80x96: the packer takes a generous window around each house,
+crops the house's own **opaque bounding box** inside it (roof top to front-wall foot,
+every edge column and row carrying art), keeps the crop's own alpha, repairs the
+compendium's 1px transparent cell separators and scales nearest-neighbour to the
+frame, then **measures the door's tile column off that box** into the manifest — a
+frame whose door were declared would drift off the drawn door as soon as a rect moved.
+It refuses a frame with a transparent column or row (the flat roof tile would show
+through as a band beside the house) and a flat crop (fewer than 3 opaque colours, or
 more than 40 % near-black) the way `build-sign.mjs` does. The city screen draws one
 frame per building over the plan's `rect` as a decal above the tile layer, sorted by
 the house's foot row, so a player south of a house draws above it and one behind its

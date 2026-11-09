@@ -41,6 +41,35 @@ function frameHasArt(png: { width: number; data: Uint8Array }, frame: number): b
   return false;
 }
 
+/**
+ * The frame is a decal over the plan's 5x6 `ROOF` footprint, so a fully
+ * transparent column or row is a band of flat roof tile beside the house. QA
+ * measured exactly that on the first pack (the two 67px houses), so every edge
+ * line of every frame is measured here and not just trusted.
+ */
+function bareLines(
+  png: { width: number; data: Uint8Array },
+  frame: number,
+): { columns: number[]; rows: number[] } {
+  const col = frame % CITY_BUILDING_COLS;
+  const row = Math.floor(frame / CITY_BUILDING_COLS);
+  const alpha = (x: number, y: number): number =>
+    png.data[((row * CITY_BUILDING_H + y) * png.width + col * CITY_BUILDING_W + x) * 4 + 3];
+  const columns: number[] = [];
+  const rows: number[] = [];
+  for (let x = 0; x < CITY_BUILDING_W; x++) {
+    let any = false;
+    for (let y = 0; y < CITY_BUILDING_H && !any; y++) any = alpha(x, y) > 0;
+    if (!any) columns.push(x);
+  }
+  for (let y = 0; y < CITY_BUILDING_H; y++) {
+    let any = false;
+    for (let x = 0; x < CITY_BUILDING_W && !any; x++) any = alpha(x, y) > 0;
+    if (!any) rows.push(y);
+  }
+  return { columns, rows };
+}
+
 describe('city buildings atlas', () => {
   it('keeps the 80x96 frames and the 4x1 grid the plan and the scene draw', () => {
     expect(CITY_BUILDING_W).toBe(80);
@@ -144,6 +173,14 @@ describe.skipIf(!hasArt('frlg/city-buildings.png'))('packed city buildings atlas
   it('has a non-empty house in every frame', () => {
     for (let frame = 0; frame < CITY_BUILDING_COLS * CITY_BUILDING_ROWS; frame++) {
       expect(frameHasArt(png, frame), `frame ${frame}`).toBe(true);
+    }
+  });
+
+  it('covers every column and row, so no flat roof tile shows through the footprint', () => {
+    for (let frame = 0; frame < CITY_BUILDING_COLS * CITY_BUILDING_ROWS; frame++) {
+      const { columns, rows } = bareLines(png, frame);
+      expect(columns, `frame ${frame} transparent columns`).toEqual([]);
+      expect(rows, `frame ${frame} transparent rows`).toEqual([]);
     }
   });
 });

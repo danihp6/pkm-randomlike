@@ -16,6 +16,16 @@
 // vertical (then horizontal) neighbours are opaque takes one of them - before it
 // is scaled, otherwise every house would draw with a striped roof.
 //
+// The frame is a decal drawn over the plan's 5x6 footprint, so it must cover
+// every pixel of its 80x96: a fully transparent column or row would let the
+// flat `roof` tile underneath show through as a band beside the house. Each rect
+// below is therefore a generous window around one house, and the frame is the
+// house's own opaque bounding box inside it (scaled to 80x96), never a
+// hand-centred 80px crop - the bbox is what makes every edge row and column
+// carry art. The door's tile column follows from the same bbox: it is measured
+// and written to the manifest, so the plan's walkable `DOOR` cell sits under the
+// drawn door (`docs/region-spec.md` §7.1).
+//
 // The build is deterministic: the same input writes a byte-identical PNG and a
 // byte-identical JSON.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -33,20 +43,19 @@ const FRAME_W = 80
 const FRAME_H = 96
 const COLS = 4
 const ROWS = 1
+const TILE = 16
 
 /**
- * The four houses, in frame order: the source rect in the compendium, and the
- * door's tile column inside the 5-tile-wide frame. Each rect is 80 px wide (the
- * frame's own width at the sheet's 16 px scale), centred on the house's door, and
- * its top and bottom are the house's own roof top and front-wall foot - so the
- * sprite's last row is the walkable front row the plan emits and its door art
- * lands on `door`. A new kind is one row here plus its frame in the manifest.
+ * The four houses, in frame order: a generous source rect around one house (the
+ * frame is that house's opaque bbox inside it) and the source x of its door's
+ * centre. A new kind is one row here plus its frame in the manifest; the door
+ * column is never declared, it is measured off the bbox.
  */
 const HOUSES = [
-  { kind: 'centre', rect: [104, 17, 80, 74], door: 2 },
-  { kind: 'gym', rect: [324, 32, 80, 76], door: 2 },
-  { kind: 'lab', rect: [580, 134, 80, 76], door: 2 },
-  { kind: 'house', rect: [18, 26, 80, 65], door: 2 },
+  { kind: 'centre', rect: [98, 13, 92, 82], doorCentre: 143.5 },
+  { kind: 'gym', rect: [659, 13, 126, 104], doorCentre: 721.5 },
+  { kind: 'lab', rect: [574, 130, 92, 84], doorCentre: 619.5 },
+  { kind: 'house', rect: [115, 819, 92, 75], doorCentre: 159.5 },
 ]
 
 const MIN_OPAQUE_COLOURS = 3
@@ -54,7 +63,7 @@ const MAX_NEAR_BLACK = 0.4
 
 const sheet = decodePng(readFileSync(SRC))
 
-/** One house's rect, its seams repaired and its alpha kept as the sheet has it. */
+/** One house's window, its seams repaired and its alpha kept as the sheet has it. */
 function crop([x0, y0, w, h]) {
   const out = Buffer.alloc(w * h * 4)
   for (let y = 0; y < h; y++) {
@@ -80,6 +89,34 @@ function crop([x0, y0, w, h]) {
       const left = (y * w + x - 1) * 4
       if (opaque(left) && opaque((y * w + x + 1) * 4)) out.copy(out, to, left, left + 4)
     }
+  }
+  return out
+}
+
+/** The house's own bounds inside its window: no transparent margin reaches the frame. */
+function opaqueBox(pixels, w, h) {
+  let minX = w
+  let minY = h
+  let maxX = -1
+  let maxY = -1
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (pixels[(y * w + x) * 4 + 3] < 8) continue
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+  }
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+}
+
+/** The bbox's pixels as their own buffer, so the scale and the flat check read it. */
+function boxPixels(pixels, srcW, box) {
+  const out = Buffer.alloc(box.w * box.h * 4)
+  for (let y = 0; y < box.h; y++) {
+    const from = ((box.y + y) * srcW + box.x) * 4
+    pixels.copy(out, y * box.w * 4, from, from + box.w * 4)
   }
   return out
 }
@@ -119,19 +156,73 @@ function assertNotFlat(house, pixels) {
   }
 }
 
+/**
+ * The frame is a decal over a 5x6 block of `ROOF`, so a transparent column or row
+ * is a hole the tile shows through. The bbox makes this hold; the check keeps a
+ * future rect from quietly reintroducing the band QA caught.
+ */
+function assertCovered(house, frame) {
+  const bare = []
+  for (let x = 0; x < FRAME_W; x++) {
+    let any = false
+    for (let y = 0; y < FRAME_H && !any; y++) any = frame[(y * FRAME_W + x) * 4 + 3] >= 8
+    if (!any) bare.push(`column ${x}`)
+  }
+  for (let y = 0; y < FRAME_H; y++) {
+    let any = false
+    for (let x = 0; x < FRAME_W && !any; x++) any = frame[(y * FRAME_W + x) * 4 + 3] >= 8
+    if (!any) bare.push(`row ${y}`)
+  }
+  if (bare.length > 0) {
+    console.error(
+      `build-city-buildings: ${house.kind} at [${house.rect.join(',')}] leaves ${bare.length} ` +
+        `transparent ${bare.length === 1 ? 'line' : 'lines'} (${bare.slice(0, 4).join(', ')}) ` +
+        `- the roof tile would show through the footprint, refusing to write`,
+    )
+    process.exit(1)
+  }
+}
+
+/** The door's tile column inside the frame, measured off the bbox, never declared. */
+function doorColumn(house, box, offsetX) {
+  const centre = (house.doorCentre - offsetX - box.x) / box.w
+  if (centre < 0 || centre > 1) {
+    console.error(
+      `build-city-buildings: ${house.kind} door ${house.doorCentre} is outside its bbox ` +
+        `[${offsetX + box.x}, ${offsetX + box.x + box.w - 1}]`,
+    )
+    process.exit(1)
+  }
+  const column = Math.floor((centre * FRAME_W) / TILE)
+  return Math.max(0, Math.min(FRAME_W / TILE - 1, column))
+}
+
 const atlas = Buffer.alloc(FRAME_W * COLS * FRAME_H * ROWS * 4)
 const frames = []
 for (const [column, house] of HOUSES.entries()) {
-  const [, , w, h] = house.rect
-  const cropPixels = crop(house.rect)
-  assertNotFlat(house, cropPixels)
-  const frame = scaleNearest(cropPixels, w, h, FRAME_W, FRAME_H)
+  const [x0, y0, w, h] = house.rect
+  const pixels = crop(house.rect)
+  const box = opaqueBox(pixels, w, h)
+  if (box.w <= 0 || box.h <= 0) {
+    console.error(
+      `build-city-buildings: no art for ${house.kind} at [${house.rect.join(',')}] ` +
+        `- refusing to write src/assets/frlg/city-buildings.png`,
+    )
+    process.exit(1)
+  }
+  const housePixels = boxPixels(pixels, w, box)
+  assertNotFlat(house, housePixels)
+  const frame = scaleNearest(housePixels, box.w, box.h, FRAME_W, FRAME_H)
+  assertCovered(house, frame)
   for (let y = 0; y < FRAME_H; y++) {
     const from = y * FRAME_W * 4
     const to = (y * FRAME_W * COLS + column * FRAME_W) * 4
     frame.copy(atlas, to, from, from + FRAME_W * 4)
   }
-  frames.push({ kind: house.kind, door: house.door })
+  frames.push({ kind: house.kind, door: doorColumn(house, box, x0) })
+  console.log(
+    `  ${house.kind}: [${x0},${y0},${w},${h}] bbox ${box.x},${box.y} ${box.w}x${box.h} -> door ${frames.at(-1).door}`,
+  )
 }
 
 mkdirSync(dirname(OUT_PATH), { recursive: true })
