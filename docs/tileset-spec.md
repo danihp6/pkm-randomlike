@@ -144,11 +144,46 @@ the city's plain pavement, which `resolveGroundFrame` lays under every cell, and
 interior's floor, which is the same tile a room's `FLOOR` cells draw.
 
 Neither field declares an autotile, a wall pattern, variants, a rustle or a
-hidden-item frame: **one frame per kind is the whole contract**, so a building is a
-rectangular block of `WALL`/`ROOF` cells with a `DOOR` cell on its street row and a
-room is a `WALL` ring around a `FLOOR` field with its fixtures on it. Shape-aware
-building edges are still open (§6). Every cell of both sheets is a **filled field**
-(the crop composited over the ground), so a patch of map never shows a hole.
+hidden-item frame: **one frame per kind is the whole contract**, so a building's map
+is a rectangular block of `WALL`/`ROOF` cells with a `DOOR` cell on its bottom row
+and a room is a `WALL` ring around a `FLOOR` field with its fixtures on it. A
+building's own outline comes from its whole-house decal (below), so the map's
+rectangle is the collision footprint rather than the art. Every cell of both sheets is
+a **filled field** (the crop composited over the ground), so a patch of map never
+shows a hole.
+
+A settlement's buildings are the third sheet of this family, and it is a **decal
+atlas**, not a field: `src/assets/frlg/city-buildings.png` is 320x96 — four frames of
+80x96, i.e. 5x6 tiles — with `src/data/frlg/city-buildings.json`, both written by
+`scripts/frlg/build-city-buildings.mjs` from the buildings compendium
+`sprite-sources/frlg/tileset-1.png`:
+
+| frame | kind | source | door column |
+| --- | --- | --- | --- |
+| 0 | `centre` | the P.C. (red roof, `P.C.` sign) | 2 |
+| 1 | `gym` | the green-roofed two-storey building | 1 |
+| 2 | `lab` | the tan-roofed house with the arched door | 2 |
+| 3 | `house` | the blue-roofed `SHOP` house | 3 |
+
+The manifest is the only source of the frame numbers: `CITY_BUILDING_SPRITES` reads it,
+`buildingFrameFor(kind, index)` answers the frames a kind carries (wrapped by `index`,
+so a second house variant is one manifest row and one `HOUSES` row) and the first
+house for a kind the sheet does not carry, and the plan's `CityBuilding.sprite` is one
+of those indices. The frame is a **decal over a 5x6 block of `ROOF`**, so it has to
+cover every pixel of its 80x96: the packer takes a generous window around each house,
+crops the house's own **opaque bounding box** inside it (roof top to front-wall foot,
+every edge column and row carrying art), keeps the crop's own alpha, repairs the
+compendium's 1px transparent cell separators and scales nearest-neighbour to the
+frame, then **measures the door's tile column off that box** into the manifest — a
+frame whose door were declared would drift off the drawn door as soon as a rect moved.
+It refuses a frame with a transparent column or row (the flat roof tile would show
+through as a band beside the house) and a flat crop (fewer than 3 opaque colours, or
+more than 40 % near-black) the way `build-sign.mjs` does. The city screen draws one
+frame per building over the plan's `rect` as a decal above the tile layer, sorted by
+the house's foot row, so a player south of a house draws above it and one behind its
+roof draws below (`docs/region-spec.md` §7.1, §7.5). The map values stay the rule:
+the sprite never replaces a `WALL`, `ROOF` or `DOOR` cell, so collision and the flat
+fallback a clone without the pack draws are untouched.
 
 ## 3. Autotiling
 
@@ -332,11 +367,13 @@ Swapping is `config = TILESETS[nextId].config` plus loading
 - **Trainer sprites** do not exist yet in any imported set; they need their own
   sheet (walk cycles + overworld facing).
 - **City and interior kinds** draw one real frame each (§2b), so nothing is pending
-  per kind; what is still open is shape: a building's front is a flat `WALL`/`ROOF`
-  block, with no door surround, awning or edge-aware roof line, and a room's fixtures
-  are single cells rather than multi-tile furniture. `autotile`/`wallPattern`/
-  `variants` for the two fields, a `grassRustle` for the city's grass corner and a
-  `hiddenItemFrame` for either are the not-yet-declared slots.
+  per kind, and a settlement's buildings are whole houses now: the `city-buildings`
+  decal atlas (§2b) puts one composed house per kind over the plan's 5x6 footprint,
+  door art on the walkable `DOOR` cell. What is still open is the interior's furniture
+  — a room's fixtures are single cells rather than multi-tile furniture — plus
+  `autotile`/`wallPattern`/`variants` for the two fields, a `grassRustle` for the
+  city's grass corner and a `hiddenItemFrame` for either. More house variants are one
+  `HOUSES` row each in the packer, with no scene change.
 - **The interior is provisional art, and the doc says so plainly.** The asset store
   has **no indoor tileset**: `docs/art-direction.md`'s FRLG inventory is terrain
   (`tileset-2.png`), buildings (`tileset.png`, `tileset-1.png`) and characters, and

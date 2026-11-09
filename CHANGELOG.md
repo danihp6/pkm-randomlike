@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **A city's buildings are whole houses.** `[Task-311]`, Batch 134: every settlement
+      repeated one `WALL` and one `ROOF` frame over a 5×4 footprint. A new
+      `build-city-buildings.mjs` composes four whole houses from the `tileset-1.png` compendium
+      into a 320×96 atlas (each building's opaque bounding box, so no transparent column or row
+      exposes the tile underneath), `cityBuildings.ts` maps a stable frame per `BuildingKind`, the
+      plan re-orients the front to the block's bottom row (6 tall, the door on the walkable
+      `DOOR`) and the city screen draws the sprite as a decal over the tile layer. `[unit]` the
+      suite is green (5 991 passed) with `npm run build` clean; `[live]` at 1280×800 in `town:1`
+      and `city:1` the four houses are distinct, no flat tile shows through, every door sits on
+      the `DOOR`, and the player enters each one.
+
 - [x] **The laboratory hands the starter by hand.** `[Task-310]`, Batch 133: a new run mounted
       the starter picker over the room on entry, so the laboratory was never seen, and after a
       pick the opaque layer stayed with an empty offer; Continue on a prologue also started

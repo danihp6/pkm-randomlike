@@ -289,10 +289,19 @@ The grid is a solid wall ring around 7-tile blocks between 3-tile streets, one s
 the plaza and its centre tile is the **spawn**: where a walk in through an exit band lands,
 while a flight lands on the Centre's door (§5). The **bottom-right block** is the **grass
 corner**, its whole square `TALL_GRASS`, so a settlement rolls wild encounters with no new
-rule. Every other block holds at most one building in its top-left corner — a 5x4 footprint
-whose front (top) row is wall with exactly one door and whose other three rows are roof —
-and the lots left over stay solid wall. The tile north of a door is a street, so every door
-opens onto pavement.
+rule. Every other block holds at most one building on its bottom edge — a 5x6 footprint whose
+front (bottom) row is wall with exactly one door and whose other five rows are roof, leaving
+one `WALL` row of the block above the roof — and the lots left over stay solid wall. The
+compendium's houses face south, so the front sits on the block's bottom row: the tile south of
+a door is a street, so every door opens onto pavement.
+
+A building also carries `sprite`, the `city-buildings` frame the city screen draws over its
+whole `rect` (§7.5): one whole house per kind, so a settlement's blocks read as the Centre,
+the gym, the laboratory and houses instead of one repeated `WALL` and `ROOF` cell
+(`docs/tileset-spec.md` §2b). The sprite's own **door column** is the one the plan puts on
+the map, so the drawn door and the walkable `DOOR` cell are the same tile. The map values are
+still the rule: `WALL`/`ROOF`/`DOOR` carry the collision and the flat fallback a clone without
+the pack draws, and the sprite is a decal over them, never a map value.
 
 The kinds fill in this order: the **Centre** (a city only), the **gym** (a city only, and
 only when the node carries one), the **laboratory**, the **casino** (a city from badge 3),
@@ -310,9 +319,10 @@ rides a street and is joined to the grid by a straight run, so a walk in reaches
 a band is never a gate — walking back never needs a badge (§4).
 
 The generator is deterministic and reads **only** `nodeStreams(seed, key).layout`, in one
-fixed order: the buildings' lots are shuffled once, then each door's column in placement
-order, and nothing else. The content, encounter and loot passes can therefore layer onto
-the same node without moving a wall (`D11`, `D60`).
+fixed order: the buildings' lots are shuffled once, then each building's whole-house sprite in
+placement order — the sprite's own door column is the one the map and the decal both use — and
+nothing else. The content, encounter and loot passes can therefore layer onto the same node
+without moving a wall (`D11`, `D60`).
 ### 7.2 The interior list
 
 Every door a settlement emits opens onto one small indoor map the engine builds from

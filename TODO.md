@@ -13272,7 +13272,7 @@ them over the footprints the plan already emits; the map values stay the collisi
 other hot file. `package.json`, `src/main.ts`, `vite.config.ts` and every other
 `src/scenes/*.ts` are untouched.
 
-- [ ] **[Task-311] A city's buildings are whole houses.** Every settlement's buildings are
+- [x] **[Task-311] A city's buildings are whole houses.** Every settlement's buildings are
       the same flat block: one `WALL` frame and one `ROOF` frame repeated over a 5×4
       footprint, so a city reads as a grid of identical grey rectangles.
       **Measured:** `src/engine/region/city/plan.ts:83-86,156-164` draws each building as a
