@@ -25,12 +25,16 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`, the
   procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame
   static props a route draws on a tile, starting with the boss door's 16x16 sign).
+  `cityBuildings.ts` is the exception to "a tileset is a `TilesetConfig`": it reads
+  the whole-house decal atlas a settlement draws over its blocks
+  (`frlg/city-buildings.json`), frame size, door column and the kind → frame pick.
   Contract in `docs/tileset-spec.md`.
 - `frlg/` — the **generated, committed** frame manifests of the packed FRLG sheets
-  (`trainers.json`, `overworld.json`, `player.json`, the icon and battle-UI maps) and
-  the two tileset manifests `city.json`/`interior.json`, whose `cells` map each tile
-  kind to its atlas frame. Written by the matching `scripts/frlg/build-*.mjs` packer,
-  never by hand; the sheet pixels themselves are gitignored.
+  (`trainers.json`, `overworld.json`, `player.json`, the icon and battle-UI maps), the
+  two tileset manifests `city.json`/`interior.json`, whose `cells` map each tile
+  kind to its atlas frame, and `city-buildings.json`, the decal atlas's frame list.
+  Written by the matching `scripts/frlg/build-*.mjs` packer, never by hand; the sheet
+  pixels themselves are gitignored.
 - `biomes.ts` — biome → tileset and terrain flavour, plus the biome a map's own `map` stream rolls.
 - `mapSize.ts` — the map-size tiers (small / medium / large by area) that scale a
   biome's base `grassPatches` / `ledges` counts and add optional paths to a

@@ -4,6 +4,7 @@ import type { KeybindAction } from '../data/keybinds';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
 import { getTrainerArchetype } from '../data/trainers';
 import { trainerLevel } from '../data/trainerLevels';
+import { CITY_BUILDINGS_TEXTURE_KEY } from '../data/tilesets/cityBuildings';
 import { IS_DEVELOP } from '../dev/env';
 import type { Tile } from '../engine/grid';
 import type { CityBuilding, CityExitBand, CityPlan } from '../engine/region/city/plan';
@@ -152,6 +153,8 @@ export class CityScene extends WorldScene {
   private counterPlacement: PlacedNpc | null = null;
   /** The battle a machine opened, or null while the settlement is not under one. */
   private pendingBattle: BattleLaunch | null = null;
+  /** One whole-house sprite per building on screen, in `plan.buildings` order. */
+  private houseSprites: Phaser.GameObjects.Image[] = [];
 
   constructor() {
     super('City');
@@ -181,10 +184,12 @@ export class CityScene extends WorldScene {
     this.npcPanel = null;
     this.counterPlacement = null;
     this.pendingBattle = null;
+    this.houseSprites = [];
     this.settings = loadSettings();
     this.refreshRunKey();
     this.refreshNpcKeys();
     this.exposeDebugScene();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clearBuildings());
 
     const run = this.run;
     if (!run) {
@@ -250,6 +255,7 @@ export class CityScene extends WorldScene {
       this.city = planCity(plan, key);
       this.standNpcs(plan, key);
     }
+    this.drawBuildings();
     this.buildPlayer(spawn);
     playMusic(this, CITY_MUSIC);
   }
@@ -258,8 +264,38 @@ export class CityScene extends WorldScene {
   private enter(world: NodeWorld): void {
     this.standNpcs(planRegion(this.run.seed), world.key);
     this.applyWorld(world);
+    this.drawBuildings();
     this.buildPlayer(this.spawnFor(world.key));
     playMusic(this, CITY_MUSIC);
+  }
+
+  /**
+   * Draws every building's whole-house sprite over its footprint: a decal over the
+   * tile layer, never a map value — the `WALL`/`ROOF`/`DOOR` cells stay the
+   * collision rule and the fallback a clone without the pack draws. The depth is
+   * the house's own foot row, so a player standing south of it draws above and one
+   * standing behind the roof draws below.
+   */
+  private drawBuildings(): void {
+    this.clearBuildings();
+    const city = this.city;
+    if (city === null) return;
+    for (const building of city.buildings) {
+      const rect = building.rect;
+      this.houseSprites.push(
+        this.add
+          .image(rect.x * TILE_SIZE, rect.y * TILE_SIZE, CITY_BUILDINGS_TEXTURE_KEY, building.sprite)
+          .setOrigin(0, 0)
+          .setDisplaySize(rect.width * TILE_SIZE, rect.height * TILE_SIZE)
+          .setDepth(actorDepth((rect.y + rect.height) * TILE_SIZE)),
+      );
+    }
+  }
+
+  /** Drops the houses on screen, so a travel never leaves the old city's over the new map. */
+  private clearBuildings(): void {
+    for (const sprite of this.houseSprites) sprite.destroy();
+    this.houseSprites = [];
   }
 
   /**

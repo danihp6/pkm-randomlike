@@ -92,6 +92,20 @@ pitch, and `scripts/frlg/build-trainer-sprites.mjs` crops the ten the archetypes
 use (keying the orange to transparent) into `src/assets/frlg/trainers.png` plus
 `src/data/frlg/trainers.json`, read through `src/data/trainerSprites.ts` (D20).
 
+The settlement buildings come from the buildings compendium `tileset-1.png`, which
+carries whole FRLG houses on a 16px grid with 1px transparent separators: a city's
+Centre, gym, laboratory and houses are four whole-house crops, not one repeated wall
+and roof cell. `scripts/frlg/build-city-buildings.mjs` crops four of them (the P.C.,
+the green-roofed two-storey building, the tan house with the arched door and the
+blue-roofed `SHOP` house), keeps the crop's own alpha, repairs the separators, scales
+nearest-neighbour into 80x96 frames — 5x6 tiles, centred so each house's door lands on
+its manifest column — and writes `src/assets/frlg/city-buildings.png` (320x96, four
+frames) plus `src/data/frlg/city-buildings.json`, read through
+`src/data/tilesets/cityBuildings.ts`. The city screen draws one frame per building as a
+decal over the plan's footprint (`docs/tileset-spec.md` §2b); a flat crop (a rect that
+slid off its house) is refused the way `build-sign.mjs` refuses one. The packer takes
+its source only from argv, per the asset-tree rule.
+
 The overworld sprites come from the pret/pokefirered decomp rather than
 the compilation sheet, because each class is its own named file there. The ten
 trainer classes' `graphics/object_events/pics/people/*.png` (mostly 160x32, ten

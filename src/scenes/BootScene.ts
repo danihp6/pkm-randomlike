@@ -57,6 +57,12 @@ import {
 } from '../data/moveCategoryIcons';
 import { TYPE_ICON_ATLAS_URL, TYPE_ICON_H, TYPE_ICON_TEXTURE_KEY, TYPE_ICON_W } from '../data/typeIcons';
 import {
+  CITY_BUILDINGS_ATLAS_URL,
+  CITY_BUILDINGS_TEXTURE_KEY,
+  CITY_BUILDING_H,
+  CITY_BUILDING_W,
+} from '../data/tilesets/cityBuildings';
+import {
   STATUS_ICON_ATLAS_URL,
   STATUS_ICON_H,
   STATUS_ICON_TEXTURE_KEY,
@@ -171,6 +177,12 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet(TYPE_ICON_TEXTURE_KEY, TYPE_ICON_ATLAS_URL, {
       frameWidth: TYPE_ICON_W,
       frameHeight: TYPE_ICON_H,
+    });
+    // A settlement's houses are 5x6-tile frames the city screen draws as decals
+    // over the block, so the sheet slices at the frame's own 80x96.
+    this.load.spritesheet(CITY_BUILDINGS_TEXTURE_KEY, CITY_BUILDINGS_ATLAS_URL, {
+      frameWidth: CITY_BUILDING_W,
+      frameHeight: CITY_BUILDING_H,
     });
     this.load.spritesheet(STATUS_ICON_TEXTURE_KEY, STATUS_ICON_ATLAS_URL, {
       frameWidth: STATUS_ICON_W,

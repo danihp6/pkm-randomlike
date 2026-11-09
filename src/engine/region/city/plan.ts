@@ -1,4 +1,5 @@
 import { citySize, cityTierForBadge, TOWN_SIZE } from '../../../data/region';
+import { buildingFrameFor, CITY_BUILDING_SPRITES } from '../../../data/tilesets/cityBuildings';
 import type { Tile } from '../../grid';
 import { DOOR, PATH, PLAZA, ROOF, TALL_GRASS, WALL, type TileMap } from '../../map';
 import type { Rng } from '../../rng';
@@ -15,8 +16,9 @@ import { nodeStreams } from '../streams';
  *
  * The map is emitted in the engine's own map values, never in atlas frames, and it
  * reads nothing but `nodeStreams(seed, key).layout`: the buildings' blocks are
- * shuffled off it once, then each door's column in placement order, and no other
- * draw is taken — so a later content pass cannot move a wall (`D11`, `D60`).
+ * shuffled off it once, then each building's house sprite in placement order — the
+ * sprite's own door column is the one the map and the decal both use — and no
+ * other draw is taken, so a later content pass cannot move a wall (`D11`, `D60`).
  */
 
 /** The five things a city door can lead to. Frozen: the interior generator parses it. */
@@ -36,6 +38,8 @@ export type CityBuilding = Readonly<{
   interiorKey: string;
   /** The footprint, inclusive of roof, wall and the door: top-left + size. */
   rect: Readonly<{ x: number; y: number; width: number; height: number }>;
+  /** The `city-buildings` frame the scene draws over `rect`. */
+  sprite: number;
 }>;
 
 /** One border exit. A city band is two-way: walking back never needs a badge. */
@@ -82,8 +86,12 @@ const BLOCK = 7;
 
 const BUILDING_WIDTH = 5;
 
-/** The front row with its door plus the three roof rows behind it. */
-const BUILDING_HEIGHT = 4;
+/**
+ * The footprint's rows: the front row with its door plus the five roof rows
+ * behind it. The compendium's houses face south, so the front sits on the block's
+ * bottom row and one `WALL` row of the block stays above the roof.
+ */
+const BUILDING_HEIGHT = 6;
 
 /** An exit band's width, matched to a street so it reads as that street reaching the ring. */
 const BAND_WIDTH = 3;
@@ -153,12 +161,13 @@ function fillBlock(tiles: number[][], block: Tile, value: number): readonly Tile
   return cells;
 }
 
-/** A building's front row on top (one `DOOR`, the rest `WALL`) and `ROOF` behind it. */
-function drawBuilding(tiles: number[][], block: Tile, doorColumn: number): void {
+/** A building's front row at `top` (one `DOOR`, the rest `WALL`) and `ROOF` above it. */
+function drawBuilding(tiles: number[][], block: Tile, top: number, doorColumn: number): void {
   for (let y = 0; y < BUILDING_HEIGHT; y++) {
     for (let x = 0; x < BUILDING_WIDTH; x++) {
-      const value = y > 0 ? ROOF : x === doorColumn ? DOOR : WALL;
-      tiles[block.y + y][block.x + x] = value;
+      const front = y === BUILDING_HEIGHT - 1;
+      const value = front ? (x === doorColumn ? DOOR : WALL) : ROOF;
+      tiles[top + y][block.x + x] = value;
     }
   }
 }
@@ -296,13 +305,16 @@ export function planCity(plan: RegionPlan, key: string): CityPlan {
   const buildings: CityBuilding[] = [];
   for (let index = 0; index < kinds.length; index++) {
     const block = lots[index];
-    const doorColumn = layoutRng.int(0, BUILDING_WIDTH - 1);
-    drawBuilding(tiles, block, doorColumn);
+    const top = block.y + BLOCK - BUILDING_HEIGHT;
+    const sprite = buildingFrameFor(kinds[index], layoutRng.int(0, CITY_BUILDING_SPRITES.length - 1));
+    const doorColumn = CITY_BUILDING_SPRITES[sprite].door;
+    drawBuilding(tiles, block, top, doorColumn);
     buildings.push({
       kind: kinds[index],
-      door: { x: block.x + doorColumn, y: block.y },
+      door: { x: block.x + doorColumn, y: top + BUILDING_HEIGHT - 1 },
       interiorKey: interiorKeys[index],
-      rect: { x: block.x, y: block.y, width: BUILDING_WIDTH, height: BUILDING_HEIGHT },
+      rect: { x: block.x, y: top, width: BUILDING_WIDTH, height: BUILDING_HEIGHT },
+      sprite,
     });
   }
 

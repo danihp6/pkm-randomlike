@@ -1,0 +1,24 @@
+{
+  "width": 80,
+  "height": 96,
+  "cols": 4,
+  "rows": 1,
+  "frames": [
+    {
+      "kind": "centre",
+      "door": 2
+    },
+    {
+      "kind": "gym",
+      "door": 2
+    },
+    {
+      "kind": "lab",
+      "door": 2
+    },
+    {
+      "kind": "house",
+      "door": 2
+    }
+  ]
+}
