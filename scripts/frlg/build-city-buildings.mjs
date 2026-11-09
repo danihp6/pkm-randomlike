@@ -53,9 +53,9 @@ const TILE = 16
  */
 const HOUSES = [
   { kind: 'centre', rect: [98, 13, 92, 82], doorCentre: 143.5 },
-  { kind: 'gym', rect: [659, 13, 126, 104], doorCentre: 721.5 },
+  { kind: 'gym', rect: [334, 26, 79, 88], doorCentre: 364.5 },
   { kind: 'lab', rect: [574, 130, 92, 84], doorCentre: 619.5 },
-  { kind: 'house', rect: [115, 819, 92, 75], doorCentre: 159.5 },
+  { kind: 'house', rect: [13, 20, 80, 80], doorCentre: 58.5 },
 ]
 
 const MIN_OPAQUE_COLOURS = 3

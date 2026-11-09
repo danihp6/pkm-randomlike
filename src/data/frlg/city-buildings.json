@@ -10,7 +10,7 @@
     },
     {
       "kind": "gym",
-      "door": 2
+      "door": 1
     },
     {
       "kind": "lab",
@@ -18,7 +18,7 @@
     },
     {
       "kind": "house",
-      "door": 2
+      "door": 3
     }
   ]
 }

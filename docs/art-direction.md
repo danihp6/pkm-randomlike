@@ -96,18 +96,19 @@ The settlement buildings come from the buildings compendium `tileset-1.png`, whi
 carries whole FRLG houses on a 16px grid with 1px transparent separators: a city's
 Centre, gym, laboratory and houses are four whole-house crops, not one repeated wall
 and roof cell. `scripts/frlg/build-city-buildings.mjs` crops four of them (the P.C.,
-the orange-roofed building with the arched entrance, the tan house with the arched
-door and the green-roofed house), keeps the crop's own alpha, repairs the separators,
+the green-roofed two-storey building, the tan house with the arched door and the
+blue-roofed `SHOP` house), keeps the crop's own alpha, repairs the separators,
 cuts each house's own opaque bounding box and scales it nearest-neighbour into an
 80x96 frame — 5x6 tiles, every edge column and row carrying art so the flat roof tile
 never shows through the footprint — and writes `src/assets/frlg/city-buildings.png`
 (320x96, four frames) plus `src/data/frlg/city-buildings.json`, read through
 `src/data/tilesets/cityBuildings.ts`. The manifest's door column is measured off the
-same box, so the plan's walkable `DOOR` cell sits under the drawn door. The city
-screen draws one frame per building as a decal over the plan's footprint
-(`docs/tileset-spec.md` §2b); a flat crop (a rect that slid off its house) and a frame
-with a transparent line are refused the way `build-sign.mjs` refuses one. The packer
-takes its source only from argv, per the asset-tree rule.
+same box, so the plan's walkable `DOOR` cell sits under the drawn door (the two
+houses narrower than the frame, the gym and the shop, scale up and take columns 1 and
+3 rather than 2). The city screen draws one frame per building as a decal over the
+plan's footprint (`docs/tileset-spec.md` §2b); a flat crop (a rect that slid off its
+house) and a frame with a transparent line are refused the way `build-sign.mjs`
+refuses one. The packer takes its source only from argv, per the asset-tree rule.
 
 The overworld sprites come from the pret/pokefirered decomp rather than
 the compilation sheet, because each class is its own named file there. The ten

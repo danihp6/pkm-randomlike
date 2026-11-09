@@ -161,9 +161,9 @@ atlas**, not a field: `src/assets/frlg/city-buildings.png` is 320x96 — four fr
 | frame | kind | source | door column |
 | --- | --- | --- | --- |
 | 0 | `centre` | the P.C. (red roof, `P.C.` sign) | 2 |
-| 1 | `gym` | the orange-roofed building with the arched entrance | 2 |
+| 1 | `gym` | the green-roofed two-storey building | 1 |
 | 2 | `lab` | the tan-roofed house with the arched door | 2 |
-| 3 | `house` | the green-roofed house with the blue door | 2 |
+| 3 | `house` | the blue-roofed `SHOP` house | 3 |
 
 The manifest is the only source of the frame numbers: `CITY_BUILDING_SPRITES` reads it,
 `buildingFrameFor(kind, index)` answers the frames a kind carries (wrapped by `index`,

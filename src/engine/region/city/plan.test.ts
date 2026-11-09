@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { citySize, cityTierForBadge, TOWN_SIZE } from '../../../data/region';
 import { FRLG_CITY_TILESET } from '../../../data/tilesets/city';
 import { CITY_BUILDING_SPRITES } from '../../../data/tilesets/cityBuildings';
@@ -82,7 +82,7 @@ describe('city plan', () => {
     }
   });
 
-  it('gives the Centre, the gym and the laboratory a door on the block’s street row', () => {
+  it('gives the Centre, the gym and the laboratory a door on the blockâ€™s street row', () => {
     for (const seed of SEEDS) {
       const plan = planRegion(seed);
       for (const key of SETTLEMENT_KEYS) {
@@ -109,7 +109,7 @@ describe('city plan', () => {
     }
   });
 
-  it('draws a whole-house sprite whose own door column is the map’s door', () => {
+  it('draws a whole-house sprite whose own door column is the mapâ€™s door', () => {
     for (const seed of SEEDS) {
       for (const city of settlementsOf(seed)) {
         for (const building of city.buildings) {
@@ -138,7 +138,7 @@ describe('city plan', () => {
     }
   });
 
-  it('sits every building on its block’s bottom row', () => {
+  it('sits every building on its blockâ€™s bottom row', () => {
     for (const seed of SEEDS) {
       for (const city of settlementsOf(seed)) {
         for (const building of city.buildings) {
@@ -229,15 +229,15 @@ describe('city plan', () => {
   it("pins a fixed seed's settlement digests", () => {
     const plan = planRegion('alpha');
     expect(SETTLEMENT_KEYS.map((key) => digest(planCity(plan, key)))).toEqual([
-      '40x40|null|19,19|lab@18,32:lab|house@8,22:house|exits:E:route:1:38,13.38,14.38,15.39,13.39,14.39,15|grass:49|siphmt',
-      '50x50|1|29,29|centre@18,12:centre|gym@28,12:gym|lab@28,42:lab|house@8,32:house:1|house@28,22:house:2|house@38,32:house:3|exits:W:route:1:0,23.0,24.0,25.1,23.1,24.1,25|E:route:2:48,23.48,24.48,25.49,23.49,24.49,25|grass:49|oazr4f',
-      '50x50|1|29,29|centre@8,12:centre|gym@18,42:gym|lab@28,42:lab|house@8,22:house:1|house@38,22:house:2|house@8,32:house:3|exits:W:route:2:0,23.0,24.0,25.1,23.1,24.1,25|E:route:3:48,23.48,24.48,25.49,23.49,24.49,25|grass:49|1raz4rp',
-      '70x70|2|39,39|centre@58,52:centre|gym@8,12:gym|lab@28,22:lab|casino@58,12:casino|house@8,32:house:1|house@38,62:house:2|house@48,62:house:3|house@18,22:house:4|house@28,42:house:5|house@58,32:house:6|exits:W:route:3:0,33.0,34.0,35.1,33.1,34.1,35|E:route:4:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|3v7czc',
-      '70x70|2|39,39|centre@58,52:centre|gym@38,22:gym|lab@48,32:lab|casino@48,52:casino|house@58,32:house:1|house@28,12:house:2|house@48,62:house:3|house@8,52:house:4|house@28,32:house:5|house@48,12:house:6|exits:W:route:4:0,33.0,34.0,35.1,33.1,34.1,35|E:route:5:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|l1f3ms',
-      '70x70|2|39,39|centre@58,12:centre|gym@38,12:gym|lab@38,62:lab|casino@58,22:casino|house@28,32:house:1|house@8,52:house:2|house@38,32:house:3|house@58,32:house:4|house@58,52:house:5|house@28,52:house:6|exits:W:route:5:0,33.0,34.0,35.1,33.1,34.1,35|E:route:6:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|8hjx5t',
-      '90x90|3|49,49|centre@8,52:centre|gym@38,82:gym|lab@18,82:lab|casino@58,12:casino|house@68,72:house:1|house@68,82:house:2|house@38,72:house:3|house@28,22:house:4|house@68,32:house:5|house@18,42:house:6|house@78,72:house:7|house@68,22:house:8|house@8,72:house:9|house@8,32:house:10|exits:W:route:6:0,43.0,44.0,45.1,43.1,44.1,45|E:route:7:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|1vqx071',
-      '90x90|3|49,49|centre@78,52:centre|gym@78,42:gym|lab@68,62:lab|casino@18,42:casino|house@8,52:house:1|house@48,22:house:2|house@68,72:house:3|house@28,32:house:4|house@28,42:house:5|house@28,82:house:6|house@58,12:house:7|house@28,12:house:8|house@8,12:house:9|house@48,42:house:10|exits:W:route:7:0,43.0,44.0,45.1,43.1,44.1,45|E:route:8:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|u0wsz9',
-      '90x90|3|49,49|centre@78,32:centre|gym@28,32:gym|lab@8,52:lab|casino@58,32:casino|house@38,82:house:1|house@78,62:house:2|house@68,12:house:3|house@18,32:house:4|house@8,82:house:5|house@78,22:house:6|house@78,72:house:7|house@8,62:house:8|house@68,42:house:9|house@68,22:house:10|exits:W:route:8:0,43.0,44.0,45.1,43.1,44.1,45|E:victory-road:1:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|1hl7osq',
+      '40x40|null|19,19|lab@18,32:lab|house@9,22:house|exits:E:route:1:38,13.38,14.38,15.39,13.39,14.39,15|grass:49|1xgwfl0',
+      '50x50|1|29,29|centre@18,12:centre|gym@27,12:gym|lab@28,42:lab|house@9,32:house:1|house@29,22:house:2|house@39,32:house:3|exits:W:route:1:0,23.0,24.0,25.1,23.1,24.1,25|E:route:2:48,23.48,24.48,25.49,23.49,24.49,25|grass:49|s58em',
+      '50x50|1|29,29|centre@8,12:centre|gym@17,42:gym|lab@28,42:lab|house@9,22:house:1|house@39,22:house:2|house@9,32:house:3|exits:W:route:2:0,23.0,24.0,25.1,23.1,24.1,25|E:route:3:48,23.48,24.48,25.49,23.49,24.49,25|grass:49|1us91g7',
+      '70x70|2|39,39|centre@58,52:centre|gym@7,12:gym|lab@28,22:lab|casino@59,12:casino|house@9,32:house:1|house@39,62:house:2|house@49,62:house:3|house@19,22:house:4|house@29,42:house:5|house@59,32:house:6|exits:W:route:3:0,33.0,34.0,35.1,33.1,34.1,35|E:route:4:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|1bgho5a',
+      '70x70|2|39,39|centre@58,52:centre|gym@37,22:gym|lab@48,32:lab|casino@49,52:casino|house@59,32:house:1|house@29,12:house:2|house@49,62:house:3|house@9,52:house:4|house@29,32:house:5|house@49,12:house:6|exits:W:route:4:0,33.0,34.0,35.1,33.1,34.1,35|E:route:5:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|1gvnqa',
+      '70x70|2|39,39|centre@58,12:centre|gym@37,12:gym|lab@38,62:lab|casino@59,22:casino|house@29,32:house:1|house@9,52:house:2|house@39,32:house:3|house@59,32:house:4|house@59,52:house:5|house@29,52:house:6|exits:W:route:5:0,33.0,34.0,35.1,33.1,34.1,35|E:route:6:68,33.68,34.68,35.69,33.69,34.69,35|grass:49|6dphz5',
+      '90x90|3|49,49|centre@8,52:centre|gym@37,82:gym|lab@18,82:lab|casino@59,12:casino|house@69,72:house:1|house@69,82:house:2|house@39,72:house:3|house@29,22:house:4|house@69,32:house:5|house@19,42:house:6|house@79,72:house:7|house@69,22:house:8|house@9,72:house:9|house@9,32:house:10|exits:W:route:6:0,43.0,44.0,45.1,43.1,44.1,45|E:route:7:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|13yfvrk',
+      '90x90|3|49,49|centre@78,52:centre|gym@77,42:gym|lab@68,62:lab|casino@19,42:casino|house@9,52:house:1|house@49,22:house:2|house@69,72:house:3|house@29,32:house:4|house@29,42:house:5|house@29,82:house:6|house@59,12:house:7|house@29,12:house:8|house@9,12:house:9|house@49,42:house:10|exits:W:route:7:0,43.0,44.0,45.1,43.1,44.1,45|E:route:8:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|142tegv',
+      '90x90|3|49,49|centre@78,32:centre|gym@27,32:gym|lab@8,52:lab|casino@59,32:casino|house@39,82:house:1|house@79,62:house:2|house@69,12:house:3|house@19,32:house:4|house@9,82:house:5|house@79,22:house:6|house@79,72:house:7|house@9,62:house:8|house@69,42:house:9|house@69,22:house:10|exits:W:route:8:0,43.0,44.0,45.1,43.1,44.1,45|E:victory-road:1:88,43.88,44.88,45.89,43.89,44.89,45|grass:49|1a2hd52',
     ]);
   });
 
@@ -248,3 +248,4 @@ describe('city plan', () => {
     expect(() => planCity(plan, 'nope:1')).toThrow('not a settlement: nope:1');
   });
 });
+
