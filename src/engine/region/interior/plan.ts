@@ -53,6 +53,8 @@ export type InteriorPlan = Readonly<{
   slots: readonly InteriorSlot[];
   /** The gym's four rooms, in order. Absent (not `[]`) on every other kind. */
   rooms?: readonly InteriorRoom[];
+  /** The lab's three Poké Ball tiles on its table; absent on every other kind. */
+  starterBalls?: readonly Tile[];
 }>;
 
 type Rect = Readonly<{ x: number; y: number; width: number; height: number }>;
@@ -62,6 +64,7 @@ type InteriorDraft = Readonly<{
   entry: Tile;
   slots: readonly InteriorSlot[];
   rooms?: readonly InteriorRoom[];
+  starterBalls?: readonly Tile[];
 }>;
 
 /** Every room is a floor rectangle inside a wall ring this many cells deep. */
@@ -72,6 +75,12 @@ const RING = 1;
  * its middle and the counter reads as one object either side of it.
  */
 const COUNTER_RUN = 9;
+
+/** The laboratory's table: three `COUNTER` cells, one Poké Ball on each. */
+const LAB_TABLE_RUN = 3;
+
+/** How far off the table's middle the professor's free side cell stands. */
+const LAB_HOST_OFFSET = 4;
 
 /** A gym's four rooms in travel order: a 2×2 walk, one door between consecutive ones. */
 const GYM_ROOM_NAMES: readonly InteriorRoom['name'][] = ['entrance', 'trainer', 'puzzle', 'leader'];
@@ -125,9 +134,22 @@ function furnitureRow(height: number): number {
 }
 
 /**
+ * A free side cell on the furniture row, `offset` cells off its middle: the left one,
+ * or the right one when the left leaves the floor. The middle is the fallback, so a
+ * room too narrow for either side still answers a walkable cell.
+ */
+function sideCell(centre: number, width: number, offset: number): number {
+  const left = centre - offset;
+  if (left >= RING && left < width - RING) return left;
+  const right = centre + offset;
+  return right >= RING && right < width - RING ? right : centre;
+}
+
+/**
  * A one-room building: a `FLOOR` rectangle in a `WALL` ring, a `DOOR` in its bottom
  * wall, and the furniture its kind carries. The Centre stamps the counter the healing
- * station is set into; the rest put their host on a free floor tile.
+ * station is set into; the laboratory stamps its three-cell table and stands the
+ * professor beside it; the rest put their host on the middle floor tile.
  */
 function planSmallRoom(kind: Exclude<InteriorRoomKind, 'gym'>, layout: Rng): InteriorDraft {
   const { width, height } = INTERIOR_SIZE;
@@ -147,10 +169,23 @@ function planSmallRoom(kind: Exclude<InteriorRoomKind, 'gym'>, layout: Rng): Int
     const pc: Tile = { x: centre + reach + 2, y: row };
     tiles[pc.y][pc.x] = PC;
     slots.push({ role: 'heal', tile: { x: centre, y: row } }, { role: 'pc', tile: pc });
-  } else {
-    slots.push({ role: HOST_ROLE[kind], tile: { x: centre, y: row } });
+    return { tiles, entry, slots };
+  }
+  if (kind === 'lab') {
+    const reach = (LAB_TABLE_RUN - 1) / 2;
+    const starterBalls: Tile[] = [];
+    for (let x = centre - reach; x <= centre + reach; x++) {
+      tiles[row][x] = COUNTER;
+      starterBalls.push({ x, y: row });
+    }
+    slots.push({
+      role: HOST_ROLE[kind],
+      tile: { x: sideCell(centre, width, LAB_HOST_OFFSET), y: row },
+    });
+    return { tiles, entry, slots, starterBalls };
   }
 
+  slots.push({ role: HOST_ROLE[kind], tile: { x: centre, y: row } });
   return { tiles, entry, slots };
 }
 
@@ -234,5 +269,12 @@ export function planInterior(plan: RegionPlan, interiorKey: string, cityKey: str
     returnTo: cityKey,
     slots: draft.slots,
     ...(draft.rooms === undefined ? {} : { rooms: draft.rooms }),
+    ...(draft.starterBalls === undefined ? {} : { starterBalls: draft.starterBalls }),
   };
+}
+
+/** True when `tile` shares an edge with one of the plan's starter balls. */
+export function nextToStarterBalls(tile: Tile, plan: InteriorPlan): boolean {
+  const balls = plan.starterBalls ?? [];
+  return balls.some((ball) => Math.abs(ball.x - tile.x) + Math.abs(ball.y - tile.y) === 1);
 }

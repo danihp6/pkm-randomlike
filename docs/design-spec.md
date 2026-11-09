@@ -318,7 +318,11 @@ carries over.
   keyboard cursor; on a phone (or any narrow or portrait stage) the three cards
   stack as full-width rows so the offer never runs off the screen. Each card shows
   the portrait, the name and the **type badges** (the selected portrait bobs
-  gently); a type the FRLG badge sheet lacks (Fairy) falls back to its name.
+  gently); a type the FRLG badge sheet lacks (Fairy) falls back to its name. In the
+  laboratory the pick is not up on entry: the player walks to the room's table of
+  three Poké Balls and presses the interact key, and the panel opens over the room;
+  a chosen card takes the starter and drops the panel, cancel drops it with no gift,
+  and the player may walk away and come back.
 - One capture per **node**, the classic way: weaken a wild Pokémon, throw a
   ball, it either clicks or breaks out. A node that spent its capture stays spent
   if you walk back into it, and every room of that node reads the same answer

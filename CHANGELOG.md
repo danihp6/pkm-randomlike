@@ -8,6 +8,17 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The laboratory hands the starter by hand.** `[Task-310]`, Batch 133: a new run mounted
+      the starter picker over the room on entry, so the laboratory was never seen, and after a
+      pick the opaque layer stayed with an empty offer; Continue on a prologue also started
+      `Route` and stranded the run in the town. The lab now stamps a three-cell `COUNTER` table
+      with three Poké Ball tiles (`starterBalls`, `nextToStarterBalls`), the scene draws the balls
+      and opens the shipped picker only on the interact key, choosing disposes it, cancel drops it
+      without a gift, and Continue routes `isPrologue` back to `Lab`. `[unit]` the suite is green
+      (5 988 passed) with `npm run build` clean; `[live]` at 1280×800 the room, table and three
+      balls draw, the picker opens with three portraits, the pick takes the starter and closes,
+      and reload + Continue reopens the laboratory.
+
 - [x] **The type badges are Añil's mini glyphs.** `[Task-309]`, Batch 133: the game packed
       Añil's long `Graphics/UI/types.png` badges (64×24 into 32×14 frames) while the board draws
       `Graphics/UI/types_mini.png`'s nineteen 24×24 glyphs, so the starter cards and the move cells

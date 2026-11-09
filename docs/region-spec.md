@@ -257,6 +257,14 @@ party is a legal save exactly while `starterTaken` is false. The room is the `La
 `planInterior(planRegion(run.seed), interiorKey, cityKey)`, and the pick inside it is the
 shipped `04 Starter pick` panel.
 
+The laboratory's table is a **three-cell `COUNTER` run** on the room's furniture row with
+one Poké Ball on each cell (`planInterior`'s `starterBalls`, `nextToStarterBalls`), and the
+professor's slot stands four cells off its middle. The pick is **not** mounted on entry: the
+player walks to a tile that shares an edge with the table and presses the interact key, which
+mounts the panel over the room. A chosen card takes the starter and drops the panel, cancel
+drops it with no gift, and the player may walk away and come back. A saved run that has not
+taken its starter reopens the laboratory on **Continue**, never the road.
+
 ## 7. What a route and a city hold
 
 What a node holds — its NPCs, its points of interest, its grass, its shops and its

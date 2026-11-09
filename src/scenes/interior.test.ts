@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import type { RunState } from '../engine/run';
 import { STARTER_LEVEL, emptyRun, takeStarter } from '../engine/run/prologue';
 import { starterOffer } from '../engine/run/starters';
+import type { StarterIntent } from '../ui/hud/panels/starter';
 import { InteriorScene, labStarterOffer, regionSceneClass, regionSceneKey } from './InteriorScene';
 
 /** The scene's own state, with the mounted panel stubbed. */
@@ -25,7 +26,7 @@ type SceneInternals = {
   seed: string;
   index: number;
   controller: { update(view: unknown): void; dispose(): void } | null;
-  handleIntent(intent: { type: 'choose' | 'select'; index: number }): void;
+  handleIntent(intent: StarterIntent): void;
 };
 
 function scene(run: RunState): SceneInternals {
@@ -78,13 +79,38 @@ describe('the professor’s pick', () => {
     expect(labStarterOffer(instance.run ?? undefined, 'seed')).toEqual([]);
   });
 
-  it('repaints the panel after the pick, so an empty offer is drawn', () => {
+  it('drops the panel after the pick, instead of repainting an empty offer', () => {
     const instance = scene(emptyRun('seed'));
+    const dispose = instance.controller!.dispose;
     const update = instance.controller!.update;
 
     instance.handleIntent({ type: 'choose', index: 0 });
 
-    expect(update).toHaveBeenCalledTimes(2);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+    expect(instance.controller).toBeNull();
+  });
+
+  it('drops the panel on cancel, with no gift at all', () => {
+    const instance = scene(emptyRun('seed'));
+    const dispose = instance.controller!.dispose;
+
+    instance.handleIntent({ type: 'cancel' });
+
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(instance.controller).toBeNull();
+    expect(instance.run?.starterTaken).toBe(false);
+    expect(instance.run?.party).toEqual([]);
+  });
+
+  it('keeps the card the pointer hovers on, and repaints it', () => {
+    const instance = scene(emptyRun('seed'));
+    const update = instance.controller!.update;
+
+    instance.handleIntent({ type: 'select', index: 2 });
+
+    expect(instance.index).toBe(2);
+    expect(update).toHaveBeenCalledTimes(1);
   });
 
   it('takes the first card on a click that arrives without a hover', () => {
@@ -112,5 +138,69 @@ describe('the scene’s region registration and its way out', () => {
     expect(source).toContain('takeStarter(');
     expect(source).not.toContain('Math.random');
     expect(source).not.toContain('Date.now');
+  });
+});
+
+/** The room's table: the pick is opened by walking up to it, never on entry. */
+describe('the laboratory’s table (Task-310)', () => {
+  const SOURCE = readFileSync(fileURLToPath(new URL('./InteriorScene.ts', import.meta.url)), 'utf8');
+
+  /** The body of the method whose signature starts at `signature`, braces balanced. */
+  function bodyOf(signature: string): string {
+    const at = SOURCE.indexOf(signature);
+    expect(at, signature).toBeGreaterThanOrEqual(0);
+    const open = SOURCE.indexOf('{', at);
+    let depth = 0;
+    for (let index = open; index < SOURCE.length; index++) {
+      const char = SOURCE[index];
+      if (char === '{') depth += 1;
+      else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) return SOURCE.slice(open, index + 1);
+      }
+    }
+    return SOURCE.slice(open);
+  }
+
+  it('never mounts the pick on entry', () => {
+    const create = bodyOf('override create(): void {');
+
+    expect(create).not.toContain('createDom');
+    expect(create).not.toContain('mountStarter(');
+    expect(create).toContain('this.readStarterKeys()');
+    expect(create).toContain('this.drawStarterBalls(interior)');
+    expect(SOURCE).not.toContain('createDom');
+  });
+
+  it('opens the pick from the table, and the panel owns the room while it is up', () => {
+    const update = bodyOf('override update(time: number, delta: number): void {');
+
+    expect(update).toContain('nextToStarterBalls(');
+    expect(update).toContain('this.openStarter()');
+    expect(update).toContain('this.disposePanel()');
+    expect(SOURCE).toContain('private openStarter(): void {');
+    expect(SOURCE).toContain('mountStarter(host, this.view()');
+  });
+
+  it('reads interact, confirm and cancel off the shared keybind map', () => {
+    expect(SOURCE).toContain("interact: bind('interact')");
+    expect(SOURCE).toContain("confirm: bind('confirm')");
+    expect(SOURCE).toContain("cancel: bind('cancel')");
+    expect(SOURCE).toContain("if (keys.cancel.some(down)) return 'cancel';");
+  });
+
+  it('drops the panel on confirm and never repaints an empty offer', () => {
+    const confirm = bodyOf('private confirm(): void {');
+
+    expect(confirm).toContain('this.disposePanel()');
+    expect(confirm).not.toContain('render(');
+    expect(confirm).toContain('takeStarter(');
+  });
+
+  it('draws one item-atlas Poké Ball per starter-ball tile', () => {
+    expect(SOURCE).toContain('ITEM_ICON_TEXTURE_KEY');
+    expect(SOURCE).toContain("itemIconFrame('pokeball')");
+    expect(SOURCE).toContain('interior.starterBalls');
+    expect(SOURCE).toContain('this.add');
   });
 });

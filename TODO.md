@@ -13204,7 +13204,7 @@ hot file: `package.json`, `src/main.ts`, `vite.config.ts` and every other
       `docs/art-direction.md` and `docs/hud-fidelity.md` (the atlas row). *Dependencies:*
       the Añil store's `types_mini.png` and the starter pick (`[Task-287]`). *(Batch 133)*
 
-- [ ] **[Task-310] The laboratory hands the starter by hand, and Continue reopens it.**
+- [x] **[Task-310] The laboratory hands the starter by hand, and Continue reopens it.**
       The picker mounts itself over the room the moment the laboratory opens, so a new run
       never sees the room; after a pick it stays as an opaque layer with an empty offer; the
       lab has no table or Poké Balls to walk up to; and a reload's Continue starts `Route`

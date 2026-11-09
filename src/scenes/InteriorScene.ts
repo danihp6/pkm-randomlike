@@ -1,14 +1,21 @@
 import Phaser from 'phaser';
+import type { KeybindAction } from '../data/keybinds';
+import { ITEM_ICON_TEXTURE_KEY, itemIconFrame } from '../data/itemIcons';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
 import { FRLG_INTERIOR_TILESET } from '../data/tilesets/interior';
 import { IS_DEVELOP } from '../dev/env';
 import type { Tile } from '../engine/grid';
-import { interiorRoomKind, planInterior, type InteriorPlan } from '../engine/region/interior/plan';
+import {
+  interiorRoomKind,
+  nextToStarterBalls,
+  planInterior,
+  type InteriorPlan,
+} from '../engine/region/interior/plan';
 import { planRegion } from '../engine/region/plan';
 import { buildNodeMeshes } from '../engine/region/preload';
 import type { RunState } from '../engine/run';
 import { serviceHeal } from '../engine/run/heal';
-import { STARTER_LEVEL, takeStarter } from '../engine/run/prologue';
+import { STARTER_LEVEL, isPrologue, takeStarter } from '../engine/run/prologue';
 import { starterOffer } from '../engine/run/starters';
 import { loadSave, storeRun, type Settings } from '../engine/save';
 import { TILE_SIZE } from '../engine/tileset';
@@ -30,16 +37,18 @@ import { WorldWalker } from './walker';
 /**
  * The prologue's room (`docs/region-spec.md` §6): the town's **laboratory**, the one
  * interior the town has — a city's Centre is `services.ts`. A brand-new run starts
- * here with no Pokémon at all, the professor's pick (`04 Starter pick`, the shipped
- * `starter` panel) hands over the starter and the starting bag, and the town's exit
- * stays shut until it does (`canLeaveTown`, enforced by the pure travel seam). The
- * room also **heals on entry**, the town's free rest (`serviceHeal`).
+ * here with no Pokémon at all and sees the room: the player walks up to the room's
+ * table — three Poké Balls on three `COUNTER` cells — and the interact key opens the
+ * professor's pick (`04 Starter pick`, the shipped `starter` panel), which hands over
+ * the starter and the starting bag. The town's exit stays shut until it does
+ * (`canLeaveTown`, enforced by the pure travel seam). The room also **heals on
+ * entry**, the town's free rest (`serviceHeal`).
  *
- * It owns no rule of its own: the room is `planInterior`'s, the gift is
- * `run/prologue.ts`'s, the heal is `run/heal.ts`'s and the walk is the shared
- * `WorldWalker`. Every other interior key keeps today's fade-back — the folder
- * registry registers one key per module, so generalising the rest is a later
- * batch's.
+ * It owns no rule of its own: the room is `planInterior`'s, the table's reach is
+ * `nextToStarterBalls`'s, the gift is `run/prologue.ts`'s, the heal is
+ * `run/heal.ts`'s and the walk is the shared `WorldWalker`. Every other interior key
+ * keeps today's fade-back — the folder registry registers one key per module, so
+ * generalising the rest is a later batch's.
  */
 
 export const regionSceneKey = 'Lab';
@@ -62,6 +71,9 @@ export type InteriorDebugState = Readonly<{
   tile: { x: number; y: number };
 }>;
 
+/** The keys the laboratory reads for its table: one to open the pick, one to cancel it. */
+type StarterKeySet = Readonly<Record<'interact' | 'confirm' | 'cancel', Phaser.Input.Keyboard.Key[]>>;
+
 /** The cards the laboratory stands: the offer while it is a prologue, `[]` after. */
 export function labStarterOffer(run: RunState | undefined, seed: string): readonly string[] {
   if (run === undefined || run.starterTaken) return [];
@@ -81,6 +93,8 @@ export class InteriorScene extends WorldScene {
   private walker: WorldWalker | null = null;
   private playerSprite: Phaser.GameObjects.Sprite | null = null;
   private runKey: Phaser.Input.Keyboard.Key | null = null;
+  /** The keys the table is asked with; the pick's cancel drops it. */
+  private starterKeys: StarterKeySet | null = null;
   /** The mounted DOM picker: the one emit point of the professor's offer. */
   private controller: StarterHandle | null = null;
   /** The card the pick is on. */
@@ -98,6 +112,8 @@ export class InteriorScene extends WorldScene {
     this.walker = null;
     this.playerSprite = null;
     this.interior = null;
+    this.starterKeys = null;
+    this.controller = null;
     this.index = 0;
     this.leftEntry = false;
     this.leaving = false;
@@ -144,15 +160,32 @@ export class InteriorScene extends WorldScene {
     this.cameras.main.fadeIn(WORLD_TRANSITION_MS);
 
     this.buildPlayer(interior.entry);
+    this.drawStarterBalls(interior);
     this.runKey = actionKeys(this, 'run', this.settings.keybinds)[0] ?? null;
-    this.createDom();
+    this.starterKeys = this.readStarterKeys();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
   }
 
   override update(time: number, delta: number): void {
     void time;
+    const action = this.readStarterAction();
+    // The pick owns the room while it is up: it never walks the player under itself,
+    // and the scene's cancel key drops it, exactly as the panel's own intent does.
+    if (this.controller !== null) {
+      if (action === 'cancel') this.disposePanel();
+      return;
+    }
     const walker = this.walker;
     const sprite = this.playerSprite;
     if (walker === null || sprite === null || this.leaving) return;
+    const run = this.run;
+    const interior = this.interior;
+    const atTable =
+      interior !== null && run !== null && isPrologue(run) && nextToStarterBalls(walker.tile, interior);
+    if ((action === 'interact' || action === 'confirm') && atTable) {
+      this.openStarter();
+      return;
+    }
     const running = this.settings.alwaysRun || (this.runKey?.isDown ?? false);
     walker.update(delta, running);
     sprite.setDepth(actorDepth(sprite.y));
@@ -231,14 +264,54 @@ export class InteriorScene extends WorldScene {
    * The offer's one build: the same rules, no Phaser object, one panel in `#hud`,
    * exactly as the options panel mounts it. The panel prints only copy that
    * already exists: its own title, the cards, the share line and the starter blurb.
+   * Only the table opens it — a new run never lands with the pick already up.
    */
-  private createDom(): void {
+  private openStarter(): void {
+    if (this.controller !== null) return;
+    const run = this.run;
+    if (run === null || !isPrologue(run)) return;
     if (typeof document === 'undefined' || typeof window === 'undefined') return;
     const host = document.getElementById('hud');
     if (host === null) return;
-    this.disposePanel();
+    this.index = 0;
     this.controller = mountStarter(host, this.view(), (intent) => this.handleIntent(intent));
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposePanel());
+  }
+
+  /**
+   * The three Poké Balls on the room's table, one per `starterBalls` cell, centred on
+   * the tile and sorted with the actors by their foot so the player passes behind
+   * them. A prop, not a map value: the table itself is the plan's `COUNTER` run.
+   */
+  private drawStarterBalls(interior: InteriorPlan): void {
+    const frame = itemIconFrame('pokeball');
+    if (frame === null) return;
+    for (const tile of interior.starterBalls ?? []) {
+      this.add
+        .image(this.centerX(tile.x), this.centerY(tile.y), ITEM_ICON_TEXTURE_KEY, frame)
+        .setDepth(actorDepth(tile.y * TILE_SIZE + TILE_SIZE));
+    }
+  }
+
+  /** Resolves the keys the table is asked with, once, from the shared keybind map. */
+  private readStarterKeys(): StarterKeySet {
+    const bind = (action: KeybindAction): Phaser.Input.Keyboard.Key[] =>
+      actionKeys(this, action, this.settings.keybinds);
+    return {
+      interact: bind('interact'),
+      confirm: bind('confirm'),
+      cancel: bind('cancel'),
+    };
+  }
+
+  /** The starter action a press this frame means, or null; `cancel` is read first. */
+  private readStarterAction(): KeybindAction | null {
+    const keys = this.starterKeys;
+    if (keys === null) return null;
+    const down = (key: Phaser.Input.Keyboard.Key): boolean => Phaser.Input.Keyboard.JustDown(key);
+    if (keys.cancel.some(down)) return 'cancel';
+    if (keys.confirm.some(down)) return 'confirm';
+    if (keys.interact.some(down)) return 'interact';
+    return null;
   }
 
   private view(): StarterView {
@@ -275,8 +348,8 @@ export class InteriorScene extends WorldScene {
 
   /**
    * The panel's intents. A chosen card is the one-click pick: the professor's gift is
-   * committed to the save and the panel repaints, and the offer is now `[]`, so the
-   * picker is gone.
+   * committed to the save and the picker drops, because the offer is spent. Cancel
+   * drops it with no gift at all, so the player can walk away and come back.
    */
   private handleIntent(intent: StarterIntent): void {
     switch (intent.type) {
@@ -286,11 +359,12 @@ export class InteriorScene extends WorldScene {
         return;
       case 'choose':
         this.index = this.clampIndex(intent.index);
-        this.render();
         this.confirm();
         return;
-      case 'seed-prompt':
       case 'cancel':
+        this.disposePanel();
+        return;
+      case 'seed-prompt':
       case 'settings':
         return;
     }
@@ -300,9 +374,8 @@ export class InteriorScene extends WorldScene {
     const run = this.run;
     const speciesId = this.offer()[this.index];
     if (run === null || speciesId === undefined) return;
-    this.run = takeStarter(run, speciesId, STARTER_LEVEL);
-    storeRun(browserStorage(), this.run);
-    this.render();
+    this.commitRun(takeStarter(run, speciesId, STARTER_LEVEL));
+    this.disposePanel();
   }
 
   /**
