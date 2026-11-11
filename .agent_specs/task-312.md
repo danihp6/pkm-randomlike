@@ -162,11 +162,16 @@ decomp id each cell was composed from; it is the pin the test checks.
 | field | layout (w×h) | secondary set | floor | wall | door | counter | heal | pc |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `interior-lab` | `PalletTown_ProfessorOaksLab` 13×14 | `lab` | 649 | 105 | 665 | 641 | 685 | 117 |
-| `interior-centre` | `PokemonCenter_1F` 15×10 | `pokemon_center` | 641 | 644 | 27 | 692 | 685 | 672 |
+| `interior-centre` | `PokemonCenter_1F` 15×10 | `pokemon_center` | 641 | 644 | 27 | 692 | 715 | 736 |
 | `interior-house` | `House1` 11×9 | `generic_building_1` | 273 | 172 | 27 | 327 | 335 | 341 |
 
 These ids are **verified** against the rendered layouts; do not re-pick them. The
 room canvas (24×18 today) is Batch 136's; the atlas is 16px and tiles at any size.
+**Corrected after Task QA (round 1):** the Centre's `heal` is `715` (the green
+machine with the red cross) and its `pc` is `736` (the blue/white monitor);
+`685` is the cream box on the counter and `672` is the layout's black diagonal
+corner, which is why the first pass drew neither. The lab's and the house's
+`heal`/`pc` are never stamped by the plan and stay as pinned.
 
 ## 🧩 Data and configuration
 
