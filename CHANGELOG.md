@@ -8,6 +8,25 @@ file is the human-readable summary.
 
 ## Unreleased
 
+- [x] **The laboratory, the Centre and the houses wear FireRed's own art.** `[Task-312]`, Batch
+      135: the interior was six single cells composed from the two outdoor sheets, so a lab, a
+      Centre and a house shared one plaster wall and one plank floor. A new
+      `build-interior-tilesets.mjs` decodes pret/pokefirered's own indoor metatile sets — the
+      640-tile primary `building` sheet, each secondary's sheet and its JASC palettes, 8 u16 per
+      metatile in two 2×2 layers, flips and palette honoured — and writes three 64×208 atlases and
+      committed manifests: `interior-lab` (Oak's Lab, 13×14), `interior-centre` (Pokémon Center 1F,
+      15×10) and `interior-house` (House1, 11×9), each with its six kinds pinned to the decomp
+      metatile the layout actually places. `interiorTilesetId(kind)` routes lab, Centre and house to
+      their own field and leaves the gym and the casino on the provisional `interior`, and the two
+      screens read it for both the texture and the mesh. `[unit]` the suite is green (6 092 passed
+      over 341 files) with `npm run build` clean, the packer reproduces every committed atlas and
+      manifest byte for byte, and a clone without the pack resolves the three committed blanks;
+      `[live]` at 1280×800 NEW RUN lands on the lab's grey diagonal floor and cream wall, a city's
+      Centre draws the yellow checkered floor with the green healing machine and the blue PC, and
+      the gym still draws the provisional field. The house field loads; its room is Task-313's. The
+      first QA pass measured the Centre's heal and PC cells as a cream box and the layout's black
+      corner, so those two ids moved to 715 and 736 and the pixels now match the layout crop.
+
 - [x] **A city's buildings are whole houses.** `[Task-311]`, Batch 134: every settlement
       repeated one `WALL` and one `ROOF` frame over a 5×4 footprint. A new
       `build-city-buildings.mjs` composes four whole houses from the `tileset-1.png` compendium

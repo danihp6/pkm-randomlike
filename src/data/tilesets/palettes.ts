@@ -37,3 +37,39 @@ export const FRLG_INTERIOR_PALETTE: Palette = {
   18: '#d8d4d2',
   19: '#8f97a6',
 };
+
+/**
+ * The laboratory: its grey diagonal floor and cream wall under the red door mat,
+ * the wooden counter, the healing machine's screen and the grey PC.
+ */
+export const FRLG_LAB_PALETTE: Palette = {
+  0: '#c2c6cc',
+  1: '#dcd8b8',
+  15: '#c8443c',
+  17: '#cbbd8c',
+  18: '#9fd06c',
+  19: '#4a5568',
+};
+
+/**
+ * The Pokémon Centre: its cream-yellow checkered floor, the red counter run, the
+ * green healing screen and the blue storage PC.
+ */
+export const FRLG_CENTRE_PALETTE: Palette = {
+  0: '#e2dcae',
+  1: '#f0e6bc',
+  15: '#c8503c',
+  17: '#c8503c',
+  18: '#68c840',
+  19: '#4878c0',
+};
+
+/** A house: its wooden floor and white wall over the wooden furniture and a dark PC. */
+export const FRLG_HOUSE_PALETTE: Palette = {
+  0: '#c09a62',
+  1: '#eceded',
+  15: '#8c5a30',
+  17: '#b08a52',
+  18: '#8ec470',
+  19: '#546074',
+};

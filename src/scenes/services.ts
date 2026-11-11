@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { KeybindAction } from '../data/keybinds';
 import { PLAYER_SPRITE_TEXTURE_KEY, PLAYER_SPRITE_WIDTH, playerSpriteFrame } from '../data/playerSprite';
 import { shopBandForTier } from '../data/shop';
-import { FRLG_INTERIOR_TILESET } from '../data/tilesets/interior';
+import { TILESETS } from '../data/tilesets';
+import { interiorTilesetId } from '../data/tilesets/interior';
 import { IS_DEVELOP } from '../dev/env';
 import type { Tile } from '../engine/grid';
 import { COUNTER, tileAt } from '../engine/map';
@@ -158,10 +159,11 @@ export class ServicesScene extends WorldScene {
     this.stock = this.rollStock(run);
     super.create();
 
+    const id = interiorTilesetId(interior.kind);
     this.drawWorld({
       tiles: interior.tiles,
-      meshes: buildNodeMeshes(interior.tiles, FRLG_INTERIOR_TILESET),
-      tilesetId: 'interior',
+      meshes: buildNodeMeshes(interior.tiles, TILESETS[id].config),
+      tilesetId: id,
     });
     this.cameras.main.fadeIn(WORLD_TRANSITION_MS);
 

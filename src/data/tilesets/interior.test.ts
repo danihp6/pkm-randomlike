@@ -2,17 +2,33 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { decodePng } from '../../../scripts/legacy-art/png-codec.mjs';
+// The packers are plain ESM under `scripts/`, outside the TypeScript program, so
+// the one pure check this suite exercises is imported untyped.
+// @ts-expect-error no declaration for the interior packer
+import { assertKindInLayout } from '../../../scripts/frlg/build-interior-tilesets.mjs';
 import { hasArt } from '../../assets/art';
 import { COUNTER, DOOR, FLOOR, HEAL, PC, WALL } from '../../engine/map';
 import { resolveTileFrame } from '../../engine/tileFrames';
-import manifest from '../frlg/interior.json';
 import { TILESETS } from './index';
-import { FRLG_INTERIOR_TILESET, INTERIOR_KIND_VALUES, type InteriorKind } from './interior';
+import centreManifest from '../frlg/interior-centre.json';
+import houseManifest from '../frlg/interior-house.json';
+import labManifest from '../frlg/interior-lab.json';
+import manifest from '../frlg/interior.json';
+import {
+  FRLG_CENTRE_TILESET,
+  FRLG_HOUSE_TILESET,
+  FRLG_INTERIOR_TILESET,
+  FRLG_LAB_TILESET,
+  INTERIOR_KIND_VALUES,
+  type InteriorKind,
+} from './interior';
+import type { TilesetConfig } from '../../engine/tileset';
 
 /**
  * The interior atlas is provisional art composed from the two field sheets
- * (`docs/tileset-spec.md` §6) behind a committed manifest; the frames are measured
- * against the generated 64x208 sheet like the forest's and the city's.
+ * (`docs/tileset-spec.md` §6) behind a committed manifest; the three
+ * `interior-*` fields are the decomp's own metatiles (`§2b`). The frames are
+ * measured against the generated 64x208 sheets like the forest's and the city's.
  */
 const KINDS: readonly InteriorKind[] = ['floor', 'wall', 'door', 'counter', 'heal', 'pc'];
 
@@ -24,6 +40,33 @@ const KIND_VALUES: Readonly<Record<InteriorKind, number>> = {
   heal: HEAL,
   pc: PC,
 };
+
+/** The pinned decomp metatile each field's kinds are composed from (§2b). */
+const PINNED: Readonly<Record<string, Readonly<Record<InteriorKind, number>>>> = {
+  'interior-lab': { floor: 649, wall: 105, door: 665, counter: 641, heal: 685, pc: 117 },
+  'interior-centre': { floor: 641, wall: 644, door: 27, counter: 692, heal: 715, pc: 736 },
+  'interior-house': { floor: 273, wall: 172, door: 27, counter: 327, heal: 335, pc: 341 },
+};
+
+type FieldManifest = Readonly<{
+  id: string;
+  atlas: Readonly<Record<string, number>>;
+  cells: Readonly<Record<InteriorKind, number>>;
+  metatiles: Readonly<Record<InteriorKind, number>>;
+}>;
+
+/** The three fields the region's lab, Centre and houses draw (`docs/tileset-spec.md` §2b). */
+type FieldId = 'interior-lab' | 'interior-centre' | 'interior-house';
+
+const FIELDS: readonly Readonly<{
+  id: FieldId;
+  config: TilesetConfig;
+  manifest: FieldManifest;
+}>[] = [
+  { id: 'interior-lab', config: FRLG_LAB_TILESET, manifest: labManifest },
+  { id: 'interior-centre', config: FRLG_CENTRE_TILESET, manifest: centreManifest },
+  { id: 'interior-house', config: FRLG_HOUSE_TILESET, manifest: houseManifest },
+];
 
 const BLANK = new URL('../../assets/placeholders/frlg/interior.png', import.meta.url);
 const PACKED = new URL('../../assets/frlg/interior.png', import.meta.url);
@@ -55,6 +98,10 @@ function meanColour(png: { width: number; data: Uint8Array }, frame: number): nu
     sum[2] += bytes[i + 2];
   }
   return sum.map((channel) => channel / (16 * 16));
+}
+
+function source(relative: string): string {
+  return readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
 }
 
 describe('the interior kinds', () => {
@@ -112,11 +159,109 @@ describe('the interior kinds', () => {
   });
 });
 
-describe('the committed interior blank', () => {
-  it('is a 64x208 sheet, so the manifest slices it into 52 cells', () => {
+describe('the lab, the Centre and the house fields', () => {
+  it('each ship a 4x13 manifest of 16px cells', () => {
+    for (const field of FIELDS) {
+      expect(field.manifest.id, field.id).toBe(field.id);
+      expect(field.manifest.atlas, field.id).toEqual({
+        tileSize: 16,
+        cols: 4,
+        rows: 13,
+        width: 64,
+        height: 208,
+      });
+      expect(field.config.atlas, field.id).toEqual(field.manifest.atlas);
+    }
+  });
+
+  it('order their cells floor, wall, door, counter, heal, pc', () => {
+    for (const field of FIELDS) {
+      expect(Object.keys(field.manifest.cells), field.id).toEqual([...KINDS]);
+      expect(Object.keys(field.manifest.metatiles), field.id).toEqual([...KINDS]);
+    }
+  });
+
+  it('draw the floor as frame 0 and give the other five kinds a frame of their own', () => {
+    for (const field of FIELDS) {
+      expect(field.config.frames[FLOOR], field.id).toBe(0);
+      expect(field.manifest.cells.floor, field.id).toBe(0);
+      const frames = KINDS.filter((kind) => kind !== 'floor').map(
+        (kind) => field.config.frames[INTERIOR_KIND_VALUES[kind]],
+      );
+      expect(new Set(frames).size, field.id).toBe(frames.length);
+      expect(frames, field.id).not.toContain(0);
+      for (const frame of frames) {
+        expect(Number.isInteger(frame), field.id).toBe(true);
+        expect(frame, field.id).toBeGreaterThanOrEqual(1);
+        expect(frame, field.id).toBeLessThanOrEqual(51);
+      }
+    }
+  });
+
+  it('read each kind off its own committed manifest', () => {
+    for (const field of FIELDS) {
+      for (const kind of KINDS) {
+        const value = INTERIOR_KIND_VALUES[kind];
+        expect(field.manifest.cells[kind], `${field.id} ${kind}`).toBe(field.config.frames[value]);
+        expect(resolveTileFrame([[value]], 0, 0, field.config)?.frame, `${field.id} ${kind}`).toBe(
+          field.config.frames[value],
+        );
+      }
+    }
+  });
+
+  it('pin the decomp metatile each cell was composed from', () => {
+    for (const field of FIELDS) expect(field.manifest.metatiles, field.id).toEqual(PINNED[field.id]);
+  });
+
+  it('declare no autotile, no pattern and no variants: one frame per kind', () => {
+    for (const field of FIELDS) {
+      expect(field.config.autotile, field.id).toBeUndefined();
+      expect(field.config.wallPattern, field.id).toBeUndefined();
+      expect(field.config.variants, field.id).toBeUndefined();
+      expect(field.config.wallAdjacentVariants, field.id).toBeUndefined();
+      expect(field.config.commonFrames, field.id).toBeUndefined();
+      expect(field.config.grassRustle, field.id).toBeUndefined();
+      expect(field.config.hiddenItemFrame, field.id).toBeUndefined();
+    }
+  });
+
+  it('refuse a metatile id its layout does not place', () => {
+    const layout = new Set([649, 105, 665, 641, 685, 117]);
+    expect(() => assertKindInLayout(PINNED['interior-lab'], layout, 'interior-lab')).not.toThrow();
+    expect(() =>
+      assertKindInLayout({ ...PINNED['interior-lab'], door: 666 }, layout, 'interior-lab'),
+    ).toThrow(/interior-lab: the door metatile 666 is not in the layout's map\.bin/);
+  });
+});
+
+describe('the committed interior blanks', () => {
+  it('are 64x208 sheets, so each manifest slices into 52 cells', () => {
     const png = decodePng(readFileSync(fileURLToPath(BLANK)));
     expect(png.width).toBe(64);
     expect(png.height).toBe(208);
+    for (const field of FIELDS) {
+      const blank = decodePng(
+        readFileSync(
+          fileURLToPath(new URL(`../../assets/placeholders/frlg/${field.id}.png`, import.meta.url)),
+        ),
+      );
+      expect([blank.width, blank.height], field.id).toEqual([64, 208]);
+    }
+  });
+});
+
+describe('the two room scenes', () => {
+  it('draw the room kind its own field', () => {
+    for (const file of ['../../scenes/InteriorScene.ts', '../../scenes/services.ts']) {
+      const text = source(file);
+      expect(text, file).toContain('interiorTilesetId');
+      expect(text, file).not.toContain('FRLG_INTERIOR_TILESET');
+    }
+  });
+
+  it('leave the gym on the provisional field', () => {
+    expect(source('../../scenes/GymScene.ts')).toContain('FRLG_INTERIOR_TILESET');
   });
 });
 
@@ -125,6 +270,43 @@ describe.skipIf(hasArt('frlg/interior.png'))('a clone without the pack', () => {
     expect(TILESETS.interior.atlasUrl).toContain('placeholders/frlg/interior.png');
   });
 });
+
+for (const field of FIELDS) {
+  describe.skipIf(hasArt(`frlg/${field.id}.png`))(`a clone without the ${field.id} pack`, () => {
+    it('resolves the committed blank', () => {
+      expect(TILESETS[field.id].atlasUrl).toContain(`placeholders/frlg/${field.id}.png`);
+    });
+  });
+
+  describe.skipIf(!hasArt(`frlg/${field.id}.png`))(`the packed ${field.id} atlas`, () => {
+    const packed = (): { width: number; height: number; data: Uint8Array } =>
+      decodePng(
+        readFileSync(fileURLToPath(new URL(`../../assets/frlg/${field.id}.png`, import.meta.url))),
+      );
+
+    it('is a 64x208 sheet with no hole in any of its 52 cells', () => {
+      const png = packed();
+      expect(png.width).toBe(64);
+      expect(png.height).toBe(208);
+      for (let frame = 0; frame < 52; frame++) expect(isOpaque(png, frame), `frame ${frame}`).toBe(true);
+    });
+
+    it('draws its kinds in colours a reader can tell apart', () => {
+      const png = packed();
+      const means = new Map(KINDS.map((kind) => [kind, meanColour(png, field.manifest.cells[kind])]));
+      const distance = (a: number[], b: number[]): number =>
+        Math.max(...a.map((value, channel) => Math.abs(value - b[channel])));
+      for (let i = 0; i < KINDS.length; i++) {
+        for (let j = i + 1; j < KINDS.length; j++) {
+          expect(
+            distance(means.get(KINDS[i])!, means.get(KINDS[j])!),
+            `${field.id} ${KINDS[i]} vs ${KINDS[j]}`,
+          ).toBeGreaterThanOrEqual(12);
+        }
+      }
+    });
+  });
+}
 
 describe.skipIf(!hasArt('frlg/interior.png'))('the packed interior atlas', () => {
   it('is a 64x208 sheet with no hole in any of its 52 cells', () => {

@@ -13339,7 +13339,7 @@ gym keeps `interior` and is untouched); `src/main.ts`, `package.json`, `vite.con
 `src/scenes/GymScene.ts`, `src/engine/map.ts` and `src/data/dex/**` are not claimed. No map value
 moves: the three fields stamp the six values the interior already has.
 
-- [ ] **[Task-312] The laboratory, the Centre and the houses wear FireRed's own art.** The one
+- [x] **[Task-312] The laboratory, the Centre and the houses wear FireRed's own art.** The one
       interior field is six single cells composed from the two outdoor sheets, so a lab, a Centre
       and a house share one plaster wall and one plank floor instead of FireRed's own rooms.
       **Measured:** `src/data/tilesets/interior.ts:7` names the six kinds (`floor`, `wall`, `door`,

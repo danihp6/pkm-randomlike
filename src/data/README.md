@@ -21,7 +21,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   amended for these kinds).
 - `tilesets/` — one file per tileset — the forest's row in `frlg.ts`, plus the
   region fields' `city.ts` and `interior.ts` (their kind → map value table and their
-  `TilesetConfig`, read off `frlg/city.json` / `frlg/interior.json`), wired by the
+  `TilesetConfig`s, read off `frlg/city.json` and the four `frlg/interior*.json`
+  manifests: the provisional field the gym and the casino draw and the lab, Centre
+  and house fields the decomp's own metatiles fill, picked per room kind by
+  `interiorTilesetId`), wired by the
   `index.ts` registry — plus the shared `palettes.ts` and `placeholder.ts`, the
   procedural sheet kept as a **test fixture**, and `props.ts` (the single-frame
   static props a route draws on a tile, starting with the boss door's 16x16 sign).
@@ -31,8 +34,10 @@ Everything balanceable lives here; the engine reads it and never hardcodes it.
   Contract in `docs/tileset-spec.md`.
 - `frlg/` — the **generated, committed** frame manifests of the packed FRLG sheets
   (`trainers.json`, `overworld.json`, `player.json`, the icon and battle-UI maps), the
-  two tileset manifests `city.json`/`interior.json`, whose `cells` map each tile
-  kind to its atlas frame, and `city-buildings.json`, the decal atlas's frame list.
+  tileset manifests `city.json`, `interior.json` and the three `interior-lab.json` /
+  `interior-centre.json` / `interior-house.json`, whose `cells` map each tile kind to
+  its atlas frame and whose `metatiles` pin the decomp metatile it was composed from,
+  and `city-buildings.json`, the decal atlas's frame list.
   Written by the matching `scripts/frlg/build-*.mjs` packer, never by hand; the sheet
   pixels themselves are gitignored.
 - `biomes.ts` — biome → tileset and terrain flavour, plus the biome a map's own `map` stream rolls.
