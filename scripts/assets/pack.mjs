@@ -53,6 +53,17 @@ const STEPS = [
     args: (p) => [p('frlg/tileset.png'), p('frlg/tileset-2.png')],
   },
   {
+    name: 'frlg interior fields',
+    script: 'scripts/frlg/build-interior-tilesets.mjs',
+    needs: requires([
+      'pokefirered/data/tilesets/primary/building',
+      'pokefirered/data/tilesets/secondary/lab',
+      'pokefirered/data/tilesets/secondary/pokemon_center',
+      'pokefirered/data/tilesets/secondary/generic_building_1',
+    ]),
+    args: (p) => [p('pokefirered')],
+  },
+  {
     name: 'frlg city buildings',
     script: 'scripts/frlg/build-city-buildings.mjs',
     needs: requires(['frlg/tileset-1.png']),

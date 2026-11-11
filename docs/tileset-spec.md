@@ -127,30 +127,65 @@ type TilesetConfig = {
 
 ## 2b. The city and interior atlases
 
-A **city** and an **interior** are not biomes: they are the two region fields a
+A **city** and an **interior** are not biomes: they are the region fields a
 settlement and its buildings draw, and each ships its own 4x13 sheet of 16px cells (64x208) plus
-a committed manifest, all written by `scripts/frlg/build-region-tilesets.mjs`:
+a committed manifest. The city and the provisional interior field are written by
+`scripts/frlg/build-region-tilesets.mjs` from the two field sheets; the laboratory,
+the Pokémon Centre and the houses are written by
+`scripts/frlg/build-interior-tilesets.mjs` from the decomp's own metatiles:
 
 | Tileset | sheet | manifest | kinds (kind → map value → frame) |
 | --- | --- | --- | --- |
 | `city` | `src/assets/frlg/city.png` | `src/data/frlg/city.json` | `grass`→8→1, `path`→12→2, `plaza`→13→3, `wall`→1→4, `roof`→14→5, `door`→15→6, `water`→6→7, `sign`→16→8 |
 | `interior` | `src/assets/frlg/interior.png` | `src/data/frlg/interior.json` | `floor`→0→0, `wall`→1→1, `door`→15→2, `counter`→17→3, `heal`→18→4, `pc`→19→5 |
+| `interior-lab` | `src/assets/frlg/interior-lab.png` | `src/data/frlg/interior-lab.json` | `floor`→0→0, `wall`→1→1, `door`→15→2, `counter`→17→3, `heal`→18→4, `pc`→19→5 |
+| `interior-centre` | `src/assets/frlg/interior-centre.png` | `src/data/frlg/interior-centre.json` | `floor`→0→0, `wall`→1→1, `door`→15→2, `counter`→17→3, `heal`→18→4, `pc`→19→5 |
+| `interior-house` | `src/assets/frlg/interior-house.png` | `src/data/frlg/interior-house.json` | `floor`→0→0, `wall`→1→1, `door`→15→2, `counter`→17→3, `heal`→18→4, `pc`→19→5 |
 
 The manifests are the only source of the frame numbers: `CITY_KIND_VALUES` /
 `INTERIOR_KIND_VALUES` freeze the **kind → map value** table (the generators read
-those, never a literal) and `FRLG_CITY_TILESET` / `FRLG_INTERIOR_TILESET` read the
-frame for each value out of the committed JSON. Frame 0 is the field's own ground —
-the city's plain pavement, which `resolveGroundFrame` lays under every cell, and the
+those, never a literal) and `FRLG_CITY_TILESET` / `FRLG_INTERIOR_TILESET` /
+`FRLG_LAB_TILESET` / `FRLG_CENTRE_TILESET` / `FRLG_HOUSE_TILESET` read the frame for
+each value out of the committed JSON. Frame 0 is the field's own ground — the
+city's plain pavement, which `resolveGroundFrame` lays under every cell, and the
 interior's floor, which is the same tile a room's `FLOOR` cells draw.
+
+**Which field a room draws is one function.** `interiorTilesetId(kind)` is total
+over `InteriorRoomKind`: a `lab`, a `centre` and a `house` draw their own field, and
+a `gym` and a `casino` still draw the provisional `interior` until their own batch
+(§6). `InteriorScene` and the Centre's `services.ts` draw the field of the room
+`planInterior` returned, so the scene names no field of its own; `GymScene` still
+names `FRLG_INTERIOR_TILESET` and `tilesetId: 'interior'`.
+
+The three decomp fields are **composed, not cropped**: a metatile is 8 little-endian
+u16 — the bottom 2x2 layer first, then the top one — where `tile = e & 0x3ff`
+indexes the primary `data/tilesets/primary/building/tiles.png` below 640 and the
+secondary set's sheet at `index - 640`, `palette = (e >> 12) & 0xf` indexes the
+**metatile's own** set's `palettes/NN.pal` (a secondary metatile uses the
+secondary's palette), pixel index 0 is transparent and the `0x400`/`0x800` bits
+mirror the tile. The packer composes each kind's metatile, composites it over the
+field's own floor so every cell is a filled field, stamps frames 0-5 in the
+contract order above and repeats that floor on frames 6-51. It refuses a kind whose
+metatile id the layout's `map.bin` never places (`entry & 0x3ff` over
+`width * height` cells) and a cell that is still transparent with the floor under
+it. Each manifest's `metatiles` map pins the decomp id every cell was composed
+from, verified against the rendered layout, so a re-pack that moves an id moves the
+test in the same task:
+
+| field | layout (w×h) | secondary set | floor | wall | door | counter | heal | pc |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `interior-lab` | `PalletTown_ProfessorOaksLab` 13×14 | `lab` | 649 | 105 | 665 | 641 | 685 | 117 |
+| `interior-centre` | `PokemonCenter_1F` 15×10 | `pokemon_center` | 641 | 644 | 27 | 692 | 685 | 672 |
+| `interior-house` | `House1` 11×9 | `generic_building_1` | 273 | 172 | 27 | 327 | 335 | 341 |
 
 Neither field declares an autotile, a wall pattern, variants, a rustle or a
 hidden-item frame: **one frame per kind is the whole contract**, so a building's map
 is a rectangular block of `WALL`/`ROOF` cells with a `DOOR` cell on its bottom row
 and a room is a `WALL` ring around a `FLOOR` field with its fixtures on it. A
 building's own outline comes from its whole-house decal (below), so the map's
-rectangle is the collision footprint rather than the art. Every cell of both sheets is
-a **filled field** (the crop composited over the ground), so a patch of map never
-shows a hole.
+rectangle is the collision footprint rather than the art. Every cell of every sheet
+is a **filled field** (the crop, or the composed metatile, over the ground), so a
+patch of map never shows a hole.
 
 A settlement's buildings are the third sheet of this family, and it is a **decal
 atlas**, not a field: `src/assets/frlg/city-buildings.png` is 320x96 — four frames of
@@ -371,20 +406,26 @@ Swapping is `config = TILESETS[nextId].config` plus loading
   decal atlas (§2b) puts one composed house per kind over the plan's 5x6 footprint,
   door art on the walkable `DOOR` cell. What is still open is the interior's furniture
   — a room's fixtures are single cells rather than multi-tile furniture — plus
-  `autotile`/`wallPattern`/`variants` for the two fields, a `grassRustle` for the
-  city's grass corner and a `hiddenItemFrame` for either. More house variants are one
-  `HOUSES` row each in the packer, with no scene change.
-- **The interior is provisional art, and the doc says so plainly.** The asset store
-  has **no indoor tileset**: `docs/art-direction.md`'s FRLG inventory is terrain
-  (`tileset-2.png`), buildings (`tileset.png`, `tileset-1.png`) and characters, and
-  pret/pokefirered is not in the store. So `INTERIOR_CELLS` in
-  `scripts/frlg/build-region-tilesets.mjs` composes the interior from the two sheets
-  that do exist: the terrain sheet's wooden plank platform (source cell `20,12`)
-  reads as the floor, and the buildings sheet supplies the plaster wall (`244,132`),
-  a dark doorway (`171,104`), a wooden counter (`112,166`), a heal station (`180,125`)
-  and a PC (`159,3`) from its props — the city's own kinds are terrain `7,0` (grass),
-  `0,18` (path), `0,15` (plaza), `0,24` (ground) and `11,1` (water) plus buildings
-  `56,212` (wall), `30,168` (roof), `40,209` (door) and `176,4` (sign). **When a real
-  indoor rip arrives it replaces `INTERIOR_CELLS` in that one script and nothing
-  else**: the manifests are regenerated from it, the kind table and the registry rows
-  stay, and no tile kind changes.
+  `autotile`/`wallPattern`/`variants` for the city and the four interior fields, a
+  `grassRustle` for the city's grass corner and a `hiddenItemFrame` for any of them.
+  More house variants are one `HOUSES` row each in the packer, with no scene change.
+- **The laboratory, the Pokémon Centre and the houses draw the decomp's own interiors
+  now; the gym and the casino are the provisional field.** `build-interior-tilesets.mjs`
+  composes `interior-lab`, `interior-centre` and `interior-house` from
+  pret/pokefirered's own metatiles (§2b): the lab's grey diagonal floor with its
+  cream wall, red door mat, counter run, healing machine and PC; the Centre's yellow
+  checkered floor with its red counter, green heal screen and blue PC; a house's
+  wooden floor with its white wall and wooden furniture. A room draws the field its
+  kind names (`interiorTilesetId`), and the three sheets are rerun from the store
+  with `node scripts/frlg/build-interior-tilesets.mjs <decompRoot>`.
+  The **`interior`** field stays for the **gym and the casino**, and it is still
+  provisional art composed from the two field sheets that do exist: the terrain
+  sheet's wooden plank platform (source cell `20,12`) reads as the floor, and the
+  buildings sheet supplies the plaster wall (`244,132`), a dark doorway (`171,104`),
+  a wooden counter (`112,166`), a heal station (`180,125`) and a PC (`159,3`) from
+  its props. **When a gym or casino indoor set arrives it replaces `INTERIOR_CELLS`
+  in `build-region-tilesets.mjs` and nothing else**: that field's manifest is
+  regenerated from it, the kind table and the registry rows stay, and no tile kind
+  changes. The city's own kinds are terrain `7,0` (grass), `0,18` (path), `0,15`
+  (plaza), `0,24` (ground) and `11,1` (water) plus buildings `56,212` (wall),
+  `30,168` (roof), `40,209` (door) and `176,4` (sign).

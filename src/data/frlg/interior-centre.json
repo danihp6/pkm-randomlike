@@ -1,0 +1,28 @@
+{
+  "kind": "pkmr-tileset",
+  "version": 1,
+  "id": "interior-centre",
+  "atlas": {
+    "tileSize": 16,
+    "cols": 4,
+    "rows": 13,
+    "width": 64,
+    "height": 208
+  },
+  "cells": {
+    "floor": 0,
+    "wall": 1,
+    "door": 2,
+    "counter": 3,
+    "heal": 4,
+    "pc": 5
+  },
+  "metatiles": {
+    "floor": 641,
+    "wall": 644,
+    "door": 27,
+    "counter": 692,
+    "heal": 685,
+    "pc": 672
+  }
+}

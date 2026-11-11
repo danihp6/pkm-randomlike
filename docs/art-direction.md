@@ -110,6 +110,25 @@ plan's footprint (`docs/tileset-spec.md` §2b); a flat crop (a rect that slid of
 house) and a frame with a transparent line are refused the way `build-sign.mjs`
 refuses one. The packer takes its source only from argv, per the asset-tree rule.
 
+The **interiors** come from the same decomp, which is the only place a room's own
+metatiles live. `scripts/frlg/build-interior-tilesets.mjs` composes three fields —
+the laboratory (`PalletTown_ProfessorOaksLab` with the `lab` secondary set), the
+Pokémon Centre (`PokemonCenter_1F` with `pokemon_center`) and a house (`House1` with
+`generic_building_1`) — out of `data/tilesets/primary/building` and their own
+secondary set, and pins six kinds per field: the floor, the wall, the door mat, the
+counter run, the healing machine and the PC. Each kind is a whole 16x16 metatile
+composited over the field's floor, so the lab reads as its grey diagonal tile with
+a cream wall, the Centre as its yellow checkered floor under a red counter, a green
+heal screen and a blue PC, and a house as a wooden floor with white walls. They are
+`interior-lab`, `interior-centre` and `interior-house`, 64x208 like every other
+region field, with their manifests in `src/data/frlg/` and the frame each kind
+draws (`docs/tileset-spec.md` §2b). The gym and the casino still draw the
+provisional `interior` field composed from the two spriters-resource sheets, which
+is what §6 there records. The packer takes its decomp root only from argv or
+`PKM_FRLG_DECOMP`, never a path inside the checkout, per the asset-tree rule; the
+checkout must carry `data/tilesets/primary/building`, the three secondary sets and
+the three layouts, and the packer names the missing one and stops.
+
 The overworld sprites come from the pret/pokefirered decomp rather than
 the compilation sheet, because each class is its own named file there. The ten
 trainer classes' `graphics/object_events/pics/people/*.png` (mostly 160x32, ten
