@@ -13321,12 +13321,198 @@ other hot file. `package.json`, `src/main.ts`, `vite.config.ts` and every other
       `src/scenes/BootScene.ts` and the three docs. *Dependencies:* the region tilesets
       (Batch 117-118) and the city screen (`[Task-300]`). *(Batch 134)*
 
+### Batch 135 - the interiors are FireRed's own
+
+**The one.** The `2026-11-11` request «hay tarea para tileset interiores, añade para el laboratorio,
+centro poke y casas deben ser igual que en rojo fuego» names the one field still drawn from
+made-up art: the interior is six single cells composed from the two outdoor sheets, which
+`docs/tileset-spec.md` §6 itself calls **provisional**, while the decomp the project already
+reads for its overworld sprites carries FireRed's own indoor metatile sets and the layouts that
+use them. This batch imports the lab's, the Centre's and the houses' fields. It is one task and
+it does not split: the three atlases, the kind table they are keyed by and the
+`interiorTilesetId` switch that lights them up all meet in `src/data/tilesets/interior.ts`, so
+"packer + manifests" and "configs + registry" would collide on that file. The backlog holds no
+other open item, so no later batch fills the batch's other slots; the plan's cut is its width.
+
+**Hot files.** `src/scenes/InteriorScene.ts` and `src/scenes/services.ts` are this task's (the
+gym keeps `interior` and is untouched); `src/main.ts`, `package.json`, `vite.config.ts`,
+`src/scenes/GymScene.ts`, `src/engine/map.ts` and `src/data/dex/**` are not claimed. No map value
+moves: the three fields stamp the six values the interior already has.
+
+- [ ] **[Task-312] The laboratory, the Centre and the houses wear FireRed's own art.** The one
+      interior field is six single cells composed from the two outdoor sheets, so a lab, a Centre
+      and a house share one plaster wall and one plank floor instead of FireRed's own rooms.
+      **Measured:** `src/data/tilesets/interior.ts:7` names the six kinds (`floor`, `wall`, `door`,
+      `counter`, `heal`, `pc`), `:10-17` stamps them as `FLOOR`, `WALL`, `DOOR`, `COUNTER`, `HEAL`
+      and `PC`, and `:26-43` is the one `FRLG_INTERIOR_TILESET`, one frame per kind off
+      `src/data/frlg/interior.json`. `scripts/frlg/build-region-tilesets.mjs:71-78` is
+      `INTERIOR_CELLS`: the terrain sheet's plank platform (`20,12`) for the floor, and the
+      buildings sheet's wall (`244,132`), door (`171,104`), counter (`112,166`), heal station
+      (`180,125`) and PC (`159,3`). `docs/tileset-spec.md:137` freezes that six-kind row and
+      `:377-390` calls the art **provisional** because "the store has no indoor tileset".
+      `src/scenes/InteriorScene.ts:163`, `src/scenes/services.ts:165` and
+      `src/scenes/GymScene.ts:213` all pass `tilesetId: 'interior'` with that one config.
+      `sprite-sources/pokefirered/.git/info/sparse-checkout` fetches `sound`, `src`, `include` and
+      `graphics/object_events/pics/people` only, so the decomp's tilesets are not on disk, while
+      upstream `data/tilesets/primary/{general,building}` and
+      `data/tilesets/secondary/{lab,pokemon_center,generic_building_1}` hold `tiles.png` (4bpp
+      indexed — the lab's is 128x56), `metatiles.bin` (16 bytes per metatile: four u16 of
+      tile | hflip | vflip | palette), `metatile_attributes.bin` and `palettes/NN.pal` (JASC-PAL,
+      16 entries), and the layouts `PalletTown_ProfessorOaksLab` (13x14, Building+Lab),
+      `PokemonCenter_1F` (15x10, Building+PokemonCenter) and `House1` (11x9,
+      Building+GenericBuilding1) name them. `scripts/legacy-art/png-codec.mjs:78,108` already
+      returns a palette PNG's **indices**, so the 4bpp sheets decode with no new dependency.
+      **Fix shape:** add `scripts/frlg/build-interior-tilesets.mjs`, its source root from argv or
+      `PKM_FRLG_DECOMP` and never a path inside a worktree: decode each `tiles.png`'s indices
+      through that set's `.pal` files, composite each metatile's 2x2 8x8 tiles honouring its flips
+      and its palette (metatile id 0-511 reads the primary `building` set, 512+ the secondary's),
+      and write **three** atlases — `src/assets/frlg/interior-lab.png`, `interior-centre.png` and
+      `interior-house.png` (4x13 of 16px, 64x208) — plus `src/data/frlg/interior-lab.json`,
+      `interior-centre.json` and `interior-house.json`. Each manifest keeps the six-kind `cells`
+      table **and** the decomp metatile id each kind was composed from, so the pin is checkable;
+      the packer names a kind's metatile off the room's own `map.bin` (Oak's Lab's floor and wall,
+      the Centre's counter and heal machine, House1's floor and wall) rather than a guessed crop,
+      and refuses a blank or a transparent cell the way `build-city-buildings.mjs` refuses a flat
+      crop. `src/data/tilesets/interior.ts` keeps `InteriorKind` and `INTERIOR_KIND_VALUES` (no map
+      value moves) and swaps its one config for `FRLG_LAB_TILESET`, `FRLG_CENTRE_TILESET` and
+      `FRLG_HOUSE_TILESET` plus `interiorTilesetId(kind): TilesetId` — `lab`, `centre` and `house`
+      to their own field, `gym` and `casino` to the provisional `interior`. `ids.ts` grows the
+      three ids and their names, `index.ts` the three registry rows and `palettes.ts` one flat
+      palette per field. The two scenes read `interiorTilesetId(interior.kind)` for both
+      `tilesetId` and the config. Add the three blank placeholders, their build steps and the
+      packer step in `scripts/assets/pack.mjs`; the three atlases land in the already-ignored
+      `src/assets/frlg/`.
+      **Docs:** `docs/tileset-spec.md` §2b (three rows, each field's source set and its metatile
+      ids) and §6 (the provisional note narrowed to the gym and the casino), `docs/art-direction.md`
+      (the decomp's indoor sets, its JASC palettes and the two sparse paths a checkout adds),
+      `src/assets/README.md` (the three atlases and the packer) and `src/data/README.md` (the three
+      configs and their manifests).
+      **Tests:** `[unit]` each field's `cells` names all six kinds and every kind resolves a frame
+      in its own field; `[unit]` the three fields' six frames are distinct from each other's (a lab
+      floor is not the Centre's) and every frame fits 4x13; `[unit]` `interiorTilesetId` maps the
+      five room kinds to the four ids; `[unit]` `TILESET_IDS` and `TILESETS` stay in step (the
+      existing id test re-pinned); `[unit]` a clean clone with no packed atlas resolves the three
+      placeholders and `npm run build` is green. `[live]` with the decomp present: the town's
+      laboratory and a city's Centre draw their own floor and wall, and a pixel sample of each
+      field's `floor` and `wall` frame equals the 16x16 composite of the decomp metatile its
+      manifest names — measured on the loaded `tiles:interior-lab` / `tiles:interior-centre`
+      texture with `getImageData` — with no magenta and no transparent seam. The house field loads
+      but no scene draws it until `[Task-313]`. Claims
+      `scripts/frlg/build-interior-tilesets.mjs` (new), `scripts/assets/pack.mjs`,
+      `scripts/assets/build-placeholders.mjs`, `scripts/assets/placeholderAccent.mjs` and its test
+      (only the pinned hue and the list length), `src/data/frlg/interior-lab.json`,
+      `interior-centre.json`, `interior-house.json`, `src/data/tilesets/interior.ts`,
+      `interior.test.ts`, `ids.ts`, `ids.test.ts`, `index.ts`, `palettes.ts`,
+      `src/assets/placeholders/frlg/interior-lab.png`, `interior-centre.png`, `interior-house.png`,
+      `src/scenes/InteriorScene.ts`, `src/scenes/services.ts`, `src/data/README.md`,
+      `src/assets/README.md`, `docs/tileset-spec.md` and `docs/art-direction.md`.
+      *Dependencies:* none. *(Batch 135)*
+
+### Batch 136 - a room is FireRed's own room
+
+**The one.** `[Task-312]` brings the three field sheets; a room still has the same 24x18 box, one
+counter run or one bare floor, and a house cannot be entered at all. This batch gives each room
+FireRed's own size, its own furniture and the `House` scene that was promised by the region spec
+and never registered. It is one task because the plan, the piece atlas and the three scenes meet
+in `src/engine/region/interior/plan.ts` and `src/data/tilesets/interiorProps.ts`; a second task
+would collide on both. It cannot ride in Batch 135: every path it writes needs the fields and
+`interiorTilesetId` that batch ships.
+
+**Hot files.** `src/scenes/InteriorScene.ts`, `src/scenes/services.ts`, `src/scenes/HouseScene.ts`
+(new) and `src/scenes/BootScene.ts` are this task's; `src/main.ts` is untouched (the region scene
+glob registers the new key), and so are `package.json`, `vite.config.ts`, `src/scenes/GymScene.ts`
+and `src/engine/map.ts`. No map value moves: a piece stands on a `COUNTER`, `HEAL`, `PC` or
+`WALL` cell the plan already stamps, so collision stays the map's rule.
+
+- [ ] **[Task-313] A room is FireRed's own room.** Every indoor room is the same 24x18 box with
+      one counter run or one bare floor, and a house cannot be entered: the doors of a settlement
+      all open onto that box, and `'House'` names no scene.
+      **Measured:** `src/engine/region/interior/plan.ts:155` sizes every small room off the one
+      `INTERIOR_SIZE` (`src/data/region.ts:77`, 24x18), while the decomp's rooms are 13x14 (Oak's
+      Lab), 15x10 (Pokemon Center 1F), 11x9 (House1) and 18x15 (Celadon Game Corner). `plan.ts:165-190`
+      stamps a nine-cell `COUNTER` run with a `HEAL` in it for the Centre, a three-cell table for the
+      lab, and nothing at all for a house but one `npc` slot; `docs/tileset-spec.md:369-376` lists
+      "the interior's furniture — a room's fixtures are single cells rather than multi-tile
+      furniture" as the thing still open. `src/scenes/HouseScene.ts` does not exist:
+      `interiorSceneKey('house:2')` answers `'House'` (`src/scenes/CityScene.ts:125-128`), `openDoor`
+      (`:752-769`) finds no scene of that key and fades back in, so every house door is a bounce.
+      `docs/region-spec.md:344-369` already promises one room per door with the slot roles, and
+      `:462-465` already names `'house:<n>' -> 'House'`.
+      **Fix shape:** `src/data/region.ts` replaces the one `INTERIOR_SIZE` with
+      `INTERIOR_SIZES: Readonly<Record<'centre' | 'lab' | 'house' | 'casino', RegionSize>>` —
+      centre 15x10, lab 13x14, house 11x9, casino 18x15, the decomp's own layout sizes — beside the
+      unchanged `GYM_SIZE`, and `planSmallRoom` reads its kind's size. Extend
+      `build-interior-tilesets.mjs` with a **piece atlas**: `src/assets/frlg/interior-pieces.png`,
+      one uniform 48x48 (3x3 tiles) frame per piece, and a `pieces` table in each field's manifest
+      with `{ kind, frame, width, height }` measured off the composed metatiles — `table` (3x2),
+      `shelf` (2x2), `plant` (1x2), `tv` (2x1), `stool` (1x1), `window` (2x1), `healMachine` (2x2)
+      and `pc` (1x2). A new `src/data/tilesets/interiorProps.ts` exposes the texture key, the frame
+      size and `interiorPieceFor(kind, field, variant)`, the `cityBuildings.ts` shape. `plan.ts`
+      gains `pieces: readonly InteriorPiece[]` on `InteriorPlan` — a piece kind, its tile and a
+      stable variant — with each room's kit: the lab's two shelf runs either side of a window and
+      three tables on the furniture row with the three balls on the middle one, the professor behind
+      it; the Centre's counter run with the heal machine in its middle, the PC at the run's end
+      against the wall, a table with two stools and a plant; the house's table and stool, shelf, TV
+      against the top wall, plant and window, its `npc` slot standing free; the casino's cabinets on
+      the floor row. The plan stamps the solid value under each piece (`COUNTER` for the furniture,
+      `HEAL`/`PC`/`WALL` where the piece is one) so the map keeps deciding collision, and every
+      footprint stays inside the floor ring, off the entry and off the tile in front of it. A new
+      `src/render/interiorPieces.ts` draws one frame per piece above the tile layer and below the
+      actors, sorted by the footprint's foot row (`cityBuildings`' rule); `InteriorScene`,
+      `services.ts` and the new `HouseScene.ts` call it. `HouseScene.ts` is the laboratory's walk
+      without the picker: `regionSceneKey = 'House'`, `regionSceneClass`, `planInterior`, the house
+      field, its pieces, the player on the shared walker and the door back to the city; its `npc`
+      slot stays undrawn until §7.3 gives it an identity (`D47`'s folder registry needs no
+      `main.ts` edit, and `src/scenes/README.md` gains the row). Add the piece blank and its build
+      step.
+      **Docs:** `docs/region-spec.md` §7.2 (the four sizes and what stands in each room, and that a
+      house is enterable), `docs/tileset-spec.md` §2b (the piece atlas row) and §6 (the furniture is
+      no longer open; the shop's and the gym's own fields stay provisional),
+      `docs/art-direction.md` (the piece sheet), `src/data/README.md` (`interiorProps.ts`),
+      `src/render/README.md` (`interiorPieces.ts`), `src/scenes/README.md` (`HouseScene.ts`) and
+      `src/engine/region/interior/README.md` (the per-kind size).
+      **Tests:** `[unit]` `INTERIOR_SIZES` pins the four sizes and the gym's 40x40, and
+      `planInterior` answers them on eight seeds; `[unit]` every room kind stamps its own pieces,
+      each footprint sits inside the floor ring, no piece touches the entry or the tile in front of
+      it, and every slot and the entry stay reachable from the door (the existing flood fill at the
+      new sizes); `[unit]` each piece's stamped value is solid and the footprint matches its
+      manifest row; `[unit]` `HouseScene.ts` exports both registry markers, `collectRegionScenes`
+      carries the key `'House'` and `interiorSceneKey('house:1')` is that key; `[unit]` a clone
+      without the packed piece sheet draws no decal and still builds; `[unit]` the suite and the
+      build are green. `[live]` at 1280x800 with the store present: the town's laboratory is
+      13x14 with its tables and three balls, a city's Centre is 15x10 with the heal machine on the
+      counter and the PC at its end, and a house's door opens a 11x9 room with its table, shelf, TV
+      and plant — the player walks up to each fixture and back out the door, and no piece overlaps
+      another or hangs over the wall. Claims `src/data/region.ts`, `region.test.ts`,
+      `src/engine/region/interior/plan.ts`, `plan.test.ts`, `README.md`,
+      `scripts/frlg/build-interior-tilesets.mjs`, `scripts/assets/pack.mjs`,
+      `scripts/assets/build-placeholders.mjs`, `scripts/assets/placeholderAccent.mjs` and its test
+      (the list length), `src/data/frlg/interior-lab.json`, `interior-centre.json`,
+      `interior-house.json`, `src/assets/frlg/interior-pieces.png` (generated, gitignored),
+      `src/assets/placeholders/frlg/interior-pieces.png`, `src/data/tilesets/interiorProps.ts`
+      (new) and its test, `src/render/interiorPieces.ts` (new) and its test,
+      `src/scenes/InteriorScene.ts`, `src/scenes/services.ts`, `src/scenes/HouseScene.ts` (new),
+      `src/scenes/regionScenes.test.ts`, `src/scenes/BootScene.ts`, `src/data/README.md`,
+      `src/render/README.md`, `src/scenes/README.md`, `docs/region-spec.md` §7.2,
+      `docs/tileset-spec.md` and `docs/art-direction.md`. *Dependencies:* the interior fields and
+      `interiorTilesetId` (`[Task-312]`, Batch 135). *(Batch 136)*
+
 ## Bugs
 
 Reported in play, awaiting triage. A bug becomes a task in the batch plan, and the
 fix is archived in `CHANGELOG.md`. `[PENDING FIXES]` below is a different list: what a
 finished **task** still owes its Task QA — and a batch, its one Integration QA pass on
 the combined tree.
+
+**An interiors request (`2026-11-11`), triaged into Batches 135 and 136.** «hay tarea para
+tileset interiores, añade para el laboratorio, centro poke y casas deben ser igual que en
+rojo fuego». The one interior field is still the **provisional** composition
+`docs/tileset-spec.md` §6 describes — six single cells off the two outdoor sheets — while the
+decomp the project already reads for its overworld sprites carries FireRed's own `lab`,
+`pokemon_center` and `generic_building` metatile sets and the layouts that use them. `[Task-312]`
+imports the three fields; `[Task-313]` gives each room FireRed's own size and furniture and adds
+the missing `House` scene, because `interiorSceneKey('house:<n>')` already answers `'House'` and
+no scene registers that key.
 
 **A starter-pick report (`2026-11-09`), triaged into Batch 133.** «Al escoger inicial se
 queda en la pantalla congelada; al recargar y darle a continuar aparece en una ruta como
