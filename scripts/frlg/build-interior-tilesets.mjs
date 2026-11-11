@@ -65,7 +65,7 @@ export const FIELDS = [
     width: 15,
     height: 10,
     secondary: 'pokemon_center',
-    kindIds: { floor: 641, wall: 644, door: 27, counter: 692, heal: 685, pc: 672 },
+    kindIds: { floor: 641, wall: 644, door: 27, counter: 692, heal: 715, pc: 736 },
   },
   {
     id: 'interior-house',

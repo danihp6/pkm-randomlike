@@ -44,7 +44,7 @@ const KIND_VALUES: Readonly<Record<InteriorKind, number>> = {
 /** The pinned decomp metatile each field's kinds are composed from (§2b). */
 const PINNED: Readonly<Record<string, Readonly<Record<InteriorKind, number>>>> = {
   'interior-lab': { floor: 649, wall: 105, door: 665, counter: 641, heal: 685, pc: 117 },
-  'interior-centre': { floor: 641, wall: 644, door: 27, counter: 692, heal: 685, pc: 672 },
+  'interior-centre': { floor: 641, wall: 644, door: 27, counter: 692, heal: 715, pc: 736 },
   'interior-house': { floor: 273, wall: 172, door: 27, counter: 327, heal: 335, pc: 341 },
 };
 

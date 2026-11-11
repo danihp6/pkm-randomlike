@@ -175,7 +175,7 @@ test in the same task:
 | field | layout (w×h) | secondary set | floor | wall | door | counter | heal | pc |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `interior-lab` | `PalletTown_ProfessorOaksLab` 13×14 | `lab` | 649 | 105 | 665 | 641 | 685 | 117 |
-| `interior-centre` | `PokemonCenter_1F` 15×10 | `pokemon_center` | 641 | 644 | 27 | 692 | 685 | 672 |
+| `interior-centre` | `PokemonCenter_1F` 15×10 | `pokemon_center` | 641 | 644 | 27 | 692 | 715 | 736 |
 | `interior-house` | `House1` 11×9 | `generic_building_1` | 273 | 172 | 27 | 327 | 335 | 341 |
 
 Neither field declares an autotile, a wall pattern, variants, a rustle or a
